@@ -114,9 +114,7 @@ export default function AreaProductGrid({
   const [filterHalfLife, setFilterHalfLife] = useState(false);
   const [filterPrice, setFilterPrice] = useState(false);
   const [filterTrials, setFilterTrials] = useState(false);
-  const [compareSet, setCompareSet] = useState<Set<string>>(new Set());
-  const [showCompare, setShowCompare] = useState(false);
-  const [showDiffsOnly, setShowDiffsOnly] = useState(false);
+
   const [isMobile, setIsMobile] = useState(false);
   const [isSwipeMode, setIsSwipeMode] = useState(false);
   const [stackItems, setStackItems] = useState<Set<string>>(new Set());
@@ -131,6 +129,71 @@ export default function AreaProductGrid({
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstCartSave = useRef(true);
+
+  const [pinnedNames, setPinnedNames] = useState<Set<string>>(new Set());
+
+  const syncPinned = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem('pnl:compare') || '[]';
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) {
+        setPinnedNames(new Set(list.map((item: any) => item.productName)));
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    syncPinned();
+    window.addEventListener('pnl:compare-changed', syncPinned);
+    window.addEventListener('storage', syncPinned);
+    return () => {
+      window.removeEventListener('pnl:compare-changed', syncPinned);
+      window.removeEventListener('storage', syncPinned);
+    };
+  }, [syncPinned]);
+
+  const pin = useCallback((product: AreaProduct) => {
+    if (typeof window === 'undefined') return;
+    const compound = compounds.find(c => c.slug === product.compoundSlug);
+    const detail = {
+      productName: product.productName,
+      imageUrl: product.imageUrl ?? null,
+      pricePerVialDollars: product.retailPrice ?? null,
+      compoundSlug: product.compoundSlug ?? null,
+      evidenceTierKey: compound?.evidenceTier ?? null,
+      category: product.category || null,
+      pinnedAt: Date.now(),
+    };
+    try {
+      window.dispatchEvent(new CustomEvent('pnl:compare-add', { detail }));
+    } catch {}
+    try {
+      const raw = window.localStorage.getItem('pnl:compare') || '[]';
+      let list = JSON.parse(raw);
+      if (!Array.isArray(list)) list = [];
+      const filtered = list.filter((x: any) => x.productName !== product.productName);
+      filtered.push(detail);
+      const trimmed = filtered.slice(-4);
+      window.localStorage.setItem('pnl:compare', JSON.stringify(trimmed));
+      window.dispatchEvent(new CustomEvent('pnl:compare-changed'));
+    } catch {}
+  }, [compounds]);
+
+  const unpin = useCallback((product: AreaProduct) => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.dispatchEvent(new CustomEvent('pnl:compare-remove', { detail: { productName: product.productName } }));
+    } catch {}
+    try {
+      const raw = window.localStorage.getItem('pnl:compare') || '[]';
+      let list = JSON.parse(raw);
+      if (!Array.isArray(list)) list = [];
+      const filtered = list.filter((x: any) => x.productName !== product.productName);
+      window.localStorage.setItem('pnl:compare', JSON.stringify(filtered));
+      window.dispatchEvent(new CustomEvent('pnl:compare-changed'));
+    } catch {}
+  }, []);
 
   /* ── Load cart from localStorage on mount ── */
   useEffect(() => {
@@ -209,24 +272,29 @@ export default function AreaProductGrid({
     showToast(`${toTitleCase(product.productName)} Added To Cart`);
   }, [showToast]);
 
+  useEffect(() => {
+    const handler = (e: CustomEvent<{ name: string }>) => {
+      const name = e.detail?.name;
+      if (!name) return;
+      const matched = products.find(
+        (p) => p.productName.toLowerCase() === name.toLowerCase() ||
+               p.compoundSlug?.toLowerCase() === name.toLowerCase()
+      );
+      if (matched) {
+        addToCart(matched);
+      }
+    };
+    window.addEventListener('pnl:add-to-cart-by-name', handler as EventListener);
+    return () => window.removeEventListener('pnl:add-to-cart-by-name', handler as EventListener);
+  }, [products, addToCart]);
+
   /* ── Cart total ── */
   const totalCartItems = useMemo(
     () => Object.values(cartItems).reduce((s, q) => s + q, 0),
     [cartItems],
   );
 
-  /* ── Compare toggle ── */
-  const toggleCompare = useCallback((slug: string) => {
-    setCompareSet(prev => {
-      const next = new Set(prev);
-      if (next.has(slug)) {
-        next.delete(slug);
-      } else if (next.size < 4) {
-        next.add(slug);
-      }
-      return next;
-    });
-  }, []);
+
 
   /* ── Stack toggle ── */
   const toggleStack = useCallback((slug: string) => {
@@ -331,70 +399,7 @@ export default function AreaProductGrid({
     return arr;
   }, [enriched, sortBy, filterWada, filterHalfLife, filterPrice, filterTrials]);
 
-  /* ── Comparison data ── */
-  const compareItems = useMemo(() => {
-    const selectedCompounds = sorted.filter(p => compareSet.has(p.compoundSlug));
-    if (selectedCompounds.length === 0) return [];
 
-    // The first item added to comparison dictates the target mg
-    const referenceSlug = Array.from(compareSet)[0];
-    const referenceItem = selectedCompounds.find(c => c.compoundSlug === referenceSlug);
-    const targetMg = referenceItem?.unitSize || 10;
-
-    return selectedCompounds.map(base => {
-      const allVariants = productsByCompound.get(base.compoundSlug) || [];
-      if (allVariants.length === 0) return base; // not carried
-
-      let closestVariant = allVariants[0];
-      let minDiff = Infinity;
-      for (const v of allVariants) {
-        if (v.unitSize != null && targetMg != null) {
-          const diff = Math.abs(Number(v.unitSize) - Number(targetMg));
-          if (diff < minDiff) {
-            minDiff = diff;
-            closestVariant = v;
-          }
-        }
-      }
-
-      return {
-        ...base,
-        productName: closestVariant.productName,
-        imageUrl: closestVariant.imageUrl || base.imageUrl,
-        productId: closestVariant.productId,
-        agentProductId: closestVariant.agentProductId,
-        retailPrice: closestVariant.retailPrice,
-        costPrice: closestVariant.costPrice,
-        isOnSale: closestVariant.isOnSale,
-        salePrice: closestVariant.salePrice,
-        unitSize: closestVariant.unitSize,
-        unitMeasure: closestVariant.unitMeasure,
-        inventoryCount: closestVariant.inventoryCount,
-        sku: closestVariant.sku,
-        category: closestVariant.category || base.category,
-        weightOz: closestVariant.weightOz || base.weightOz,
-      };
-    });
-  }, [sorted, compareSet, productsByCompound]);
-
-  const bestValueSlug = useMemo(() => {
-    if (compareItems.length < 2) return null;
-    let min = Infinity;
-    let slug = '';
-    compareItems.forEach(p => { if (p.retailPrice < min) { min = p.retailPrice; slug = p.compoundSlug; } });
-    return slug;
-  }, [compareItems]);
-
-  const mostStudiedSlug = useMemo(() => {
-    if (compareItems.length < 2) return null;
-    let max = -1;
-    let slug = '';
-    compareItems.forEach(p => {
-      const c = p.compound?.pubmedCitationCount ?? 0;
-      if (c > max) { max = c; slug = p.compoundSlug; }
-    });
-    return max > 0 ? slug : null;
-  }, [compareItems]);
 
 
   /* ─── Not authenticated gate ─── */
@@ -702,7 +707,7 @@ export default function AreaProductGrid({
         {sorted.map((p) => {
           const compound = p.compound;
           const ti = tierInfo(compound?.evidenceTier ?? '');
-          const isComparing = compareSet.has(p.compoundSlug);
+          const isComparing = pinnedNames.has(p.productName);
           const inCart = p.agentProductId ? (cartItems[p.agentProductId] || 0) : 0;
           const outOfStock = p.agentProductId ? p.inventoryCount <= 0 : false;
           const displayPrice = p.isOnSale && p.salePrice != null
@@ -1088,8 +1093,31 @@ export default function AreaProductGrid({
                   <input
                     type="checkbox"
                     checked={isComparing}
-                    onChange={() => toggleCompare(p.compoundSlug)}
-                    disabled={!isComparing && compareSet.size >= 4}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        if (pinnedNames.size >= 4) {
+                          showToast('You can compare up to 4 compounds at a time.');
+                          return;
+                        }
+                        try {
+                          const raw = window.localStorage.getItem('pnl:compare') || '[]';
+                          const list = JSON.parse(raw);
+                          if (Array.isArray(list) && list.length > 0) {
+                            const firstItem = list[0];
+                            const currentCompound = compounds.find(c => c.slug === p.compoundSlug);
+                            const firstCompound = firstItem.compoundSlug ? compounds.find(c => c.slug === firstItem.compoundSlug) : null;
+                            if (currentCompound && firstCompound && currentCompound.category !== firstCompound.category) {
+                              showToast(`You can only compare peptides within the same category ("${firstCompound.category || 'Other'}").`);
+                              return;
+                            }
+                          }
+                        } catch {}
+                        pin(p);
+                      } else {
+                        unpin(p);
+                      }
+                    }}
+                    disabled={!isComparing && pinnedNames.size >= 4}
                     style={{
                       width: 18,
                       height: 18,
@@ -1150,583 +1178,7 @@ export default function AreaProductGrid({
         </div>
       )}
 
-      {/* ─── Sticky comparison bar ─── */}
-      {compareSet.size >= 2 && !showCompare && (
-        <div style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-          padding: '0 16px',
-          paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
-          background: 'linear-gradient(to top, rgba(5,7,10,0.98) 60%, transparent)',
-          animation: 'fadeInUp 0.25s ease',
-        }}>
-          <div style={{
-            maxWidth: 600,
-            margin: '0 auto',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            padding: '14px 20px',
-            background: 'rgba(10,16,24,0.95)',
-            border: '1px solid rgba(0,196,188,0.3)',
-            borderRadius: 16,
-            backdropFilter: 'blur(12px)',
-          }}>
-            <span style={{
-              color: '#D0DAE4',
-              fontSize: '0.88rem',
-              fontWeight: 600,
-              flex: 1,
-            }}>
-              {compareSet.size} Selected
-            </span>
-            <button
-              onClick={() => setShowCompare(true)}
-              style={{
-                height: 44,
-                padding: '0 24px',
-                background: '#00C4BC',
-                color: '#000',
-                border: 'none',
-                borderRadius: 10,
-                fontWeight: 800,
-                fontSize: '0.88rem',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Compare {compareSet.size} Compounds
-            </button>
-            <button
-              onClick={() => setCompareSet(new Set())}
-              style={{
-                height: 44,
-                width: 44,
-                minWidth: 44,
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 10,
-                color: '#A8B4C0',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-              aria-label="Clear comparison"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Comparison Modal ─── */}
-      {showCompare && compareItems.length >= 2 && (
-        <div
-          onClick={() => setShowCompare(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 2000,
-            background: 'rgba(0,0,0,0.88)',
-            backdropFilter: 'blur(10px)',
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'center',
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              width: '100%',
-              height: '100dvh',
-              overflowY: 'auto',
-              WebkitOverflowScrolling: 'touch',
-              background: 'linear-gradient(180deg, #0F1923 0%, #0A1018 100%)',
-              animation: 'fadeIn 0.3s ease',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            {/* Modal header */}
-            <div style={{
-              padding: '20px 24px 16px',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              position: 'sticky',
-              top: 0,
-              zIndex: 5,
-              background: 'linear-gradient(180deg, #0F1923 0%, rgba(15,25,35,0.95) 100%)',
-              backdropFilter: 'blur(8px)',
-            }}>
-              <h2 style={{
-                color: '#FFFFFF',
-                fontSize: '1.4rem',
-                fontWeight: 800,
-                margin: 0,
-              }}>
-                Compare Compounds
-              </h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#A8B4C0', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={showDiffsOnly} onChange={e => setShowDiffsOnly(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#00C4BC' }} />
-                  Highlight Differences
-                </label>
-                <button
-                  onClick={() => setShowCompare(false)}
-                style={{
-                  width: 44,
-                  height: 44,
-                  minWidth: 44,
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 12,
-                  color: '#A8B4C0',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-                aria-label="Close comparison"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            </div>
-
-            {/* Comparison table */}
-            <div style={{ padding: '24px 12px 40px', overflowX: 'auto', flex: 1 }}>
-              <table style={{
-                width: '100%',
-                borderCollapse: 'separate',
-                borderSpacing: 0,
-                fontSize: '0.82rem',
-              }}>
-                <thead>
-                  <tr>
-                    <th style={{
-                      textAlign: 'left',
-                      padding: '12px 14px',
-                      color: '#718096',
-                      fontWeight: 600,
-                      fontSize: '0.75rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                      borderBottom: '1px solid rgba(255,255,255,0.06)',
-                      position: 'sticky',
-                      left: 0,
-                      background: '#0F1923',
-                      zIndex: 2,
-                      minWidth: 120,
-                    }}>
-                      Attribute
-                    </th>
-                    {compareItems.map(p => {
-                      const isBestVal = bestValueSlug === p.compoundSlug;
-                      const isMostStudied = mostStudiedSlug === p.compoundSlug;
-                      return (
-                        <th key={p.productId} style={{
-                          textAlign: 'center',
-                          padding: '16px 14px',
-                          color: '#FFFFFF',
-                          fontWeight: 700,
-                          fontSize: '1rem',
-                          borderBottom: '1px solid rgba(255,255,255,0.06)',
-                          borderLeft: '1px solid rgba(255,255,255,0.06)',
-                          minWidth: 200,
-                          background: 'rgba(255,255,255,0.01)',
-                        }}>
-                          <div style={{ marginBottom: 16, fontSize: '1.5rem', fontWeight: 800 }}>{toTitleCase(p.productName)}</div>
-                          {p.imageUrl && (
-                            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={p.imageUrl} alt={p.productName} style={{ width: 200, height: 200, objectFit: 'contain', borderRadius: 8, background: '#fff' }} />
-                            </div>
-                          )}
-                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginTop: 8 }}>
-                            {isBestVal && (
-                              <span style={{
-                                display: 'inline-block',
-                                padding: '2px 8px',
-                                borderRadius: 10,
-                                fontSize: '0.65rem',
-                                fontWeight: 700,
-                                background: 'rgba(0,196,188,0.15)',
-                                color: '#00C4BC',
-                                border: '1px solid rgba(0,196,188,0.3)',
-                              }}>Best Value</span>
-                            )}
-                            {isMostStudied && (
-                              <span style={{
-                                display: 'inline-block',
-                                padding: '2px 8px',
-                                borderRadius: 10,
-                                fontSize: '0.65rem',
-                                fontWeight: 700,
-                                background: 'rgba(214,158,46,0.15)',
-                                color: '#D69E2E',
-                                border: '1px solid rgba(214,158,46,0.3)',
-                              }}>Most Studied</span>
-                            )}
-                          </div>
-                        </th>
-                      );
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* Efficacy Profile Radar Chart */}
-                  <CompareRow label="Efficacy Profile" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.efficacyScores)}>
-                    {compareItems.map(p => {
-                      const scores = p.compound?.efficacyScores || {};
-                      const data = Object.keys(scores).map(key => ({
-                        subject: key,
-                        A: scores[key],
-                        fullMark: 10,
-                      }));
-                      return (
-                        <td key={p.productId} style={{ ...compareTdStyle, width: 250, height: 250 }}>
-                          {Object.keys(scores).length > 0 ? (
-                            <ResponsiveContainer width="100%" height={220}>
-                              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
-                                <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                                <PolarAngleAxis dataKey="subject" tick={{ fill: '#A8B4C0', fontSize: 10 }} />
-                                <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
-                                <Radar name={p.productName} dataKey="A" stroke="#00C4BC" fill="#00C4BC" fillOpacity={0.4} />
-                              </RadarChart>
-                            </ResponsiveContainer>
-                          ) : <span style={{ color: '#718096' }}>—</span>}
-                        </td>
-                      );
-                    })}
-                  </CompareRow>
-
-                  {/* Price */}
-                  <CompareRow label="Price" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.retailPrice)}>
-                    {compareItems.map(p => {
-                      const price = p.retailPrice;
-                      const pricePerMg = p.unitSize && Number(p.unitSize) > 0 ? price / Number(p.unitSize) : null;
-                      return (
-                        <td key={p.productId} style={compareTdStyle}>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                            <div>
-                              <span style={{ color: '#00C4BC', fontWeight: 800, fontSize: '1.05rem' }}>
-                                {formatPrice(price)}
-                              </span>
-                              {p.unitSize && (
-                                <span style={{ color: '#718096', fontSize: '0.8rem', marginLeft: 4 }}>
-                                  / {p.unitSize}{p.unitMeasure || ''}
-                                </span>
-                              )}
-                            </div>
-                            {pricePerMg != null && (
-                              <span style={{ color: '#A8B4C0', fontSize: '0.75rem', fontWeight: 600 }}>
-                                {formatPrice(pricePerMg)} / mg
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </CompareRow>
-
-                  {/* Evidence Tier */}
-                  <CompareRow label="Evidence Tier" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.evidenceTier)}>
-                    {compareItems.map(p => {
-                      const ti = tierInfo(p.compound?.evidenceTier ?? '');
-                      return (
-                        <td key={p.productId} style={compareTdStyle}>
-                          <span style={{
-                            display: 'inline-block',
-                            padding: '3px 9px',
-                            borderRadius: 16,
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            background: `${ti.color}20`,
-                            color: ti.color,
-                          }}>
-                            {ti.label}
-                          </span>
-                        </td>
-                      );
-                    })}
-                  </CompareRow>
-
-                  {/* Risk Level */}
-                  <CompareRow label="Risk Level" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.riskLevel)}>
-                    {compareItems.map(p => {
-                      const risk = p.compound?.riskLevel ?? '—';
-                      const color = risk === 'low' ? '#68D391'
-                        : risk === 'moderate' ? '#F6E05E'
-                        : risk === 'high' ? '#FC8181'
-                        : risk === 'critical' ? '#FF6B6B'
-                        : '#A8B4C0';
-                      return (
-                        <td key={p.productId} style={compareTdStyle}>
-                          <button
-                            onClick={() => alert(p.compound?.riskReasons?.length ? p.compound.riskReasons.join('\\n') : 'No additional risk data available.')}
-                            title="Click to view risk reasons"
-                            style={{ 
-                              color, 
-                              fontWeight: 700, 
-                              textTransform: 'capitalize',
-                              background: 'none',
-                              border: 'none',
-                              borderBottom: `1px dashed ${color}`,
-                              cursor: 'pointer',
-                              padding: 0,
-                              fontSize: '0.95rem'
-                            }}
-                          >
-                            {risk}
-                          </button>
-                        </td>
-                      );
-                    })}
-                  </CompareRow>
-
-                  {/* Side Effects */}
-                  <CompareRow label="Side Effects" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.sideEffects)}>
-                    {compareItems.map(p => (
-                      <td key={p.productId} style={{ ...compareTdStyle, maxWidth: 220, textAlign: 'left', verticalAlign: 'top' }}>
-                        <span style={{ color: '#D0DAE4', fontSize: '0.85rem', lineHeight: 1.5 }}>
-                          {p.compound?.sideEffects || '—'}
-                        </span>
-                      </td>
-                    ))}
-                  </CompareRow>
-
-                  {/* Half-Life */}
-                  <CompareRow label="Half-Life" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.halfLife)}>
-                    {compareItems.map(p => (
-                      <td key={p.productId} style={compareTdStyle}>
-                        <span style={{ color: '#D0DAE4', fontWeight: 600 }}>
-                          {p.compound?.halfLife || '—'}
-                        </span>
-                      </td>
-                    ))}
-                  </CompareRow>
-
-                  {/* Molecular Weight */}
-                  <CompareRow label="Molecular Weight" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.molecularWeightDa)}>
-                    {compareItems.map(p => (
-                      <td key={p.productId} style={compareTdStyle}>
-                        <span style={{ color: '#D0DAE4' }}>
-                          {p.compound?.molecularWeightDa
-                            ? `${p.compound.molecularWeightDa.toLocaleString()} Da`
-                            : '—'}
-                        </span>
-                      </td>
-                    ))}
-                  </CompareRow>
-
-                  {/* Category */}
-                  <CompareRow label="Category" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.category)}>
-                    {compareItems.map(p => (
-                      <td key={p.productId} style={compareTdStyle}>
-                        <span style={{ color: '#D0DAE4', textTransform: 'capitalize' }}>
-                          {p.compound?.category ? p.compound.category.replace(/_/g, ' ') : '—'}
-                        </span>
-                      </td>
-                    ))}
-                  </CompareRow>
-
-                  {/* Quality & COA */}
-                  <CompareRow label="Quality & COA" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.purityPercentage)}>
-                    {compareItems.map(p => (
-                      <td key={p.productId} style={compareTdStyle}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                          {p.compound?.purityPercentage != null ? (
-                            <span style={{ color: '#68D391', fontWeight: 700 }}>
-                              {p.compound.purityPercentage}% Purity
-                            </span>
-                          ) : (
-                            <span style={{ color: '#718096' }}>—</span>
-                          )}
-                          {p.compound?.coaUrl && p.compound.coaUrl !== '#' && (
-                            <a href={p.compound.coaUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#00C4BC', fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none', background: 'rgba(0,196,188,0.1)', padding: '2px 8px', borderRadius: 12, border: '1px solid rgba(0,196,188,0.2)' }}>
-                              View COA ↗
-                            </a>
-                          )}
-                        </div>
-                      </td>
-                    ))}
-                  </CompareRow>
-
-                  {/* Other Names */}
-                  <CompareRow label="Other Names" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => (p.compound?.aliases || []).join(','))}>
-                    {compareItems.map(p => (
-                      <td key={p.productId} style={compareTdStyle}>
-                        <span style={{ color: '#D0DAE4', fontSize: '0.85rem' }}>
-                          {p.compound?.aliases && p.compound.aliases.length > 0
-                            ? p.compound.aliases.join(', ')
-                            : '—'}
-                        </span>
-                      </td>
-                    ))}
-                  </CompareRow>
-
-                  {/* Summary */}
-                  <CompareRow label="Summary" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.plainSummary)}>
-                    {compareItems.map(p => (
-                      <td key={p.productId} style={{ ...compareTdStyle, maxWidth: 220, textAlign: 'left', verticalAlign: 'top' }}>
-                        <span style={{ color: '#D0DAE4', fontSize: '0.85rem', lineHeight: 1.5 }}>
-                          {p.compound?.plainSummary || '—'}
-                        </span>
-                      </td>
-                    ))}
-                  </CompareRow>
-
-                  {/* Main Benefits */}
-                  <CompareRow label="Main Benefits" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.benefits)}>
-                    {compareItems.map(p => (
-                      <td key={p.productId} style={{ ...compareTdStyle, maxWidth: 220, textAlign: 'left', verticalAlign: 'top' }}>
-                        <span style={{ color: '#00C4BC', fontSize: '0.85rem', lineHeight: 1.5, fontWeight: 600 }}>
-                          {p.compound?.benefits || '—'}
-                        </span>
-                      </td>
-                    ))}
-                  </CompareRow>
-
-                  {/* Mechanism */}
-                  <CompareRow label="Mechanism" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.mechanism)}>
-                    {compareItems.map(p => (
-                      <td key={p.productId} style={{ ...compareTdStyle, maxWidth: 220, textAlign: 'left', verticalAlign: 'top' }}>
-                        <span style={{
-                          color: '#D0DAE4',
-                          fontSize: '0.85rem',
-                          lineHeight: 1.5,
-                          display: 'block',
-                        }}>
-                          {p.compound?.mechanism || '—'}
-                        </span>
-                      </td>
-                    ))}
-                  </CompareRow>
-
-                  {/* Key Research Uses */}
-                  <CompareRow label="Key Research Uses" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => (p.compound?.studiedFor || []).join(','))}>
-                    {compareItems.map(p => (
-                      <td key={p.productId} style={{ ...compareTdStyle, verticalAlign: 'top', textAlign: 'left' }}>
-                        <div style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'flex-start',
-                          gap: 6,
-                        }}>
-                          {(p.compound?.studiedFor ?? []).length > 0
-                            ? p.compound!.studiedFor.map((use, i) => (
-                              <span key={i} style={{
-                                display: 'inline-block',
-                                padding: '3px 10px',
-                                borderRadius: 8,
-                                fontSize: '0.72rem',
-                                fontWeight: 600,
-                                background: 'rgba(255,255,255,0.05)',
-                                color: '#D0DAE4',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                                textTransform: 'capitalize'
-                              }}>
-                                {use}
-                              </span>
-                            ))
-                            : <span style={{ color: '#718096' }}>—</span>
-                          }
-                        </div>
-                      </td>
-                    ))}
-                  </CompareRow>
-
-                  {/* Synergistic Stacking */}
-                  <CompareRow label="Synergistic Stacking" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => (p.compound?.bestStackedWith || []).join(','))}>
-                    {compareItems.map(p => (
-                      <td key={p.productId} style={{ ...compareTdStyle, verticalAlign: 'top', textAlign: 'left' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
-                          {(p.compound?.bestStackedWith ?? []).length > 0
-                            ? p.compound!.bestStackedWith.map((use, i) => (
-                              <span key={i} style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 600, background: 'rgba(0,196,188,0.1)', color: '#00C4BC', border: '1px solid rgba(0,196,188,0.2)', textTransform: 'capitalize' }}>
-                                + {use}
-                              </span>
-                            ))
-                            : <span style={{ color: '#718096' }}>—</span>
-                          }
-                        </div>
-                      </td>
-                    ))}
-                  </CompareRow>
-
-                  {/* Typical Protocol/Frequency */}
-                  <CompareRow label="Protocol/Frequency" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.typicalFrequency)}>
-                    {compareItems.map(p => (
-                      <td key={p.productId} style={{ ...compareTdStyle, verticalAlign: 'top', textAlign: 'left' }}>
-                        <span style={{ color: '#D0DAE4', fontSize: '0.85rem' }}>
-                          {p.compound?.typicalFrequency || '—'}
-                        </span>
-                      </td>
-                    ))}
-                  </CompareRow>
-
-                  {/* References */}
-                  <CompareRow label="References" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.pubmedCitationCount)}>
-                    {compareItems.map(p => (
-                      <td key={p.productId} style={compareTdStyle}>
-                        {p.compound?.pubmedCitationCount != null ? (
-                          <Link href={`/research/${p.compound.slug}/references`} style={{ color: '#00C4BC', fontWeight: 700, textDecoration: 'none' }}>
-                            {p.compound.pubmedCitationCount.toLocaleString()} Citations ↗
-                          </Link>
-                        ) : (
-                          <span style={{ color: '#718096' }}>—</span>
-                        )}
-                      </td>
-                    ))}
-                  </CompareRow>
-
-                  {/* Action row */}
-                  <CompareRow label="">
-                    {compareItems.map(p => {
-                      const outOfStock = !p.agentProductId || p.inventoryCount === 0;
-                      return (
-                        <td key={p.productId} style={{ ...compareTdStyle, borderBottom: 'none', paddingTop: 24 }}>
-                          <button
-                            onClick={() => addToCart(p)}
-                            disabled={outOfStock}
-                            style={{
-                              width: '100%',
-                              maxWidth: 180,
-                              height: 44,
-                              background: outOfStock ? 'rgba(255,255,255,0.05)' : '#00C4BC',
-                              color: outOfStock ? '#718096' : '#000',
-                              border: 'none',
-                              borderRadius: 10,
-                              fontWeight: 800,
-                              fontSize: '0.88rem',
-                              cursor: outOfStock ? 'not-allowed' : 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              transition: 'all 0.2s',
-                            }}
-                          >
-                            {outOfStock ? 'Out Of Stock' : !p.agentProductId ? 'Not Carried' : 'Add To Cart'}
-                          </button>
-                        </td>
-                      );
-                    })}
-                  </CompareRow>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Comparison Drawer is rendered at the layout level via StorefrontCompareDrawer */}
 
       {/* Stack Builder Sticky Banner */}
       {stackItems.size > 0 && (

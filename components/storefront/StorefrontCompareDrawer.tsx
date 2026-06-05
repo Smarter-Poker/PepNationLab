@@ -64,11 +64,7 @@ function dispatchAddToCart(productName: string) {
   }
 }
 
-function dispatchAddAllToCart(items: PinnedItem[]) {
-  for (const item of items) {
-    dispatchAddToCart(item.productName);
-  }
-}
+
 
 const cellStyle: React.CSSProperties = {
   padding: 'var(--space-3, 12px)',
@@ -850,18 +846,6 @@ export default function StorefrontCompareDrawer({
             </button>
             <button
               type="button"
-              onClick={() => dispatchAddAllToCart(pinned)}
-              aria-label="Add All Pinned To Cart - Stack Builder"
-              style={{
-                background: 'rgba(255,255,255,0.05)', border: `1px solid rgba(255,255,255,0.12)`,
-                color: 'var(--white)', borderRadius: 8, padding: '6px 12px',
-                fontSize: '0.74rem', fontWeight: 800, cursor: 'pointer',
-              }}
-            >
-              Add All To Cart
-            </button>
-            <button
-              type="button"
               onClick={clearAll}
               aria-label="Clear All Pinned"
               style={{
@@ -888,7 +872,7 @@ export default function StorefrontCompareDrawer({
                       background: 'rgba(255,255,255,0.04)',
                       border: '1px solid rgba(255,255,255,0.10)',
                       display: 'flex', flexDirection: 'column', gap: 8,
-                      minHeight: 130,
+                      minHeight: 165,
                     }}
                   >
                     <button
@@ -947,6 +931,21 @@ export default function StorefrontCompareDrawer({
                         </span>
                       )}
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => dispatchAddToCart(item.productName)}
+                      style={{
+                        background: primaryColor, border: 'none', color: '#04221F',
+                        padding: '6px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.74rem',
+                        cursor: 'pointer', marginTop: 'auto', width: '100%',
+                        textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                        transition: 'opacity 0.2s',
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                      onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                    >
+                      <Zap size={11} /> Add To Cart
+                    </button>
                   </div>
                 );
               })}
@@ -1006,17 +1005,6 @@ export default function StorefrontCompareDrawer({
                     </label>
                   </>
                 )}
-                <button
-                  type="button"
-                  onClick={() => dispatchAddAllToCart(pinned)}
-                  style={{
-                    background: primaryColor, border: 'none', color: '#04221F',
-                    padding: '8px 16px', borderRadius: 8, fontWeight: 800, fontSize: '0.85rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Add All To Cart
-                </button>
                 <button
                   onClick={() => setShowMatrix(false)}
                   style={{
@@ -1150,7 +1138,7 @@ export default function StorefrontCompareDrawer({
                     const pc = pinnedProsCons[origIdx];
                     const color = colors[origIdx % colors.length];
                     return (
-                      <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                           <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
                           {p.productName}
@@ -1161,6 +1149,21 @@ export default function StorefrontCompareDrawer({
                           {pc?.pros.map((pro, i) => <div key={`pro-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><ThumbsUp size={11} color="#68D391" style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{pro}</span></div>)}
                           {pc?.cons.map((con, i) => <div key={`con-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><ThumbsDown size={11} color="#FC8181" style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{con}</span></div>)}
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => dispatchAddToCart(p.productName)}
+                          style={{
+                            background: primaryColor, border: 'none', color: '#04221F',
+                            padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
+                            cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                            transition: 'opacity 0.2s',
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                          <Zap size={12} /> Add To Cart
+                        </button>
                       </div>
                     );
                   })}
@@ -1194,7 +1197,7 @@ export default function StorefrontCompareDrawer({
                     const color = colors[origIdx % colors.length];
                     const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
                     return (
-                      <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                           <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
                           {p.productName}
@@ -1209,6 +1212,21 @@ export default function StorefrontCompareDrawer({
                           {c?.is_glp1 && <div style={{ fontSize: '0.72rem', color: '#9F7AEA', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> GLP-1 / Incretin Class</div>}
                           {c?.sources?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div><div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{c.sources.slice(0, 3).map((src, si) => <a key={si} href={src.startsWith('http') ? src : undefined} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.68rem', color, opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>{src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si+1}</span> : src}</a>)}</div></div> : null}
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => dispatchAddToCart(p.productName)}
+                          style={{
+                            background: primaryColor, border: 'none', color: '#04221F',
+                            padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
+                            cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                            transition: 'opacity 0.2s',
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                          <Zap size={12} /> Add To Cart
+                        </button>
                       </div>
                     );
                   })}
@@ -1226,7 +1244,7 @@ export default function StorefrontCompareDrawer({
                     const hlH = parseHalfLifeHours(c?.half_life);
                     const dosesPerWeek = hlH > 0 ? Math.max(1, Math.round(168 / (hlH * 2))) : null;
                     return (
-                      <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                           <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
                           {p.productName}
@@ -1254,6 +1272,21 @@ export default function StorefrontCompareDrawer({
                           {c?.handling?.notes && <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, borderLeft: '2px solid rgba(255,255,255,0.08)', paddingLeft: 6 }}>{c.handling.notes}</div>}
                           {c?.coa_url && <a href={c.coa_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color, textDecoration: 'none', fontWeight: 700 }}><BookOpen size={11} /> View COA</a>}
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => dispatchAddToCart(p.productName)}
+                          style={{
+                            background: primaryColor, border: 'none', color: '#04221F',
+                            padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
+                            cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                            transition: 'opacity 0.2s',
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                          <Zap size={12} /> Add To Cart
+                        </button>
                       </div>
                     );
                   })}
@@ -1278,10 +1311,27 @@ export default function StorefrontCompareDrawer({
                     <p style={{ margin: '0 0 4px 0', fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>Research verdict cards — scored on evidence strength, safety profile, scientific backing, research coverage, and handling practicality.</p>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
                       {verdicts.map(v => (
-                        <div key={v.label} style={{ padding: '12px 14px', borderRadius: 10, background: `${v.color}08`, border: `1px solid ${v.color}25` }}>
-                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: v.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, display: 'flex', alignItems: 'center', gap: '4px' }}>{v.icon} {v.label}</div>
-                          <div style={{ fontWeight: 900, fontSize: '0.92rem', color: 'var(--white)', marginBottom: 4 }}>{v.item.p.productName}</div>
-                          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{v.reason}</div>
+                        <div key={v.label} style={{ padding: '12px 14px', borderRadius: 10, background: `${v.color}08`, border: `1px solid ${v.color}25`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          <div>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: v.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, display: 'flex', alignItems: 'center', gap: '4px' }}>{v.icon} {v.label}</div>
+                            <div style={{ fontWeight: 900, fontSize: '0.92rem', color: 'var(--white)', marginBottom: 4 }}>{v.item.p.productName}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{v.reason}</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => dispatchAddToCart(v.item.p.productName)}
+                            style={{
+                              background: v.color, border: 'none', color: '#04221F',
+                              padding: '6px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.74rem',
+                              cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                              transition: 'opacity 0.2s',
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                          >
+                            <Zap size={11} /> Add To Cart
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -1335,17 +1385,6 @@ export default function StorefrontCompareDrawer({
                                   </button>
                                 )}
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => dispatchAddToCart(p.productName)}
-                                style={{
-                                  background: primaryColor, border: 'none', color: '#04221F',
-                                  padding: '8px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.8rem',
-                                  cursor: 'pointer', marginTop: 4, width: 'fit-content'
-                                }}
-                              >
-                                Add To Cart
-                              </button>
                               {pinned.length >= 2 && (
                                 <button
                                   type="button"
@@ -1498,6 +1537,30 @@ export default function StorefrontCompareDrawer({
                       });
                     })()}
                   </tbody>
+                  <tfoot style={{ position: 'sticky', bottom: 0, zIndex: 20 }}>
+                    <tr style={{ background: '#0F161E', borderTop: '2px solid rgba(168,180,192,0.18)' }}>
+                      <td style={{ ...labelCellStyle, background: '#0F161E', borderBottom: 'none' }}>Action</td>
+                      {displayedPinned.map((p) => (
+                        <td key={p.productName} style={{ ...cellStyle, borderBottom: 'none' }}>
+                          <button
+                            type="button"
+                            onClick={() => dispatchAddToCart(p.productName)}
+                            style={{
+                              background: primaryColor, border: 'none', color: '#04221F',
+                              padding: '10px 16px', borderRadius: 8, fontWeight: 800, fontSize: '0.85rem',
+                              cursor: 'pointer', width: '100%', textAlign: 'center',
+                              boxShadow: `0 2px 8px ${primaryColor}33`,
+                              transition: 'opacity 0.2s',
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                          >
+                            Add To Cart
+                          </button>
+                        </td>
+                      ))}
+                    </tr>
+                  </tfoot>
                 </table>
               </div>}
             </div>

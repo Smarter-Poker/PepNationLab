@@ -16,6 +16,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { GitCompare, Check, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 const STORAGE_KEY = 'pnl:compare';
 const MAX_PINNED = 4;
@@ -26,6 +27,7 @@ interface PinnedItem {
   pricePerVialDollars: number | null;
   compoundSlug: string | null;
   evidenceTierKey: string | null;
+  category?: string | null;
   pinnedAt: number;
 }
 
@@ -55,6 +57,7 @@ interface Props {
   productName?: string;
   imageUrl?: string | null;
   pricePerVialDollars?: number | null;
+  category?: string | null;
   size?: 'sm' | 'md';
   className?: string;
 }
@@ -66,6 +69,7 @@ export default function PinToCompareButton({
   productName,
   imageUrl,
   pricePerVialDollars,
+  category,
   size = 'md',
 }: Props) {
   const [pinned, setPinned] = useState(false);
@@ -99,18 +103,28 @@ export default function PinToCompareButton({
       writePinned(list);
     } else if (list.length < MAX_PINNED) {
       // Pin
+      if (list.length > 0) {
+        const firstCategory = list[0].category;
+        if (firstCategory && category && firstCategory !== category) {
+          toast.error(`You can only compare peptides within the same category ("${firstCategory}").`);
+          return;
+        }
+      }
       const item: PinnedItem = {
         productName: productName ?? compoundName,
         imageUrl: imageUrl ?? null,
         pricePerVialDollars: pricePerVialDollars ?? null,
         compoundSlug,
         evidenceTierKey: evidenceTierKey ?? null,
+        category: category ?? null,
         pinnedAt: Date.now(),
       };
       writePinned([...list, item]);
+    } else {
+      toast.error('You can compare up to 4 compounds at a time.');
     }
     sync();
-  }, [compoundSlug, compoundName, evidenceTierKey, productName, imageUrl, pricePerVialDollars, sync]);
+  }, [compoundSlug, compoundName, evidenceTierKey, productName, imageUrl, pricePerVialDollars, category, sync]);
 
   const teal = '#00C4BC';
   const isSmall = size === 'sm';

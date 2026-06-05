@@ -954,6 +954,80 @@ export default function AgentStorefrontGrid({
       .replace(/sexual\s+health/g, 'sexual')
       .replace(/gut\s+lining/g, 'leakygut');
 
+    // Dynamically build the set of specific compound names, slugs, and aliases to prevent broad synonym expansion
+    const SPECIFIC_COMPOUNDS = new Set<string>();
+    products.forEach(p => {
+      const name = p.products?.name?.toLowerCase().trim();
+      if (name) {
+        SPECIFIC_COMPOUNDS.add(name);
+        SPECIFIC_COMPOUNDS.add(name.replace(/[\s-]+/g, ''));
+        name.split(/[\s-]+/).forEach(part => {
+          if (part && part.length > 2 && part !== 'water' && part !== 'stack' && part !== 'bundle') {
+            SPECIFIC_COMPOUNDS.add(part);
+          }
+        });
+      }
+      const slug = p.products?.compound_slug?.toLowerCase().trim();
+      if (slug) {
+        SPECIFIC_COMPOUNDS.add(slug);
+        SPECIFIC_COMPOUNDS.add(slug.replace(/[\s-]+/g, ''));
+        slug.split(/[\s-]+/).forEach(part => {
+          if (part && part.length > 2) SPECIFIC_COMPOUNDS.add(part);
+        });
+      }
+    });
+
+    // Add extra brand names / short forms / aliases manually to ensure coverage
+    const brandNames = [
+      'tirzepatide', 'semaglutide', 'retatrutide', 'ozempic', 'wegovy', 'mounjaro',
+      'bpc157', 'bpc-157', 'tb500', 'tb-500', 'nad', 'nad+', 'epithalon', 'mots-c',
+      'semax', 'selank', 'kpv', 'sermorelin', 'ipamorelin', 'cjc-1295', 'cjc1295',
+      'aod9604', 'aod-9604', 'ghk-cu', 'ghk', 'dihexa', '5-amino-1mq', '5amino1mq',
+      'cardarine', 'sr9009', 'ibutamoren', 'mk677', 'mk-677', 'wolverine',
+      'sema', 'tirz', 'reta', 'bpc', 'tb', 'cjc', 'ipa'
+    ];
+    brandNames.forEach(name => {
+      SPECIFIC_COMPOUNDS.add(name);
+      SPECIFIC_COMPOUNDS.add(name.replace(/[\s-]+/g, ''));
+    });
+
+    // Make sure general/category terms are NEVER classified as specific compounds
+    const GENERAL_TERMS = [
+      'fat', 'weightloss', 'weight', 'loss', 'lipolysis', 'obesity', 'adipose', 'slimming',
+      'lean', 'cut', 'cutting', 'slim', 'shed', 'trim', 'bodyfat', 'overweight', 'bmi', 'diet',
+      'calories', 'calorie', 'deficit', 'melt', 'burn', 'fat-loss', 'fatloss', 'visceral',
+      'muscle', 'growthhormone', 'gh', 'hgh', 'hypertrophy', 'bodybuilding', 'mass', 'strength',
+      'growth', 'anabolic', 'gains', 'bulking', 'size', 'brawn', 'musclebuilding', 'musclegrowth',
+      'lean-muscle', 'leanmuscle', 'physique', 'pump', 'ripped', 'swole', 'protein', 'powerlifting',
+      'athletic', 'jacked', 'build', 'strong', 'stronger', 'power', 'lift', 'big', 'bigger',
+      'sleep', 'insomnia', 'circadian', 'rest', 'rem', 'tired', 'exhausted', 'yawn', 'sleepless',
+      'wakeup', 'waking', 'melatonin', 'napping', 'drowsy', 'fatigue', 'jet-lag', 'jetlag',
+      'pain', 'analgesic', 'inflammation', 'injury', 'healing', 'joint', 'tendon', 'nociception',
+      'soreness', 'headache', 'headaches', 'migraine', 'migraines', 'ache', 'sore', 'hurt',
+      'arthritis', 'back', 'knee', 'elbow', 'shoulder', 'torn', 'sprain', 'sprained', 'swelling',
+      'inflamed', 'anti-inflammatory', 'antiinflammatory', 'recover', 'recovery', 'repair',
+      'damage', 'neuropathy', 'brain', 'cognitive', 'nootropic', 'memory', 'focus', 'neuro',
+      'learning', 'attention', 'clarity', 'smart', 'mental', 'concentration', 'skin', 'antiaging',
+      'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow', 'complexion', 'youth', 'tanning',
+      'tan', 'melanin', 'sun', 'burn', 'brightening', 'pores', 'texture', 'hairloss', 'hair-loss',
+      'hairgrowth', 'balding', 'alopecia', 'scalp', 'energy', 'stamina', 'endurance', 'metabolism',
+      'mitochondrial', 'cardio', 'vitality', 'atp', 'cellular-energy', 'sugar', 'diabetes', 'insulin',
+      'glucose', 'glycemic', 'metabolic', 'bloodsugar', 'leptin', 'ghrelin', 'satiety', 'incretin',
+      'glp1', 'glp-1', 'heart', 'bloodpressure', 'cardiovascular', 'blood', 'vascular', 'bone',
+      'osteoporosis', 'skeleton', 'radius', 'ligament', 'cartilage', 'sex', 'libido', 'erectile', 'aphrodisiac',
+      'testosterone', 'hormone', 'arousal', 'drive', 'desire', 'sexual', 'gut', 'digestion',
+      'ulcer', 'gastric', 'intestinal', 'microbiome', 'bowel', 'leaky', 'stomach', 'ibs',
+      'immune', 'immunity', 'infection', 'virus', 'bacteria', 'autoimmune', 'stress', 'anxiety',
+      'cortisol', 'calm', 'relax', 'mood', 'depression', 'panic', 'worry', 'aging', 'longevity',
+      'senescence', 'lifespan', 'telomere', 'mitochondria', 'mechanism', 'moa', 'receptor',
+      'agonist', 'antagonist', 'inhibitor', 'activator', 'signaling', 'pathway', 'binding',
+      'target', 'kinase', 'enzyme', 'protein', 'peptide', 'amino-acid', 'chain', 'stack',
+      'combo', 'combination', 'protocol', 'cycle', 'regimen', 'bundle', 'synergy', 'synergistic'
+    ];
+    GENERAL_TERMS.forEach(term => {
+      SPECIFIC_COMPOUNDS.delete(term);
+    });
+
     // Filter out stop words and detect negative modifiers
     const qTokens = processedQ.split(/\s+/).filter(t => t);
     const rawTokens: { token: string, isNegative: boolean, variants: string[] }[] = [];
@@ -975,18 +1049,21 @@ export default function AgentStorefrontGrid({
         
         // Add semantic synonyms to the variant list bidirectionally with typo tolerance
         const toAdd = new Set<string>();
-        for (const variant of variants) {
-          for (const group of CONCEPT_GROUPS) {
-            const matchesGroup = group.some(w => {
-               if (w === variant) return true;
-               // Allow 1 character typo for words longer than 4 characters
-               if (variant.length >= 4 && Math.abs(w.length - variant.length) <= 1) {
-                  return getEditDistance(w, variant) <= 1;
-               }
-               return false;
-            });
-            if (matchesGroup) {
-              group.forEach(w => toAdd.add(w));
+        const isTokenSpecific = variants.some(v => SPECIFIC_COMPOUNDS.has(v) || SPECIFIC_COMPOUNDS.has(v.replace(/[\s-]+/g, '')));
+        if (!isTokenSpecific) {
+          for (const variant of variants) {
+            for (const group of CONCEPT_GROUPS) {
+              const matchesGroup = group.some(w => {
+                 if (w === variant) return true;
+                 // Allow 1 character typo for words longer than 4 characters
+                 if (variant.length >= 4 && Math.abs(w.length - variant.length) <= 1) {
+                    return getEditDistance(w, variant) <= 1;
+                 }
+                 return false;
+              });
+              if (matchesGroup) {
+                group.forEach(w => toAdd.add(w));
+              }
             }
           }
         }
@@ -998,7 +1075,7 @@ export default function AgentStorefrontGrid({
       }
     }
     return rawTokens;
-  }, [deferredSearch]);
+  }, [deferredSearch, products]);
 
   const matchesSearch = useCallback(
     (g: GroupedProduct) => {
