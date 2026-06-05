@@ -384,7 +384,12 @@ function ReconstitutionCalc({
   const [desiredMass, setDesiredMass] = useState<number>(0.25);
 
   useEffect(() => {
-    if (defaultVialMassMg && defaultVialMassMg > 0) setVialMass(defaultVialMassMg);
+    if (defaultVialMassMg && defaultVialMassMg > 0) {
+      const timer = window.setTimeout(() => {
+        setVialMass(defaultVialMassMg);
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }
   }, [defaultVialMassMg]);
 
   const diluentMl = reconstitutionVolumeMl(vialMass, targetConc);
@@ -614,7 +619,6 @@ export default function ProductModalEnhancements({
   currentCompoundSlug,
   currentProductName,
   currentBundlePriceDollars,
-  currentDefaultVariantId,
   currentImageUrl,
   currentVialMassMg,
   grouped,
@@ -635,7 +639,10 @@ export default function ProductModalEnhancements({
       pricePerVialDollars: currentBundlePriceDollars != null ? Number(currentBundlePriceDollars) / 10 : null,
       viewedAt: Date.now(),
     });
-    setRecentlyViewed(readRecentlyViewed().filter((r) => r.name !== currentProductName).slice(-5));
+    const timer = window.setTimeout(() => {
+      setRecentlyViewed(readRecentlyViewed().filter((r) => r.name !== currentProductName).slice(-5));
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [currentProductName, currentImageUrl, currentBundlePriceDollars]);
   const supplies = useMemo(() => {
     return SUPPLY_PATTERNS.map(({ key, pattern, label }) => ({
