@@ -151,25 +151,25 @@ interface GroupedProduct {
 }
 
 const POPULAR_ORDER: string[] = [
-  'KLOW (TB10+BPC10+GHK50+KPV10)',            // #1
-  'Tirzepatide',                              // #2
-  'Sermorelin Acetate',                       // #3
-  'Retatrutide',                              // #4
-  'GLOW (TB10+BPC10+GHK50)',                  // #5
-  'BPC 157',                                  // #6
-  'Bac. water',                               // #7
-  'Semaglutide',                              
-  'CJC-1295 without DAC 5mg + IPA 5mg',      
-  'TB500 (Thymosin B4 Acetate)',              
-  'BPC 10mg + TB 10mg',                       
-  'GHK-CU',                                   
-  'PT-141',                                   
-  'Ipamorelin',                               
-  'AOD9604',                                  
-  'HGH Fragment 176-191',                     
-  'KPV',                                      // #18 - GI & Autoimmune Specialist
-  'Semax',                                    // #19 - Nootropic Focus
-  'Selank',                                   // #20 - Nootropic Anxiety Relief
+  'Tirzepatide',
+  'Semaglutide',
+  'Retatrutide',
+  'BPC 157',
+  'TB500 (Thymosin B4 Acetate)',
+  'The Glow Stack (TB10 + BPC10 + GHK50)',
+  'The Wolverine Stack (BPC 10mg + TB 10mg)',
+  'Sermorelin Acetate',
+  'Ipamorelin',
+  'GHK-CU',
+  'NAD+',
+  'AOD9604',
+  'Bac. water',
+  'CJC-1295 Without DAC',
+  'CJC-1295 With DAC',
+  'The GH Synergy Stack (CJC 5mg + IPA 5mg)',
+  'KPV',
+  'Semax',
+  'Selank',
 ];
 
 const CARD_MAPPINGS = [
@@ -1214,9 +1214,13 @@ export default function AgentStorefrontGrid({
 
     // Apply activeCardIndex filters
     if (activeCardIndex === 1 && !deferredSearch.trim()) {
-      result = result.filter(({ g }) => g.popularity >= 0 && g.popularity < 10);
-    } else if (activeCardIndex === 9) {
-      result = [];
+      result.sort((a, b) => a.g.popularity - b.g.popularity);
+      result = result.slice(0, 10);
+    } else if (activeCardIndex !== null && activeCardIndex > 1 && !deferredSearch.trim()) {
+      const activeCard = CARD_MAPPINGS.find(m => m.index === activeCardIndex);
+      if (activeCard) {
+        result = result.filter(({ g }) => g.category === activeCard.label);
+      }
     }
 
     const q = deferredSearch.trim();
@@ -1609,7 +1613,6 @@ export default function AgentStorefrontGrid({
         {/* Search input mapped precisely over the search input bar in the image */}
         <input
           type="text"
-          placeholder="Search Peptides..."
           value={searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value);
@@ -1627,39 +1630,17 @@ export default function AgentStorefrontGrid({
             color: '#FFFFFF',
             fontSize: 'max(14px, 2.2vw)',
             fontWeight: 500,
-            padding: '0 5% 0 4.5%',
+            padding: '0 5% 0 calc(4.5% + 15px)',
           }}
         />
 
-        {/* Clear Search Button */}
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={() => setSearchQuery('')}
-            style={{
-              position: 'absolute',
-              right: '4.5%',
-              top: '26.9%',
-              height: '11.5%',
-              background: 'transparent',
-              border: 'none',
-              color: '#FFFFFF',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 10,
-              padding: '0 10px',
-            }}
-          >
-            <X size={20} />
-          </button>
-        )}
+        {/* Clear Search Button Removed */}
 
         {/* Mapped overlay buttons for the 9 cards at the bottom */}
         {CARD_MAPPINGS.map((card) => {
-          const left = 0.78 + (card.index - 1) * 10.74;
-          const width = 9.77;
+          const CARD_LEFTS = [1.270, 12.207, 23.242, 34.180, 45.215, 56.152, 67.188, 78.125, 89.160];
+          const left = CARD_LEFTS[card.index - 1];
+          const width = 9.570;
           const isActive = activeCardIndex === card.index;
 
           return (
@@ -1668,11 +1649,7 @@ export default function AgentStorefrontGrid({
               type="button"
               onClick={() => {
                 setActiveCardIndex(card.index);
-                if (card.index === 1 || card.index === 9) {
-                  setSearchQuery('');
-                } else {
-                  setSearchQuery(card.query || '');
-                }
+                setSearchQuery(''); // Clear search query when card is clicked
                 setFilterCategory('all');
                 setFilterArea('');
               }}
@@ -1689,6 +1666,9 @@ export default function AgentStorefrontGrid({
                 boxShadow: isActive ? '0 0 15px rgba(255,255,255,0.15), inset 0 0 10px rgba(255,255,255,0.05)' : 'none',
                 backgroundColor: isActive ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
                 outline: 'none',
+                boxSizing: 'border-box',
+                margin: 0,
+                padding: 0,
                 transition: 'background 0.2s, border-color 0.2s, box-shadow 0.2s',
               }}
               onMouseEnter={(e) => {
@@ -1855,7 +1835,7 @@ export default function AgentStorefrontGrid({
         </div>
       )}
 
-      {activeCardIndex !== 9 && filteredProducts.length === 0 && (
+      {filteredProducts.length === 0 && (
         <div className="glass-panel hover-lift stagger-fade-in">
           <div style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)' }}>
             {deferredSearch.trim() ? (
@@ -1940,7 +1920,7 @@ export default function AgentStorefrontGrid({
       )}
 
 
-      {activeCardIndex !== 9 && (
+      {true && (
         <motion.div
           className="grid-3" style={{ gap: 'var(--space-6)', display: filteredProducts.length === 0 ? 'none' : undefined }}
           variants={containerVariants} initial="hidden" animate="show"

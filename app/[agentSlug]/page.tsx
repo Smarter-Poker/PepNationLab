@@ -267,9 +267,9 @@ export default async function AgentStorefrontPage({ params }: Props) {
   return (
     <div style={{
       minHeight: '100dvh',
-      background: '#000f20',
-      ['--black' as any]: '#000f20',
-      ['--black-2' as any]: '#000814'
+      background: '#000000',
+      ['--black' as any]: '#000000',
+      ['--black-2' as any]: '#000000'
     }}>
       <CouponLinkCapture />
       <style dangerouslySetInnerHTML={{__html: `
@@ -310,7 +310,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
       `}} />
 
       {/* Agent branded navbar */}
-      <nav className="sf-nav glass-header" style={{ background: 'rgba(0, 15, 32, 0.85)' }}>
+      <nav className="sf-nav glass-header" style={{ background: 'rgba(0, 0, 0, 0.85)' }}>
         {/* Back button */}
         <StorefrontBackButton dashLink={dashLink} />
 
