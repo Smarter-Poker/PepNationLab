@@ -215,7 +215,7 @@ export default function PageLoader({
         </div>
       </div>
 
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes pulse-glow {
           0%, 100% { opacity: 0.5; transform: scale(1); }
           50% { opacity: 1; transform: scale(1.08); }
@@ -236,7 +236,7 @@ export default function PageLoader({
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-      `}</style>
+      ` }} />
     </div>
   );
 }
