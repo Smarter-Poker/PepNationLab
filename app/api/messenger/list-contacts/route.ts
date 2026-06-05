@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       indirectSubAgents = (indirect ?? []) as ContactRow[];
     }
 
-    const allAgentOrSubIds = [...directAgentIds, ...indirectSubAgents.map((r) => r.id)];
+    const allAgentOrSubIds = [me.id, ...directAgentIds, ...indirectSubAgents.map((r) => r.id)];
 
     let researcherRows: ContactRow[] = [];
     if (allAgentOrSubIds.length > 0) {
