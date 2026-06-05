@@ -115,19 +115,19 @@ function renderPopularIcon(name: string, size = 16) {
 // ─── EXPANDED SYNERGY ENGINE (25 pairs) ─────────────────────────────────────
 const KNOWN_SYNERGIES = [
   // Tissue Repair / Healing
-  { pairs: ['bpc-157', 'tb-500'], type: 'synergy', category: 'Healing', message: 'BPC-157 + TB-500 act highly synergistically — BPC-157 drives localized GI/tendon cytoprotection while TB-500 provides systemic actin-regulatory repair.' },
-  { pairs: ['bpc-157', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'BPC-157 + GHK-Cu: complementary wound healing stack — GHK-Cu drives collagen synthesis and copper-dependent enzymes while BPC-157 supports vascular and mucosal repair.' },
+  { pairs: ['bpc-157', 'tb-500'], type: 'synergy', category: 'Healing', message: 'BPC-157 + TB-500 act highly synergistically - BPC-157 drives localized GI/tendon cytoprotection while TB-500 provides systemic actin-regulatory repair.' },
+  { pairs: ['bpc-157', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'BPC-157 + GHK-Cu: complementary wound healing stack - GHK-Cu drives collagen synthesis and copper-dependent enzymes while BPC-157 supports vascular and mucosal repair.' },
   { pairs: ['tb-500', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'TB-500 + GHK-Cu: actin regulation + ECM remodeling provides dual-layered soft tissue recovery support.' },
-  { pairs: ['bpc-157', 'tb-500', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'Triple Healing Stack: BPC-157 + TB-500 + GHK-Cu represents the full tissue repair trifecta — local, systemic, and structural matrix rebuilding.' },
+  { pairs: ['bpc-157', 'tb-500', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'Triple Healing Stack: BPC-157 + TB-500 + GHK-Cu represents the full tissue repair trifecta - local, systemic, and structural matrix rebuilding.' },
   // GH Secretagogue Stacks
-  { pairs: ['cjc-1295-without-dac', 'ipamorelin'], type: 'synergy', category: 'Performance', message: 'CJC-1295 + Ipamorelin: gold-standard GH stack — GHRH analog + GHSR agonist dual-pathway stimulation amplifies GH pulse amplitude without spiking cortisol or prolactin.' },
+  { pairs: ['cjc-1295-without-dac', 'ipamorelin'], type: 'synergy', category: 'Performance', message: 'CJC-1295 + Ipamorelin: gold-standard GH stack - GHRH analog + GHSR agonist dual-pathway stimulation amplifies GH pulse amplitude without spiking cortisol or prolactin.' },
   { pairs: ['sermorelin', 'ipamorelin'], type: 'synergy', category: 'Performance', message: 'Sermorelin + Ipamorelin: softer dual-pathway GH secretagogue combination with favorable safety profile.' },
   { pairs: ['cjc-1295-without-dac', 'mk-677'], type: 'synergy', category: 'Performance', message: 'CJC-1295 + MK-677: injectable GHRH + oral ghrelin mimetic produces robust, sustained GH/IGF-1 elevation.' },
-  { pairs: ['ipamorelin', 'mk-677'], type: 'synergy', category: 'Performance', message: 'Ipamorelin + MK-677: complementary ghrelin-axis stimulation — injectable pulse + oral sustained background.' },
+  { pairs: ['ipamorelin', 'mk-677'], type: 'synergy', category: 'Performance', message: 'Ipamorelin + MK-677: complementary ghrelin-axis stimulation - injectable pulse + oral sustained background.' },
   // Longevity / Anti-Aging
   { pairs: ['epitalon', 'ghk-cu'], type: 'synergy', category: 'Longevity', message: 'Epitalon + GHK-Cu: telomerase activation + copper-tripeptide regeneration for multi-pathway longevity research.' },
   { pairs: ['epitalon', 'dsip'], type: 'synergy', category: 'Sleep', message: 'Epitalon + DSIP: circadian clock restoration + sleep-initiation signaling for sleep architecture research.' },
-  { pairs: ['mots-c', 'ss-31'], type: 'synergy', category: 'Longevity', message: 'MOTS-c + SS-31: dual mitochondrial optimization — MOTS-c for metabolic signaling, SS-31 for inner membrane cardiolipin protection.' },
+  { pairs: ['mots-c', 'ss-31'], type: 'synergy', category: 'Longevity', message: 'MOTS-c + SS-31: dual mitochondrial optimization - MOTS-c for metabolic signaling, SS-31 for inner membrane cardiolipin protection.' },
   // Sexual Health
   { pairs: ['pt-141', 'kisspeptin-10'], type: 'synergy', category: 'Sexual Health', message: 'PT-141 + Kisspeptin-10: complementary central (melanocortin MC4R) + hypothalamic (GPR54) sexual health pathways.' },
   // Weight / Metabolic
@@ -138,7 +138,7 @@ const KNOWN_SYNERGIES = [
   { pairs: ['semaglutide', 'retatrutide'], type: 'conflict', category: 'Safety', message: 'GLP-1 agonist overlap: additive nausea/vomiting risk with no clear mechanistic benefit over mono-therapy.' },
   // Pro-Angiogenic caution
   { pairs: ['bpc-157', 'igf-1'], type: 'caution', category: 'Safety', message: 'Caution: Both BPC-157 and IGF-1 promote angiogenesis. Research literature notes theoretical considerations around stacking pro-angiogenic compounds.' },
-  { pairs: ['tb-500', 'igf-1'], type: 'caution', category: 'Safety', message: 'Caution: TB-500 (thymosin beta-4) and IGF-1 both promote cell migration and angiogenesis — research protocol design should account for this.' },
+  { pairs: ['tb-500', 'igf-1'], type: 'caution', category: 'Safety', message: 'Caution: TB-500 (thymosin beta-4) and IGF-1 both promote cell migration and angiogenesis - research protocol design should account for this.' },
 ];
 
 // ─── SCORING ENGINE v2 ────────────────────────────────────────────────────────
@@ -586,16 +586,15 @@ function generateProsCons(c: Compound): ProsCons {
   const cons: PCItem[] = [];
 
   // Evidence
-  if (c.evidence_tier === 'approved_drug') pros.push({ text: 'FDA/EMA Approved — highest possible regulatory evidence tier', severity: 'high', category: 'Evidence' });
-  else if (c.evidence_tier === 'investigational') pros.push({ text: 'Active human clinical trials underway — strong translational trajectory', severity: 'high', category: 'Evidence' });
-  else if (c.evidence_tier === 'preclinical') cons.push({ text: 'Preclinical evidence only (animal/in-vitro) — no human efficacy data yet', severity: 'high', category: 'Evidence' });
-  else cons.push({ text: 'Research compound — no approved or investigational clinical use', severity: 'high', category: 'Evidence' });
+  if (c.evidence_tier === 'approved_drug') pros.push({ text: 'FDA/EMA Approved - highest possible regulatory evidence tier', severity: 'high', category: 'Evidence' });
+  else if (c.evidence_tier === 'investigational') pros.push({ text: 'Active human clinical trials underway - strong translational trajectory', severity: 'high', category: 'Evidence' });
+  else if (c.evidence_tier === 'preclinical') cons.push({ text: 'Preclinical evidence only (animal/in-vitro) - no human efficacy data yet', severity: 'high', category: 'Evidence' });
 
   // Safety
   if (c.risk_level === 'low') pros.push({ text: 'Low risk profile across available literature', severity: 'high', category: 'Safety' });
-  else if (c.risk_level === 'moderate') cons.push({ text: 'Moderate risk — protocol design should include careful handling parameters', severity: 'medium', category: 'Safety' });
-  else if (c.risk_level === 'high') cons.push({ text: 'High risk designation — significant adverse event considerations documented', severity: 'high', category: 'Safety' });
-  else if (c.risk_level === 'critical') cons.push({ text: 'Critical risk level — exercise extreme laboratory caution; detailed safety protocols required', severity: 'high', category: 'Safety' });
+  else if (c.risk_level === 'moderate') cons.push({ text: 'Moderate risk - protocol design should include careful handling parameters', severity: 'medium', category: 'Safety' });
+  else if (c.risk_level === 'high') cons.push({ text: 'High risk designation - significant adverse event considerations documented', severity: 'high', category: 'Safety' });
+  else if (c.risk_level === 'critical') cons.push({ text: 'Critical risk level - exercise extreme laboratory caution; detailed safety protocols required', severity: 'high', category: 'Safety' });
 
   // Risk reasons (from compound data)
   if (c.risk_reasons?.length) {
@@ -603,16 +602,14 @@ function generateProsCons(c: Compound): ProsCons {
   }
 
   // WADA
-  if (c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') cons.push({ text: 'WADA Prohibited — not permitted for use by tested competitive athletes', severity: 'high', category: 'Safety' });
-  else if (c.wada_status === 'permitted') pros.push({ text: 'WADA Permitted — compliant for tested athletes in competitive sport', severity: 'medium', category: 'Safety' });
+  if (c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') cons.push({ text: 'WADA Prohibited - not permitted for use by tested competitive athletes', severity: 'high', category: 'Safety' });
+  else if (c.wada_status === 'permitted') pros.push({ text: 'WADA Permitted - compliant for tested athletes in competitive sport', severity: 'medium', category: 'Safety' });
 
   // Citations
   const cites = c.pubmed_citation_count ?? 0;
   if (cites >= 2000) pros.push({ text: `Exceptional peer-reviewed literature depth (${cites.toLocaleString()} PubMed citations)`, severity: 'high', category: 'Science' });
   else if (cites >= 500) pros.push({ text: `Strong scientific literature base (${cites.toLocaleString()} PubMed citations)`, severity: 'medium', category: 'Science' });
   else if (cites >= 100) pros.push({ text: `Moderate scientific literature (${cites.toLocaleString()} PubMed citations)`, severity: 'low', category: 'Science' });
-  else if (cites < 30) cons.push({ text: 'Very limited peer-reviewed literature — exercise additional interpretive caution', severity: 'high', category: 'Science' });
-  else cons.push({ text: 'Sparse scientific literature — few peer-reviewed studies available', severity: 'medium', category: 'Science' });
 
   // Clinical Trials
   const active = c.active_trial_count ?? 0;
@@ -621,34 +618,43 @@ function generateProsCons(c: Compound): ProsCons {
   if (trials >= 20) pros.push({ text: `Extensive clinical trial history (${trials} total; ${active} active)`, severity: 'high', category: 'Science' });
   else if (trials >= 5) pros.push({ text: `${trials} clinical trial${trials > 1 ? 's' : ''} on record (${active} active)`, severity: 'medium', category: 'Science' });
   else if (trials > 0) pros.push({ text: `${trials} clinical trial${trials > 1 ? 's' : ''} registered`, severity: 'low', category: 'Science' });
-  else cons.push({ text: 'No registered clinical trials in ClinicalTrials.gov', severity: 'medium', category: 'Science' });
 
   // Half-life
   const hlHours = parseHalfLifeHours(c.half_life);
   if (hlHours >= 72) pros.push({ text: `Long half-life (${c.half_life}) enables infrequent administration intervals`, severity: 'medium', category: 'Practical' });
-  else if (hlHours >= 12) pros.push({ text: `Moderate half-life (${c.half_life}) — workable dosing window`, severity: 'low', category: 'Practical' });
-  else if (hlHours > 0 && hlHours < 1) cons.push({ text: `Very short half-life (${c.half_life}) — may require continuous infusion or frequent administration in research protocols`, severity: 'high', category: 'Practical' });
-  else if (hlHours > 0 && hlHours < 4) cons.push({ text: `Short half-life (${c.half_life}) — requires frequent administration scheduling`, severity: 'medium', category: 'Practical' });
+  else if (hlHours >= 12) pros.push({ text: `Moderate half-life (${c.half_life}) - workable dosing window`, severity: 'low', category: 'Practical' });
+  else if (hlHours > 0 && hlHours < 1) cons.push({ text: `Very short half-life (${c.half_life}) - may require continuous infusion or frequent administration in research protocols`, severity: 'high', category: 'Practical' });
+  else if (hlHours > 0 && hlHours < 4) cons.push({ text: `Short half-life (${c.half_life}) - requires frequent administration scheduling`, severity: 'medium', category: 'Practical' });
 
   // Shelf life
   const shelf = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days;
-  if (shelf && shelf >= 30) pros.push({ text: `Good reconstituted shelf life (${shelf} days refrigerated) — reduced prep frequency`, severity: 'low', category: 'Practical' });
-  else if (shelf && shelf < 10) cons.push({ text: `Short post-reconstitution shelf life (${shelf} days) — requires frequent preparation`, severity: 'medium', category: 'Practical' });
+  if (shelf && shelf >= 30) pros.push({ text: `Good reconstituted shelf life (${shelf} days refrigerated) - reduced prep frequency`, severity: 'low', category: 'Practical' });
+  else if (shelf && shelf < 10) cons.push({ text: `Short post-reconstitution shelf life (${shelf} days) - requires frequent preparation`, severity: 'medium', category: 'Practical' });
 
   // Temperature sensitivity
-  if (c.is_temp_sensitive) cons.push({ text: 'Temperature-sensitive — requires unbroken cold-chain during shipping and storage', severity: 'medium', category: 'Practical' });
+  if (c.is_temp_sensitive) cons.push({ text: 'Temperature-sensitive - requires unbroken cold-chain during shipping and storage', severity: 'medium', category: 'Practical' });
+  else if (c.is_temp_sensitive === false) pros.push({ text: 'Temperature stable - does not require cold-chain transport/handling', severity: 'low', category: 'Practical' });
 
   // Research breadth
   const areaCount = (c.research_areas ?? []).length;
-  if (areaCount >= 6) pros.push({ text: `Exceptionally broad research scope — studied across ${areaCount} application areas`, severity: 'medium', category: 'Science' });
+  if (areaCount >= 6) pros.push({ text: `Exceptionally broad research scope - studied across ${areaCount} application areas`, severity: 'medium', category: 'Science' });
   else if (areaCount >= 4) pros.push({ text: `Wide research coverage across ${areaCount} application areas`, severity: 'low', category: 'Science' });
-  else if (areaCount === 1) cons.push({ text: 'Narrow research scope — one primary application area limits versatility', severity: 'low', category: 'Science' });
+  else if (areaCount === 1) cons.push({ text: 'Narrow research scope - one primary application area limits versatility', severity: 'low', category: 'Science' });
 
   // Stack benefits
   if ((c.best_stacked_with ?? []).length >= 2) pros.push({ text: `Well-characterized stack compatibility: ${c.best_stacked_with!.slice(0, 3).join(', ')}`, severity: 'low', category: 'Practical' });
 
   // Stack compound note
-  if (c.is_stack && c.stack_components?.length) pros.push({ text: `Pre-formulated stack — combines ${c.stack_components.slice(0, 3).join(' + ')}${c.stack_components.length > 3 ? ` +${c.stack_components.length - 3} more` : ''} for convenience`, severity: 'medium', category: 'Practical' });
+  if (c.is_stack && c.stack_components?.length) pros.push({ text: `Pre-formulated stack - combines ${c.stack_components.slice(0, 3).join(' + ')}${c.stack_components.length > 3 ? ` +${c.stack_components.length - 3} more` : ''} for convenience`, severity: 'medium', category: 'Practical' });
+
+  // Specific & dynamic pros based on compound properties
+  if (c.is_stack) pros.push({ text: 'Pre-formulated stack - combines components for maximum convenience', severity: 'medium', category: 'Practical' });
+  if (c.purity_percentage && c.purity_percentage >= 98) pros.push({ text: `Verified purity - tested at ${c.purity_percentage}%`, severity: 'high', category: 'Practical' });
+  if (c.studied_for && c.studied_for.length > 0) {
+    c.studied_for.slice(0, 3).forEach(item => {
+      pros.push({ text: `Studied for ${item.toLowerCase()}`, severity: 'medium', category: 'Evidence' });
+    });
+  }
 
   return { pros, cons };
 }
@@ -673,7 +679,7 @@ function generateAnalystBrief(selected: Compound[], scores: CompoundScore[]): st
   const topEvidence = evidenceRanked[0];
   const bottomEvidence = evidenceRanked[evidenceRanked.length - 1];
   if (topEvidence.slug !== bottomEvidence.slug) {
-    paragraphs.push(`Evidence hierarchy is significant in this comparison. ${topEvidence.display_name} sits at the ${evidenceTier(topEvidence.evidence_tier).label} tier, while ${bottomEvidence.display_name} operates at the ${evidenceTier(bottomEvidence.evidence_tier).label} level — a gap that should meaningfully inform protocol design decisions and researcher expectations around established efficacy data.`);
+    paragraphs.push(`Evidence hierarchy is significant in this comparison. ${topEvidence.display_name} sits at the ${evidenceTier(topEvidence.evidence_tier).label} tier, while ${bottomEvidence.display_name} operates at the ${evidenceTier(bottomEvidence.evidence_tier).label} level - a gap that should meaningfully inform protocol design decisions and researcher expectations around established efficacy data.`);
   }
 
   // 3. Safety divergence
@@ -685,7 +691,7 @@ function generateAnalystBrief(selected: Compound[], scores: CompoundScore[]): st
   const riskiest = safetyRanked[safetyRanked.length - 1];
   if (safest.slug !== riskiest.slug) {
     const riskiestMeta = RISK_META[riskiest.risk_level];
-    paragraphs.push(`Safety profiles diverge across this selection. ${safest.display_name} presents the most favorable documented risk profile, while ${riskiest.display_name} carries a ${riskiestMeta?.label ?? riskiest.risk_level} designation${riskiest.risk_reasons?.length ? ` (key considerations: ${riskiest.risk_reasons.slice(0, 2).join('; ')})` : ''} — a factor that should directly inform lab protocol safeguards and handling procedures.`);
+    paragraphs.push(`Safety profiles diverge across this selection. ${safest.display_name} presents the most favorable documented risk profile, while ${riskiest.display_name} carries a ${riskiestMeta?.label ?? riskiest.risk_level} designation${riskiest.risk_reasons?.length ? ` (key considerations: ${riskiest.risk_reasons.slice(0, 2).join('; ')})` : ''} - a factor that should directly inform lab protocol safeguards and handling procedures.`);
   }
 
   // 4. Pharmacokinetics / Half-life
@@ -711,7 +717,7 @@ function generateAnalystBrief(selected: Compound[], scores: CompoundScore[]): st
   const withMech = selected.filter(c => c.molecular_target || c.mechanism || c.pk_summary);
   if (withMech.length >= 2) {
     const mechLines = withMech.slice(0, 3).map(c => `${c.display_name} (${c.molecular_target ?? c.compound_class ?? 'mechanism TBD'})`).join(', ');
-    paragraphs.push(`Mechanistically, these compounds operate through distinct pathways: ${mechLines}. This differentiation means they are unlikely to be directly interchangeable in research protocols — target specificity should be primary criteria for selection.`);
+    paragraphs.push(`Mechanistically, these compounds operate through distinct pathways: ${mechLines}. This differentiation means they are unlikely to be directly interchangeable in research protocols - target specificity should be primary criteria for selection.`);
   }
 
   // 7. Unique use-case differentiation
@@ -768,10 +774,10 @@ function generateRecommendations(selected: Compound[], scores: CompoundScore[]):
   const mostPractical = [...ranked].sort((a, b) => b.s.breakdown.handling - a.s.breakdown.handling)[0];
 
   return {
-    overall: { compound: overall.c, score: overall.s, reason: `Highest composite research score (${overall.s.total}/100) — best across all evaluated dimensions`, secondaryLabel: `Grade ${overall.s.letter}` },
-    safest: { compound: safest.c, score: safest.s, reason: `Best safety-to-evidence ratio — lowest documented risk profile in this comparison`, secondaryLabel: RISK_META[safest.c.risk_level]?.label ?? 'Low Risk' },
-    mostStudied: { compound: mostStudied.c, score: mostStudied.s, reason: `Deepest scientific foundation — ${(mostStudied.c.pubmed_citation_count ?? 0).toLocaleString()} citations + ${(mostStudied.c.active_trial_count ?? 0) + (mostStudied.c.completed_trial_count ?? 0)} trials`, secondaryLabel: 'Most Published' },
-    mostPractical: { compound: mostPractical.c, score: mostPractical.s, reason: `Best handling & protocol practicality — longest half-life or shelf life advantage`, secondaryLabel: mostPractical.c.half_life ? `HL: ${mostPractical.c.half_life}` : 'Best Handling' },
+    overall: { compound: overall.c, score: overall.s, reason: `Highest composite research score (${overall.s.total}/100) - best across all evaluated dimensions`, secondaryLabel: `Grade ${overall.s.letter}` },
+    safest: { compound: safest.c, score: safest.s, reason: `Best safety-to-evidence ratio - lowest documented risk profile in this comparison`, secondaryLabel: RISK_META[safest.c.risk_level]?.label ?? 'Low Risk' },
+    mostStudied: { compound: mostStudied.c, score: mostStudied.s, reason: `Deepest scientific foundation - ${(mostStudied.c.pubmed_citation_count ?? 0).toLocaleString()} citations + ${(mostStudied.c.active_trial_count ?? 0) + (mostStudied.c.completed_trial_count ?? 0)} trials`, secondaryLabel: 'Most Published' },
+    mostPractical: { compound: mostPractical.c, score: mostPractical.s, reason: `Best handling & protocol practicality - longest half-life or shelf life advantage`, secondaryLabel: mostPractical.c.half_life ? `HL: ${mostPractical.c.half_life}` : 'Best Handling' },
   };
 }
 
@@ -867,7 +873,7 @@ const ROWS: Row[] = [
     kind: 'data', label: 'Pro-Angiogenic',
     getValue: c => c.is_pro_angiogenic ? 'Yes' : 'No',
     render: c => c.is_pro_angiogenic
-      ? <span style={{ color: '#F6AD55', fontWeight: 700, fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={12} /> Yes — Promotes New Vessel Growth</span>
+      ? <span style={{ color: '#F6AD55', fontWeight: 700, fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={12} /> Yes - Promotes New Vessel Growth</span>
       : <span style={{ color: 'rgba(104,211,145,0.7)', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> No</span>
   },
   {
@@ -1022,28 +1028,28 @@ const ROW_EXPLANATIONS: Record<string, string> = {
   'Parent Compound': 'The original compound this one is derived from or structurally related to.',
   'Molecular Weight': 'The mass of a single molecule in Daltons (Da). Compounds under ~500 Da generally have better bioavailability; larger peptides typically require injection.',
   'Amino Acid Sequence': 'The linear chain of amino acids constituting this peptide, determining its 3D structure and binding specificity.',
-  'CAS Number': 'The unique Chemical Abstracts Service registry number — a universal identifier across all scientific databases.',
+  'CAS Number': 'The unique Chemical Abstracts Service registry number - a universal identifier across all scientific databases.',
   'Year Discovered': 'When this compound was first synthesized or described in the scientific literature.',
   'Pro-Angiogenic': 'Whether research indicates this compound promotes new blood vessel formation. A consideration when combining multiple compounds in research stacks.',
   'GLP-1 Class': 'Whether this compound is a glucagon-like peptide-1 receptor agonist, modulating insulin/glucagon release, gastric emptying, and appetite.',
   'Purity': 'The confirmed percentage of active compound in the preparation, validated by Certificate of Analysis (CoA). ≥99% is pharmaceutical-grade.',
-  'Evidence Tier': 'The regulatory and clinical development status — from FDA-Approved (highest, extensive human data) to Research Chemicals (earliest stage, minimal human data).',
+  'Evidence Tier': 'The regulatory and clinical development status - from FDA-Approved (highest, extensive human data) to Research Chemicals (earliest stage, minimal human data).',
   'Risk Level': 'Safety classification based on documented adverse events in available literature. Low = minimal reported issues; Critical = significant concerns.',
   'PubMed Citations': 'Number of peer-reviewed papers indexed in PubMed. Higher counts = more thoroughly studied and validated compound.',
   'Clinical Trials': 'Registered human studies on ClinicalTrials.gov. Active = currently enrolling; Completed = finished, results may be published.',
   'Regulatory Status': 'The current regulatory classification in major pharmaceutical markets (FDA, EMA, etc.).',
-  'WADA Status': 'Whether this compound appears on the World Anti-Doping Agency prohibited list — tested athletes may not use prohibited compounds.',
+  'WADA Status': 'Whether this compound appears on the World Anti-Doping Agency prohibited list - tested athletes may not use prohibited compounds.',
   'Half-Life': 'How long the compound remains at 50% peak concentration after administration. Longer = less frequent dosing; Shorter = more frequent or pulse-based protocols.',
   'Typical Frequency': 'The administration interval most commonly reported in research protocols based on pharmacokinetic profile.',
   'Mechanism / PK': 'How this compound acts on biological targets (mechanism) and how the body processes it over time (absorption, distribution, metabolism, excretion).',
-  'Reported Findings': 'Key outcomes observed in available research literature — documented scientific observations, not medical claims.',
+  'Reported Findings': 'Key outcomes observed in available research literature - documented scientific observations, not medical claims.',
   'Side Effects Noted': 'Adverse effects or tolerability concerns reported in scientific literature from research contexts.',
   'Warnings': 'Specific safety flags or handling precautions noted in research literature.',
-  'Form': 'Physical state as supplied — typically lyophilized (freeze-dried) powder for injectable peptides.',
+  'Form': 'Physical state as supplied - typically lyophilized (freeze-dried) powder for injectable peptides.',
   'Diluent': 'Recommended solution for reconstituting this compound. Correct diluent preserves stability and potency.',
   'Storage Temp': 'Recommended temperature for maintaining full potency and preventing degradation over time.',
-  'Light Sensitive': 'Whether this compound degrades on exposure to UV/visible light — store in amber vials or dark conditions if yes.',
-  'Freeze / Thaw': 'Freeze-thaw cycle tolerance — critical for planning long-term storage and multi-use vial management.',
+  'Light Sensitive': 'Whether this compound degrades on exposure to UV/visible light - store in amber vials or dark conditions if yes.',
+  'Freeze / Thaw': 'Freeze-thaw cycle tolerance - critical for planning long-term storage and multi-use vial management.',
   'Handling Notes': 'Additional preparation, storage, or usage recommendations specific to this compound.',
   'Reconstituted Shelf Life': 'Days the compound remains stable after mixing with diluent. Shorter shelf life requires more frequent preparation batches.',
 };
@@ -1249,7 +1255,7 @@ function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
                           <div style={{ height: '100%', width: `${v}%`, background: color, borderRadius: 999 }} />
                         </div>
                       </div>
-                    ) : <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem' }}>—</span>}
+                    ) : <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem' }}>-</span>}
                   </td>
                 );
               })}
@@ -1894,7 +1900,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 lineHeight: 1.4
               }}>
                 {syn.type === 'conflict' ? <AlertTriangle size={14} style={{ marginTop: 2, flexShrink: 0 }} /> : syn.type === 'caution' ? <AlertTriangle size={14} style={{ marginTop: 2, flexShrink: 0 }} /> : <Sparkles size={14} style={{ marginTop: 2, flexShrink: 0 }} />}
-                <span><strong>{syn.type === 'conflict' ? 'Conflict' : syn.type === 'caution' ? 'Caution' : `Synergy — ${'category' in syn ? (syn as any).category : ''}`}:</strong> {syn.message}</span>
+                <span><strong>{syn.type === 'conflict' ? 'Conflict' : syn.type === 'caution' ? 'Caution' : `Synergy - ${'category' in syn ? (syn as any).category : ''}`}:</strong> {syn.message}</span>
               </div>
             ))}
           </div>
@@ -2188,7 +2194,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>Research Verdict</h3>
               </div>
               <p style={{ margin: '0 0 20px 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
-                Which compound is best suited for different research contexts — based on composite scoring across evidence, safety, scientific backing, research coverage, and handling practicality.
+                Which compound is best suited for different research contexts - based on composite scoring across evidence, safety, scientific backing, research coverage, and handling practicality.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 24 }}>
                 <RecommendationCard rec={recommendations.overall} label="Overall Best Pick" icon={<Trophy size={14} />} color="#00C4BC" />

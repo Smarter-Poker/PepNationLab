@@ -118,19 +118,19 @@ function parseHalfLifeHours(hl: string | null | undefined): number {
 
 const KNOWN_SYNERGIES = [
   // Tissue Repair / Healing
-  { pairs: ['bpc-157', 'tb-500'], type: 'synergy', category: 'Healing', message: 'BPC-157 + TB-500 act highly synergistically — BPC-157 drives localized GI/tendon cytoprotection while TB-500 provides systemic actin-regulatory repair.' },
-  { pairs: ['bpc-157', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'BPC-157 + GHK-Cu: complementary wound healing — GHK-Cu drives collagen synthesis and copper-dependent enzymes while BPC-157 supports vascular repair.' },
+  { pairs: ['bpc-157', 'tb-500'], type: 'synergy', category: 'Healing', message: 'BPC-157 + TB-500 act highly synergistically - BPC-157 drives localized GI/tendon cytoprotection while TB-500 provides systemic actin-regulatory repair.' },
+  { pairs: ['bpc-157', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'BPC-157 + GHK-Cu: complementary wound healing - GHK-Cu drives collagen synthesis and copper-dependent enzymes while BPC-157 supports vascular repair.' },
   { pairs: ['tb-500', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'TB-500 + GHK-Cu: actin regulation + ECM remodeling provides dual-layered soft tissue recovery support.' },
-  { pairs: ['bpc-157', 'tb-500', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'Triple Healing Stack: BPC-157 + TB-500 + GHK-Cu is the full tissue repair trifecta — local, systemic, and structural matrix rebuilding.' },
+  { pairs: ['bpc-157', 'tb-500', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'Triple Healing Stack: BPC-157 + TB-500 + GHK-Cu is the full tissue repair trifecta - local, systemic, and structural matrix rebuilding.' },
   // GH Secretagogue Stacks
-  { pairs: ['cjc-1295-without-dac', 'ipamorelin'], type: 'synergy', category: 'Performance', message: 'CJC-1295 + Ipamorelin: gold-standard GH stack — GHRH analog + GHSR agonist dual-pathway stimulation amplifies GH pulse amplitude without spiking cortisol or prolactin.' },
+  { pairs: ['cjc-1295-without-dac', 'ipamorelin'], type: 'synergy', category: 'Performance', message: 'CJC-1295 + Ipamorelin: gold-standard GH stack - GHRH analog + GHSR agonist dual-pathway stimulation amplifies GH pulse amplitude without spiking cortisol or prolactin.' },
   { pairs: ['sermorelin', 'ipamorelin'], type: 'synergy', category: 'Performance', message: 'Sermorelin + Ipamorelin: softer dual-pathway GH secretagogue combination with favorable safety profile.' },
   { pairs: ['cjc-1295-without-dac', 'mk-677'], type: 'synergy', category: 'Performance', message: 'CJC-1295 + MK-677: injectable GHRH + oral ghrelin mimetic produces robust, sustained GH/IGF-1 elevation.' },
-  { pairs: ['ipamorelin', 'mk-677'], type: 'synergy', category: 'Performance', message: 'Ipamorelin + MK-677: complementary ghrelin-axis stimulation — injectable pulse + oral sustained background.' },
+  { pairs: ['ipamorelin', 'mk-677'], type: 'synergy', category: 'Performance', message: 'Ipamorelin + MK-677: complementary ghrelin-axis stimulation - injectable pulse + oral sustained background.' },
   // Longevity / Anti-Aging
   { pairs: ['epitalon', 'ghk-cu'], type: 'synergy', category: 'Longevity', message: 'Epitalon + GHK-Cu: telomerase activation + copper-tripeptide regeneration for multi-pathway longevity research.' },
   { pairs: ['epitalon', 'dsip'], type: 'synergy', category: 'Sleep', message: 'Epitalon + DSIP: circadian clock restoration + sleep-initiation signaling for sleep architecture research.' },
-  { pairs: ['mots-c', 'ss-31'], type: 'synergy', category: 'Longevity', message: 'MOTS-c + SS-31: dual mitochondrial optimization — MOTS-c for metabolic signaling, SS-31 for inner membrane cardiolipin protection.' },
+  { pairs: ['mots-c', 'ss-31'], type: 'synergy', category: 'Longevity', message: 'MOTS-c + SS-31: dual mitochondrial optimization - MOTS-c for metabolic signaling, SS-31 for inner membrane cardiolipin protection.' },
   // Sexual Health
   { pairs: ['pt-141', 'kisspeptin-10'], type: 'synergy', category: 'Sexual Health', message: 'PT-141 + Kisspeptin-10: complementary central (melanocortin MC4R) + hypothalamic (GPR54) sexual health pathways.' },
   // Weight / Metabolic
@@ -141,7 +141,7 @@ const KNOWN_SYNERGIES = [
   { pairs: ['semaglutide', 'retatrutide'], type: 'conflict', category: 'Safety', message: 'GLP-1 agonist overlap: additive nausea/vomiting risk with no clear mechanistic benefit over mono-therapy.' },
   // Pro-Angiogenic caution
   { pairs: ['bpc-157', 'igf-1'], type: 'caution', category: 'Safety', message: 'Caution: Both BPC-157 and IGF-1 promote angiogenesis. Research literature notes theoretical considerations around stacking pro-angiogenic compounds.' },
-  { pairs: ['tb-500', 'igf-1'], type: 'caution', category: 'Safety', message: 'Caution: TB-500 (thymosin beta-4) and IGF-1 both promote cell migration and angiogenesis — research protocol design should account for this.' },
+  { pairs: ['tb-500', 'igf-1'], type: 'caution', category: 'Safety', message: 'Caution: TB-500 (thymosin beta-4) and IGF-1 both promote cell migration and angiogenesis - research protocol design should account for this.' },
 ];
 
 // ── Animated Score Ring ───────────────────────────────────────────────────────
@@ -330,31 +330,48 @@ function generateProsConsPinned(p: PinnedItem, compoundsBySlug: Record<string, C
   const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
   const pros: string[] = [];
   const cons: string[] = [];
-  if (p.evidenceTierKey === 'approved_drug') pros.push('FDA/EMA Approved — highest evidence tier');
+  
+  if (p.evidenceTierKey === 'approved_drug') pros.push('FDA/EMA Approved - highest evidence tier');
   else if (p.evidenceTierKey === 'investigational') pros.push('Active human clinical trials underway');
   else if (p.evidenceTierKey === 'preclinical') cons.push('Only preclinical (animal/in-vitro) evidence so far');
-  else cons.push('Research compound only — no approved human use');
+  
   if (c?.risk_level === 'low') pros.push('Low risk profile in available literature');
-  else if (c?.risk_level === 'moderate') cons.push('Moderate risk — careful handling protocols recommended');
-  else if (c?.risk_level === 'high') cons.push('High risk level — significant adverse event reports');
-  else if (c?.risk_level === 'critical') cons.push('Critical risk designation — exercise extreme caution');
-  if (c?.wada_status === 'prohibited' || c?.wada_status === 'prohibited_males') cons.push('WADA Prohibited — not permitted in tested competitive sport');
-  else if (c?.wada_status === 'permitted') pros.push('WADA Permitted — compliant for tested athletes');
+  else if (c?.risk_level === 'moderate') cons.push('Moderate risk - careful handling protocols recommended');
+  else if (c?.risk_level === 'high') cons.push('High risk level - significant adverse event reports');
+  else if (c?.risk_level === 'critical') cons.push('Critical risk designation - exercise extreme caution');
+  
+  if (c?.wada_status === 'prohibited' || c?.wada_status === 'prohibited_males') cons.push('WADA Prohibited - not permitted in tested competitive sport');
+  else if (c?.wada_status === 'permitted') pros.push('WADA Permitted - compliant for tested athletes');
+  
   const cites = c?.pubmed_citation_count ?? 0;
   if (cites >= 1000) pros.push(`Extensive scientific literature (${cites.toLocaleString()} PubMed citations)`);
   else if (cites >= 200) pros.push(`Good literature base (${cites.toLocaleString()} PubMed citations)`);
-  else if (cites < 50) cons.push('Limited peer-reviewed literature available');
+  
   const trials = (c?.active_trial_count ?? 0) + (c?.completed_trial_count ?? 0);
   if (trials >= 10) pros.push(`Substantial clinical trial history (${trials} trials)`);
   else if (trials > 0) pros.push(`${trials} clinical trial${trials > 1 ? 's' : ''} on record`);
-  else cons.push('No registered clinical trials found');
+  
   if (p.pricePerVialDollars != null && p.pricePerVialDollars < 30) pros.push('Competitively priced per vial');
-  else if (p.pricePerVialDollars != null && p.pricePerVialDollars > 150) cons.push('Premium price point — factor into protocol cost');
+  else if (p.pricePerVialDollars != null && p.pricePerVialDollars > 150) cons.push('Premium price point - factor into protocol cost');
+  
   const areaCount = (c?.research_areas ?? []).length;
   if (areaCount >= 4) pros.push(`Broad research interest across ${areaCount} application areas`);
-  else if (areaCount === 1) cons.push('Narrow research scope — one primary application area');
+  else if (areaCount === 1) cons.push('Narrow research scope - one primary application area');
+  
   if ((c?.best_stacked_with ?? []).length > 0) pros.push(`Known synergistic partners: ${c!.best_stacked_with!.join(', ')}`);
-  if (c?.is_temp_sensitive) cons.push('Temperature-sensitive — requires cold-chain handling');
+  
+  if (c?.is_temp_sensitive) cons.push('Temperature-sensitive - requires cold-chain handling');
+  else if (c?.is_temp_sensitive === false) pros.push('Temperature stable - does not require cold-chain transport/handling');
+  
+  // Specific & dynamic pros based on compound properties
+  if (c?.is_stack) pros.push('Pre-formulated stack - combines components for maximum convenience');
+  if (c?.purity_percentage && c.purity_percentage >= 98) pros.push(`Verified purity - tested at ${c.purity_percentage}%`);
+  if (c?.studied_for && c.studied_for.length > 0) {
+    c.studied_for.slice(0, 3).forEach(item => {
+      pros.push(`Studied for ${item.toLowerCase()}`);
+    });
+  }
+  
   return { pros, cons };
 }
 
@@ -1203,7 +1220,7 @@ export default function StorefrontCompareDrawer({
                         {c?.mechanism && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Mechanism of Action</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.mechanism}</div></div>}
                         {c?.pk_summary && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Pharmacokinetics</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.pk_summary}</div></div>}
                         {c?.risk_reasons?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Risk Considerations</div><div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>{c.risk_reasons.map((r, ri) => <div key={ri} style={{ display: 'flex', gap: 5, alignItems: 'flex-start' }}><AlertTriangle size={10} color={RISK_META[c.risk_level]?.color ?? '#F6AD55'} style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{r}</span></div>)}</div></div> : null}
-                        {c?.is_pro_angiogenic && <div style={{ fontSize: '0.72rem', color: '#F6AD55', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={12} /> Pro-Angiogenic — Promotes New Vessel Growth</div>}
+                        {c?.is_pro_angiogenic && <div style={{ fontSize: '0.72rem', color: '#F6AD55', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={12} /> Pro-Angiogenic - Promotes New Vessel Growth</div>}
                         {c?.is_glp1 && <div style={{ fontSize: '0.72rem', color: '#9F7AEA', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> GLP-1 / Incretin Class</div>}
                         {c?.sources?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div><div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{c.sources.slice(0, 3).map((src, si) => <a key={si} href={src.startsWith('http') ? src : undefined} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.68rem', color, opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>{src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si+1}</span> : src}</a>)}</div></div> : null}
                       </div>
@@ -1300,7 +1317,7 @@ export default function StorefrontCompareDrawer({
                   ];
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-                      <p style={{ margin: '0 0 4px 0', fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>Research verdict cards — scored on evidence strength, safety profile, scientific backing, research coverage, and handling practicality.</p>
+                      <p style={{ margin: '0 0 4px 0', fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>Research verdict cards - scored on evidence strength, safety profile, scientific backing, research coverage, and handling practicality.</p>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
                         {verdicts.map(v => (
                           <div key={v.label} style={{ padding: '12px 14px', borderRadius: 10, background: `${v.color}08`, border: `1px solid ${v.color}25`, display: 'flex', flexDirection: 'column', gap: 10 }}>
