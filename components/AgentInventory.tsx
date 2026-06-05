@@ -74,8 +74,8 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
       } else {
         setError(json.error || 'Failed to load inventory');
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -89,7 +89,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
         setAlerts(json.alerts || []);
         setSuggestedCart(json.suggestedCart || []);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load reorder suggestions', err);
     }
   }
@@ -114,9 +114,10 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
         throw new Error(json.error || 'Failed to update stock');
       }
       toast.success('Inventory stock updated successfully');
-    } catch (err: any) {
-      setError(err.message || 'Failed to update stock');
-      toast.error(err.message || 'Failed to update stock');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update stock';
+      setError(msg);
+      toast.error(msg);
       fetchInventory();
     } finally {
       setSavingId(null);
@@ -142,7 +143,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
       toast.error('Failed To Verify Warehouse Address');
       return;
     }
-    const wh = (profile?.warehouse_address || {}) as Record<string, any>;
+    const wh = (profile?.warehouse_address || {}) as Record<string, string>;
     const missing = !wh?.street1 || !wh?.city || !wh?.state || !wh?.zip;
     if (missing) {
       toast.error('Set Your Warehouse Address In Storefront Config Before Restocking');
@@ -179,8 +180,8 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
       } else {
         setRestockStatus(`Error: ${json.error}`);
       }
-    } catch (err: any) {
-      setRestockStatus(`Error: ${err.message}`);
+    } catch (err: unknown) {
+      setRestockStatus(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   }
 
