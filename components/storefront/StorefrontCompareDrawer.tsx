@@ -194,9 +194,9 @@ function AnimatedScoreRingDrawer({ score, color }: { score: CompoundScore; color
           <div style={{ fontSize: '0.88rem', fontWeight: 900, color: (gradeColor === '#00C4BC' || gradeColor === '#FC8181') ? '#FFF' : gradeColor }}>Grade {score.letter}</div>
           <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', marginBottom: 5 }}>{score.verdict}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {[['Ev', score.breakdown.evidence, 28], ['Sa', score.breakdown.safety, 24], ['Sc', score.breakdown.science, 14], ['Co', score.breakdown.coverage, 16], ['Ha', score.breakdown.handling, 10], ['Dp', score.breakdown.completeness, 8]].map(([lbl, val, max]) => (
+            {[['Evidence', score.breakdown.evidence, 28], ['Safety', score.breakdown.safety, 24], ['Science', score.breakdown.science, 14], ['Coverage', score.breakdown.coverage, 16], ['Handling', score.breakdown.handling, 10], ['Depth', score.breakdown.completeness, 8]].map(([lbl, val, max]) => (
               <div key={String(lbl)} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)' }}>
-                <span style={{ minWidth: 12 }}>{lbl}</span>
+                <span style={{ minWidth: 50 }}>{lbl}</span>
                 <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${(Number(val)/Number(max))*100}%`, background: color, borderRadius: 999 }} />
                 </div>
