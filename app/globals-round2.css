@@ -1583,3 +1583,57 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
 /* ============================================================
    END ROUND 26
    ============================================================ */
+
+/* ============================================================
+   ROUND 27 — GLOBAL DISPLAY CAPITALIZATION
+   ------------------------------------------------------------
+   Enforces first letter of every word capitalized on all display
+   elements throughout all page routes of pepnationlab.com.
+   Excludes chat panels, code formatting, and inputs/textareas to
+   preserve functional inputs and raw user messages.
+   ============================================================ */
+
+body, p, span, div, h1, h2, h3, h4, h5, h6, a, li, th, td, label, button, .btn, footer, header, nav {
+  text-transform: capitalize;
+}
+
+/* Exclude inputs, textareas, selectors, code blocks, chat bubbles, email and phone links, and explicit class overrides */
+input,
+textarea,
+select,
+option,
+code,
+pre,
+kbd,
+samp,
+.imessage-bubble,
+.imessage-bubble *,
+.imessage-composer,
+.imessage-composer *,
+[class*="composer"],
+[class*="composer"] *,
+[class*="bubble"],
+[class*="bubble"] *,
+.no-capitalize,
+.no-capitalize *,
+[data-no-capitalize],
+[data-no-capitalize] *,
+a[href^="mailto:"],
+a[href^="mailto:"] *,
+a[href^="tel:"],
+a[href^="tel:"] *,
+[class*="email"],
+[class*="email"] *,
+[class*="username"],
+[class*="username"] *,
+[class*="unit"],
+[class*="unit"] *,
+[class*="measure"],
+[class*="measure"] *,
+[class*="uuid"],
+[class*="uuid"] *,
+[class*="hash"],
+[class*="hash"] * {
+  text-transform: none !important;
+}
+
