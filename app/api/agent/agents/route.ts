@@ -203,6 +203,7 @@ export async function POST(req: NextRequest) {
       disclaimer_v1_accepted: true,
       disclaimer_accepted_at: new Date().toISOString(),
       is_active: true,
+      must_change_password: true,
       updated_at: new Date().toISOString(),
       // profiles.tier is the agent_tier enum (tier_1|tier_2|tier_3). It must be a
       // valid enum label or the whole upsert fails. Full agents under a super

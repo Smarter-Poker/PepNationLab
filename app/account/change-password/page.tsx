@@ -31,8 +31,7 @@ export default function ChangePasswordPage() {
       });
       const json = await res.json();
       if (!res.ok) { setError(json.error || 'Failed To Update Password'); return; }
-      router.push('/dashboard');
-      router.refresh();
+      window.location.replace('/dashboard');
     } catch {
       setError('Network Error. Please Try Again.');
     } finally {

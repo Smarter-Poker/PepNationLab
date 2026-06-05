@@ -38,5 +38,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
+  // Set must_change_password to true so they are forced to change it on their next login
+  const { error: profileErr } = await supabase
+    .from('profiles')
+    .update({ must_change_password: true, updated_at: new Date().toISOString() })
+    .eq('id', userId);
+
+  if (profileErr) {
+    console.error('Failed to set must_change_password flag:', profileErr);
+  }
+
   return NextResponse.json({ success: true });
 }

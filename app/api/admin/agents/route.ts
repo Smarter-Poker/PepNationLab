@@ -206,6 +206,7 @@ export async function POST(req: NextRequest) {
     disclaimer_v1_accepted: true,
     disclaimer_accepted_at: new Date().toISOString(),
     is_active: true,
+    must_change_password: true,
     // Provisioning attribution (2026-06-01)
     created_by_agent_id: gate.userId,
     created_by_role: 'admin',
