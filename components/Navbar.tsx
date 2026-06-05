@@ -270,7 +270,76 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
   };
 
   const handleBack = () => {
-    router.back();
+    const isHistoryEmpty = typeof window !== 'undefined' && window.history.length <= 1;
+
+    // 1. If on /research/[slug]/[subpage] (e.g. spec, regulatory, references, structure), go to /research/[slug]
+    const compoundSubpageMatch = pathname.match(/^\/research\/([a-zA-Z0-9_-]+)\/(spec|regulatory|references|structure)$/);
+    if (compoundSubpageMatch) {
+      router.push(`/research/${compoundSubpageMatch[1]}`);
+      return;
+    }
+
+    // 2. If on /research/[slug] monograph
+    const compoundPageMatch = pathname.match(/^\/research\/([a-zA-Z0-9_-]+)$/);
+    const reservedResearchSlugs = [
+      'areas', 'catalog', 'compare', 'stacks', 'calculators', 'about-areas', 
+      'approved-drugs', 'discontinued', 'orphan-drugs', 'wada-prohibited', 
+      'reading-queue', 'saved', 'timeline', 'in-pipeline', 'most-cited', 
+      'most-studied-2026', 'new-additions', 'evidence', 'correlated', 'faq', 
+      'glossary', 'api-docs', 'search-index', 'search', 'learn', 'data', 
+      'match', 'subscriptions'
+    ];
+    if (compoundPageMatch && !reservedResearchSlugs.includes(compoundPageMatch[1])) {
+      if (isHistoryEmpty) {
+        router.push('/research/catalog');
+      } else {
+        router.back();
+      }
+      return;
+    }
+
+    // 3. If on /research/area/[area]
+    const areaPageMatch = pathname.match(/^\/research\/area\/([a-zA-Z0-9_-]+)$/);
+    if (areaPageMatch) {
+      router.push('/research/areas');
+      return;
+    }
+
+    // 4. If on a category filter page
+    const isCategoryFilter = pathname.startsWith('/research/by-class') ||
+                             pathname.startsWith('/research/by-half-life') ||
+                             pathname.startsWith('/research/by-mechanism') ||
+                             pathname.startsWith('/research/by-mw') ||
+                             pathname.startsWith('/research/by-route') ||
+                             pathname.startsWith('/research/by-target');
+    if (isCategoryFilter) {
+      router.push('/research/catalog');
+      return;
+    }
+
+    // 5. If on /research landing page
+    if (pathname === '/research' || pathname === '/research/') {
+      router.push(dashLink);
+      return;
+    }
+
+    // 6. Generic research sub-pages
+    const isGenericResearchPage = pathname.startsWith('/research/') && reservedResearchSlugs.some(s => pathname.startsWith(`/research/${s}`));
+    if (isGenericResearchPage) {
+      if (isHistoryEmpty) {
+        router.push('/research');
+      } else {
+        router.back();
+      }
+      return;
+    }
+
+    // 7. General fallback
+    if (isHistoryEmpty) {
+      router.push(dashLink);
+    } else {
+      router.back();
+    }
   };
 
   const showBack = pathname !== '/';

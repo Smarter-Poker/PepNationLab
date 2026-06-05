@@ -426,32 +426,23 @@ function MatchResultsDrawer({
                       {followUp.question}
                     </p>
                   </div>
-                  <form onSubmit={(e) => { e.preventDefault(); submitFollowUp(followUpInput); }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <input
-                      type="text"
-                      autoFocus
-                      value={followUpInput}
-                      onChange={(e) => setFollowUpInput(e.target.value)}
-                      placeholder="Your answer..."
-                      style={{
-                        width: '100%', padding: '16px 20px', borderRadius: 12,
-                        background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)',
-                        color: '#FFF', fontSize: '1rem', outline: 'none'
-                      }}
-                    />
-                    <button
-                      type="submit"
-                      disabled={!followUpInput.trim()}
-                      style={{
-                        background: primaryColor, color: '#0A1018', border: 'none',
-                        padding: '16px', borderRadius: 12, fontWeight: 800, fontSize: '1.05rem',
-                        cursor: followUpInput.trim() ? 'pointer' : 'not-allowed',
-                        opacity: followUpInput.trim() ? 1 : 0.5,
-                      }}
-                    >
-                      Continue Match
-                    </button>
-                  </form>
+                    <div style={{ marginTop: 24, padding: 20, background: 'rgba(192,197,206,0.1)', borderRadius: 16, border: '1px solid rgba(192,197,206,0.2)' }}>
+                      <p style={{ color: '#C0C5CE', fontSize: '1.1rem', fontWeight: 600, lineHeight: 1.5, textAlign: 'center' }}>
+                        The AI needs more context to refine these results. Please restart the match process and provide more detail.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        style={{
+                          display: 'block', margin: '24px auto 0',
+                          background: primaryColor, color: '#0A1018', border: 'none',
+                          padding: '12px 24px', borderRadius: 12, fontWeight: 800, fontSize: '1rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Start Over
+                      </button>
+                    </div>
                 </div>
               ) : filteredResults.length === 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 24px', textAlign: 'center' }}>

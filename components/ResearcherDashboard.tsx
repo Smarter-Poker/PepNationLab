@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import Messaging from '@/components/Messaging';
@@ -274,11 +275,26 @@ function SettingsIcon() {
 // ─────────────────────────────────────────────────────────────────────────
 
 export default function ResearcherDashboard({ userId, userName, userEmail, agentId, agentName, agentSlug, profile }: ResearcherDashboardProps) {
+  const router = useRouter();
   const [tab, setTab] = useState<TabKey>('overview');
   const [pageLoading, setPageLoading] = useState(false);
   const navigateWithLoader = (url: string) => {
     setPageLoading(true);
-    window.location.href = url;
+    if (url.startsWith('http')) {
+      try {
+        const urlObj = new URL(url);
+        const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+        if (urlObj.origin === currentOrigin) {
+          router.push(urlObj.pathname + urlObj.search + urlObj.hash);
+          return;
+        }
+      } catch (e) {
+        // Fallback
+      }
+      window.location.href = url;
+    } else {
+      router.push(url);
+    }
   };
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);

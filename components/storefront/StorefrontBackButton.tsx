@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 
-export default function StorefrontBackButton() {
+export default function StorefrontBackButton({ dashLink }: { dashLink?: string }) {
   const router = useRouter();
 
   const handleBack = (e: React.MouseEvent) => {
@@ -10,7 +10,7 @@ export default function StorefrontBackButton() {
     if (typeof window !== 'undefined' && window.history.length > 1) {
       router.back();
     } else {
-      router.push('/dashboard');
+      router.push(dashLink || '/dashboard');
     }
   };
 

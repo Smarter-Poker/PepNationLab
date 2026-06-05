@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { Package, CheckCircle, Truck, Gift, XCircle, DollarSign, User, MessageSquare, FileText, Clock, ShoppingCart, Link2, Bell, X, ArrowRight } from 'lucide-react';
@@ -96,6 +97,7 @@ function injectBellAnim() {
    Main Component
 ══════════════════════════════════════════════════════════════════════════════ */
 export default function NavbarNotificationBell() {
+  const router = useRouter();
   const [open, setOpen]           = useState(false);
   const [items, setItems]         = useState<NotifItem[]>([]);
   const [unread, setUnread]       = useState(0);
@@ -197,7 +199,23 @@ export default function NavbarNotificationBell() {
                 description: newItem.body || undefined,
                 action: {
                   label: 'View',
-                  onClick: () => { window.location.href = dest; },
+                  onClick: () => {
+                    if (dest.startsWith('http')) {
+                      try {
+                        const urlObj = new URL(dest);
+                        const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+                        if (urlObj.origin === currentOrigin) {
+                          router.push(urlObj.pathname + urlObj.search + urlObj.hash);
+                          return;
+                        }
+                      } catch (e) {
+                        // Fallback
+                      }
+                      window.location.href = dest;
+                    } else {
+                      router.push(dest);
+                    }
+                  },
                 },
               });
             } catch { /* toast best-effort */ }

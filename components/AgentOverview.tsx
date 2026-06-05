@@ -28,6 +28,16 @@ export default function AgentOverview({
   const handleNav = (href: string) => {
     if (!href) return;
     if (href.startsWith('http')) {
+      try {
+        const urlObj = new URL(href);
+        const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+        if (urlObj.origin === currentOrigin) {
+          router.push(urlObj.pathname + urlObj.search + urlObj.hash);
+          return;
+        }
+      } catch (e) {
+        // Fallback
+      }
       window.location.href = href;
     } else {
       router.push(href);

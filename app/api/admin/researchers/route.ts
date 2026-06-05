@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -124,7 +127,7 @@ export async function POST(req: NextRequest) {
     locked_tier_level = parseInt(tier.replace('tier_', ''), 10);
   }
 
-  const profileUpdates: any = {
+  const profileUpdates: Record<string, unknown> = {
     role,
     tier: role === 'researcher' ? null : tier,
     locked_tier_level: role === 'researcher' ? null : locked_tier_level,

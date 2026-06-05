@@ -2401,7 +2401,9 @@ export default function AgentStorefrontGrid({
                         const item = products.find(p => p.id === vId);
                         if (!item) return null;
                         const perVial = item.retail_price / 10;
-                        const costPerVial = perVial;
+                        const costPerVial = isStorefrontOwner && (item as any).cost_price != null
+                          ? Number((item as any).cost_price) / 10
+                          : perVial;
                         const sizeLabel = item.products?.unit_size
                           ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
                           : '';
@@ -2436,7 +2438,7 @@ export default function AgentStorefrontGrid({
                         console.error('Failed to sync cart:', e);
                       }
                       setShowCartFloat(false);
-                      window.location.href = `/checkout?agent=${encodeURIComponent(agentSlug)}`;
+                      router.push(`/checkout?agent=${encodeURIComponent(agentSlug)}`);
                     }}
                     style={{
                       display: 'block', width: '100%', textAlign: 'center', padding: '16px',
@@ -2695,13 +2697,9 @@ export default function AgentStorefrontGrid({
                     : activeV.retail_price;
                   const basePrice = rawPrice / 10;
 
-                  const agentCostPerVial = basePrice;
+                  const agentCostPerVial = (activeV as any).cost_price != null ? Number((activeV as any).cost_price) / 10 : basePrice;
 
-                  const tiers = isStorefrontOwner
-                    ? [
-                        { label: 'All Quantities - Agent Direct Price', min: 1, max: Infinity, pct: 0 },
-                      ]
-                    : volumePricingEnabled
+                  const tiers = volumePricingEnabled
                       ? [
                           { label: '1-2 Vials', min: 1, max: 2, pct: 20 },
                           { label: '3-5 Vials', min: 3, max: 5, pct: 15 },

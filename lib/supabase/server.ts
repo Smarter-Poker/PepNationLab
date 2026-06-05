@@ -23,6 +23,9 @@ export async function createClient() {
           }
         },
       },
+      global: {
+        fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }),
+      },
     }
   );
 }
@@ -35,6 +38,9 @@ export async function createServiceClient() {
       cookies: {
         getAll() { return []; },
         setAll() { /* service role — no cookie setting needed */ },
+      },
+      global: {
+        fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }),
       },
     }
   );
@@ -51,6 +57,11 @@ export function createAdminClient() {
   return createSupabaseClient(
     (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
     (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
-    { auth: { autoRefreshToken: false, persistSession: false } }
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: {
+        fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }),
+      },
+    }
   );
 }

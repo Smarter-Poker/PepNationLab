@@ -125,6 +125,12 @@ export default async function AgentStorefrontPage({ params }: Props) {
 
   const hasAccess = isAdmin || isStorefrontOwner || isSubAgent || isDownlineResearcher;
 
+  const dashLink = userProfile?.role === 'admin'
+    ? '/admin'
+    : (userProfile?.role === 'agent' || userProfile?.role === 'super_agent')
+    ? '/dashboard/agent'
+    : '/dashboard';
+
   if (!hasAccess) {
     // If the researcher is logged in but belongs to a DIFFERENT agent,
     // redirect them to THEIR actual storefront instead of showing a login form.
@@ -296,7 +302,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
       {/* Agent branded navbar */}
       <nav className="sf-nav glass-header" style={{ background: 'rgba(10, 16, 24, 0.85)' }}>
         {/* Back button */}
-        <StorefrontBackButton />
+        <StorefrontBackButton dashLink={dashLink} />
 
         <div className="sf-nav-brand">
           {agent.logo_url ? (

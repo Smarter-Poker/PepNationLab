@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireOrdersAccess } from '@/lib/admin-auth';
@@ -37,9 +40,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
+  interface OrderRow {
+    id: string;
+    agent_id: string | null;
+    status: string;
+    profiles: {
+      full_name: string | null;
+      email: string;
+      phone: string | null;
+    } | null;
+  }
+
+  const typedData = (data as unknown) as OrderRow[] | null;
+
   // Filter out pending_customer_payment and agent_approval_pending orders that belong to an external agent.
   // The Admin should only see them if they are direct (agent_id is null) or if the Admin is the agent.
-  let filteredData = (data || []).filter((order: any) => {
+  let filteredData = (typedData || []).filter((order) => {
     if (order.status === 'pending_customer_payment' || order.status === 'agent_approval_pending') {
       if (order.agent_id && order.agent_id !== gate.userId) {
         return false;
@@ -51,7 +67,7 @@ export async function GET(req: NextRequest) {
   // Filter in memory for fuzzy text search across joined profile fields
   if (query) {
     const q = query.toLowerCase();
-    filteredData = filteredData.filter((order: any) => {
+    filteredData = filteredData.filter((order) => {
       const buyer = order.profiles;
       return (
         order.id.toLowerCase().includes(q) ||
@@ -108,7 +124,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const updates: any = {
+  const updates: Record<string, unknown> = {
     status,
     updated_at: new Date().toISOString(),
   };
@@ -126,12 +142,12 @@ export async function POST(req: NextRequest) {
     updates.agent_approved_at = new Date().toISOString();
   }
 
-  const { error } = await supabase
+  const { error: updateError } = await supabase
     .from('orders')
     .update(updates)
     .eq('id', id);
 
-  if (error) {
+  if (updateError) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 

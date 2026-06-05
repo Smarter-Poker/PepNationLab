@@ -7,8 +7,20 @@ export default function AdminOverviewImageMap() {
   const router = useRouter();
 
   const handleNav = (href: string) => {
-    if (href.startsWith('http') || href === '/') {
+    if (href.startsWith('http')) {
+      try {
+        const urlObj = new URL(href);
+        const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+        if (urlObj.origin === currentOrigin) {
+          router.push(urlObj.pathname + urlObj.search + urlObj.hash);
+          return;
+        }
+      } catch (e) {
+        // Fallback
+      }
       window.location.href = href;
+    } else if (href === '/') {
+      router.push('/');
     } else {
       router.push(href);
     }

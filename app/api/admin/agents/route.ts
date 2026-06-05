@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -8,7 +11,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
 // GET: List all agents with their profiles and storefront data
-export async function GET(req: NextRequest) {
+export async function GET() {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
@@ -195,7 +198,7 @@ export async function POST(req: NextRequest) {
 
   const userId = authData.user.id;
   const profileRole = account_role === 'super_agent' ? 'agent' : account_role;
-  const profileData: Record<string, any> = {
+  const profileData: Record<string, unknown> = {
     id: userId,
     email: null,
     username: usernameClean,
