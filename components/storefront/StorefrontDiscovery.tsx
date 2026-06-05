@@ -1236,17 +1236,33 @@ export default function DiscoveryHero({
 
   function onSuggestionSelect(s: Suggestion) {
     if (s.kind === 'compound') {
+      const matched = resolveProducts([s.slug]);
+      if (matched && matched[0] && matched[0].product_id) {
+        onOpenProduct(matched[0].product_id);
+        setSuggestOpen(false);
+        return;
+      }
       router.push(`/research/${s.slug}`);
       setSuggestOpen(false);
       return;
     }
     if (s.kind === 'area') {
+      if (onSelectArea) {
+        onSelectArea(s.slug);
+        setSuggestOpen(false);
+        return;
+      }
       router.push(`/research/area/${s.slug}`);
       setSuggestOpen(false);
       return;
     }
-    // For 'glossary', we can just use the query in the AI match or push
+    // For 'glossary', we can filter the storefront grid directly
     if (s.kind === 'glossary') {
+      if (onSearchStarted) {
+        onSearchStarted(s.display_name);
+        setSuggestOpen(false);
+        return;
+      }
       router.push(`/research/search?q=${encodeURIComponent(s.display_name)}`);
       setSuggestOpen(false);
       return;

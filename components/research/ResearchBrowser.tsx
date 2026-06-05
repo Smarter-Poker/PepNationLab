@@ -79,19 +79,24 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
   }, [compounds]);
 
   const filtered = useMemo(() => {
-    let q = query.trim().toLowerCase();
-    if (q) {
-      q = autocorrectSearch(q);
-    }
+    const q = query.trim().toLowerCase();
+    const tokens = q ? autocorrectSearch(q).split(/\s+/).filter(Boolean) : [];
+
     return compounds.filter((c) => {
-      if (q) {
+      if (tokens.length > 0) {
         const haystack = [
           c.display_name,
           ...(c.aliases ?? []),
           c.category ?? '',
           ...(c.research_areas ?? []),
+          c.plain_summary ?? '',
+          c.eli5_summary ?? '',
+          c.compound_class ?? '',
+          c.molecular_target ?? '',
         ].join(' ').toLowerCase();
-        if (!haystack.includes(q)) return false;
+        
+        const matchesAll = tokens.every(tok => haystack.includes(tok));
+        if (!matchesAll) return false;
       }
       if (category !== ALL && c.category !== category) return false;
       if (tier !== ALL && c.evidence_tier !== tier) return false;
