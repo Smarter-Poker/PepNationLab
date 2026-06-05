@@ -1360,10 +1360,10 @@ export default function StorefrontCompareDrawer({
                   const mostStudied = [...ranked].sort((a, b) => b.s.breakdown.science - a.s.breakdown.science)[0];
                   const mostPractical = [...ranked].sort((a, b) => b.s.breakdown.handling - a.s.breakdown.handling)[0];
                   const verdicts = [
-                    { label: 'Overall Best Pick', icon: <img src="/images/badges/verdict_overall.jpg" alt="Overall Best" style={{ width: 18, height: 18, borderRadius: '50%' }} />, item: leader, color: primaryColor, reason: `Highest composite research score (${leader.s.total}/100)` },
-                    { label: 'Safest Profile', icon: <img src="/images/badges/verdict_safest.jpg" alt="Safest Profile" style={{ width: 18, height: 18, borderRadius: '50%' }} />, item: safest, color: '#68D391', reason: `Best safety-to-evidence ratio in this comparison` },
-                    { label: 'Most Research-Backed', icon: <img src="/images/badges/verdict_studied.jpg" alt="Most Studied" style={{ width: 18, height: 18, borderRadius: '50%' }} />, item: mostStudied, color: '#F6AD55', reason: `Deepest scientific literature footprint` },
-                    { label: 'Most Practical', icon: <img src="/images/badges/verdict_practical.jpg" alt="Most Practical" style={{ width: 18, height: 18, borderRadius: '50%' }} />, item: mostPractical, color: '#9F7AEA', reason: `Best handling & protocol practicality score` },
+                    { label: 'Overall Best Pick', icon: <img src="/images/badges/verdict_overall.png" alt="Overall Best" style={{ height: 22, objectFit: 'contain' }} />, item: leader, color: primaryColor, reason: `Highest composite research score (${leader.s.total}/100)` },
+                    { label: 'Safest Profile', icon: <img src="/images/badges/verdict_safest.png" alt="Safest Profile" style={{ height: 22, objectFit: 'contain' }} />, item: safest, color: '#68D391', reason: `Best safety-to-evidence ratio in this comparison` },
+                    { label: 'Most Research-Backed', icon: <img src="/images/badges/verdict_studied.png" alt="Most Studied" style={{ height: 22, objectFit: 'contain' }} />, item: mostStudied, color: '#F6AD55', reason: `Deepest scientific literature footprint` },
+                    { label: 'Most Practical', icon: <img src="/images/badges/verdict_practical.png" alt="Most Practical" style={{ height: 22, objectFit: 'contain' }} />, item: mostPractical, color: '#9F7AEA', reason: `Best handling & protocol practicality score` },
                   ];
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>

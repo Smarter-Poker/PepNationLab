@@ -93,7 +93,7 @@ function StockBadge({ state }: { state: StockState }) {
         fontWeight: 800,
         letterSpacing: '0.05em',
         textTransform: 'uppercase',
-        padding: '3px 10px 3px 4px',
+        padding: '2px 8px 2px 2px',
         borderRadius: 9999,
         background: bg,
         color: fg,
@@ -102,7 +102,7 @@ function StockBadge({ state }: { state: StockState }) {
         whiteSpace: 'nowrap',
       }}
     >
-      <img src={badgeSrc} alt={label} style={{ height: 16, objectFit: 'contain' }} />
+      <img src={badgeSrc} alt={label} style={{ height: 22, objectFit: 'contain' }} />
       {label}
     </span>
   );

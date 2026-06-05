@@ -59,7 +59,7 @@ export default function ProductsPreview() {
                   <img 
                     src="/images/badges/badge_research_compound.png" 
                     alt="Research Only" 
-                    style={{ height: 18, objectFit: 'contain' }} 
+                    style={{ height: 22, objectFit: 'contain' }} 
                   />
                 </div>
               </div>
