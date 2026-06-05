@@ -172,6 +172,18 @@ const POPULAR_ORDER: string[] = [
   'Selank',                                   // #20 - Nootropic Anxiety Relief
 ];
 
+const CARD_MAPPINGS = [
+  { index: 1, label: 'Top 10 Best Peptides', query: '' },
+  { index: 2, label: 'Weight Loss & Metabolism', query: 'weight loss' },
+  { index: 3, label: 'Muscle Growth & Performance', query: 'muscle growth' },
+  { index: 4, label: 'Immunity & Wellness', query: 'immunity' },
+  { index: 5, label: 'Anti-Aging & Longevity', query: 'anti-aging' },
+  { index: 6, label: 'Healing & Recovery', query: 'healing' },
+  { index: 7, label: 'Sexual Health & Hormones', query: 'sexual health' },
+  { index: 8, label: 'Skin, Hair & Cosmetics', query: 'skin & hair' },
+  { index: 9, label: 'Peptide Stacks', query: '' }
+];
+
 function fuzzyMatch(query: string, text: string): boolean {
   const q = query.toLowerCase();
   const t = text.toLowerCase();
@@ -367,6 +379,18 @@ export default function AgentStorefrontGrid({
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState<string>(getInit('q'));
   const deferredSearch = useDeferredValue(searchQuery);
+  const [activeCardIndex, setActiveCardIndex] = useState<number | null>(1);
+
+  useEffect(() => {
+    // If URL has search query or category/area filters on mount, clear default Top 10 card selection
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('q') || params.get('category') || params.get('area')) {
+        setActiveCardIndex(null);
+      }
+    }
+  }, []);
+
   const [semanticMatches, setSemanticMatches] = useState<Record<string, { score: number, reason: string }>>({});
 
   useEffect(() => {
@@ -512,6 +536,7 @@ export default function AgentStorefrontGrid({
     setMaxPrice(priceBounds.max);
     setMinWeight(weightBounds.min);
     setMaxWeight(weightBounds.max);
+    setActiveCardIndex(1);
   }, [priceBounds.min, priceBounds.max, weightBounds.min, weightBounds.max]);
   const [detailProduct, setDetailProduct] = useState<GroupedProduct | null>(null);
   const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
@@ -1187,6 +1212,13 @@ export default function AgentStorefrontGrid({
       matchesBulk(g)
     );
 
+    // Apply activeCardIndex filters
+    if (activeCardIndex === 1 && !deferredSearch.trim()) {
+      result = result.filter(({ g }) => g.popularity >= 0 && g.popularity < 10);
+    } else if (activeCardIndex === 9) {
+      result = [];
+    }
+
     const q = deferredSearch.trim();
 
     if (q && sortBy === 'popular') {
@@ -1205,7 +1237,7 @@ export default function AgentStorefrontGrid({
       }
     }
     return result.map(r => ({ ...r.g, _search: r.search }));
-  }, [grouped, matchesCategory, matchesArea, matchesSearch, matchesPrice, matchesWeight, matchesInStock, matchesBulk, sortBy, deferredSearch]);
+  }, [grouped, matchesCategory, matchesArea, matchesSearch, matchesPrice, matchesWeight, matchesInStock, matchesBulk, sortBy, deferredSearch, activeCardIndex]);
 
   useEffect(() => {
     if (filteredProducts.length === 0 && deferredSearch.trim().length > 2) {
@@ -1557,113 +1589,174 @@ export default function AgentStorefrontGrid({
         </div>
       )}
 
-      <div className="sf-toolbar">
-        <div className="sf-toolbar-inner">
-        <div className="sf-toolbar-search">
-          <span className="sf-search-icon">
-            <Search size={14} aria-hidden="true" />
-          </span>
-          <input
-            type="text"
-            aria-label="Search Products"
-            placeholder="Search Products"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              aria-label="Clear Search"
-              className="sf-search-clear"
-              onClick={() => setSearchQuery('')}
-            >
-              <X size={11} aria-hidden="true" />
-            </button>
-          )}
-        </div>
+      {/* ── Phase 3: Dynamic Image Hero ─────────────────────────────── */}
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: 960,
+          margin: '0 auto 24px',
+          aspectRatio: '1672 / 941',
+          backgroundImage: 'url(/images/store_discovery_hero_v3.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          borderRadius: 20,
+          overflow: 'hidden',
+          boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
+          border: '1px solid rgba(255,255,255,0.08)',
+        }}
+      >
+        {/* Search input mapped precisely over the search input bar in the image */}
+        <input
+          type="text"
+          placeholder="Search Peptides..."
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setActiveCardIndex(null); // Clear card filter when user types
+          }}
+          style={{
+            position: 'absolute',
+            left: '1.3%',
+            top: '25.5%',
+            width: '97.2%',
+            height: '10.1%',
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            color: '#FFFFFF',
+            fontSize: 'max(14px, 2.2vw)',
+            fontWeight: 500,
+            padding: '0 2% 0 4.5%',
+          }}
+        />
 
-        <div className="sf-toolbar-cat">
-          <select
-            aria-label="Filter By Category"
-            value={filterCategory}
-            onChange={e => setFilterCategory(e.target.value)}
+        {/* Clear Search Button */}
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            style={{
+              position: 'absolute',
+              right: '2.5%',
+              top: '25.5%',
+              height: '10.1%',
+              background: 'transparent',
+              border: 'none',
+              color: '#FFFFFF',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 10,
+              padding: '0 10px',
+            }}
           >
-            <option value="all">All Categories ({categoryCounts['all'] ?? 0})</option>
-            {categories.map(c => (
-              <option key={c} value={c}>{c} ({categoryCounts[c] ?? 0})</option>
-            ))}
-            <option value="on_sale">On Sale ({categoryCounts['on_sale'] ?? 0})</option>
-          </select>
-        </div>
+            <X size={20} />
+          </button>
+        )}
 
-        </div>
+        {/* Mapped overlay buttons for the 9 cards at the bottom */}
+        {CARD_MAPPINGS.map((card) => {
+          const left = 1.4 + (card.index - 1) * 10.7;
+          const width = 10.4;
+          const isActive = activeCardIndex === card.index;
+
+          return (
+            <button
+              key={card.index}
+              type="button"
+              onClick={() => {
+                setActiveCardIndex(card.index);
+                if (card.index === 1 || card.index === 9) {
+                  setSearchQuery('');
+                } else {
+                  setSearchQuery(card.query || '');
+                }
+                setFilterCategory('all');
+                setFilterArea('');
+              }}
+              style={{
+                position: 'absolute',
+                left: `${left}%`,
+                top: '54.2%',
+                width: `${width}%`,
+                height: '40.3%',
+                cursor: 'pointer',
+                background: 'transparent',
+                border: isActive ? '2px solid rgba(255, 255, 255, 0.45)' : '2px solid transparent',
+                borderRadius: 14,
+                boxShadow: isActive ? '0 0 15px rgba(255,255,255,0.15), inset 0 0 10px rgba(255,255,255,0.05)' : 'none',
+                backgroundColor: isActive ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
+                outline: 'none',
+                transition: 'background 0.2s, border-color 0.2s, box-shadow 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.borderColor = 'transparent';
+                }
+              }}
+              title={card.label}
+              aria-label={card.label}
+            />
+          );
+        })}
       </div>
 
-      {/* ── Phase 3: Quick-Filter Chips ─────────────────────────────── */}
-      {!deferredSearch.trim() && (
+      {/* Active Filter Banner */}
+      {activeCardIndex !== null && (
         <div style={{
           display: 'flex',
-          flexWrap: 'wrap',
-          gap: '8px',
-          padding: '10px 0 4px',
-          marginBottom: '4px',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 24,
+          padding: '12px 18px',
+          borderRadius: 14,
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          backdropFilter: 'blur(8px)',
         }}>
-          {([
-            { label: 'Fat Loss',     query: 'fatloss lipolysis visceral', icon: Flame },
-            { label: 'Muscle & GH',  query: 'muscle growthhormone hypertrophy anabolic', icon: Zap },
-            { label: 'Brain & Neuro',query: 'cognitive nootropic brain bdnf neuroprotect', icon: Brain },
-            { label: 'Healing',      query: 'healing repair tendon wound', icon: Shield },
-            { label: 'Longevity',    query: 'longevity antiaging telomere senolytic', icon: Hourglass },
-            { label: 'Sleep',        query: 'sleep insomnia circadian rem', icon: Moon },
-            { label: 'Immune',       query: 'immune immunity antimicrobial tcell', icon: Shield },
-            { label: 'Gut Health',   query: 'gut gastrointestinal leakygut guthealth', icon: Activity },
-            { label: 'GLP-1',        query: 'glp1 semaglutide tirzepatide weightloss', icon: Syringe },
-            { label: 'Mitochondria', query: 'mitochondrial nad+ ampk atp', icon: Zap },
-            { label: 'Sexual Health',query: 'sexual libido erectile fertility', icon: Heart },
-            { label: 'Skin & Hair',  query: 'skin collagen hairloss antiaging', icon: Sparkles },
-          ] as { label: string; query: string; icon: any }[]).map(({ label, query, icon: Icon }) => (
-            <button
-              key={label}
-              type="button"
-              onClick={() => setSearchQuery(query)}
-              aria-label={`Filter: ${label}`}
-              style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.14)',
-                borderRadius: '20px',
-                color: 'rgba(255,255,255,0.82)',
-                fontSize: '0.72rem',
-                fontWeight: 600,
-                padding: '5px 11px',
-                cursor: 'pointer',
-                letterSpacing: '0.01em',
-                transition: 'all 0.18s ease',
-                whiteSpace: 'nowrap',
-                lineHeight: 1.4,
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(120,200,255,0.15)';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(120,200,255,0.45)';
-                (e.currentTarget as HTMLButtonElement).style.color = '#fff';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.06)';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.14)';
-                (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.82)';
-              }}
-            >
-              <Icon size={11} style={{ marginRight: 5, display: 'inline-block', verticalAlign: 'middle' }} />
-              {label}
-            </button>
-          ))}
+          <span style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem', fontWeight: 700 }}>
+            Active View: <span style={{ color: '#FFFFFF' }}>{CARD_MAPPINGS.find(m => m.index === activeCardIndex)?.label}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveCardIndex(null);
+              setSearchQuery('');
+            }}
+            style={{
+              marginLeft: 'auto',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: '#FFFFFF',
+              borderRadius: 8,
+              padding: '6px 12px',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'background 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+          >
+            Clear Filter
+          </button>
         </div>
       )}
 
-
-      {bundles && bundles.length > 0 && (
+      {/* Stacks Grid (displayed only under Peptide Stacks tab) */}
+      {activeCardIndex === 9 && bundles && bundles.length > 0 && (
         <div style={{ marginTop: 0 }}>
           <h3 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.05rem', color: 'var(--white)', marginBottom: 'var(--space-4)', letterSpacing: '0.03em' }}>
-            Research Bundles
+            Research Stacks &amp; Bundles
           </h3>
           <div className="grid-3" style={{ gap: 'var(--space-6)' }}>
             {bundles.map((bundle) => {
@@ -1762,7 +1855,7 @@ export default function AgentStorefrontGrid({
         </div>
       )}
 
-      {filteredProducts.length === 0 && (
+      {activeCardIndex !== 9 && filteredProducts.length === 0 && (
         <div className="glass-panel hover-lift stagger-fade-in">
           <div style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)' }}>
             {deferredSearch.trim() ? (
@@ -1847,11 +1940,12 @@ export default function AgentStorefrontGrid({
       )}
 
 
-      <motion.div
-        className="grid-3" style={{ gap: 'var(--space-6)', display: filteredProducts.length === 0 ? 'none' : undefined }}
-        variants={containerVariants} initial="hidden" animate="show"
-        key={`${filterCategory}-${sortBy}-${searchQuery}`}
-      >
+      {activeCardIndex !== 9 && (
+        <motion.div
+          className="grid-3" style={{ gap: 'var(--space-6)', display: filteredProducts.length === 0 ? 'none' : undefined }}
+          variants={containerVariants} initial="hidden" animate="show"
+          key={`${filterCategory}-${sortBy}-${searchQuery}`}
+        >
         {filteredProducts.map((group) => {
           const selectedVariantId = selectedVariants[group.name] || group.defaultVariantId;
           const activeVariant = group.variants.find(v => v.id === selectedVariantId) || group.variants[0];
@@ -2057,7 +2151,8 @@ export default function AgentStorefrontGrid({
             </motion.div>
           );
         })}
-      </motion.div>
+        </motion.div>
+      )}
       </>
       )}
 

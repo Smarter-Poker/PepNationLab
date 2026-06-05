@@ -265,7 +265,12 @@ export default async function AgentStorefrontPage({ params }: Props) {
     isStorefrontOwner && (agent as { storefront_renamed_at?: string | null }).storefront_renamed_at == null;
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
+    <div style={{
+      minHeight: '100dvh',
+      background: '#000f20',
+      ['--black' as any]: '#000f20',
+      ['--black-2' as any]: '#000814'
+    }}>
       <CouponLinkCapture />
       <style dangerouslySetInnerHTML={{__html: `
         .sf-nav { height: 60px; background: var(--black-2); border-bottom: 1px solid rgba(192,184,168,0.2); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; position: sticky; top: 0; z-index: 50; gap: 8px; }
@@ -302,21 +307,10 @@ export default async function AgentStorefrontPage({ params }: Props) {
           border-color: #DCD4C4;
           box-shadow: inset 0 2px 6px rgba(255,255,255,0.35), 0 6px 16px rgba(0,0,0,0.6);
         }
-
-        .sf-hero { padding: 12px 12px 4px; text-align: center; }
-        .sf-hero h1 { font-size: 1.3rem; color: var(--white); margin-bottom: 6px; }
-        .sf-hero p { font-size: 0.85rem; }
-        @media (min-width: 600px) {
-          .sf-nav { height: 68px; padding: 0 24px; gap: 12px; }
-          .sf-nav-brand-name { font-size: 1rem; }
-          .sf-btn-dash, .sf-btn-cart { width: 104px; height: 38px; font-size: 0.85rem; padding: 0; }
-          .sf-hero { padding: 24px 24px 8px; }
-          .sf-hero h1 { font-size: 1.6rem; }
-        }
       `}} />
 
       {/* Agent branded navbar */}
-      <nav className="sf-nav glass-header" style={{ background: 'rgba(10, 16, 24, 0.85)' }}>
+      <nav className="sf-nav glass-header" style={{ background: 'rgba(0, 15, 32, 0.85)' }}>
         {/* Back button */}
         <StorefrontBackButton dashLink={dashLink} />
 
@@ -360,22 +354,6 @@ export default async function AgentStorefrontPage({ params }: Props) {
           settingsUrl="/dashboard/agent?tab=Storefront+Config"
         />
       ) : null}
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        @media (max-width: 600px) {
-          .sf-hero { display: none !important; }
-        }
-      `}} />
-      <section
-        className="sf-hero"
-        style={{ background: `radial-gradient(ellipse at 50% 0%, ${primaryColor}10 0%, transparent 70%)` }}
-      >
-        <div style={{ maxWidth: 640, margin: '0 auto' }}>
-          <h1 className="animated-gradient-text" style={{ marginBottom: 6, color: 'var(--white)' }}>
-            Pep Nation&apos;s Research Store
-          </h1>
-        </div>
-      </section>
 
       {/* Products */}
       <section style={{ paddingTop: 8, paddingBottom: 24, position: 'relative', minHeight: '60vh' }}>
