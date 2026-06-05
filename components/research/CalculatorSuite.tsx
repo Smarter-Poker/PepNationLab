@@ -1196,7 +1196,7 @@ function HplcRtSection() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 12 }}>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>HPLC Column Phase</div>
-            <StyledSelect value={columnType} onChange={(e) => setColumnType(e.target.value as any)}>
+            <StyledSelect value={columnType} onChange={(e) => setColumnType(e.target.value as 'C18' | 'C8' | 'C4' | 'HILIC')}>
               <option value="C18">C18 Octadecylsilane (Standard RP)</option>
               <option value="C8">C8 Octylsilane (Moderate RP)</option>
               <option value="C4">C4 Butylsilane (Fragile / Large RP)</option>
@@ -1205,7 +1205,7 @@ function HplcRtSection() {
           </label>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Acid Modifier</div>
-            <StyledSelect value={modifier} onChange={(e) => setModifier(e.target.value as any)}>
+            <StyledSelect value={modifier} onChange={(e) => setModifier(e.target.value as 'TFA' | 'FA')}>
               <option value="TFA">0.1% Trifluoroacetic Acid (Strong Ion-Pairing)</option>
               <option value="FA">0.1% Formic Acid (Weaker Ion-Pairing, MS Friendly)</option>
             </StyledSelect>
@@ -1477,7 +1477,7 @@ function SppsSection() {
           </label>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Coupling Chemistry Reagents</div>
-            <StyledSelect value={chemistry} onChange={(e) => setChemistry(e.target.value as any)}>
+            <StyledSelect value={chemistry} onChange={(e) => setChemistry(e.target.value as 'DIC/Oxyma' | 'HATU/DIEA' | 'HBTU/DIEA')}>
               <option value="DIC/Oxyma">DIC/Oxyma (Cost-Effective / standard)</option>
               <option value="HATU/DIEA">HATU/DIEA (Premium / high coupling efficiency)</option>
               <option value="HBTU/DIEA">HBTU/DIEA (Moderate standard)</option>

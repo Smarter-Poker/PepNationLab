@@ -724,7 +724,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
             gap: '16px',
           }}
         >
-          <div>We Couldn't Find A Direct Match. Try Searching For One Of Our Popular Research Goals:</div>
+          <div>{"We Couldn't Find A Direct Match. Try Searching For One Of Our Popular Research Goals:"}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
             <button
               onClick={() => {

@@ -1057,6 +1057,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
   const [copied, setCopied] = useState(false);
   const [diffMode, setDiffMode] = useState(false);
   const [hideIdentical, setHideIdentical] = useState(false);
+  const [controlSlug, setControlSlug] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'matrix' | 'proscons' | 'brief' | 'mechanism' | 'protocol' | 'recommend'>('matrix');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -1537,6 +1538,29 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                                 {c.year_discovered && <span style={{ background: 'rgba(168,180,192,0.08)', color: 'rgba(168,180,192,0.5)', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 600 }}>{c.year_discovered}</span>}
                                 <span style={{ background: `${color}15`, color, padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>{scores[origIdx].letter}</span>
                               </div>
+                              {selected.length >= 2 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setControlSlug(c.slug === controlSlug ? null : c.slug)}
+                                  style={{
+                                    background: c.slug === controlSlug ? '#00C4BC' : 'rgba(255,255,255,0.06)',
+                                    border: '1px solid rgba(255,255,255,0.12)',
+                                    color: c.slug === controlSlug ? '#04221F' : '#A8B4C0',
+                                    borderRadius: 6,
+                                    padding: '4px 10px',
+                                    fontSize: '0.68rem',
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    marginTop: 6,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    width: 'fit-content'
+                                  }}
+                                >
+                                  {c.slug === controlSlug ? 'Baseline Control' : 'Set Baseline'}
+                                </button>
+                              )}
                             </div>
                             <button type="button" className="no-print" onClick={() => removeCompound(c.slug)} aria-label={`Remove ${c.display_name}`}
                               style={{ background: 'transparent', border: 'none', color: 'rgba(168,180,192,0.5)', cursor: 'pointer', display: 'flex', padding: 3, borderRadius: 4 }}

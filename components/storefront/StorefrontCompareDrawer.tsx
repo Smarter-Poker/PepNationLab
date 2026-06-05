@@ -392,6 +392,7 @@ export default function StorefrontCompareDrawer({
 
   useEffect(() => {
     if (initialCompoundsBySlug && Object.keys(initialCompoundsBySlug).length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCompoundsBySlug(initialCompoundsBySlug);
     }
   }, [initialCompoundsBySlug]);
