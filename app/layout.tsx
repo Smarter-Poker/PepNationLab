@@ -13,7 +13,7 @@ import GlobalCallListener from "@/components/messenger/GlobalCallListener";
 import SessionKeepalive from "@/components/messenger/SessionKeepalive";
 import FirstRunNotificationPrompt from "@/components/FirstRunNotificationPrompt";
 import FlashSaleBanner from "@/components/FlashSaleBanner";
-import SupportButton from "@/components/messenger/SupportButton";
+
 
 export const viewport: Viewport = {
   themeColor: [
@@ -103,8 +103,6 @@ export default function RootLayout({
           <GlobalCallListener />
           <FirstRunNotificationPrompt />
           <SessionKeepalive />
-          {/* fix-56 #6: floating Support button on /messenger for non-admin users. */}
-          <SupportButton />
         </ThemeProvider>
       </body>
     </html>

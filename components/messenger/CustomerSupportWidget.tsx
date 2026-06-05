@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
   X,
@@ -15,7 +15,10 @@ import {
   PanelLeftClose,
   Info,
   CheckCircle2,
+  LifeBuoy,
+  Clock,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useMessengerStore } from '@/stores/messengerStore';
 import MessagePane from './MessagePane';
 import SupportContextSidebar from './SupportContextSidebar';
@@ -192,7 +195,38 @@ function playChime() {
   }
 }
 
-export default function CustomerSupportWidget() {
+const TOPIC_OPTIONS = [
+  'Order Issue',
+  'Payment',
+  'Product Question',
+  'Account',
+  'Other',
+] as const;
+
+type Topic = typeof TOPIC_OPTIONS[number];
+
+function isUuid(s: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s.trim());
+}
+
+function isAfterHoursCentral(now: Date): boolean {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago',
+      hour: 'numeric',
+      hour12: false,
+      weekday: 'short',
+    }).formatToParts(now);
+    const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '12');
+    const weekday = parts.find((p) => p.type === 'weekday')?.value ?? '';
+    if (weekday === 'Sat' || weekday === 'Sun') return true;
+    return hour >= 17 || hour < 7;
+  } catch {
+    return false;
+  }
+}
+
+function CustomerSupportWidgetInner() {
   const router = useRouter();
   // Shared messenger store. Setting activeConversationId here makes the
   // embedded <MessagePane /> render the support thread inside the modal,
@@ -216,6 +250,18 @@ export default function CustomerSupportWidget() {
   const originalTitleRef = useRef<string | null>(null);
   const prevUnreadRef = useRef<number>(-1);
 
+  const [profile, setProfile] = useState<{ role: string | null } | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [topic, setTopic] = useState<Topic>('Order Issue');
+  const [description, setDescription] = useState('');
+  const [orderId, setOrderId] = useState('');
+  const [didAutoOpen, setDidAutoOpen] = useState(false);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const conversations = useMessengerStore((s) => s.conversations);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!window.location.pathname.startsWith('/messenger')) return;
@@ -225,20 +271,171 @@ export default function CustomerSupportWidget() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user || cancelled) return;
-        const { data: profile } = await supabase
+        const { data: prof } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .maybeSingle();
         if (cancelled) return;
-        if (profile?.role === 'admin') {
-          adminIdRef.current = user.id;
+        if (prof) {
+          setProfile(prof);
+          if (prof.role === 'admin') {
+            adminIdRef.current = user.id;
+          }
           setShow(true);
         }
       } catch {}
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // ESC closes the modal.
+  useEffect(() => {
+    if (!modalOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') handleCloseModal();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [modalOpen]);
+
+  // Keep after-hours central clock ticking
+  useEffect(() => {
+    if (!modalOpen) return;
+    const handle = setInterval(() => setNowTick(Date.now()), 60_000);
+    return () => clearInterval(handle);
+  }, [modalOpen]);
+
+  const afterHours = useMemo(() => isAfterHoursCentral(new Date(nowTick)), [nowTick]);
+
+  // Honor URL params: openSupport=1 + optional orderId pre-fills + auto-opens.
+  useEffect(() => {
+    if (!show || didAutoOpen || !searchParams) return;
+    const openFlag = searchParams.get('openSupport');
+    const orderQ = searchParams.get('orderId');
+    if (openFlag === '1') {
+      setTimeout(() => {
+        setTopic('Order Issue');
+        if (orderQ) setOrderId(orderQ);
+        setModalOpen(true);
+        setDidAutoOpen(true);
+      }, 0);
+    } else if (orderQ && !modalOpen) {
+      // Just pre-fill the field without forcing the modal open.
+      setTimeout(() => {
+        setOrderId(orderQ);
+      }, 0);
+    }
+  }, [show, didAutoOpen, searchParams, modalOpen]);
+
+  const clearQueryParams = useCallback(() => {
+    if (typeof window === 'undefined' || !searchParams) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('openSupport');
+    params.delete('orderId');
+    const qs = params.toString();
+    router.replace(qs ? `/messenger?${qs}` : '/messenger', { scroll: false });
+  }, [router, searchParams]);
+
+  const handleCloseModal = useCallback(() => {
+    setModalOpen(false);
+    clearQueryParams();
+  }, [clearQueryParams]);
+
+  const supportConv = useMemo(() => {
+    return conversations.find((c) => c.counterparty_role === 'admin');
+  }, [conversations]);
+
+  const handleNonAdminClick = useCallback(() => {
+    if (supportConv) {
+      setMessengerActive(supportConv.conversation_id);
+    } else {
+      setModalOpen(true);
+    }
+  }, [supportConv, setMessengerActive]);
+
+  const onSubmit = useCallback(async () => {
+    if (busy) return;
+    if (!topic) {
+      toast.error('Please Pick A Topic');
+      return;
+    }
+    const trimmedOrderId = orderId.trim();
+    if (trimmedOrderId && !isUuid(trimmedOrderId)) {
+      toast.error('Order Id Must Be A Valid UUID');
+      return;
+    }
+    const trimmedDesc = description.trim().slice(0, 500);
+
+    setBusy(true);
+    try {
+      const res = await fetch('/api/messenger/support/open', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic,
+          orderId: trimmedOrderId || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json.error || 'Failed To Open Support');
+        return;
+      }
+      const conversationId: string = json.conversationId;
+
+      if (trimmedDesc.length > 0 && conversationId) {
+        try {
+          const supabase = createClient();
+          const clientMessageId = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+            ? crypto.randomUUID()
+            : undefined;
+          await fetch('/api/messenger/send-message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              conversationId,
+              text: trimmedDesc,
+              messageType: 'text',
+              ...(clientMessageId ? { clientMessageId } : {}),
+            }),
+          });
+          void supabase;
+        } catch {}
+      }
+
+      setModalOpen(false);
+      setDescription('');
+      clearQueryParams();
+
+      if (afterHours) {
+        toast(
+          'Thanks — Your Support Thread Is Open. Requests After 5pm Central Typically Get Answered The Next Business Day.',
+          { duration: 7000 },
+        );
+      }
+
+      try {
+        const cRes = await fetch('/api/messenger/get-conversations', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ parentId: null }),
+        });
+        if (cRes.ok) {
+          const cJson = await cRes.json();
+          if (Array.isArray(cJson.conversations)) {
+            useMessengerStore.getState().setConversations(cJson.conversations);
+          }
+        }
+      } catch {}
+
+      setMessengerActive(conversationId);
+    } catch {
+      toast.error('Network Error');
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, topic, orderId, description, afterHours, clearQueryParams, setMessengerActive]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -527,6 +724,389 @@ export default function CustomerSupportWidget() {
   }
 
   if (!show) return null;
+
+  const isAdmin = profile?.role === 'admin';
+
+  if (!isAdmin) {
+    const totalUnreadNonAdmin = supportConv?.unread_count ?? 0;
+    const isThreadActive = supportConv && messengerActiveId === supportConv.conversation_id;
+
+    return (
+      <>
+        {/* Support Pre-chat modal (for researchers) */}
+        {modalOpen && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Contact Support"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 250,
+              background: 'rgba(5, 10, 15, 0.66)',
+              backdropFilter: 'blur(3px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 'max(16px, env(safe-area-inset-bottom))',
+            }}
+            onClick={(e) => { if (e.target === e.currentTarget) handleCloseModal(); }}
+          >
+            <div
+              className="glass-panel"
+              style={{
+                width: 'min(420px, 100%)',
+                background: 'linear-gradient(180deg, #0F1923 0%, #1D2D3E 100%)',
+                border: '1px solid #C0B8A8',
+                borderRadius: 14,
+                boxShadow:
+                  '0 22px 48px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -2px 4px rgba(0,0,0,0.45)',
+                color: 'var(--white, #fff)',
+                overflow: 'hidden',
+              }}
+            >
+              <header
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '14px 16px',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  background:
+                    'linear-gradient(135deg, rgba(0,196,188,0.14) 0%, rgba(0,196,188,0.02) 100%)',
+                }}
+              >
+                <LifeBuoy size={18} style={{ color: 'var(--teal, #00C4BC)' }} aria-hidden="true" />
+                <strong style={{ flex: 1, fontSize: '0.98rem' }}>Contact Support</strong>
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  aria-label="Close"
+                  style={{
+                    width: 28,
+                    height: 28,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 8,
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    color: 'var(--silver, #C0B8A8)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <X size={14} aria-hidden="true" />
+                </button>
+              </header>
+
+              <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {afterHours && (
+                  <div
+                    role="status"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 10,
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      background: 'rgba(255,184,0,0.10)',
+                      border: '1px solid rgba(255,184,0,0.45)',
+                      color: '#FFD175',
+                      fontSize: '0.82rem',
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    <Clock size={16} aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span>
+                      <strong style={{ color: '#FFE9B7', display: 'block', marginBottom: 2 }}>
+                        Outside Business Hours
+                      </strong>
+                      Requests Received After 5pm Central Typically Get Answered The Next Business Day. Your Thread Will Still Be Created — We Will Reply As Soon As We Are Back.
+                    </span>
+                  </div>
+                )}
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--silver, #C0B8A8)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    Topic
+                  </span>
+                  <select
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value as Topic)}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      color: 'var(--white, #fff)',
+                      fontSize: '0.92rem',
+                      fontWeight: 600,
+                      outline: 'none',
+                    }}
+                  >
+                    {TOPIC_OPTIONS.map((t) => (
+                      <option key={t} value={t} style={{ background: '#0F1923' }}>{t}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--silver, #C0B8A8)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    Description (Optional)
+                  </span>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value.slice(0, 500))}
+                    rows={4}
+                    maxLength={500}
+                    placeholder="What's This About?"
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      color: 'var(--white, #fff)',
+                      fontSize: '0.9rem',
+                      lineHeight: 1.4,
+                      outline: 'none',
+                      resize: 'vertical',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  <span style={{ fontSize: '0.66rem', color: 'var(--silver, #C0B8A8)', textAlign: 'right' }}>
+                    {description.length}/500
+                  </span>
+                </label>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--silver, #C0B8A8)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    Order (Optional)
+                  </span>
+                  <input
+                    type="text"
+                    value={orderId}
+                    onChange={(e) => setOrderId(e.target.value)}
+                    placeholder="Order UUID"
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      color: 'var(--white, #fff)',
+                      fontSize: '0.86rem',
+                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </label>
+              </div>
+
+              <footer
+                style={{
+                  padding: '12px 16px',
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(255,255,255,0.02)',
+                  display: 'flex',
+                  gap: 8,
+                  justifyContent: 'flex-end',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  disabled={busy}
+                  style={{
+                    padding: '9px 14px',
+                    borderRadius: 8,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    color: 'var(--silver, #C0B8A8)',
+                    fontSize: '0.84rem',
+                    fontWeight: 700,
+                    cursor: busy ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={onSubmit}
+                  disabled={busy}
+                  style={{
+                    padding: '9px 16px',
+                    borderRadius: 8,
+                    background: busy ? 'rgba(0,196,188,0.55)' : 'var(--teal, #00C4BC)',
+                    border: 0,
+                    color: '#000',
+                    fontSize: '0.84rem',
+                    fontWeight: 800,
+                    cursor: busy ? 'wait' : 'pointer',
+                    opacity: busy ? 0.85 : 1,
+                  }}
+                >
+                  {busy ? 'Opening…' : 'Start Support Thread'}
+                </button>
+              </footer>
+            </div>
+          </div>
+        )}
+
+        {/* Collapsed bar (visually identical to admin) */}
+        <button
+          type="button"
+          onClick={handleNonAdminClick}
+          aria-label="Contact Customer Support"
+          title="Contact Customer Support"
+          className="cs-widget-bar"
+          style={{
+            position: 'fixed',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '10px 56px',
+            paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
+            minHeight: 60,
+            width: '100%',
+            background: 'linear-gradient(180deg, #0E1A24 0%, #0A1219 100%)',
+            color: 'var(--white, #fff)',
+            border: 'none',
+            borderTop: `1px solid ${NICKEL_BORDER}`,
+            borderRadius: 0,
+            fontSize: '0.9rem',
+            fontWeight: 700,
+            letterSpacing: '0.01em',
+            boxShadow: '0 -10px 28px rgba(0,0,0,0.55)',
+            cursor: 'pointer',
+            textAlign: 'center',
+          }}
+        >
+          <span
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              lineHeight: 1.2,
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: 0,
+              textAlign: 'center',
+            }}
+          >
+            <span style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--white, #fff)' }}>
+              Customer Support
+            </span>
+            <span
+              style={{
+                fontSize: '0.74rem',
+                color: totalUnreadNonAdmin > 0 ? '#FFB4B4' : 'var(--grey-400, #A8B4C0)',
+                fontWeight: totalUnreadNonAdmin > 0 ? 700 : 500,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                marginTop: 2,
+              }}
+            >
+              {supportConv ? (
+                totalUnreadNonAdmin > 0 ? (
+                  <>
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        background: '#E53E3E',
+                        boxShadow: '0 0 6px rgba(229,62,62,0.65)',
+                        display: 'inline-block',
+                      }}
+                    />
+                    {`${totalUnreadNonAdmin > 99 ? '99+' : totalUnreadNonAdmin} Unread Thread${totalUnreadNonAdmin === 1 ? '' : 's'}`}
+                  </>
+                ) : (
+                  '1 Thread'
+                )
+              ) : (
+                '0 Threads'
+              )}
+            </span>
+          </span>
+
+          {totalUnreadNonAdmin > 0 && (
+            <span
+              aria-hidden
+              style={{
+                position: 'absolute',
+                right: 50,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                minWidth: 24,
+                height: 22,
+                padding: '0 8px',
+                borderRadius: 7,
+                background: '#E53E3E',
+                color: '#fff',
+                fontSize: '0.74rem',
+                fontWeight: 800,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow:
+                  '0 0 0 1px rgba(229,62,62,0.30), inset 0 1px 0 rgba(255,255,255,0.30)',
+              }}
+            >
+              {totalUnreadNonAdmin > 99 ? '99+' : totalUnreadNonAdmin}
+            </span>
+          )}
+
+          <span
+            aria-hidden
+            style={{
+              position: 'absolute',
+              right: 14,
+              top: '50%',
+              transform: isThreadActive
+                ? 'translateY(-50%) rotate(180deg)'
+                : 'translateY(-50%) rotate(0deg)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              color: 'var(--silver, #C0B8A8)',
+              flexShrink: 0,
+              transition: 'transform 160ms ease',
+            }}
+          >
+            <ChevronUp size={16} aria-hidden="true" />
+          </span>
+        </button>
+
+        <style jsx>{`
+          @media (min-width: 768px) {
+            .cs-widget-bar {
+              right: auto !important;
+              width: 320px !important;
+              border-right: 1px solid ${NICKEL_SOFT} !important;
+            }
+          }
+        `}</style>
+        <style jsx global>{`
+          .messenger-sidebar {
+            padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+          }
+        `}</style>
+      </>
+    );
+  }
 
   return (
     <>
@@ -1531,5 +2111,13 @@ export default function CustomerSupportWidget() {
         }
       `}</style>
     </>
+  );
+}
+
+export default function CustomerSupportWidget() {
+  return (
+    <Suspense fallback={null}>
+      <CustomerSupportWidgetInner />
+    </Suspense>
   );
 }

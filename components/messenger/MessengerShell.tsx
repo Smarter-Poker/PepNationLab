@@ -49,6 +49,17 @@ export default function MessengerShell({ userId }: Props) {
   const consumedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!searchParams) return;
+    const conversation = searchParams.get('conversation') || searchParams.get('conv');
+    if (conversation) {
+      setActive(conversation);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('conversation');
+      params.delete('conv');
+      const qs = params.toString();
+      router.replace(qs ? `/messenger?${qs}` : '/messenger', { scroll: false });
+      return;
+    }
+
     const compose = searchParams.get('compose');
     const participant = searchParams.get('participant');
     const participants = searchParams.get('participants');

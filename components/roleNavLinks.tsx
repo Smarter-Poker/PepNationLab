@@ -128,7 +128,6 @@ function agentLinks(isSuper: boolean, storefrontHref: string): RoleNavLink[] {
     { href: '/account', label: 'Account Settings', icon: ICON.gear },
     { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
     { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr },
-    { href: '/dashboard/agent/help', label: 'Help & Support', icon: <svg {...ip}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> },
   ];
 }
 
@@ -162,7 +161,6 @@ function researcherLinks(storefrontHref?: string): RoleNavLink[] {
     { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
     { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
     { href: '/account', label: 'Account Settings', icon: ICON.gear },
-    { href: '/account/help', label: 'Help & Support', icon: <svg {...ip}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> },
   );
   return links;
 }
