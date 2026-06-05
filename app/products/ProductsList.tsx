@@ -314,39 +314,27 @@ export default function ProductsList({
                     </h4>
 
                     {/* Stock & Delivery status badges */}
-                    <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
-                        padding: '3px 10px',
-                        borderRadius: 'var(--radius-full)',
-                        background: product.in_stock ? 'rgba(192,184,168,0.08)' : 'rgba(246,173,85,0.08)',
-                        border: `1px solid ${product.in_stock ? 'rgba(192,184,168,0.25)' : 'rgba(246,173,85,0.25)'}`,
-                        color: product.in_stock ? 'var(--teal)' : '#00E5FF'
-                      }}>
-                        <span style={{
-                          width: 5, height: 5, borderRadius: '50%',
-                          background: product.in_stock ? 'var(--teal)' : '#00E5FF',
-                          boxShadow: `0 0 4px ${product.in_stock ? 'var(--teal)' : '#00E5FF'}`
-                        }} />
-                        {product.in_stock ? 'In Stock — Ships Now' : `Out Of Stock / Backordered`}
-                      </span>
-
-                      {isLowStock && (
-                        <span style={{
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                          padding: '3px 10px',
-                          borderRadius: 'var(--radius-full)',
-                          background: 'rgba(229,62,62,0.08)',
-                          border: '1px solid rgba(229,62,62,0.25)',
-                          color: 'var(--red)'
-                        }}>
-                          Low Stock
-                        </span>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', flexWrap: 'wrap', alignItems: 'center' }}>
+                      {product.in_stock ? (
+                        isLowStock ? (
+                          <img 
+                            src="/images/badges/badge_low_stock.png" 
+                            alt="Low Stock" 
+                            style={{ height: 20, objectFit: 'contain' }} 
+                          />
+                        ) : (
+                          <img 
+                            src="/images/badges/badge_in_stock.png" 
+                            alt="In Stock" 
+                            style={{ height: 20, objectFit: 'contain' }} 
+                          />
+                        )
+                      ) : (
+                        <img 
+                          src="/images/badges/badge_out_of_stock.png" 
+                          alt="Out Of Stock" 
+                          style={{ height: 20, objectFit: 'contain' }} 
+                        />
                       )}
 
                       {product.unit_size && (

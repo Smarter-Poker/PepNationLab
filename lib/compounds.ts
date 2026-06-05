@@ -74,17 +74,17 @@ export interface Compound {
 export const EVIDENCE_TIER: Record<string, { label: string; color: string; blurb: string; badgeUrl: string }> = {
   approved_drug: { label: 'Approved Drug', color: '#68D391', blurb: 'FDA and/or EMA approved with robust human trial data.', badgeUrl: '/images/badges/badge_approved_drug.png' },
   investigational: { label: 'Investigational', color: '#00E5FF', blurb: 'In active human clinical trials; not yet approved.', badgeUrl: '/images/badges/badge_investigational_drug.png' },
-  preclinical: { label: 'Preclinical', color: '#F6AD55', blurb: 'Evidence is animal or in-vitro; no human efficacy data.', badgeUrl: '/images/badges/badge_preclinical.jpg' },
-  research_chemical: { label: 'Research Compound', color: '#A8B4C0', blurb: 'No approved human use; sold for laboratory research only.', badgeUrl: '/images/badges/badge_research_compound.jpg' },
-  cosmetic: { label: 'Cosmetic', color: '#D6BCFA', blurb: 'Recognized topical cosmetic active, not a drug.', badgeUrl: '/images/badges/badge_cosmetic.jpg' },
+  preclinical: { label: 'Preclinical', color: '#F6AD55', blurb: 'Evidence is animal or in-vitro; no human efficacy data.', badgeUrl: '/images/badges/badge_preclinical.png' },
+  research_chemical: { label: 'Research Compound', color: '#A8B4C0', blurb: 'No approved human use; sold for laboratory research only.', badgeUrl: '/images/badges/badge_research_compound.png' },
+  cosmetic: { label: 'Cosmetic', color: '#D6BCFA', blurb: 'Recognized topical cosmetic active, not a drug.', badgeUrl: '/images/badges/badge_cosmetic.png' },
   supply: { label: 'Supply', color: '#A8B4C0', blurb: 'Reconstitution or lab-prep supply.', badgeUrl: '' },
 };
 
 export const RISK_META: Record<Compound['risk_level'], { label: string; color: string; bg: string; badgeUrl: string }> = {
-  critical: { label: 'Critical Risk', color: '#FF6B6B', bg: 'rgba(229,62,62,0.16)', badgeUrl: '/images/badges/badge_risk_critical.jpg' },
-  high: { label: 'High Risk', color: '#F6AD55', bg: 'rgba(246,173,85,0.14)', badgeUrl: '/images/badges/badge_risk_high.jpg' },
-  moderate: { label: 'Moderate Risk', color: '#00E5FF', bg: 'rgba(0,229,255,0.12)', badgeUrl: '/images/badges/badge_risk_moderate.jpg' },
-  low: { label: 'Low Risk', color: '#68D391', bg: 'rgba(104,211,145,0.12)', badgeUrl: '/images/badges/badge_risk_low.jpg' },
+  critical: { label: 'Critical Risk', color: '#FF6B6B', bg: 'rgba(229,62,62,0.16)', badgeUrl: '/images/badges/badge_risk_critical.png' },
+  high: { label: 'High Risk', color: '#F6AD55', bg: 'rgba(246,173,85,0.14)', badgeUrl: '/images/badges/badge_risk_high.png' },
+  moderate: { label: 'Moderate Risk', color: '#00E5FF', bg: 'rgba(0,229,255,0.12)', badgeUrl: '/images/badges/badge_risk_moderate.png' },
+  low: { label: 'Low Risk', color: '#68D391', bg: 'rgba(104,211,145,0.12)', badgeUrl: '/images/badges/badge_risk_low.png' },
 };
 
 export const WADA_LABEL: Record<string, string> = {

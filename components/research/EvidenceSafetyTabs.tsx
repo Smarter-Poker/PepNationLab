@@ -172,9 +172,9 @@ export default function EvidenceSafetyTabs({
                   )}
                   {c.flags.map((f) => {
                     let badgeSrc = '';
-                    if (f === 'Pro-Angiogenic') badgeSrc = '/images/badges/badge_angio_alert.jpg';
-                    else if (f === 'GLP-1 Class') badgeSrc = '/images/badges/badge_glp1.jpg';
-                    else if (f === 'Cold-Chain') badgeSrc = '/images/badges/badge_cold_chain.jpg';
+                    if (f === 'Pro-Angiogenic') badgeSrc = '/images/badges/badge_angio_alert.png';
+                    else if (f === 'GLP-1 Class') badgeSrc = '/images/badges/badge_glp1.png';
+                    else if (f === 'Cold-Chain') badgeSrc = '/images/badges/badge_cold_chain.png';
                     
                     return badgeSrc ? (
                       <img key={f} src={badgeSrc} alt={f} style={{ height: 20, borderRadius: 4, objectFit: 'contain' }} />
