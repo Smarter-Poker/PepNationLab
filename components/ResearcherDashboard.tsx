@@ -11,6 +11,7 @@ import LabToolsCalculators from '@/components/LabToolsCalculators';
 import OrderTimeline from '@/components/OrderTimeline';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import SavedMatches from '@/components/SavedMatches';
+import PageLoader from '@/components/PageLoader';
 
 interface Order {
   id: string;
@@ -23,7 +24,7 @@ interface Order {
   fulfillment_method: string | null;
   payment_method: string;
   tracking_number: string | null;
-  shipping_address: any;
+  shipping_address: Record<string, unknown> | null;
   created_at: string;
   order_items: { id: string; product_id?: string; product_name: string; quantity: number; unit_retail_price: number }[];
 }
@@ -274,6 +275,11 @@ function SettingsIcon() {
 
 export default function ResearcherDashboard({ userId, userName, userEmail, agentId, agentName, agentSlug, profile }: ResearcherDashboardProps) {
   const [tab, setTab] = useState<TabKey>('overview');
+  const [pageLoading, setPageLoading] = useState(false);
+  const navigateWithLoader = (url: string) => {
+    setPageLoading(true);
+    window.location.href = url;
+  };
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
@@ -298,12 +304,6 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
   const [newPassword, setNewPassword] = useState('');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (tab === 'orders' && orders.length === 0) fetchOrders();
-    if (tab === 'favorites' && favorites.length === 0) fetchFavorites();
-    setSidebarOpen(false);
-  }, [tab]);
-
   async function fetchOrders() {
     setLoadingOrders(true);
     try {
@@ -325,7 +325,26 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
     setLoadingFavs(false);
   }
 
-  const handleReorder = (e: React.MouseEvent, items: any[]) => {
+  useEffect(() => {
+    let t1: number | undefined;
+    let t2: number | undefined;
+    if (tab === 'orders' && orders.length === 0) {
+      t1 = window.setTimeout(() => {
+        void fetchOrders();
+      }, 0);
+    }
+    if (tab === 'favorites' && favorites.length === 0) {
+      t2 = window.setTimeout(() => {
+        void fetchFavorites();
+      }, 0);
+    }
+    return () => {
+      if (t1) window.clearTimeout(t1);
+      if (t2) window.clearTimeout(t2);
+    };
+  }, [tab, orders.length, favorites.length]);
+
+  const handleReorder = (e: React.MouseEvent, items: Order['order_items']) => {
     e.preventDefault();
     e.stopPropagation();
     let added = 0;
@@ -358,7 +377,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
     setSaving(true);
     try {
       const supabase = createClient();
-      const updates: any = {};
+      const updates: Record<string, string> = {};
       const joined = `${firstName.trim()} ${lastName.trim()}`.trim();
       if (joined !== (profile.full_name || '').trim()) updates.full_name = joined;
       if (phone !== (profile.phone || '')) updates.phone = phone;
@@ -435,9 +454,10 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
               key={item.id}
               onClick={() => {
                 if (item.id === 'messages') {
-                  window.location.href = '/messenger';
+                  navigateWithLoader('/messenger');
                 } else {
                   setTab(item.id);
+                  setSidebarOpen(false);
                 }
               }}
               style={{
@@ -466,40 +486,46 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
         {/* Bottom actions */}
         <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(192,184,168,0.08)', flexShrink: 0 }}>
           {agentSlug && (
-            <a
-              href={`/${agentSlug}`}
+            <button
+              onClick={() => {
+                navigateWithLoader(agentSlug ? `/${agentSlug}` : '/products');
+              }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 padding: '9px 12px', borderRadius: 8,
                 background: 'rgba(0,196,188,0.08)',
-                border: '1px solid rgba(0,196,188,0.15)',
+                border: 'none',
                 color: 'var(--teal)', fontSize: '0.78rem', fontWeight: 600,
-                textDecoration: 'none', marginBottom: 8,
+                marginBottom: 8,
                 transition: 'background 0.15s',
+                cursor: 'pointer',
               }}
             >
               <svg {...IP}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
               Browse Store
-            </a>
+            </button>
           )}
 
           <div style={{ height: 1, background: 'rgba(192,184,168,0.08)', margin: '8px 0' }} />
 
-          <a
-            href="/account/help"
+          <button
+            onClick={() => {
+              navigateWithLoader('/account/help');
+            }}
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '9px 12px', borderRadius: 8,
               background: 'none',
-              border: '1px solid transparent',
+              border: 'none',
               color: 'var(--silver)', fontSize: '0.78rem', fontWeight: 600,
-              textDecoration: 'none', marginBottom: 8,
+              marginBottom: 8,
               transition: 'background 0.15s',
+              cursor: 'pointer',
             }}
           >
             <svg {...IP}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></svg>
             Help & Support
-          </a>
+          </button>
 
           <form action="/api/auth/signout" method="POST">
             <button type="submit" style={{
@@ -547,16 +573,16 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                 backgroundSize: '100% 100%',
               }}>
                 {/* Invisible click zones — percentages map 1:1 to image pixels */}
-                {[
-                  { key: 'store',       top: '3.0%',  height: '11.0%', action: () => { window.location.href = agentSlug ? `/${agentSlug}` : '/products'; } },
-                  { key: 'library',     top: '14.0%', height: '11.0%', action: () => { window.location.href = '/research'; } },
-                  { key: 'messenger',   top: '25.0%', height: '11.0%', action: () => { window.location.href = '/messenger'; } },
-                  { key: 'lab-journal', top: '36.0%', height: '11.0%', action: () => { window.location.href = '/account/lab-journal'; } },
+                 {[
+                  { key: 'store',       top: '3.0%',  height: '11.0%', action: () => navigateWithLoader(agentSlug ? `/${agentSlug}` : '/products') },
+                  { key: 'library',     top: '14.0%', height: '11.0%', action: () => navigateWithLoader('/research') },
+                  { key: 'messenger',   top: '25.0%', height: '11.0%', action: () => navigateWithLoader('/messenger') },
+                  { key: 'lab-journal', top: '36.0%', height: '11.0%', action: () => navigateWithLoader('/account/lab-journal') },
                   { key: 'orders',      top: '47.0%', height: '11.0%', action: () => setTab('orders') },
                   { key: 'wallet',      top: '58.0%', height: '11.0%', action: () => setTab('wallet') },
-                  { key: 'tools',       top: '69.0%', height: '10.5%', action: () => { window.location.href = '/research/calculators'; } },
+                  { key: 'tools',       top: '69.0%', height: '10.5%', action: () => navigateWithLoader('/research/calculators') },
                   { key: 'account',     top: '79.5%', height: '10.0%', action: () => setTab('account') },
-                  { key: 'help',        top: '89.5%', height: '9.5%',  action: () => { window.location.href = '/account/help'; } },
+                  { key: 'help',        top: '89.5%', height: '9.5%',  action: () => navigateWithLoader('/account/help') },
                 ].map(z => (
                   <div
                     key={z.key}
@@ -617,9 +643,9 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
               </div>
               <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8, letterSpacing: '0.05em' }}>No Orders Yet</div>
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', maxWidth: 400, margin: '0 auto 20px', lineHeight: 1.5 }}>
-                You haven't placed any orders. Start browsing the catalog to find the products you need.
+                You haven&apos;t placed any orders. Start browsing the catalog to find the products you need.
               </p>
-              <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{ display: 'inline-block', padding: '10px 24px', borderRadius: '8px', background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', fontSize: '0.9rem', color: '#00E5FF', fontWeight: 700, textDecoration: 'none' }}>Browse Catalog</a>
+              <button onClick={() => navigateWithLoader(agentSlug ? `/${agentSlug}` : '/products')} style={{ display: 'inline-block', padding: '10px 24px', borderRadius: '8px', background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', fontSize: '0.9rem', color: '#00E5FF', fontWeight: 700, cursor: 'pointer' }}>Browse Catalog</button>
             </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -714,14 +740,14 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
 
                           <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end', gap: '12px', padding: '0 24px 24px' }}>
                             {o.status === 'pending_customer_payment' && (
-                              <a href={`/orders/${o.id}`} className="pulse-cyan btn-neon-cyan" style={{
+                              <button onClick={() => navigateWithLoader(`/orders/${o.id}`)} className="pulse-cyan btn-neon-cyan" style={{
                                 display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 24px',
-                                borderRadius: '10px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none',
+                                borderRadius: '10px', fontSize: '0.9rem', fontWeight: 800, border: 'none', cursor: 'pointer',
                                 transition: 'transform 0.2s ease',
                               }}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                                 Upload Proof / Change Payment
-                              </a>
+                              </button>
                             )}
                             <button onClick={(e) => handleReorder(e, o.order_items)} className="pulse-silver" style={{
                               display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 24px',
@@ -886,7 +912,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                       {f.products.category && <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: 6 }}>{f.products.category}</div>}
                       <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--teal)', marginBottom: 8 }}>${Number(f.products.base_price).toFixed(2)}</div>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{ flex: 1, textAlign: 'center', padding: '5px 10px', background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)', borderRadius: 6, color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 600, textDecoration: 'none' }}>View In Store</a>
+                        <button onClick={() => navigateWithLoader(agentSlug ? `/${agentSlug}` : '/products')} style={{ flex: 1, textAlign: 'center', padding: '5px 10px', background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)', borderRadius: 6, color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>View In Store</button>
                         {favoritesTab === 'favorites' && (
                           <button onClick={() => removeFavorite(f.product_id)} style={{ padding: '5px 10px', background: 'rgba(252,129,129,0.08)', border: '1px solid rgba(252,129,129,0.15)', borderRadius: 6, color: '#FC8181', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>Remove</button>
                         )}
@@ -966,6 +992,8 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
           </div>
         )}
       </main>
+
+      <PageLoader open={pageLoading} />
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
