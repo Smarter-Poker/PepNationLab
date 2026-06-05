@@ -407,7 +407,6 @@ function generateAnalystBrief(selected: Compound[], scores: CompoundScore[]): st
   }
 
   // 8. Stack recommendation
-  const stackable = selected.filter(c => (c.best_stacked_with ?? []).length > 0);
   const stackPairs = selected.flatMap(c =>
     selected
       .filter(other => other.slug !== c.slug && (c.best_stacked_with ?? []).some(s => s.toLowerCase().includes(other.slug) || other.slug.includes(s.toLowerCase())))

@@ -157,7 +157,10 @@ export default function NavbarNotificationBell() {
   }, []);
 
   // ── Initial load ──────────────────────────────────────────────────────────
-  useEffect(() => { loadFeed(); }, [loadFeed]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadFeed();
+  }, [loadFeed]);
 
   // ── Supabase Realtime: subscribe to new notifications for current user ────
   useEffect(() => {
@@ -217,7 +220,7 @@ export default function NavbarNotificationBell() {
             const updatedItem = payload.new as NotifItem;
             setItems(prev => {
               const oldItem = prev.find(n => n.id === updatedItem.id);
-              const wasUnread = oldItem ? !oldItem.read_at : (payload.old && (payload.old as any).read_at === null);
+              const wasUnread = oldItem ? !oldItem.read_at : (payload.old && (payload.old as Record<string, unknown>).read_at === null);
               if (wasUnread && updatedItem.read_at !== null) {
                 setUnread(u => Math.max(0, u - 1));
               }
