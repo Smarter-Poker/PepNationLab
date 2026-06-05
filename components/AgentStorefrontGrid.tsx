@@ -151,7 +151,7 @@ interface GroupedProduct {
 }
 
 const POPULAR_ORDER: string[] = [
-  'Stack KLOW (TB10+BPC10+GHK50+KPV10)',
+  'KLOW STACK (TB10+BPC10+GHK50+KPV10)',
   'Tirzepatide',
   'Semaglutide',
   'Retatrutide',

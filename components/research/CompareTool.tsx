@@ -386,8 +386,10 @@ export function scoreCompound(c: Compound, allSelected: Compound[] = []): Compou
 
     // Peptide Stacks
     'bpc-tb': 98,
-    'glow': 96,
-    'cjc-ipamorelin': 95,
+    'shred-stack': 97,
+    'limitless-stack': 96,
+    'glow': 94,
+    'cjc-ipamorelin': 93,
     'klow': 92
   };
 

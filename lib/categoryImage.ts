@@ -139,7 +139,7 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'glow blend':                               '/images/products/glow-blend.png',
   'glow stack':                               '/images/products/glow-blend.png',
   'klow blend':                               '/images/products/klow-blend.png',
-  'stack klow':                               '/images/products/klow-blend.png',
+  'klow stack':                               '/images/products/klow-blend.png',
   'snap-8':                                   '/images/products/snap-8.png',
   'snap8':                                    '/images/products/snap-8.png',
 

@@ -246,7 +246,7 @@ function scoreCompoundFromPinned(p: PinnedItem, compoundsBySlug: Record<string, 
   if (!c) {
     return {
       total: 80,
-      letter: 'C+',
+      letter: 'B-',
       breakdown: { evidence: 0, safety: 0, coverage: 0, science: 0, handling: 0, completeness: 0 },
       verdict: 'Compound data pending',
       weaknesses: [],
