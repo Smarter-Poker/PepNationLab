@@ -163,7 +163,6 @@ const POPULAR_ORDER: string[] = [
   'GHK-CU',
   'NAD+',
   'AOD9604',
-  'Bac. water',
   'CJC-1295 Without DAC',
   'CJC-1295 With DAC',
   'The GH Synergy Stack (CJC 5mg + IPA 5mg)',
