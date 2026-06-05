@@ -46,8 +46,9 @@
  */
 
 import { useMemo, useState, useEffect } from 'react';
-import { ArrowRight, Plus, Beaker, ChevronDown, ChevronUp, BookmarkPlus, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Plus, Beaker, ChevronDown, ChevronUp, BookmarkPlus, AlertCircle, CheckCircle2, Shield, AlertTriangle, BookOpen, Trophy, Clock, Sparkles, Thermometer } from 'lucide-react';
 import PinToCompareButton from '../research/PinToCompareButton';
+import { scoreCompound } from '../research/CompareTool';
 import {
   evidenceTier,
   relatedCompounds,
@@ -257,6 +258,188 @@ export function ClickableCategoryBadge({
     >
       {category}
     </button>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * QualityScoreWidget: Show composite score & grade letter            *
+ * ------------------------------------------------------------------ */
+function QualityScoreWidget({
+  compound,
+  primaryColor,
+}: {
+  compound: Compound;
+  primaryColor: string;
+}) {
+  const [displayPct, setDisplayPct] = useState(0);
+  const [showAudit, setShowAudit] = useState(false);
+
+  const score = useMemo(() => scoreCompound(compound), [compound]);
+
+  useEffect(() => {
+    const target = score.total;
+    const duration = 900;
+    const start = performance.now();
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const t = Math.min(elapsed / duration, 1);
+      setDisplayPct(Math.round(easeOut(t) * target));
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    const raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [score.total]);
+
+  const r = 32;
+  const circ = 2 * Math.PI * r;
+  const pct = (displayPct / 100) * circ;
+  const gradeColor =
+    score.letter.startsWith('A') ? '#68D391' :
+    score.letter.startsWith('B') ? '#00C4BC' :
+    score.letter.startsWith('C') ? '#F6AD55' : '#FC8181';
+
+  return (
+    <div
+      style={{
+        background: 'rgba(255, 255, 255, 0.02)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: 14,
+        padding: '16px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        {/* Score Ring */}
+        <div style={{ position: 'relative', width: 72, height: 72, flexShrink: 0 }}>
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
+            <circle
+              cx="36"
+              cy="36"
+              r={r}
+              fill="none"
+              stroke={gradeColor}
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={`${pct} ${circ}`}
+              strokeDashoffset={circ / 4}
+            />
+          </svg>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: '1.05rem', fontWeight: 900, color: gradeColor, lineHeight: 1 }}>{displayPct}</span>
+            <span style={{ fontSize: '0.5rem', color: gradeColor, opacity: 0.6 }}>/100</span>
+          </div>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span
+              style={{
+                fontSize: '0.65rem',
+                fontWeight: 900,
+                padding: '2px 8px',
+                borderRadius: 999,
+                background: score.letter.startsWith('A') ? 'rgba(104,211,145,0.15)' : 'rgba(0,196,188,0.15)',
+                color: gradeColor,
+                border: `1px solid ${gradeColor}40`,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+              }}
+            >
+              Grade {score.letter}
+            </span>
+            <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>PepNation Lab Grade</span>
+          </div>
+          <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#FFF' }}>
+            {score.verdict}
+          </div>
+          <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
+            Composite quality score calculated across evidence level, risk tolerances, and publication backing.
+          </div>
+        </div>
+      </div>
+
+      {score.strengths.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingTop: 2 }}>
+          {score.strengths.map((str) => (
+            <span
+              key={str}
+              style={{
+                fontSize: '0.64rem',
+                fontWeight: 800,
+                color: '#68D391',
+                background: 'rgba(104, 211, 145, 0.08)',
+                border: '1px solid rgba(104, 211, 145, 0.25)',
+                borderRadius: 6,
+                padding: '2px 8px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+              }}
+            >
+              ✓ {str}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setShowAudit(!showAudit)}
+        style={{
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          color: primaryColor,
+          fontSize: '0.74rem',
+          fontWeight: 700,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          alignSelf: 'flex-start',
+          marginTop: 2,
+        }}
+      >
+        {showAudit ? 'Hide Score Breakdown' : 'Show Score Breakdown'}
+      </button>
+
+      {showAudit && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+            gap: '8px 16px',
+            padding: 12,
+            background: 'rgba(255,255,255,0.01)',
+            border: '1px solid rgba(255,255,255,0.04)',
+            borderRadius: 10,
+            marginTop: 2,
+          }}
+        >
+          {[
+            ['Evidence Strength', score.breakdown.evidence, 28, '#00C4BC'],
+            ['Safety Profile', score.breakdown.safety, 24, '#FC8181'],
+            ['Scientific Backing', score.breakdown.science, 14, '#F6AD55'],
+            ['Research Breadth', score.breakdown.coverage, 16, '#9F7AEA'],
+            ['Protocol Practicality', score.breakdown.handling, 10, '#4FD1C5'],
+            ['Data Completeness', score.breakdown.completeness, 8, '#ED64A6'],
+          ].map(([label, val, max, col]) => (
+            <div key={String(label)} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.64rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
+                <span>{label}</span>
+                <span style={{ color: String(col), fontFamily: 'monospace' }}>{val}/{max}</span>
+              </div>
+              <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 999, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${(Number(val) / Number(max)) * 100}%`, background: String(col), borderRadius: 999 }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -662,6 +845,9 @@ export default function ProductModalEnhancements({
       borderTop: '1px solid rgba(255,255,255,0.06)',
       display: 'flex', flexDirection: 'column', gap: 22,
     }}>
+      {currentCompound && (
+        <QualityScoreWidget compound={currentCompound} primaryColor={primaryColor} />
+      )}
       <IsThisRightForMe compound={currentCompound} primaryColor={primaryColor} />
 
       {stackComponents.length > 0 && (
