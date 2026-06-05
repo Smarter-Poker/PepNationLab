@@ -1059,7 +1059,6 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
 
   const [activeTab, setActiveTab] = useState<'matrix' | 'proscons' | 'brief' | 'mechanism' | 'protocol' | 'recommend'>('matrix');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-  const [mobileViewIndex, setMobileViewIndex] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -1088,10 +1087,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
   const bySlug = useMemo(() => new Map(compounds.map(c => [c.slug, c])), [compounds]);
   const selected = useMemo(() => selectedSlugs.map(s => bySlug.get(s)).filter((c): c is Compound => Boolean(c)), [selectedSlugs, bySlug]);
 
-  let clampedMobileIndex = mobileViewIndex;
-  if (clampedMobileIndex >= selected.length && selected.length > 1) clampedMobileIndex = selected.length - 1;
-
-  const displayedSelected = useMemo(() => isMobile && selected.length > 1 ? [selected[0], selected[clampedMobileIndex]] : selected, [isMobile, selected, clampedMobileIndex]);
+  const displayedSelected = selected;
   const maxHalfLife = useMemo(() => Math.max(...displayedSelected.map(c => parseHalfLifeHours(c.half_life)), 0), [displayedSelected]);
   const scores = useMemo(() => selected.map(c => scoreCompound(c, selected)), [selected]);
   const prosCons = useMemo(() => selected.map(c => generateProsCons(c)), [selected]);
@@ -1338,7 +1334,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
               )}
 
               {/* Score Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${displayedSelected.length}, 1fr)`, gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`, gap: 16 }}>
                 {displayedSelected.map(c => {
                   const origIdx = selected.findIndex(x => x.slug === c.slug);
                   const score = scores[origIdx];
@@ -1502,17 +1498,17 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
 
           {/* ── TAB: ATTRIBUTE MATRIX ── */}
           {(activeTab === 'matrix') && (
-            <div className="glass-panel" style={{ borderRadius: 14, overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480, position: 'relative' }}>
+            <div className="glass-panel" style={{ borderRadius: 14, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? (displayedSelected.length * 160 + 120) : 480, position: 'relative' }}>
                 <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                   <tr>
-                    <th style={{ ...labelCellStyle, textAlign: 'left', width: '22%', background: '#162230', zIndex: 30, fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }} scope="col">Attribute</th>
+                    <th style={{ ...labelCellStyle, textAlign: 'left', width: isMobile ? 120 : '22%', background: '#162230', zIndex: 30, fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }} scope="col">Attribute</th>
                     {displayedSelected.map(c => {
                       const origIdx = selected.findIndex(x => x.slug === c.slug);
                       const color = colors[origIdx % colors.length];
                       const isTop = c.slug === topPickSlug;
                       return (
-                        <th key={c.slug} style={{ ...cellStyle, textAlign: 'left', background: '#162230', width: `${78 / displayedSelected.length}%` }} scope="col"
+                        <th key={c.slug} style={{ ...cellStyle, textAlign: 'left', background: '#162230', width: isMobile ? 160 : `${78 / displayedSelected.length}%`, scrollSnapAlign: 'start' }} scope="col"
                           draggable={!isMobile}
                           onDragStart={e => { e.dataTransfer.setData('text/plain', String(origIdx)); e.dataTransfer.effectAllowed = 'move'; }}
                           onDragOver={e => e.preventDefault()}
@@ -1521,10 +1517,8 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                             <div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                                 {!isMobile && <GripHorizontal size={13} color="rgba(255,255,255,0.15)" style={{ cursor: 'grab', flexShrink: 0 }} />}
-                                {isMobile && origIdx !== 0 && selected.length > 2 && <button onClick={() => setMobileViewIndex(p => p > 1 ? p - 1 : selected.length - 1)} style={{ background: 'none', border: 'none', color: 'rgba(168,180,192,0.6)', cursor: 'pointer', padding: 0 }}><ChevronLeft size={16} /></button>}
                                 <Link href={`/research/${c.slug}`} style={{ color, fontWeight: 900, textDecoration: 'none', fontSize: '1.05rem' }}>{c.display_name}</Link>
                                 {isTop && <Trophy size={13} color="#00C4BC" />}
-                                {isMobile && origIdx !== 0 && selected.length > 2 && <button onClick={() => setMobileViewIndex(p => p < selected.length - 1 ? p + 1 : 1)} style={{ background: 'none', border: 'none', color: 'rgba(168,180,192,0.6)', cursor: 'pointer', padding: 0 }}><ChevronRight size={16} /></button>}
                               </div>
                               <div style={{ display: 'flex', gap: 3, marginTop: 4, flexWrap: 'wrap' }}>
                                 {c.evidence_tier === 'approved_drug' && <span style={{ background: 'rgba(104,211,145,0.15)', color: '#68D391', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}><Check size={9} /> FDA</span>}
