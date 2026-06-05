@@ -60,7 +60,7 @@ const groupCellStyle: React.CSSProperties = {
   background: 'linear-gradient(rgba(0,196,188,0.1),rgba(0,196,188,0.1)),#162230',
   borderTop: '1px solid rgba(0,196,188,0.3)',
   borderBottom: '1px solid rgba(0,196,188,0.3)',
-  color: 'var(--teal,#00C4BC)',
+  color: '#FFF',
   fontWeight: 800,
   fontSize: '0.72rem',
   letterSpacing: '0.06em',
@@ -562,7 +562,7 @@ function renderRelativeDelta(rowLabel: string, c: Compound, control: Compound): 
     const diff = currentVal - controlVal;
     if (diff === 0) return null;
     const sign = diff > 0 ? '+' : '';
-    const color = diff > 0 ? '#68D391' : '#FF6B6B';
+    const color = diff > 0 ? '#68D391' : '#FFF';
     let unit = '';
     if (rowLabel === 'Molecular Weight') unit = ' Da';
     else if (rowLabel === 'Purity') unit = '%';
@@ -807,7 +807,7 @@ const ROWS: Row[] = [
       if (!items.length) return NL;
       return (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-          {items.map(s => <span key={s} style={{ background: 'rgba(0,196,188,0.1)', color: '#00C4BC', padding: '1px 6px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600 }}>{s}</span>)}
+          {items.map(s => <span key={s} style={{ background: 'rgba(0,196,188,0.1)', color: '#FFF', padding: '1px 6px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600 }}>{s}</span>)}
         </div>
       );
     }
@@ -860,7 +860,7 @@ const ROWS: Row[] = [
     getValue: c => c.molecular_weight_da ?? c.identity?.molecular_weight,
     render: c => c.molecular_weight_da ? `${c.molecular_weight_da} Da` : txt(c.identity?.molecular_weight)
   },
-  { kind: 'data', label: 'Amino Acid Sequence', getValue: c => c.identity?.sequence, render: c => c.identity?.sequence ? <code style={{ fontSize: '0.7rem', wordBreak: 'break-all', color: '#00C4BC', background: 'rgba(0,196,188,0.08)', padding: '2px 4px', borderRadius: 4, display: 'block' }}>{c.identity.sequence}</code> : NL },
+  { kind: 'data', label: 'Amino Acid Sequence', getValue: c => c.identity?.sequence, render: c => c.identity?.sequence ? <code style={{ fontSize: '0.7rem', wordBreak: 'break-all', color: '#FFF', background: 'rgba(0,196,188,0.08)', padding: '2px 4px', borderRadius: 4, display: 'block' }}>{c.identity.sequence}</code> : NL },
   { kind: 'data', label: 'CAS Number', getValue: c => c.identity?.cas, render: c => txt(c.identity?.cas) },
   { kind: 'data', label: 'Year Discovered', getValue: c => c.year_discovered, render: c => txt(c.year_discovered) },
   {
@@ -882,7 +882,7 @@ const ROWS: Row[] = [
     bestLogic: 'max', getRawScore: c => c.purity_percentage ?? 0,
     render: c => c.purity_percentage ? (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontWeight: 700, color: c.purity_percentage >= 99 ? '#68D391' : c.purity_percentage >= 95 ? '#F6AD55' : '#FC8181' }}>{c.purity_percentage}%</span>
+        <span style={{ fontWeight: 700, color: c.purity_percentage >= 99 ? '#68D391' : c.purity_percentage >= 95 ? '#F6AD55' : '#FFF' }}>{c.purity_percentage}%</span>
         <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', maxWidth: 80 }}>
           <div style={{ height: '100%', width: `${c.purity_percentage}%`, background: c.purity_percentage >= 99 ? '#68D391' : '#F6AD55' }} />
         </div>
@@ -922,7 +922,7 @@ const ROWS: Row[] = [
     render: c => {
       const n = c.pubmed_citation_count;
       if (!n) return NL;
-      const tier = n >= 1000 ? { color: '#68D391', label: 'Extensive' } : n >= 200 ? { color: '#00C4BC', label: 'Good' } : n >= 50 ? { color: '#F6AD55', label: 'Moderate' } : { color: '#FC8181', label: 'Sparse' };
+      const tier = n >= 1000 ? { color: '#68D391', label: 'Extensive' } : n >= 200 ? { color: '#FFF', label: 'Good' } : n >= 50 ? { color: '#F6AD55', label: 'Moderate' } : { color: '#FFF', label: 'Sparse' };
       return <span>{n.toLocaleString()} <span style={{ fontSize: '0.68rem', color: tier.color, fontWeight: 700, marginLeft: 4 }}>{tier.label}</span></span>;
     }
   },
@@ -945,7 +945,7 @@ const ROWS: Row[] = [
   { kind: 'data', label: 'WADA Status', getValue: c => c.wada_status, render: c => {
     const label = wadaLabel(c.wada_status);
     const isProhibited = c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males';
-    return <span style={{ color: isProhibited ? '#FC8181' : c.wada_status === 'permitted' ? '#68D391' : 'inherit', fontWeight: isProhibited ? 700 : 'inherit' }}>{label}</span>;
+    return <span style={{ color: isProhibited ? '#FFF' : c.wada_status === 'permitted' ? '#68D391' : 'inherit', fontWeight: isProhibited ? 700 : 'inherit' }}>{label}</span>;
   }},
 
   { kind: 'group', label: 'Pharmacology' },
@@ -959,7 +959,7 @@ const ROWS: Row[] = [
       const pct = maxHl && maxHl > 0 ? (hlVal / maxHl) * 100 : 0;
       return (
         <div>
-          <div style={{ color: '#00C4BC', fontWeight: 700, marginBottom: 4 }}>{c.half_life}</div>
+          <div style={{ color: '#FFF', fontWeight: 700, marginBottom: 4 }}>{c.half_life}</div>
           {pct > 0 && <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', width: '100%', maxWidth: 140 }}><div style={{ height: '100%', width: `${pct}%`, background: '#00C4BC', transition: 'width 0.5s ease' }} /></div>}
           {c.measured_half_life_hours && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Measured: {c.measured_half_life_hours}h</div>}
           {c.predicted_half_life_hours && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>Predicted: {c.predicted_half_life_hours}h</div>}
@@ -1003,7 +1003,7 @@ const ROWS: Row[] = [
     render: c => {
       const d = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days;
       if (d == null) return NL;
-      const color = d >= 28 ? '#68D391' : d < 14 ? '#FC8181' : '#F6AD55';
+      const color = d >= 28 ? '#68D391' : d < 14 ? '#FFF' : '#F6AD55';
       return <span style={{ color, fontWeight: 700 }}>{d} Days <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>Refrigerated</span></span>;
     },
   },
@@ -1082,7 +1082,7 @@ function FocusRowModal({ row, selected, maxHalfLife, controlCompound, topPickSlu
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
                   <span style={{ color, fontWeight: 900, fontSize: '0.88rem' }}>{c.display_name}</span>
-                  {isTop && <Trophy size={11} color="#00C4BC" style={{ marginLeft: 2 }} />}
+                  {isTop && <Trophy size={11} color="#FFF" style={{ marginLeft: 2 }} />}
                 </div>
                 <div style={{ fontSize: '0.95rem', color: '#fff', lineHeight: 1.55 }}>{row.render(c, maxHalfLife)}</div>
                 {controlCompound && controlCompound.slug !== c.slug && (
@@ -1143,14 +1143,14 @@ function AnimatedScoreRing({ score, color }: { score: CompoundScore; color: stri
           />
         </svg>
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: '1.1rem', fontWeight: 900, color: gradeColor, lineHeight: 1 }}>{displayPct}</span>
-          <span style={{ fontSize: '0.55rem', color: gradeColor, opacity: 0.7 }}>/100</span>
+          <span style={{ fontSize: '1.1rem', fontWeight: 900, color: (gradeColor === '#00C4BC' || gradeColor === '#FC8181') ? '#FFF' : gradeColor, lineHeight: 1 }}>{displayPct}</span>
+          <span style={{ fontSize: '0.55rem', color: (gradeColor === '#00C4BC' || gradeColor === '#FC8181') ? '#FFF' : gradeColor, opacity: 0.7 }}>/100</span>
         </div>
       </div>
       {/* Right column */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-          <span style={{ fontSize: '1rem', fontWeight: 900, color: gradeColor, letterSpacing: '-0.02em' }}>Grade {score.letter}</span>
+          <span style={{ fontSize: '1rem', fontWeight: 900, color: (gradeColor === '#00C4BC' || gradeColor === '#FC8181') ? '#FFF' : gradeColor, letterSpacing: '-0.02em' }}>Grade {score.letter}</span>
         </div>
         <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.45)', marginBottom: 6 }}>{score.verdict}</div>
         {/* Mini breakdown bars */}
@@ -1168,7 +1168,7 @@ function AnimatedScoreRing({ score, color }: { score: CompoundScore; color: stri
               <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.07)', borderRadius: 999, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${(d.val / d.max) * 100}%`, background: color, borderRadius: 999, transition: 'width 0.8s ease' }} />
               </div>
-              <span style={{ fontSize: '0.58rem', color, minWidth: 16, textAlign: 'right', fontWeight: 700 }}>{d.val}</span>
+              <span style={{ fontSize: '0.58rem', color: (color === '#00C4BC' || color === '#FC8181') ? '#FFF' : color, minWidth: 16, textAlign: 'right', fontWeight: 700 }}>{d.val}</span>
             </div>
           ))}
         </div>
@@ -1204,7 +1204,7 @@ function ProsConsCard({ pc }: { pc: ProsCons }) {
         ))}
       </div>
       {sorted.length > MAX_SHOWN && (
-        <button type="button" onClick={() => setExpanded(e => !e)} style={{ marginTop: 8, background: 'none', border: 'none', color: 'rgba(0,196,188,0.8)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+        <button type="button" onClick={() => setExpanded(e => !e)} style={{ marginTop: 8, background: 'none', border: 'none', color: '#FFF', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
           {expanded ? '▲ Show Less' : `▼ Show ${sorted.length - MAX_SHOWN} More`}
         </button>
       )}
@@ -1244,7 +1244,7 @@ function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
                   <td key={c.slug} style={{ textAlign: 'center', padding: '5px 10px' }}>
                     {v != null ? (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                        <span style={{ fontWeight: 800, fontSize: '0.82rem', color }}>{v}</span>
+                        <span style={{ fontWeight: 800, fontSize: '0.82rem', color: (color === '#00C4BC' || color === '#FC8181') ? '#FFF' : color }}>{v}</span>
                         <div style={{ width: 28, height: 3, background: 'rgba(255,255,255,0.07)', borderRadius: 999, overflow: 'hidden' }}>
                           <div style={{ height: '100%', width: `${v}%`, background: color, borderRadius: 999 }} />
                         </div>
@@ -1263,15 +1263,16 @@ function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
 
 // ─── Recommendation Card ──────────────────────────────────────────────────────
 function RecommendationCard({ rec, label, icon, color }: { rec: { compound: Compound; score: CompoundScore; reason: string; secondaryLabel: string }; label: string; icon: React.ReactNode; color: string }) {
+  const textColor = (color === '#00C4BC' || color === '#FC8181') ? '#FFF' : color;
   return (
     <div style={{ padding: '12px 14px', borderRadius: 10, background: `${color}08`, border: `1px solid ${color}25`, display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <div style={{ color, display: 'flex' }}>{icon}</div>
-        <span style={{ fontSize: '0.67rem', fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
-        <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: `${color}20`, color, padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>{rec.secondaryLabel}</span>
+        <span style={{ fontSize: '0.67rem', fontWeight: 800, color: textColor, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
+        <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: `${color}20`, color: textColor, padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>{rec.secondaryLabel}</span>
       </div>
       <div style={{ fontWeight: 900, fontSize: '1rem', color: 'var(--white)', lineHeight: 1.2 }}>
-        <Link href={`/research/${rec.compound.slug}`} style={{ color: color, textDecoration: 'none' }}>{rec.compound.display_name}</Link>
+        <Link href={`/research/${rec.compound.slug}`} style={{ color: textColor, textDecoration: 'none' }}>{rec.compound.display_name}</Link>
       </div>
       <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>{rec.reason}</div>
       {rec.score.recommendedContexts.length > 0 && (
@@ -1464,7 +1465,7 @@ const TruncatedCell = ({ children }: { children: React.ReactNode }) => {
         {children}
       </div>
       {isTruncated && !expanded && (
-        <button type="button" onClick={() => setExpanded(true)} style={{ color: '#00C4BC', background: 'transparent', border: 'none', padding: 0, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', marginTop: 4 }}>Read More</button>
+        <button type="button" onClick={() => setExpanded(true)} style={{ color: '#FFF', background: 'transparent', border: 'none', padding: 0, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', marginTop: 4 }}>Read More</button>
       )}
       {expanded && (
         <button type="button" onClick={() => setExpanded(false)} style={{ color: 'rgba(255,255,255,0.4)', background: 'transparent', border: 'none', padding: 0, fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', marginTop: 4 }}>Show Less</button>
@@ -1783,7 +1784,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         .ct-tab { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.45); border-radius: 8px; padding: 8px 14px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .ct-tab:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); }
-        .ct-tab.active { background: rgba(0,196,188,0.15); border-color: rgba(0,196,188,0.5); color: #00C4BC; }
+        .ct-tab.active { background: rgba(0,196,188,0.15); border-color: rgba(0,196,188,0.5); color: #FFF; }
         .ct-row-hover:hover td { background: rgba(255,255,255,0.015) !important; }
         .popular-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 4; }
         .popular-card:hover { background: rgba(0,196,188,0.08); border-color: rgba(0,196,188,0.3); transform: translateY(-1px); }
@@ -1873,7 +1874,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <AlertTriangle size={16} color="#FC8181" />
-            <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FC8181', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Research Safety & Compatibility Advisories
             </span>
           </div>
@@ -1882,7 +1883,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
               <div key={idx} style={{
                 background: syn.type === 'conflict' ? 'rgba(229,62,62,0.06)' : syn.type === 'caution' ? 'rgba(246,173,85,0.06)' : 'rgba(104,211,145,0.06)',
                 borderLeft: `3px solid ${syn.type === 'conflict' ? '#FC8181' : syn.type === 'caution' ? '#F6AD55' : '#68D391'}`,
-                color: syn.type === 'conflict' ? '#FC8181' : syn.type === 'caution' ? '#F6AD55' : '#68D391',
+                color: syn.type === 'conflict' ? '#FFF' : syn.type === 'caution' ? '#F6AD55' : '#68D391',
                 padding: '8px 12px',
                 borderRadius: '0 8px 8px 0',
                 fontSize: '0.82rem',
@@ -1922,7 +1923,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 {compareHistory.map((slugs, i) => (
                   <button key={i} type="button"
                     onClick={() => { haptic(30); setSelectedSlugs(slugs.filter(s => compounds.some(c => c.slug === s))); }}
-                    style={{ background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.22)', borderRadius: 8, padding: '6px 12px', color: '#00C4BC', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
+                    style={{ background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.22)', borderRadius: 8, padding: '6px 12px', color: '#FFF', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
                     {slugs.map(s => bySlug.get(s)?.display_name ?? s).join(' vs ')}
                   </button>
                 ))}
@@ -1989,7 +1990,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 <div style={{ position: isMobile ? 'sticky' : 'relative', top: isMobile ? 10 : 'auto', zIndex: isMobile ? 40 : 'auto', display: 'flex', alignItems: 'center', gap: 10, background: isMobile ? 'rgba(0,196,188,0.15)' : 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10, padding: '10px 16px', backdropFilter: isMobile ? 'blur(10px)' : 'none', marginBottom: isMobile ? 12 : 0, cursor: 'pointer', boxShadow: isMobile ? '0 8px 24px rgba(0,0,0,0.5)' : 'none' }} onClick={() => setActiveTab('recommend')}>
                   <Trophy size={17} color="#00C4BC" style={{ flexShrink: 0 }} />
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#00C4BC' }}>Top Pick: {bySlug.get(topPickSlug)?.display_name}</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FFF' }}>Top Pick: {bySlug.get(topPickSlug)?.display_name}</span>
                     <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.6)' }}>Tap to see full verdict & analysis <ArrowRight size={8} style={{ display: 'inline-block' }}/></span>
                   </div>
                 </div>
@@ -2006,12 +2007,12 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                     <div key={c.slug} style={{ padding: 14, borderRadius: 12, background: isTop ? 'rgba(0,196,188,0.05)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isTop ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.07)'}` }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                        <Link href={`/research/${c.slug}`} style={{ color, fontWeight: 900, textDecoration: 'none', fontSize: '0.95rem' }}>{c.display_name}</Link>
+                        <Link href={`/research/${c.slug}`} style={{ color: (color === '#00C4BC' || color === '#FF6B6B') ? '#FFF' : color, fontWeight: 900, textDecoration: 'none', fontSize: '0.95rem' }}>{c.display_name}</Link>
                         {isTop && <Trophy size={13} color="#00C4BC" />}
                       </div>
                       <AnimatedScoreRing score={score} color={color} />
                       {score.bestFor.length > 0 && (
-                        <div style={{ marginTop: 8, padding: '5px 8px', background: `${color}10`, borderRadius: 6, fontSize: '0.67rem', color: color, fontWeight: 700, lineHeight: 1.4 }}>
+                        <div style={{ marginTop: 8, padding: '5px 8px', background: `${color}10`, borderRadius: 6, fontSize: '0.67rem', color: (color === '#00C4BC' || color === '#FF6B6B') ? '#FFF' : color, fontWeight: 700, lineHeight: 1.4 }}>
                           Unique: {score.bestFor.map(researchAreaLabel).slice(0, 2).join(', ')}
                         </div>
                       )}
@@ -2239,7 +2240,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                     <Trophy size={12} /> {showWinnersOnly ? 'Winners Only ✓' : 'Winners Only'}
                   </button>
                   <button type="button" onClick={() => { setCellColorCode(v => !v); haptic(20); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, background: cellColorCode ? 'rgba(0,196,188,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${cellColorCode ? 'rgba(0,196,188,0.4)' : 'rgba(255,255,255,0.1)'}`, color: cellColorCode ? '#00C4BC' : '#A8B4C0', borderRadius: 8, padding: '7px 12px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, background: cellColorCode ? 'rgba(0,196,188,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${cellColorCode ? 'rgba(0,196,188,0.4)' : 'rgba(255,255,255,0.1)'}`, color: cellColorCode ? '#FFF' : '#A8B4C0', borderRadius: 8, padding: '7px 12px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
                     <BarChart3 size={12} /> {cellColorCode ? 'Color Rank ✓' : 'Color Rank'}
                   </button>
                   {!isMobile && (
@@ -2257,8 +2258,8 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
               {isMobile && (
                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
                    <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 4, gap: 4 }}>
-                     <button onClick={() => setMobileViewMode('matrix')} style={{ background: mobileViewMode === 'matrix' ? 'rgba(0,196,188,0.15)' : 'transparent', color: mobileViewMode === 'matrix' ? '#00C4BC' : '#A8B4C0', border: 'none', padding: '6px 12px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 800 }}>Table View</button>
-                     <button onClick={() => setMobileViewMode('accordion')} style={{ background: mobileViewMode === 'accordion' ? 'rgba(0,196,188,0.15)' : 'transparent', color: mobileViewMode === 'accordion' ? '#00C4BC' : '#A8B4C0', border: 'none', padding: '6px 12px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 800 }}>Card View</button>
+                     <button onClick={() => setMobileViewMode('matrix')} style={{ background: mobileViewMode === 'matrix' ? 'rgba(0,196,188,0.15)' : 'transparent', color: mobileViewMode === 'matrix' ? '#FFF' : '#A8B4C0', border: 'none', padding: '6px 12px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 800 }}>Table View</button>
+                     <button onClick={() => setMobileViewMode('accordion')} style={{ background: mobileViewMode === 'accordion' ? 'rgba(0,196,188,0.15)' : 'transparent', color: mobileViewMode === 'accordion' ? '#FFF' : '#A8B4C0', border: 'none', padding: '6px 12px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 800 }}>Card View</button>
                    </div>
                  </div>
               )}
@@ -2268,8 +2269,8 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                   {/* Feature 1: Swipe Mode toggle */}
                   {selected.length >= 2 && (
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 14 }}>
-                      <button onClick={() => setSwipeMode(false)} style={{ background: !swipeMode ? 'rgba(0,196,188,0.15)' : 'transparent', color: !swipeMode ? '#00C4BC' : '#A8B4C0', border: 'none', padding: '7px 16px', borderRadius: 7, fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>Stack All</button>
-                      <button onClick={() => { setSwipeMode(true); setSwipeIndex(0); }} style={{ background: swipeMode ? 'rgba(0,196,188,0.15)' : 'transparent', color: swipeMode ? '#00C4BC' : '#A8B4C0', border: 'none', padding: '7px 16px', borderRadius: 7, fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>One At A Time</button>
+                      <button onClick={() => setSwipeMode(false)} style={{ background: !swipeMode ? 'rgba(0,196,188,0.15)' : 'transparent', color: !swipeMode ? '#FFF' : '#A8B4C0', border: 'none', padding: '7px 16px', borderRadius: 7, fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>Stack All</button>
+                      <button onClick={() => { setSwipeMode(true); setSwipeIndex(0); }} style={{ background: swipeMode ? 'rgba(0,196,188,0.15)' : 'transparent', color: swipeMode ? '#FFF' : '#A8B4C0', border: 'none', padding: '7px 16px', borderRadius: 7, fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>One At A Time</button>
                     </div>
                   )}
 
@@ -2312,7 +2313,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                                   lastGroup = row.label;
                                   if (collapsedGroups.has(row.label)) return null;
                                   return (
-                                    <div key={row.label} style={{ margin: '12px 0 4px', padding: '7px 12px', background: 'rgba(0,196,188,0.07)', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800, color: '#00C4BC', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{row.label}</div>
+                                    <div key={row.label} style={{ margin: '12px 0 4px', padding: '7px 12px', background: 'rgba(0,196,188,0.07)', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800, color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{row.label}</div>
                                   );
                                 }
                                 if (showWinnersOnly && !row.bestLogic) return null;
@@ -2453,7 +2454,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                     <th style={{ ...labelCellStyle, textAlign: 'left', width: isMobile ? 120 : '22%', background: '#162230', zIndex: 30, fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }} scope="col">
                        Attribute
                        {isMobile && selected.length > 1 && (
-                         <button onClick={() => setReorderModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#00C4BC', padding: '4px 8px', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, marginTop: 8, cursor: 'pointer' }}>
+                         <button onClick={() => setReorderModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', padding: '4px 8px', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, marginTop: 8, cursor: 'pointer' }}>
                            <LayoutList size={12} /> Reorder
                          </button>
                        )}
@@ -2474,18 +2475,18 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                             <div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                                 {!isMobile && <GripHorizontal size={13} color="rgba(255,255,255,0.15)" style={{ cursor: 'grab', flexShrink: 0 }} />}
-                                <Link href={`/research/${c.slug}`} style={{ color, fontWeight: 900, textDecoration: 'none', fontSize: '1.05rem' }}>{c.display_name}</Link>
+                                <Link href={`/research/${c.slug}`} style={{ color: (color === '#00C4BC' || color === '#FF6B6B') ? '#FFF' : color, fontWeight: 900, textDecoration: 'none', fontSize: '1.05rem' }}>{c.display_name}</Link>
                                 {isTop && <Trophy size={13} color="#00C4BC" />}
                               </div>
                               <div style={{ display: 'flex', gap: 3, marginTop: 4, flexWrap: 'wrap' }}>
                                 {c.evidence_tier === 'approved_drug' && <span style={{ background: 'rgba(104,211,145,0.15)', color: '#68D391', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}><Check size={9} /> FDA</span>}
-                                {(c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') && <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FC8181', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}><X size={9} /> WADA Banned</span>}
+                                {(c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') && <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FFF', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}><X size={9} /> WADA Banned</span>}
                                 {c.is_stack && <span style={{ background: 'rgba(159,122,234,0.15)', color: '#9F7AEA', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>Stack</span>}
                                 {c.is_temp_sensitive && <span style={{ background: 'rgba(246,173,85,0.15)', color: '#F6AD55', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>Cold Chain</span>}
                                 {c.is_pro_angiogenic && <span style={{ background: 'rgba(246,173,85,0.12)', color: '#F6AD55', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>Angio Alert</span>}
                                 {c.is_glp1 && <span style={{ background: 'rgba(159,122,234,0.12)', color: '#9F7AEA', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>GLP-1</span>}
                                 {c.year_discovered && <span style={{ background: 'rgba(168,180,192,0.08)', color: 'rgba(168,180,192,0.5)', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 600 }}>{c.year_discovered}</span>}
-                                <span style={{ background: `${color}15`, color, padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>{scores[origIdx].letter}</span>
+                                <span style={{ background: `${color}15`, color: (color === '#00C4BC' || color === '#FF6B6B') ? '#FFF' : color, padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>{scores[origIdx].letter}</span>
                               </div>
                               {selected.length >= 2 && (
                                 <button
@@ -2792,7 +2793,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
       )}
       {/* Landscape Prompt Toast */}
       {isMobile && showLandscapePrompt && selected.length >= 2 && activeTab === 'matrix' && (
-        <div className="no-print" style={{ position: 'fixed', top: 20, left: 20, right: 20, zIndex: 110, background: 'rgba(0,196,188,0.15)', border: '1px solid rgba(0,196,188,0.4)', borderRadius: 12, padding: '12px 16px', color: '#00C4BC', display: 'flex', alignItems: 'center', gap: 12, backdropFilter: 'blur(10px)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', animation: 'fadeInDown 0.5s ease-out' }}>
+        <div className="no-print" style={{ position: 'fixed', top: 20, left: 20, right: 20, zIndex: 110, background: 'rgba(0,196,188,0.15)', border: '1px solid rgba(0,196,188,0.4)', borderRadius: 12, padding: '12px 16px', color: '#FFF', display: 'flex', alignItems: 'center', gap: 12, backdropFilter: 'blur(10px)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', animation: 'fadeInDown 0.5s ease-out' }}>
           <Smartphone size={24} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Rotate for Better View</div>
@@ -2829,7 +2830,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
               key={tab.id}
               type="button"
               onClick={() => { setActiveTab(tab.id); haptic(15); }}
-              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, background: 'transparent', border: 'none', borderTop: activeTab === tab.id ? '2px solid #00C4BC' : '2px solid transparent', color: activeTab === tab.id ? '#00C4BC' : 'rgba(168,180,192,0.38)', cursor: 'pointer', fontSize: '0.52rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.03em', transition: 'color 0.18s', padding: '4px 2px' }}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, background: 'transparent', border: 'none', borderTop: activeTab === tab.id ? '2px solid #00C4BC' : '2px solid transparent', color: activeTab === tab.id ? '#FFF' : 'rgba(168,180,192,0.38)', cursor: 'pointer', fontSize: '0.52rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.03em', transition: 'color 0.18s', padding: '4px 2px' }}
             >
               {tab.icon}
               {tab.label}

@@ -143,7 +143,7 @@ export default function PinToCompareButton({
           borderRadius: isSmall ? 7 : 9,
           border: `1px solid ${teal}`,
           background: `${teal}18`,
-          color: teal,
+          color: '#FFF',
           fontSize: isSmall ? '0.72rem' : '0.82rem',
           fontWeight: 700,
           cursor: 'pointer',

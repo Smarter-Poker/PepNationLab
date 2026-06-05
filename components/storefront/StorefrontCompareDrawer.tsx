@@ -89,7 +89,7 @@ const groupCellStyle: React.CSSProperties = {
   background: 'linear-gradient(rgba(192,197,206,0.1), rgba(192,197,206,0.1)), #0F161E',
   borderTop: '1px solid rgba(192,197,206,0.3)',
   borderBottom: '1px solid rgba(192,197,206,0.3)',
-  color: 'var(--teal, #C0C5CE)',
+  color: '#FFF',
   fontWeight: 800,
   fontSize: '0.72rem',
   letterSpacing: '0.06em',
@@ -186,12 +186,12 @@ function AnimatedScoreRingDrawer({ score, color }: { score: CompoundScore; color
               strokeDasharray={`${pct} ${circ}`} strokeDashoffset={circ / 4} />
           </svg>
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: '0.95rem', fontWeight: 900, color: gradeColor, lineHeight: 1 }}>{displayPct}</span>
-            <span style={{ fontSize: '0.5rem', color: gradeColor, opacity: 0.6 }}>/100</span>
+            <span style={{ fontSize: '0.95rem', fontWeight: 900, color: '#FFF', lineHeight: 1 }}>{displayPct}</span>
+            <span style={{ fontSize: '0.5rem', color: '#FFF', opacity: 0.6 }}>/100</span>
           </div>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '0.88rem', fontWeight: 900, color: gradeColor }}>Grade {score.letter}</div>
+          <div style={{ fontSize: '0.88rem', fontWeight: 900, color: (gradeColor === '#00C4BC' || gradeColor === '#FC8181') ? '#FFF' : gradeColor }}>Grade {score.letter}</div>
           <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', marginBottom: 5 }}>{score.verdict}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {[['Ev', score.breakdown.evidence, 28], ['Sa', score.breakdown.safety, 24], ['Sc', score.breakdown.science, 14], ['Co', score.breakdown.coverage, 16], ['Ha', score.breakdown.handling, 10], ['Dp', score.breakdown.completeness, 8]].map(([lbl, val, max]) => (
@@ -200,7 +200,7 @@ function AnimatedScoreRingDrawer({ score, color }: { score: CompoundScore; color
                 <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${(Number(val)/Number(max))*100}%`, background: color, borderRadius: 999 }} />
                 </div>
-                <span style={{ minWidth: 14, textAlign: 'right', fontWeight: 700, color }}>{val}</span>
+                <span style={{ minWidth: 14, textAlign: 'right', fontWeight: 700, color: (color === '#00C4BC' || color === '#FC8181') ? '#FFF' : color }}>{val}</span>
               </div>
             ))}
           </div>
@@ -224,7 +224,7 @@ function AnimatedScoreRingDrawer({ score, color }: { score: CompoundScore; color
           lineHeight: 1.4
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 3 }}>
-            <span style={{ fontWeight: 800, color: '#00C4BC' }}>Score Audit</span>
+            <span style={{ fontWeight: 800, color: '#FFF' }}>Score Audit</span>
             <button onClick={(e) => { e.stopPropagation(); setShowAudit(false); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.65rem', padding: 0 }}>Close</button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -264,10 +264,10 @@ function scoreCompoundFromPinned(p: PinnedItem, compoundsBySlug: Record<string, 
 function getChoiceBadge(idx: number): React.ReactNode {
   const labels = ['1st Choice', '2nd Choice', '3rd Choice', '4th Choice'];
   const badgeColors = [
-    { bg: 'rgba(0,196,188,0.15)', text: '#00C4BC', border: 'rgba(0,196,188,0.35)' },
+    { bg: 'rgba(0,196,188,0.15)', text: '#FFF', border: 'rgba(0,196,188,0.35)' },
     { bg: 'rgba(246,173,85,0.15)', text: '#F6AD55', border: 'rgba(246,173,85,0.35)' },
     { bg: 'rgba(104,211,145,0.15)', text: '#68D391', border: 'rgba(104,211,145,0.35)' },
-    { bg: 'rgba(252,129,129,0.15)', text: '#FC8181', border: 'rgba(252,129,129,0.35)' },
+    { bg: 'rgba(252,129,129,0.15)', text: '#FFF', border: 'rgba(252,129,129,0.35)' },
   ];
   const color = badgeColors[idx] || badgeColors[badgeColors.length - 1];
   return (
@@ -586,7 +586,7 @@ export default function StorefrontCompareDrawer({
           if (!c?.half_life) return NL;
           const hlVal = parseHalfLifeHours(c.half_life);
           const pct = maxHalfLife && maxHalfLife > 0 ? (hlVal / maxHalfLife) * 100 : 0;
-          return (<div><div style={{ color: primaryColor, fontWeight: 700, marginBottom: 4 }}>{c.half_life}</div>{pct > 0 && (<div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', width: '100%', maxWidth: 150 }}><div style={{ height: '100%', width: `${pct}%`, background: primaryColor }} /></div>)}</div>);
+          return (<div><div style={{ color: '#FFF', fontWeight: 700, marginBottom: 4 }}>{c.half_life}</div>{pct > 0 && (<div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', width: '100%', maxWidth: 150 }}><div style={{ height: '100%', width: `${pct}%`, background: primaryColor }} /></div>)}</div>);
         }
       },
       {
@@ -827,7 +827,7 @@ export default function StorefrontCompareDrawer({
             flexWrap: 'wrap',
           }}>
             <div style={{
-              color: primaryColor, fontWeight: 800, fontSize: '0.86rem',
+              color: '#FFF', fontWeight: 800, fontSize: '0.86rem',
               textTransform: 'uppercase', letterSpacing: '0.05em',
               flex: 1, minWidth: 150,
             }}>
@@ -937,12 +937,12 @@ export default function StorefrontCompareDrawer({
                         }}>{tier.label}</span>
                       )}
                       {c?.wada_status && (c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') && (
-                        <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FC8181', padding: '2px 6px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                        <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FFF', padding: '2px 6px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                           <X size={10} /> WADA Banned
                         </span>
                       )}
                       {item.pricePerVialDollars != null && (
-                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)' }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#FFF', fontFamily: 'var(--font-brand)' }}>
                           ${Number(item.pricePerVialDollars).toFixed(2)}/Vial
                         </span>
                       )}
@@ -1046,7 +1046,7 @@ export default function StorefrontCompareDrawer({
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                     <AlertTriangle size={16} color="#FC8181" />
-                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FC8181', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       Research Safety & Compatibility Advisories
                     </span>
                   </div>
@@ -1055,7 +1055,7 @@ export default function StorefrontCompareDrawer({
                       <div key={idx} style={{
                         background: syn.type === 'conflict' ? 'rgba(229,62,62,0.06)' : 'rgba(104,211,145,0.06)',
                         borderLeft: `3px solid ${syn.type === 'conflict' ? '#FC8181' : '#68D391'}`,
-                        color: syn.type === 'conflict' ? '#FC8181' : '#68D391',
+                        color: syn.type === 'conflict' ? '#FFF' : '#68D391',
                         padding: '8px 12px',
                         borderRadius: '0 8px 8px 0',
                         fontSize: '0.82rem',
@@ -1077,7 +1077,7 @@ export default function StorefrontCompareDrawer({
               {sortedPinnedItems.length >= 2 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 8, padding: '10px 14px' }}>
                   <Trophy size={16} color={primaryColor} />
-                  <span style={{ fontWeight: 800, fontSize: '0.92rem', color: primaryColor }}>Top Pick: {sortedPinnedItems[0].productName}</span>
+                  <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#FFF' }}>Top Pick: {sortedPinnedItems[0].productName}</span>
                   <span style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}>· Leading with a composite score of {pinnedScores[0].total}/100</span>
                 </div>
               )}
@@ -1125,7 +1125,7 @@ export default function StorefrontCompareDrawer({
                   ['verdict', 'Verdict'],
                 ] as const).map(([id, label]) => (
                   <button key={id} type="button" onClick={() => setMatrixTab(id)}
-                    style={{ padding: '7px 12px', borderRadius: 8, fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', border: matrixTab === id ? `1px solid ${primaryColor}77` : '1px solid rgba(255,255,255,0.1)', background: matrixTab === id ? `${primaryColor}15` : 'rgba(255,255,255,0.04)', color: matrixTab === id ? primaryColor : 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>
+                    style={{ padding: '7px 12px', borderRadius: 8, fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', border: matrixTab === id ? `1px solid ${primaryColor}77` : '1px solid rgba(255,255,255,0.1)', background: matrixTab === id ? `${primaryColor}15` : 'rgba(255,255,255,0.04)', color: matrixTab === id ? '#FFF' : 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>
                     {label}
                   </button>
                 ))}
@@ -1177,7 +1177,7 @@ export default function StorefrontCompareDrawer({
                   <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Research reference only</span>
                 </div>
                 {smartSummary && (
-                  <div style={{ background: `${primaryColor}10`, border: `1px solid ${primaryColor}30`, borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: '0.78rem', color: primaryColor, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ background: `${primaryColor}10`, border: `1px solid ${primaryColor}30`, borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: '0.78rem', color: '#FFF', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Info size={14} /> {smartSummary}
                   </div>
                 )}
@@ -1243,26 +1243,26 @@ export default function StorefrontCompareDrawer({
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         <div style={{ background: `${color}08`, borderRadius: 8, padding: '8px 10px' }}>
-                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Reconstitution</div>
+                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: color === primaryColor ? '#FFF' : color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Reconstitution</div>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 10px', fontSize: '0.74rem' }}>
                             <div style={{ color: 'rgba(255,255,255,0.4)' }}>Form</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.form ?? NL}</div>
                             <div style={{ color: 'rgba(255,255,255,0.4)' }}>Diluent</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.diluent ?? NL}</div>
                             <div style={{ color: 'rgba(255,255,255,0.4)' }}>Storage</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.storage_temp ?? NL}</div>
                             <div style={{ color: 'rgba(255,255,255,0.4)' }}>Light</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? 'Sensitive' : 'Safe'}</div>
-                            {shelf && <><div style={{ color: 'rgba(255,255,255,0.4)' }}>Shelf Life</div><div style={{ color: shelf >= 28 ? '#68D391' : shelf < 14 ? '#FC8181' : '#F6AD55', fontWeight: 700 }}>{shelf} days</div></>}
+                            {shelf && <><div style={{ color: 'rgba(255,255,255,0.4)' }}>Shelf Life</div><div style={{ color: shelf >= 28 ? '#68D391' : shelf < 14 ? '#FFF' : '#F6AD55', fontWeight: 700 }}>{shelf} days</div></>}
                           </div>
                         </div>
                         {(c?.half_life || c?.typical_frequency) && (
                           <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.04)' }}>
                             <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Administration</div>
-                            {c?.half_life && <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)', marginBottom: 3 }}><Clock size={9} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Half-life: <strong style={{ color }}>{c.half_life}</strong></div>}
+                            {c?.half_life && <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)', marginBottom: 3 }}><Clock size={9} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Half-life: <strong style={{ color: color === primaryColor ? '#FFF' : color }}>{c.half_life}</strong></div>}
                             {c?.typical_frequency && <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)', marginBottom: 3 }}><Zap size={9} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Frequency: <strong style={{ color: 'rgba(255,255,255,0.9)' }}>{c.typical_frequency}</strong></div>}
                             {dosesPerWeek && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', marginTop: 3, fontStyle: 'italic' }}>~{dosesPerWeek}× per week based on half-life</div>}
                           </div>
                         )}
                         {c?.handling?.freeze_thaw && <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 5, alignItems: 'flex-start' }}><Thermometer size={11} color="#F6AD55" style={{ marginTop: 1, flexShrink: 0 }} /><span>{c.handling.freeze_thaw}</span></div>}
                         {c?.handling?.notes && <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, borderLeft: '2px solid rgba(255,255,255,0.08)', paddingLeft: 6 }}>{c.handling.notes}</div>}
-                        {c?.coa_url && <a href={c.coa_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color, textDecoration: 'none', fontWeight: 700 }}><BookOpen size={11} /> View COA</a>}
+                        {c?.coa_url && <a href={c.coa_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: color === primaryColor ? '#FFF' : color, textDecoration: 'none', fontWeight: 700 }}><BookOpen size={11} /> View COA</a>}
                       </div>
                       <button
                         type="button"
@@ -1305,7 +1305,7 @@ export default function StorefrontCompareDrawer({
                         {verdicts.map(v => (
                           <div key={v.label} style={{ padding: '12px 14px', borderRadius: 10, background: `${v.color}08`, border: `1px solid ${v.color}25`, display: 'flex', flexDirection: 'column', gap: 10 }}>
                             <div>
-                              <div style={{ fontSize: '0.65rem', fontWeight: 800, color: v.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, display: 'flex', alignItems: 'center', gap: '4px' }}>{v.icon} {v.label}</div>
+                              <div style={{ fontSize: '0.65rem', fontWeight: 800, color: v.color === primaryColor ? '#FFF' : v.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, display: 'flex', alignItems: 'center', gap: '4px' }}>{v.icon} {v.label}</div>
                               <div style={{ fontWeight: 900, fontSize: '0.92rem', color: 'var(--white)', marginBottom: 4 }}>{v.item.p.productName}</div>
                               <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{v.reason}</div>
                             </div>
