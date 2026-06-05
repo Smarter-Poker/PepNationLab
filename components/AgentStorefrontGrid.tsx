@@ -2179,29 +2179,7 @@ export default function AgentStorefrontGrid({
               }}
             >
               <div className="" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0, position: 'relative' }}>
-                {group._search?.reason && (
-                  <div style={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    zIndex: 10,
-                    background: 'rgba(20, 25, 30, 0.75)',
-                    backdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    padding: '4px 10px',
-                    borderRadius: 20,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: 'var(--white)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                    pointerEvents: 'none'
-                  }}>
-                    <Sparkles size={11} style={{ marginRight: 4 }} /> Matched: {toTitleCase(group._search.reason)}
-                  </div>
-                )}
+
               <div style={{
                 height: 220,
                 background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)`,
@@ -2209,6 +2187,35 @@ export default function AgentStorefrontGrid({
                 borderBottom: '1px solid rgba(255,255,255,0.02)', position: 'relative'
               }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${primaryColor}50, transparent)` }} />
+                {group._search?.reason && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 52,
+                    left: 10,
+                    right: 10,
+                    zIndex: 10,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    pointerEvents: 'none'
+                  }}>
+                    <div style={{
+                      background: 'rgba(20, 25, 30, 0.75)',
+                      backdropFilter: 'blur(8px)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      padding: '4px 10px',
+                      borderRadius: 20,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      color: 'var(--white)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    }}>
+                      <Sparkles size={11} style={{ marginRight: 4 }} /> Matched: {toTitleCase(group._search.reason)}
+                    </div>
+                  </div>
+                )}
 
                 {/* Compare Checkbox opposite of the heart (which is on top-right, so this is on top-left) */}
                 <div
@@ -2317,7 +2324,7 @@ export default function AgentStorefrontGrid({
 
                 {group.popularity < 20 && (
                   <div style={{
-                    position: 'absolute', top: 12, left: 12,
+                    position: 'absolute', bottom: 12, right: 12,
                     fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
                     padding: '4px 10px', borderRadius: 'var(--radius-full)',
                     background: 'rgba(192,184,168,0.15)', border: '1px solid rgba(192,184,168,0.4)',
@@ -2329,7 +2336,9 @@ export default function AgentStorefrontGrid({
 
                 {group.variants.some(v => (v as any).is_on_sale) && (
                   <div style={{
-                    position: 'absolute', top: 12, right: 12,
+                    position: 'absolute',
+                    bottom: stockState.kind !== 'in_stock' ? 40 : 12,
+                    left: 12,
                     fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
                     padding: '4px 10px', borderRadius: 'var(--radius-full)',
                     background: 'rgba(245,101,101,0.15)', border: '1px solid rgba(245,101,101,0.4)',
