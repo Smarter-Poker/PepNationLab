@@ -137,7 +137,9 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
 
   // ── Skin, Hair & Cosmetics — EMERALD GREEN cap ──────────────────────────────
   'glow blend':                               '/images/products/glow-blend.png',
+  'glow stack':                               '/images/products/glow-blend.png',
   'klow blend':                               '/images/products/klow-blend.png',
+  'stack klow':                               '/images/products/klow-blend.png',
   'snap-8':                                   '/images/products/snap-8.png',
   'snap8':                                    '/images/products/snap-8.png',
 
@@ -145,6 +147,12 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'selank':                                   '/images/products/selank.png',
   'semax':                                    '/images/products/semax.png',
   'dihexa':                                   '/images/products/dihexa.png',
+
+  // ── Curated Stacks ─────────────────────────────────────────────────────────
+  'wolverine stack':                          '/images/products/wolverine-stack.png',
+  'shred stack':                              '/images/products/shred-stack.png',
+  'limitless stack':                          '/images/products/limitless-stack.png',
+  'gh synergy stack':                         '/images/products/cjc-1295-ipa.png',
 };
 
 // ─── Category → base vial image (fallback when no individual image exists) ───

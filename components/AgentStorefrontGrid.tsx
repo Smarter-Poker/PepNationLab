@@ -151,14 +151,14 @@ interface GroupedProduct {
 }
 
 const POPULAR_ORDER: string[] = [
-  'KLOW (TB10+BPC10+GHK50+KPV10)',
+  'Stack KLOW (TB10+BPC10+GHK50+KPV10)',
   'Tirzepatide',
   'Semaglutide',
   'Retatrutide',
   'BPC 157',
   'TB500 (Thymosin B4 Acetate)',
-  'The Glow Stack (TB10 + BPC10 + GHK50)',
-  'The Wolverine Stack (BPC 10mg + TB 10mg)',
+  'Glow Stack (TB10 + BPC10 + GHK50)',
+  'Wolverine Stack (BPC 10mg + TB 10mg)',
   'Sermorelin Acetate',
   'Ipamorelin',
   'GHK-CU',
@@ -166,7 +166,9 @@ const POPULAR_ORDER: string[] = [
   'AOD9604',
   'CJC-1295 Without DAC',
   'CJC-1295 With DAC',
-  'The GH Synergy Stack (CJC 5mg + IPA 5mg)',
+  'GH Synergy Stack (CJC 5mg + IPA 5mg)',
+  'Shred Stack (Tirzepatide + AOD9604)',
+  'Limitless Stack (Semax + Selank)',
   'KPV',
   'Semax',
   'Selank',
@@ -380,6 +382,75 @@ export default function AgentStorefrontGrid({
   const [searchQuery, setSearchQuery] = useState<string>(getInit('q'));
   const deferredSearch = useDeferredValue(searchQuery);
   const [activeCardIndex, setActiveCardIndex] = useState<number | null>(1);
+
+  const [pinnedNames, setPinnedNames] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const raw = window.localStorage.getItem('pnl:compare') || '[]';
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) {
+        return new Set(list.map((x: any) => x.productName));
+      }
+    } catch {}
+    return new Set();
+  });
+
+  useEffect(() => {
+    const syncPinned = () => {
+      try {
+        const raw = window.localStorage.getItem('pnl:compare') || '[]';
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          setPinnedNames(new Set(list.map((x: any) => x.productName)));
+        }
+      } catch {}
+    };
+    window.addEventListener('pnl:compare-changed', syncPinned);
+    window.addEventListener('storage', syncPinned);
+    return () => {
+      window.removeEventListener('pnl:compare-changed', syncPinned);
+      window.removeEventListener('storage', syncPinned);
+    };
+  }, []);
+
+  const pin = useCallback((group: GroupedProduct, activeVariant: ProductItem) => {
+    if (typeof window === 'undefined') return;
+    const pricePerVialDollars = activeVariant ? Number(activeVariant.retail_price) / 10 : null;
+    const detail = {
+      productName: group.name,
+      imageUrl: group.imageUrl,
+      pricePerVialDollars,
+      compoundSlug: group.compoundSlug,
+      evidenceTierKey: group.compoundSlug && compoundsBySlug ? compoundsBySlug[group.compoundSlug]?.evidence_tier ?? null : null,
+      pinnedAt: Date.now(),
+    };
+    try {
+      window.dispatchEvent(new CustomEvent('pnl:compare-add', { detail }));
+    } catch {}
+    try {
+      const raw = window.localStorage.getItem('pnl:compare') || '[]';
+      const list = JSON.parse(raw) as Array<typeof detail>;
+      const filtered = list.filter((x) => x.productName !== group.name);
+      filtered.push(detail);
+      const trimmed = filtered.slice(-4);
+      window.localStorage.setItem('pnl:compare', JSON.stringify(trimmed));
+      window.dispatchEvent(new CustomEvent('pnl:compare-changed'));
+    } catch {}
+  }, [compoundsBySlug]);
+
+  const unpin = useCallback((group: GroupedProduct) => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.dispatchEvent(new CustomEvent('pnl:compare-remove', { detail: { productName: group.name } }));
+    } catch {}
+    try {
+      const raw = window.localStorage.getItem('pnl:compare') || '[]';
+      const list = JSON.parse(raw) as Array<any>;
+      const filtered = list.filter((x) => x.productName !== group.name);
+      window.localStorage.setItem('pnl:compare', JSON.stringify(filtered));
+      window.dispatchEvent(new CustomEvent('pnl:compare-changed'));
+    } catch {}
+  }, []);
 
   useEffect(() => {
     // If URL has search query or category/area filters on mount, clear default Top 10 card selection
@@ -1200,6 +1271,29 @@ export default function AgentStorefrontGrid({
   );
 
   const filteredProducts = useMemo(() => {
+    const getProductScore = (g: GroupedProduct) => {
+      let score = 0;
+      // 1. In Stock Bonus: +10000
+      const inStock = g.variants.some(v => {
+        const agentCount = Math.max(0, Number(inventoryMap[v.product_id] ?? 0));
+        const masterCount = Math.max(0, Number(v.products?.inventory_count ?? 0));
+        return agentCount > 0 || masterCount > 0;
+      });
+      if (inStock) score += 10000;
+
+      // 2. Custom Stack/Bundle Bonus: +5000
+      const isStack = g.category === 'Peptide Stacks' || 
+                      g.name.toLowerCase().includes('stack') || 
+                      g.name.toLowerCase().includes('bundle') ||
+                      g.name.toLowerCase().includes('klow');
+      if (isStack) score += 5000;
+
+      // 3. Popularity penalty (lower index is better, so subtract index)
+      score += (1000 - g.popularity);
+
+      return score;
+    };
+
     const withScores = grouped.map(g => ({ g, search: matchesSearch(g) }));
 
     let result = withScores.filter(({ g, search }) =>
@@ -1214,7 +1308,7 @@ export default function AgentStorefrontGrid({
 
     // Apply activeCardIndex filters
     if (activeCardIndex === 1 && !deferredSearch.trim()) {
-      result.sort((a, b) => a.g.popularity - b.g.popularity);
+      result.sort((a, b) => getProductScore(b.g) - getProductScore(a.g));
       result = result.slice(0, 10);
     } else if (activeCardIndex !== null && activeCardIndex > 1 && !deferredSearch.trim()) {
       const activeCard = CARD_MAPPINGS.find(m => m.index === activeCardIndex);
@@ -1228,20 +1322,20 @@ export default function AgentStorefrontGrid({
     if (q && sortBy === 'popular') {
       result.sort((a, b) => {
         if (b.search.score !== a.search.score) return b.search.score - a.search.score;
-        return a.g.popularity - b.g.popularity;
+        return getProductScore(b.g) - getProductScore(a.g);
       });
     } else {
       switch (sortBy) {
-        case 'popular': result.sort((a, b) => a.g.popularity - b.g.popularity); break;
+        case 'popular': result.sort((a, b) => getProductScore(b.g) - getProductScore(a.g)); break;
         case 'name_asc': result.sort((a, b) => a.g.name.localeCompare(b.g.name)); break;
         case 'name_desc': result.sort((a, b) => b.g.name.localeCompare(a.g.name)); break;
         case 'price_low': result.sort((a, b) => a.g.lowestPrice - b.g.lowestPrice); break;
         case 'price_high': result.sort((a, b) => b.g.lowestPrice - a.g.lowestPrice); break;
-        case 'newest': result.sort((a, b) => a.g.popularity - b.g.popularity); break;
+        case 'newest': result.sort((a, b) => getProductScore(b.g) - getProductScore(a.g)); break;
       }
     }
     return result.map(r => ({ ...r.g, _search: r.search }));
-  }, [grouped, matchesCategory, matchesArea, matchesSearch, matchesPrice, matchesWeight, matchesInStock, matchesBulk, sortBy, deferredSearch, activeCardIndex]);
+  }, [grouped, matchesCategory, matchesArea, matchesSearch, matchesPrice, matchesWeight, matchesInStock, matchesBulk, sortBy, deferredSearch, activeCardIndex, inventoryMap]);
 
   useEffect(() => {
     if (filteredProducts.length === 0 && deferredSearch.trim().length > 2) {
@@ -1581,7 +1675,10 @@ export default function AgentStorefrontGrid({
           <span style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.78rem', fontWeight: 700 }}>Filtered By Research Area</span>
           <button
             type="button"
-            onClick={() => setFilterArea('')}
+            onClick={() => {
+              setFilterArea('');
+              setActiveCardIndex(1); // Default to Top 10 when cleared
+            }}
             style={{
               marginLeft: 'auto',
               background: 'transparent', border: '1px solid rgba(255,255,255,0.18)',
@@ -1615,8 +1712,13 @@ export default function AgentStorefrontGrid({
           type="text"
           value={searchQuery}
           onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setActiveCardIndex(null); // Clear card filter when user types
+            const val = e.target.value;
+            setSearchQuery(val);
+            if (!val.trim()) {
+              setActiveCardIndex(1); // Default to Top 10 when query is cleared/empty
+            } else {
+              setActiveCardIndex(null); // Clear card filter when user types
+            }
           }}
           style={{
             position: 'absolute',
@@ -1630,7 +1732,7 @@ export default function AgentStorefrontGrid({
             color: '#FFFFFF',
             fontSize: 'max(14px, 2.2vw)',
             fontWeight: 500,
-            padding: '0 5% 0 calc(4.5% + 15px)',
+            padding: '0 5% 0 calc(4.5% + 30px)',
           }}
         />
 
@@ -1691,7 +1793,7 @@ export default function AgentStorefrontGrid({
       </div>
 
       {/* Active Filter Banner */}
-      {activeCardIndex !== null && (
+      {activeCardIndex !== null && activeCardIndex !== 1 && (
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -1709,7 +1811,7 @@ export default function AgentStorefrontGrid({
           <button
             type="button"
             onClick={() => {
-              setActiveCardIndex(null);
+              setActiveCardIndex(1);
               setSearchQuery('');
             }}
             style={{
@@ -2121,6 +2223,50 @@ export default function AgentStorefrontGrid({
                           }}>
                             {displaySizeText} &nbsp;${displayPrice.toFixed(2)}
                           </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
+                          <label
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={pinnedNames.has(group.name)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  if (pinnedNames.size >= 4) {
+                                    toast.error('You can compare up to 4 compounds at a time.');
+                                    return;
+                                  }
+                                  pin(group, activeVariant);
+                                } else {
+                                  unpin(group);
+                                }
+                              }}
+                              disabled={!pinnedNames.has(group.name) && pinnedNames.size >= 4}
+                              style={{
+                                width: 16,
+                                height: 16,
+                                accentColor: primaryColor,
+                                cursor: 'pointer',
+                                flexShrink: 0,
+                              }}
+                            />
+                            <span style={{
+                              color: pinnedNames.has(group.name) ? primaryColor : 'var(--grey-400)',
+                              fontSize: '0.78rem',
+                              fontWeight: 600,
+                              transition: 'color 0.15s',
+                            }}>
+                              Compare
+                            </span>
+                          </label>
                         </div>
                       </>
                     );
@@ -2628,7 +2774,14 @@ export default function AgentStorefrontGrid({
                       category={detailProduct.category}
                       primaryColor={primaryColor}
                       onClick={() => {
-                        setFilterCategory(detailProduct.category);
+                        const matchedCard = CARD_MAPPINGS.find(m => m.label === detailProduct.category);
+                        if (matchedCard) {
+                          setActiveCardIndex(matchedCard.index);
+                        } else {
+                          setFilterCategory(detailProduct.category);
+                        }
+                        setSearchQuery('');
+                        setFilterArea('');
                         setDetailProduct(null);
                       }}
                     />

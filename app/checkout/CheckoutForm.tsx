@@ -280,18 +280,19 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
           if (ap) {
             const retail = ap.retail_price / 10;
-            const sizeLabel = ap.products?.unit_size
-              ? `(${ap.products.unit_size}${ap.products.unit_measure || ''})`
+            const prod = (Array.isArray(ap.products) ? ap.products[0] : ap.products) as any;
+            const sizeLabel = prod?.unit_size
+              ? `(${prod.unit_size}${prod.unit_measure || ''})`
               : '';
             setBacProduct({
               id: ap.product_id,
               agentProductId: ap.id,
-              name: `${ap.products?.name || 'Bac. Water'} ${sizeLabel}`.trim(),
+              name: `${prod?.name || 'Bac. Water'} ${sizeLabel}`.trim(),
               retailPrice: retail,
               costPrice: retail,
-              weightOz: Number(ap.products?.weight_oz) || 0.5,
-              unitSize: ap.products?.unit_size ?? null,
-              unitMeasure: ap.products?.unit_measure ?? null,
+              weightOz: Number(prod?.weight_oz) || 0.5,
+              unitSize: prod?.unit_size ?? null,
+              unitMeasure: prod?.unit_measure ?? null,
             });
           }
         }
