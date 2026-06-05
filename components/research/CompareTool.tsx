@@ -1568,7 +1568,32 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
     ];
   }, [selected]);
 
-  const activeSynergies = KNOWN_SYNERGIES.filter(syn => syn.pairs.every(slug => selectedSlugs.includes(slug)));
+  const activeSynergies = useMemo(() => {
+    const matched = KNOWN_SYNERGIES.filter(syn => syn.pairs.every(slug => selectedSlugs.includes(slug)));
+
+    const proAngio = selected.filter(c => c.is_pro_angiogenic);
+    const hasProAngioCaution = proAngio.length >= 2;
+    const glp1 = selected.filter(c => c.is_glp1);
+    const hasGlp1Conflict = glp1.length >= 2;
+
+    return matched.filter(syn => {
+      if (hasGlp1Conflict) {
+        const isGlp1Pair = syn.pairs.every(slug => {
+          const comp = selected.find(c => c.slug === slug);
+          return comp?.is_glp1;
+        });
+        if (isGlp1Pair) return false;
+      }
+      if (hasProAngioCaution) {
+        const isProAngioPair = syn.pairs.every(slug => {
+          const comp = selected.find(c => c.slug === slug);
+          return comp?.is_pro_angiogenic;
+        });
+        if (isProAngioPair) return false;
+      }
+      return true;
+    });
+  }, [selected, selectedSlugs]);
 
   // Dynamic compound-class based warnings
   const dynamicAlerts = useMemo(() => {
@@ -1583,6 +1608,10 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
     }
     return alerts;
   }, [selected]);
+
+  const combinedAlerts = useMemo(() => {
+    return [...activeSynergies, ...dynamicAlerts];
+  }, [activeSynergies, dynamicAlerts]);
 
   const tabs = [
     { id: 'matrix' as const, label: 'Matrix', showAlways: false },
@@ -1683,12 +1712,43 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
       </div>
 
       {/* Synergy / Conflict Alerts */}
-      {[...activeSynergies, ...dynamicAlerts].map((syn, idx) => (
-        <div key={idx} style={{ background: syn.type === 'conflict' ? 'rgba(229,62,62,0.1)' : syn.type === 'caution' ? 'rgba(246,173,85,0.1)' : 'rgba(104,211,145,0.1)', border: `1px solid ${syn.type === 'conflict' ? 'rgba(229,62,62,0.3)' : syn.type === 'caution' ? 'rgba(246,173,85,0.3)' : 'rgba(104,211,145,0.3)'}`, color: syn.type === 'conflict' ? '#FC8181' : syn.type === 'caution' ? '#F6AD55' : '#68D391', padding: '11px 16px', borderRadius: 8, marginBottom: 10, fontSize: '0.88rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-          {syn.type === 'conflict' ? <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} /> : syn.type === 'caution' ? <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} /> : <Sparkles size={15} style={{ flexShrink: 0, marginTop: 1 }} />}
-          <span><strong>{syn.type === 'conflict' ? 'Conflict' : syn.type === 'caution' ? 'Caution' : `Synergy — ${'category' in syn ? syn.category : ''}`}:</strong> {syn.message}</span>
+      {combinedAlerts.length > 0 && (
+        <div style={{
+          background: 'rgba(20, 25, 30, 0.6)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: 12,
+          padding: 16,
+          marginBottom: 16,
+          backdropFilter: 'blur(8px)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <AlertTriangle size={16} color="#FC8181" />
+            <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FC8181', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Research Safety & Compatibility Advisories
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {combinedAlerts.map((syn, idx) => (
+              <div key={idx} style={{
+                background: syn.type === 'conflict' ? 'rgba(229,62,62,0.06)' : syn.type === 'caution' ? 'rgba(246,173,85,0.06)' : 'rgba(104,211,145,0.06)',
+                borderLeft: `3px solid ${syn.type === 'conflict' ? '#FC8181' : syn.type === 'caution' ? '#F6AD55' : '#68D391'}`,
+                color: syn.type === 'conflict' ? '#FC8181' : syn.type === 'caution' ? '#F6AD55' : '#68D391',
+                padding: '8px 12px',
+                borderRadius: '0 8px 8px 0',
+                fontSize: '0.82rem',
+                fontWeight: 500,
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 8,
+                lineHeight: 1.4
+              }}>
+                {syn.type === 'conflict' ? <AlertTriangle size={14} style={{ marginTop: 2, flexShrink: 0 }} /> : syn.type === 'caution' ? <AlertTriangle size={14} style={{ marginTop: 2, flexShrink: 0 }} /> : <Sparkles size={14} style={{ marginTop: 2, flexShrink: 0 }} />}
+                <span><strong>{syn.type === 'conflict' ? 'Conflict' : syn.type === 'caution' ? 'Caution' : `Synergy — ${'category' in syn ? (syn as any).category : ''}`}:</strong> {syn.message}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
+      )}
 
       {/* Empty State */}
       {selected.length === 0 ? (
