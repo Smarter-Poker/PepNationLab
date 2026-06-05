@@ -19,6 +19,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Pin, PinOff, MessageSquare, Tag as TagIcon, Search, Download,
@@ -769,6 +770,7 @@ function EmptyState({ slug }: { slug: string | null }) {
 export default function AgentResearcherCRMv2({
   isSuperAgent, onResetPassword, onPromote, onToggleAutoApprove,
 }: CRMExternalProps) {
+  const router = useRouter();
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -835,8 +837,8 @@ export default function AgentResearcherCRMv2({
   }, [refresh]);
 
   const message = useCallback((r: Researcher | { id: string }) => {
-    window.location.href = `/messenger?participant=${encodeURIComponent(r.id)}`;
-  }, []);
+    router.push(`/messenger?participant=${encodeURIComponent(r.id)}`);
+  }, [router]);
 
   const addReminder = useCallback(async (r: Researcher) => {
     const title = window.prompt('What Do You Want To Be Reminded About?');
@@ -872,8 +874,8 @@ export default function AgentResearcherCRMv2({
     if (!data) return;
     const ids = data.researchers.filter(r => !(r.last_login ?? r.last_sign_in_at)).map(r => r.id);
     if (ids.length === 0) { toast('No un-activated researchers'); return; }
-    window.location.href = `/messenger?participants=${encodeURIComponent(ids.join(','))}`;
-  }, [data]);
+    router.push(`/messenger?participants=${encodeURIComponent(ids.join(','))}`);
+  }, [data, router]);
 
   /* ── Filtering + sorting ── */
   const filtered = useMemo(() => {
