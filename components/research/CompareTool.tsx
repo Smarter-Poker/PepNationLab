@@ -1234,6 +1234,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
 
   return (
     <div>
+      {/* Search bar */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print { body { background: #fff !important; color: #000 !important; } .no-print { display: none !important; } td, th { color: #000 !important; background: #fff !important; border-bottom: 1px solid #ddd !important; } }
         .ct-tab { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.45); border-radius: 8px; padding: 8px 14px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
@@ -1243,9 +1244,9 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         .ct-row-hover:hover td { background: rgba(255,255,255,0.015) !important; }
         .popular-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 4; }
         .popular-card:hover { background: rgba(0,196,188,0.08); border-color: rgba(0,196,188,0.3); transform: translateY(-1px); }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeInDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
       `}} />
-
-      {/* Search bar */}
       <div className="no-print" style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', marginBottom: 24, position: 'relative', zIndex: 50 }} ref={searchRef}>
         <div style={{ position: 'relative', flex: 1, minWidth: 240, maxWidth: 520 }}>
           <Search style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(168,180,192,0.6)' }} size={17} />
@@ -1404,9 +1405,9 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                       <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                          <div style={{ width: 64, fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontWeight: 700 }}>{c.display_name}</div>
                          <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
-                            <div style={{ width: `${scores[i].overall}%`, height: '100%', background: colors[i % colors.length], borderRadius: 3, transition: 'width 1s ease-out' }} />
+                            <div style={{ width: `${scores[i].total}%`, height: '100%', background: colors[i % colors.length], borderRadius: 3, transition: 'width 1s ease-out' }} />
                          </div>
-                         <div style={{ width: 20, fontSize: '0.7rem', fontWeight: 800, color: colors[i % colors.length], textAlign: 'right' }}>{Math.round(scores[i].overall)}</div>
+                         <div style={{ width: 28, fontSize: '0.7rem', fontWeight: 800, color: colors[i % colors.length], textAlign: 'right' }}>{scores[i].total}</div>
                       </div>
                     ))}
                   </div>
@@ -1564,21 +1565,21 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
               {isMobile && mobileViewMode === 'accordion' ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {(() => {
-                    let currentGroupIdentical = false;
                     const controlCompound = displayedSelected.find(x => x.slug === controlSlug);
                     return ROWS.map(row => {
                       if (row.kind === 'group') {
-                        currentGroupIdentical = true;
-                        const startIndex = ROWS.indexOf(row) + 1;
-                        for (let i = startIndex; i < ROWS.length; i++) {
-                          const r = ROWS[i];
-                          if (r.kind === 'group') break;
-                          if (!r.isIdentical) {
-                            currentGroupIdentical = false;
-                            break;
+                        // Check if all children of this group are identical (for hideIdentical)
+                        if (hideIdentical) {
+                          const startIndex = ROWS.indexOf(row) + 1;
+                          let groupAllIdentical = true;
+                          for (let gi = startIndex; gi < ROWS.length; gi++) {
+                            const r = ROWS[gi];
+                            if (r.kind === 'group') break;
+                            const vals = displayedSelected.map(c => r.getValue(c));
+                            if (!vals.every(v => v === vals[0])) { groupAllIdentical = false; break; }
                           }
+                          if (groupAllIdentical) return null;
                         }
-                        if (hideIdentical && currentGroupIdentical) return null;
                         
                         const isCollapsed = collapsedGroups.has(row.label);
                         return (
@@ -1589,7 +1590,10 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                         );
                       }
 
-                      if (hideIdentical && row.isIdentical) return null;
+                      // In accordion, compute if this row is identical across compounds
+                      const rowVals = displayedSelected.map(c => row.getValue(c));
+                      const rowAllSame = rowVals.every(v => v === rowVals[0]);
+                      if (hideIdentical && rowAllSame && displayedSelected.length > 1) return null;
 
                       // Check if parent group is collapsed
                       let parentGroupLabel = '';
@@ -1601,16 +1605,14 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                       }
                       if (parentGroupLabel && collapsedGroups.has(parentGroupLabel)) return null;
 
-                      // Winner Engine Calculation
+                      // Winner Engine Calculation (accordion)
                       const bestIndices: number[] = [];
-                      if (row.bestLogic && displayedSelected.length > 1 && !allSame) {
+                      if (row.bestLogic && displayedSelected.length > 1) {
                         const rawScores = displayedSelected.map(c => row.getRawScore ? row.getRawScore(c) : 0);
                         const valid = rawScores.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
                         if (valid.length > 0) {
                           const best = row.bestLogic === 'max' ? Math.max(...valid) : Math.min(...valid);
-                          rawScores.forEach((s, i) => {
-                            if (s === best) bestIndices.push(i);
-                          });
+                          rawScores.forEach((s, i) => { if (s === best) bestIndices.push(i); });
                         }
                       }
 
@@ -1730,6 +1732,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                     const visibleRows: typeof ROWS = [];
                     let currentGroupRow: typeof ROWS[number] | null = null;
                     let currentGroupHasChildren = false;
+                    const controlCompound = displayedSelected.find(x => x.slug === controlSlug);
 
                     for (const row of ROWS) {
                       if (row.kind === 'group') {
@@ -1978,7 +1981,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         </div>
       )}
       {/* Landscape Prompt Toast */}
-      {isMobile && showLandscapePrompt && selected.length > 2 && activeTab === 'matrix' && (
+      {isMobile && showLandscapePrompt && selected.length >= 2 && activeTab === 'matrix' && (
         <div className="no-print" style={{ position: 'fixed', top: 20, left: 20, right: 20, zIndex: 110, background: 'rgba(0,196,188,0.15)', border: '1px solid rgba(0,196,188,0.4)', borderRadius: 12, padding: '12px 16px', color: '#00C4BC', display: 'flex', alignItems: 'center', gap: 12, backdropFilter: 'blur(10px)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', animation: 'fadeInDown 0.5s ease-out' }}>
           <Smartphone size={24} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
