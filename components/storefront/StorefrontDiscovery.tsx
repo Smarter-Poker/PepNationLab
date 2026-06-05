@@ -1558,7 +1558,7 @@ export default function DiscoveryHero({
             overflowY: 'auto'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ color: '#FFF', fontSize: '1.4rem', fontWeight: 800 }}>Browse By Research Area</h3>
+              <h3 style={{ color: '#FFF', fontSize: '1.4rem', fontWeight: 800 }}>{capitalizeEveryWord('Browse By Research Area')}</h3>
               <button 
                 type="button" 
                 onClick={() => setShowAllAreas(false)}
@@ -1608,25 +1608,6 @@ export default function DiscoveryHero({
                       alt={labelForArea(area).replace('\n', ' ')} 
                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                     />
-                    {/* Dark gradient overlay for image text */}
-                    <div style={{
-                      position: 'absolute',
-                      top: 0, left: 0, right: 0, bottom: 0,
-                      background: 'linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.9) 100%)'
-                    }} />
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '8px',
-                      left: '8px',
-                      right: '8px',
-                      color: '#FFF',
-                      fontWeight: 800,
-                      fontSize: 'clamp(12px, 1.4vw, 16px)',
-                      textShadow: '0px 2px 4px rgba(0,0,0,0.9)',
-                      lineHeight: 1.2
-                    }}>
-                      {labelForArea(area).replace('\n', ' ')}
-                    </div>
                   </div>
                   
                   {/* Dynamic description underneath the image */}
@@ -1638,7 +1619,7 @@ export default function DiscoveryHero({
                       lineHeight: 1.4,
                       fontWeight: 400
                     }}>
-                      {RESEARCH_AREAS[area]?.blurb || 'Explore research compounds in this category.'}
+                      {capitalizeEveryWord(RESEARCH_AREAS[area]?.blurb || 'Explore Research Compounds In This Category.')}
                     </p>
                   </div>
                 </button>
