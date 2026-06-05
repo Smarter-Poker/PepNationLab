@@ -323,152 +323,7 @@ function getAttributeRawValue(
   }
 }
 
-interface AttributeBarComparisonProps {
-  data: { label: string; scores: number[] }[];
-  colors: string[];
-  pinned: PinnedItem[];
-  compoundsBySlug: Record<string, Compound>;
-}
 
-function AttributeBarComparison({
-  data,
-  colors,
-  pinned,
-  compoundsBySlug,
-}: AttributeBarComparisonProps) {
-  const meta: Record<string, { title: string; desc: string; icon: React.ReactNode }> = {
-    Evidence: {
-      title: 'Evidence Strength',
-      desc: 'Regulatory approval and clinical phase standing',
-      icon: <Shield size={14} style={{ color: '#00C4BC' }} />,
-    },
-    Safety: {
-      title: 'Safety & Tolerability',
-      desc: 'Risk profile and warnings frequency in literature',
-      icon: <AlertTriangle size={14} style={{ color: '#FC8181' }} />,
-    },
-    Citations: {
-      title: 'Scientific Citations',
-      desc: 'Volume of indexed PubMed research publications',
-      icon: <BookOpen size={14} style={{ color: '#F6AD55' }} />,
-    },
-    Trials: {
-      title: 'Clinical Trials',
-      desc: 'Completed and active registered human trials',
-      icon: <Trophy size={14} style={{ color: '#68D391' }} />,
-    },
-    'Half-Life': {
-      title: 'Pharmacokinetic Half-Life',
-      desc: 'Active duration of compound in research subjects',
-      icon: <Clock size={14} style={{ color: '#4FD1C5' }} />,
-    },
-    Coverage: {
-      title: 'Research Coverage',
-      desc: 'Breadth of target therapeutic application areas',
-      icon: <Sparkles size={14} style={{ color: '#9F7AEA' }} />,
-    },
-    Handling: {
-      title: 'Reconstituted Stability',
-      desc: 'Shelf life of reconstituted compound under refrigeration',
-      icon: <Thermometer size={14} style={{ color: '#ED64A6' }} />,
-    },
-  };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {data.map((dim) => {
-        const info = meta[dim.label] || { title: dim.label, desc: '', icon: null };
-        return (
-          <div
-            key={dim.label}
-            style={{
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              borderRadius: 12,
-              padding: '14px 18px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-              transition: 'transform 0.2s, background 0.2s',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {info.icon}
-              <div style={{ flex: 1 }}>
-                <span style={{ fontWeight: 800, fontSize: '0.86rem', color: '#FFF' }}>
-                  {info.title}
-                </span>
-                <span style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.4)', marginLeft: 8 }}>
-                  {info.desc}
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {pinned.map((p, idx) => {
-                const score = dim.scores[idx] ?? 0;
-                const color = colors[idx % colors.length];
-                const rawVal = getAttributeRawValue(dim.label, p, compoundsBySlug);
-
-                return (
-                  <div
-                    key={p.productName}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      fontSize: '0.78rem',
-                    }}
-                  >
-                    <div style={{ width: 160, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                      {getChoiceBadge(idx)}
-                      <span
-                        style={{
-                          fontWeight: 700,
-                          color: 'rgba(255, 255, 255, 0.85)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                        title={p.productName}
-                      >
-                        {p.productName}
-                      </span>
-                    </div>
-
-                    <div style={{ flex: 1, height: 8, background: 'rgba(255, 255, 255, 0.05)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
-                      <div
-                        style={{
-                          height: '100%',
-                          width: `${score}%`,
-                          background: `linear-gradient(90deg, ${color}cc, ${color})`,
-                          borderRadius: 999,
-                        }}
-                      />
-                    </div>
-
-                    <div
-                      style={{
-                        width: 110,
-                        textAlign: 'right',
-                        fontWeight: 800,
-                        color: color,
-                        fontFamily: 'monospace',
-                        fontSize: '0.74rem',
-                      }}
-                    >
-                      {rawVal}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 // ── Pros/Cons Generator ──────────────────────────────────────────────────────
 function generateProsConsPinned(p: PinnedItem, compoundsBySlug: Record<string, Compound>): { pros: string[]; cons: string[] } {
@@ -660,7 +515,7 @@ export default function StorefrontCompareDrawer({
       {
         kind: 'data', label: 'Research Summary',
         getValue: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return c?.eli5_summary ?? c?.plain_summary ?? ''; },
-        render: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; const text = c?.eli5_summary ?? c?.plain_summary; return text ? <span style={{ fontSize: '0.8rem', lineHeight: 1.5, display: 'block', maxHeight: 100, overflowY: 'auto' }}>{text}</span> : NL; }
+        render: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; const text = c?.eli5_summary ?? c?.plain_summary; return text ? <span style={{ fontSize: '0.8rem', lineHeight: 1.5, display: 'block' }}>{text}</span> : NL; }
       },
       {
         kind: 'data', label: 'Studied For',
@@ -1234,23 +1089,28 @@ export default function StorefrontCompareDrawer({
                     const score = pinnedScores[idx];
                     const color = colors[idx % colors.length];
                     return (
-                      <div key={p.productName} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                      <div key={p.productName} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           {getChoiceBadge(idx)}
-                          <span style={{ fontWeight: 800, fontSize: '0.86rem', color: 'var(--white)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</span>
                         </div>
                         <AnimatedScoreRingDrawer score={score} color={color} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                          {p.imageUrl && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={p.imageUrl} alt={p.productName} width={36} height={36} style={{ borderRadius: 6, objectFit: 'cover' }} />
+                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--white)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</div>
+                            {p.pricePerVialDollars != null && (
+                              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#68D391' }}>
+                                ${Number(p.pricePerVialDollars).toFixed(2)} <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>/ vial</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
-                </div>
-              )}
-
-              {/* Attribute Progress Bars */}
-              {radarData.length >= 2 && (
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                  <div style={{ textAlign: 'center', fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', marginBottom: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Dimension Comparison</div>
-                  <AttributeBarComparison data={radarData} colors={colors} pinned={sortedPinnedItems} compoundsBySlug={compoundsBySlug} />
                 </div>
               )}
 
@@ -1272,213 +1132,208 @@ export default function StorefrontCompareDrawer({
               </div>
 
               {/* Pros & Cons Tab */}
-              {matrixTab === 'proscons' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
-                  {displayedPinned.map((p, idx) => {
-                    const pc = pinnedProsCons[idx];
-                    const color = colors[idx % colors.length];
-                    const score = pinnedScores[idx];
-                    return (
-                      <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                          {getChoiceBadge(idx)}
-                          <span style={{ color: 'var(--white)', fontWeight: 850 }}>{p.productName}</span>
-                          <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color, fontWeight: 800 }}>Score: {score?.total}/100</span>
-                        </div>
-                        <AnimatedScoreRingDrawer score={score} color={color} />
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 10 }}>
-                          {pc?.pros.map((pro, i) => <div key={`pro-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><ThumbsUp size={11} color="#68D391" style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{pro}</span></div>)}
-                          {pc?.cons.map((con, i) => <div key={`con-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><ThumbsDown size={11} color="#FC8181" style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{con}</span></div>)}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => dispatchAddToCart(p.productName)}
-                          style={{
-                            background: primaryColor, border: 'none', color: '#04221F',
-                            padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
-                            cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                            transition: 'opacity 0.2s',
-                          }}
-                          onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                        >
-                          <Zap size={12} /> Add To Cart
-                        </button>
+              <div style={{ display: matrixTab === 'proscons' ? 'grid' : 'none', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
+                {displayedPinned.map((p, idx) => {
+                  const pc = pinnedProsCons[idx];
+                  const color = colors[idx % colors.length];
+                  const score = pinnedScores[idx];
+                  return (
+                    <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        {getChoiceBadge(idx)}
+                        <span style={{ color: 'var(--white)', fontWeight: 850 }}>{p.productName}</span>
+                        <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color, fontWeight: 800 }}>Score: {score?.total}/100</span>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                      <AnimatedScoreRingDrawer score={score} color={color} />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 10 }}>
+                        {pc?.pros.map((pro, i) => <div key={`pro-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><ThumbsUp size={11} color="#68D391" style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{pro}</span></div>)}
+                        {pc?.cons.map((con, i) => <div key={`con-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><ThumbsDown size={11} color="#FC8181" style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{con}</span></div>)}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => dispatchAddToCart(p.productName)}
+                        style={{
+                          background: primaryColor, border: 'none', color: '#04221F',
+                          padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
+                          cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                          transition: 'opacity 0.2s',
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                        onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                      >
+                        <Zap size={12} /> Add To Cart
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
 
               {/* Analyst Brief Tab */}
-              {matrixTab === 'brief' && analystBriefLines.length > 0 && (
-                <div style={{ padding: 16, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 20 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                    <Info size={15} color={primaryColor} />
-                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--white)' }}>Analyst Brief</span>
-                    <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Research reference only</span>
-                  </div>
-                  {smartSummary && (
-                    <div style={{ background: `${primaryColor}10`, border: `1px solid ${primaryColor}30`, borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: '0.78rem', color: primaryColor, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Info size={14} /> {smartSummary}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {analystBriefLines.map((para, i) => <p key={i} style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: '0.84rem', lineHeight: 1.7, paddingLeft: 12, borderLeft: `2px solid ${primaryColor}40` }}>{para}</p>)}
-                  </div>
+              <div style={{ display: (matrixTab === 'brief' && analystBriefLines.length > 0) ? 'block' : 'none', padding: 16, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                  <Info size={15} color={primaryColor} />
+                  <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--white)' }}>Analyst Brief</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Research reference only</span>
                 </div>
-              )}
+                {smartSummary && (
+                  <div style={{ background: `${primaryColor}10`, border: `1px solid ${primaryColor}30`, borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: '0.78rem', color: primaryColor, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Info size={14} /> {smartSummary}
+                  </div>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {analystBriefLines.map((para, i) => <p key={i} style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: '0.84rem', lineHeight: 1.7, paddingLeft: 12, borderLeft: `2px solid ${primaryColor}40` }}>{para}</p>)}
+                </div>
+              </div>
 
               {/* Mechanism Tab */}
-              {matrixTab === 'mechanism' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
-                  {displayedPinned.map((p, idx) => {
-                    const color = colors[idx % colors.length];
-                    const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
-                    return (
-                      <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                          {getChoiceBadge(idx)}
-                          <span style={{ color: 'var(--white)', fontWeight: 800 }}>{p.productName}</span>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {c?.compound_class && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Compound Class</div><div style={{ fontSize: '0.78rem', color }}>{c.compound_class}</div></div>}
-                          {c?.molecular_target && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Molecular Target</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{c.molecular_target}</div></div>}
-                          {c?.mechanism && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Mechanism of Action</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.mechanism}</div></div>}
-                          {c?.pk_summary && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Pharmacokinetics</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.pk_summary}</div></div>}
-                          {c?.risk_reasons?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Risk Considerations</div><div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>{c.risk_reasons.map((r, ri) => <div key={ri} style={{ display: 'flex', gap: 5, alignItems: 'flex-start' }}><AlertTriangle size={10} color={RISK_META[c.risk_level]?.color ?? '#F6AD55'} style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{r}</span></div>)}</div></div> : null}
-                          {c?.is_pro_angiogenic && <div style={{ fontSize: '0.72rem', color: '#F6AD55', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={12} /> Pro-Angiogenic — Promotes New Vessel Growth</div>}
-                          {c?.is_glp1 && <div style={{ fontSize: '0.72rem', color: '#9F7AEA', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> GLP-1 / Incretin Class</div>}
-                          {c?.sources?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div><div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{c.sources.slice(0, 3).map((src, si) => <a key={si} href={src.startsWith('http') ? src : undefined} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.68rem', color, opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>{src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si+1}</span> : src}</a>)}</div></div> : null}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => dispatchAddToCart(p.productName)}
-                          style={{
-                            background: primaryColor, border: 'none', color: '#04221F',
-                            padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
-                            cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                            transition: 'opacity 0.2s',
-                          }}
-                          onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                        >
-                          <Zap size={12} /> Add To Cart
-                        </button>
+              <div style={{ display: matrixTab === 'mechanism' ? 'grid' : 'none', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
+                {displayedPinned.map((p, idx) => {
+                  const color = colors[idx % colors.length];
+                  const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+                  return (
+                    <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        {getChoiceBadge(idx)}
+                        <span style={{ color: 'var(--white)', fontWeight: 800 }}>{p.productName}</span>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {c?.compound_class && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Compound Class</div><div style={{ fontSize: '0.78rem', color }}>{c.compound_class}</div></div>}
+                        {c?.molecular_target && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Molecular Target</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{c.molecular_target}</div></div>}
+                        {c?.mechanism && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Mechanism of Action</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.mechanism}</div></div>}
+                        {c?.pk_summary && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Pharmacokinetics</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.pk_summary}</div></div>}
+                        {c?.risk_reasons?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Risk Considerations</div><div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>{c.risk_reasons.map((r, ri) => <div key={ri} style={{ display: 'flex', gap: 5, alignItems: 'flex-start' }}><AlertTriangle size={10} color={RISK_META[c.risk_level]?.color ?? '#F6AD55'} style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{r}</span></div>)}</div></div> : null}
+                        {c?.is_pro_angiogenic && <div style={{ fontSize: '0.72rem', color: '#F6AD55', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={12} /> Pro-Angiogenic — Promotes New Vessel Growth</div>}
+                        {c?.is_glp1 && <div style={{ fontSize: '0.72rem', color: '#9F7AEA', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> GLP-1 / Incretin Class</div>}
+                        {c?.sources?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div><div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{c.sources.slice(0, 3).map((src, si) => <a key={si} href={src.startsWith('http') ? src : undefined} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.68rem', color, opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>{src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si+1}</span> : src}</a>)}</div></div> : null}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => dispatchAddToCart(p.productName)}
+                        style={{
+                          background: primaryColor, border: 'none', color: '#04221F',
+                          padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
+                          cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                          transition: 'opacity 0.2s',
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                        onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                      >
+                        <Zap size={12} /> Add To Cart
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
 
               {/* Protocol Tab */}
-              {matrixTab === 'protocol' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
-                  {displayedPinned.map((p, idx) => {
-                    const color = colors[idx % colors.length];
-                    const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
-                    const shelf = c?.reconstitution_shelf_days ?? c?.handling?.reconstituted_days;
-                    const hlH = parseHalfLifeHours(c?.half_life);
-                    const dosesPerWeek = hlH > 0 ? Math.max(1, Math.round(168 / (hlH * 2))) : null;
-                    return (
-                      <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                          {getChoiceBadge(idx)}
-                          <span style={{ color: 'var(--white)', fontWeight: 800 }}>{p.productName}</span>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          <div style={{ background: `${color}08`, borderRadius: 8, padding: '8px 10px' }}>
-                            <div style={{ fontSize: '0.6rem', color, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Reconstitution</div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 10px', fontSize: '0.74rem' }}>
-                              <div style={{ color: 'rgba(255,255,255,0.4)' }}>Form</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.form ?? NL}</div>
-                              <div style={{ color: 'rgba(255,255,255,0.4)' }}>Diluent</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.diluent ?? NL}</div>
-                              <div style={{ color: 'rgba(255,255,255,0.4)' }}>Storage</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.storage_temp ?? NL}</div>
-                              <div style={{ color: 'rgba(255,255,255,0.4)' }}>Light</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? 'Sensitive' : 'Safe'}</div>
-                              {shelf && <><div style={{ color: 'rgba(255,255,255,0.4)' }}>Shelf Life</div><div style={{ color: shelf >= 28 ? '#68D391' : shelf < 14 ? '#FC8181' : '#F6AD55', fontWeight: 700 }}>{shelf} days</div></>}
-                            </div>
-                          </div>
-                          {(c?.half_life || c?.typical_frequency) && (
-                            <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                              <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Administration</div>
-                              {c?.half_life && <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)', marginBottom: 3 }}><Clock size={9} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Half-life: <strong style={{ color }}>{c.half_life}</strong></div>}
-                              {c?.typical_frequency && <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)', marginBottom: 3 }}><Zap size={9} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Frequency: <strong style={{ color: 'rgba(255,255,255,0.9)' }}>{c.typical_frequency}</strong></div>}
-                              {dosesPerWeek && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', marginTop: 3, fontStyle: 'italic' }}>~{dosesPerWeek}× per week based on half-life</div>}
-                            </div>
-                          )}
-                          {c?.handling?.freeze_thaw && <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 5, alignItems: 'flex-start' }}><Thermometer size={11} color="#F6AD55" style={{ marginTop: 1, flexShrink: 0 }} /><span>{c.handling.freeze_thaw}</span></div>}
-                          {c?.handling?.notes && <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, borderLeft: '2px solid rgba(255,255,255,0.08)', paddingLeft: 6 }}>{c.handling.notes}</div>}
-                          {c?.coa_url && <a href={c.coa_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color, textDecoration: 'none', fontWeight: 700 }}><BookOpen size={11} /> View COA</a>}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => dispatchAddToCart(p.productName)}
-                          style={{
-                            background: primaryColor, border: 'none', color: '#04221F',
-                            padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
-                            cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                            transition: 'opacity 0.2s',
-                          }}
-                          onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                        >
-                          <Zap size={12} /> Add To Cart
-                        </button>
+              <div style={{ display: matrixTab === 'protocol' ? 'grid' : 'none', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
+                {displayedPinned.map((p, idx) => {
+                  const color = colors[idx % colors.length];
+                  const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+                  const shelf = c?.reconstitution_shelf_days ?? c?.handling?.reconstituted_days;
+                  const hlH = parseHalfLifeHours(c?.half_life);
+                  const dosesPerWeek = hlH > 0 ? Math.max(1, Math.round(168 / (hlH * 2))) : null;
+                  return (
+                    <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        {getChoiceBadge(idx)}
+                        <span style={{ color: 'var(--white)', fontWeight: 800 }}>{p.productName}</span>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ background: `${color}08`, borderRadius: 8, padding: '8px 10px' }}>
+                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Reconstitution</div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 10px', fontSize: '0.74rem' }}>
+                            <div style={{ color: 'rgba(255,255,255,0.4)' }}>Form</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.form ?? NL}</div>
+                            <div style={{ color: 'rgba(255,255,255,0.4)' }}>Diluent</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.diluent ?? NL}</div>
+                            <div style={{ color: 'rgba(255,255,255,0.4)' }}>Storage</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.storage_temp ?? NL}</div>
+                            <div style={{ color: 'rgba(255,255,255,0.4)' }}>Light</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? 'Sensitive' : 'Safe'}</div>
+                            {shelf && <><div style={{ color: 'rgba(255,255,255,0.4)' }}>Shelf Life</div><div style={{ color: shelf >= 28 ? '#68D391' : shelf < 14 ? '#FC8181' : '#F6AD55', fontWeight: 700 }}>{shelf} days</div></>}
+                          </div>
+                        </div>
+                        {(c?.half_life || c?.typical_frequency) && (
+                          <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Administration</div>
+                            {c?.half_life && <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)', marginBottom: 3 }}><Clock size={9} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Half-life: <strong style={{ color }}>{c.half_life}</strong></div>}
+                            {c?.typical_frequency && <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)', marginBottom: 3 }}><Zap size={9} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Frequency: <strong style={{ color: 'rgba(255,255,255,0.9)' }}>{c.typical_frequency}</strong></div>}
+                            {dosesPerWeek && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', marginTop: 3, fontStyle: 'italic' }}>~{dosesPerWeek}× per week based on half-life</div>}
+                          </div>
+                        )}
+                        {c?.handling?.freeze_thaw && <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 5, alignItems: 'flex-start' }}><Thermometer size={11} color="#F6AD55" style={{ marginTop: 1, flexShrink: 0 }} /><span>{c.handling.freeze_thaw}</span></div>}
+                        {c?.handling?.notes && <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, borderLeft: '2px solid rgba(255,255,255,0.08)', paddingLeft: 6 }}>{c.handling.notes}</div>}
+                        {c?.coa_url && <a href={c.coa_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color, textDecoration: 'none', fontWeight: 700 }}><BookOpen size={11} /> View COA</a>}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => dispatchAddToCart(p.productName)}
+                        style={{
+                          background: primaryColor, border: 'none', color: '#04221F',
+                          padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
+                          cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                          transition: 'opacity 0.2s',
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                        onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                      >
+                        <Zap size={12} /> Add To Cart
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
 
               {/* Verdict Tab */}
-              {matrixTab === 'verdict' && sortedPinnedItems.length >= 2 && (() => {
-                const ranked = sortedPinnedItems.map((p, i) => ({ p, s: pinnedScores[i] }));
-                const leader = ranked[0];
-                const safest = [...ranked].sort((a, b) => b.s.breakdown.safety - a.s.breakdown.safety)[0];
-                const mostStudied = [...ranked].sort((a, b) => b.s.breakdown.science - a.s.breakdown.science)[0];
-                const mostPractical = [...ranked].sort((a, b) => b.s.breakdown.handling - a.s.breakdown.handling)[0];
-                const verdicts = [
-                  { label: 'Overall Best', icon: <Trophy size={14} />, item: leader, color: primaryColor, reason: `Highest composite research score (${leader.s.total}/100)` },
-                  { label: 'Safest Profile', icon: <Shield size={14} />, item: safest, color: '#68D391', reason: `Best safety-to-evidence ratio in this comparison` },
-                  { label: 'Most Studied', icon: <BookOpen size={14} />, item: mostStudied, color: '#F6AD55', reason: `Deepest scientific literature footprint` },
-                  { label: 'Most Practical', icon: <Zap size={14} />, item: mostPractical, color: '#9F7AEA', reason: `Best handling & protocol practicality score` },
-                ];
-                return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-                    <p style={{ margin: '0 0 4px 0', fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>Research verdict cards — scored on evidence strength, safety profile, scientific backing, research coverage, and handling practicality.</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
-                      {verdicts.map(v => (
-                        <div key={v.label} style={{ padding: '12px 14px', borderRadius: 10, background: `${v.color}08`, border: `1px solid ${v.color}25`, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          <div>
-                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: v.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, display: 'flex', alignItems: 'center', gap: '4px' }}>{v.icon} {v.label}</div>
-                            <div style={{ fontWeight: 900, fontSize: '0.92rem', color: 'var(--white)', marginBottom: 4 }}>{v.item.p.productName}</div>
-                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{v.reason}</div>
+              <div style={{ display: matrixTab === 'verdict' ? 'block' : 'none' }}>
+                {sortedPinnedItems.length >= 2 && (() => {
+                  const ranked = sortedPinnedItems.map((p, i) => ({ p, s: pinnedScores[i] }));
+                  const leader = ranked[0];
+                  const safest = [...ranked].sort((a, b) => b.s.breakdown.safety - a.s.breakdown.safety)[0];
+                  const mostStudied = [...ranked].sort((a, b) => b.s.breakdown.science - a.s.breakdown.science)[0];
+                  const mostPractical = [...ranked].sort((a, b) => b.s.breakdown.handling - a.s.breakdown.handling)[0];
+                  const verdicts = [
+                    { label: 'Overall Best', icon: <Trophy size={14} />, item: leader, color: primaryColor, reason: `Highest composite research score (${leader.s.total}/100)` },
+                    { label: 'Safest Profile', icon: <Shield size={14} />, item: safest, color: '#68D391', reason: `Best safety-to-evidence ratio in this comparison` },
+                    { label: 'Most Studied', icon: <BookOpen size={14} />, item: mostStudied, color: '#F6AD55', reason: `Deepest scientific literature footprint` },
+                    { label: 'Most Practical', icon: <Zap size={14} />, item: mostPractical, color: '#9F7AEA', reason: `Best handling & protocol practicality score` },
+                  ];
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                      <p style={{ margin: '0 0 4px 0', fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>Research verdict cards — scored on evidence strength, safety profile, scientific backing, research coverage, and handling practicality.</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+                        {verdicts.map(v => (
+                          <div key={v.label} style={{ padding: '12px 14px', borderRadius: 10, background: `${v.color}08`, border: `1px solid ${v.color}25`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div>
+                              <div style={{ fontSize: '0.65rem', fontWeight: 800, color: v.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, display: 'flex', alignItems: 'center', gap: '4px' }}>{v.icon} {v.label}</div>
+                              <div style={{ fontWeight: 900, fontSize: '0.92rem', color: 'var(--white)', marginBottom: 4 }}>{v.item.p.productName}</div>
+                              <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{v.reason}</div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => dispatchAddToCart(v.item.p.productName)}
+                              style={{
+                                background: v.color, border: 'none', color: '#04221F',
+                                padding: '6px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.74rem',
+                                cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                                transition: 'opacity 0.2s',
+                              }}
+                              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                            >
+                              <Zap size={11} /> Add To Cart
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => dispatchAddToCart(v.item.p.productName)}
-                            style={{
-                              background: v.color, border: 'none', color: '#04221F',
-                              padding: '6px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.74rem',
-                              cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                              transition: 'opacity 0.2s',
-                            }}
-                            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                          >
-                            <Zap size={11} /> Add To Cart
-                          </button>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })()}
+                  );
+                })()}
+              </div>
 
-              {matrixTab === 'matrix' && <div style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              {/* Matrix Tab */}
+              <div style={{ display: matrixTab === 'matrix' ? 'block' : 'none', borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px', position: 'relative' }}>
                   <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                     <tr>
@@ -1487,29 +1342,35 @@ export default function StorefrontCompareDrawer({
                         return (
                           <th 
                             key={p.productName} 
-                            style={{ ...cellStyle, textAlign: 'left', width: `${80 / displayedPinned.length}%`, background: '#0F161E' }} 
+                            style={{ ...cellStyle, textAlign: 'left', width: `${80 / displayedPinned.length}%`, background: '#0F161E', borderLeft: '1px solid rgba(168,180,192,0.18)' }} 
                             scope="col"
                           >
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 8 }}>
                                 {getChoiceBadge(idx)}
-                                {isMobile && idx !== 0 && sortedPinnedItems.length > 2 && (
-                                  <button
-                                    onClick={() => setMobileViewIndex(prev => prev > 1 ? prev - 1 : sortedPinnedItems.length - 1)}
-                                    style={{ background: 'none', border: 'none', color: 'var(--silver)', cursor: 'pointer', padding: 0 }}
-                                  >
-                                    <ChevronLeft size={18} />
-                                  </button>
-                                )}
-
-                                {isMobile && idx !== 0 && sortedPinnedItems.length > 2 && (
-                                  <button
-                                    onClick={() => setMobileViewIndex(prev => prev < sortedPinnedItems.length - 1 ? prev + 1 : 1)}
-                                    style={{ background: 'none', border: 'none', color: 'var(--silver)', cursor: 'pointer', padding: 0 }}
-                                  >
-                                    <ChevronRight size={18} />
-                                  </button>
-                                )}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  {p.pricePerVialDollars != null && (
+                                    <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#68D391' }}>
+                                      ${Number(p.pricePerVialDollars).toFixed(2)} <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>/ vial</span>
+                                    </div>
+                                  )}
+                                  {isMobile && idx !== 0 && sortedPinnedItems.length > 2 && (
+                                    <div style={{ display: 'flex', gap: 4 }}>
+                                      <button
+                                        onClick={() => setMobileViewIndex(prev => prev > 1 ? prev - 1 : sortedPinnedItems.length - 1)}
+                                        style={{ background: 'none', border: 'none', color: 'var(--silver)', cursor: 'pointer', padding: 0 }}
+                                      >
+                                        <ChevronLeft size={18} />
+                                      </button>
+                                      <button
+                                        onClick={() => setMobileViewIndex(prev => prev < sortedPinnedItems.length - 1 ? prev + 1 : 1)}
+                                        style={{ background: 'none', border: 'none', color: 'var(--silver)', cursor: 'pointer', padding: 0 }}
+                                      >
+                                        <ChevronRight size={18} />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
 
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
@@ -1519,11 +1380,6 @@ export default function StorefrontCompareDrawer({
                                 )}
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                                   <div style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--white)' }}>{p.productName}</div>
-                                  {p.pricePerVialDollars != null && (
-                                    <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#68D391', marginTop: 2 }}>
-                                      ${Number(p.pricePerVialDollars).toFixed(2)} <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>/ vial</span>
-                                    </div>
-                                  )}
                                 </div>
                               </div>
                             </div>
@@ -1635,7 +1491,7 @@ export default function StorefrontCompareDrawer({
                             {displayedPinned.map((p, pIdx) => {
                               const isWinner = bestIndices.includes(pIdx);
                               return (
-                                <td key={p.productName} style={{ ...valueCellStyle, position: 'relative' }}>
+                                <td key={p.productName} style={{ ...valueCellStyle, position: 'relative', borderLeft: '1px solid rgba(168,180,192,0.18)' }}>
                                   {isWinner && (
                                     <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.65rem', background: primaryColor, color: '#04221F', padding: '2px 6px', borderRadius: 4, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
                                       <Trophy size={9} /> Top Pick
@@ -1656,7 +1512,23 @@ export default function StorefrontCompareDrawer({
                     <tr style={{ background: '#0F161E', borderTop: '2px solid rgba(168,180,192,0.18)' }}>
                       <td style={{ ...labelCellStyle, background: '#0F161E', borderBottom: 'none' }}>Action</td>
                       {displayedPinned.map((p) => (
-                        <td key={p.productName} style={{ ...cellStyle, borderBottom: 'none' }}>
+                        <td key={p.productName} style={{ ...cellStyle, borderBottom: 'none', borderLeft: '1px solid rgba(168,180,192,0.18)' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              {p.imageUrl && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={p.imageUrl} alt={p.productName} width={32} height={32} style={{ borderRadius: 6, objectFit: 'cover' }} />
+                              )}
+                              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--white)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</div>
+                                {p.pricePerVialDollars != null && (
+                                  <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#68D391' }}>
+                                    ${Number(p.pricePerVialDollars).toFixed(2)}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
                           <button
                             type="button"
                             onClick={() => dispatchAddToCart(p.productName)}
@@ -1677,7 +1549,7 @@ export default function StorefrontCompareDrawer({
                     </tr>
                   </tfoot>
                 </table>
-              </div>}
+              </div>
             </div>
           </div>
         </div>
