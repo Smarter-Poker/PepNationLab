@@ -374,7 +374,7 @@ function VisualSyringe({ ml, size, type = 'u100', onDrawMlChange }: VisualSyring
               {/* Minor Ticks */}
               <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'space-between', pointerEvents: 'none', padding: '0 2px' }}>
                 {Array.from({ length: subdivisions + 1 }).map((_, i) => {
-                  if (i % (maxUnits / subdivisions) === 0) return <div key={i} />;
+                  if (i % (subdivisions / tickCount) === 0) return <div key={i} />;
                   return (
                     <div key={i} style={{ width: 1, height: 4, background: 'rgba(255,255,255,0.15)' }} />
                   );
