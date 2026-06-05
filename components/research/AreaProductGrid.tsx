@@ -705,11 +705,9 @@ export default function AreaProductGrid({
           const isComparing = compareSet.has(p.compoundSlug);
           const inCart = p.agentProductId ? (cartItems[p.agentProductId] || 0) : 0;
           const outOfStock = p.agentProductId ? p.inventoryCount <= 0 : false;
-          const displayPrice = isStorefrontOwner && p.costPrice != null
-            ? p.costPrice
-            : p.isOnSale && p.salePrice != null
-              ? p.salePrice
-              : p.retailPrice;
+          const displayPrice = p.isOnSale && p.salePrice != null
+            ? p.salePrice
+            : p.retailPrice;
 
           return (
             <div
@@ -928,9 +926,9 @@ export default function AreaProductGrid({
                     fontSize: '1.05rem',
                     fontWeight: 800,
                   }}>
-                    {p.agentProductId ? (isStorefrontOwner ? `Cost ${formatPrice(displayPrice)}` : formatPrice(displayPrice)) : '—'}
+                    {p.agentProductId ? formatPrice(displayPrice) : '—'}
                   </span>
-                  {p.agentProductId && p.isOnSale && p.salePrice != null && !isStorefrontOwner && (
+                  {p.agentProductId && p.isOnSale && p.salePrice != null && (
                     <span style={{
                       color: '#718096',
                       fontSize: '0.8rem',
@@ -1412,10 +1410,9 @@ export default function AreaProductGrid({
                   </CompareRow>
 
                   {/* Price */}
-                  <CompareRow label="Price" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => isStorefrontOwner && p.costPrice != null ? p.costPrice : p.retailPrice)}>
+                  <CompareRow label="Price" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.retailPrice)}>
                     {compareItems.map(p => {
-                      const price = isStorefrontOwner && p.costPrice != null
-                        ? p.costPrice : p.retailPrice;
+                      const price = p.retailPrice;
                       const pricePerMg = p.unitSize && Number(p.unitSize) > 0 ? price / Number(p.unitSize) : null;
                       return (
                         <td key={p.productId} style={compareTdStyle}>
