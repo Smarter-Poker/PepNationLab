@@ -676,9 +676,11 @@ export default function StorefrontCompareDrawer({
     clampedMobileIndex = pinned.length - 1;
   }
 
-  const displayedPinned = isMobile && pinned.length > 1 
-    ? [pinned[0], pinned[clampedMobileIndex]] 
-    : pinned;
+  const displayedPinned = useMemo(() => {
+    return isMobile && pinned.length > 1 
+      ? [pinned[0], pinned[clampedMobileIndex]] 
+      : pinned;
+  }, [isMobile, pinned, clampedMobileIndex]);
 
   const maxHalfLife = useMemo(() => {
     return Math.max(...displayedPinned.map(p => {
