@@ -1104,10 +1104,9 @@ export default function AreaProductGrid({
                           const list = JSON.parse(raw);
                           if (Array.isArray(list) && list.length > 0) {
                             const firstItem = list[0];
-                            const currentCompound = compounds.find(c => c.slug === p.compoundSlug);
-                            const firstCompound = firstItem.compoundSlug ? compounds.find(c => c.slug === firstItem.compoundSlug) : null;
-                            if (currentCompound && firstCompound && currentCompound.category !== firstCompound.category) {
-                              showToast(`You can only compare peptides within the same category ("${firstCompound.category || 'Other'}").`);
+                            const firstCategory = firstItem.category;
+                            if (firstCategory && firstCategory !== p.category) {
+                              showToast(`You can only compare peptides within the same category ("${firstCategory}").`);
                               return;
                             }
                           }

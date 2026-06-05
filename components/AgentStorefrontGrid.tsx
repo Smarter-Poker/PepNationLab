@@ -2247,10 +2247,10 @@ export default function AgentStorefrontGrid({
                           const raw = window.localStorage.getItem('pnl:compare') || '[]';
                           const list = JSON.parse(raw);
                           if (Array.isArray(list) && list.length > 0) {
-                            const firstItemName = list[0].productName;
-                            const firstItemGroup = grouped.find(g => g.name === firstItemName);
-                            if (firstItemGroup && firstItemGroup.category !== group.category) {
-                              toast.error(`You can only compare peptides within the same category ("${firstItemGroup.category}").`);
+                            const firstItem = list[0];
+                            const firstCategory = firstItem.category;
+                            if (firstCategory && firstCategory !== group.category) {
+                              toast.error(`You can only compare peptides within the same category ("${firstCategory}").`);
                               return;
                             }
                           }
