@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
@@ -14,7 +15,31 @@ export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  const supabase = await createClient();
+  let response = NextResponse.json({ success: true });
+
+  // Create a response-aware server client so cookies modified by auth.updateUser
+  // are properly written to the outgoing HTTP headers returned to the browser.
+  const supabase = createServerClient(
+    (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
+    (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim(),
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            req.cookies.set({ name, value, ...options });
+          });
+          response = NextResponse.json({ success: true });
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
   const { data: { user }, error: authErr } = await supabase.auth.getUser();
   if (authErr || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -34,13 +59,19 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { newPassword, skip } = body;
 
+  const admin = createAdminClient();
+
   if (skip === true) {
-    const admin = createAdminClient();
-    await admin
+    const { error: profileErr } = await admin
       .from('profiles')
       .update({ must_change_password: false, updated_at: new Date().toISOString() })
       .eq('id', user.id);
-    return NextResponse.json({ success: true });
+
+    if (profileErr) {
+      console.error('Profile flag update error:', profileErr);
+      return NextResponse.json({ error: 'Failed To Update Profile Settings.' }, { status: 500 });
+    }
+    return response;
   }
 
   if (!newPassword || typeof newPassword !== 'string') {
@@ -50,16 +81,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Password Must Be At Least 6 Characters' }, { status: 400 });
   }
 
+  // Update password via the user client. This generates a new session and triggers setAll()
+  // to update the session cookies in the response, keeping the user logged in.
   const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
   if (pwError) {
-    return NextResponse.json({ error: 'Failed To Update Password.' }, { status: 500 });
+    console.error('Password update error:', pwError);
+    return NextResponse.json({ error: pwError.message || 'Failed To Update Password.' }, { status: 500 });
   }
 
-  const admin = createAdminClient();
-  await admin
+  // Clear the must_change_password flag in the profiles table via the admin client
+  const { error: profileErr } = await admin
     .from('profiles')
     .update({ must_change_password: false, updated_at: new Date().toISOString() })
     .eq('id', user.id);
 
-  return NextResponse.json({ success: true });
+  if (profileErr) {
+    console.error('Profile flag update error:', profileErr);
+    return NextResponse.json({ error: 'Failed To Update Profile Settings.' }, { status: 500 });
+  }
+
+  return response;
 }
+

@@ -1724,38 +1724,6 @@ export default function AreaProductGrid({
                 </tbody>
               </table>
             </div>
-            
-            {/* AI Advisor Call to Action */}
-            <div style={{
-              marginTop: 24,
-              padding: '24px 32px',
-              borderRadius: 12,
-              background: 'linear-gradient(90deg, rgba(0,196,188,0.08) 0%, rgba(15,25,35,0) 100%)',
-              border: '1px solid rgba(0,196,188,0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 24,
-              flexWrap: 'wrap'
-            }}>
-              <div>
-                <h3 style={{ margin: '0 0 8px', color: '#FFF', fontSize: '1.2rem', fontWeight: 800 }}>Need help deciding?</h3>
-                <p style={{ margin: 0, color: '#D0DAE4', fontSize: '0.95rem', lineHeight: 1.5, maxWidth: 600 }}>
-                  Tell our AI Research Assistant what you&apos;re trying to achieve. It can evaluate these compounds based on your specific goals, analyze the pros and cons, and recommend the best fit for your research.
-                </p>
-              </div>
-              <Link href="/research/match" style={{
-                background: '#00C4BC',
-                color: '#000',
-                padding: '12px 24px',
-                borderRadius: 8,
-                fontWeight: 800,
-                textDecoration: 'none',
-                whiteSpace: 'nowrap'
-              }}>
-                Ask AI Advisor ↗
-              </Link>
-            </div>
           </div>
         </div>
       )}
