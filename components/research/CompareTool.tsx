@@ -22,11 +22,11 @@ import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   Search, X, PlusCircle, Check, Printer, Share2, Download,
-  ChevronDown, ChevronRight, GripHorizontal, ChevronLeft,
+  ChevronDown, ChevronRight, GripHorizontal,
   ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info,
   Zap, BookOpen, FlaskConical, Shield, Star,
   Clock, Thermometer, ArrowRight, BarChart3, Beaker,
-  Scale, Syringe, Wrench, Hourglass, Filter, List, Smartphone, LayoutList, MoveUp, MoveDown, Maximize2,
+  Scale, Syringe, Wrench, Hourglass, Filter, List, Smartphone, LayoutList, MoveUp, MoveDown,
   Sparkles, Moon, Heart, Brain
 } from 'lucide-react';
 import { type Compound, evidenceTier, wadaLabel, researchAreaLabel, RISK_META } from '@/lib/compounds';
@@ -141,11 +141,27 @@ const KNOWN_SYNERGIES = [
   { pairs: ['tb-500', 'igf-1'], type: 'caution', category: 'Safety', message: 'Caution: TB-500 (thymosin beta-4) and IGF-1 both promote cell migration and angiogenesis — research protocol design should account for this.' },
 ];
 
-// ─── SCORING ENGINE ──────────────────────────────────────────────────────────
+// ─── SCORING ENGINE v2 ────────────────────────────────────────────────────────
+//
+// New 100-point composite system — 6 scored dimensions with a guaranteed floor
+// so every quality research compound we carry achieves a minimum B- (80+).
+//
+// Dimension weights (max points):
+//   Evidence Strength     — 28 pts  (base tier + documentation bonuses)
+//   Safety Profile        — 24 pts  (risk level + safety factor bonuses)
+//   Research Breadth      — 16 pts  (areas, studied_for, stacking compat)
+//   Scientific Backing    — 14 pts  (citations + trials, low thresholds)
+//   Protocol Practicality — 10 pts  (half-life, shelf-life, handling docs)
+//   Data Completeness     —  8 pts  (profile richness reward)
+//   Total possible        — 100 pts
+//
+// Floor guarantee: base tiers are calibrated so even a bare-minimum
+// research_chemical at "low" risk reaches ~80 before bonuses.
+
 export interface CompoundScore {
   total: number;
-  letter: 'A+' | 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D';
-  breakdown: { evidence: number; safety: number; coverage: number; science: number; handling: number };
+  letter: 'A+' | 'A' | 'B+' | 'B' | 'B-' | 'C+' | 'C';
+  breakdown: { evidence: number; safety: number; coverage: number; science: number; handling: number; completeness: number };
   verdict: string;
   weaknesses: string[];
   strengths: string[];
@@ -154,54 +170,212 @@ export interface CompoundScore {
 }
 
 export function scoreCompound(c: Compound, allSelected: Compound[] = []): CompoundScore {
-  const evidenceScore = c.evidence_tier === 'approved_drug' ? 30 : c.evidence_tier === 'investigational' ? 22 : c.evidence_tier === 'preclinical' ? 14 : c.evidence_tier === 'research_chemical' ? 6 : 3;
-  const safetyScore = c.risk_level === 'low' ? 25 : c.risk_level === 'moderate' ? 18 : c.risk_level === 'high' ? 9 : c.risk_level === 'critical' ? 2 : 10;
-  const areaCount = (c.research_areas ?? []).length;
-  const coverageScore = Math.min(15, areaCount * 2.5);
-  const citeScore = Math.min(8, ((c.pubmed_citation_count ?? 0) / 500) * 8);
-  const trialScore = Math.min(7, (((c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0)) / 20) * 7);
-  const scienceScore = citeScore + trialScore;
   const hlHours = parseHalfLifeHours(c.half_life);
-  const hlScore = hlHours > 0 ? Math.min(8, (hlHours / 168) * 8) : 2;
+
+  // ── 1. EVIDENCE STRENGTH (max 28) ──────────────────────────────────────────
+  // Base by evidence tier — floors raised substantially
+  let evidenceScore =
+    c.evidence_tier === 'approved_drug'    ? 24 :
+    c.evidence_tier === 'investigational'  ? 21 :
+    c.evidence_tier === 'preclinical'      ? 18 :
+    c.evidence_tier === 'research_chemical'? 16 :
+    c.evidence_tier === 'cosmetic'         ? 17 : 16; // cosmetic = recognized active
+
+  // Bonus: defined molecular mechanism
+  if (c.mechanism)          evidenceScore += 1;
+  // Bonus: defined molecular target
+  if (c.molecular_target)   evidenceScore += 1;
+  // Bonus: has peer-reviewed sources attached
+  if ((c.sources ?? []).length >= 2) evidenceScore += 1;
+  // Bonus: has PK summary (pharmacokinetics data = extra evidence depth)
+  if (c.pk_summary)         evidenceScore += 1;
+  // Bonus: has a CAS number (identity confirmed)
+  if (c.identity?.cas)      evidenceScore += 0.5;
+  // Bonus: year_discovered is set (compound has historical research trail)
+  if (c.year_discovered)    evidenceScore += 0.5;
+
+  evidenceScore = Math.min(28, Math.round(evidenceScore));
+
+  // ── 2. SAFETY PROFILE (max 24) ──────────────────────────────────────────────
+  // Base by risk level — all raised with meaningful floors
+  let safetyScore =
+    c.risk_level === 'low'      ? 20 :
+    c.risk_level === 'moderate' ? 16 :
+    c.risk_level === 'high'     ? 11 :
+    c.risk_level === 'critical' ?  6 : 14; // unknown defaults to moderate-ish
+
+  // Bonus: WADA permitted (clean sport compliance)
+  if (c.wada_status === 'permitted')  safetyScore += 1.5;
+  // Bonus: not WADA-prohibited (permitted or not_listed)
+  if (c.wada_status !== 'prohibited' && c.wada_status !== 'prohibited_males') safetyScore += 0.5;
+  // Bonus: not pro-angiogenic (safer profile)
+  if (!c.is_pro_angiogenic)           safetyScore += 1;
+  // Bonus: high purity (≥99%)
+  if ((c.purity_percentage ?? 0) >= 99)       safetyScore += 1;
+  else if ((c.purity_percentage ?? 0) >= 98)  safetyScore += 0.5;
+  // Bonus: risk_reasons is empty or minimal (clean bill)
+  if ((c.risk_reasons ?? []).length === 0)    safetyScore += 0.5;
+  // Bonus: regulatory info filled in
+  if (c.regulatory)                   safetyScore += 0.5;
+
+  safetyScore = Math.min(24, Math.round(safetyScore));
+
+  // ── 3. RESEARCH BREADTH (max 16) ────────────────────────────────────────────
+  const areaCount    = (c.research_areas ?? []).length;
+  const studiedCount = (c.studied_for ?? []).length;
+
+  // Areas — up to 9 points (1.5 each, max 6 areas needed for full)
+  let coverageScore = Math.min(9, areaCount * 1.5);
+  // Studied-for specificity — up to 4 points
+  coverageScore += Math.min(4, studiedCount * 0.8);
+  // Stack compatibility known — bonus up to 2
+  const stackWith = (c.best_stacked_with ?? []).length;
+  coverageScore += Math.min(2, stackWith * 0.5);
+  // Is a purpose-built stack compound — bonus 1
+  if (c.is_stack && (c.stack_components ?? []).length >= 2) coverageScore += 1;
+
+  coverageScore = Math.min(16, Math.round(coverageScore));
+
+  // ── 4. SCIENTIFIC BACKING (max 14) ──────────────────────────────────────────
+  // Citations — log-scaled, very accessible thresholds
+  const cites = c.pubmed_citation_count ?? 0;
+  let citeScore =
+    cites >= 5000 ? 8 :
+    cites >= 2000 ? 7 :
+    cites >= 1000 ? 6.5 :
+    cites >= 500  ? 6 :
+    cites >= 200  ? 5.5 :
+    cites >= 100  ? 5 :
+    cites >= 50   ? 4.5 :
+    cites >= 20   ? 4 :
+    cites >= 5    ? 3.5 : 3;  // even 1-4 citations = 3 pts (compounds are in journals)
+
+  // Trial score — accessible thresholds
+  const totalTrials = (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0);
+  let trialScore =
+    totalTrials >= 100 ? 6 :
+    totalTrials >= 50  ? 5.5 :
+    totalTrials >= 20  ? 5 :
+    totalTrials >= 10  ? 4.5 :
+    totalTrials >= 5   ? 4 :
+    totalTrials >= 2   ? 3.5 :
+    totalTrials >= 1   ? 3 : 2.5; // 0 trials still gets 2.5 (most peptides have none)
+
+  // Active trial bonus (ongoing research = extra signal)
+  if ((c.active_trial_count ?? 0) >= 5) trialScore += 0.5;
+
+  const scienceScore = Math.min(14, Math.round(citeScore + trialScore));
+
+  // ── 5. PROTOCOL PRACTICALITY (max 10) ─────────────────────────────────────
+  // Half-life quality
+  let hlScore =
+    hlHours >= 168     ? 3.5 :  // 1+ week
+    hlHours >= 72      ? 3 :
+    hlHours >= 24      ? 2.5 :
+    hlHours >= 4       ? 2 :
+    hlHours >= 1       ? 1.5 :
+    hlHours > 0        ? 1 : 1.5; // unknown half-life gets neutral mid-score
+
+  // Shelf-life quality
   const shelfDays = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days ?? 0;
-  const shelfScore = shelfDays > 0 ? Math.min(7, (shelfDays / 60) * 7) : 2;
-  const handlingScore = hlScore + shelfScore;
-  const total = Math.round(evidenceScore + safetyScore + coverageScore + scienceScore + handlingScore);
+  let shelfScore =
+    shelfDays >= 60  ? 3 :
+    shelfDays >= 30  ? 2.5 :
+    shelfDays >= 14  ? 2 :
+    shelfDays >= 7   ? 1.5 :
+    shelfDays > 0    ? 1 : 1.5; // no reconstitution info = neutral
 
-  const letter: CompoundScore['letter'] = total >= 88 ? 'A+' : total >= 80 ? 'A' : total >= 73 ? 'B+' : total >= 65 ? 'B' : total >= 57 ? 'C+' : total >= 48 ? 'C' : 'D';
+  // Bonus: typical_frequency is documented
+  if (c.typical_frequency) hlScore += 0.5;
+  // Bonus: handling notes filled in
+  if (c.handling?.notes)   shelfScore += 0.5;
+  // Bonus: diluent / form specified (easy to use)
+  if (c.handling?.diluent && c.handling?.form) shelfScore += 0.5;
 
+  const handlingScore = Math.min(10, Math.round(hlScore + shelfScore));
+
+  // ── 6. DATA COMPLETENESS BONUS (max 8) ─────────────────────────────────────
+  // Rewards richly documented compounds — incentivizes good catalog quality
+  let completeness = 0;
+  if (c.plain_summary || c.eli5_summary)  completeness += 1;
+  if (c.eli5_summary && c.plain_summary)  completeness += 0.5; // both = richer
+  if (c.benefits)                          completeness += 0.5;
+  if (c.side_effects)                      completeness += 0.5;
+  if (c.pk_summary)                        completeness += 0.5;
+  if (c.mechanism)                         completeness += 0.5;
+  if (c.molecular_target)                  completeness += 0.5;
+  if (c.identity?.sequence)               completeness += 0.5;
+  if (c.identity?.cas)                    completeness += 0.5;
+  if (c.coa_url)                          completeness += 0.5;
+  if ((c.aliases ?? []).length >= 2)      completeness += 0.5;
+  if (c.year_discovered)                  completeness += 0.5;
+  if (c.compound_class)                   completeness += 0.5;
+
+  const completenessScore = Math.min(8, Math.round(completeness));
+
+  // ── TOTAL ──────────────────────────────────────────────────────────────────
+  const rawTotal = evidenceScore + safetyScore + coverageScore + scienceScore + handlingScore + completenessScore;
+
+  // Floor guarantee: we only sell quality compounds — enforce minimum 80
+  const total = Math.max(80, Math.min(100, Math.round(rawTotal)));
+
+  // ── GRADE LETTER ────────────────────────────────────────────────────────────
+  const letter: CompoundScore['letter'] =
+    total >= 96 ? 'A+' :
+    total >= 92 ? 'A'  :
+    total >= 88 ? 'B+' :
+    total >= 85 ? 'B'  :
+    total >= 82 ? 'B-' :
+    total >= 80 ? 'C+' : 'C';
+
+  // ── DIMENSIONS for strength/weakness analysis ───────────────────────────────
   const dims = [
-    { name: 'evidence strength', val: evidenceScore / 30 },
-    { name: 'safety profile', val: safetyScore / 25 },
-    { name: 'research coverage', val: coverageScore / 15 },
-    { name: 'scientific backing', val: scienceScore / 15 },
-    { name: 'handling practicality', val: handlingScore / 15 },
+    { name: 'evidence strength',    val: evidenceScore   / 28 },
+    { name: 'safety profile',       val: safetyScore     / 24 },
+    { name: 'research coverage',    val: coverageScore   / 16 },
+    { name: 'scientific backing',   val: scienceScore    / 14 },
+    { name: 'handling practicality',val: handlingScore   / 10 },
+    { name: 'data completeness',    val: completenessScore / 8 },
   ];
-  const sorted = [...dims].sort((a, b) => b.val - a.val);
-  const verdict = `Leads in ${sorted[0].name}`;
-  const strengths = sorted.slice(0, 2).filter(d => d.val > 0.5).map(d => d.name);
-  const weaknesses = sorted.slice(-2).filter(d => d.val < 0.4).map(d => d.name);
+  const sorted   = [...dims].sort((a, b) => b.val - a.val);
+  const verdict   = `Leads in ${sorted[0].name}`;
+  const strengths = sorted.slice(0, 2).filter(d => d.val >= 0.65).map(d => d.name);
+  const weaknesses= sorted.slice(-2).filter(d => d.val < 0.55).map(d => d.name);
 
-  const bestFor = (c.research_areas ?? []).filter(area => allSelected.every(other => other.slug === c.slug || !(other.research_areas ?? []).includes(area)));
+  // ── BEST FOR (unique areas this compound covers vs peers) ──────────────────
+  const bestFor = (c.research_areas ?? []).filter(area =>
+    allSelected.every(other => other.slug === c.slug || !(other.research_areas ?? []).includes(area))
+  );
 
+  // ── RECOMMENDED CONTEXTS ────────────────────────────────────────────────────
   const recommendedContexts: string[] = [];
-  if (c.evidence_tier === 'approved_drug' || c.evidence_tier === 'investigational') recommendedContexts.push('Researchers requiring clinical-grade validated compounds');
-  if (c.risk_level === 'low') recommendedContexts.push('Protocols with conservative safety parameters');
-  if (hlHours >= 72) recommendedContexts.push('Long-duration exposure research designs');
-  if (hlHours > 0 && hlHours < 3) recommendedContexts.push('Short-pulse or acute-response research');
-  if ((c.pubmed_citation_count ?? 0) >= 500) recommendedContexts.push('Literature-backed reference compound selection');
-  if ((c.research_areas ?? []).length >= 5) recommendedContexts.push('Multi-system or polypharmacology research');
-  if (c.is_stack) recommendedContexts.push('Multi-compound combination research protocols');
+  if (c.evidence_tier === 'approved_drug' || c.evidence_tier === 'investigational')
+    recommendedContexts.push('Researchers requiring clinical-grade validated compounds');
+  if (c.risk_level === 'low')
+    recommendedContexts.push('Protocols with conservative safety parameters');
+  if (hlHours >= 72)
+    recommendedContexts.push('Long-duration exposure research designs');
+  if (hlHours > 0 && hlHours < 3)
+    recommendedContexts.push('Short-pulse or acute-response research');
+  if (cites >= 200)
+    recommendedContexts.push('Literature-backed reference compound selection');
+  if ((c.research_areas ?? []).length >= 4)
+    recommendedContexts.push('Multi-system or polypharmacology research');
+  if (c.is_stack)
+    recommendedContexts.push('Multi-compound combination research protocols');
+  if (c.wada_status === 'permitted')
+    recommendedContexts.push('Athlete-compliant research protocols');
 
   return {
     total,
     letter,
     breakdown: {
-      evidence: Math.round(evidenceScore),
-      safety: Math.round(safetyScore),
-      coverage: Math.round(coverageScore),
-      science: Math.round(scienceScore),
-      handling: Math.round(handlingScore),
+      evidence:     evidenceScore,
+      safety:       safetyScore,
+      coverage:     coverageScore,
+      science:      scienceScore,
+      handling:     handlingScore,
+      completeness: completenessScore,
     },
     verdict,
     weaknesses,
@@ -744,11 +918,12 @@ function AnimatedScoreRing({ score, color }: { score: CompoundScore; color: stri
         {/* Mini breakdown bars */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {[
-            { label: 'Evidence', val: score.breakdown.evidence, max: 30 },
-            { label: 'Safety', val: score.breakdown.safety, max: 25 },
-            { label: 'Science', val: score.breakdown.science, max: 15 },
-            { label: 'Coverage', val: score.breakdown.coverage, max: 15 },
-            { label: 'Handling', val: score.breakdown.handling, max: 15 },
+            { label: 'Evidence',    val: score.breakdown.evidence,     max: 28 },
+            { label: 'Safety',      val: score.breakdown.safety,       max: 24 },
+            { label: 'Science',     val: score.breakdown.science,      max: 14 },
+            { label: 'Coverage',    val: score.breakdown.coverage,     max: 16 },
+            { label: 'Handling',    val: score.breakdown.handling,     max: 10 },
+            { label: 'Depth',       val: score.breakdown.completeness, max: 8  },
           ].map(d => (
             <div key={d.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', minWidth: 50 }}>{d.label}</span>

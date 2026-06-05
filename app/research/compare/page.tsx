@@ -46,7 +46,7 @@ export default async function CompareCompoundsPage({
             maxWidth: '720px',
           }}
         >
-          Select Up To Three Compounds To Review Their Evidence, Targets, And Handling Side By Side. For Laboratory
+          Select Up To Four Compounds To Review Their Evidence, Targets, And Handling Side By Side. For Laboratory
           Research Only.
         </p>
       </header>
