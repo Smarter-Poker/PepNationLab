@@ -332,7 +332,7 @@ export default function ProductsList({
                           background: product.in_stock ? 'var(--teal)' : '#00E5FF',
                           boxShadow: `0 0 4px ${product.in_stock ? 'var(--teal)' : '#00E5FF'}`
                         }} />
-                        {product.in_stock ? 'In Stock — Ships Now' : `Out of Stock / Backordered`}
+                        {product.in_stock ? 'In Stock — Ships Now' : `Out Of Stock / Backordered`}
                       </span>
 
                       {isLowStock && (

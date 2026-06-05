@@ -24,11 +24,13 @@ export default function AutocompleteDropdown({
   recent,
   onSelect,
   onSelectRecent,
+  id = 'search-autocomplete',
 }: {
   suggestions: Suggestion[];
   recent: string[];
   onSelect: (s: Suggestion) => void;
   onSelectRecent: (text: string) => void;
+  id?: string;
 }) {
   const compounds = suggestions.filter((s) => s.kind === 'compound');
   const areasAndGlossary = suggestions.filter((s) => s.kind === 'area' || s.kind === 'glossary');
@@ -43,6 +45,16 @@ export default function AutocompleteDropdown({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      const activeEl = document.activeElement;
+      if (!activeEl) return;
+
+      const isSearchActive =
+        activeEl.getAttribute('role') === 'combobox' ||
+        activeEl.id === 'discovery-search-input' ||
+        activeEl.closest('[role="listbox"]') !== null;
+
+      if (!isSearchActive) return;
+
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setFocusIdx((i) => Math.min(flat.length - 1, i + 1));
@@ -56,8 +68,8 @@ export default function AutocompleteDropdown({
         else if (item.type === 'sug' && item.sug) onSelect(item.sug);
       }
     }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [flat, focusIdx, onSelect, onSelectRecent]);
 
   if (flat.length === 0) return null;
@@ -87,6 +99,7 @@ export default function AutocompleteDropdown({
 
   return (
     <div
+      id={id}
       role="listbox"
       style={{
         position: 'absolute',
@@ -115,6 +128,8 @@ export default function AutocompleteDropdown({
               <button
                 key={`r-${t}`}
                 type="button"
+                role="option"
+                aria-selected={active}
                 onClick={() => onSelectRecent(t)}
                 onMouseEnter={() => setFocusIdx(idx)}
                 style={{
@@ -141,6 +156,8 @@ export default function AutocompleteDropdown({
               <button
                 key={`c-${s.slug}`}
                 type="button"
+                role="option"
+                aria-selected={active}
                 onClick={() => onSelect(s)}
                 onMouseEnter={() => setFocusIdx(idx)}
                 style={{
@@ -193,6 +210,8 @@ export default function AutocompleteDropdown({
               <button
                 key={`a-${s.kind}-${s.slug}`}
                 type="button"
+                role="option"
+                aria-selected={active}
                 onClick={() => onSelect(s)}
                 onMouseEnter={() => setFocusIdx(idx)}
                 style={{

@@ -132,6 +132,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [profile, setProfile] = useState<{ full_name?: string | null; role?: string; referring_agent_id?: string | null; is_super_agent?: boolean | null; is_sub_agent?: boolean | null } | null>(null);
   const [agentSlug, setAgentSlug] = useState<string | null>(null);
+  const [agentName, setAgentName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showQRModal, setShowQRModal] = useState(false);
 
@@ -172,6 +173,8 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
         isSuperAgent: profile?.is_super_agent === true,
         isSubAgent: profile?.is_sub_agent === true,
         storefrontHref: activeAgentSlug ? `/${activeAgentSlug}` : '/dashboard/agent',
+        storefrontName: agentName || undefined,
+        pathname,
       })
     : null;
 
@@ -203,20 +206,22 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
               if (data.role === 'researcher' && data.referring_agent_id) {
                 supabase
                   .from('agent_profiles')
-                  .select('slug')
+                  .select('slug, display_name')
                   .eq('id', data.referring_agent_id)
                   .maybeSingle()
                   .then(({ data: ap }) => {
                     if (ap?.slug) setAgentSlug(ap.slug);
+                    if (ap?.display_name) setAgentName(ap.display_name);
                   });
               } else if ((data.role === 'agent' || data.role === 'super_agent') && data.is_sub_agent !== true) {
                 supabase
                   .from('agent_profiles')
-                  .select('slug')
+                  .select('slug, display_name')
                   .eq('id', session.user.id)
                   .maybeSingle()
                   .then(({ data: ap }) => {
                     if (ap?.slug) setAgentSlug(ap.slug);
+                    if (ap?.display_name) setAgentName(ap.display_name);
                   });
               }
             }
@@ -240,20 +245,22 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
               if (data.role === 'researcher' && data.referring_agent_id) {
                 supabase
                   .from('agent_profiles')
-                  .select('slug')
+                  .select('slug, display_name')
                   .eq('id', data.referring_agent_id)
                   .maybeSingle()
                   .then(({ data: ap }) => {
                     if (ap?.slug) setAgentSlug(ap.slug);
+                    if (ap?.display_name) setAgentName(ap.display_name);
                   });
               } else if ((data.role === 'agent' || data.role === 'super_agent') && data.is_sub_agent !== true) {
                 supabase
                   .from('agent_profiles')
-                  .select('slug')
+                  .select('slug, display_name')
                   .eq('id', session.user.id)
                   .maybeSingle()
                   .then(({ data: ap }) => {
                     if (ap?.slug) setAgentSlug(ap.slug);
+                    if (ap?.display_name) setAgentName(ap.display_name);
                   });
               }
             }
@@ -262,6 +269,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
         setUser(null);
         setProfile(null);
         setAgentSlug(null);
+        setAgentName(null);
       }
       setLoading(false);
     });
@@ -358,7 +366,8 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
     }
   };
 
-  const showBack = pathname !== '/';
+  const isStorefront = activeAgentSlug && pathname === `/${activeAgentSlug}`;
+  const showBack = pathname !== '/' && !isStorefront;
 
   // QR popup details — sub-agents recruit via /invite?ref (no storefront);
   // agents/super-agents share their storefront slug.
@@ -566,8 +575,8 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
               <div style={{ fontWeight: 600, color: 'var(--white)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {displayName}
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'capitalize' }}>
-                {role.replace('_', ' ')}
+              <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>
+                {role.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
               </div>
             </div>
           </div>

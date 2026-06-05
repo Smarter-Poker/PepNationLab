@@ -230,6 +230,11 @@ export default function GlobalSearchBar({
           ref={inputRef}
           type="search"
           value={q}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-controls="global-search-autocomplete"
           onChange={(e) => {
             setQ(e.target.value);
             setOpen(true);
@@ -314,6 +319,7 @@ export default function GlobalSearchBar({
 
       {open && (q.trim().length > 0 || recent.length > 0) && (
         <AutocompleteDropdown
+          id="global-search-autocomplete"
           suggestions={suggestions}
           recent={recent}
           onSelect={onSuggestionSelect}

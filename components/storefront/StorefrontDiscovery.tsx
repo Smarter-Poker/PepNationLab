@@ -1466,6 +1466,11 @@ export default function DiscoveryHero({
             id="discovery-search-input"
             type="text"
             value={query}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={suggestOpen}
+            aria-haspopup="listbox"
+            aria-controls="storefront-search-autocomplete"
             onChange={(e) => {
               setQuery(e.target.value);
               setSuggestOpen(true);
@@ -1493,6 +1498,7 @@ export default function DiscoveryHero({
           {suggestOpen && query.trim().length >= 2 && suggestions.length > 0 && (
             <div style={{ position: 'absolute', top: '100%', left: 0, right: '4%', zIndex: 50, marginTop: '4px' }}>
               <AutocompleteDropdown
+                id="storefront-search-autocomplete"
                 suggestions={suggestions}
                 recent={[]} // Storefront doesn't need recent searches history necessarily, but we provide empty array
                 onSelect={onSuggestionSelect}

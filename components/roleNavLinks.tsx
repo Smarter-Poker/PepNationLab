@@ -108,13 +108,23 @@ const ADMIN_LINKS: RoleNavLink[] = [
   { href: '/admin/settings', label: 'Account Settings', icon: ICON.gear },
 ];
 
-function agentLinks(isSuper: boolean, storefrontHref: string): RoleNavLink[] {
+function agentLinks(isSuper: boolean, storefrontHref: string, pathname?: string): RoleNavLink[] {
   const teamItem: RoleNavLink = isSuper
     ? { href: agentTab('My Agent Accounts'), label: 'My Agents', icon: <svg {...ip}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> }
     : { href: agentTab('My Sub-Agents'), label: 'My Sub Agents', icon: <svg {...ip}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> };
-  return [
+  
+  const normPath = pathname?.replace(/\/$/, '') || '';
+  const normStoreHref = storefrontHref?.replace(/\/$/, '') || '';
+
+  const links: RoleNavLink[] = [
     { href: agentTab('Overview'), label: 'Overview', icon: ICON.grid },
-    { href: storefrontHref, label: 'Visit My Storefront', icon: ICON.storefront },
+  ];
+
+  if (normPath !== normStoreHref) {
+    links.push({ href: storefrontHref, label: 'Visit My Storefront', icon: ICON.storefront });
+  }
+
+  links.push(
     { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
     { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
     { href: '/account/lab-journal', label: 'Lab Journal', icon: ICON.heart },
@@ -130,8 +140,9 @@ function agentLinks(isSuper: boolean, storefrontHref: string): RoleNavLink[] {
     { href: agentTab('Coupons'), label: 'Coupons', icon: <svg {...ip}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
     { href: '/account', label: 'Account Settings', icon: ICON.gear },
     { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
-    { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr },
-  ];
+    { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr }
+  );
+  return links;
 }
 
 const SUBAGENT_LINKS: RoleNavLink[] = [
@@ -150,11 +161,15 @@ const SUBAGENT_LINKS: RoleNavLink[] = [
 
 // Researcher (customer) menu. Their account lives entirely in the role-agnostic
 // /account/* pages plus their referring agent's storefront.
-function researcherLinks(storefrontHref?: string): RoleNavLink[] {
+function researcherLinks(storefrontHref?: string, storefrontName?: string, pathname?: string): RoleNavLink[] {
   const links: RoleNavLink[] = [];
   
-  if (storefrontHref && !storefrontHref.includes('/dashboard')) {
-    links.push({ href: storefrontHref, label: 'Pep Nation Research Store', icon: ICON.storefront });
+  const normPath = pathname?.replace(/\/$/, '') || '';
+  const normStoreHref = storefrontHref?.replace(/\/$/, '') || '';
+
+  if (storefrontHref && !storefrontHref.includes('/dashboard') && normPath !== normStoreHref) {
+    const label = storefrontName ? `${storefrontName}'s Research Store` : 'Pep Nation Research Store';
+    links.push({ href: storefrontHref, label, icon: ICON.storefront });
   }
 
   links.push(
@@ -176,13 +191,13 @@ function researcherLinks(storefrontHref?: string): RoleNavLink[] {
  */
 export function getRoleNavLinks(
   role: string,
-  opts: { isSuperAgent?: boolean; isSubAgent?: boolean; storefrontHref?: string } = {},
+  opts: { isSuperAgent?: boolean; isSubAgent?: boolean; storefrontHref?: string; storefrontName?: string; pathname?: string } = {},
 ): RoleNavLink[] | null {
   if (role === 'admin') return ADMIN_LINKS;
   if (opts.isSubAgent) return SUBAGENT_LINKS;
   if (role === 'super_agent' || role === 'agent' || opts.isSuperAgent) {
-    return agentLinks(!!opts.isSuperAgent || role === 'super_agent', opts.storefrontHref || '/dashboard/agent');
+    return agentLinks(!!opts.isSuperAgent || role === 'super_agent', opts.storefrontHref || '/dashboard/agent', opts.pathname);
   }
-  if (role === 'researcher') return researcherLinks(opts.storefrontHref);
+  if (role === 'researcher') return researcherLinks(opts.storefrontHref, opts.storefrontName, opts.pathname);
   return null;
 }
