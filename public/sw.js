@@ -122,8 +122,8 @@ async function searchOffline(queryStr) {
     const results = compounds.filter(c => {
       const displayName = (c.display_name || '').toLowerCase();
       const slug = (c.slug || '').toLowerCase();
-      const aliases = (c.aliases || []).map(a => a.toLowerCase());
-      const areas = (c.research_areas || []).map(a => a.toLowerCase());
+      const aliases = (Array.isArray(c.aliases) ? c.aliases : []).map(a => a.toLowerCase());
+      const areas = (Array.isArray(c.research_areas) ? c.research_areas : []).map(a => a.toLowerCase());
       const category = (c.category || '').toLowerCase();
 
       return (

@@ -82,6 +82,7 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
   const [aiProtocolText, setAiProtocolText] = useState('');
   const [editingNotes, setEditingNotes] = useState(false);
   const [tempNotes, setTempNotes] = useState('');
+  const [dragOverDay, setDragOverDay] = useState<string | null>(null);
 
   const selectedCompounds = useMemo(
     () => selected.map((s) => bySlug.get(s)).filter((c): c is Compound => Boolean(c)),
@@ -269,6 +270,56 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
         })
       };
     }));
+  };
+
+  // Drag and drop handlers for calendar grid
+  const handleDragStart = (e: React.DragEvent, sourceDay: string, compoundSlug: string) => {
+    e.dataTransfer.setData('text/plain', JSON.stringify({ sourceDay, compoundSlug }));
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetDay: string) => {
+    e.preventDefault();
+    try {
+      const dataStr = e.dataTransfer.getData('text/plain');
+      if (!dataStr) return;
+      const { sourceDay, compoundSlug } = JSON.parse(dataStr);
+      if (sourceDay === targetDay) return;
+
+      setProtocol(prev => prev.map(w => {
+        if (w.weekNumber !== activeWeek) return w;
+
+        const sourceDayObj = w.schedule.find(s => s.day === sourceDay);
+        const compoundDose = sourceDayObj?.compounds.find(c => c.slug === compoundSlug);
+        if (!compoundDose) return w;
+
+        return {
+          ...w,
+          schedule: w.schedule.map(s => {
+            if (s.day === sourceDay) {
+              return {
+                ...s,
+                compounds: s.compounds.filter(c => c.slug !== compoundSlug)
+              };
+            }
+            if (s.day === targetDay) {
+              if (s.compounds.some(c => c.slug === compoundSlug)) return s;
+              return {
+                ...s,
+                compounds: [...s.compounds, compoundDose]
+              };
+            }
+            return s;
+          })
+        };
+      }));
+      toast.success(`Moved ${compoundSlug.toUpperCase()} to ${targetDay}`);
+    } catch (err) {
+      console.error('Drag drop failed:', err);
+    }
   };
 
   // Save Notes editing
@@ -676,16 +727,21 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
                     {protocol.find(w => w.weekNumber === activeWeek)?.schedule.map((s) => (
                       <div 
                         key={s.day} 
+                        onDragOver={handleDragOver}
+                        onDragEnter={() => setDragOverDay(s.day)}
+                        onDragLeave={() => setDragOverDay(null)}
+                        onDrop={(e) => handleDrop(e, s.day)}
                         style={{ 
                           display: 'flex', 
                           justifyContent: 'space-between', 
                           alignItems: 'center', 
-                          background: 'rgba(255,255,255,0.02)', 
-                          border: '1px solid rgba(255,255,255,0.05)', 
+                          background: dragOverDay === s.day ? 'rgba(0,196,188,0.08)' : 'rgba(255,255,255,0.02)', 
+                          border: dragOverDay === s.day ? '1px solid #00C4BC' : '1px solid rgba(255,255,255,0.05)', 
                           borderRadius: 8, 
                           padding: '10px 14px',
                           flexWrap: 'wrap',
-                          gap: 12
+                          gap: 12,
+                          transition: 'all 0.2s ease'
                         }}
                       >
                         <strong style={{ width: 90, color: '#FFFFFF', fontSize: 13 }}>{s.day}</strong>
@@ -693,6 +749,8 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
                           {s.compounds.map((c) => (
                             <div 
                               key={c.slug} 
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, s.day, c.slug)}
                               style={{ 
                                 display: 'flex', 
                                 alignItems: 'center', 
@@ -701,8 +759,10 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
                                 border: '1px solid rgba(0,196,188,0.2)', 
                                 borderRadius: 6, 
                                 padding: '4px 8px',
-                                fontSize: 12
+                                fontSize: 12,
+                                cursor: 'grab'
                               }}
+                              title="Drag to reschedule"
                             >
                               <span style={{ color: '#00C4BC', fontWeight: 700 }}>{c.slug.toUpperCase()}</span>
                               <input 
@@ -727,10 +787,10 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
                             <select
                               value=""
                               onChange={(e) => {
-                                if (e.target.value) {
-                                  handleAddDose(activeWeek, s.day, e.target.value);
-                                  e.target.value = '';
-                                }
+                                  if (e.target.value) {
+                                    handleAddDose(activeWeek, s.day, e.target.value);
+                                    e.target.value = '';
+                                  }
                               }}
                               style={{ background: 'transparent', border: '1px dashed rgba(255,255,255,0.2)', borderRadius: 6, color: '#A8B4C0', fontSize: 11, padding: '3px 8px', cursor: 'pointer' }}
                             >

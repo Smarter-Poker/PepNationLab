@@ -1664,10 +1664,11 @@ function HplcRtSection() {
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     if (points.length === 0) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left - 50; // padding left
-    const plotWidth = rect.width - 70; // padding left + right
+    const mouseX = e.clientX - rect.left;
+    const viewBoxX = (mouseX / rect.width) * 600;
+    const relativeX = viewBoxX - 50; // plot starts at 50 in viewBox
     const maxTime = Number(gradient) || 20;
-    const mouseTime = (mouseX / plotWidth) * maxTime;
+    const mouseTime = (relativeX / 530) * maxTime; // plot width is 530 in viewBox
     
     let closest = points[0];
     let minDiff = Math.abs(points[0].time - mouseTime);
