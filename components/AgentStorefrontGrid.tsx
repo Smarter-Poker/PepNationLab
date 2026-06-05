@@ -1596,7 +1596,7 @@ export default function AgentStorefrontGrid({
           width: '100%',
           maxWidth: 960,
           margin: '0 auto 24px',
-          aspectRatio: '1672 / 941',
+          aspectRatio: '2 / 1',
           backgroundImage: 'url(/images/store_discovery_hero_v3.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
@@ -1617,17 +1617,17 @@ export default function AgentStorefrontGrid({
           }}
           style={{
             position: 'absolute',
-            left: '1.3%',
-            top: '25.5%',
-            width: '97.2%',
-            height: '10.1%',
+            left: '3.4%',
+            top: '26.9%',
+            width: '93.2%',
+            height: '11.5%',
             background: 'transparent',
             border: 'none',
             outline: 'none',
             color: '#FFFFFF',
             fontSize: 'max(14px, 2.2vw)',
             fontWeight: 500,
-            padding: '0 2% 0 4.5%',
+            padding: '0 5% 0 4.5%',
           }}
         />
 
@@ -1638,9 +1638,9 @@ export default function AgentStorefrontGrid({
             onClick={() => setSearchQuery('')}
             style={{
               position: 'absolute',
-              right: '2.5%',
-              top: '25.5%',
-              height: '10.1%',
+              right: '4.5%',
+              top: '26.9%',
+              height: '11.5%',
               background: 'transparent',
               border: 'none',
               color: '#FFFFFF',
@@ -1658,8 +1658,8 @@ export default function AgentStorefrontGrid({
 
         {/* Mapped overlay buttons for the 9 cards at the bottom */}
         {CARD_MAPPINGS.map((card) => {
-          const left = 1.4 + (card.index - 1) * 10.7;
-          const width = 10.4;
+          const left = 0.78 + (card.index - 1) * 10.74;
+          const width = 9.77;
           const isActive = activeCardIndex === card.index;
 
           return (
@@ -1679,9 +1679,9 @@ export default function AgentStorefrontGrid({
               style={{
                 position: 'absolute',
                 left: `${left}%`,
-                top: '54.2%',
+                top: '55.9%',
                 width: `${width}%`,
-                height: '40.3%',
+                height: '39.7%',
                 cursor: 'pointer',
                 background: 'transparent',
                 border: isActive ? '2px solid rgba(255, 255, 255, 0.45)' : '2px solid transparent',
