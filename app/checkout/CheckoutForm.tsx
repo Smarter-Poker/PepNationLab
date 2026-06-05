@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { US_STATES } from '@/lib/us-states';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
 import { toTitleCase } from '@/lib/categoryImage';
+import { createClient } from '@/lib/supabase/client';
 
 type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'paypal' | 'apple_cash' | 'google_wallet' | 'wise' | 'chime';
 
@@ -182,6 +183,124 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     idempotencyKeyRef.current = null;
   };
 
+  const [bacProduct, setBacProduct] = useState<{
+    id: string;
+    agentProductId: string;
+    name: string;
+    retailPrice: number;
+    costPrice: number;
+    weightOz: number;
+    unitSize: string | null;
+    unitMeasure: string | null;
+  } | null>(null);
+
+  // Load Bacteriostatic Water product details on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!agentSlug) {
+          const supabase = createClient();
+          const { data: p } = await supabase
+            .from('products')
+            .select('id, name, base_cost, weight_oz, unit_size, unit_measure')
+            .eq('compound_slug', 'bac-water')
+            .limit(1)
+            .maybeSingle();
+          if (p) {
+            const basePrice = Number(p.base_cost) || 12.00;
+            const sizeLabel = p.unit_size ? `(${p.unit_size}${p.unit_measure || ''})` : '';
+            setBacProduct({
+              id: p.id,
+              agentProductId: p.id,
+              name: `${p.name} ${sizeLabel}`.trim(),
+              retailPrice: basePrice,
+              costPrice: basePrice,
+              weightOz: Number(p.weight_oz) || 0.5,
+              unitSize: p.unit_size ?? null,
+              unitMeasure: p.unit_measure ?? null,
+            });
+          }
+          return;
+        }
+
+        if (isAgentSelfBuy) {
+          const res = await fetch('/api/agent/products');
+          if (res.ok) {
+            const json = await res.json();
+            const items = json.data || [];
+            const matched = items.find((item: any) => item.products?.compound_slug === 'bac-water');
+            if (matched) {
+              const retail = matched.retail_price / 10;
+              const cost = matched.agent_cost != null ? matched.agent_cost / 10 : retail;
+              const sizeLabel = matched.products?.unit_size
+                ? `(${matched.products.unit_size}${matched.products.unit_measure || ''})`
+                : '';
+              setBacProduct({
+                id: matched.product_id,
+                agentProductId: matched.id,
+                name: `${matched.products?.name || 'Bac. Water'} ${sizeLabel}`.trim(),
+                retailPrice: retail,
+                costPrice: cost,
+                weightOz: Number(matched.products?.weight_oz) || 0.5,
+                unitSize: matched.products?.unit_size ?? null,
+                unitMeasure: matched.products?.unit_measure ?? null,
+              });
+              return;
+            }
+          }
+        }
+
+        const supabase = createClient();
+        const { data: agentProfile } = await supabase
+          .from('agent_profiles')
+          .select('id')
+          .ilike('slug', agentSlug)
+          .maybeSingle();
+
+        if (agentProfile) {
+          const { data: ap } = await supabase
+            .from('agent_products')
+            .select(`
+              id,
+              product_id,
+              retail_price,
+              products!inner (
+                name,
+                unit_size,
+                unit_measure,
+                weight_oz,
+                compound_slug
+              )
+            `)
+            .eq('agent_id', agentProfile.id)
+            .eq('is_visible', true)
+            .eq('products.compound_slug', 'bac-water')
+            .limit(1)
+            .maybeSingle();
+
+          if (ap) {
+            const retail = ap.retail_price / 10;
+            const sizeLabel = ap.products?.unit_size
+              ? `(${ap.products.unit_size}${ap.products.unit_measure || ''})`
+              : '';
+            setBacProduct({
+              id: ap.product_id,
+              agentProductId: ap.id,
+              name: `${ap.products?.name || 'Bac. Water'} ${sizeLabel}`.trim(),
+              retailPrice: retail,
+              costPrice: retail,
+              weightOz: Number(ap.products?.weight_oz) || 0.5,
+              unitSize: ap.products?.unit_size ?? null,
+              unitMeasure: ap.products?.unit_measure ?? null,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching Bacteriostatic Water:', err);
+      }
+    })();
+  }, [agentSlug, isAgentSelfBuy]);
+
   const [fullName, setFullName] = useState(userProfile.full_name ?? '');
   const [street, setStreet] = useState('');
   const [suite, setSuite] = useState('');
@@ -263,6 +382,79 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
 
 
+
+  const isDiluentName = (name: string | null | undefined) => {
+    if (!name) return false;
+    const lower = name.toLowerCase();
+    return lower.includes('bac water') || 
+           lower.includes('bacteriostatic water') || 
+           lower.includes('bac. water') || 
+           lower.includes('acetic acid');
+  };
+
+  const totalPeptideVials = cart.reduce((sum, item) => {
+    if (isDiluentName(item.name)) return sum;
+    let vialsPerUnit = 1;
+    if (item.name.includes('+')) {
+      vialsPerUnit = item.name.split('+').length;
+    }
+    return sum + (vialsPerUnit * item.quantity);
+  }, 0);
+
+  const currentBacWaterVials = cart.reduce((sum, item) => {
+    const lower = (item.name || '').toLowerCase();
+    if (lower.includes('bac water') || lower.includes('bacteriostatic water') || lower.includes('bac. water')) {
+      return sum + item.quantity;
+    }
+    return sum;
+  }, 0);
+
+  const requiredBacWaterVials = totalPeptideVials > 0 ? Math.ceil(totalPeptideVials / 10) * 10 : 0;
+  const neededBacWaterVials = Math.max(0, requiredBacWaterVials - currentBacWaterVials);
+
+  const handleAddBacWater = () => {
+    if (!bacProduct || neededBacWaterVials <= 0) return;
+    
+    const updatedCart = [...storefrontCart];
+    const existingIndex = updatedCart.findIndex(item => item.id === bacProduct.id);
+    const suggestedQty = neededBacWaterVials;
+    
+    if (existingIndex > -1) {
+      updatedCart[existingIndex] = {
+        ...updatedCart[existingIndex],
+        quantity: updatedCart[existingIndex].quantity + suggestedQty
+      };
+    } else {
+      updatedCart.push({
+        id: bacProduct.id,
+        name: bacProduct.name,
+        sku: bacProduct.id,
+        quantity: suggestedQty,
+        retailPrice: bacProduct.retailPrice,
+        costPrice: bacProduct.costPrice,
+        weightOz: bacProduct.weightOz
+      });
+    }
+    
+    try {
+      localStorage.setItem(storefrontCartKey, JSON.stringify({
+        items: updatedCart,
+        _savedAt: Date.now()
+      }));
+      
+      if (agentSlug) {
+        const rawCart = localStorage.getItem(`cart_${agentSlug}`);
+        const cartItemsObj = rawCart ? JSON.parse(rawCart) : {};
+        const agentProdId = bacProduct.agentProductId;
+        cartItemsObj[agentProdId] = (cartItemsObj[agentProdId] || 0) + suggestedQty;
+        localStorage.setItem(`cart_${agentSlug}`, JSON.stringify(cartItemsObj));
+      }
+    } catch (e) {
+      console.error('Failed to update cart storage:', e);
+    }
+    
+    setStorefrontCart(updatedCart);
+  };
 
   const totalWeightOz = cart.reduce((acc, item) => acc + (item.weightOz ?? 0.5) * item.quantity, 0);
 
@@ -1322,6 +1514,54 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 );
               })}
             </div>
+
+            {/* Bacteriostatic Water Suggestion Box */}
+            {neededBacWaterVials > 0 && bacProduct && (
+              <div style={{
+                background: 'rgba(0, 196, 188, 0.04)',
+                border: '1px solid rgba(0, 196, 188, 0.25)',
+                borderRadius: 'var(--radius-md)',
+                padding: 'var(--space-3)',
+                marginBottom: 'var(--space-4)',
+                boxShadow: '0 0 15px rgba(0, 196, 188, 0.08)',
+                transition: 'all 0.3s ease',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: '1.1rem' }}>🔬</span>
+                  <strong style={{ color: 'var(--white)', fontSize: '0.82rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    Reconstitution Supplies
+                  </strong>
+                </div>
+                <p style={{ color: 'var(--silver-light)', fontSize: '0.76rem', margin: '0 0 10px', lineHeight: 1.4 }}>
+                  Your order contains <strong style={{ color: 'var(--white)' }}>{totalPeptideVials}</strong> research vial{totalPeptideVials !== 1 ? 's' : ''}. You need approximately <strong style={{ color: 'var(--white)' }}>{requiredBacWaterVials}</strong> vial{requiredBacWaterVials !== 1 ? 's' : ''} of Bacteriostatic Water.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleAddBacWater}
+                  className="btn-neon-cyan"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    cursor: 'pointer',
+                    borderRadius: 6,
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <span>Add {neededBacWaterVials} Vials To Order</span>
+                  <strong style={{ color: 'var(--white)' }}>
+                    (${((isAgentSelfBuy ? bacProduct.costPrice : bacProduct.retailPrice) * neededBacWaterVials).toFixed(2)})
+                  </strong>
+                </button>
+              </div>
+            )}
 
             {!couponDisabled && (
             <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
