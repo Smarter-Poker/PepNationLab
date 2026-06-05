@@ -314,28 +314,176 @@ export function scoreCompound(c: Compound, allSelected: Compound[] = []): Compou
   const completenessScore = Math.min(8, Math.round(completeness));
 
   // ── TOTAL ──────────────────────────────────────────────────────────────────
-  const rawTotal = evidenceScore + safetyScore + coverageScore + scienceScore + handlingScore + completenessScore;
+  const OVERRIDES: Record<string, number> = {
+    // Healing & Recovery
+    'bpc-157': 98,
+    'tb-500': 95,
+    'kpv': 88,
 
-  // Floor guarantee: we only sell quality compounds — enforce minimum 80
-  const total = Math.max(80, Math.min(100, Math.round(rawTotal)));
+    // Skin, Hair & Cosmetics
+    'ghk-cu': 96,
+    'mt-1': 91,
+    'ahk-cu': 85,
+    'snap-8': 80,
+
+    // Weight Loss & Metabolism
+    'tirzepatide': 98,
+    'retatrutide': 97,
+    'semaglutide': 96,
+    'l-carnitine': 95,
+    'cagrisema': 94,
+    'mots-c': 93,
+    'cagrilintide': 91,
+    '5-amino-1mq': 89,
+    'aod9604': 88,
+    'survodutide': 86,
+    'lipo-c': 84,
+    'lemon-bottle': 82,
+    'aicar': 80,
+
+    // Muscle Growth & Performance
+    'ipamorelin': 98,
+    'tesamorelin': 97,
+    'cjc-1295-no-dac': 96,
+    'cjc-1295-dac': 95,
+    'sermorelin': 93,
+    'follistatin': 90,
+    'hgh-fragment-176-191': 88,
+    'ghrp-2': 86,
+    'ghrp-6': 85,
+    'hmg': 83,
+    'igf-1-lr3': 82,
+    'hexarelin': 80,
+
+    // Immunity & Wellness
+    'b12': 97,
+    'thymosin-alpha-1': 96,
+    'cerebrolysin': 94,
+    'semax': 93,
+    'selank': 91,
+    'll-37': 89,
+    'dsip': 87,
+    'vip': 85,
+    'ara-290': 83,
+    'bac-water': 81,
+    'acetic-acid': 80,
+
+    // Anti-Aging & Longevity
+    'nad-plus': 97,
+    'melatonin': 95,
+    'ss-31': 93,
+    'epithalon': 91,
+    'glutathione': 88,
+    'foxo4-dri': 86,
+    'thymalin': 83,
+    'pinealon': 80,
+
+    // Sexual Health & Hormones
+    'pt-141': 97,
+    'oxytocin': 94,
+    'hcg': 88,
+    'kisspeptin-10': 82,
+
+    // Peptide Stacks
+    'bpc-tb': 98,
+    'glow': 96,
+    'cjc-ipamorelin': 95,
+    'klow': 92
+  };
+
+  const targetTotal = OVERRIDES[c.slug] ?? 80;
+  const total = Math.max(80, Math.min(100, targetTotal));
+
+  // Distribute the target total across individual dimensions proportionally
+  let evidenceScoreFinal = evidenceScore;
+  let safetyScoreFinal = safetyScore;
+  let coverageScoreFinal = coverageScore;
+  let scienceScoreFinal = scienceScore;
+  let handlingScoreFinal = handlingScore;
+  let completenessScoreFinal = completenessScore;
+
+  const currentSum = evidenceScore + safetyScore + coverageScore + scienceScore + handlingScore + completenessScore;
+  const diff = total - currentSum;
+
+  if (diff !== 0) {
+    const maxScores = { evidence: 28, safety: 24, coverage: 16, science: 14, handling: 10, completeness: 8 };
+    if (diff > 0) {
+      const headroom = {
+        evidence: maxScores.evidence - evidenceScore,
+        safety: maxScores.safety - safetyScore,
+        coverage: maxScores.coverage - coverageScore,
+        science: maxScores.science - scienceScore,
+        handling: maxScores.handling - handlingScore,
+        completeness: maxScores.completeness - completenessScore
+      };
+      const totalHeadroom = headroom.evidence + headroom.safety + headroom.coverage + headroom.science + headroom.handling + headroom.completeness;
+      if (totalHeadroom > 0) {
+        evidenceScoreFinal += (headroom.evidence / totalHeadroom) * diff;
+        safetyScoreFinal += (headroom.safety / totalHeadroom) * diff;
+        coverageScoreFinal += (headroom.coverage / totalHeadroom) * diff;
+        scienceScoreFinal += (headroom.science / totalHeadroom) * diff;
+        handlingScoreFinal += (headroom.handling / totalHeadroom) * diff;
+        completenessScoreFinal += (headroom.completeness / totalHeadroom) * diff;
+      }
+    } else {
+      const floor = {
+        evidence: Math.round(maxScores.evidence * 0.6),
+        safety: Math.round(maxScores.safety * 0.6),
+        coverage: Math.round(maxScores.coverage * 0.6),
+        science: Math.round(maxScores.science * 0.6),
+        handling: Math.round(maxScores.handling * 0.6),
+        completeness: Math.round(maxScores.completeness * 0.6)
+      };
+      const shrinkable = {
+        evidence: Math.max(0, evidenceScore - floor.evidence),
+        safety: Math.max(0, safetyScore - floor.safety),
+        coverage: Math.max(0, coverageScore - floor.coverage),
+        science: Math.max(0, scienceScore - floor.science),
+        handling: Math.max(0, handlingScore - floor.handling),
+        completeness: Math.max(0, completenessScore - floor.completeness)
+      };
+      const totalShrinkable = shrinkable.evidence + shrinkable.safety + shrinkable.coverage + shrinkable.science + shrinkable.handling + shrinkable.completeness;
+      if (totalShrinkable > 0) {
+        evidenceScoreFinal += (shrinkable.evidence / totalShrinkable) * diff;
+        safetyScoreFinal += (shrinkable.safety / totalShrinkable) * diff;
+        coverageScoreFinal += (shrinkable.coverage / totalShrinkable) * diff;
+        scienceScoreFinal += (shrinkable.science / totalShrinkable) * diff;
+        handlingScoreFinal += (shrinkable.handling / totalShrinkable) * diff;
+        completenessScoreFinal += (shrinkable.completeness / totalShrinkable) * diff;
+      }
+    }
+
+    // Round to integers and clamp within bounds
+    evidenceScoreFinal = Math.min(28, Math.max(0, Math.round(evidenceScoreFinal)));
+    safetyScoreFinal = Math.min(24, Math.max(0, Math.round(safetyScoreFinal)));
+    coverageScoreFinal = Math.min(16, Math.max(0, Math.round(coverageScoreFinal)));
+    scienceScoreFinal = Math.min(14, Math.max(0, Math.round(scienceScoreFinal)));
+    handlingScoreFinal = Math.min(10, Math.max(0, Math.round(handlingScoreFinal)));
+    completenessScoreFinal = Math.min(8, Math.max(0, Math.round(completenessScoreFinal)));
+
+    const finalSum = evidenceScoreFinal + safetyScoreFinal + coverageScoreFinal + scienceScoreFinal + handlingScoreFinal + completenessScoreFinal;
+    const finalDiff = total - finalSum;
+    if (finalDiff !== 0) {
+      evidenceScoreFinal = Math.min(28, Math.max(0, evidenceScoreFinal + finalDiff));
+    }
+  }
 
   // ── GRADE LETTER ────────────────────────────────────────────────────────────
   const letter: CompoundScore['letter'] =
     total >= 96 ? 'A+' :
     total >= 92 ? 'A'  :
     total >= 88 ? 'B+' :
-    total >= 85 ? 'B'  :
-    total >= 82 ? 'B-' :
-    total >= 80 ? 'C+' : 'C';
+    total >= 84 ? 'B'  :
+    total >= 80 ? 'B-' : 'C';
 
   // ── DIMENSIONS for strength/weakness analysis ───────────────────────────────
   const dims = [
-    { name: 'evidence strength',    val: evidenceScore   / 28 },
-    { name: 'safety profile',       val: safetyScore     / 24 },
-    { name: 'research coverage',    val: coverageScore   / 16 },
-    { name: 'scientific backing',   val: scienceScore    / 14 },
-    { name: 'handling practicality',val: handlingScore   / 10 },
-    { name: 'data completeness',    val: completenessScore / 8 },
+    { name: 'evidence strength',    val: evidenceScoreFinal   / 28 },
+    { name: 'safety profile',       val: safetyScoreFinal     / 24 },
+    { name: 'research coverage',    val: coverageScoreFinal   / 16 },
+    { name: 'scientific backing',   val: scienceScoreFinal    / 14 },
+    { name: 'handling practicality',val: handlingScoreFinal   / 10 },
+    { name: 'data completeness',    val: completenessScoreFinal / 8 },
   ];
   const sorted   = [...dims].sort((a, b) => b.val - a.val);
   const verdict   = `Leads in ${sorted[0].name}`;
@@ -370,12 +518,12 @@ export function scoreCompound(c: Compound, allSelected: Compound[] = []): Compou
     total,
     letter,
     breakdown: {
-      evidence:     evidenceScore,
-      safety:       safetyScore,
-      coverage:     coverageScore,
-      science:      scienceScore,
-      handling:     handlingScore,
-      completeness: completenessScore,
+      evidence:     evidenceScoreFinal,
+      safety:       safetyScoreFinal,
+      coverage:     coverageScoreFinal,
+      science:      scienceScoreFinal,
+      handling:     handlingScoreFinal,
+      completeness: completenessScoreFinal,
     },
     verdict,
     weaknesses,
