@@ -303,7 +303,6 @@ function renderRelativeDeltaPinned(
   if (currentVal != null && controlVal != null) {
     const diff = currentVal - controlVal;
     if (diff === 0) return null;
-    const sign = diff > 0 ? '+' : '';
     let color = diff > 0 ? '#68D391' : '#FF6B6B';
     if (rowLabel === 'Price Per Vial') {
       color = diff < 0 ? '#68D391' : '#FF6B6B';
@@ -1051,7 +1050,7 @@ export default function StorefrontCompareDrawer({
                     </div>
                   )}
                   <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(200px, 1fr))`, gap: 12 }}>
-                    {displayedPinned.map((p, dIdx) => {
+                    {displayedPinned.map((p) => {
                       const origIdx = pinned.findIndex(x => x.productName === p.productName);
                       const score = pinnedScores[origIdx];
                       const color = colors[origIdx % colors.length];
