@@ -175,6 +175,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
   }, [drawerOpen]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDrawerOpen(false);
   }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -24,9 +24,9 @@ import {
   Search, X, PlusCircle, Check, Printer, Share2, Download,
   ChevronDown, ChevronRight, GripHorizontal, ChevronLeft,
   ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info,
-  Zap, BookOpen, FlaskConical, Shield, Star, TrendingUp,
-  Clock, Thermometer, Layers, ArrowRight, BarChart3, Beaker,
-  Scale, Dna, Droplets, Activity, Syringe, Wrench, Hourglass,
+  Zap, BookOpen, FlaskConical, Shield, Star,
+  Clock, Thermometer, ArrowRight, BarChart3, Beaker,
+  Scale, Syringe, Wrench, Hourglass,
   Sparkles, Moon, Heart, Brain
 } from 'lucide-react';
 import { type Compound, evidenceTier, wadaLabel, researchAreaLabel, RISK_META } from '@/lib/compounds';
@@ -824,7 +824,7 @@ function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
           {allKeys.map(key => (
             <tr key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
               <td style={{ padding: '5px 10px', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'capitalize' }}>{key.replace(/_/g, ' ')}</td>
-              {selected.map((c, i) => {
+              {selected.map((c) => {
                 const v = (c.efficacy_scores ?? {})[key];
                 const color = v != null ? getColor(v) : 'transparent';
                 return (
