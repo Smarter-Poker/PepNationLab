@@ -26,7 +26,7 @@ import {
   ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info,
   Zap, BookOpen, FlaskConical, Shield, Star,
   Clock, Thermometer, ArrowRight, BarChart3, Beaker,
-  Scale, Syringe, Wrench, Hourglass,
+  Scale, Syringe, Wrench, Hourglass, Filter, List, Smartphone, LayoutList, MoveUp, MoveDown, Maximize2,
   Sparkles, Moon, Heart, Brain
 } from 'lucide-react';
 import { type Compound, evidenceTier, wadaLabel, researchAreaLabel, RISK_META } from '@/lib/compounds';
@@ -1034,6 +1034,32 @@ function ProtocolTab({ selected }: { selected: Compound[] }) {
   );
 }
 
+const TruncatedCell = ({ children }: { children: React.ReactNode }) => {
+  const [expanded, setExpanded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      setIsTruncated(containerRef.current.scrollHeight > containerRef.current.clientHeight);
+    }
+  }, [children]);
+
+  return (
+    <div>
+      <div ref={containerRef} style={expanded ? {} : { display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        {children}
+      </div>
+      {isTruncated && !expanded && (
+        <button type="button" onClick={() => setExpanded(true)} style={{ color: '#00C4BC', background: 'transparent', border: 'none', padding: 0, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', marginTop: 4 }}>Read More</button>
+      )}
+      {expanded && (
+        <button type="button" onClick={() => setExpanded(false)} style={{ color: 'rgba(255,255,255,0.4)', background: 'transparent', border: 'none', padding: 0, fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', marginTop: 4 }}>Show Less</button>
+      )}
+    </div>
+  );
+};
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function CompareTool({ compounds, initialSlugs = [] }: { compounds: Compound[]; initialSlugs?: string[] }) {
   const router = useRouter();
@@ -1060,6 +1086,11 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
   const [activeTab, setActiveTab] = useState<'matrix' | 'proscons' | 'brief' | 'mechanism' | 'protocol' | 'recommend'>('matrix');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
+  const [mobileViewMode, setMobileViewMode] = useState<'matrix' | 'accordion'>('matrix');
+  const [showLandscapePrompt, setShowLandscapePrompt] = useState(true);
+  const [reorderModalOpen, setReorderModalOpen] = useState(false);
+  const [jumpMenuOpen, setJumpMenuOpen] = useState(false);
+  const [expandedTextModal, setExpandedTextModal] = useState<{ title: string; content: string } | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -1330,13 +1361,12 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
             <div className="glass-panel" style={{ borderRadius: 14, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* Top Pick Banner */}
               {topPickSlug && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 10, padding: '10px 16px' }}>
-                  <Trophy size={17} color="#00C4BC" />
-                  <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#00C4BC' }}>Top Overall Pick: {bySlug.get(topPickSlug)?.display_name}</span>
-                  <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}>· Highest composite research score</span>
-                  <button type="button" onClick={() => setActiveTab('recommend')} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', color: '#00C4BC', borderRadius: 6, padding: '4px 10px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>
-                    See Verdict <ArrowRight size={11} />
-                  </button>
+                <div style={{ position: isMobile ? 'sticky' : 'relative', top: isMobile ? 10 : 'auto', zIndex: isMobile ? 40 : 'auto', display: 'flex', alignItems: 'center', gap: 10, background: isMobile ? 'rgba(0,196,188,0.15)' : 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10, padding: '10px 16px', backdropFilter: isMobile ? 'blur(10px)' : 'none', marginBottom: isMobile ? 12 : 0, cursor: 'pointer', boxShadow: isMobile ? '0 8px 24px rgba(0,0,0,0.5)' : 'none' }} onClick={() => setActiveTab('recommend')}>
+                  <Trophy size={17} color="#00C4BC" style={{ flexShrink: 0 }} />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#00C4BC' }}>Top Pick: {bySlug.get(topPickSlug)?.display_name}</span>
+                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.6)' }}>Tap to see full verdict & analysis <ArrowRight size={8} style={{ display: 'inline-block' }}/></span>
+                  </div>
                 </div>
               )}
 
@@ -1365,20 +1395,35 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 })}
               </div>
 
-              {/* Radar Chart */}
+              {/* Radar Chart or Spark Bars */}
               {radarData.length >= 2 && (
-                <div style={{ marginTop: 4 }}>
-                  <div style={{ textAlign: 'center', fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Research Profile Radar — hover axes for details</div>
-                  <AttributeRadarChart data={radarData} colors={colors} compoundNames={selected.map(c => c.display_name)} size={isMobile ? 220 : 320} animated />
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginTop: 6 }}>
+                isMobile ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12, padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800, marginBottom: 4 }}>Profile Strength</div>
                     {selected.map((c, i) => (
-                      <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)' }}>
-                        <div style={{ width: 10, height: 4, borderRadius: 2, background: colors[i % colors.length] }} />
-                        {c.display_name}
+                      <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                         <div style={{ width: 64, fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontWeight: 700 }}>{c.display_name}</div>
+                         <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{ width: `${scores[i].overall}%`, height: '100%', background: colors[i % colors.length], borderRadius: 3, transition: 'width 1s ease-out' }} />
+                         </div>
+                         <div style={{ width: 20, fontSize: '0.7rem', fontWeight: 800, color: colors[i % colors.length], textAlign: 'right' }}>{Math.round(scores[i].overall)}</div>
                       </div>
                     ))}
                   </div>
-                </div>
+                ) : (
+                  <div style={{ marginTop: 4 }}>
+                    <div style={{ textAlign: 'center', fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Research Profile Radar — hover axes for details</div>
+                    <AttributeRadarChart data={radarData} colors={colors} compoundNames={selected.map(c => c.display_name)} size={320} animated />
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginTop: 6 }}>
+                      {selected.map((c, i) => (
+                        <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)' }}>
+                          <div style={{ width: 10, height: 4, borderRadius: 2, background: colors[i % colors.length] }} />
+                          {c.display_name}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
               )}
             </div>
           )}
@@ -1390,14 +1435,14 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 <Scale size={17} color="#00C4BC" /> Pros &amp; Cons Analysis
                 <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontWeight: 400, marginLeft: 4 }}>Data-driven from compound attributes</span>
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(260px, 1fr))`, gap: 14 }}>
+              <div className="hide-scroll" style={{ display: isMobile ? 'flex' : 'grid', gridTemplateColumns: isMobile ? undefined : `repeat(auto-fit, minmax(260px, 1fr))`, gap: 14, overflowX: isMobile ? 'auto' : 'visible', WebkitOverflowScrolling: 'touch', scrollSnapType: isMobile ? 'x mandatory' : 'none', paddingBottom: isMobile ? 12 : 0, margin: isMobile ? '0 -24px' : 0, paddingLeft: isMobile ? 24 : 0, paddingRight: isMobile ? 24 : 0 }}>
                 {displayedSelected.map(c => {
                   const origIdx = selected.findIndex(x => x.slug === c.slug);
                   const pc = prosCons[origIdx];
                   const color = colors[origIdx % colors.length];
                   const isTop = c.slug === topPickSlug;
                   return (
-                    <div key={c.slug} style={{ padding: 16, borderRadius: 12, background: isTop ? 'rgba(0,196,188,0.04)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isTop ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.07)'}` }}>
+                    <div key={c.slug} style={{ padding: 16, borderRadius: 12, background: isTop ? 'rgba(0,196,188,0.04)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isTop ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.07)'}`, minWidth: isMobile ? 280 : 'auto', scrollSnapAlign: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                         <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
                         <span style={{ fontWeight: 900, fontSize: '0.9rem', color: '#fff' }}>{c.display_name}</span>
@@ -1505,17 +1550,124 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
 
           {/* ── TAB: ATTRIBUTE MATRIX ── */}
           {(activeTab === 'matrix') && (
-            <div className="glass-panel" style={{ borderRadius: 14, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? (displayedSelected.length * 160 + 120) : 480, position: 'relative' }}>
+            <>
+              {/* Toggle View Mode on Mobile */}
+              {isMobile && (
+                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+                   <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 4, gap: 4 }}>
+                     <button onClick={() => setMobileViewMode('matrix')} style={{ background: mobileViewMode === 'matrix' ? 'rgba(0,196,188,0.15)' : 'transparent', color: mobileViewMode === 'matrix' ? '#00C4BC' : '#A8B4C0', border: 'none', padding: '6px 12px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 800 }}>Table View</button>
+                     <button onClick={() => setMobileViewMode('accordion')} style={{ background: mobileViewMode === 'accordion' ? 'rgba(0,196,188,0.15)' : 'transparent', color: mobileViewMode === 'accordion' ? '#00C4BC' : '#A8B4C0', border: 'none', padding: '6px 12px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 800 }}>Card View</button>
+                   </div>
+                 </div>
+              )}
+
+              {isMobile && mobileViewMode === 'accordion' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {(() => {
+                    let currentGroupIdentical = false;
+                    const controlCompound = displayedSelected.find(x => x.slug === controlSlug);
+                    return ROWS.map(row => {
+                      if (row.kind === 'group') {
+                        currentGroupIdentical = true;
+                        const startIndex = ROWS.indexOf(row) + 1;
+                        for (let i = startIndex; i < ROWS.length; i++) {
+                          const r = ROWS[i];
+                          if (r.kind === 'group') break;
+                          if (!r.isIdentical) {
+                            currentGroupIdentical = false;
+                            break;
+                          }
+                        }
+                        if (hideIdentical && currentGroupIdentical) return null;
+                        
+                        const isCollapsed = collapsedGroups.has(row.label);
+                        return (
+                          <div key={row.label} id={`group-${row.label.replace(/\s+/g, '-')}`} onClick={() => toggleGroup(row.label)} style={{ marginTop: 12, padding: '12px 16px', background: '#162230', color: '#fff', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: 8, fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                            {row.label}
+                            {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                          </div>
+                        );
+                      }
+
+                      if (hideIdentical && row.isIdentical) return null;
+
+                      // Check if parent group is collapsed
+                      let parentGroupLabel = '';
+                      for (let i = ROWS.indexOf(row) - 1; i >= 0; i--) {
+                        if (ROWS[i].kind === 'group') {
+                          parentGroupLabel = ROWS[i].label;
+                          break;
+                        }
+                      }
+                      if (parentGroupLabel && collapsedGroups.has(parentGroupLabel)) return null;
+
+                      // Winner Engine Calculation
+                      const bestIndices: number[] = [];
+                      if (row.bestLogic && displayedSelected.length > 1 && !allSame) {
+                        const rawScores = displayedSelected.map(c => row.getRawScore ? row.getRawScore(c) : 0);
+                        const valid = rawScores.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
+                        if (valid.length > 0) {
+                          const best = row.bestLogic === 'max' ? Math.max(...valid) : Math.min(...valid);
+                          rawScores.forEach((s, i) => {
+                            if (s === best) bestIndices.push(i);
+                          });
+                        }
+                      }
+
+                      return (
+                        <div key={row.label} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, padding: 12 }}>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 800, color: '#A8B4C0', marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                             {row.label}
+                             {row.glossaryTerm && <InCellGlossaryTooltip term={row.glossaryTerm} />}
+                           </div>
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                             {displayedSelected.map((c, idx) => {
+                               const isWinner = bestIndices.includes(idx);
+                               const isControl = c.slug === controlSlug;
+                               return (
+                                 <div key={c.slug} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: 10, background: isControl ? 'rgba(0,196,188,0.05)' : 'rgba(255,255,255,0.02)', borderRadius: 8, position: 'relative', border: isWinner ? '1px solid rgba(0,196,188,0.4)' : '1px solid transparent' }}>
+                                   {isWinner && (
+                                      <div style={{ position: 'absolute', top: -8, right: 10, fontSize: '0.65rem', background: '#00C4BC', color: '#04221F', padding: '2px 6px', borderRadius: 4, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px', boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+                                        <Trophy size={10} /> Top Pick
+                                      </div>
+                                   )}
+                                   <div style={{ width: 80, fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', flexShrink: 0, marginTop: 2 }}>{c.display_name}</div>
+                                   <div style={{ flex: 1, fontSize: '0.85rem', color: '#fff' }}>
+                                     <TruncatedCell>
+                                       {row.render(c, maxHalfLife)}
+                                       {controlCompound && renderRelativeDelta(row.label, c, controlCompound)}
+                                     </TruncatedCell>
+                                   </div>
+                                 </div>
+                               );
+                             })}
+                           </div>
+                        </div>
+                      )
+                    });
+                  })()}
+                </div>
+              ) : (
+                <div className="glass-panel" style={{ borderRadius: 14, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? (displayedSelected.length * 160 + 120) : 480, position: 'relative' }}>
                 <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                   <tr>
-                    <th style={{ ...labelCellStyle, textAlign: 'left', width: isMobile ? 120 : '22%', background: '#162230', zIndex: 30, fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }} scope="col">Attribute</th>
+                    <th style={{ ...labelCellStyle, textAlign: 'left', width: isMobile ? 120 : '22%', background: '#162230', zIndex: 30, fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }} scope="col">
+                       Attribute
+                       {isMobile && selected.length > 1 && (
+                         <button onClick={() => setReorderModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#00C4BC', padding: '4px 8px', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, marginTop: 8, cursor: 'pointer' }}>
+                           <LayoutList size={12} /> Reorder
+                         </button>
+                       )}
+                    </th>
                     {displayedSelected.map(c => {
                       const origIdx = selected.findIndex(x => x.slug === c.slug);
                       const color = colors[origIdx % colors.length];
                       const isTop = c.slug === topPickSlug;
+                      const isControl = c.slug === controlSlug;
+                      const controlStyle: React.CSSProperties = isControl && isMobile ? { position: 'sticky', left: 120, zIndex: 25, boxShadow: '-2px 0 8px rgba(0,0,0,0.4)', borderRight: '2px solid rgba(0,196,188,0.4)' } : {};
                       return (
-                        <th key={c.slug} style={{ ...cellStyle, textAlign: 'left', background: c.slug === controlSlug ? 'linear-gradient(rgba(0,196,188,0.08),rgba(0,196,188,0.08)), #162230' : '#162230', width: isMobile ? 160 : `${78 / displayedSelected.length}%`, scrollSnapAlign: 'start' }} scope="col"
+                        <th key={c.slug} style={{ ...cellStyle, textAlign: 'left', background: isControl ? 'linear-gradient(rgba(0,196,188,0.08),rgba(0,196,188,0.08)), #162230' : '#162230', width: isMobile ? 160 : `${78 / displayedSelected.length}%`, scrollSnapAlign: 'start', ...controlStyle }} scope="col"
                           draggable={!isMobile}
                           onDragStart={e => { e.dataTransfer.setData('text/plain', String(origIdx)); e.dataTransfer.effectAllowed = 'move'; }}
                           onDragOver={e => e.preventDefault()}
@@ -1613,8 +1765,6 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                       visibleRows.push(currentGroupRow);
                     }
 
-                    const controlCompound = displayedSelected.find(x => x.slug === controlSlug);
-
                     return visibleRows.map((row) => {
                       const rIdx = ROWS.indexOf(row);
                       if (row.kind === 'group') {
@@ -1686,16 +1836,28 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                           </td>
                           {displayedSelected.map((c, idx) => {
                             const isWinner = bestIndices.includes(idx);
+                            const isControl = c.slug === controlSlug;
+                            const controlStyleTd: React.CSSProperties = isControl && isMobile ? { position: 'sticky', left: 120, zIndex: 15, background: '#192A34', boxShadow: '-2px 0 8px rgba(0,0,0,0.4)', borderRight: '2px solid rgba(0,196,188,0.4)' } : {};
+
                             return (
-                              <td key={c.slug} style={{ ...valueCellStyle, position: 'relative', background: c.slug === controlSlug ? 'rgba(0,196,188,0.04)' : undefined }}>
+                              <td key={c.slug} style={{ ...valueCellStyle, position: 'relative', background: c.slug === controlSlug ? 'rgba(0,196,188,0.04)' : undefined, ...controlStyleTd }}>
                                 {isWinner && (
                                   <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.65rem', background: '#00C4BC', color: '#04221F', padding: '1px 5px', borderRadius: 3, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
                                     <Trophy size={9} /> Top Pick
                                   </div>
                                 )}
                                 <div style={isWinner ? { borderLeft: '2px solid #00C4BC', paddingLeft: 7, marginLeft: -8 } : {}}>
-                                  {row.render(c, maxHalfLife)}
-                                  {controlCompound && renderRelativeDelta(row.label, c, controlCompound)}
+                                  {isMobile ? (
+                                    <TruncatedCell>
+                                      {row.render(c, maxHalfLife)}
+                                      {controlCompound && renderRelativeDelta(row.label, c, controlCompound)}
+                                    </TruncatedCell>
+                                  ) : (
+                                    <>
+                                      {row.render(c, maxHalfLife)}
+                                      {controlCompound && renderRelativeDelta(row.label, c, controlCompound)}
+                                    </>
+                                  )}
                                 </div>
                               </td>
                             );
@@ -1708,7 +1870,9 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
               </table>
             </div>
           )}
-        </div>
+          </>
+        )}
+      </div>
       )}
       {/* Floating Action Button (FAB) for adding compounds on mobile */}
       {isMobile && selected.length >= 1 && selected.length < MAX_COLUMNS && canAdd && (
@@ -1725,6 +1889,104 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         >
           <PlusCircle size={28} />
         </button>
+      )}
+
+      {/* Differences Only Floating Pill (Mobile) */}
+      {isMobile && activeTab === 'matrix' && selected.length >= 2 && (
+        <button
+          className="no-print"
+          onClick={() => setHideIdentical(!hideIdentical)}
+          style={{ position: 'fixed', bottom: 26, left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: hideIdentical ? '#00C4BC' : 'rgba(22,34,48,0.95)', color: hideIdentical ? '#04221F' : '#fff', border: `1px solid ${hideIdentical ? '#00C4BC' : 'rgba(255,255,255,0.2)'}`, padding: '10px 20px', borderRadius: 999, fontSize: '0.85rem', fontWeight: 800, boxShadow: '0 8px 32px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(12px)', cursor: 'pointer' }}
+        >
+          {hideIdentical ? <Check size={16} /> : <Filter size={16} />}
+          {hideIdentical ? 'Showing Differences' : 'Differences Only'}
+        </button>
+      )}
+      {/* Jump to Group Menu Button (Mobile) */}
+      {isMobile && activeTab === 'matrix' && (
+        <button
+          className="no-print"
+          onClick={() => setJumpMenuOpen(true)}
+          style={{ position: 'fixed', bottom: 26, left: 20, zIndex: 100, background: 'rgba(22,34,48,0.95)', color: '#fff', border: `1px solid rgba(255,255,255,0.2)`, padding: '10px', borderRadius: '50%', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)', cursor: 'pointer' }}
+        >
+          <List size={20} />
+        </button>
+      )}
+
+      {/* Reorder Modal */}
+      {reorderModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setReorderModalOpen(false)}>
+          <div style={{ background: '#162230', width: '100%', maxWidth: 400, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, boxShadow: '0 -10px 40px rgba(0,0,0,0.5)', animation: 'slideUp 0.3s ease-out' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Reorder Columns</h3>
+              <button onClick={() => setReorderModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#A8B4C0', cursor: 'pointer' }}><X size={24} /></button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '60vh', overflowY: 'auto' }}>
+              {selectedSlugs.map((slug, idx) => {
+                const c = bySlug.get(slug);
+                if (!c) return null;
+                return (
+                  <div key={slug} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>{c.display_name}</div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button disabled={idx === 0} onClick={() => {
+                        const newSlugs = [...selectedSlugs];
+                        [newSlugs[idx - 1], newSlugs[idx]] = [newSlugs[idx], newSlugs[idx - 1]];
+                        setSelectedSlugs(newSlugs);
+                      }} style={{ background: idx === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 6, padding: 6, color: idx === 0 ? 'rgba(255,255,255,0.2)' : '#fff', cursor: idx === 0 ? 'default' : 'pointer' }}><MoveUp size={16} /></button>
+                      <button disabled={idx === selectedSlugs.length - 1} onClick={() => {
+                        const newSlugs = [...selectedSlugs];
+                        [newSlugs[idx + 1], newSlugs[idx]] = [newSlugs[idx], newSlugs[idx + 1]];
+                        setSelectedSlugs(newSlugs);
+                      }} style={{ background: idx === selectedSlugs.length - 1 ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 6, padding: 6, color: idx === selectedSlugs.length - 1 ? 'rgba(255,255,255,0.2)' : '#fff', cursor: idx === selectedSlugs.length - 1 ? 'default' : 'pointer' }}><MoveDown size={16} /></button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Jump to Group Menu Modal */}
+      {jumpMenuOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setJumpMenuOpen(false)}>
+          <div style={{ background: '#162230', width: '100%', maxWidth: 400, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, boxShadow: '0 -10px 40px rgba(0,0,0,0.5)', animation: 'slideUp 0.3s ease-out' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Jump to Section</h3>
+              <button onClick={() => setJumpMenuOpen(false)} style={{ background: 'transparent', border: 'none', color: '#A8B4C0', cursor: 'pointer' }}><X size={24} /></button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '60vh', overflowY: 'auto' }}>
+              {ROWS.filter(r => r.kind === 'group').map(g => (
+                <button
+                  key={g.label}
+                  onClick={() => {
+                     setJumpMenuOpen(false);
+                     const el = document.getElementById(`group-${g.label.replace(/\s+/g, '-')}`);
+                     if (el) {
+                       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                     }
+                  }}
+                  style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  {g.label}
+                  <ChevronRight size={16} color="rgba(255,255,255,0.3)" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Landscape Prompt Toast */}
+      {isMobile && showLandscapePrompt && selected.length > 2 && activeTab === 'matrix' && (
+        <div className="no-print" style={{ position: 'fixed', top: 20, left: 20, right: 20, zIndex: 110, background: 'rgba(0,196,188,0.15)', border: '1px solid rgba(0,196,188,0.4)', borderRadius: 12, padding: '12px 16px', color: '#00C4BC', display: 'flex', alignItems: 'center', gap: 12, backdropFilter: 'blur(10px)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', animation: 'fadeInDown 0.5s ease-out' }}>
+          <Smartphone size={24} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Rotate for Better View</div>
+            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>Landscape mode shows more compounds.</div>
+          </div>
+          <button onClick={() => setShowLandscapePrompt(false)} style={{ background: 'transparent', border: 'none', color: 'rgba(0,196,188,0.6)', cursor: 'pointer', padding: 4 }}><X size={16} /></button>
+        </div>
       )}
     </div>
   );
