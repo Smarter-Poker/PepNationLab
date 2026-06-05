@@ -24,55 +24,79 @@ const RESEARCH_NOTE = 'Research Use Only. Not Intended As Medical Advice Or Huma
 
 const chromeOuterStyle: React.CSSProperties = {
   scrollMarginTop: 100,
-  marginBottom: 24,
-  borderRadius: 20,
-  padding: 4,
-  background: 'linear-gradient(135deg, #e6e9f0 0%, #8a95a5 50%, #e6e9f0 100%)',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+  marginBottom: 28,
+  borderRadius: 24,
+  padding: '2px', // High-tech ultra-thin border gradient
+  background: 'linear-gradient(135deg, rgba(0, 229, 255, 0.3) 0%, rgba(104, 211, 145, 0.05) 50%, rgba(0, 229, 255, 0.3) 100%)',
+  boxShadow: '0 16px 40px rgba(0,0,0,0.7), 0 0 24px rgba(0, 229, 255, 0.04)',
+  transition: 'all 0.3s ease',
 };
 
 const chromeInnerStyle: React.CSSProperties = {
-  borderRadius: 16,
-  padding: 24,
-  background: '#0B0E14',
-  boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8)',
+  borderRadius: 22,
+  padding: 32,
+  background: 'radial-gradient(circle at 50% 0%, #111622 0%, #080a0f 100%)',
+  boxShadow: 'inset 0 0 30px rgba(0,0,0,0.9)',
 };
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
-  fontSize: 13,
-  fontWeight: 600,
-  color: '#A8B4C0',
-  marginBottom: 6,
-  textTransform: 'capitalize', // Title Case
-  letterSpacing: '0.02em',
+  fontSize: 12,
+  fontWeight: 700,
+  color: '#9CA3AF',
+  marginBottom: 8,
+  textTransform: 'capitalize', // Enforce Title Case on Labels
+  letterSpacing: '0.05em',
 };
 
 const inputStyleBase: React.CSSProperties = {
   width: '100%',
-  background: 'rgba(255, 255, 255, 0.05)', // Glassmorphism
-  backdropFilter: 'blur(10px)',
-  border: '1px solid rgba(255, 255, 255, 0.1)',
-  color: '#A8B2C1',
-  padding: '10px 12px',
+  height: '46px',
+  boxSizing: 'border-box',
+  background: 'rgba(255, 255, 255, 0.04)', // Semi-transparent glassmorphic background
+  backdropFilter: 'blur(12px)',
+  border: '1px solid rgba(255, 255, 255, 0.08)',
+  color: '#F3F4F6',
+  padding: '0 16px',
   borderRadius: 8,
-  fontSize: 16,
+  fontSize: 15,
   fontFamily: 'monospace',
   outline: 'none',
-  transition: 'all 0.3s ease',
+  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+};
+
+const selectStyleBase: React.CSSProperties = {
+  ...inputStyleBase,
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  MozAppearance: 'none',
+  // Custom encoded SVG arrow chevron
+  backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23A8B2C1' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 16px center',
+  backgroundSize: '16px',
+  paddingRight: '42px',
+  cursor: 'pointer',
 };
 
 function StyledInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
   return (
     <input 
       {...props}
       onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
       onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         ...inputStyleBase,
-        borderColor: focused ? '#A8B2C1' : 'rgba(255, 255, 255, 0.1)',
-        boxShadow: focused ? '0 0 10px rgba(168,178,193,0.3), inset 0 2px 4px rgba(0,0,0,0.3)' : 'inset 0 2px 4px rgba(0,0,0,0.3)',
+        borderColor: focused ? '#00E5FF' : hovered ? 'rgba(0, 229, 255, 0.35)' : 'rgba(255, 255, 255, 0.08)',
+        boxShadow: focused 
+          ? '0 0 12px rgba(0, 229, 255, 0.25), inset 0 2px 4px rgba(0,0,0,0.5)' 
+          : hovered 
+            ? '0 0 8px rgba(0, 229, 255, 0.1), inset 0 2px 4px rgba(0,0,0,0.2)' 
+            : 'inset 0 2px 4px rgba(0,0,0,0.2)',
         ...props.style
       }}
     />
@@ -81,15 +105,22 @@ function StyledInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
 
 function StyledSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
   return (
     <select 
       {...props}
       onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
       onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        ...inputStyleBase,
-        borderColor: focused ? '#A8B2C1' : 'rgba(255, 255, 255, 0.1)',
-        boxShadow: focused ? '0 0 10px rgba(168,178,193,0.3), inset 0 2px 4px rgba(0,0,0,0.3)' : 'inset 0 2px 4px rgba(0,0,0,0.3)',
+        ...selectStyleBase,
+        borderColor: focused ? '#00E5FF' : hovered ? 'rgba(0, 229, 255, 0.35)' : 'rgba(255, 255, 255, 0.08)',
+        boxShadow: focused 
+          ? '0 0 12px rgba(0, 229, 255, 0.25), inset 0 2px 4px rgba(0,0,0,0.5)' 
+          : hovered 
+            ? '0 0 8px rgba(0, 229, 255, 0.1), inset 0 2px 4px rgba(0,0,0,0.2)' 
+            : 'inset 0 2px 4px rgba(0,0,0,0.2)',
         ...props.style
       }}
     />
@@ -97,30 +128,30 @@ function StyledSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
 }
 
 const explainerStyle: React.CSSProperties = {
-  color: '#A8B4C0',
+  color: '#9CA3AF',
   fontSize: 14,
   lineHeight: 1.6,
-  margin: '0 0 16px',
+  margin: '0 0 20px',
 };
 
 const resultStyle: React.CSSProperties = {
-  marginTop: 16,
-  padding: 16,
-  borderRadius: 12,
-  background: '#080A0F',
-  border: '1px solid rgba(168,178,193,0.5)',
-  boxShadow: '0 0 20px rgba(168,178,193,0.2), inset 0 0 10px rgba(168,178,193,0.1)', // Neon Glow
-  color: '#A8B2C1',
+  marginTop: 20,
+  padding: 20,
+  borderRadius: 14,
+  background: '#07090e',
+  border: '1px solid rgba(0, 229, 255, 0.2)',
+  boxShadow: '0 4px 20px rgba(0, 229, 255, 0.05), inset 0 0 15px rgba(0, 229, 255, 0.02)',
+  color: '#E5E7EB',
   fontSize: 16,
   fontFamily: 'monospace',
   textAlign: 'center',
-  textTransform: 'capitalize', // Title Case
+  textTransform: 'capitalize', // Enforce Title Case
 };
 
 const noteStyle: React.CSSProperties = {
-  marginTop: 14,
+  marginTop: 18,
   marginBottom: 0,
-  color: '#A8B4C0',
+  color: '#6B7280',
   fontSize: 11,
   fontStyle: 'italic',
 };
@@ -218,17 +249,17 @@ function SaveToJournalButton({
 }
 
 const POPULAR_PEPTIDES = [
-  { name: 'Custom (Enter Manually)', vialMass: '', defaultDose: '', unit: 'mcg' },
+  { name: 'Custom (Enter Manually)', vialMass: '10', defaultDose: '1', unit: 'mg' },
   { name: 'BPC-157', vialMass: '5', defaultDose: '250', unit: 'mcg' },
-  { name: 'TB-500', vialMass: '5', defaultDose: '2.5', unit: 'mg' },
+  { name: 'TB-500', vialMass: '5', defaultDose: '1', unit: 'mg' },
   { name: 'CJC-1295 / Ipamorelin', vialMass: '5', defaultDose: '300', unit: 'mcg' },
-  { name: 'Tirzepatide', vialMass: '10', defaultDose: '2.5', unit: 'mg' },
+  { name: 'Tirzepatide', vialMass: '10', defaultDose: '1', unit: 'mg' },
   { name: 'Semaglutide', vialMass: '5', defaultDose: '0.25', unit: 'mg' },
-  { name: 'Retatrutide', vialMass: '10', defaultDose: '2', unit: 'mg' },
-  { name: 'GHK-Cu', vialMass: '50', defaultDose: '2', unit: 'mg' },
+  { name: 'Retatrutide', vialMass: '10', defaultDose: '1', unit: 'mg' },
+  { name: 'GHK-Cu', vialMass: '50', defaultDose: '1', unit: 'mg' },
   { name: 'Melanotan II', vialMass: '10', defaultDose: '250', unit: 'mcg' },
   { name: 'PT-141', vialMass: '10', defaultDose: '1', unit: 'mg' },
-  { name: 'MOTS-c', vialMass: '10', defaultDose: '5', unit: 'mg' }
+  { name: 'MOTS-c', vialMass: '10', defaultDose: '1', unit: 'mg' }
 ];
 
 const STANDARD_AA = new Set('ACDEFGHIKLMNPQRSTVWY');
@@ -245,13 +276,13 @@ function VisualSyringe({ ml, size }: { ml: number; size: 0.3 | 0.5 | 1.0 }) {
   return (
     <div style={{ background: '#121620', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16, marginTop: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 12, color: '#A8B4C0', fontFamily: 'monospace' }}>
-        <span>Syringe Capacity: {size} mL ({maxUnits} Units Max)</span>
-        <span style={{ color: '#00E5FF', fontWeight: 'bold' }}>{units} Units ({ml.toFixed(3)} mL)</span>
+        <span>Syringe Capacity: <span className="calc-no-capitalize">{size} mL ({maxUnits} Units Max)</span></span>
+        <span style={{ color: '#00E5FF', fontWeight: 'bold' }} className="calc-no-capitalize">{units} Units ({ml.toFixed(3)} mL)</span>
       </div>
       
       {ml > size ? (
         <div style={{ color: '#FF6B6B', fontSize: 13, textAlign: 'center', padding: '8px 0', border: '1px dashed rgba(255,107,107,0.3)', borderRadius: 6, background: 'rgba(255,107,107,0.05)' }}>
-          Warning: Dose volume ({ml.toFixed(3)} mL) exceeds syringe capacity ({size} mL). Select a larger syringe or increase reconstitution diluent volume.
+          Warning: Dose Volume <span className="calc-no-capitalize">({ml.toFixed(3)} mL)</span> Exceeds Syringe Capacity <span className="calc-no-capitalize">({size} mL)</span>. Select A Larger Syringe Or Increase Reconstitution Diluent Volume.
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', height: 60, paddingLeft: 40, position: 'relative' }}>
@@ -299,19 +330,19 @@ function VisualSyringe({ ml, size }: { ml: number; size: 0.3 | 0.5 | 1.0 }) {
 
 function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
   const [peptide, setPeptide] = useState(POPULAR_PEPTIDES[0].name);
-  const [vialMass, setVialMass] = useState('');
-  const [diluentMl, setDiluentMl] = useState('');
-  const [desiredMass, setDesiredMass] = useState('');
-  const [unit, setUnit] = useState('mcg');
+  const [vialMass, setVialMass] = useState('10');
+  const [diluentMl, setDiluentMl] = useState('2');
+  const [desiredMass, setDesiredMass] = useState('1');
+  const [unit, setUnit] = useState('mg');
   const [syringeSize, setSyringeSize] = useState<0.3 | 0.5 | 1.0>(1.0);
   const [diluentType, setDiluentType] = useState<'bac-water' | 'acetic-acid'>('bac-water');
 
   const peptideList = useMemo(() => {
     const dbPeptides = compounds.map(c => ({
       name: c.display_name,
-      vialMass: '',
-      defaultDose: '',
-      unit: 'mcg'
+      vialMass: '10',
+      defaultDose: '1',
+      unit: 'mg'
     }));
     return [...POPULAR_PEPTIDES, ...dbPeptides];
   }, [compounds]);
@@ -321,14 +352,15 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
     setPeptide(val);
     const found = peptideList.find(p => p.name === val);
     if (found && found.name !== 'Custom (Enter Manually)') {
-      setVialMass(found.vialMass || '5');
-      setDesiredMass(found.defaultDose || '250');
-      setUnit(found.unit || 'mcg');
+      setVialMass(found.vialMass || '10');
+      setDesiredMass(found.defaultDose || '1');
+      setUnit(found.unit || 'mg');
       setDiluentMl('2');
     } else {
       setVialMass('');
-      setDesiredMass('');
+      setDesiredMass('1');
       setDiluentMl('');
+      setUnit('mg');
     }
   };
 
@@ -356,7 +388,7 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
       <div style={chromeInnerStyle}>
         <CalculatorHeader
           title="Reconstitution & Syringe Calculator"
-          why="Lyophilized peptide preparation guidelines. Select standard compounds, configure diluent matrices, and visually confirm draw volumes using standard insulin syringe models."
+          why="Lyophilized Peptide Preparation Guidelines. Select Standard Compounds, Configure Diluent Matrices, And Visually Confirm Draw Volumes Using Standard Insulin Syringe Models."
         />
         
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16, marginBottom: 16 }}>
@@ -370,11 +402,11 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 }}>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Step 2: Vial Mass (mg)</div>
+            <div style={labelStyle}>Step 2: Vial Mass (Mg)</div>
             <StyledInput type="number" step="any" min={0} value={vialMass} placeholder="e.g. 5" onChange={(e) => setVialMass(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Step 3: Diluent Added (mL)</div>
+            <div style={labelStyle}>Step 3: Diluent Added (ML)</div>
             <StyledInput type="number" step="any" min={0} value={diluentMl} placeholder="e.g. 2" onChange={(e) => setDiluentMl(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
@@ -388,42 +420,42 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
 
         {isIgf && (
           <div style={{ color: '#F6AD55', fontSize: 13, padding: '8px 12px', border: '1px solid rgba(246,173,85,0.3)', borderRadius: 6, background: 'rgba(246,173,85,0.05)', marginBottom: 12 }}>
-            Stability Warning: IGF-1 family peptides precipitate quickly in neutral pH (bac-water). Reconstituting in 0.6% Acetic Acid maintains solubility and shelf-stability.
+            Stability Warning: IGF-1 Family Peptides Precipitate Quickly In Neutral PH (Bac-Water). Reconstituting In 0.6% Acetic Acid Maintains Solubility And Shelf-Stability.
           </div>
         )}
 
         <div style={{ ...resultStyle, marginTop: 12 }}>
           {vMass > 0 && dilMl > 0 ? (
             <div style={{ color: '#00E5FF', fontWeight: 800, fontSize: 18 }}>
-              Add {dilMl} mL of {diluentType === 'bac-water' ? 'Bacteriostatic Water' : '0.6% Acetic Acid'} to the vial.
+              Add {dilMl} ML Of {diluentType === 'bac-water' ? 'Bacteriostatic Water' : '0.6% Acetic Acid'} To The Vial.
             </div>
           ) : (
-            <div style={{ fontSize: 14 }}>Enter vial mass and diluent volume above.</div>
+            <div style={{ fontSize: 14 }}>Enter Vial Mass And Diluent Volume Above.</div>
           )}
         </div>
 
         <h3 style={{ margin: '24px 0 8px', color: '#FFFFFF', fontSize: 16 }}>Draw Volume & Syringe Visualizer</h3>
         <p style={{ color: '#A8B4C0', fontSize: 14, marginBottom: 16 }}>
-          Input desired target dose to map pulling volume to tick marks.
+          Input Desired Target Dose To Map Pulling Volume To Tick Marks.
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Desired Target Dose</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <StyledInput style={{ flex: 1 }} type="number" step="any" min={0} value={desiredMass} placeholder="e.g. 250" onChange={(e) => setDesiredMass(e.target.value)} />
-              <StyledSelect style={{ width: 80 }} value={unit} onChange={(e) => setUnit(e.target.value)}>
-                <option value="mcg">mcg</option>
-                <option value="mg">mg</option>
+              <StyledInput style={{ flex: 1 }} type="number" step="any" min={0} value={desiredMass} placeholder="e.g. 1" onChange={(e) => setDesiredMass(e.target.value)} />
+              <StyledSelect style={{ width: 90 }} value={unit} onChange={(e) => setUnit(e.target.value)}>
+                <option value="mcg" className="calc-no-capitalize">mcg</option>
+                <option value="mg" className="calc-no-capitalize">mg</option>
               </StyledSelect>
             </div>
           </label>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Insulin Syringe Capacity</div>
             <StyledSelect value={syringeSize} onChange={(e) => setSyringeSize(Number(e.target.value) as 0.3 | 0.5 | 1.0)}>
-              <option value="1.0">1.0 mL (100 units)</option>
-              <option value="0.5">0.5 mL (50 units)</option>
-              <option value="0.3">0.3 mL (30 units)</option>
+              <option value="1.0">1.0 ML (100 Units)</option>
+              <option value="0.5">0.5 ML (50 Units)</option>
+              <option value="0.3">0.3 ML (30 Units)</option>
             </StyledSelect>
           </label>
         </div>
@@ -431,16 +463,16 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
         {drawMl !== null && isFinite(drawMl) && drawMl > 0 ? (
           <>
             <div style={{ ...resultStyle, marginTop: 20 }}>
-              To draw a dose of <strong>{dMassNumeric} {unit}</strong>, pull liquid to:
+              To Draw A Dose Of <strong>{dMassNumeric} <span className="calc-no-capitalize">{unit}</span></strong>, Pull Liquid To:
               <span style={{ fontSize: 28, color: '#68D391', fontWeight: 800, display: 'block', margin: '8px 0' }}>
-                {Math.round(drawMl * 100)} units
+                {Math.round(drawMl * 100)} Units
               </span>
-              <span style={{ fontSize: 13, color: '#A8B4C0' }}>({drawMl.toFixed(3)} mL of working solution)</span>
+              <span style={{ fontSize: 13, color: '#A8B4C0' }} className="calc-no-capitalize">({drawMl.toFixed(3)} mL of working solution)</span>
             </div>
             <VisualSyringe ml={drawMl} size={syringeSize} />
           </>
         ) : (
-          <div style={{ ...resultStyle, marginTop: 20, fontSize: 14 }}>Enter a desired dose above.</div>
+          <div style={{ ...resultStyle, marginTop: 20, fontSize: 14 }}>Enter A Desired Dose Above.</div>
         )}
 
         {vMass > 0 && dilMl > 0 && (
@@ -540,7 +572,7 @@ function DilutionSection() {
       <div style={chromeInnerStyle}>
         <CalculatorHeader
           title="Serial Dilution & Assay Curve Generator"
-          why="Design multi-step dilution curves for pharmacological profiles. Standard curve assay mode calculates pipetting guides for microcentrifuge tube racks."
+          why="Design Multi-Step Dilution Curves For Pharmacological Profiles. Standard Curve Assay Mode Calculates Pipetting Guides For Microcentrifuge Tube Racks."
         />
 
         <div style={{ marginBottom: 16 }}>
@@ -565,7 +597,7 @@ function DilutionSection() {
           </label>
           {assayMode && (
             <label style={{ display: "block" }}>
-              <div style={labelStyle}>Target Vol per Tube (mL)</div>
+              <div style={labelStyle}>Target Vol Per Tube (ML)</div>
               <StyledInput type="number" step="any" min={0} value={finalVol} placeholder="e.g. 100" onChange={(e) => setFinalVol(e.target.value)} />
             </label>
           )}
@@ -577,18 +609,18 @@ function DilutionSection() {
             
             {selectedTubeData && (
               <div style={{ ...resultStyle, marginBottom: 16, fontSize: 14, border: '1px solid #00E5FF', background: 'rgba(0,229,255,0.02)' }}>
-                <div style={{ color: '#00E5FF', fontWeight: 'bold', marginBottom: 6 }}>Recipe for Tube {selectedTube} (T{selectedTube}):</div>
+                <div style={{ color: '#00E5FF', fontWeight: 'bold', marginBottom: 6 }}>Recipe For Tube {selectedTube} (T{selectedTube}):</div>
                 {selectedTube === 1 ? (
                   <div>
-                    Transfer <strong style={{ color: '#68D391' }}>{selectedTubeData.transferVolumeMl?.toFixed(3)} mL</strong> of Stock into the tube, and mix with <strong style={{ color: '#68D391' }}>{selectedTubeData.diluentVolumeMl?.toFixed(3)} mL</strong> of diluent.
+                    Transfer <strong style={{ color: '#68D391' }} className="calc-no-capitalize">{selectedTubeData.transferVolumeMl?.toFixed(3)} mL</strong> Of Stock Into The Tube, And Mix With <strong style={{ color: '#68D391' }} className="calc-no-capitalize">{selectedTubeData.diluentVolumeMl?.toFixed(3)} mL</strong> Of Diluent.
                   </div>
                 ) : (
                   <div>
-                    Transfer <strong style={{ color: '#68D391' }}>{selectedTubeData.transferVolumeMl?.toFixed(3)} mL</strong> of Tube {selectedTube - 1} (T{selectedTube - 1}) into the tube, and mix with <strong style={{ color: '#68D391' }}>{selectedTubeData.diluentVolumeMl?.toFixed(3)} mL</strong> of diluent.
+                    Transfer <strong style={{ color: '#68D391' }} className="calc-no-capitalize">{selectedTubeData.transferVolumeMl?.toFixed(3)} mL</strong> Of Tube {selectedTube - 1} (T{selectedTube - 1}) Into The Tube, And Mix With <strong style={{ color: '#68D391' }} className="calc-no-capitalize">{selectedTubeData.diluentVolumeMl?.toFixed(3)} mL</strong> Of Diluent.
                   </div>
                 )}
                 <div style={{ marginTop: 6, fontSize: 12, color: '#A8B4C0' }}>
-                  Target Concentration: <strong>{selectedTubeData.concentration.toExponential(3)}</strong> units. Total Volume: {(selectedTubeData.transferVolumeMl! + selectedTubeData.diluentVolumeMl!).toFixed(3)} mL
+                  Target Concentration: <strong className="calc-no-capitalize">{selectedTubeData.concentration.toExponential(3)}</strong> Units. Total Volume: <span className="calc-no-capitalize">{(selectedTubeData.transferVolumeMl! + selectedTubeData.diluentVolumeMl!).toFixed(3)} mL</span>
                 </div>
               </div>
             )}
@@ -601,25 +633,25 @@ function DilutionSection() {
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                 <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>Step / Tube</th>
                 <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>Concentration</th>
-                {assayMode && <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>Transfer Vol (mL)</th>}
-                {assayMode && <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>Diluent Vol (mL)</th>}
+                {assayMode && <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>Transfer Vol (ML)</th>}
+                {assayMode && <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>Diluent Vol (ML)</th>}
               </tr>
             </thead>
             <tbody>
               {series.map((s) => (
                 <tr key={s.stepNumber} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: assayMode && selectedTube === s.stepNumber ? 'rgba(0,229,255,0.05)' : 'transparent' }}>
                   <td style={{ padding: 8, color: '#FFFFFF' }}>Step {s.stepNumber} (T{s.stepNumber})</td>
-                  <td style={{ padding: 8, color: '#A8B2C1', fontWeight: 600 }}>
+                  <td style={{ padding: 8, color: '#A8B2C1', fontWeight: 600 }} className="calc-no-capitalize">
                     {Math.abs(s.concentration) >= 0.001 && Math.abs(s.concentration) < 1e5
                       ? s.concentration.toPrecision(4)
                       : s.concentration.toExponential(3)}
                   </td>
-                  {assayMode && <td style={{ padding: 8, color: '#68D391' }}>{s.transferVolumeMl?.toFixed(3)}</td>}
-                  {assayMode && <td style={{ padding: 8, color: '#68D391' }}>{s.diluentVolumeMl?.toFixed(3)}</td>}
+                  {assayMode && <td style={{ padding: 8, color: '#68D391' }} className="calc-no-capitalize">{s.transferVolumeMl?.toFixed(3)}</td>}
+                  {assayMode && <td style={{ padding: 8, color: '#68D391' }} className="calc-no-capitalize">{s.diluentVolumeMl?.toFixed(3)}</td>}
                 </tr>
               ))}
               {series.length === 0 && (
-                <tr><td colSpan={assayMode ? 4 : 2} style={{ padding: 8, color: '#A8B4C0' }}>Enter stock concentration and a dilution factor &gt; 1.</td></tr>
+                <tr><td colSpan={assayMode ? 4 : 2} style={{ padding: 8, color: '#A8B4C0' }}>Enter Stock Concentration And A Dilution Factor &gt; 1.</td></tr>
               )}
             </tbody>
           </table>
@@ -690,7 +722,7 @@ function ConcentrationSection({ compounds }: { compounds: CompoundListItem[] }) 
       <div style={chromeInnerStyle}>
         <CalculatorHeader
           title="Concentration Converter"
-          why="Convert mass concentrations (mg/mL, mcg/mL, ng/mL) to molar metrics (mmol/L, umol/L, nmol/L). Automatic library integration retrieves exact molecular weights."
+          why="Convert Mass Concentrations (Mg/ML, Mcg/ML, Ng/ML) To Molar Metrics (Mmol/L, Umol/L, Nmol/L). Automatic Library Integration Retrieves Exact Molecular Weights."
         />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 12 }}>
           <label style={{ display: "block" }}>
@@ -700,13 +732,13 @@ function ConcentrationSection({ compounds }: { compounds: CompoundListItem[] }) 
           <label style={{ display: "block" }}>
             <div style={labelStyle}>From Unit</div>
             <StyledSelect value={from} onChange={(e) => setFrom(e.target.value as ConcentrationUnit)}>
-              {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              {UNITS.map((u) => <option key={u} value={u} className="calc-no-capitalize">{u}</option>)}
             </StyledSelect>
           </label>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>To Unit</div>
             <StyledSelect value={to} onChange={(e) => setTo(e.target.value as ConcentrationUnit)}>
-              {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              {UNITS.map((u) => <option key={u} value={u} className="calc-no-capitalize">{u}</option>)}
             </StyledSelect>
           </label>
         </div>
@@ -718,7 +750,7 @@ function ConcentrationSection({ compounds }: { compounds: CompoundListItem[] }) 
               <StyledInput 
                 type="text" 
                 value={searchQuery} 
-                placeholder="Type compound name..." 
+                placeholder="Type Compound Name..." 
                 onFocus={() => setShowDropdown(true)}
                 onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
               />
@@ -728,6 +760,7 @@ function ConcentrationSection({ compounds }: { compounds: CompoundListItem[] }) 
                     <div 
                       key={c.slug} 
                       onClick={() => handleSelectCompound(c)}
+                      className="calc-no-capitalize"
                       style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: 13, color: '#E2E8F0' }}
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -740,7 +773,7 @@ function ConcentrationSection({ compounds }: { compounds: CompoundListItem[] }) 
             </div>
             <label style={{ display: "block" }}>
               <div style={labelStyle}>Molecular Weight (Da)</div>
-              <StyledInput type="number" step="any" value={mw} onChange={(e) => setMw(e.target.value)} placeholder="Enter Da manually..." />
+              <StyledInput type="number" step="any" value={mw} onChange={(e) => setMw(e.target.value)} placeholder="Enter Da Manually..." />
             </label>
           </div>
         )}
@@ -749,8 +782,8 @@ function ConcentrationSection({ compounds }: { compounds: CompoundListItem[] }) 
           {result === null
             ? 'Enter A Molecular Weight (Da) To Convert Between Mass And Molar Units.'
             : from === to
-            ? <>Same Unit Selected — No Conversion Needed: <strong>{Number(value).toPrecision(6)}</strong> {to}</>
-            : <>Converted: <strong>{result.toPrecision(6)}</strong> {to}</>
+            ? <>Same Unit Selected — No Conversion Needed: <strong className="calc-no-capitalize">{Number(value).toPrecision(6)}</strong> <span className="calc-no-capitalize">{to}</span></>
+            : <>Converted: <strong className="calc-no-capitalize">{result.toPrecision(6)}</strong> <span className="calc-no-capitalize">{to}</span></>
           }
         </div>
 
@@ -804,20 +837,20 @@ function StabilitySection() {
       <div style={chromeInnerStyle}>
         <CalculatorHeader
           title="Arrhenius Stability & Thermal Degradation Predictor"
-          why="Model temperature-dependent shelf life. Activation Energy (Ea) governs degradation rates; select preset peptide categories or customize Ea."
+          why="Model Temperature-Dependent Shelf Life. Activation Energy (Ea) Governs Degradation Rates; Select Preset Peptide Categories Or Customize Ea."
         />
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
           <button 
             onClick={() => { setTFrom('-20'); setTTo('4'); }} 
             style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #00E5FF', background: 'transparent', color: '#00E5FF', cursor: 'pointer', fontSize: 13 }}
           >
-            Preset: Freezer to Fridge
+            Preset: Freezer To Fridge
           </button>
           <button 
             onClick={() => { setTFrom('4'); setTTo('25'); }} 
             style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #F6AD55', background: 'transparent', color: '#F6AD55', cursor: 'pointer', fontSize: 13 }}
           >
-            Preset: Fridge to Room Temp
+            Preset: Fridge To Room Temp
           </button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
@@ -836,7 +869,7 @@ function StabilitySection() {
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Degradation Profile</div>
             <StyledSelect value={profile} onChange={handleProfileChange}>
-              {DEGRADATION_PROFILES.map((p) => <option key={p.ea} value={p.ea}>{p.name}</option>)}
+              {DEGRADATION_PROFILES.map((p) => <option key={p.ea} value={p.ea} className="calc-no-capitalize">{p.name}</option>)}
               <option value="custom">Custom Ea</option>
             </StyledSelect>
           </label>
@@ -907,7 +940,7 @@ function CostSection() {
       <div style={chromeInnerStyle}>
         <CalculatorHeader
           title="Study Budget & Economics Calculator"
-          why="Determine unit dose economics and analyze monthly/annual cohort expenditures. Compare vendor pricing tiers side-by-side."
+          why="Determine Unit Dose Economics And Analyze Monthly/Annual Cohort Expenditures. Compare Vendor Pricing Tiers Side-By-Side."
         />
 
         <div style={{ marginBottom: 16 }}>
@@ -927,11 +960,11 @@ function CostSection() {
                 <StyledInput type="number" step="any" value={priceA} onChange={(e) => setPriceA(e.target.value)} />
               </label>
               <label style={{ display: "block" }}>
-                <div style={labelStyle}>Vial Mass (mg)</div>
+                <div style={labelStyle}>Vial Mass (Mg)</div>
                 <StyledInput type="number" step="any" value={massA} onChange={(e) => setMassA(e.target.value)} />
               </label>
               <label style={{ display: "block" }}>
-                <div style={labelStyle}>Per-Dose Amount (mcg)</div>
+                <div style={labelStyle}>Per-Dose Amount (Mcg)</div>
                 <StyledInput type="number" step="any" value={doseA} onChange={(e) => setDoseA(e.target.value)} />
               </label>
             </div>
@@ -947,11 +980,11 @@ function CostSection() {
                   <StyledInput type="number" step="any" value={priceB} onChange={(e) => setPriceB(e.target.value)} />
                 </label>
                 <label style={{ display: "block" }}>
-                  <div style={labelStyle}>Vial Mass (mg)</div>
+                  <div style={labelStyle}>Vial Mass (Mg)</div>
                   <StyledInput type="number" step="any" value={massB} onChange={(e) => setMassB(e.target.value)} />
                 </label>
                 <label style={{ display: "block" }}>
-                  <div style={labelStyle}>Per-Dose Amount (mcg)</div>
+                  <div style={labelStyle}>Per-Dose Amount (Mcg)</div>
                   <StyledInput type="number" step="any" value={doseB} onChange={(e) => setDoseB(e.target.value)} />
                 </label>
               </div>
@@ -961,12 +994,12 @@ function CostSection() {
 
         <div style={{ marginTop: 16 }}>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Dosing Frequency (doses per week)</div>
+            <div style={labelStyle}>Dosing Frequency (Doses Per Week)</div>
             <StyledSelect value={frequency} onChange={(e) => setFrequency(e.target.value)}>
-              <option value="7">Daily (7x / week)</option>
-              <option value="2">Twice Weekly (2x / week)</option>
-              <option value="1">Weekly (1x / week)</option>
-              <option value="0.5">Bi-Weekly (0.5x / week)</option>
+              <option value="7">Daily (7x / Week)</option>
+              <option value="2">Twice Weekly (2x / Week)</option>
+              <option value="1">Weekly (1x / Week)</option>
+              <option value="0.5">Bi-Weekly (0.5x / Week)</option>
             </StyledSelect>
           </label>
         </div>
@@ -976,13 +1009,13 @@ function CostSection() {
             {!outA
               ? 'Enter Valid Inputs.'
               : <>
-                  <div>Doses Per Vial: <strong>{outA.dosesPerVial.toFixed(1)}</strong>{'  '}|{'  '}Cost Per Dose: <strong>${outA.dollarsPerDose.toFixed(2)}</strong></div>
+                  <div>Doses Per Vial: <strong className="calc-no-capitalize">{outA.dosesPerVial.toFixed(1)}</strong>{'  '}|{'  '}Cost Per Dose: <strong className="calc-no-capitalize">${outA.dollarsPerDose.toFixed(2)}</strong></div>
                   {daysPerVialA !== null && daysPerVialA > 0 && (
-                    <div style={{ marginTop: 8, color: '#00E5FF' }}>Vial Lasts Approximately: <strong>{daysPerVialA.toFixed(1)} Days</strong></div>
+                    <div style={{ marginTop: 8, color: '#00E5FF' }}>Vial Lasts Approximately: <strong className="calc-no-capitalize">{daysPerVialA.toFixed(1)} Days</strong></div>
                   )}
                   {outA.monthlyCostUsd && (
                     <div style={{ marginTop: 8, fontSize: 13, color: '#A8B4C0' }}>
-                      Est. Monthly Cost: <strong>${outA.monthlyCostUsd.toFixed(2)}</strong> | Annual Cost: <strong>${outA.annualCostUsd?.toFixed(2)}</strong>
+                      Est. Monthly Cost: <strong className="calc-no-capitalize">${outA.monthlyCostUsd.toFixed(2)}</strong> | Annual Cost: <strong className="calc-no-capitalize">${outA.annualCostUsd?.toFixed(2)}</strong>
                     </div>
                   )}
                 </>
@@ -996,10 +1029,10 @@ function CostSection() {
                 <div style={{ color: '#00E5FF', fontWeight: 'bold', fontSize: 13, marginBottom: 8 }}>OPTION A RESULTS</div>
                 {outA ? (
                   <div style={{ fontSize: 13, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div>Cost/Dose: <strong>${outA.dollarsPerDose.toFixed(2)}</strong></div>
-                    <div>Doses/Vial: <strong>{outA.dosesPerVial.toFixed(1)}</strong></div>
-                    <div>Monthly: <strong>${outA.monthlyCostUsd?.toFixed(2)}</strong></div>
-                    <div>Annual: <strong>${outA.annualCostUsd?.toFixed(2)}</strong></div>
+                    <div>Cost/Dose: <strong className="calc-no-capitalize">${outA.dollarsPerDose.toFixed(2)}</strong></div>
+                    <div>Doses/Vial: <strong className="calc-no-capitalize">{outA.dosesPerVial.toFixed(1)}</strong></div>
+                    <div>Monthly: <strong className="calc-no-capitalize">${outA.monthlyCostUsd?.toFixed(2)}</strong></div>
+                    <div>Annual: <strong className="calc-no-capitalize">${outA.annualCostUsd?.toFixed(2)}</strong></div>
                   </div>
                 ) : 'Invalid Inputs'}
               </div>
@@ -1009,10 +1042,10 @@ function CostSection() {
                 <div style={{ color: '#F6AD55', fontWeight: 'bold', fontSize: 13, marginBottom: 8 }}>OPTION B RESULTS</div>
                 {outB ? (
                   <div style={{ fontSize: 13, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div>Cost/Dose: <strong>${outB.dollarsPerDose.toFixed(2)}</strong></div>
-                    <div>Doses/Vial: <strong>{outB.dosesPerVial.toFixed(1)}</strong></div>
-                    <div>Monthly: <strong>${outB.monthlyCostUsd?.toFixed(2)}</strong></div>
-                    <div>Annual: <strong>${outB.annualCostUsd?.toFixed(2)}</strong></div>
+                    <div>Cost/Dose: <strong className="calc-no-capitalize">${outB.dollarsPerDose.toFixed(2)}</strong></div>
+                    <div>Doses/Vial: <strong className="calc-no-capitalize">{outB.dosesPerVial.toFixed(1)}</strong></div>
+                    <div>Monthly: <strong className="calc-no-capitalize">${outB.monthlyCostUsd?.toFixed(2)}</strong></div>
+                    <div>Annual: <strong className="calc-no-capitalize">${outB.annualCostUsd?.toFixed(2)}</strong></div>
                   </div>
                 ) : 'Invalid Inputs'}
               </div>
@@ -1022,14 +1055,14 @@ function CostSection() {
               <div style={{ ...resultStyle, background: 'rgba(104,211,145,0.05)', border: '1px solid #68D391', color: '#E2E8F0', fontSize: 14 }}>
                 {outA.dollarsPerDose < outB.dollarsPerDose ? (
                   <span>
-                    Success: <strong>Option A</strong> is more cost-effective. It saves you <strong style={{ color: '#68D391' }}>${(outB.dollarsPerDose - outA.dollarsPerDose).toFixed(2)}</strong> per dose (<strong style={{ color: '#68D391' }}>{((1 - outA.dollarsPerDose / outB.dollarsPerDose) * 100).toFixed(1)}%</strong> savings).
+                    Success: <strong>Option A</strong> Is More Cost-Effective. It Saves You <strong style={{ color: '#68D391' }} className="calc-no-capitalize">${(outB.dollarsPerDose - outA.dollarsPerDose).toFixed(2)}</strong> Per Dose (<strong style={{ color: '#68D391' }} className="calc-no-capitalize">{((1 - outA.dollarsPerDose / outB.dollarsPerDose) * 100).toFixed(1)}%</strong> Savings).
                   </span>
                 ) : outB.dollarsPerDose < outA.dollarsPerDose ? (
                   <span>
-                    Success: <strong>Option B</strong> is more cost-effective. It saves you <strong style={{ color: '#68D391' }}>${(outA.dollarsPerDose - outB.dollarsPerDose).toFixed(2)}</strong> per dose (<strong style={{ color: '#68D391' }}>{((1 - outB.dollarsPerDose / outA.dollarsPerDose) * 100).toFixed(1)}%</strong> savings).
+                    Success: <strong>Option B</strong> Is More Cost-Effective. It Saves You <strong style={{ color: '#68D391' }} className="calc-no-capitalize">${(outA.dollarsPerDose - outB.dollarsPerDose).toFixed(2)}</strong> Per Dose (<strong style={{ color: '#68D391' }} className="calc-no-capitalize">{((1 - outB.dollarsPerDose / outA.dollarsPerDose) * 100).toFixed(1)}%</strong> Savings).
                   </span>
                 ) : (
-                  <span>Both options yield identical cost-per-dose metrics.</span>
+                  <span>Both Options Yield Identical Cost-Per-Dose Metrics.</span>
                 )}
               </div>
             )}
@@ -1079,11 +1112,11 @@ function PoolingSection() {
       <div style={chromeInnerStyle}>
         <CalculatorHeader
           title="Vial Pooling & Solubility Estimator"
-          why="Aggregate multiple vial masses into a single working concentration. Integrates physical solubility safeguards to warn against precipitation."
+          why="Aggregate Multiple Vial Masses Into A Single Working Concentration. Integrates Physical Solubility Safeguards To Warn Against Precipitation."
         />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 12 }}>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Per-Vial Mass (mg)</div>
+            <div style={labelStyle}>Per-Vial Mass (Mg)</div>
             <StyledInput type="number" step="any" value={mass} onChange={(e) => setMass(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
@@ -1091,25 +1124,25 @@ function PoolingSection() {
             <StyledInput type="number" min={1} step={1} value={count} onChange={(e) => setCount(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Total Diluent (mL)</div>
+            <div style={labelStyle}>Total Diluent (ML)</div>
             <StyledInput type="number" step="any" value={diluent} onChange={(e) => setDiluent(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Transfer Loss Buffer (%)</div>
-            <StyledInput type="number" step="any" min="0" max="100" value={loss} placeholder="e.g. 5" onChange={(e) => setLoss(e.target.value)} />
+            <StyledInput type="number" step="any" min="0" max="100" value={loss} placeholder="E.g. 5" onChange={(e) => setLoss(e.target.value)} />
           </label>
         </div>
 
         {out && out.concentrationMgPerMl > 50 && (
           <div style={{ color: '#F6AD55', fontSize: 13, padding: '8px 12px', border: '1px solid rgba(246,173,85,0.3)', borderRadius: 6, background: 'rgba(246,173,85,0.05)', marginBottom: 12 }}>
-            Aqueous Precipitation Risk: Calculated concentration is <strong>{out.concentrationMgPerMl.toFixed(1)} mg/mL</strong>. Concentrations exceeding 50 mg/mL are highly prone to peptide aggregation or gelation in standard aqueous buffers.
+            Aqueous Precipitation Risk: Calculated Concentration Is <strong className="calc-no-capitalize">{out.concentrationMgPerMl.toFixed(1)} mg/mL</strong>. Concentrations Exceeding <span className="calc-no-capitalize">50 mg/mL</span> Are Highly Prone To Peptide Aggregation Or Gelation In Standard Aqueous Buffers.
           </div>
         )}
 
         <div style={resultStyle}>
           {!out
             ? 'Enter Valid Inputs.'
-            : <>Total Mass: <strong>{out.totalMassMg.toFixed(2)} mg</strong>{'  '}|{'  '}Concentration: <strong>{out.concentrationMgPerMl.toFixed(3)} mg/mL</strong></>
+            : <>Total Mass: <strong className="calc-no-capitalize">{out.totalMassMg.toFixed(2)} mg</strong>{'  '}|{'  '}Concentration: <strong className="calc-no-capitalize">{out.concentrationMgPerMl.toFixed(3)} mg/mL</strong></>
           }
         </div>
 
@@ -1165,30 +1198,30 @@ function HplcRtSection() {
       <div style={chromeInnerStyle}>
         <CalculatorHeader
           title="HPLC Retention Time Predictor"
-          why="Predict peptide elution retention profiles under reverse-phase (C18, C8, C4) or normal-phase (HILIC) columns using Bull-Breese residue hydrophobicity indices."
+          why="Predict Peptide Elution Retention Profiles Under Reverse-Phase (C18, C8, C4) Or Normal-Phase (HILIC) Columns Using Bull-Breese Residue Hydrophobicity Indices."
         />
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
           <button 
             onClick={() => { setStart('5'); setEnd('65'); setGradient('20'); setShowAdvanced(true); }} 
             style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #00E5FF', background: 'transparent', color: '#00E5FF', cursor: 'pointer', fontSize: 13 }}
           >
-            Preset: Standard 20min (5% - 65% B)
+            Preset: Standard 20 Min (5% - 65% B)
           </button>
           <button 
             onClick={() => { setStart('10'); setEnd('90'); setGradient('30'); setShowAdvanced(true); }} 
             style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #F6AD55', background: 'transparent', color: '#F6AD55', cursor: 'pointer', fontSize: 13 }}
           >
-            Preset: Long 30min (10% - 90% B)
+            Preset: Long 30 Min (10% - 90% B)
           </button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, marginBottom: 12 }}>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>One-Letter Sequence (Standard 20 AA Codes)</div>
-            <StyledInput type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} placeholder="e.g. PLG" />
+            <StyledInput type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} placeholder="E.g. PLG" className="calc-no-capitalize" />
             {unknownChars.length > 0 && (
               <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
-                Warning: Non-standard characters detected: <strong>{unknownChars.join(', ')}</strong>. Standard codes: A C D E F G H I K L M N P Q R S T V W Y.
+                Warning: Non-Standard Characters Detected: <strong className="calc-no-capitalize">{unknownChars.join(', ')}</strong>. Standard Codes: A C D E F G H I K L M N P Q R S T V W Y.
               </div>
             )}
           </label>
@@ -1198,17 +1231,17 @@ function HplcRtSection() {
           <label style={{ display: "block" }}>
             <div style={labelStyle}>HPLC Column Phase</div>
             <StyledSelect value={columnType} onChange={(e) => setColumnType(e.target.value as 'C18' | 'C8' | 'C4' | 'HILIC')}>
-              <option value="C18">C18 Octadecylsilane (Standard RP)</option>
-              <option value="C8">C8 Octylsilane (Moderate RP)</option>
-              <option value="C4">C4 Butylsilane (Fragile / Large RP)</option>
-              <option value="HILIC">HILIC Hydrophilic Interaction (Normal Phase)</option>
+              <option value="C18" className="calc-no-capitalize">C18 Octadecylsilane (Standard RP)</option>
+              <option value="C8" className="calc-no-capitalize">C8 Octylsilane (Moderate RP)</option>
+              <option value="C4" className="calc-no-capitalize">C4 Butylsilane (Fragile / Large RP)</option>
+              <option value="HILIC" className="calc-no-capitalize">HILIC Hydrophilic Interaction (Normal Phase)</option>
             </StyledSelect>
           </label>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Acid Modifier</div>
             <StyledSelect value={modifier} onChange={(e) => setModifier(e.target.value as 'TFA' | 'FA')}>
-              <option value="TFA">0.1% Trifluoroacetic Acid (Strong Ion-Pairing)</option>
-              <option value="FA">0.1% Formic Acid (Weaker Ion-Pairing, MS Friendly)</option>
+              <option value="TFA" className="calc-no-capitalize">0.1% Trifluoroacetic Acid (Strong Ion-Pairing)</option>
+              <option value="FA" className="calc-no-capitalize">0.1% Formic Acid (Weaker Ion-Pairing, MS Friendly)</option>
             </StyledSelect>
           </label>
         </div>
@@ -1237,7 +1270,7 @@ function HplcRtSection() {
               ? 'Gradient End Must Be Greater Than Gradient Start.'
               : 'Enter A Valid One-Letter Sequence.'
             : <>
-                Predicted Retention Time: <strong>{rt.toFixed(2)} Min</strong> ({columnType}, 0.1% {modifier})
+                Predicted Retention Time: <strong className="calc-no-capitalize">{rt.toFixed(2)} Min</strong> (<span className="calc-no-capitalize">{columnType}, 0.1% {modifier}</span>)
               </>
           }
         </div>
@@ -1301,15 +1334,15 @@ function MassSpecSection() {
       <div style={chromeInnerStyle}>
         <CalculatorHeader
           title="Mass Spec m/z & Stick Plot Predictor"
-          why="Generate theoretical charge state isotope profiles ([M+nH]^n+) for HPLC fraction verification. The interactive spectrum plots simulated mass spectrum readouts."
+          why="Generate Theoretical Charge State Isotope Profiles ([M+nH]^n+) For HPLC Fraction Verification. The Interactive Spectrum Plots Simulated Mass Spectrum Readouts."
         />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, marginBottom: 12 }}>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>One-Letter Sequence (Standard 20 AA Codes)</div>
-            <StyledInput type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} placeholder="e.g. GLP1 sequence..." />
+            <StyledInput type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} placeholder="E.g. GLP-1 Sequence..." className="calc-no-capitalize" />
             {unknownChars.length > 0 && (
               <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
-                Warning: Non-standard characters detected: <strong>{unknownChars.join(', ')}</strong>. Residues estimated at ~110 Da average. Standard codes only: A C D E F G H I K L M N P Q R S T V W Y.
+                Warning: Non-Standard Characters Detected: <strong className="calc-no-capitalize">{unknownChars.join(', ')}</strong>. Residues Estimated At ~110 Da Average. Standard Codes Only: A C D E F G H I K L M N P Q R S T V W Y.
               </div>
             )}
           </label>
@@ -1332,9 +1365,9 @@ function MassSpecSection() {
             <label style={{ display: "block" }}>
               <div style={labelStyle}>Adduct</div>
               <StyledSelect value={adduct} onChange={(e) => setAdduct(e.target.value)}>
-                <option value="1.00728">+H (Proton, 1.007 Da)</option>
-                <option value="22.98977">+Na (Sodium, 22.990 Da)</option>
-                <option value="38.96371">+K (Potassium, 38.964 Da)</option>
+                <option value="1.00728" className="calc-no-capitalize">+H (Proton, 1.007 Da)</option>
+                <option value="22.98977" className="calc-no-capitalize">+Na (Sodium, 22.990 Da)</option>
+                <option value="38.96371" className="calc-no-capitalize">+K (Potassium, 38.964 Da)</option>
               </StyledSelect>
             </label>
           )}
@@ -1349,7 +1382,7 @@ function MassSpecSection() {
                 const isBase = p.charge === basePeakCharge;
                 return (
                   <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', flex: 1, minWidth: 40 }}>
-                    <span style={{ fontSize: 10, color: isBase ? '#68D391' : '#00E5FF', marginBottom: 4, fontFamily: 'monospace', fontWeight: isBase ? 'bold' : 'normal' }}>
+                    <span style={{ fontSize: 10, color: isBase ? '#68D391' : '#00E5FF', marginBottom: 4, fontFamily: 'monospace', fontWeight: isBase ? 'bold' : 'normal' }} className="calc-no-capitalize">
                       {isBase ? 'BASE' : `z=${p.charge}`}
                     </span>
                     <div 
@@ -1363,7 +1396,7 @@ function MassSpecSection() {
                         transition: 'height 0.3s ease',
                       }} 
                     />
-                    <span style={{ fontSize: 9, color: '#A8B4C0', marginTop: 6, fontFamily: 'monospace' }}>
+                    <span style={{ fontSize: 9, color: '#A8B4C0', marginTop: 6, fontFamily: 'monospace' }} className="calc-no-capitalize">
                       {p.mz}
                     </span>
                   </div>
@@ -1378,7 +1411,7 @@ function MassSpecSection() {
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                 <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>Charge State</th>
-                <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>m/z (Theoretical)</th>
+                <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}><span className="calc-no-capitalize">m/z (Theoretical)</span></th>
                 <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>Rel Intensity</th>
               </tr>
             </thead>
@@ -1388,11 +1421,11 @@ function MassSpecSection() {
                 return (
                   <tr key={p.charge} style={{ background: isBase ? 'rgba(104,211,145,0.06)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <td style={{ padding: 8, color: isBase ? '#68D391' : '#FFFFFF', fontWeight: isBase ? 800 : 'normal' }}>
-                      {mode === 'negative' ? `-${p.charge}` : `+${p.charge}`}
+                      <span className="calc-no-capitalize">{mode === 'negative' ? `-${p.charge}` : `+${p.charge}`}</span>
                       {isBase && <span style={{ marginLeft: 8, fontSize: 10, background: '#68D391', color: '#000', padding: '1px 4px', borderRadius: 4, fontWeight: 'bold' }}>BASE</span>}
                     </td>
-                    <td style={{ padding: 8, color: isBase ? '#68D391' : '#A8B2C1', fontWeight: 600 }}>{p.mz.toFixed(4)}</td>
-                    <td style={{ padding: 8, color: isBase ? '#68D391' : '#D0DAE4' }}>{(p.intensity * 100).toFixed(0)}%</td>
+                    <td style={{ padding: 8, color: isBase ? '#68D391' : '#A8B2C1', fontWeight: 600 }} className="calc-no-capitalize">{p.mz.toFixed(4)}</td>
+                    <td style={{ padding: 8, color: isBase ? '#68D391' : '#D0DAE4' }} className="calc-no-capitalize">{(p.intensity * 100).toFixed(0)}%</td>
                   </tr>
                 );
               })}
@@ -1457,15 +1490,15 @@ function SppsSection() {
       <div style={chromeInnerStyle}>
         <CalculatorHeader
           title="Fmoc-SPPS Synthesis Cost Estimator"
-          why="Forecast experimental synthesis costs for custom peptides. Adjust scales, coupling reagents (HATU vs DIC), yields, and resin values."
+          why="Forecast Experimental Synthesis Costs For Custom Peptides. Adjust Scales, Coupling Reagents (HATU Vs DIC), Yields, And Resin Values."
         />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, marginBottom: 12 }}>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>One-Letter Sequence</div>
-            <StyledInput type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} placeholder="e.g. FLG" />
+            <StyledInput type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} placeholder="E.g. FLG" className="calc-no-capitalize" />
             {sppsUnknownChars.length > 0 && (
               <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
-                Warning: Non-standard characters: <strong>{sppsUnknownChars.join(', ')}</strong>. Codes ignored in residue yield projections.
+                Warning: Non-Standard Characters: <strong className="calc-no-capitalize">{sppsUnknownChars.join(', ')}</strong>. Codes Ignored In Residue Yield Projections.
               </div>
             )}
           </label>
@@ -1473,15 +1506,15 @@ function SppsSection() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 12 }}>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Synthesis Scale (umol)</div>
+            <div style={labelStyle}>Synthesis Scale (Umol)</div>
             <StyledInput type="number" step="any" value={scale} onChange={(e) => setScale(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Coupling Chemistry Reagents</div>
             <StyledSelect value={chemistry} onChange={(e) => setChemistry(e.target.value as 'DIC/Oxyma' | 'HATU/DIEA' | 'HBTU/DIEA')}>
-              <option value="DIC/Oxyma">DIC/Oxyma (Cost-Effective / standard)</option>
-              <option value="HATU/DIEA">HATU/DIEA (Premium / high coupling efficiency)</option>
-              <option value="HBTU/DIEA">HBTU/DIEA (Moderate standard)</option>
+              <option value="DIC/Oxyma" className="calc-no-capitalize">DIC/Oxyma (Cost-Effective / Standard)</option>
+              <option value="HATU/DIEA" className="calc-no-capitalize">HATU/DIEA (Premium / High Coupling Efficiency)</option>
+              <option value="HBTU/DIEA" className="calc-no-capitalize">HBTU/DIEA (Moderate Standard)</option>
             </StyledSelect>
           </label>
         </div>
@@ -1509,11 +1542,11 @@ function SppsSection() {
         <div style={resultStyle}>
           {!out ? 'Enter A Valid Sequence.' : (
             <>
-              <div>Total Synthesizer Cost: <strong>${out.totalUsd.toFixed(2)}</strong></div>
+              <div>Total Synthesizer Cost: <strong className="calc-no-capitalize">${out.totalUsd.toFixed(2)}</strong></div>
               <div style={{ color: '#00E5FF', marginTop: 6, fontSize: 18 }}>
-                Cost Per Recovered Mg: <strong>${out.costPerRecoveredMg.toFixed(2)}</strong>
+                Cost Per Recovered Mg: <strong className="calc-no-capitalize">${out.costPerRecoveredMg.toFixed(2)}</strong>
                 <span style={{ display: 'block', fontSize: 12, color: '#A8B4C0', marginTop: 4, fontWeight: 'normal' }}>
-                  Assuming ~{out.recoveredMg.toFixed(1)} mg final pure peptide recovered.
+                  Assuming ~<span className="calc-no-capitalize">{out.recoveredMg.toFixed(1)} mg</span> Final Pure Peptide Recovered.
                 </span>
               </div>
               
@@ -1536,9 +1569,9 @@ function SppsSection() {
                   <div key={b.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#D0DAE4', marginBottom: 4 }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: costColors[idx % costColors.length] }} />
-                      {b.label}
+                      <span className="calc-no-capitalize">{b.label}</span>
                     </span>
-                    <span>${b.costUsd.toFixed(2)}</span>
+                    <span className="calc-no-capitalize">${b.costUsd.toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -1608,7 +1641,7 @@ function SolubilitySection() {
       <div style={chromeInnerStyle}>
         <CalculatorHeader
           title="Solubility Predictor"
-          why="Heuristic calculation of aqueous solubility. Input the sequence for automatic residue diagnostics (GRAVY, Cysteine ratios, and hydrophobic aggregations)."
+          why="Heuristic Calculation Of Aqueous Solubility. Input The Sequence For Automatic Residue Diagnostics (GRAVY, Cysteine Ratios, And Hydrophobic Aggregations)."
         />
         <div style={{ marginBottom: 12, fontSize: 12, color: '#A8B4C0' }}>
           Enter Sequence To Auto-Calculate Sequence Length And GRAVY Score.
@@ -1618,45 +1651,45 @@ function SolubilitySection() {
             onClick={() => { setPH('7.4'); setShowAdvanced(true); }} 
             style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #00E5FF', background: 'transparent', color: '#00E5FF', cursor: 'pointer', fontSize: 13 }}
           >
-            Preset: PBS (pH 7.4)
+            Preset: PBS (<span className="calc-no-capitalize">pH 7.4</span>)
           </button>
           <button 
             onClick={() => { setPH('2.5'); setShowAdvanced(true); }} 
             style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #F6AD55', background: 'transparent', color: '#F6AD55', cursor: 'pointer', fontSize: 13 }}
           >
-            Preset: 10% Acetic Acid (pH ~2.5)
+            Preset: 10% Acetic Acid (<span className="calc-no-capitalize">pH ~2.5</span>)
           </button>
           <button 
             onClick={() => { setPH('7.0'); setShowAdvanced(true); }} 
             style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #D6BCFA', background: 'transparent', color: '#D6BCFA', cursor: 'pointer', fontSize: 13 }}
           >
-            Preset: Pure Water (pH 7.0)
+            Preset: Pure Water (<span className="calc-no-capitalize">pH 7.0</span>)
           </button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, marginBottom: 12 }}>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Peptide Sequence (Optional)</div>
-            <StyledInput type="text" value={seq} onChange={onSequenceChange} placeholder="e.g. FLGPLG" />
+            <StyledInput type="text" value={seq} onChange={onSequenceChange} placeholder="E.g. FLGPLG" className="calc-no-capitalize" />
           </label>
         </div>
 
         <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} style={{ background: 'transparent', border: '1px solid rgba(168,178,193,0.3)', color: '#A8B2C1', padding: '6px 12px', borderRadius: 6, fontSize: 12, marginBottom: 12, cursor: 'pointer' }}>{showAdvanced ? 'Hide Parameter Details' : 'Configure Parameter Details'}</button>
         {showAdvanced && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 12 }}>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>GRAVY Score</div>
+            <div style={labelStyle}><span className="calc-no-capitalize">GRAVY</span> Score</div>
             <StyledInput type="number" step="0.01" value={gravy} onChange={(e) => setGravy(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Isoelectric Point (pI)</div>
-            <StyledInput type="number" step="0.01" value={pi} onChange={(e) => setPi(e.target.value)} placeholder="e.g. 6.0" />
+            <div style={labelStyle}>Isoelectric Point (<span className="calc-no-capitalize">pI</span>)</div>
+            <StyledInput type="number" step="0.01" value={pi} onChange={(e) => setPi(e.target.value)} placeholder="E.g. 6.0" />
           </label>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Sequence Length</div>
             <StyledInput type="number" step={1} min={1} value={len} onChange={(e) => setLen(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Solution pH</div>
+            <div style={labelStyle}>Solution <span className="calc-no-capitalize">pH</span></div>
             <StyledInput type="number" step="0.1" value={pH} onChange={(e) => setPH(e.target.value)} />
           </label>
         </div>}
@@ -1664,7 +1697,7 @@ function SolubilitySection() {
         {out?.warnings && out.warnings.length > 0 && (
           <div style={{ margin: '12px 0', fontSize: 13, color: '#F6AD55', background: 'rgba(246,173,85,0.1)', border: '1px solid rgba(246,173,85,0.3)', borderRadius: 8, padding: '10px 14px' }}>
             {out.warnings.map((w, idx) => (
-              <div key={idx} style={{ marginBottom: 4 }}>Warning: {w}</div>
+              <div key={idx} style={{ marginBottom: 4 }} className="calc-no-capitalize">Warning: {w}</div>
             ))}
           </div>
         )}
@@ -1672,8 +1705,8 @@ function SolubilitySection() {
         <div style={resultStyle}>
           {!out ? 'Enter Valid Inputs.' : (
             <>
-              Predicted Solubility: <strong>{out.predictedSolubilityMgMl.toFixed(3)} mg/mL</strong> ({out.classification.toUpperCase()})
-              <div style={{ fontSize: 12, color: '#A8B4C0', marginTop: 6 }}>{out.notes}</div>
+              Predicted Solubility: <strong className="calc-no-capitalize">{out.predictedSolubilityMgMl.toFixed(3)} mg/mL</strong> (<span className="calc-no-capitalize">{out.classification.toUpperCase()}</span>)
+              <div style={{ fontSize: 12, color: '#A8B4C0', marginTop: 6 }} className="calc-no-capitalize">{out.notes}</div>
             </>
           )}
         </div>
@@ -1727,7 +1760,7 @@ function VialQuantitySection() {
       <div style={chromeInnerStyle}>
         <CalculatorHeader
           title="In Vivo Study Cohort Design & Procurement Tool"
-          why="Synthesize sample cohorts and schedule studies. Dynamically outputs total animal cohort mass requirements and coordinates vial quantities needed including overage bounds."
+          why="Synthesize Sample Cohorts And Schedule Studies. Dynamically Outputs Total Animal Cohort Mass Requirements And Coordinates Vial Quantities Needed Including Overage Bounds."
         />
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 12 }}>
@@ -1740,12 +1773,12 @@ function VialQuantitySection() {
             <StyledInput type="number" min={1} step={1} value={subjectsPerGroup} onChange={(e) => setSubjectsPerGroup(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Doses per Subject (Weekly)</div>
+            <div style={labelStyle}>Doses Per Subject (Weekly)</div>
             <StyledSelect value={dosesPerSubjectPerWeek} onChange={(e) => setDosesPerSubjectPerWeek(e.target.value)}>
-              <option value="7">Daily (7x / week)</option>
-              <option value="3">Three Times Weekly (3x / week)</option>
-              <option value="2">Twice Weekly (2x / week)</option>
-              <option value="1">Weekly (1x / week)</option>
+              <option value="7">Daily (7x / Week)</option>
+              <option value="3">Three Times Weekly (3x / Week)</option>
+              <option value="2">Twice Weekly (2x / Week)</option>
+              <option value="1">Weekly (1x / Week)</option>
             </StyledSelect>
           </label>
           <label style={{ display: "block" }}>
@@ -1757,11 +1790,11 @@ function VialQuantitySection() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 12 }}>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Mg Per Dose</div>
-            <StyledInput type="number" step="0.001" value={mgPerDose} onChange={(e) => setMgPerDose(e.target.value)} placeholder="e.g. 0.250" />
+            <StyledInput type="number" step="0.001" value={mgPerDose} onChange={(e) => setMgPerDose(e.target.value)} placeholder="E.g. 0.250" />
           </label>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Mg Per Vial</div>
-            <StyledInput type="number" step="0.01" value={mgPerVial} onChange={(e) => setMgPerVial(e.target.value)} placeholder="e.g. 5" />
+            <StyledInput type="number" step="0.01" value={mgPerVial} onChange={(e) => setMgPerVial(e.target.value)} placeholder="E.g. 5" />
           </label>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Overage Buffer (%)</div>
@@ -1775,15 +1808,15 @@ function VialQuantitySection() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, textAlign: 'center', fontSize: 13 }}>
               <div style={{ padding: 8, background: 'rgba(255,255,255,0.02)', borderRadius: 6 }}>
                 <span style={{ display: 'block', color: '#A8B4C0', fontSize: 10 }}>TOTAL SUBJECTS (N)</span>
-                <strong style={{ fontSize: 16, color: '#FFF' }}>{totalN}</strong>
+                <strong style={{ fontSize: 16, color: '#FFF' }} className="calc-no-capitalize">{totalN}</strong>
               </div>
               <div style={{ padding: 8, background: 'rgba(255,255,255,0.02)', borderRadius: 6 }}>
                 <span style={{ display: 'block', color: '#A8B4C0', fontSize: 10 }}>DOSES PER SUBJECT</span>
-                <strong style={{ fontSize: 16, color: '#FFF' }}>{Math.round(Number(dosesPerSubjectPerWeek) * Number(studyDurationWeeks))}</strong>
+                <strong style={{ fontSize: 16, color: '#FFF' }} className="calc-no-capitalize">{Math.round(Number(dosesPerSubjectPerWeek) * Number(studyDurationWeeks))}</strong>
               </div>
               <div style={{ padding: 8, background: 'rgba(255,255,255,0.02)', borderRadius: 6 }}>
                 <span style={{ display: 'block', color: '#A8B4C0', fontSize: 10 }}>STUDY WEEKS</span>
-                <strong style={{ fontSize: 16, color: '#FFF' }}>{studyDurationWeeks}</strong>
+                <strong style={{ fontSize: 16, color: '#FFF' }} className="calc-no-capitalize">{studyDurationWeeks}</strong>
               </div>
             </div>
           </div>
@@ -1792,9 +1825,9 @@ function VialQuantitySection() {
         <div style={resultStyle}>
           {!out ? 'Enter Valid Inputs.' : (
             <>
-              Vials Needed: <strong style={{ color: '#00E5FF', fontSize: 20 }}>{out.vialsNeeded.toLocaleString()}</strong>{'  '}|{'  '}
-              Per-Subject Mass: <strong>{Number(out.perSubjectMg).toFixed(2)} mg</strong>{'  '}|{'  '}
-              Total Mass: <strong>{Number(out.totalMg).toFixed(2)} mg</strong>
+              Vials Needed: <strong style={{ color: '#00E5FF', fontSize: 20 }} className="calc-no-capitalize">{out.vialsNeeded.toLocaleString()}</strong>{'  '}|{'  '}
+              Per-Subject Mass: <strong className="calc-no-capitalize">{Number(out.perSubjectMg).toFixed(2)} mg</strong>{'  '}|{'  '}
+              Total Mass: <strong className="calc-no-capitalize">{Number(out.totalMg).toFixed(2)} mg</strong>
             </>
           )}
         </div>
@@ -1838,7 +1871,26 @@ export default function CalculatorSuite({ activeId }: { activeId?: string | null
   if (!activeId) return null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
+    <div className="calc-container" style={{ display: 'flex', flexDirection: 'column' }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .calc-container {
+          text-transform: capitalize !important;
+        }
+        .calc-container input,
+        .calc-container select,
+        .calc-container option,
+        .calc-container textarea,
+        .calc-container code,
+        .calc-container pre,
+        .calc-no-capitalize,
+        .calc-no-capitalize * {
+          text-transform: none !important;
+        }
+        select option {
+          background-color: #0b0e14 !important;
+          color: #f3f4f6 !important;
+        }
+      ` }} />
       {activeId === 'reconstitution' && <Reconstitution compounds={compounds} />}
       {activeId === 'dilution' && <DilutionSection />}
       {activeId === 'concentration' && <ConcentrationSection compounds={compounds} />}
