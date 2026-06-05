@@ -1070,6 +1070,12 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
   }, []);
 
   useEffect(() => {
+    if (window.innerWidth < 768) {
+      setCollapsedGroups(new Set(['Evidence & Regulatory', 'Pharmacology', 'Handling & Storage']));
+    }
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(searchParams?.toString() || '');
     if (selectedSlugs.length > 0) { params.set('compare', selectedSlugs.join(',')); params.delete('add'); }
     else { params.delete('compare'); params.delete('add'); }
@@ -1200,6 +1206,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
       <style dangerouslySetInnerHTML={{ __html: `
         @media print { body { background: #fff !important; color: #000 !important; } .no-print { display: none !important; } td, th { color: #000 !important; background: #fff !important; border-bottom: 1px solid #ddd !important; } }
         .ct-tab { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.45); border-radius: 8px; padding: 8px 14px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
         .ct-tab:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); }
         .ct-tab.active { background: rgba(0,196,188,0.15); border-color: rgba(0,196,188,0.5); color: #00C4BC; }
         .ct-row-hover:hover td { background: rgba(255,255,255,0.015) !important; }
@@ -1307,7 +1314,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
 
           {/* Tabs */}
           {selected.length >= 2 && (
-            <div className="no-print" style={{ overflowX: 'auto', paddingBottom: 4 }}>
+            <div className="no-print hide-scroll" style={{ overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               <div style={{ display: 'flex', gap: 6, minWidth: 'max-content' }}>
                 {tabs.map(tab => (
                   <button key={tab.id} type="button" className={`ct-tab${activeTab === tab.id ? ' active' : ''}`} onClick={() => setActiveTab(tab.id)}>
@@ -1508,7 +1515,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                       const color = colors[origIdx % colors.length];
                       const isTop = c.slug === topPickSlug;
                       return (
-                        <th key={c.slug} style={{ ...cellStyle, textAlign: 'left', background: '#162230', width: isMobile ? 160 : `${78 / displayedSelected.length}%`, scrollSnapAlign: 'start' }} scope="col"
+                        <th key={c.slug} style={{ ...cellStyle, textAlign: 'left', background: c.slug === controlSlug ? 'linear-gradient(rgba(0,196,188,0.08),rgba(0,196,188,0.08)), #162230' : '#162230', width: isMobile ? 160 : `${78 / displayedSelected.length}%`, scrollSnapAlign: 'start' }} scope="col"
                           draggable={!isMobile}
                           onDragStart={e => { e.dataTransfer.setData('text/plain', String(origIdx)); e.dataTransfer.effectAllowed = 'move'; }}
                           onDragOver={e => e.preventDefault()}
@@ -1680,7 +1687,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                           {displayedSelected.map((c, idx) => {
                             const isWinner = bestIndices.includes(idx);
                             return (
-                              <td key={c.slug} style={{ ...valueCellStyle, position: 'relative' }}>
+                              <td key={c.slug} style={{ ...valueCellStyle, position: 'relative', background: c.slug === controlSlug ? 'rgba(0,196,188,0.04)' : undefined }}>
                                 {isWinner && (
                                   <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.65rem', background: '#00C4BC', color: '#04221F', padding: '1px 5px', borderRadius: 3, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
                                     <Trophy size={9} /> Top Pick
@@ -1702,6 +1709,22 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
             </div>
           )}
         </div>
+      )}
+      {/* Floating Action Button (FAB) for adding compounds on mobile */}
+      {isMobile && selected.length >= 1 && selected.length < MAX_COLUMNS && canAdd && (
+        <button
+          className="no-print"
+          onClick={() => {
+            searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => {
+              const input = searchRef.current?.querySelector('input');
+              if (input) input.focus();
+            }, 500);
+          }}
+          style={{ position: 'fixed', bottom: 20, right: 20, width: 56, height: 56, borderRadius: '50%', background: '#00C4BC', color: '#04221F', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,196,188,0.4)', border: 'none', cursor: 'pointer', zIndex: 100 }}
+        >
+          <PlusCircle size={28} />
+        </button>
       )}
     </div>
   );
