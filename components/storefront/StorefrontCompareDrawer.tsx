@@ -262,33 +262,28 @@ function scoreCompoundFromPinned(p: PinnedItem, compoundsBySlug: Record<string, 
 }
 
 function getChoiceBadge(idx: number): React.ReactNode {
-  const labels = ['1st Choice', '2nd Choice', '3rd Choice', '4th Choice'];
-  const badgeColors = [
-    { bg: 'rgba(0,196,188,0.15)', text: '#FFF', border: 'rgba(0,196,188,0.35)' },
-    { bg: 'rgba(246,173,85,0.15)', text: '#F6AD55', border: 'rgba(246,173,85,0.35)' },
-    { bg: 'rgba(104,211,145,0.15)', text: '#68D391', border: 'rgba(104,211,145,0.35)' },
-    { bg: 'rgba(252,129,129,0.15)', text: '#FFF', border: 'rgba(252,129,129,0.35)' },
+  const trophySrcs = [
+    '/images/badges/trophy_1st.png',
+    '/images/badges/trophy_2nd.png',
+    '/images/badges/trophy_3rd.png',
+    '/images/badges/trophy_4th.png'
   ];
-  const color = badgeColors[idx] || badgeColors[badgeColors.length - 1];
+  const src = trophySrcs[idx] || trophySrcs[trophySrcs.length - 1];
+  const labels = ['1st Choice', '2nd Choice', '3rd Choice', '4th Choice'];
+  const alt = labels[idx] || `${idx + 1}th Choice`;
   return (
-    <span style={{
-      fontSize: '0.65rem',
-      fontWeight: 900,
-      padding: '2px 8px',
-      borderRadius: 999,
-      background: color.bg,
-      color: color.text,
-      border: `1px solid ${color.border}`,
-      textTransform: 'uppercase',
-      letterSpacing: '0.04em',
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 3,
-      width: 'fit-content'
-    }}>
-      {idx === 0 && <Trophy size={10} />}
-      {labels[idx] || `${idx + 1}th Choice`}
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img 
+      src={src} 
+      alt={alt} 
+      style={{ 
+        height: '32px', 
+        width: 'auto', 
+        objectFit: 'contain',
+        display: 'inline-block',
+        verticalAlign: 'middle'
+      }} 
+    />
   );
 }
 

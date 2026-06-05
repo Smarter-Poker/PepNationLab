@@ -74,6 +74,32 @@ function txt(v: unknown): string {
   const s = (v ?? '').toString().trim();
   return s || NL;
 }
+
+function getChoiceBadge(idx: number): React.ReactNode {
+  const trophySrcs = [
+    '/images/badges/trophy_1st.png',
+    '/images/badges/trophy_2nd.png',
+    '/images/badges/trophy_3rd.png',
+    '/images/badges/trophy_4th.png'
+  ];
+  const src = trophySrcs[idx] || trophySrcs[trophySrcs.length - 1];
+  const labels = ['1st Choice', '2nd Choice', '3rd Choice', '4th Choice'];
+  const alt = labels[idx] || `${idx + 1}th Choice`;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img 
+      src={src} 
+      alt={alt} 
+      style={{ 
+        height: '28px', 
+        width: 'auto', 
+        objectFit: 'contain',
+        display: 'inline-block',
+        verticalAlign: 'middle'
+      }} 
+    />
+  );
+}
 function parseHalfLifeHours(hl: string | null | undefined): number {
   if (!hl) return 0;
   const s = hl.toLowerCase();
@@ -2009,12 +2035,17 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                   const score = scores[origIdx];
                   const color = colors[origIdx % colors.length];
                   const isTop = c.slug === topPickSlug;
+                  const sortedByScore = [...selected].map((x, idx) => ({ c: x, score: scores[idx].total })).sort((a, b) => b.score - a.score);
+                  const rankIndex = sortedByScore.findIndex(x => x.c.slug === c.slug);
                   return (
                     <div key={c.slug} style={{ padding: 14, borderRadius: 12, background: isTop ? 'rgba(0,196,188,0.05)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isTop ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.07)'}` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        {getChoiceBadge(rankIndex)}
+                        {isTop && <Trophy size={13} color="#00C4BC" />}
+                      </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
                         <Link href={`/research/${c.slug}`} style={{ color: (color === '#00C4BC' || color === '#FF6B6B') ? '#FFF' : color, fontWeight: 900, textDecoration: 'none', fontSize: '0.95rem' }}>{c.display_name}</Link>
-                        {isTop && <Trophy size={13} color="#00C4BC" />}
                       </div>
                       <AnimatedScoreRing score={score} color={color} />
                       {score.bestFor.length > 0 && (
@@ -2477,12 +2508,21 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                           onDragStart={e => { e.dataTransfer.setData('text/plain', String(origIdx)); e.dataTransfer.effectAllowed = 'move'; }}
                           onDragOver={e => e.preventDefault()}
                           onDrop={e => { e.preventDefault(); const src = parseInt(e.dataTransfer.getData('text/plain'), 10); if (src !== origIdx && !isNaN(src)) { setSelectedSlugs(prev => { const n = [...prev]; const [r] = n.splice(src, 1); n.splice(origIdx, 0, r); return n; }); } }}>
-                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
-                            <div>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6, width: '100%' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, minWidth: 0 }}>
+                              {(() => {
+                                const sortedByScore = [...selected].map((x, idx) => ({ c: x, score: scores[idx].total })).sort((a, b) => b.score - a.score);
+                                const rankIndex = sortedByScore.findIndex(x => x.c.slug === c.slug);
+                                return (
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                    {getChoiceBadge(rankIndex)}
+                                    {isTop && <Trophy size={13} color="#00C4BC" />}
+                                  </div>
+                                );
+                              })()}
                               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                                 {!isMobile && <GripHorizontal size={13} color="rgba(255,255,255,0.15)" style={{ cursor: 'grab', flexShrink: 0 }} />}
                                 <Link href={`/research/${c.slug}`} style={{ color: (color === '#00C4BC' || color === '#FF6B6B') ? '#FFF' : color, fontWeight: 900, textDecoration: 'none', fontSize: '1.05rem' }}>{c.display_name}</Link>
-                                {isTop && <Trophy size={13} color="#00C4BC" />}
                               </div>
                               <div style={{ display: 'flex', gap: 3, marginTop: 4, flexWrap: 'wrap' }}>
                                 {c.evidence_tier === 'approved_drug' && <span style={{ background: 'rgba(104,211,145,0.15)', color: '#68D391', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}><Check size={9} /> FDA</span>}
@@ -2747,7 +2787,14 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 if (!c) return null;
                 return (
                   <div key={slug} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10 }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>{c.display_name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {(() => {
+                        const sortedByScore = [...selected].map((x, idx) => ({ c: x, score: scores[idx].total })).sort((a, b) => b.score - a.score);
+                        const rankIndex = sortedByScore.findIndex(x => x.c.slug === c.slug);
+                        return getChoiceBadge(rankIndex);
+                      })()}
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>{c.display_name}</div>
+                    </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button disabled={idx === 0} onClick={() => {
                         const newSlugs = [...selectedSlugs];
