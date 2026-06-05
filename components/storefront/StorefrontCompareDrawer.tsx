@@ -741,9 +741,35 @@ export default function StorefrontCompareDrawer({
 
   const colors = [primaryColor, '#F6AD55', '#68D391', '#FC8181'];
 
-  const activeSynergiesModal = KNOWN_SYNERGIES.filter(syn =>
-    syn.pairs.every(slug => pinned.some(p => p.compoundSlug === slug))
-  );
+  const activeSynergiesModal = useMemo(() => {
+    const matched = KNOWN_SYNERGIES.filter(syn =>
+      syn.pairs.every(slug => pinned.some(p => p.compoundSlug === slug))
+    );
+
+    const pinnedCompounds = pinned.map(p => p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null).filter(Boolean) as Compound[];
+    const glp1s = pinnedCompounds.filter(c => c.is_glp1);
+    const hasGlp1Conflict = glp1s.length >= 2;
+    const proAngio = pinnedCompounds.filter(c => c.is_pro_angiogenic);
+    const hasProAngioCaution = proAngio.length >= 2;
+
+    return matched.filter(syn => {
+      if (hasGlp1Conflict) {
+        const isGlp1Pair = syn.pairs.every(slug => {
+          const comp = compoundsBySlug[slug];
+          return comp?.is_glp1;
+        });
+        if (isGlp1Pair) return false;
+      }
+      if (hasProAngioCaution) {
+        const isProAngioPair = syn.pairs.every(slug => {
+          const comp = compoundsBySlug[slug];
+          return comp?.is_pro_angiogenic;
+        });
+        if (isProAngioPair) return false;
+      }
+      return true;
+    });
+  }, [pinned, compoundsBySlug]);
 
   // Dynamic GLP-1 / pro-angiogenic warnings
   const dynamicWarnings = useMemo(() => {
@@ -775,7 +801,9 @@ export default function StorefrontCompareDrawer({
   if (pinned.length === 0) return null;
   if (typeof document === 'undefined') return null;
 
-  const activeSynergies = [...activeSynergiesModal, ...dynamicWarnings];
+  const activeSynergies = useMemo(() => {
+    return [...activeSynergiesModal, ...dynamicWarnings];
+  }, [activeSynergiesModal, dynamicWarnings]);
 
   return createPortal(
     <>
@@ -1020,13 +1048,40 @@ export default function StorefrontCompareDrawer({
             
             <div style={{ overflowY: 'auto', padding: '24px', flex: 1 }}>
               {activeSynergies.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
-                  {activeSynergies.map((syn, idx) => (
-                    <div key={idx} style={{ background: syn.type === 'conflict' ? 'rgba(229,62,62,0.1)' : 'rgba(104,211,145,0.1)', border: `1px solid ${syn.type === 'conflict' ? 'rgba(229,62,62,0.3)' : 'rgba(104,211,145,0.3)'}`, color: syn.type === 'conflict' ? '#FC8181' : '#68D391', padding: '12px 16px', borderRadius: 8, marginBottom: 8, fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                      {syn.type === 'conflict' ? <AlertTriangle size={16} style={{ marginTop: 1, flexShrink: 0 }} /> : <Sparkles size={16} style={{ marginTop: 1, flexShrink: 0 }} />}
-                      <span><strong>{syn.type === 'conflict' ? 'Conflict' : 'Synergy'}:</strong> {syn.message}</span>
-                    </div>
-                  ))}
+                <div style={{
+                  background: 'rgba(20, 25, 30, 0.6)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 12,
+                  padding: 16,
+                  marginBottom: 16,
+                  backdropFilter: 'blur(8px)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <AlertTriangle size={16} color="#FC8181" />
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FC8181', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Research Safety & Compatibility Advisories
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {activeSynergies.map((syn, idx) => (
+                      <div key={idx} style={{
+                        background: syn.type === 'conflict' ? 'rgba(229,62,62,0.06)' : 'rgba(104,211,145,0.06)',
+                        borderLeft: `3px solid ${syn.type === 'conflict' ? '#FC8181' : '#68D391'}`,
+                        color: syn.type === 'conflict' ? '#FC8181' : '#68D391',
+                        padding: '8px 12px',
+                        borderRadius: '0 8px 8px 0',
+                        fontSize: '0.82rem',
+                        fontWeight: 500,
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 8,
+                        lineHeight: 1.4
+                      }}>
+                        {syn.type === 'conflict' ? <AlertTriangle size={14} style={{ marginTop: 2, flexShrink: 0 }} /> : <Sparkles size={14} style={{ marginTop: 2, flexShrink: 0 }} />}
+                        <span><strong>{syn.type === 'conflict' ? 'Conflict' : 'Synergy'}:</strong> {syn.message}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
