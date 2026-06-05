@@ -1414,12 +1414,7 @@ export default function DiscoveryHero({
         <button
           type="button"
           onClick={() => {
-            onSelectArea(''); // Clear filter
-            if (query.trim().length > 0) {
-              submitTypedGoal();
-            } else {
-              setWizardOpen(true);
-            }
+            if (onAlreadyKnowClicked) onAlreadyKnowClicked();
           }}
           title="Match Me"
           style={{
@@ -1433,8 +1428,7 @@ export default function DiscoveryHero({
         <button
           type="button"
           onClick={() => {
-            onSelectArea(''); // Clear filter
-            setWizardOpen(true);
+            if (onAlreadyKnowClicked) onAlreadyKnowClicked();
           }}
           title="Let Us Guide You"
           style={{
