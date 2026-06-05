@@ -252,6 +252,7 @@ function CustomerSupportWidgetInner() {
 
   const [profile, setProfile] = useState<{ role: string | null } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [topic, setTopic] = useState<Topic>('Order Issue');
   const [description, setDescription] = useState('');
   const [orderId, setOrderId] = useState('');

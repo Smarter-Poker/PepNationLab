@@ -58,34 +58,78 @@ export async function isAdminUser(userId: string): Promise<boolean> {
   return data?.role === 'admin';
 }
 
+interface DownlineProfile {
+  id?: string;
+  parent_agent_id?: string | null;
+  referring_agent_id?: string | null;
+  referring_sub_agent_id?: string | null;
+}
+
+async function isDownlineOf(
+  target: DownlineProfile,
+  superAgentId: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  svc: any,
+): Promise<boolean> {
+  if (target.parent_agent_id === superAgentId) return true;
+  if (target.referring_agent_id === superAgentId) return true;
+  if (target.referring_sub_agent_id === superAgentId) return true;
+
+  const parentId = target.parent_agent_id || target.referring_agent_id || target.referring_sub_agent_id;
+  if (!parentId) return false;
+
+  const { data: parent } = await svc
+    .from('profiles')
+    .select('id, parent_agent_id, referring_agent_id, referring_sub_agent_id')
+    .eq('id', parentId)
+    .maybeSingle();
+
+  if (!parent) return false;
+
+  if (parent.parent_agent_id === superAgentId) return true;
+  if (parent.referring_agent_id === superAgentId) return true;
+  if (parent.referring_sub_agent_id === superAgentId) return true;
+
+  const grandParentId = parent.parent_agent_id || parent.referring_agent_id || parent.referring_sub_agent_id;
+  if (!grandParentId) return false;
+
+  const { data: grandParent } = await svc
+    .from('profiles')
+    .select('id, parent_agent_id, referring_agent_id, referring_sub_agent_id')
+    .eq('id', grandParentId)
+    .maybeSingle();
+
+  if (!grandParent) return false;
+
+  if (grandParent.parent_agent_id === superAgentId) return true;
+  if (grandParent.referring_agent_id === superAgentId) return true;
+  if (grandParent.referring_sub_agent_id === superAgentId) return true;
+
+  return false;
+}
+
 export async function canInvite(callerId: string, targetUserId: string): Promise<boolean> {
   if (callerId === targetUserId) return true;
   const svc = await createServiceClient();
   const { data: caller } = await svc
     .from('profiles')
-    .select('id, role, parent_agent_id, referring_agent_id, referring_sub_agent_id')
+    .select('id, role, parent_agent_id, referring_agent_id, referring_sub_agent_id, is_super_agent')
     .eq('id', callerId)
     .maybeSingle();
   const { data: target } = await svc
     .from('profiles')
-    .select('id, role, parent_agent_id, referring_agent_id, referring_sub_agent_id')
+    .select('id, role, parent_agent_id, referring_agent_id, referring_sub_agent_id, is_super_agent')
     .eq('id', targetUserId)
     .maybeSingle();
   if (!caller || !target) return false;
 
+  const isCallerSuperAgent = caller.role === 'super_agent' || caller.is_super_agent === true;
+
   if (caller.role === 'admin') return true;
   if (target.role === 'admin') return true;
 
-  if (caller.role === 'super_agent') {
-    if (target.parent_agent_id === caller.id) return true;
-    if (target.referring_agent_id) {
-      const { data: midAgent } = await svc
-        .from('profiles')
-        .select('id, parent_agent_id')
-        .eq('id', target.referring_agent_id)
-        .maybeSingle();
-      if (midAgent?.parent_agent_id === caller.id) return true;
-    }
+  if (isCallerSuperAgent) {
+    if (await isDownlineOf(target, caller.id, svc)) return true;
     return false;
   }
 
@@ -156,7 +200,7 @@ export function getCronAuth(
 export async function broadcastCallSignalServer(
   targetUserId: string,
   event: 'incoming_call' | 'call_accepted' | 'call_declined' | 'call_ended',
-  payload: any,
+  payload: Record<string, unknown>,
 ): Promise<void> {
   const svc = await createServiceClient();
   // HOTFIX fix-38: public channel (reverted from private:true). The
