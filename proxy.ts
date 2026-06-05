@@ -227,7 +227,7 @@ export default async function proxy(request: NextRequest) {
     return redirectWithCookies(url);
   }
 
-  if ((profile as any)?.must_change_password === true && pathname !== '/account/change-password') {
+  if ((profile as { must_change_password?: boolean } | null)?.must_change_password === true && pathname !== '/account/change-password') {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Must change password' }, { status: 403 });
     }

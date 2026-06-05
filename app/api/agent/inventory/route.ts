@@ -5,7 +5,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import type { AgentTier } from '@/lib/pricing';
 
 // GET: Fetch the agent's current inventory levels for all active products
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
