@@ -199,7 +199,7 @@ function AnimatedScoreRingDrawer({ score, color }: { score: CompoundScore; color
           <div style={{ fontSize: '0.88rem', fontWeight: 900, color: gradeColor }}>Grade {score.letter}</div>
           <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', marginBottom: 5 }}>{score.verdict}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {[['Ev', score.breakdown.evidence, 30], ['Sa', score.breakdown.safety, 25], ['Sc', score.breakdown.science, 15], ['Ha', score.breakdown.handling, 15]].map(([lbl, val, max]) => (
+            {[['Ev', score.breakdown.evidence, 28], ['Sa', score.breakdown.safety, 24], ['Sc', score.breakdown.science, 14], ['Co', score.breakdown.coverage, 16], ['Ha', score.breakdown.handling, 10], ['Dp', score.breakdown.completeness, 8]].map(([lbl, val, max]) => (
               <div key={String(lbl)} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)' }}>
                 <span style={{ minWidth: 12 }}>{lbl}</span>
                 <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}>
@@ -233,11 +233,12 @@ function AnimatedScoreRingDrawer({ score, color }: { score: CompoundScore; color
             <button onClick={(e) => { e.stopPropagation(); setShowAudit(false); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.65rem', padding: 0 }}>Close</button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div>Evidence: {score.breakdown.evidence} / 30</div>
-            <div>Safety: {score.breakdown.safety} / 25</div>
-            <div>PubMed/Trials: {score.breakdown.science} / 15</div>
-            <div>Areas: {score.breakdown.coverage} / 15</div>
-            <div>Handling: {score.breakdown.handling} / 15</div>
+            <div>Evidence: {score.breakdown.evidence} / 28</div>
+            <div>Safety: {score.breakdown.safety} / 24</div>
+            <div>Science: {score.breakdown.science} / 14</div>
+            <div>Coverage: {score.breakdown.coverage} / 16</div>
+            <div>Handling: {score.breakdown.handling} / 10</div>
+            <div>Data Depth: {score.breakdown.completeness} / 8</div>
           </div>
         </div>
       )}
@@ -249,10 +250,10 @@ function scoreCompoundFromPinned(p: PinnedItem, compoundsBySlug: Record<string, 
   const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
   if (!c) {
     return {
-      total: 0,
-      letter: 'D',
-      breakdown: { evidence: 0, safety: 0, coverage: 0, science: 0, handling: 0 },
-      verdict: 'Unknown compound',
+      total: 80,
+      letter: 'C+',
+      breakdown: { evidence: 0, safety: 0, coverage: 0, science: 0, handling: 0, completeness: 0 },
+      verdict: 'Compound data pending',
       weaknesses: [],
       strengths: [],
       bestFor: [],
