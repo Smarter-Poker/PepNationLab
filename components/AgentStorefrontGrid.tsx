@@ -2063,7 +2063,7 @@ export default function AgentStorefrontGrid({
                   );
                 })()}
 
-                <div style={{
+              <div style={{
                   marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)',
                   textAlign: 'center'
                 }}>
@@ -2071,10 +2071,8 @@ export default function AgentStorefrontGrid({
                     const defaultV = group.variants.find(v => v.id === group.defaultVariantId) || group.variants[0];
                     const size = defaultV.products?.unit_size || '10';
                     const measure = defaultV.products?.unit_measure || 'mg';
-                    const perVialBase = isStorefrontOwner && (defaultV as any).cost_price != null
-                      ? Number((defaultV as any).cost_price) / 10
-                      : defaultV.retail_price / 10;
-                    const isOnSale = !isStorefrontOwner && (defaultV as any).is_on_sale && (defaultV as any).sale_price;
+                    const perVialBase = defaultV.retail_price / 10;
+                    const isOnSale = (defaultV as any).is_on_sale && (defaultV as any).sale_price;
                     const perVialDisplay = isOnSale ? (defaultV as any).sale_price / 10 : perVialBase;
                     const perVialOriginal = perVialBase;
                     
@@ -2184,9 +2182,7 @@ export default function AgentStorefrontGrid({
                     item.products?.category || 'Other',
                     name,
                   );
-                  const perVial = isStorefrontOwner && (item as any).cost_price != null
-                    ? Number((item as any).cost_price) / 10
-                    : item.retail_price / 10;
+                  const perVial = item.retail_price / 10;
                   // Bac. water sells in fixed 10-packs; show it as packs (10x), not loose vials.
                   const isBW = isBacWaterItem(item.products?.name, item.products?.compound_slug);
                   const packSize = 10;
@@ -2324,9 +2320,7 @@ export default function AgentStorefrontGrid({
                         item.products?.category || 'Other',
                         name,
                       );
-                      const perVial = isStorefrontOwner && (item as any).cost_price != null
-                        ? Number((item as any).cost_price) / 10
-                        : item.retail_price / 10;
+                      const perVial = item.retail_price / 10;
                       return (
                         <div key={variantId} style={{
                           display: 'flex', alignItems: 'center', gap: 12, padding: 10,
@@ -2394,9 +2388,7 @@ export default function AgentStorefrontGrid({
                     ${Object.entries(cartItems).reduce((sum, [vId, qty]) => {
                       const item = products.find(p => p.id === vId);
                       if (!item) return sum;
-                      const per = isStorefrontOwner && (item as any).cost_price != null
-                        ? Number((item as any).cost_price) / 10
-                        : item.retail_price / 10;
+                      const per = item.retail_price / 10;
                       return sum + per * qty;
                     }, 0).toFixed(2)}
                   </span>
@@ -2409,9 +2401,7 @@ export default function AgentStorefrontGrid({
                         const item = products.find(p => p.id === vId);
                         if (!item) return null;
                         const perVial = item.retail_price / 10;
-                        const costPerVial = isStorefrontOwner && (item as any).cost_price != null
-                          ? Number((item as any).cost_price) / 10
-                          : perVial;
+                        const costPerVial = perVial;
                         const sizeLabel = item.products?.unit_size
                           ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
                           : '';
@@ -2705,9 +2695,7 @@ export default function AgentStorefrontGrid({
                     : activeV.retail_price;
                   const basePrice = rawPrice / 10;
 
-                  const agentCostPerVial = isStorefrontOwner && (activeV as any).cost_price != null
-                    ? Number((activeV as any).cost_price) / 10
-                    : basePrice;
+                  const agentCostPerVial = basePrice;
 
                   const tiers = isStorefrontOwner
                     ? [
@@ -2725,7 +2713,7 @@ export default function AgentStorefrontGrid({
                         ];
 
                   const getUnitPrice = (q: number) => {
-                    if (isStorefrontOwner) return agentCostPerVial;
+                    
                     const t = tiers.find(t => q >= t.min && q <= t.max);
                     return t ? parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2)) : basePrice;
                   };
@@ -2856,7 +2844,7 @@ export default function AgentStorefrontGrid({
                         )}
                       </div>
 
-                      {(volumePricingEnabled && !isStorefrontOwner) && (
+                      {(volumePricingEnabled) && (
                         <div style={{
                           marginTop: 'var(--space-5)', border: '6px solid #E2E8F0',
                           borderRadius: 'var(--radius-md)', overflow: 'hidden'
@@ -2865,9 +2853,7 @@ export default function AgentStorefrontGrid({
                             Volume Pricing
                           </div>
                           {tiers.map((t, i) => {
-                            const tierPrice = (isStorefrontOwner && t.pct === 0)
-                              ? agentCostPerVial
-                              : parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
+                            const tierPrice = parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
                             const isActive = displayQty >= t.min && displayQty <= t.max;
                             return (
                               <div key={i} style={{
@@ -2878,7 +2864,7 @@ export default function AgentStorefrontGrid({
                                 <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
                                   {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}-${t.max} vials`)}
                                   {t.pct > 0 && <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.75rem' }}>+{t.pct}%</span>}
-                                  {t.pct === 0 && !isStorefrontOwner && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
+                                  {t.pct === 0 && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
                                 </span>
                                 <span style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: isActive ? primaryColor : 'var(--grey-300)' }}>
                                   ${tierPrice.toFixed(2)}/ea
