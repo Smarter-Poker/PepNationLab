@@ -11,7 +11,6 @@ import AttachMenu from './AttachMenu';
 import VoiceRecorder from './VoiceRecorder';
 import GifPicker from './GifPicker';
 import TemplatesMenu from './TemplatesMenu';
-import ScheduledMessageList from './ScheduledMessageList';
 import ExpiryPicker from './ExpiryPicker';
 import { vibrateLight, vibrateMedium, playSendSound } from '@/lib/messenger/haptics';
 
@@ -614,38 +613,13 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
             />
             {/* Action buttons inside the right side of the pill */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, paddingBottom: 2 }}>
-              {!text.trim() && (
-                <>
-                  <button type="button" onClick={() => togglePopover(setShowEmoji)} className="hover-lift" style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Insert Emoji" title="Insert Emoji">
-                    <img src="/messenger-icons/emoji-icon.png" alt="Emoji" style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.6)' }} />
-                  </button>
-                  <button type="button" onClick={() => togglePopover(setShowScheduleInput)} className="hover-lift" style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Schedule Send" title="Schedule Send">
-                    <img src="/messenger-icons/calendar-icon.png" alt="Schedule" style={{ width: 48, height: 48, objectFit: 'contain' }} />
-                  </button>
-                </>
-              )}
-              {/* round-15 fix: revert to ORIGINAL conditional render.
-                  Send button only appears once the user starts typing
-                  (text.trim() non-empty) or while sending. Cleaner UI
-                  when the field is idle — matches the user's reference
-                  desktop screenshot of how the composer should behave. */}
-              {text.trim() || sending ? (
-                <>
-                  {/* round-16: emoji button appears LEFT of Send only
-                      while the user is typing. Distinct aria-label
-                      ("Add Emoji") so the round-15 mobile-hide rule
-                      that targets aria-label="Insert Emoji" does NOT
-                      hit this typing-state instance. */}
-                  <button
-                    type="button"
-                    onClick={() => togglePopover(setShowEmoji)}
-                    className="hover-lift composer-emoji-typing"
-                    style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                    aria-label="Add Emoji"
-                    title="Add Emoji"
-                  >
-                    <img src="/messenger-icons/emoji-icon.png" alt="Add Emoji" style={{ width: 28, height: 28, objectFit: 'contain' }} />
-                  </button>
+                  {/* round-15 fix: revert to ORIGINAL conditional render.
+                      Send button only appears once the user starts typing
+                      (text.trim() non-empty) or while sending. Cleaner UI
+                      when the field is idle — matches the user's reference
+                      desktop screenshot of how the composer should behave. */}
+                  {text.trim() || sending ? (
+                    <>
                   <button
                     type="button"
                     onClick={() => { vibrateMedium(); void handleSendText(); }}
@@ -699,62 +673,12 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
         </div>
       )}
 
-      {showScheduleInput && !voiceMode && (
-        <div
-          style={{
-            marginTop: 8, padding: 10, borderRadius: 8,
-            background: 'var(--surface-2, #162230)',
-            border: '1px solid var(--surface-3, #1D2D3E)',
-            display: 'flex', flexDirection: 'column', gap: 6,
-          }}
-        >
-          <label style={{ fontSize: '0.74rem', color: 'var(--grey-400, #A8B4C0)' }} htmlFor="schedule-at-input">
-            Send At
-          </label>
-          <input
-            id="schedule-at-input"
-            type="datetime-local"
-            value={scheduleAt}
-            onChange={(e) => setScheduleAt(e.target.value)}
-            aria-label="Schedule Date And Time"
-            style={{
-              padding: '6px 8px', borderRadius: 6,
-              border: '1px solid var(--surface-3, #1D2D3E)',
-              background: 'var(--surface-1, #0F1923)',
-              color: 'var(--white, #FFFFFF)', fontSize: '0.85rem',
-            }}
-          />
-          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              onClick={() => { setShowScheduleInput(false); setScheduleAt(''); }}
-              style={{
-                padding: '6px 10px', borderRadius: 6,
-                border: '1px solid var(--surface-3, #1D2D3E)',
-                background: 'transparent', color: 'var(--white, #FFFFFF)',
-                cursor: 'pointer', fontSize: '0.78rem',
-              }}
-            >Cancel</button>
-            <button
-              type="button"
-              onClick={() => void handleSchedule()}
-              style={{
-                padding: '6px 10px', borderRadius: 6, border: 0,
-                background: 'var(--teal, #00C4BC)', color: '#000',
-                cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700,
-              }}
-            >Schedule</button>
-          </div>
-        </div>
-      )}
-
       {!voiceMode && (
         <div style={{ fontSize: '0.72rem', color: 'var(--grey-400, #A8B4C0)', textAlign: 'right', marginTop: 4 }}>
           {text.length} / {MAX_LEN}
         </div>
       )}
 
-      {showEmoji && <EmojiPicker onPick={insertAtCursor} onClose={() => setShowEmoji(false)} />}
       {showAttach && (
         <AttachMenu
           onClose={() => setShowAttach(false)}
@@ -784,9 +708,6 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
           onPick={(s) => setPendingExpirySeconds(s)}
           onClose={() => setShowExpiry(false)}
         />
-      )}
-      {showScheduled && (
-        <ScheduledMessageList onClose={() => setShowScheduled(false)} />
       )}
     </div>
   );
