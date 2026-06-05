@@ -1090,7 +1090,6 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
   const [showLandscapePrompt, setShowLandscapePrompt] = useState(true);
   const [reorderModalOpen, setReorderModalOpen] = useState(false);
   const [jumpMenuOpen, setJumpMenuOpen] = useState(false);
-  const [expandedTextModal, setExpandedTextModal] = useState<{ title: string; content: string } | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -1773,7 +1772,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                       if (row.kind === 'group') {
                         const isCollapsed = collapsedGroups.has(row.label);
                         return (
-                          <tr key={`g-${row.label}`} onClick={() => toggleGroup(row.label)}>
+                          <tr key={`g-${row.label}`} id={`group-${row.label.replace(/\s+/g, '-')}`} onClick={() => toggleGroup(row.label)}>
                             <td style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10 }} colSpan={colSpan}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                                 {isCollapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
@@ -1888,7 +1887,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
               if (input) input.focus();
             }, 500);
           }}
-          style={{ position: 'fixed', bottom: 20, right: 20, width: 56, height: 56, borderRadius: '50%', background: '#00C4BC', color: '#04221F', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,196,188,0.4)', border: 'none', cursor: 'pointer', zIndex: 100 }}
+          style={{ position: 'fixed', bottom: 88, right: 20, width: 56, height: 56, borderRadius: '50%', background: '#00C4BC', color: '#04221F', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,196,188,0.4)', border: 'none', cursor: 'pointer', zIndex: 100 }}
         >
           <PlusCircle size={28} />
         </button>
@@ -1910,7 +1909,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         <button
           className="no-print"
           onClick={() => setJumpMenuOpen(true)}
-          style={{ position: 'fixed', bottom: 26, left: 20, zIndex: 100, background: 'rgba(22,34,48,0.95)', color: '#fff', border: `1px solid rgba(255,255,255,0.2)`, padding: '10px', borderRadius: '50%', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)', cursor: 'pointer' }}
+          style={{ position: 'fixed', bottom: 88, left: 20, zIndex: 100, background: 'rgba(22,34,48,0.95)', color: '#fff', border: `1px solid rgba(255,255,255,0.2)`, padding: '10px', borderRadius: '50%', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)', cursor: 'pointer' }}
         >
           <List size={20} />
         </button>
