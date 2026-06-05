@@ -1346,7 +1346,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
   const [hideIdentical, setHideIdentical] = useState(false);
   const [controlSlug, setControlSlug] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'matrix' | 'proscons' | 'brief' | 'mechanism' | 'protocol' | 'recommend'>('matrix');
+  const [activeTab, setActiveTab] = useState<'matrix' | 'proscons' | 'brief' | 'mechanism' | 'protocol' | 'recommend' | 'efficacy'>('matrix');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
   const [mobileViewMode, setMobileViewMode] = useState<'matrix' | 'accordion'>('matrix');
@@ -1581,6 +1581,9 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
     { id: 'matrix' as const, label: 'Matrix', showAlways: false },
     { id: 'proscons' as const, label: 'Pros & Cons', showAlways: false },
     { id: 'brief' as const, label: 'Analyst Brief', showAlways: false },
+    ...(selected.some(c => c.efficacy_scores && Object.keys(c.efficacy_scores).length > 0)
+      ? [{ id: 'efficacy' as const, label: '📊 Efficacy', showAlways: false }]
+      : []),
     { id: 'mechanism' as const, label: 'Mechanism', showAlways: false },
     { id: 'protocol' as const, label: 'Protocol', showAlways: false },
     { id: 'recommend' as const, label: 'Verdict', showAlways: false },
@@ -1692,6 +1695,23 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
               </div>
             ))}
           </div>
+          {/* Feature 7: Compare History */}
+          {compareHistory.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Clock size={13} /> Recent Comparisons
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {compareHistory.map((slugs, i) => (
+                  <button key={i} type="button"
+                    onClick={() => { haptic(30); setSelectedSlugs(slugs.filter(s => compounds.some(c => c.slug === s))); }}
+                    style={{ background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.22)', borderRadius: 8, padding: '6px 12px', color: '#00C4BC', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
+                    {slugs.map(s => bySlug.get(s)?.display_name ?? s).join(' vs ')}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {/* Popular Comparisons */}
           <div style={{ marginTop: 8 }}>
             <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Popular Comparisons — Quick Start</div>
@@ -1707,10 +1727,32 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
           </div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28, paddingBottom: isMobile ? 70 : 0 }}>
 
-          {/* Tabs */}
+          {/* Feature 5: Quick Compare Bar — sticky strip with compact scores */}
           {selected.length >= 2 && (
+            <div className="no-print hide-scroll" style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(9,18,28,0.96)', borderBottom: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(14px)', display: 'flex', gap: 8, padding: '8px 12px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', borderRadius: isMobile ? 0 : 10, scrollbarWidth: 'none' }}>
+              {selected.map((c, i) => {
+                const sc = scores[i]; const color = colors[i % colors.length]; const isTop = c.slug === topPickSlug;
+                return (
+                  <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', background: isTop ? 'rgba(0,196,188,0.12)' : `${color}10`, border: `1px solid ${isTop ? 'rgba(0,196,188,0.35)' : color + '28'}`, borderRadius: 20, flexShrink: 0 }}>
+                    {isTop && <Trophy size={9} color="#00C4BC" />}
+                    <span style={{ fontSize: '0.73rem', fontWeight: 800, color }}>{c.display_name.split(' ').slice(0, 2).join(' ')}</span>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'rgba(255,255,255,0.75)' }}>{sc.letter}</span>
+                    <span style={{ fontSize: '0.64rem', color: 'rgba(255,255,255,0.4)' }}>{sc.total}</span>
+                  </div>
+                );
+              })}
+              {isMobile && (
+                <button onClick={handleShareCard} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, flexShrink: 0, color: 'rgba(168,180,192,0.7)', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer' }}>
+                  <Share2 size={10} /> Share Card
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Feature 6: Desktop-only tab strip (replaced by bottom tab bar on mobile) */}
+          {selected.length >= 2 && !isMobile && (
             <div className="no-print hide-scroll" style={{ overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               <div style={{ display: 'flex', gap: 6, minWidth: 'max-content' }}>
                 {tabs.map(tab => (
@@ -1865,6 +1907,58 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
             </div>
           )}
 
+          {/* ── TAB: EFFICACY HEATMAP ── */}
+          {activeTab === 'efficacy' && selected.some(c => c.efficacy_scores && Object.keys(c.efficacy_scores).length > 0) && (
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <BarChart3 size={17} color="rgba(0,196,188,0.8)" />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>Efficacy Score Comparison</h3>
+                <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Per-domain scores 0–100 from compound metadata</span>
+              </div>
+              <p style={{ margin: '0 0 20px 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.55 }}>
+                Side-by-side efficacy profile comparison. Highlighted cells indicate the leader for each application domain. Use this to identify the best compound for a specific research use case.
+              </p>
+              {/* Leader summary callout */}
+              {(() => {
+                const allKeys = [...new Set(selected.flatMap(c => Object.keys(c.efficacy_scores ?? {})))];
+                const leaders: { domain: string; compound: string; score: number; color: string }[] = [];
+                allKeys.forEach(key => {
+                  let best: { c: Compound; v: number; idx: number } | null = null;
+                  selected.forEach((c, i) => {
+                    const v = (c.efficacy_scores ?? {})[key];
+                    if (v != null && (best === null || v > best.v)) best = { c, v, idx: i };
+                  });
+                  if (best && best.v >= 70) leaders.push({ domain: key.replace(/_/g, ' '), compound: best.c.display_name, score: best.v, color: colors[best.idx % colors.length] });
+                });
+                if (!leaders.length) return null;
+                // Group by compound
+                const byCompound: Record<string, { domain: string; score: number }[]> = {};
+                leaders.forEach(l => { if (!byCompound[l.compound]) byCompound[l.compound] = []; byCompound[l.compound].push({ domain: l.domain, score: l.score }); });
+                return (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+                    {Object.entries(byCompound).map(([compound, domains], i) => {
+                      const c = selected.find(x => x.display_name === compound);
+                      const color = c ? colors[selected.indexOf(c) % colors.length] : '#00C4BC';
+                      return (
+                        <div key={compound} style={{ padding: '10px 14px', borderRadius: 10, background: `${color}08`, border: `1px solid ${color}25`, flex: '1 1 200px' }}>
+                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>★ {compound} leads in:</div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            {domains.sort((a, b) => b.score - a.score).slice(0, 5).map(d => (
+                              <span key={d.domain} style={{ fontSize: '0.68rem', background: `${color}15`, color, border: `1px solid ${color}30`, padding: '1px 7px', borderRadius: 4, fontWeight: 600, textTransform: 'capitalize' }}>
+                                {d.domain} ({d.score})
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+              <EfficacyHeatmap selected={displayedSelected} />
+            </div>
+          )}
+
           {/* ── TAB: RECOMMENDATION / VERDICT ── */}
           {activeTab === 'recommend' && selected.length >= 2 && recommendations && (
             <div className="glass-panel" style={{ borderRadius: 14, padding: 24 }}>
@@ -1950,94 +2044,189 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
               )}
 
               {isMobile && mobileViewMode === 'accordion' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {(() => {
-                    const controlCompound = displayedSelected.find(x => x.slug === controlSlug);
-                    return ROWS.map(row => {
-                      if (row.kind === 'group') {
-                        // Check if all children of this group are identical (for hideIdentical)
-                        if (hideIdentical) {
-                          const startIndex = ROWS.indexOf(row) + 1;
-                          let groupAllIdentical = true;
-                          for (let gi = startIndex; gi < ROWS.length; gi++) {
-                            const r = ROWS[gi];
-                            if (r.kind === 'group') break;
-                            const vals = displayedSelected.map(c => r.getValue(c));
-                            if (!vals.every(v => v === vals[0])) { groupAllIdentical = false; break; }
-                          }
-                          if (groupAllIdentical) return null;
+                <div>
+                  {/* Feature 1: Swipe Mode toggle */}
+                  {selected.length >= 2 && (
+                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 14 }}>
+                      <button onClick={() => setSwipeMode(false)} style={{ background: !swipeMode ? 'rgba(0,196,188,0.15)' : 'transparent', color: !swipeMode ? '#00C4BC' : '#A8B4C0', border: 'none', padding: '7px 16px', borderRadius: 7, fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>Stack All</button>
+                      <button onClick={() => { setSwipeMode(true); setSwipeIndex(0); }} style={{ background: swipeMode ? 'rgba(0,196,188,0.15)' : 'transparent', color: swipeMode ? '#00C4BC' : '#A8B4C0', border: 'none', padding: '7px 16px', borderRadius: 7, fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>One At A Time</button>
+                    </div>
+                  )}
+
+                  {swipeMode && selected.length >= 2 ? (
+                    /* SWIPE MODE — one compound's full profile, swipe left/right */
+                    <div
+                      onTouchStart={e => { touchStartX.current = e.touches[0].clientX; }}
+                      onTouchEnd={e => {
+                        const dx = e.changedTouches[0].clientX - touchStartX.current;
+                        if (Math.abs(dx) > 48) {
+                          if (dx < 0 && swipeIndex < displayedSelected.length - 1) { setSwipeIndex(i => i + 1); haptic(20); }
+                          if (dx > 0 && swipeIndex > 0) { setSwipeIndex(i => i - 1); haptic(20); }
                         }
-                        
-                        const isCollapsed = collapsedGroups.has(row.label);
+                      }}
+                    >
+                      {(() => {
+                        const safeIdx = Math.min(swipeIndex, displayedSelected.length - 1);
+                        const c = displayedSelected[safeIdx];
+                        if (!c) return null;
+                        const origIdx = selected.findIndex(x => x.slug === c.slug);
+                        const color = colors[origIdx % colors.length];
+                        const isTop = c.slug === topPickSlug;
+                        const sc = scores[origIdx];
+                        const controlCompound = displayedSelected.find(x => x.slug === controlSlug);
                         return (
-                          <div key={row.label} id={`group-${row.label.replace(/\s+/g, '-')}`} onClick={() => toggleGroup(row.label)} style={{ marginTop: 12, padding: '12px 16px', background: '#162230', color: '#fff', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: 8, fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-                            {row.label}
-                            {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                          <div>
+                            {/* Compound header */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', background: isTop ? 'rgba(0,196,188,0.08)' : `${color}0E`, border: `1px solid ${isTop ? 'rgba(0,196,188,0.3)' : color + '30'}`, borderRadius: 14, marginBottom: 16 }}>
+                              <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                              <Link href={`/research/${c.slug}`} style={{ color, fontWeight: 900, fontSize: '1.05rem', textDecoration: 'none', flex: 1 }}>{c.display_name}</Link>
+                              {isTop && <Trophy size={14} color="#00C4BC" />}
+                              <div style={{ background: `${color}22`, color, fontSize: '0.8rem', fontWeight: 900, padding: '4px 10px', borderRadius: 8 }}>{sc.letter} · {sc.total}</div>
+                            </div>
+                            {/* Attribute list — all rows for this single compound */}
+                            {(() => {
+                              let lastGroup = '';
+                              return ROWS.map(row => {
+                                if (row.kind === 'group') {
+                                  if (showWinnersOnly) return null;
+                                  lastGroup = row.label;
+                                  if (collapsedGroups.has(row.label)) return null;
+                                  return (
+                                    <div key={row.label} style={{ margin: '12px 0 4px', padding: '7px 12px', background: 'rgba(0,196,188,0.07)', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800, color: '#00C4BC', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{row.label}</div>
+                                  );
+                                }
+                                if (showWinnersOnly && !row.bestLogic) return null;
+                                if (lastGroup && collapsedGroups.has(lastGroup) && !showWinnersOnly) return null;
+                                // Rank badge for cell color coding
+                                let rankDot: string | undefined;
+                                if (cellColorCode && row.bestLogic && row.getRawScore && displayedSelected.length >= 2) {
+                                  const allRaw = displayedSelected.map(x => row.getRawScore!(x));
+                                  const myRaw = row.getRawScore(c);
+                                  const valid = allRaw.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
+                                  if (valid.length >= 2 && typeof myRaw === 'number' && !isNaN(myRaw)) {
+                                    const sorted = [...valid].sort((a, b) => row.bestLogic === 'max' ? b - a : a - b);
+                                    const rank = sorted.indexOf(myRaw);
+                                    rankDot = rank === 0 ? '#68D391' : rank === sorted.length - 1 ? '#FC8181' : '#F6AD55';
+                                  }
+                                }
+                                return (
+                                  <div key={row.label} onClick={() => setFocusRow(row)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, padding: '9px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: 8, marginBottom: 3, cursor: 'pointer' }}
+                                    onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                                    onMouseOut={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#A8B4C0', flexShrink: 0, maxWidth: '42%', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      {rankDot && <div style={{ width: 6, height: 6, borderRadius: '50%', background: rankDot, flexShrink: 0 }} />}
+                                      {row.label}
+                                    </div>
+                                    <div style={{ flex: 1, textAlign: 'right', fontSize: '0.84rem', color: '#fff' }}>
+                                      <TruncatedCell>{row.render(c, maxHalfLife)}{controlCompound && renderRelativeDelta(row.label, c, controlCompound)}</TruncatedCell>
+                                    </div>
+                                  </div>
+                                );
+                              });
+                            })()}
                           </div>
                         );
-                      }
-
-                      // In accordion, compute if this row is identical across compounds
-                      const rowVals = displayedSelected.map(c => row.getValue(c));
-                      const rowAllSame = rowVals.every(v => v === rowVals[0]);
-                      if (hideIdentical && rowAllSame && displayedSelected.length > 1) return null;
-
-                      // Check if parent group is collapsed
-                      let parentGroupLabel = '';
-                      for (let i = ROWS.indexOf(row) - 1; i >= 0; i--) {
-                        if (ROWS[i].kind === 'group') {
-                          parentGroupLabel = ROWS[i].label;
-                          break;
-                        }
-                      }
-                      if (parentGroupLabel && collapsedGroups.has(parentGroupLabel)) return null;
-
-                      // Winner Engine Calculation (accordion)
-                      const bestIndices: number[] = [];
-                      if (row.bestLogic && displayedSelected.length > 1) {
-                        const rawScores = displayedSelected.map(c => row.getRawScore ? row.getRawScore(c) : 0);
-                        const valid = rawScores.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
-                        if (valid.length > 0) {
-                          const best = row.bestLogic === 'max' ? Math.max(...valid) : Math.min(...valid);
-                          rawScores.forEach((s, i) => { if (s === best) bestIndices.push(i); });
-                        }
-                      }
-
-                      return (
-                        <div key={row.label} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, padding: 12 }}>
-                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 800, color: '#A8B4C0', marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                             {row.label}
-                             {row.glossaryTerm && <InCellGlossaryTooltip term={row.glossaryTerm} />}
-                           </div>
-                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                             {displayedSelected.map((c, idx) => {
-                               const isWinner = bestIndices.includes(idx);
-                               const isControl = c.slug === controlSlug;
-                               return (
-                                 <div key={c.slug} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: 10, background: isControl ? 'rgba(0,196,188,0.05)' : 'rgba(255,255,255,0.02)', borderRadius: 8, position: 'relative', border: isWinner ? '1px solid rgba(0,196,188,0.4)' : '1px solid transparent' }}>
-                                   {isWinner && (
-                                      <div style={{ position: 'absolute', top: -8, right: 10, fontSize: '0.65rem', background: '#00C4BC', color: '#04221F', padding: '2px 6px', borderRadius: 4, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px', boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
-                                        <Trophy size={10} /> Top Pick
-                                      </div>
-                                   )}
-                                   <div style={{ width: 80, fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', flexShrink: 0, marginTop: 2 }}>{c.display_name}</div>
-                                   <div style={{ flex: 1, fontSize: '0.85rem', color: '#fff' }}>
-                                     <TruncatedCell>
-                                       {row.render(c, maxHalfLife)}
-                                       {controlCompound && renderRelativeDelta(row.label, c, controlCompound)}
-                                     </TruncatedCell>
-                                   </div>
-                                 </div>
-                               );
-                             })}
-                           </div>
+                      })()}
+                      {/* Dot indicators + Prev/Next */}
+                      <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          {displayedSelected.map((_, i) => (
+                            <button key={i} onClick={() => { setSwipeIndex(i); haptic(15); }} style={{ width: i === swipeIndex ? 24 : 8, height: 8, borderRadius: 4, background: i === swipeIndex ? '#00C4BC' : 'rgba(255,255,255,0.2)', border: 'none', cursor: 'pointer', transition: 'all 0.25s ease', padding: 0 }} />
+                          ))}
                         </div>
-                      )
-                    });
-                  })()}
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={() => { if (swipeIndex > 0) { setSwipeIndex(i => i - 1); haptic(20); } }} disabled={swipeIndex === 0} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '9px 18px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 9, color: swipeIndex === 0 ? 'rgba(255,255,255,0.2)' : '#fff', fontSize: '0.82rem', fontWeight: 700, cursor: swipeIndex === 0 ? 'default' : 'pointer' }}>
+                            <ChevronLeft size={16} /> Prev
+                          </button>
+                          <button onClick={() => { if (swipeIndex < displayedSelected.length - 1) { setSwipeIndex(i => i + 1); haptic(20); } }} disabled={swipeIndex >= displayedSelected.length - 1} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '9px 18px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 9, color: swipeIndex >= displayedSelected.length - 1 ? 'rgba(255,255,255,0.2)' : '#fff', fontSize: '0.82rem', fontWeight: 700, cursor: swipeIndex >= displayedSelected.length - 1 ? 'default' : 'pointer' }}>
+                            Next <ChevronRight size={16} />
+                          </button>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.68rem', color: 'rgba(255,255,255,0.28)' }}>Swipe left or right to navigate compounds</p>
+                      </div>
+                    </div>
+                  ) : (
+                    /* STACK MODE — existing all-compounds accordion */
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {(() => {
+                        const controlCompound = displayedSelected.find(x => x.slug === controlSlug);
+                        return ROWS.map(row => {
+                          if (row.kind === 'group') {
+                            if (hideIdentical) {
+                              const startIndex = ROWS.indexOf(row) + 1;
+                              let groupAllIdentical = true;
+                              for (let gi = startIndex; gi < ROWS.length; gi++) {
+                                const r = ROWS[gi];
+                                if (r.kind === 'group') break;
+                                const vals = displayedSelected.map(c => r.getValue(c));
+                                if (!vals.every(v => v === vals[0])) { groupAllIdentical = false; break; }
+                              }
+                              if (groupAllIdentical) return null;
+                            }
+                            const isCollapsed = collapsedGroups.has(row.label);
+                            return (
+                              <div key={row.label} id={`group-${row.label.replace(/\s+/g, '-')}`} onClick={() => toggleGroup(row.label)} style={{ marginTop: 12, padding: '12px 16px', background: '#162230', color: '#fff', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: 8, fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                                {row.label}
+                                {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                              </div>
+                            );
+                          }
+                          if (showWinnersOnly && !row.bestLogic) return null;
+                          const rowVals = displayedSelected.map(c => row.getValue(c));
+                          const rowAllSame = rowVals.every(v => v === rowVals[0]);
+                          if (hideIdentical && rowAllSame && displayedSelected.length > 1) return null;
+                          let parentGroupLabel = '';
+                          for (let i = ROWS.indexOf(row) - 1; i >= 0; i--) {
+                            if (ROWS[i].kind === 'group') { parentGroupLabel = ROWS[i].label; break; }
+                          }
+                          if (parentGroupLabel && collapsedGroups.has(parentGroupLabel)) return null;
+                          const bestIndices: number[] = [];
+                          if (row.bestLogic && displayedSelected.length > 1) {
+                            const rawScores = displayedSelected.map(c => row.getRawScore ? row.getRawScore(c) : 0);
+                            const valid = rawScores.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
+                            if (valid.length > 0) {
+                              const best = row.bestLogic === 'max' ? Math.max(...valid) : Math.min(...valid);
+                              rawScores.forEach((s, i) => { if (s === best) bestIndices.push(i); });
+                            }
+                          }
+                          return (
+                            <div key={row.label} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, padding: 12 }}>
+                              <div onClick={() => setFocusRow(row)} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 800, color: '#A8B4C0', marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}>
+                                {row.label}{row.glossaryTerm && <InCellGlossaryTooltip term={row.glossaryTerm} />}
+                                <Info size={11} style={{ marginLeft: 'auto', color: 'rgba(0,196,188,0.4)', flexShrink: 0 }} />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                {displayedSelected.map((c, idx) => {
+                                  const isWinner = bestIndices.includes(idx);
+                                  const isControl = c.slug === controlSlug;
+                                  return (
+                                    <div key={c.slug} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: 10, background: isControl ? 'rgba(0,196,188,0.05)' : 'rgba(255,255,255,0.02)', borderRadius: 8, position: 'relative', border: isWinner ? '1px solid rgba(0,196,188,0.4)' : '1px solid transparent' }}>
+                                      {isWinner && (
+                                        <div style={{ position: 'absolute', top: -8, right: 10, fontSize: '0.65rem', background: '#00C4BC', color: '#04221F', padding: '2px 6px', borderRadius: 4, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px', boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+                                          <Trophy size={10} /> Top Pick
+                                        </div>
+                                      )}
+                                      <div style={{ width: 80, fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', flexShrink: 0, marginTop: 2 }}>{c.display_name}</div>
+                                      <div style={{ flex: 1, fontSize: '0.85rem', color: '#fff' }}>
+                                        <TruncatedCell>
+                                          {row.render(c, maxHalfLife)}
+                                          {controlCompound && renderRelativeDelta(row.label, c, controlCompound)}
+                                        </TruncatedCell>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="glass-panel" style={{ borderRadius: 14, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory' }}>
+                  <div style={{ transform: tableZoom !== 1 ? `scale(${tableZoom})` : undefined, transformOrigin: 'top left', transition: 'transform 0.2s ease', width: tableZoom !== 1 ? `${100 / tableZoom}%` : '100%' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? (displayedSelected.length * 160 + 120) : 480, position: 'relative' }}>
                 <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                   <tr>
@@ -2144,7 +2333,8 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
 
                         const values = displayedSelected.map(c => row.getValue(c));
                         const allSame = values.every(v => v === values[0]);
-                        const isVisible = !(hideIdentical && allSame && displayedSelected.length > 1);
+                        const isVisible = !(hideIdentical && allSame && displayedSelected.length > 1)
+                          && !(showWinnersOnly && !row.bestLogic);
                         if (isVisible) {
                           currentGroupHasChildren = true;
                           visibleRows.push(row);
@@ -2229,8 +2419,23 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                             const isControl = c.slug === controlSlug;
                             const controlStyleTd: React.CSSProperties = isControl && isMobile ? { position: 'sticky', left: 120, zIndex: 15, background: '#192A34', boxShadow: '-2px 0 8px rgba(0,0,0,0.4)', borderRight: '2px solid rgba(0,196,188,0.4)' } : {};
 
+                            // Feature 4: Cell color coding by rank
+                            let rankBg: string | undefined;
+                            if (cellColorCode && row.bestLogic && row.getRawScore && displayedSelected.length >= 2) {
+                              const allRaw = displayedSelected.map(x => row.getRawScore!(x));
+                              const myRaw = allRaw[idx];
+                              const valid = allRaw.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
+                              if (valid.length >= 2 && typeof myRaw === 'number' && !isNaN(myRaw) && myRaw !== Infinity) {
+                                const sorted = [...valid].sort((a, b) => row.bestLogic === 'max' ? b - a : a - b);
+                                const rank = sorted.indexOf(myRaw);
+                                if (rank === 0) rankBg = 'rgba(104,211,145,0.09)';
+                                else if (rank === sorted.length - 1) rankBg = 'rgba(252,129,129,0.08)';
+                                else rankBg = 'rgba(246,173,85,0.06)';
+                              }
+                            }
+
                             return (
-                              <td key={c.slug} style={{ ...valueCellStyle, position: 'relative', background: c.slug === controlSlug ? 'rgba(0,196,188,0.04)' : undefined, ...controlStyleTd }}>
+                              <td key={c.slug} style={{ ...valueCellStyle, position: 'relative', background: rankBg ?? (c.slug === controlSlug ? 'rgba(0,196,188,0.04)' : undefined), ...controlStyleTd }}>
                                 {isWinner && (
                                   <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.65rem', background: '#00C4BC', color: '#04221F', padding: '1px 5px', borderRadius: 3, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
                                     <Trophy size={9} /> Top Pick
@@ -2264,20 +2469,17 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         )}
       </div>
       )}
-      {/* Floating Action Button (FAB) for adding compounds on mobile */}
+      {/* Floating Action Button (FAB) */}
       {isMobile && selected.length >= 1 && selected.length < MAX_COLUMNS && canAdd && (
         <button
           className="no-print"
           onClick={() => {
             searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => {
-              const input = searchRef.current?.querySelector('input');
-              if (input) input.focus();
-            }, 500);
+            setTimeout(() => { const input = searchRef.current?.querySelector('input'); if (input) input.focus(); }, 500);
           }}
-          style={{ position: 'fixed', bottom: 88, right: 20, width: 56, height: 56, borderRadius: '50%', background: '#00C4BC', color: '#04221F', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,196,188,0.4)', border: 'none', cursor: 'pointer', zIndex: 100 }}
+          style={{ position: 'fixed', bottom: selected.length >= 2 ? 148 : 88, right: 20, width: 52, height: 52, borderRadius: '50%', background: '#00C4BC', color: '#04221F', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,196,188,0.4)', border: 'none', cursor: 'pointer', zIndex: 100 }}
         >
-          <PlusCircle size={28} />
+          <PlusCircle size={26} />
         </button>
       )}
 
@@ -2286,7 +2488,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         <button
           className="no-print"
           onClick={() => setHideIdentical(!hideIdentical)}
-          style={{ position: 'fixed', bottom: 26, left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: hideIdentical ? '#00C4BC' : 'rgba(22,34,48,0.95)', color: hideIdentical ? '#04221F' : '#fff', border: `1px solid ${hideIdentical ? '#00C4BC' : 'rgba(255,255,255,0.2)'}`, padding: '10px 20px', borderRadius: 999, fontSize: '0.85rem', fontWeight: 800, boxShadow: '0 8px 32px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(12px)', cursor: 'pointer' }}
+          style={{ position: 'fixed', bottom: selected.length >= 2 ? 106 : 70, left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: hideIdentical ? '#00C4BC' : 'rgba(22,34,48,0.95)', color: hideIdentical ? '#04221F' : '#fff', border: `1px solid ${hideIdentical ? '#00C4BC' : 'rgba(255,255,255,0.2)'}`, padding: '9px 18px', borderRadius: 999, fontSize: '0.83rem', fontWeight: 800, boxShadow: '0 8px 32px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(12px)', cursor: 'pointer' }}
         >
           {hideIdentical ? <Check size={16} /> : <Filter size={16} />}
           {hideIdentical ? 'Showing Differences' : 'Differences Only'}
@@ -2297,7 +2499,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         <button
           className="no-print"
           onClick={() => setJumpMenuOpen(true)}
-          style={{ position: 'fixed', bottom: 88, left: 20, zIndex: 100, background: 'rgba(22,34,48,0.95)', color: '#fff', border: `1px solid rgba(255,255,255,0.2)`, padding: '10px', borderRadius: '50%', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)', cursor: 'pointer' }}
+          style={{ position: 'fixed', bottom: selected.length >= 2 ? 148 : 88, left: 20, zIndex: 100, background: 'rgba(22,34,48,0.95)', color: '#fff', border: `1px solid rgba(255,255,255,0.2)`, padding: '10px', borderRadius: '50%', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)', cursor: 'pointer' }}
         >
           <List size={20} />
         </button>
@@ -2377,6 +2579,42 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
           </div>
           <button onClick={() => setShowLandscapePrompt(false)} style={{ background: 'transparent', border: 'none', color: 'rgba(0,196,188,0.6)', cursor: 'pointer', padding: 4 }}><X size={16} /></button>
         </div>
+      )}
+
+      {/* Features 3 + 9: Focus Row Modal (tapping a row shows full values + plain-English explanation) */}
+      {focusRow && (
+        <FocusRowModal
+          row={focusRow}
+          selected={selected}
+          maxHalfLife={maxHalfLife}
+          controlCompound={selected.find(x => x.slug === controlSlug)}
+          topPickSlug={topPickSlug}
+          onClose={() => { setFocusRow(null); }}
+        />
+      )}
+
+      {/* Feature 6: Mobile Bottom Tab Bar (fixed, replaces desktop horizontal tab strip on phones) */}
+      {isMobile && selected.length >= 2 && (
+        <nav className="no-print" aria-label="Compare section navigation" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: 'rgba(11,22,35,0.97)', borderTop: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', display: 'flex', justifyContent: 'space-around', alignItems: 'stretch', height: 56, paddingBottom: 'env(safe-area-inset-bottom,0px)' }}>
+          {([
+            { id: 'matrix'    as const, icon: <LayoutList size={17} />,    label: 'Matrix' },
+            { id: 'proscons'  as const, icon: <Scale size={17} />,          label: 'Pros/Cons' },
+            { id: 'brief'     as const, icon: <FileText size={17} />,       label: 'Brief' },
+            { id: 'mechanism' as const, icon: <FlaskConical size={17} />,   label: 'Mechanism' },
+            { id: 'protocol'  as const, icon: <Beaker size={17} />,         label: 'Protocol' },
+            { id: 'recommend' as const, icon: <Trophy size={17} />,         label: 'Verdict' },
+          ]).map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => { setActiveTab(tab.id); haptic(15); }}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, background: 'transparent', border: 'none', borderTop: activeTab === tab.id ? '2px solid #00C4BC' : '2px solid transparent', color: activeTab === tab.id ? '#00C4BC' : 'rgba(168,180,192,0.38)', cursor: 'pointer', fontSize: '0.52rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.03em', transition: 'color 0.18s', padding: '4px 2px' }}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </nav>
       )}
     </div>
   );

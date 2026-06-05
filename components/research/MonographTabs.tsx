@@ -1,9 +1,15 @@
 'use client';
 
 /**
- * MonographTabs — the full compound research profile, organized into tabs with
- * short paragraphs instead of one endless stack. Includes a sticky Back control
- * so the page is never a dead end (router.back, with a Research Library fallback).
+ * MonographTabs v2 — comprehensive compound research profile with 8 tabs:
+ *   1. Overview       — summary, key facts, purity, identity, stack components
+ *   2. Analytics      — efficacy scores chart (NEW), top application domains
+ *   3. Mechanism      — MOA, molecular target, PK summary
+ *   4. Studied For    — studied_for, research_areas, benefits, best_stacked_with
+ *   5. Handling       — reconstitution, shelf life, storage, half-life, PK
+ *   6. Safety         — warnings, side_effects, risk_reasons, WADA detail
+ *   7. Research Data  — trials metrics, citations, external DB links (NEW)
+ *   8. Sources        — linked references
  *
  * Research-Use-Only. Title Case on prose via `capitalize`.
  */
@@ -12,6 +18,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, FileText, FlaskConical, Beaker, Snowflake, ShieldAlert, BookOpen, Microscope, Sparkles,
+  BarChart3, TrendingUp, AlertTriangle, Check, Zap, ExternalLink,
 } from 'lucide-react';
 import {
   type Compound,
@@ -26,6 +33,8 @@ import GlossaryText from '@/components/research/GlossaryText';
 import SequenceViewer from '@/components/research/SequenceViewer';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
+import EfficacyScoreChart from '@/components/research/EfficacyScoreChart';
+import TrialsMetricsPanel from '@/components/research/TrialsMetricsPanel';
 
 interface Props {
   compound: Compound;
@@ -50,6 +59,16 @@ function Label({ children }: { children: React.ReactNode }) {
   );
 }
 
+function SectionDivider({ title }: { title: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '20px 0 14px' }}>
+      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+      <span style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)' }}>{title}</span>
+      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+    </div>
+  );
+}
+
 function Fact({ label, value }: { label: string; value: React.ReactNode }) {
   if (value == null || value === '') return null;
   return (
@@ -60,14 +79,24 @@ function Fact({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function Chips({ items, color = '#A8B4C0' }: { items: string[]; color?: string }) {
+function Chips({ items, color = '#A8B4C0', linkPrefix }: { items: string[]; color?: string; linkPrefix?: string }) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-      {items.map((it) => (
-        <span key={it} style={{ ...cap, fontSize: '0.78rem', fontWeight: 600, padding: '4px 10px', borderRadius: 9999, background: `${color}14`, border: `1px solid ${color}33`, color: '#D0DAE4', whiteSpace: 'nowrap' }}>
-          {it}
-        </span>
-      ))}
+      {items.map((it) =>
+        linkPrefix ? (
+          <Link
+            key={it}
+            href={`${linkPrefix}${it}`}
+            style={{ fontSize: '0.78rem', fontWeight: 700, padding: '4px 10px', borderRadius: 9999, background: `${color}14`, border: `1px solid ${color}33`, color, textDecoration: 'none', whiteSpace: 'nowrap' }}
+          >
+            {it}
+          </Link>
+        ) : (
+          <span key={it} style={{ ...cap, fontSize: '0.78rem', fontWeight: 600, padding: '4px 10px', borderRadius: 9999, background: `${color}14`, border: `1px solid ${color}33`, color: '#D0DAE4', whiteSpace: 'nowrap' }}>
+            {it}
+          </span>
+        )
+      )}
     </div>
   );
 }
@@ -91,6 +120,20 @@ function Eli5Formatter({ text, color }: { text: string; color: string }) {
   );
 }
 
+function InfoCard({ color, children }: { color: string; children: React.ReactNode }) {
+  return (
+    <div style={{
+      background: `${color}08`,
+      border: `1px solid ${color}20`,
+      borderRadius: 12,
+      padding: '14px 16px',
+      marginBottom: 12,
+    }}>
+      {children}
+    </div>
+  );
+}
+
 export default function MonographTabs({ compound, related = [] }: Props) {
   const router = useRouter();
   const tier = evidenceTier(compound.evidence_tier);
@@ -99,26 +142,46 @@ export default function MonographTabs({ compound, related = [] }: Props) {
   const id = compound.identity ?? {};
   const h = compound.handling ?? {};
   const teal = '#00C4BC';
+  const hasEfficacy = compound.efficacy_scores && Object.keys(compound.efficacy_scores).length > 0;
+  const hasTrialsData = (compound.pubmed_citation_count ?? 0) > 0 || (compound.active_trial_count ?? 0) > 0 || (compound.completed_trial_count ?? 0) > 0 || compound.year_discovered;
+  const hasStackData = compound.best_stacked_with && compound.best_stacked_with.length > 0;
 
-  // Build only the tabs that have content.
-  const tabs: Array<{ key: string; label: string; icon: React.ReactNode }> = [
+  // Build tabs — only show tabs with content
+  const tabs: Array<{ key: string; label: string; icon: React.ReactNode; badge?: string }> = [
     { key: 'overview', label: 'Overview', icon: <Microscope size={15} aria-hidden="true" /> },
   ];
-  if (compound.mechanism) tabs.push({ key: 'mechanism', label: 'Mechanism', icon: <FlaskConical size={15} aria-hidden="true" /> });
-  if (compound.studied_for.length > 0 || compound.research_areas.length > 0 || compound.benefits) {
+
+  if (hasEfficacy) {
+    tabs.push({ key: 'analytics', label: 'Analytics', icon: <BarChart3 size={15} aria-hidden="true" />, badge: 'NEW' });
+  }
+
+  if (compound.mechanism) {
+    tabs.push({ key: 'mechanism', label: 'Mechanism', icon: <FlaskConical size={15} aria-hidden="true" /> });
+  }
+
+  if (compound.studied_for.length > 0 || compound.research_areas.length > 0 || compound.benefits || hasStackData) {
     tabs.push({ key: 'studied', label: 'Studied For', icon: <Beaker size={15} aria-hidden="true" /> });
   }
+
   tabs.push({ key: 'handling', label: 'Handling', icon: <Snowflake size={15} aria-hidden="true" /> });
-  if (compound.side_effects || compound.warnings || compound.regulatory || compound.wada_status) {
+
+  if (compound.side_effects || compound.warnings || compound.regulatory || compound.wada_status || (compound.risk_reasons && compound.risk_reasons.length > 0)) {
     tabs.push({ key: 'safety', label: 'Safety', icon: <ShieldAlert size={15} aria-hidden="true" /> });
   }
-  if (compound.sources.length > 0) tabs.push({ key: 'sources', label: 'Sources', icon: <BookOpen size={15} aria-hidden="true" /> });
+
+  if (hasTrialsData) {
+    tabs.push({ key: 'research_data', label: 'Research Data', icon: <TrendingUp size={15} aria-hidden="true" />, badge: 'NEW' });
+  }
+
+  if (compound.sources.length > 0) {
+    tabs.push({ key: 'sources', label: 'Sources', icon: <BookOpen size={15} aria-hidden="true" /> });
+  }
 
   const [active, setActive] = useState('overview');
 
   return (
     <main style={{ maxWidth: 820, margin: '0 auto', padding: 'var(--space-4) var(--space-4) var(--space-8)' }}>
-      {/* Sticky Back / actions bar — never a dead end */}
+      {/* Sticky Back / actions bar */}
       <div
         style={{
           position: 'sticky',
@@ -169,7 +232,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
         </div>
       </div>
 
-      {/* Centered header */}
+      {/* Header */}
       <header style={{ textAlign: 'center', marginBottom: 'var(--space-4)' }}>
         <h1 style={{ fontSize: '1.7rem', fontWeight: 900, color: 'var(--white)', margin: 0 }}>
           {compound.display_name}
@@ -198,13 +261,23 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               {wadaLabel(compound.wada_status)}
             </span>
           )}
+          {compound.is_glp1 && (
+            <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '4px 12px', borderRadius: 9999, background: 'rgba(159,122,234,0.15)', border: '1px solid rgba(159,122,234,0.5)', color: '#9F7AEA' }}>
+              GLP-1 Class
+            </span>
+          )}
+          {compound.is_pro_angiogenic && (
+            <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '4px 12px', borderRadius: 9999, background: 'rgba(246,173,85,0.12)', border: '1px solid rgba(246,173,85,0.4)', color: '#F6AD55' }}>
+              Pro-Angiogenic
+            </span>
+          )}
         </div>
       </header>
 
       {/* Tab bar */}
       <div
         role="tablist"
-        style={{ display: 'flex', flexWrap: 'wrap', gap: 6, borderBottom: '1px solid rgba(192,184,168,0.2)', marginBottom: 'var(--space-4)' }}
+        style={{ display: 'flex', flexWrap: 'wrap', gap: 4, borderBottom: '1px solid rgba(192,184,168,0.2)', marginBottom: 'var(--space-4)', overflowX: 'auto' }}
       >
         {tabs.map((t) => {
           const isActive = active === t.key;
@@ -225,13 +298,29 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 background: 'transparent',
                 color: isActive ? 'var(--white)' : 'var(--silver)',
                 fontWeight: isActive ? 800 : 600,
-                fontSize: '0.85rem',
+                fontSize: '0.82rem',
                 cursor: 'pointer',
                 marginBottom: -1,
+                whiteSpace: 'nowrap',
+                position: 'relative',
               }}
             >
               <span style={{ color: isActive ? teal : 'var(--silver)', display: 'flex' }}>{t.icon}</span>
               {t.label}
+              {t.badge && (
+                <span style={{
+                  fontSize: '0.52rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.06em',
+                  color: '#00C4BC',
+                  background: 'rgba(0,196,188,0.15)',
+                  border: '1px solid rgba(0,196,188,0.3)',
+                  padding: '1px 4px',
+                  borderRadius: 3,
+                }}>
+                  {t.badge}
+                </span>
+              )}
             </button>
           );
         })}
@@ -239,37 +328,250 @@ export default function MonographTabs({ compound, related = [] }: Props) {
 
       {/* Tab panels */}
       <section role="tabpanel" className="glass-panel" style={{ padding: 'var(--space-5)', minHeight: 160 }}>
+
+        {/* ── OVERVIEW ─────────────────────────────────────────────────── */}
         {active === 'overview' && (
           <div>
             {compound.eli5_summary && (
               <Eli5Formatter text={compound.eli5_summary} color={teal} />
             )}
-            
+
             {compound.plain_summary && <Para>{compound.plain_summary}</Para>}
-            <div style={{ marginTop: 'var(--space-2)' }}>
-              <Fact label="Class" value={compound.compound_class} />
-              <Fact label="Molecular Target" value={compound.molecular_target} />
-              <Fact label="Sequence" value={id.sequence} />
-              <Fact label="Molecular Weight" value={compound.molecular_weight_da ? `${compound.molecular_weight_da} Da` : id.molecular_weight} />
-              <Fact label="Year Discovered" value={compound.year_discovered} />
-              <Fact label="PubMed Citations" value={compound.pubmed_citation_count?.toLocaleString()} />
-              <Fact label="Clinical Trials" value={(compound.active_trial_count || compound.completed_trial_count) ? String((compound.active_trial_count ?? 0) + (compound.completed_trial_count ?? 0)) : null} />
-              <Fact label="CAS" value={id.cas} />
-              <Fact label="Parent" value={id.parent} />
-            </div>
+
+            <SectionDivider title="Identity & Classification" />
+            <Fact label="Class" value={compound.compound_class} />
+            <Fact label="Molecular Target" value={compound.molecular_target} />
+            <Fact label="Category" value={compound.category} />
+            <Fact label="Year Discovered" value={compound.year_discovered} />
+            <Fact label="Molecular Weight" value={compound.molecular_weight_da ? `${compound.molecular_weight_da} Da` : id.molecular_weight} />
+            <Fact label="CAS Number" value={id.cas} />
+            <Fact label="Parent Compound" value={id.parent} />
+
+            {/* Purity bar */}
+            {compound.purity_percentage != null && (
+              <div style={{ display: 'flex', gap: 'var(--space-3)', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.88rem', alignItems: 'center' }}>
+                <span style={{ flex: '0 0 42%', color: 'var(--silver)', fontWeight: 700 }}>Purity</span>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{
+                    fontWeight: 800,
+                    color: compound.purity_percentage >= 99 ? '#68D391' : compound.purity_percentage >= 95 ? '#F6AD55' : '#FC8181',
+                    minWidth: 44,
+                  }}>
+                    {compound.purity_percentage}%
+                  </span>
+                  <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden', maxWidth: 160 }}>
+                    <div style={{
+                      height: '100%',
+                      width: `${compound.purity_percentage}%`,
+                      background: compound.purity_percentage >= 99 ? '#68D391' : '#F6AD55',
+                      borderRadius: 3,
+                    }} />
+                  </div>
+                  {compound.coa_url && (
+                    <a href={compound.coa_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', color: teal, textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                      <ExternalLink size={11} /> COA
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Flags */}
+            {(compound.is_glp1 || compound.is_pro_angiogenic || compound.is_stack) && (
+              <>
+                <SectionDivider title="Classification Flags" />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {compound.is_glp1 && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, background: 'rgba(159,122,234,0.1)', border: '1px solid rgba(159,122,234,0.25)' }}>
+                      <Check size={13} color="#9F7AEA" />
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#9F7AEA' }}>GLP-1 / Incretin Class</span>
+                    </div>
+                  )}
+                  {compound.is_pro_angiogenic && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, background: 'rgba(246,173,85,0.1)', border: '1px solid rgba(246,173,85,0.25)' }}>
+                      <AlertTriangle size={13} color="#F6AD55" />
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#F6AD55' }}>Pro-Angiogenic — promotes new vessel growth</span>
+                    </div>
+                  )}
+                  {compound.is_stack && compound.stack_components && compound.stack_components.length > 0 && (
+                    <div style={{ width: '100%', marginTop: 4 }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Stack Components</div>
+                      <Chips items={compound.stack_components} color="#9F7AEA" />
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Quick stats row */}
+            {(compound.pubmed_citation_count || compound.active_trial_count || compound.completed_trial_count) && (
+              <>
+                <SectionDivider title="Research Metrics at a Glance" />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 8 }}>
+                  {compound.pubmed_citation_count != null && (
+                    <div style={{ textAlign: 'center', padding: '10px 8px', borderRadius: 10, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.15)' }}>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 900, color: teal }}>{compound.pubmed_citation_count.toLocaleString()}</div>
+                      <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>PubMed Citations</div>
+                    </div>
+                  )}
+                  {((compound.active_trial_count ?? 0) + (compound.completed_trial_count ?? 0)) > 0 && (
+                    <div style={{ textAlign: 'center', padding: '10px 8px', borderRadius: 10, background: 'rgba(104,211,145,0.06)', border: '1px solid rgba(104,211,145,0.15)' }}>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#68D391' }}>{(compound.active_trial_count ?? 0) + (compound.completed_trial_count ?? 0)}</div>
+                      <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>Clinical Trials</div>
+                      {(compound.active_trial_count ?? 0) > 0 && <div style={{ fontSize: '0.58rem', color: '#68D391', fontWeight: 700 }}>{compound.active_trial_count} Active</div>}
+                    </div>
+                  )}
+                  {compound.typical_frequency && (
+                    <div style={{ textAlign: 'center', padding: '10px 8px', borderRadius: 10, background: 'rgba(246,173,85,0.06)', border: '1px solid rgba(246,173,85,0.15)', gridColumn: 'span 2' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginBottom: 3 }}>
+                        <Zap size={12} color="#F6AD55" />
+                        <div style={{ fontSize: '0.65rem', color: '#F6AD55', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Typical Frequency</div>
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', fontWeight: 600, lineHeight: 1.3 }}>{compound.typical_frequency}</div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
             <div style={{ marginTop: 'var(--space-4)' }}>
               <SequenceViewer sequence={id.sequence} molecularWeight={compound.molecular_weight_da ? `${compound.molecular_weight_da} Da` : id.molecular_weight} />
             </div>
           </div>
         )}
 
-        {active === 'mechanism' && (
+        {/* ── ANALYTICS (NEW) ──────────────────────────────────────── */}
+        {active === 'analytics' && (
           <div>
-            <Label>Mechanism Of Action</Label>
-            <Para>{compound.mechanism}</Para>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: teal, marginBottom: 4 }}>
+                📊 Application Domain Efficacy Profile
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', margin: 0, lineHeight: 1.6 }}>
+                Per-domain efficacy scores derived from compound research metadata. Scores represent the strength of research evidence and mechanistic alignment with each application area (0–100 scale).
+              </p>
+            </div>
+
+            {hasEfficacy && (
+              <EfficacyScoreChart
+                scores={compound.efficacy_scores!}
+                title={`${compound.display_name} — Research Efficacy Profile`}
+                accentColor={teal}
+              />
+            )}
+
+            {/* Best stacked with context in analytics */}
+            {hasStackData && (
+              <>
+                <SectionDivider title="Synergy Potential" />
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 8 }}>
+                    Best Stacked With
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {compound.best_stacked_with!.map((slug) => (
+                      <Link
+                        key={slug}
+                        href={`/research/${slug}`}
+                        style={{ fontSize: '0.78rem', fontWeight: 700, padding: '4px 10px', borderRadius: 9999, background: 'rgba(246,173,85,0.1)', border: '1px solid rgba(246,173,85,0.3)', color: '#F6AD55', textDecoration: 'none' }}
+                      >
+                        {slug} →
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Research breadth */}
+            {compound.research_areas.length > 0 && (
+              <>
+                <SectionDivider title="Research Coverage" />
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 8 }}>
+                    {compound.research_areas.length} Application Area{compound.research_areas.length > 1 ? 's' : ''} — {compound.research_areas.length >= 6 ? 'Exceptionally broad' : compound.research_areas.length >= 4 ? 'Wide coverage' : compound.research_areas.length >= 2 ? 'Moderate coverage' : 'Focused scope'}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {compound.research_areas.map((area) => (
+                      <Link
+                        key={area}
+                        href={`/research/area/${area}`}
+                        style={{ fontSize: '0.78rem', fontWeight: 700, padding: '4px 10px', borderRadius: 9999, background: `${teal}14`, border: `1px solid ${teal}33`, color: teal, textDecoration: 'none' }}
+                      >
+                        {researchAreaLabel(area)}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 
+        {/* ── MECHANISM ────────────────────────────────────────────── */}
+        {active === 'mechanism' && (
+          <div>
+            {compound.compound_class && (
+              <InfoCard color={teal}>
+                <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>Compound Class</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: teal }}>{compound.compound_class}</div>
+              </InfoCard>
+            )}
+            {compound.molecular_target && (
+              <InfoCard color="#9F7AEA">
+                <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>Molecular Target</div>
+                <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#9F7AEA', lineHeight: 1.4 }}>{compound.molecular_target}</div>
+              </InfoCard>
+            )}
+
+            <Label>Mechanism of Action</Label>
+            <Para>{compound.mechanism}</Para>
+
+            {compound.pk_summary && (
+              <>
+                <SectionDivider title="Pharmacokinetics" />
+                {compound.half_life && (
+                  <p style={{ margin: '0 0 8px', fontSize: '0.95rem' }}>
+                    <span style={{ color: 'var(--silver)', fontWeight: 700 }}>Half-Life: </span>
+                    <span style={{ color: teal, fontWeight: 800 }}>{compound.half_life}</span>
+                    {compound.measured_half_life_hours && <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem', marginLeft: 8 }}>(Measured: {compound.measured_half_life_hours}h)</span>}
+                    {compound.predicted_half_life_hours && <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem', marginLeft: 8 }}>(Predicted: {compound.predicted_half_life_hours}h)</span>}
+                  </p>
+                )}
+                {compound.typical_frequency && (
+                  <p style={{ margin: '0 0 10px', fontSize: '0.88rem' }}>
+                    <span style={{ color: 'var(--silver)', fontWeight: 700 }}>Typical Frequency: </span>
+                    <span style={{ color: 'rgba(255,255,255,0.8)' }}>{compound.typical_frequency}</span>
+                  </p>
+                )}
+                <Para>{compound.pk_summary}</Para>
+              </>
+            )}
+
+            {/* External ID quick links in mechanism tab */}
+            {((compound as unknown as Record<string, unknown>).chembl_id || (compound as unknown as Record<string, unknown>).uniprot_id) && (
+              <>
+                <SectionDivider title="Database References" />
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {(compound as unknown as Record<string, unknown>).chembl_id && (
+                    <a href={`https://www.ebi.ac.uk/chembl/compound_report_card/${(compound as unknown as Record<string, unknown>).chembl_id}/`} target="_blank" rel="noopener noreferrer"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color: teal, textDecoration: 'none', fontWeight: 700, padding: '5px 10px', borderRadius: 6, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)' }}>
+                      <ExternalLink size={12} /> ChEMBL: {(compound as unknown as Record<string, unknown>).chembl_id as string}
+                    </a>
+                  )}
+                  {(compound as unknown as Record<string, unknown>).uniprot_id && (
+                    <a href={`https://www.uniprot.org/uniprotkb/${(compound as unknown as Record<string, unknown>).uniprot_id}/entry`} target="_blank" rel="noopener noreferrer"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color: '#9F7AEA', textDecoration: 'none', fontWeight: 700, padding: '5px 10px', borderRadius: 6, background: 'rgba(159,122,234,0.08)', border: '1px solid rgba(159,122,234,0.2)' }}>
+                      <ExternalLink size={12} /> UniProt: {(compound as unknown as Record<string, unknown>).uniprot_id as string}
+                    </a>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── STUDIED FOR ──────────────────────────────────────────── */}
         {active === 'studied' && (
           <div>
             {compound.studied_for.length > 0 && (
@@ -295,27 +597,86 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               </div>
             )}
             {compound.benefits && (
-              <div>
+              <div style={{ marginBottom: 'var(--space-4)' }}>
                 <Label>Reported In Research</Label>
                 <Para>{compound.benefits}</Para>
               </div>
             )}
+
+            {/* Best Stacked With — now shown here with links */}
+            {hasStackData && (
+              <>
+                <SectionDivider title="Stack Compatibility" />
+                <div style={{ marginBottom: 12 }}>
+                  <Label>Best Stacked With</Label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                    {compound.best_stacked_with!.map((slug) => (
+                      <Link
+                        key={slug}
+                        href={`/research/${slug}`}
+                        style={{ fontSize: '0.8rem', fontWeight: 700, padding: '5px 12px', borderRadius: 9999, background: 'rgba(246,173,85,0.1)', border: '1px solid rgba(246,173,85,0.3)', color: '#F6AD55', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                      >
+                        {slug} <ExternalLink size={11} />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Stack components if this is a pre-made combo */}
+            {compound.is_stack && compound.stack_components && compound.stack_components.length > 0 && (
+              <>
+                <SectionDivider title="Pre-Formulated Stack" />
+                <div style={{ marginBottom: 12 }}>
+                  <Label>Component Compounds</Label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                    {compound.stack_components.map((slug) => (
+                      <Link
+                        key={slug}
+                        href={`/research/${slug}`}
+                        style={{ fontSize: '0.8rem', fontWeight: 700, padding: '5px 12px', borderRadius: 9999, background: 'rgba(159,122,234,0.1)', border: '1px solid rgba(159,122,234,0.3)', color: '#9F7AEA', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                      >
+                        {slug} <ExternalLink size={11} />
+                      </Link>
+                    ))}
+                  </div>
+                  {compound.stack_rationale && <Para>{compound.stack_rationale}</Para>}
+                </div>
+              </>
+            )}
           </div>
         )}
 
+        {/* ── HANDLING ─────────────────────────────────────────────── */}
         {active === 'handling' && (
           <div>
             <div style={{ marginBottom: 'var(--space-4)' }}>
               <Fact label="Form" value={h.form} />
               <Fact label="Diluent" value={h.diluent} />
               <Fact label="Storage Temperature" value={h.storage_temp} />
-              <Fact label="Light Sensitive" value={h.light_sensitive == null ? null : h.light_sensitive ? 'Yes' : 'No'} />
+              <Fact label="Light Sensitive" value={h.light_sensitive == null ? null : h.light_sensitive ? 'Yes — Protect from light' : 'No'} />
               <Fact label="Freeze / Thaw" value={h.freeze_thaw} />
+              <Fact label="Typical Frequency" value={compound.typical_frequency} />
               <Fact
                 label="Reconstituted Shelf Life"
-                value={(compound.reconstitution_shelf_days ?? h.reconstituted_days) != null ? `${compound.reconstitution_shelf_days ?? h.reconstituted_days} Days Refrigerated` : null}
+                value={(compound.reconstitution_shelf_days ?? h.reconstituted_days) != null
+                  ? <span style={{ color: (compound.reconstitution_shelf_days ?? h.reconstituted_days ?? 0) >= 28 ? '#68D391' : (compound.reconstitution_shelf_days ?? h.reconstituted_days ?? 0) < 14 ? '#FC8181' : '#F6AD55', fontWeight: 700 }}>
+                      {compound.reconstitution_shelf_days ?? h.reconstituted_days} Days Refrigerated
+                    </span>
+                  : null}
               />
+              {/* Purity in handling context */}
+              {compound.purity_percentage != null && (
+                <div style={{ display: 'flex', gap: 'var(--space-3)', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.88rem', alignItems: 'center' }}>
+                  <span style={{ flex: '0 0 42%', color: 'var(--silver)', fontWeight: 700 }}>Purity</span>
+                  <span style={{ flex: 1, color: compound.purity_percentage >= 99 ? '#68D391' : '#F6AD55', fontWeight: 800 }}>
+                    {compound.purity_percentage}% {compound.purity_percentage >= 99 ? '— Pharmaceutical Grade' : compound.purity_percentage >= 98 ? '— High Purity' : '— Research Grade'}
+                  </span>
+                </div>
+              )}
             </div>
+
             {(compound.half_life || compound.pk_summary) && (
               <div style={{ marginBottom: 'var(--space-4)' }}>
                 <Label>Pharmacokinetics</Label>
@@ -323,6 +684,8 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                   <p style={{ margin: '0 0 6px', fontSize: '0.95rem' }}>
                     <span style={{ color: 'var(--silver)', fontWeight: 700 }}>Half-Life: </span>
                     <span style={{ color: teal, fontWeight: 800 }}>{compound.half_life}</span>
+                    {compound.measured_half_life_hours && <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', marginLeft: 8 }}>Measured: {compound.measured_half_life_hours}h</span>}
+                    {compound.predicted_half_life_hours && <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.3)', marginLeft: 8 }}>Predicted: {compound.predicted_half_life_hours}h</span>}
                   </p>
                 )}
                 {compound.pk_summary && <Para>{compound.pk_summary}</Para>}
@@ -333,11 +696,35 @@ export default function MonographTabs({ compound, related = [] }: Props) {
           </div>
         )}
 
+        {/* ── SAFETY ───────────────────────────────────────────────── */}
         {active === 'safety' && (
           <div>
+            {/* Risk Level Card */}
+            {risk && (
+              <InfoCard color={risk.color}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
+                    Risk Classification
+                  </div>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: risk.color }}>{risk.label} Risk</span>
+                </div>
+                {/* Risk reasons — full list */}
+                {compound.risk_reasons && compound.risk_reasons.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {compound.risk_reasons.map((reason, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                        <AlertTriangle size={13} color={risk.color} style={{ marginTop: 2, flexShrink: 0 }} />
+                        <span style={{ fontSize: '0.84rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{reason}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </InfoCard>
+            )}
+
             {compound.warnings && (
               <div style={{ marginBottom: 'var(--space-4)' }}>
-                <Label>Warnings & Limitations</Label>
+                <Label>Warnings &amp; Limitations</Label>
                 <Para>{compound.warnings}</Para>
               </div>
             )}
@@ -347,14 +734,60 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 <Para>{compound.side_effects}</Para>
               </div>
             )}
-            <div>
-              <Label>Regulatory & Anti-Doping</Label>
-              {compound.regulatory && <Para>{compound.regulatory}</Para>}
-              <p style={{ color: 'var(--white)', fontWeight: 700, margin: 0 }}>{wadaLabel(compound.wada_status)}</p>
-            </div>
+
+            <SectionDivider title="Regulatory & Anti-Doping" />
+            {compound.regulatory && (
+              <div style={{ marginBottom: 12 }}>
+                <Label>Regulatory Status</Label>
+                <Para>{compound.regulatory}</Para>
+              </div>
+            )}
+
+            {/* WADA detail */}
+            {compound.wada_status && (() => {
+              const isProhibited = compound.wada_status === 'prohibited' || compound.wada_status === 'prohibited_males';
+              const isPermitted = compound.wada_status === 'permitted';
+              const wadaColor = isProhibited ? '#FC8181' : isPermitted ? '#68D391' : '#F6AD55';
+              const wadaDesc = isProhibited
+                ? 'Listed on the WADA Prohibited List. Not permitted in tested competitive sport. Researchers working with athletes must be aware of this designation.'
+                : compound.wada_status === 'prohibited_males'
+                ? 'Prohibited for male athletes under WADA regulations.'
+                : isPermitted
+                ? 'Not prohibited under current WADA regulations. May be used by tested athletes without anti-doping concern under current rules.'
+                : 'WADA status is not specifically listed. Verify with the current WADA Prohibited List before athlete-related research.';
+              return (
+                <InfoCard color={wadaColor}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>WADA Anti-Doping</div>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: wadaColor }}>{wadaLabel(compound.wada_status)}</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{wadaDesc}</p>
+                  <a href="https://www.wada-ama.org/en/prohibited-list" target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: wadaColor, textDecoration: 'none', fontWeight: 700, marginTop: 8 }}>
+                    <ExternalLink size={11} /> View WADA Prohibited List
+                  </a>
+                </InfoCard>
+              );
+            })()}
           </div>
         )}
 
+        {/* ── RESEARCH DATA (NEW) ──────────────────────────────────── */}
+        {active === 'research_data' && (
+          <div>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: teal, marginBottom: 4 }}>
+                📈 Research Metrics & External Databases
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', margin: 0, lineHeight: 1.6 }}>
+                Quantitative research footprint: clinical trial registrations, peer-reviewed publications, regulatory classifications, and links to authoritative external databases.
+              </p>
+            </div>
+            <TrialsMetricsPanel compound={compound} />
+          </div>
+        )}
+
+        {/* ── SOURCES ──────────────────────────────────────────────── */}
         {active === 'sources' && (
           <div>
             <Label>Sources</Label>
@@ -367,11 +800,9 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ 
-                        color: teal, 
-                        textDecoration: 'underline'
-                      }}
+                      style={{ color: teal, textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 5 }}
                     >
+                      <BookOpen size={12} />
                       {src}
                     </a>
                   </li>
@@ -382,6 +813,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
         )}
       </section>
 
+      {/* Related Compounds */}
       {related.length > 0 && (
         <section style={{ marginTop: 'var(--space-5)' }}>
           <h2 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--white)', margin: '0 0 var(--space-3)' }}>
