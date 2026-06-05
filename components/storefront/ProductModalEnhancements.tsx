@@ -47,6 +47,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { ArrowRight, Plus, Beaker, ChevronDown, ChevronUp, BookmarkPlus, AlertCircle, CheckCircle2 } from 'lucide-react';
+import PinToCompareButton from '../research/PinToCompareButton';
 import {
   evidenceTier,
   relatedCompounds,
@@ -515,65 +516,6 @@ function ReconstitutionCalc({
 /* ------------------------------------------------------------------ *
  * Phase 3: Pin To Compare                                            *
  * ------------------------------------------------------------------ */
-function PinToCompareButton({
-  productName,
-  imageUrl,
-  pricePerVialDollars,
-  compoundSlug,
-  evidenceTierKey,
-  primaryColor,
-}: {
-  productName: string;
-  imageUrl: string | null;
-  pricePerVialDollars: number | null;
-  compoundSlug: string | null;
-  evidenceTierKey: string | null;
-  primaryColor: string;
-}) {
-  function pin() {
-    if (typeof window === 'undefined') return;
-    const detail = {
-      productName,
-      imageUrl,
-      pricePerVialDollars,
-      compoundSlug,
-      evidenceTierKey,
-      pinnedAt: Date.now(),
-    };
-    try {
-      window.dispatchEvent(new CustomEvent('pnl:compare-add', { detail }));
-    } catch {
-      // ignore — drawer may not be mounted yet, it will catch up via storage poll
-    }
-    try {
-      const raw = window.localStorage.getItem('pnl:compare') || '[]';
-      const list = JSON.parse(raw) as Array<typeof detail>;
-      const filtered = list.filter((x) => x.productName !== productName);
-      filtered.push(detail);
-      const trimmed = filtered.slice(-3);
-      window.localStorage.setItem('pnl:compare', JSON.stringify(trimmed));
-    } catch {
-      // localStorage may be blocked; non-fatal.
-    }
-  }
-  return (
-    <button
-      type="button"
-      onClick={pin}
-      aria-label={`Pin ${productName} To Compare`}
-      style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-        padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
-        border: `1px solid ${primaryColor}55`,
-        background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 3px 8px rgba(0,0,0,0.45)',
-        color: primaryColor, fontSize: '0.82rem', fontWeight: 700,
-      }}
-    >
-      <BookmarkPlus size={14} aria-hidden="true" /> Pin To Compare
-    </button>
-  );
-}
 
 /* ------------------------------------------------------------------ *
  * Phase 4: Recently Viewed strip (localStorage-backed)               *
@@ -898,16 +840,19 @@ export default function ProductModalEnhancements({
       />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <PinToCompareButton
-          productName={currentProductName}
-          imageUrl={currentImageUrl ?? null}
-          pricePerVialDollars={
-            currentBundlePriceDollars != null ? Number(currentBundlePriceDollars) / 10 : null
-          }
-          compoundSlug={currentCompoundSlug ?? null}
-          evidenceTierKey={currentCompound?.evidence_tier ?? null}
-          primaryColor={primaryColor}
-        />
+        {currentCompoundSlug && currentProductName && (
+          <PinToCompareButton
+            compoundSlug={currentCompoundSlug}
+            compoundName={currentCompound?.display_name ?? currentProductName}
+            productName={currentProductName}
+            imageUrl={currentImageUrl ?? null}
+            pricePerVialDollars={
+              currentBundlePriceDollars != null ? Number(currentBundlePriceDollars) / 10 : null
+            }
+            evidenceTierKey={currentCompound?.evidence_tier ?? undefined}
+            category={currentCompound?.category ?? null}
+          />
+        )}
       </div>
 
       {recentlyViewed.length > 0 && (
