@@ -336,7 +336,6 @@ function generateAnalystBrief(selected: Compound[], scores: CompoundScore[]): st
 
   const ranked = [...selected].map((c, i) => ({ c, s: scores[i] })).sort((a, b) => b.s.total - a.s.total);
   const leader = ranked[0];
-  const runner = ranked[1];
 
   // 1. Overall ranking
   const rankStr = ranked.map(({ c, s }) => `${c.display_name} (${s.total}/100, ${s.letter})`).join(', ');
@@ -1118,7 +1117,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
   }, []);
 
   const removeCompound = useCallback((slug: string) => setSelectedSlugs(prev => prev.filter(s => s !== slug)), []);
-  const toggleGroup = useCallback((label: string) => setCollapsedGroups(prev => { const n = new Set(prev); n.has(label) ? n.delete(label) : n.add(label); return n; }), []);
+  const toggleGroup = useCallback((label: string) => setCollapsedGroups(prev => { const n = new Set(prev); if (n.has(label)) { n.delete(label); } else { n.add(label); } return n; }), []);
 
   function handleShare() {
     if (typeof window === 'undefined') return;
