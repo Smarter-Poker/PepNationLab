@@ -1271,25 +1271,74 @@ export default function AgentStorefrontGrid({
   );
 
   const filteredProducts = useMemo(() => {
-    const getProductScore = (g: GroupedProduct) => {
+    const getProductRankScore = (g: GroupedProduct, searchScore: number) => {
       let score = 0;
-      // 1. In Stock Bonus: +10000
+
+      // 1. Stock Status (likelihood to sell): +50000 bonus if in stock
       const inStock = g.variants.some(v => {
         const agentCount = Math.max(0, Number(inventoryMap[v.product_id] ?? 0));
         const masterCount = Math.max(0, Number(v.products?.inventory_count ?? 0));
         return agentCount > 0 || masterCount > 0;
       });
-      if (inStock) score += 10000;
+      if (inStock) score += 50000;
 
-      // 2. Custom Stack/Bundle Bonus: +5000
+      // 2. Core Relevance to the Category (1st priority inside results/category browsing)
+      const compound = g.compoundSlug && compoundsBySlug ? compoundsBySlug[g.compoundSlug] : null;
+      if (compound) {
+        if (activeCardIndex !== null) {
+          const card = CARD_MAPPINGS.find(m => m.index === activeCardIndex);
+          if (card) {
+            const scores = (compound.efficacy_scores as Record<string, number>) || {};
+            if (activeCardIndex === 2) { // Weight Loss
+              score += (scores.weight_loss || 0) * 100;
+              score += (scores.metabolism || 0) * 100;
+            } else if (activeCardIndex === 3) { // Muscle Growth
+              score += (scores.muscle_growth || 0) * 100;
+              score += (scores.athletic_performance || 0) * 100;
+            } else if (activeCardIndex === 4) { // Immunity
+              score += (scores.immunity || 0) * 100;
+              score += (scores.wellbeing || 0) * 100;
+            } else if (activeCardIndex === 5) { // Anti-Aging
+              score += (scores.anti_aging || 0) * 100;
+              score += (scores.longevity || 0) * 100;
+            } else if (activeCardIndex === 6) { // Healing
+              score += (scores.healing || 0) * 100;
+              score += (scores.recovery || 0) * 100;
+            } else if (activeCardIndex === 7) { // Sexual Health
+              score += (scores.sexual_health || 0) * 100;
+            } else if (activeCardIndex === 8) { // Skin & Hair
+              score += (scores.skin_health || 0) * 100;
+              score += (scores.hair_health || 0) * 100;
+            }
+          }
+        }
+      }
+
+      // 3. Custom Stack Premium Bonus (stacks are premium and highly relevant)
       const isStack = g.category === 'Peptide Stacks' || 
                       g.name.toLowerCase().includes('stack') || 
                       g.name.toLowerCase().includes('bundle') ||
                       g.name.toLowerCase().includes('klow');
-      if (isStack) score += 5000;
+      if (isStack) score += 20000;
 
-      // 3. Popularity penalty (lower index is better, so subtract index)
+      // 4. Search relevance score (if query exists)
+      if (searchScore > 0) {
+        score += searchScore * 50;
+      }
+
+      // 5. Popularity ranking (2nd priority)
       score += (1000 - g.popularity);
+
+      // 6. Likelihood to Sell to the Researcher:
+      if (compound) {
+        if (compound.evidence_tier === 'approved_drug') score += 2000;
+        else if (compound.evidence_tier === 'investigational') score += 1000;
+        else if (compound.evidence_tier === 'preclinical') score += 200;
+        
+        if (compound.pubmed_citation_count) {
+          score += Math.min(500, Math.log10(compound.pubmed_citation_count + 1) * 100);
+        }
+      }
 
       return score;
     };
@@ -1308,7 +1357,7 @@ export default function AgentStorefrontGrid({
 
     // Apply activeCardIndex filters
     if (activeCardIndex === 1 && !deferredSearch.trim()) {
-      result.sort((a, b) => getProductScore(b.g) - getProductScore(a.g));
+      result.sort((a, b) => getProductRankScore(b.g, b.search.score) - getProductRankScore(a.g, a.search.score));
       result = result.slice(0, 10);
     } else if (activeCardIndex !== null && activeCardIndex > 1 && !deferredSearch.trim()) {
       const activeCard = CARD_MAPPINGS.find(m => m.index === activeCardIndex);
@@ -1321,21 +1370,20 @@ export default function AgentStorefrontGrid({
 
     if (q && sortBy === 'popular') {
       result.sort((a, b) => {
-        if (b.search.score !== a.search.score) return b.search.score - a.search.score;
-        return getProductScore(b.g) - getProductScore(a.g);
+        return getProductRankScore(b.g, b.search.score) - getProductRankScore(a.g, a.search.score);
       });
     } else {
       switch (sortBy) {
-        case 'popular': result.sort((a, b) => getProductScore(b.g) - getProductScore(a.g)); break;
+        case 'popular': result.sort((a, b) => getProductRankScore(b.g, b.search.score) - getProductRankScore(a.g, a.search.score)); break;
         case 'name_asc': result.sort((a, b) => a.g.name.localeCompare(b.g.name)); break;
         case 'name_desc': result.sort((a, b) => b.g.name.localeCompare(a.g.name)); break;
         case 'price_low': result.sort((a, b) => a.g.lowestPrice - b.g.lowestPrice); break;
         case 'price_high': result.sort((a, b) => b.g.lowestPrice - a.g.lowestPrice); break;
-        case 'newest': result.sort((a, b) => getProductScore(b.g) - getProductScore(a.g)); break;
+        case 'newest': result.sort((a, b) => getProductRankScore(b.g, b.search.score) - getProductRankScore(a.g, a.search.score)); break;
       }
     }
     return result.map(r => ({ ...r.g, _search: r.search }));
-  }, [grouped, matchesCategory, matchesArea, matchesSearch, matchesPrice, matchesWeight, matchesInStock, matchesBulk, sortBy, deferredSearch, activeCardIndex, inventoryMap]);
+  }, [grouped, matchesCategory, matchesArea, matchesSearch, matchesPrice, matchesWeight, matchesInStock, matchesBulk, sortBy, deferredSearch, activeCardIndex, inventoryMap, compoundsBySlug]);
 
   useEffect(() => {
     if (filteredProducts.length === 0 && deferredSearch.trim().length > 2) {
@@ -2085,6 +2133,69 @@ export default function AgentStorefrontGrid({
               }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${primaryColor}50, transparent)` }} />
 
+                {/* Compare Checkbox opposite of the heart (which is on top-right, so this is on top-left) */}
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    position: 'absolute',
+                    top: 10,
+                    left: 10,
+                    zIndex: 10,
+                    width: 34,
+                    height: 34,
+                    borderRadius: '50%',
+                    background: pinnedNames.has(group.name) ? 'rgba(0,196,188,0.20)' : 'rgba(0,0,0,0.55)',
+                    border: `1px solid ${pinnedNames.has(group.name) ? 'rgba(0,196,188,0.50)' : 'rgba(255,255,255,0.20)'}`,
+                    backdropFilter: 'blur(6px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    boxSizing: 'border-box',
+                    transition: 'transform 0.15s ease, border-color 0.15s, background 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.12)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  <input
+                    type="checkbox"
+                    checked={pinnedNames.has(group.name)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        if (pinnedNames.size >= 4) {
+                          toast.error('You can compare up to 4 compounds at a time.');
+                          return;
+                        }
+                        try {
+                          const raw = window.localStorage.getItem('pnl:compare') || '[]';
+                          const list = JSON.parse(raw);
+                          if (Array.isArray(list) && list.length > 0) {
+                            const firstItemName = list[0].productName;
+                            const firstItemGroup = grouped.find(g => g.name === firstItemName);
+                            if (firstItemGroup && firstItemGroup.category !== group.category) {
+                              toast.error(`You can only compare peptides within the same category ("${firstItemGroup.category}").`);
+                              return;
+                            }
+                          }
+                        } catch {}
+                        pin(group, activeVariant);
+                      } else {
+                        unpin(group);
+                      }
+                    }}
+                    disabled={!pinnedNames.has(group.name) && pinnedNames.size >= 4}
+                    style={{
+                      width: 17,
+                      height: 17,
+                      accentColor: primaryColor,
+                      cursor: 'pointer',
+                      margin: 0,
+                    }}
+                    title="Compare this peptide"
+                    aria-label={`Compare ${group.name}`}
+                  />
+                </div>
+
                 {(() => {
                   const wished = wishlist.has(activeVariant.product_id);
                   return (
@@ -2223,50 +2334,6 @@ export default function AgentStorefrontGrid({
                           }}>
                             {displaySizeText} &nbsp;${displayPrice.toFixed(2)}
                           </span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
-                          <label
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              cursor: 'pointer',
-                              userSelect: 'none',
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={pinnedNames.has(group.name)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  if (pinnedNames.size >= 4) {
-                                    toast.error('You can compare up to 4 compounds at a time.');
-                                    return;
-                                  }
-                                  pin(group, activeVariant);
-                                } else {
-                                  unpin(group);
-                                }
-                              }}
-                              disabled={!pinnedNames.has(group.name) && pinnedNames.size >= 4}
-                              style={{
-                                width: 16,
-                                height: 16,
-                                accentColor: primaryColor,
-                                cursor: 'pointer',
-                                flexShrink: 0,
-                              }}
-                            />
-                            <span style={{
-                              color: pinnedNames.has(group.name) ? primaryColor : 'var(--grey-400)',
-                              fontSize: '0.78rem',
-                              fontWeight: 600,
-                              transition: 'color 0.15s',
-                            }}>
-                              Compare
-                            </span>
-                          </label>
                         </div>
                       </>
                     );
