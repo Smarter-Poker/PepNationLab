@@ -566,36 +566,46 @@ export default function StorefrontCompareDrawer({
     const onAdd = (e: Event) => {
       const detail = (e as CustomEvent<PinnedItem>).detail;
       if (!detail || !detail.productName) return;
-      setPinned((prev) => {
-        const filtered = prev.filter((p) => p.productName !== detail.productName);
-        const next = [...filtered, detail].slice(-MAX_PINNED);
-        writePinned(next);
-        return next;
-      });
+      const current = readPinned();
+      const filtered = current.filter((p) => p.productName !== detail.productName);
+      const next = [...filtered, detail].slice(-MAX_PINNED);
+      writePinned(next);
+      setPinned(next);
       setCollapsed(false);
     };
 
     const onRemove = (e: Event) => {
       const detail = (e as CustomEvent<{ productName: string }>).detail;
       if (!detail || !detail.productName) return;
-      setPinned((prev) => {
-        const next = prev.filter((p) => p.productName !== detail.productName);
-        writePinned(next);
-        return next;
-      });
+      const current = readPinned();
+      const next = current.filter((p) => p.productName !== detail.productName);
+      writePinned(next);
+      setPinned(next);
     };
 
     const onClear = () => {
-      setPinned([]);
       writePinned([]);
+      setPinned([]);
     };
 
     const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) setPinned(readPinned());
+      if (e.key === STORAGE_KEY) {
+        const latest = readPinned();
+        setPinned((prev) => {
+          const isSame = prev.length === latest.length && prev.every((p, idx) => p.productName === latest[idx].productName);
+          if (isSame) return prev;
+          return latest;
+        });
+      }
     };
 
     const syncPinned = () => {
-      setPinned(readPinned());
+      const latest = readPinned();
+      setPinned((prev) => {
+        const isSame = prev.length === latest.length && prev.every((p, idx) => p.productName === latest[idx].productName);
+        if (isSame) return prev;
+        return latest;
+      });
     };
 
     window.addEventListener('pnl:compare-add', onAdd as EventListener);
@@ -613,16 +623,14 @@ export default function StorefrontCompareDrawer({
   }, []);
 
   function removeAt(i: number) {
-    setPinned((prev) => {
-      const next = prev.filter((_, idx) => idx !== i);
-      writePinned(next);
-      return next;
-    });
+    const next = pinned.filter((_, idx) => idx !== i);
+    writePinned(next);
+    setPinned(next);
   }
 
   function clearAll() {
-    setPinned([]);
     writePinned([]);
+    setPinned([]);
   }
 
   const toggleGroup = (label: string) => {
@@ -922,13 +930,13 @@ export default function StorefrontCompareDrawer({
     ];
   }, [sortedPinnedItems, compoundsBySlug, maxCitations, maxHalfLife, maxTrials]);
 
-  if (!mounted) return null;
-  if (pinned.length === 0) return null;
-  if (typeof document === 'undefined') return null;
-
   const activeSynergies = useMemo(() => {
     return [...activeSynergiesModal, ...dynamicWarnings];
   }, [activeSynergiesModal, dynamicWarnings]);
+
+  if (!mounted) return null;
+  if (pinned.length === 0) return null;
+  if (typeof document === 'undefined') return null;
 
   return createPortal(
     <>

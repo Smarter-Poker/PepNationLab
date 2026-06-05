@@ -422,6 +422,7 @@ export default function AgentStorefrontGrid({
       pricePerVialDollars,
       compoundSlug: group.compoundSlug,
       evidenceTierKey: group.compoundSlug && compoundsBySlug ? compoundsBySlug[group.compoundSlug]?.evidence_tier ?? null : null,
+      category: group.category,
       pinnedAt: Date.now(),
     };
     try {
@@ -2218,27 +2219,28 @@ export default function AgentStorefrontGrid({
                 )}
 
                 {/* Compare Checkbox opposite of the heart (which is on top-right, so this is on top-left) */}
-                <div
+                <label
                   onClick={(e) => e.stopPropagation()}
                   style={{
                     position: 'absolute',
                     top: 10,
                     left: 10,
                     zIndex: 10,
-                    width: 34,
-                    height: 34,
-                    borderRadius: '50%',
+                    width: 46,
+                    height: 48,
+                    borderRadius: 10,
                     background: pinnedNames.has(group.name) ? 'rgba(0,196,188,0.20)' : 'rgba(0,0,0,0.55)',
                     border: `1px solid ${pinnedNames.has(group.name) ? 'rgba(0,196,188,0.50)' : 'rgba(255,255,255,0.20)'}`,
                     backdropFilter: 'blur(6px)',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
                     boxSizing: 'border-box',
                     transition: 'transform 0.15s ease, border-color 0.15s, background 0.15s',
                   }}
-                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.12)'}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
                   onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                 >
                   <input
@@ -2278,7 +2280,21 @@ export default function AgentStorefrontGrid({
                     title="Compare this peptide"
                     aria-label={`Compare ${group.name}`}
                   />
-                </div>
+                  <span
+                    style={{
+                      fontSize: '0.52rem',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      color: pinnedNames.has(group.name) ? primaryColor : 'rgba(255,255,255,0.6)',
+                      transition: 'color 0.15s',
+                      pointerEvents: 'none',
+                      marginTop: 2
+                    }}
+                  >
+                    Compare
+                  </span>
+                </label>
 
                 {(() => {
                   const wished = wishlist.has(activeVariant.product_id);
