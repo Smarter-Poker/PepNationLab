@@ -197,17 +197,48 @@ export function vialPooling(opts: {
   vialCount: number;
   totalDiluentMl: number;
   transferLossPct?: number;
-}): { totalMassMg: number; concentrationMgPerMl: number; solubilityWarning: boolean } | null {
-  const { vialMassMg, vialCount, totalDiluentMl } = opts;
+  pipetteTipType?: 'standard' | 'low-retention';
+  viscosityModifier?: 'aqueous' | 'glycerol' | 'viscous';
+}): {
+  totalMassMg: number;
+  concentrationMgPerMl: number;
+  solubilityWarning: boolean;
+  calculatedLossPct: number;
+  recommendation: string;
+} | null {
+  const { vialMassMg, vialCount, totalDiluentMl, pipetteTipType = 'standard', viscosityModifier = 'aqueous' } = opts;
   if (!isFinite(vialMassMg) || vialMassMg <= 0) return null;
   if (!isFinite(vialCount) || vialCount <= 0) return null;
   if (!isFinite(totalDiluentMl) || totalDiluentMl <= 0) return null;
-  const lossPct = Math.max(0, Math.min(100, opts.transferLossPct ?? 0));
+
+  let computedLoss = opts.transferLossPct ?? 0;
+  if (opts.transferLossPct === undefined || isNaN(opts.transferLossPct)) {
+    // Dynamically calculate based on modifiers if user did not provide manual input
+    const tipLoss = pipetteTipType === 'low-retention' ? 0.5 : 2.0;
+    const viscLoss = viscosityModifier === 'viscous' ? 6.0 : viscosityModifier === 'glycerol' ? 3.0 : 0.0;
+    computedLoss = tipLoss + viscLoss;
+  }
+
+  const lossPct = Math.max(0, Math.min(100, computedLoss));
   const effectiveVialMass = vialMassMg * (1 - lossPct / 100);
   const totalMassMg = effectiveVialMass * vialCount;
   const conc = totalMassMg / totalDiluentMl;
   const solubilityWarning = conc > 50;
-  return { totalMassMg, concentrationMgPerMl: conc, solubilityWarning };
+
+  let recommendation = 'Standard aqueous solution: low transfer loss under standard laboratory pipetting protocols.';
+  if (viscosityModifier === 'viscous' || viscosityModifier === 'glycerol') {
+    recommendation = `Viscous mixture detected. Recommend using positive displacement pipettes or low-retention tips. Aspirate and dispense slowly, allowing liquid interface to settle to minimize wall adhesion loss of ${lossPct.toFixed(1)}%.`;
+  } else if (pipetteTipType === 'standard') {
+    recommendation = 'Standard tips in use. Upgrading to low-retention tips will reduce surface retention loss by up to 1.5%.';
+  }
+
+  return {
+    totalMassMg,
+    concentrationMgPerMl: conc,
+    solubilityWarning,
+    calculatedLossPct: lossPct,
+    recommendation,
+  };
 }
 
 const BULL_BREESE: Record<string, number> = {
@@ -266,7 +297,7 @@ export interface MassSpecPeak {
 }
 
 const PROTON_MASS = 1.00728;
-const RESIDUE_MASS: Record<string, number> = {
+export const RESIDUE_MASS: Record<string, number> = {
   A: 71.03711, R: 156.10111, N: 114.04293, D: 115.02694, C: 103.00919,
   E: 129.04259, Q: 128.05858, G: 57.02146, H: 137.05891, I: 113.08406,
   L: 113.08406, K: 128.09496, M: 131.04049, F: 147.06841, P: 97.05276,
@@ -373,6 +404,7 @@ export interface SolubilityResult {
   classification: SolubilityClassification;
   notes: string;
   warnings: string[];
+  bufferAdvice?: string;
 }
 
 export function predictSolubility(opts: {
@@ -400,13 +432,40 @@ export function predictSolubility(opts: {
   const notes = `pI=${isoelectricPoint.toFixed(2)}; |pI - pH|=${pIDistance.toFixed(2)}; GRAVY=${gravy.toFixed(2)}; n=${sequenceLength}.`;
   
   const warnings: string[] = [];
+  let bufferAdvice = '';
+
   if (sequence) {
     const seq = sequence.toUpperCase();
-    if ((seq.match(/C/g) || []).length >= 2) {
+    const cCount = (seq.match(/C/g) || []).length;
+    
+    if (cCount >= 2) {
       warnings.push("Contains multiple Cysteines: risk of disulfide aggregation.");
     }
-    if (/[VILMFWY]{5,}/.test(seq)) {
-      warnings.push("Contains poly-hydrophobic run (>4 residues): extremely high aggregation risk.");
+    if (/[VILMFWY]{4,}/.test(seq)) {
+      warnings.push("Contains poly-hydrophobic run (>=4 residues): extremely high aggregation risk.");
+    }
+
+    if (gravy > 0.5 || /[VILMFWY]{4,}/.test(seq)) {
+      bufferAdvice = "Highly hydrophobic peptide sequence. Direct aqueous dissolution may result in immediate precipitation. Recommend pre-dissolving in a minimal volume of sterile 100% DMSO, DMF, or Acetonitrile, then slowly diluting with sterile water or PBS to target concentration.";
+    } else if (cCount >= 2) {
+      bufferAdvice = "Contains multiple Cysteine residues. High risk of disulfide-bond aggregation over time. Store in oxygen-free de-aerated buffers at acidic pH (<6), or add a reducing agent like DTT/TCEP for long-term analytical storage.";
+    } else if (isoelectricPoint < 5) {
+      bufferAdvice = "Acidic peptide (pI < 5). Dissolution is favored at alkaline pH. Dilute with basic buffers such as sterile sodium bicarbonate or phosphate-buffered saline (PBS) at pH 7.4–8.0. Avoid acidic diluents.";
+    } else if (isoelectricPoint > 8) {
+      bufferAdvice = "Basic peptide (pI > 8). Dissolution is favored at acidic pH. Dilute with sterile 0.1% – 1% acetic acid or dilute HCl. Avoid alkaline buffers.";
+    } else {
+      bufferAdvice = "Hydrophilic peptide. Dissolves readily in standard aqueous buffers (bacteriostatic water or sterile PBS at pH 7.4).";
+    }
+  } else {
+    // Fallback on gravy/pI parameters
+    if (gravy > 0.5) {
+      bufferAdvice = "Hydrophobic properties predicted (GRAVY > 0.5). Recommend pre-dissolving in DMSO before aqueous dilution.";
+    } else if (isoelectricPoint < 5) {
+      bufferAdvice = "Acidic properties predicted (pI < 5). Dissolution favored in alkaline buffers (PBS pH 7.4–8.0).";
+    } else if (isoelectricPoint > 8) {
+      bufferAdvice = "Basic properties predicted (pI > 8). Dissolution favored in acidic diluents (0.6% Acetic Acid).";
+    } else {
+      bufferAdvice = "Standard peptide profile. Dissolution in bacteriostatic water or sterile PBS pH 7.4 is recommended.";
     }
   }
 
@@ -415,6 +474,7 @@ export function predictSolubility(opts: {
     classification,
     notes,
     warnings,
+    bufferAdvice,
   };
 }
 

@@ -299,3 +299,90 @@ export function relatedCompounds(
       evidence_tier: x.c.evidence_tier,
     }));
 }
+
+export interface StackAnalysis {
+  synergyIndex: number;
+  riskLevel: 'low' | 'moderate' | 'high' | 'critical';
+  synergyExplanation: string;
+}
+
+export function calculateStackSynergy(compounds: Compound[]): StackAnalysis {
+  if (compounds.length <= 1) {
+    return {
+      synergyIndex: 0,
+      riskLevel: compounds.length === 1 ? compounds[0].risk_level : 'low',
+      synergyExplanation: 'Select at least two compounds to calculate synergy and cumulative stack risk.'
+    };
+  }
+
+  let score = 50;
+  let sharedAreasCount = 0;
+  const areas = new Set<string>();
+  
+  for (const c of compounds) {
+    for (const a of c.research_areas || []) {
+      if (areas.has(a.toLowerCase())) {
+        sharedAreasCount++;
+      } else {
+        areas.add(a.toLowerCase());
+      }
+    }
+  }
+  score += sharedAreasCount * 15;
+
+  let hasRelationship = false;
+  for (let i = 0; i < compounds.length; i++) {
+    for (let j = i + 1; j < compounds.length; j++) {
+      const c1 = compounds[i];
+      const c2 = compounds[j];
+      if (c1.best_stacked_with?.some(s => s.toLowerCase() === c2.slug || s.toLowerCase() === c2.display_name.toLowerCase())) {
+        hasRelationship = true;
+      }
+      if (c1.stack_components?.some(s => s.toLowerCase() === c2.slug || s.toLowerCase() === c2.display_name.toLowerCase())) {
+        hasRelationship = true;
+      }
+    }
+  }
+  if (hasRelationship) {
+    score += 20;
+  }
+
+  const isMultipleGlp1 = compounds.filter(c => c.is_glp1).length >= 2;
+  const isMultipleProAngio = compounds.filter(c => c.is_pro_angiogenic).length >= 2;
+  
+  if (isMultipleGlp1) score -= 25;
+  if (isMultipleProAngio) score -= 15;
+
+  const maxRisk = compounds.reduce((acc, c) => {
+    const levels: Record<string, number> = { low: 1, moderate: 2, high: 3, critical: 4 };
+    if (levels[c.risk_level] > levels[acc]) return c.risk_level;
+    return acc;
+  }, 'low' as Compound['risk_level']);
+
+  if (maxRisk === 'critical') score -= 20;
+  else if (maxRisk === 'high') score -= 10;
+
+  const finalScore = Math.max(0, Math.min(100, score));
+
+  let riskLevel = maxRisk;
+  if (isMultipleGlp1) {
+    riskLevel = 'critical';
+  } else if (isMultipleProAngio && (riskLevel === 'low' || riskLevel === 'moderate')) {
+    riskLevel = 'moderate';
+  }
+
+  let explanation = '';
+  if (finalScore >= 80) {
+    explanation = 'Excellent synergy. These compounds share documented complementary pathways and are highly recommended for combined research protocols.';
+  } else if (finalScore >= 50) {
+    explanation = 'Moderate synergy. The compounds address similar research areas but lack direct stacking documentation in standard literature.';
+  } else {
+    explanation = 'Low synergy. These compounds have unrelated mechanism profiles or carry overlapping pathway contraindications (e.g. incretin redundancy).';
+  }
+
+  return {
+    synergyIndex: finalScore,
+    riskLevel,
+    synergyExplanation: explanation
+  };
+}

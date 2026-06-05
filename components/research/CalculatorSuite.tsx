@@ -14,6 +14,7 @@ import {
   predictSolubility,
   vialQuantityPower,
   type ConcentrationUnit,
+  RESIDUE_MASS,
 } from '@/lib/research/calculators';
 import { toast } from 'sonner';
 
@@ -264,14 +265,17 @@ const STANDARD_AA = new Set('ACDEFGHIKLMNPQRSTVWY');
 interface VisualSyringeProps {
   ml: number;
   size: 0.3 | 0.5 | 1.0;
+  type?: 'u100' | 'u40' | 'u80';
   onDrawMlChange?: (newMl: number) => void;
 }
 
-function VisualSyringe({ ml, size, onDrawMlChange }: VisualSyringeProps) {
+function VisualSyringe({ ml, size, type = 'u100', onDrawMlChange }: VisualSyringeProps) {
   const maxMl = size;
   const pct = Math.min(100, Math.max(0, (ml / maxMl) * 100));
-  const units = Math.round(ml * 100);
-  const maxUnits = Math.round(size * 100);
+  
+  const multiplier = type === 'u40' ? 40 : type === 'u80' ? 80 : 100;
+  const units = Math.round(ml * multiplier);
+  const maxUnits = Math.round(size * multiplier);
   
   const tickCount = size === 1.0 ? 10 : size === 0.5 ? 5 : 3;
   const subdivisions = size === 1.0 ? 100 : size === 0.5 ? 50 : 30;
@@ -311,7 +315,7 @@ function VisualSyringe({ ml, size, onDrawMlChange }: VisualSyringeProps) {
   return (
     <div style={{ background: '#121620', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16, marginTop: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 12, color: '#A8B4C0', fontFamily: 'monospace' }}>
-        <span>Syringe Capacity: <span className="calc-no-capitalize">{size} mL ({maxUnits} Units Max)</span></span>
+        <span>Syringe Capacity: <span className="calc-no-capitalize">{size} mL ({maxUnits} Units Max, {type.toUpperCase()})</span></span>
         <span style={{ color: '#00E5FF', fontWeight: 'bold' }} className="calc-no-capitalize">{units} Units ({ml.toFixed(3)} mL)</span>
       </div>
       
@@ -370,7 +374,7 @@ function VisualSyringe({ ml, size, onDrawMlChange }: VisualSyringeProps) {
               {/* Minor Ticks */}
               <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'space-between', pointerEvents: 'none', padding: '0 2px' }}>
                 {Array.from({ length: subdivisions + 1 }).map((_, i) => {
-                  if (i % (maxUnits / tickCount) === 0) return <div key={i} />;
+                  if (i % (maxUnits / subdivisions) === 0) return <div key={i} />;
                   return (
                     <div key={i} style={{ width: 1, height: 4, background: 'rgba(255,255,255,0.15)' }} />
                   );
@@ -395,6 +399,7 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
   const [desiredMass, setDesiredMass] = useState('1');
   const [unit, setUnit] = useState('mg');
   const [syringeSize, setSyringeSize] = useState<0.3 | 0.5 | 1.0>(1.0);
+  const [syringeType, setSyringeType] = useState<'u100' | 'u40' | 'u80'>('u100');
   const [diluentType, setDiluentType] = useState<'bac-water' | 'acetic-acid'>('bac-water');
   const [showGuide, setShowGuide] = useState(false);
 
@@ -442,6 +447,8 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
       setDiluentType('bac-water');
     }
   }, [isIgf]);
+
+  const syringeMultiplier = syringeType === 'u40' ? 40 : syringeType === 'u80' ? 80 : 100;
 
   const handleDrawMlChange = (newMl: number) => {
     if (vMass <= 0 || dilMl <= 0) return;
@@ -576,7 +583,7 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
             <div class="recipe-item" style="background: #ECFDF5; padding: 12px; border-radius: 8px; border: 1px solid #A7F3D0; margin-top: 20px;">
               <span class="recipe-label" style="font-size: 16px; color: #065F46;">Recommended Syringe Draw:</span>
               <span class="recipe-value" style="font-size: 22px; color: #047857; display: block; margin-top: 4px;">
-                ${drawMl !== null && isFinite(drawMl) ? Math.round(drawMl * 100) : 0} Units
+                ${drawMl !== null && isFinite(drawMl) ? Math.round(drawMl * syringeMultiplier) : 0} Units (${syringeType.toUpperCase()})
               </span>
               <span style="font-size: 12px; color: #065F46; display: block; margin-top: 2px;">
                 (${drawMl !== null && isFinite(drawMl) ? drawMl.toFixed(3) : 0} mL drawn on a ${syringeSize} mL insulin syringe)
@@ -675,9 +682,17 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Insulin Syringe Capacity</div>
             <StyledSelect value={syringeSize} onChange={(e) => setSyringeSize(Number(e.target.value) as 0.3 | 0.5 | 1.0)}>
-              <option value="1.0"><span className="calc-no-capitalize">1.0 mL</span> (100 Units)</option>
-              <option value="0.5"><span className="calc-no-capitalize">0.5 mL</span> (50 Units)</option>
-              <option value="0.3"><span className="calc-no-capitalize">0.3 mL</span> (30 Units)</option>
+              <option value="1.0"><span className="calc-no-capitalize">1.0 mL</span> ({syringeMultiplier} Units Max)</option>
+              <option value="0.5"><span className="calc-no-capitalize">0.5 mL</span> ({Math.round(0.5 * syringeMultiplier)} Units Max)</option>
+              <option value="0.3"><span className="calc-no-capitalize">0.3 mL</span> ({Math.round(0.3 * syringeMultiplier)} Units Max)</option>
+            </StyledSelect>
+          </label>
+          <label style={{ display: "block" }}>
+            <div style={labelStyle}>Syringe Concentration Type</div>
+            <StyledSelect value={syringeType} onChange={(e) => setSyringeType(e.target.value as any)}>
+              <option value="u100">U-100 (Standard, 100 U/mL)</option>
+              <option value="u40">U-40 (Veterinary, 40 U/mL)</option>
+              <option value="u80">U-80 (Specialized, 80 U/mL)</option>
             </StyledSelect>
           </label>
         </div>
@@ -687,7 +702,7 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
             <div style={{ ...resultStyle, marginTop: 20 }}>
               To Draw A Dose Of <strong>{dMassNumeric} <span className="calc-no-capitalize">{unit}</span></strong>, Pull Liquid To:
               <span style={{ fontSize: 28, color: '#68D391', fontWeight: 800, display: 'block', margin: '8px 0' }}>
-                {Math.round(drawMl * 100)} Units
+                {Math.round(drawMl * syringeMultiplier)} Units (${syringeType.toUpperCase()})
               </span>
               <span style={{ fontSize: 13, color: '#A8B4C0' }}>
                 (<span className="calc-no-capitalize">{drawMl.toFixed(3)} mL</span> Of Working Solution)
@@ -706,7 +721,7 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
               </div>
             )}
             
-            <VisualSyringe ml={drawMl} size={syringeSize} onDrawMlChange={handleDrawMlChange} />
+            <VisualSyringe ml={drawMl} size={syringeSize} type={syringeType} onDrawMlChange={handleDrawMlChange} />
           </>
         ) : (
           <div style={{ ...resultStyle, marginTop: 20, fontSize: 14 }}>Enter A Desired Dose Above.</div>
@@ -728,7 +743,8 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
 Vial Mass: ${vMass} mg
 Diluent Volume: ${dilMl} mL (${diluentType === 'bac-water' ? 'Bacteriostatic Water' : '0.6% Acetic Acid'})
 Target Dose: ${dMassNumeric} ${unit}
-Recommended Syringe Draw: ${drawMl !== null && isFinite(drawMl) ? Math.round(drawMl * 100) : 0} Units (On A ${syringeSize} mL Syringe)`}
+Syringe Type: ${syringeType.toUpperCase()} (${syringeMultiplier} U/mL)
+Recommended Syringe Draw: ${drawMl !== null && isFinite(drawMl) ? Math.round(drawMl * syringeMultiplier) : 0} Units (On A ${syringeSize} mL Syringe)`}
               compoundSlug={compounds.find(c => c.display_name === peptide)?.slug || null}
             />
             <button
@@ -1019,6 +1035,7 @@ function ConcentrationSection({ compounds }: { compounds: CompoundListItem[] }) 
   const [mw, setMw] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [fetchingMw, setFetchingMw] = useState(false);
 
   const mwRequired = needsMW(from, to);
 
@@ -1029,12 +1046,63 @@ function ConcentrationSection({ compounds }: { compounds: CompoundListItem[] }) 
     ).slice(0, 10);
   }, [compounds, searchQuery]);
 
+  const isRawSequence = useMemo(() => {
+    const clean = searchQuery.replace(/\s+/g, '').toUpperCase();
+    if (clean.length < 2) return false;
+    return Array.from(clean).every(char => char in RESIDUE_MASS);
+  }, [searchQuery]);
+
   const handleSelectCompound = (c: CompoundListItem) => {
     if (c.molecular_weight_da) {
       setMw(c.molecular_weight_da.toString());
     }
     setSearchQuery(c.display_name);
     setShowDropdown(false);
+  };
+
+  const handleUniProtLookup = async () => {
+    if (!searchQuery) return;
+    setFetchingMw(true);
+    try {
+      const res = await fetch(`https://rest.uniprot.org/uniprotkb/search?query=${encodeURIComponent(searchQuery)}&size=1`);
+      if (res.ok) {
+        const data = await res.json();
+        const entry = data.results?.[0];
+        if (entry) {
+          const sequence = entry.sequence?.value;
+          const name = entry.proteinDescription?.recommendedName?.fullName?.value || entry.uniProtkbId;
+          
+          if (sequence) {
+            let mass = 18.0106; // H2O
+            for (const aa of sequence.toUpperCase()) {
+              mass += RESIDUE_MASS[aa] || 110; // average residue mass fallback
+            }
+            setMw(Math.round(mass).toString());
+            toast.success(`UniProt: ${name} (MW: ${Math.round(mass)} Da)`);
+          } else {
+            toast.error('No sequence data found in UniProt.');
+          }
+        } else {
+          toast.error('No UniProt match found.');
+        }
+      } else {
+        toast.error('Failed to contact UniProt API.');
+      }
+    } catch {
+      toast.error('Error looking up UniProt database.');
+    } finally {
+      setFetchingMw(false);
+    }
+  };
+
+  const handleCalculateSequenceMw = () => {
+    const clean = searchQuery.replace(/\s+/g, '').toUpperCase();
+    let mass = 18.0106;
+    for (const aa of clean) {
+      mass += RESIDUE_MASS[aa] || 0;
+    }
+    setMw(mass.toFixed(2));
+    toast.success(`Calculated from sequence: ${mass.toFixed(2)} Da`);
   };
 
   const result = concentrationConvert({
@@ -1073,14 +1141,35 @@ function ConcentrationSection({ compounds }: { compounds: CompoundListItem[] }) 
         {mwRequired && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginTop: 12, position: 'relative' }}>
             <div style={{ position: 'relative' }}>
-              <div style={labelStyle}>Search Database Peptide</div>
-              <StyledInput 
-                type="text" 
-                value={searchQuery} 
-                placeholder="Type Compound Name..." 
-                onFocus={() => setShowDropdown(true)}
-                onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
-              />
+              <div style={labelStyle}>Search Database or Sequence</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <StyledInput 
+                  type="text" 
+                  value={searchQuery} 
+                  placeholder="Peptide name or sequence..." 
+                  onFocus={() => setShowDropdown(true)}
+                  onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
+                  style={{ flex: 1 }}
+                />
+                {isRawSequence ? (
+                  <button
+                    type="button"
+                    onClick={handleCalculateSequenceMw}
+                    style={{ padding: '0 12px', background: '#00C4BC', color: '#000', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  >
+                    Calc MW
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleUniProtLookup}
+                    disabled={fetchingMw || !searchQuery}
+                    style={{ padding: '0 12px', background: 'transparent', border: '1px solid #00E5FF', color: '#00E5FF', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  >
+                    {fetchingMw ? '...' : 'UniProt'}
+                  </button>
+                )}
+              </div>
               {showDropdown && filteredCompounds.length > 0 && (
                 <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#121620', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, zIndex: 10, maxHeight: 200, overflowY: 'auto', marginTop: 4 }}>
                   {filteredCompounds.map((c) => (
@@ -1425,12 +1514,16 @@ function PoolingSection() {
   const [count, setCount] = useState('');
   const [diluent, setDiluent] = useState('');
   const [loss, setLoss] = useState('');
+  const [pipetteTip, setPipetteTip] = useState<'standard' | 'low-retention'>('standard');
+  const [viscosity, setViscosity] = useState<'aqueous' | 'glycerol' | 'viscous'>('aqueous');
 
   const out = vialPooling({
     vialMassMg: Number(mass),
     vialCount: Math.max(1, Math.floor(Number(count) || 1)),
     totalDiluentMl: Number(diluent),
-    transferLossPct: Number(loss) || 0,
+    transferLossPct: loss !== '' ? Number(loss) : undefined,
+    pipetteTipType: pipetteTip,
+    viscosityModifier: viscosity,
   });
 
   return (
@@ -1454,8 +1547,23 @@ function PoolingSection() {
             <StyledInput type="number" step="any" value={diluent} onChange={(e) => setDiluent(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Transfer Loss Buffer (%)</div>
-            <StyledInput type="number" step="any" min="0" max="100" value={loss} placeholder="E.g. 5" onChange={(e) => setLoss(e.target.value)} />
+            <div style={labelStyle}>Pipette Tip Type</div>
+            <StyledSelect value={pipetteTip} onChange={(e) => setPipetteTip(e.target.value as any)}>
+              <option value="standard">Standard Tips (+2.0% loss)</option>
+              <option value="low-retention">Low-Retention (+0.5% loss)</option>
+            </StyledSelect>
+          </label>
+          <label style={{ display: "block" }}>
+            <div style={labelStyle}>Fluid Viscosity</div>
+            <StyledSelect value={viscosity} onChange={(e) => setViscosity(e.target.value as any)}>
+              <option value="aqueous">Aqueous (0.0% loss)</option>
+              <option value="glycerol">Glycerol Carrier (+3.0% loss)</option>
+              <option value="viscous">Viscous/Gelatin (+6.0% loss)</option>
+            </StyledSelect>
+          </label>
+          <label style={{ display: "block" }}>
+            <div style={labelStyle}>Custom Loss Overrides (%)</div>
+            <StyledInput type="number" step="any" min="0" max="100" value={loss} placeholder="Override calculated" onChange={(e) => setLoss(e.target.value)} />
           </label>
         </div>
 
@@ -1465,10 +1573,17 @@ function PoolingSection() {
           </div>
         )}
 
+        {out && (
+          <div style={{ margin: '12px 0', padding: 12, borderRadius: 8, background: 'rgba(0, 229, 255, 0.03)', border: '1px solid rgba(0, 229, 255, 0.12)', fontSize: 13, color: '#A8B2C1' }}>
+            <strong style={{ color: '#00E5FF', display: 'block', marginBottom: 4 }}>Pipetting Optimization Advice</strong>
+            {out.recommendation}
+          </div>
+        )}
+
         <div style={resultStyle}>
           {!out
             ? 'Enter Valid Inputs.'
-            : <>Total Mass: <strong className="calc-no-capitalize">{out.totalMassMg.toFixed(2)} mg</strong>{'  '}|{'  '}Concentration: <strong className="calc-no-capitalize">{out.concentrationMgPerMl.toFixed(3)} mg/mL</strong></>
+            : <>Total Mass: <strong className="calc-no-capitalize">{out.totalMassMg.toFixed(2)} mg</strong>{'  '}|{'  '}Concentration: <strong className="calc-no-capitalize">{out.concentrationMgPerMl.toFixed(3)} mg/mL</strong>{'  '}|{'  '}Loss: <strong className="calc-no-capitalize">{out.calculatedLossPct.toFixed(1)}%</strong></>
           }
         </div>
 
@@ -1478,9 +1593,12 @@ function PoolingSection() {
             noteText={`Vials Pooled: ${count}
 Mass Per Vial: ${mass} mg
 Diluent Added: ${diluent} mL
-Transfer Loss: ${loss}%
+Pipette Tip Type: ${pipetteTip}
+Viscosity Modifier: ${viscosity}
+Calculated Transfer Loss: ${out.calculatedLossPct.toFixed(1)}%
 Total Pooled Mass: ${out.totalMassMg.toFixed(2)} mg
-Final Pooled Concentration: ${out.concentrationMgPerMl.toFixed(3)} mg/mL`}
+Final Pooled Concentration: ${out.concentrationMgPerMl.toFixed(3)} mg/mL
+Advice: ${out.recommendation}`}
           />
         )}
 
@@ -1498,6 +1616,7 @@ function HplcRtSection() {
   const [gradient, setGradient] = useState('20');
   const [columnType, setColumnType] = useState<'C18' | 'C8' | 'C4' | 'HILIC'>('C18');
   const [modifier, setModifier] = useState<'TFA' | 'FA'>('TFA');
+  const [hoveredPoint, setHoveredPoint] = useState<{ time: number; val: number } | null>(null);
 
   const cleanSeq = seq.replace(/\s+/g, '').toUpperCase();
   const unknownChars = useMemo(() => {
@@ -1518,6 +1637,151 @@ function HplcRtSection() {
   });
 
   const gradientInvalid = gradient.trim() !== '' && Number(gradient) <= 0;
+
+  const points = useMemo(() => {
+    if (rt === null || Number(gradient) <= 0 || rt > Number(gradient)) return [];
+    const pts = [];
+    const maxTime = Number(gradient) || 20;
+    const peakTime = rt;
+    const sigma = 0.15; // peak standard deviation width
+    const height = 120; // max peak height in mAU
+    
+    // Generate 300 points for a smooth Gaussian curve
+    for (let i = 0; i <= 300; i++) {
+      const t = (i / 300) * maxTime;
+      // Baseline drift representing RP gradient
+      const drift = 5 + (t / maxTime) * 6; 
+      // Micro noise for chromatogram authenticity
+      const noise = Math.sin(t * 12) * 0.2 + (Math.sin(t * 89) * 0.15);
+      // Gaussian Peak
+      const peak = height * Math.exp(-Math.pow(t - peakTime, 2) / (2 * Math.pow(sigma, 2)));
+      
+      pts.push({ time: t, val: drift + noise + peak });
+    }
+    return pts;
+  }, [rt, gradient]);
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (points.length === 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left - 50; // padding left
+    const plotWidth = rect.width - 70; // padding left + right
+    const maxTime = Number(gradient) || 20;
+    const mouseTime = (mouseX / plotWidth) * maxTime;
+    
+    let closest = points[0];
+    let minDiff = Math.abs(points[0].time - mouseTime);
+    for (const p of points) {
+      const diff = Math.abs(p.time - mouseTime);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = p;
+      }
+    }
+    if (closest.time >= 0 && closest.time <= maxTime) {
+      setHoveredPoint(closest);
+    }
+  };
+
+  const handlePrintReport = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Pop-up blocker prevented printing HPLC report.');
+      return;
+    }
+    
+    const maxTime = Number(gradient) || 20;
+    const svgWidth = 600;
+    const svgHeight = 200;
+    const paddingLeft = 50;
+    const paddingRight = 20;
+    const paddingTop = 20;
+    const paddingBottom = 40;
+    const plotWidth = svgWidth - paddingLeft - paddingRight;
+    const plotHeight = svgHeight - paddingTop - paddingBottom;
+    const pathD = points.map((p, i) => {
+      const px = paddingLeft + (p.time / maxTime) * plotWidth;
+      const py = svgHeight - paddingBottom - (p.val / 150) * plotHeight;
+      return `${i === 0 ? 'M' : 'L'} ${px} ${py}`;
+    }).join(' ');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Analytical HPLC Quality Control Report</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #111827; padding: 40px; max-width: 700px; margin: 0 auto; }
+            .header { text-align: center; border-bottom: 2px solid #00C4BC; padding-bottom: 12px; margin-bottom: 24px; }
+            h1 { font-size: 22px; color: #047857; margin: 0; text-transform: uppercase; }
+            .subtitle { font-size: 12px; color: #6B7280; letter-spacing: 0.05em; margin-top: 4px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+            .card { background: #F9FAFB; border: 1px solid #E5E7EB; padding: 16px; border-radius: 8px; font-size: 14px; }
+            .section-title { font-weight: bold; font-size: 13px; color: #374151; margin-bottom: 8px; border-bottom: 1px solid #E5E7EB; padding-bottom: 4px; text-transform: uppercase; }
+            .item { display: flex; justify-content: space-between; margin: 6px 0; }
+            .label { color: #6B7280; }
+            .value { font-weight: 600; font-family: monospace; }
+            .chart-container { border: 1px solid #E5E7EB; border-radius: 8px; padding: 16px; background: #FFFFFF; margin-bottom: 24px; text-align: center; }
+            .disclaimer { font-size: 10px; color: #9CA3AF; text-align: center; font-style: italic; border-top: 1px dashed #E5E7EB; paddingTop: 16px; margin-top: 30px; }
+            .signature-block { display: flex; justify-content: space-between; margin-top: 40px; font-size: 12px; }
+            .sig-line { border-top: 1px solid #9CA3AF; width: 180px; text-align: center; padding-top: 4px; color: #6B7280; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>HPLC Analytical Assessment Report</h1>
+            <div class="subtitle">PREDICTIVE CHROMATOGRAM FOR FRACTION VERIFICATION</div>
+          </div>
+          
+          <div class="grid">
+            <div class="card">
+              <div class="section-title">Compound Details</div>
+              <div class="item"><span class="label">Sequence Length:</span><span class="value">${cleanSeq.length} Residues</span></div>
+              <div class="item"><span class="label">Amino Acid Sequence:</span><span class="value" style="word-break: break-all;">${cleanSeq}</span></div>
+            </div>
+            <div class="card">
+              <div class="section-title">HPLC Parameters</div>
+              <div class="item"><span class="label">Column Type:</span><span class="value">${columnType} Phase</span></div>
+              <div class="item"><span class="label">Acid Modifier:</span><span class="value">0.1% ${modifier}</span></div>
+              <div class="item"><span class="label">Gradient Run:</span><span class="value">${start}% to ${end}% B (${gradient} Min)</span></div>
+              <div class="item"><span class="label">Predicted RT:</span><span class="value">${rt !== null ? rt.toFixed(2) : 'N/A'} Min</span></div>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <div style="font-weight: bold; font-size: 12px; margin-bottom: 10px; color: #374151;">Chromatogram Peak Plot</div>
+            <svg width="600" height="200">
+              <!-- grid lines -->
+              <line x1="50" y1="20" x2="50" y2="160" stroke="#E5E7EB" stroke-width="1" />
+              <line x1="50" y1="160" x2="580" y2="160" stroke="#374151" stroke-width="2" />
+              <!-- plot path -->
+              <path d="${pathD}" fill="none" stroke="#00C4BC" stroke-width="2.5" />
+              <!-- peak indicator -->
+              ${rt !== null ? `
+                <line x1="${paddingLeft + (rt / maxTime) * plotWidth}" y1="${paddingTop}" x2="${paddingLeft + (rt / maxTime) * plotWidth}" y2="160" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="3,3" />
+                <text x="${paddingLeft + (rt / maxTime) * plotWidth}" y="15" fill="#B45309" font-size="10" font-family="monospace" text-anchor="middle">RT = ${rt.toFixed(2)} min</text>
+              ` : ''}
+              <text x="315" y="190" fill="#6B7280" font-size="10" font-family="sans-serif" text-anchor="middle">Retention Time (Minutes)</text>
+              <text x="15" y="90" fill="#6B7280" font-size="10" font-family="sans-serif" text-anchor="middle" transform="rotate(-90 15 90)">UV Absorbance (mAU)</text>
+            </svg>
+          </div>
+
+          <div class="signature-block">
+            <div>
+              <div class="sig-line" style="margin-top: 30px;">Date Analyzed</div>
+            </div>
+            <div>
+              <div class="sig-line" style="margin-top: 30px;">QC Officer Signature</div>
+            </div>
+          </div>
+
+          <div class="disclaimer">
+            ${RESEARCH_NOTE}
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   return (
     <section id="hplc-rt" style={chromeOuterStyle}>
@@ -1588,6 +1852,80 @@ function HplcRtSection() {
           </label>
         </div>}
 
+        {points.length > 0 && rt !== null && (
+          <div style={{ display: 'flex', flexDirection: 'column', marginTop: 16, background: 'rgba(0,0,0,0.3)', padding: 20, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 11, color: '#A8B4C0', textTransform: 'uppercase', letterSpacing: '0.1em' }}>UV Absorbance Chromatogram (mAU)</span>
+              <span style={{ fontSize: 11, color: '#00E5FF', fontFamily: 'monospace' }} className="calc-no-capitalize">
+                {hoveredPoint ? `Time: ${hoveredPoint.time.toFixed(2)} min | UV: ${hoveredPoint.val.toFixed(1)} mAU` : `Peak RT: ${rt.toFixed(2)} min`}
+              </span>
+            </div>
+            <div style={{ height: 160, position: 'relative' }}>
+              <svg 
+                width="100%" 
+                height="100%" 
+                viewBox="0 0 600 160" 
+                preserveAspectRatio="none"
+                onMouseMove={handleMouseMove}
+                onMouseLeave={() => setHoveredPoint(null)}
+                style={{ overflow: 'visible' }}
+              >
+                {/* Grid Lines */}
+                <line x1="50" y1="10" x2="50" y2="130" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                <line x1="50" y1="130" x2="580" y2="130" stroke="rgba(255,255,255,0.2)" strokeWidth="2.5" />
+                
+                {/* Draw points path */}
+                <path 
+                  d={points.map((p, i) => {
+                    const px = 50 + (p.time / (Number(gradient) || 20)) * 530;
+                    const py = 130 - (p.val / 150) * 110;
+                    return `${i === 0 ? 'M' : 'L'} ${px} ${py}`;
+                  }).join(' ')} 
+                  fill="none" 
+                  stroke="#00E5FF" 
+                  strokeWidth="2"
+                />
+
+                {/* Peak marker */}
+                <line 
+                  x1={50 + (rt / (Number(gradient) || 20)) * 530} 
+                  y1="10" 
+                  x2={50 + (rt / (Number(gradient) || 20)) * 530} 
+                  y2="130" 
+                  stroke="#68D391" 
+                  strokeWidth="1" 
+                  strokeDasharray="4,4" 
+                />
+                
+                {/* Hover Line Indicator */}
+                {hoveredPoint && (
+                  <>
+                    <line 
+                      x1={50 + (hoveredPoint.time / (Number(gradient) || 20)) * 530} 
+                      y1="10" 
+                      x2={50 + (hoveredPoint.time / (Number(gradient) || 20)) * 530} 
+                      y2="130" 
+                      stroke="rgba(255, 255, 255, 0.4)" 
+                      strokeWidth="1" 
+                    />
+                    <circle 
+                      cx={50 + (hoveredPoint.time / (Number(gradient) || 20)) * 530} 
+                      cy={130 - (hoveredPoint.val / 150) * 110} 
+                      r="4" 
+                      fill="#FFFFFF" 
+                    />
+                  </>
+                )}
+              </svg>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#A8B4C0', fontFamily: 'monospace', paddingLeft: 40, marginTop: 8 }}>
+              <span>0 min</span>
+              <span>{(Number(gradient) || 20) / 2} min</span>
+              <span>{Number(gradient) || 20} min</span>
+            </div>
+          </div>
+        )}
+
         <div style={resultStyle}>
           {gradientInvalid
             ? 'Gradient Length Must Be Greater Than 0 Minutes.'
@@ -1602,16 +1940,38 @@ function HplcRtSection() {
         </div>
 
         {rt !== null && (
-          <SaveToJournalButton
-            title="HPLC Retention Time Prediction"
-            noteText={`Sequence: ${seq}
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
+            <SaveToJournalButton
+              title="HPLC Retention Time Prediction"
+              noteText={`Sequence: ${seq}
 Column Type: ${columnType}
 Acid Modifier: ${modifier}
 Predicted Retention Time: ${rt.toFixed(2)} Min
 Gradient Start (%B): ${start}%
 Gradient End (%B): ${end}%
 Gradient Length: ${gradient} Min`}
-          />
+            />
+            <button
+              type="button"
+              onClick={handlePrintReport}
+              style={{
+                background: 'transparent',
+                border: '1px solid #00E5FF',
+                color: '#00E5FF',
+                padding: '8px 16px',
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                marginTop: 12,
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0, 229, 255, 0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              Print Analytical Report
+            </button>
+          </div>
         )}
 
         <p style={noteStyle}>{RESEARCH_NOTE}</p>
@@ -1626,6 +1986,7 @@ function MassSpecSection() {
   const [mode, setMode] = useState<'positive' | 'negative'>('positive');
   const [maxCharge, setMaxCharge] = useState('4');
   const [adduct, setAdduct] = useState('1.00728'); // Default +H
+  const [hoveredPeak, setHoveredPeak] = useState<any | null>(null);
 
   const cleanSeq = seq.replace(/\s+/g, '').toUpperCase();
   const unknownChars = useMemo(() => {
@@ -1654,6 +2015,148 @@ function MassSpecSection() {
   const maxIntensity = useMemo(() => {
     return Math.max(...peaks.map(p => p.intensity), 0.001);
   }, [peaks]);
+
+  const minMz = useMemo(() => {
+    if (chartPeaks.length === 0) return 0;
+    return Math.max(0, Math.floor(chartPeaks[0].mz - 100));
+  }, [chartPeaks]);
+
+  const maxMz = useMemo(() => {
+    if (chartPeaks.length === 0) return 1000;
+    return Math.ceil(chartPeaks[chartPeaks.length - 1].mz + 100);
+  }, [chartPeaks]);
+
+  const handlePrintMSReport = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Pop-up blocker prevented printing Mass Spec report.');
+      return;
+    }
+
+    const svgWidth = 600;
+    const svgHeight = 220;
+    const paddingLeft = 60;
+    const paddingRight = 20;
+    const paddingTop = 20;
+    const paddingBottom = 45;
+    const plotWidth = svgWidth - paddingLeft - paddingRight;
+    const plotHeight = svgHeight - paddingTop - paddingBottom;
+
+    const stickElements = chartPeaks.map((p) => {
+      const x = paddingLeft + ((p.mz - minMz) / (maxMz - minMz || 1)) * plotWidth;
+      const y = svgHeight - paddingBottom - (p.intensity / maxIntensity) * plotHeight;
+      const isBase = p.charge === basePeakCharge;
+      const strokeColor = isBase ? '#047857' : '#0284C7';
+      
+      return `
+        <line x1="${x}" y1="${svgHeight - paddingBottom}" x2="${x}" y2="${y}" stroke="${strokeColor}" stroke-width="3" />
+        <circle cx="${x}" cy="${y}" r="4" fill="${strokeColor}" />
+        <text x="${x}" y="${y - 8}" fill="${strokeColor}" font-size="9" font-family="monospace" text-anchor="middle" font-weight="bold">
+          ${isBase ? 'BASE' : `z=${p.charge}`}
+        </text>
+        <text x="${x}" y="${svgHeight - paddingBottom + 15}" fill="#374151" font-size="9" font-family="monospace" text-anchor="middle">
+          ${p.mz.toFixed(1)}
+        </text>
+      `;
+    }).join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Mass Spectrometry Analytical Report</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #111827; padding: 40px; max-width: 700px; margin: 0 auto; }
+            .header { text-align: center; border-bottom: 2px solid #00C4BC; padding-bottom: 12px; margin-bottom: 24px; }
+            h1 { font-size: 22px; color: #047857; margin: 0; text-transform: uppercase; }
+            .subtitle { font-size: 12px; color: #6B7280; letter-spacing: 0.05em; margin-top: 4px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+            .card { background: #F9FAFB; border: 1px solid #E5E7EB; padding: 16px; border-radius: 8px; font-size: 14px; }
+            .section-title { font-weight: bold; font-size: 13px; color: #374151; margin-bottom: 8px; border-bottom: 1px solid #E5E7EB; padding-bottom: 4px; text-transform: uppercase; }
+            .item { display: flex; justify-content: space-between; margin: 6px 0; }
+            .label { color: #6B7280; }
+            .value { font-weight: 600; font-family: monospace; }
+            .chart-container { border: 1px solid #E5E7EB; border-radius: 8px; padding: 16px; background: #FFFFFF; margin-bottom: 24px; text-align: center; }
+            .peaks-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
+            .peaks-table th { border-bottom: 2px solid #E5E7EB; padding: 6px; text-align: left; color: #6B7280; }
+            .peaks-table td { border-bottom: 1px solid #F3F4F6; padding: 6px; }
+            .disclaimer { font-size: 10px; color: #9CA3AF; text-align: center; font-style: italic; border-top: 1px dashed #E5E7EB; paddingTop: 16px; margin-top: 30px; }
+            .signature-block { display: flex; justify-content: space-between; margin-top: 40px; font-size: 12px; }
+            .sig-line { border-top: 1px solid #9CA3AF; width: 180px; text-align: center; padding-top: 4px; color: #6B7280; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Mass Spectrometry Assessment Report</h1>
+            <div class="subtitle">THEORETICAL CHARGE STATE PEAK VERIFICATION</div>
+          </div>
+          
+          <div class="grid">
+            <div class="card">
+              <div class="section-title">Sequence Specs</div>
+              <div class="item"><span class="label">Amino Acid Sequence:</span><span class="value" style="word-break: break-all;">${cleanSeq}</span></div>
+              <div class="item"><span class="label">Sequence Length:</span><span class="value">${cleanSeq.length} AA</span></div>
+            </div>
+            <div class="card">
+              <div class="section-title">MS Settings</div>
+              <div class="item"><span class="label">Ionization Mode:</span><span class="value">${mode === 'positive' ? 'ESI+' : 'ESI-'}</span></div>
+              <div class="item"><span class="label">Adduct Type:</span><span class="value">${mode === 'positive' ? (adduct === '1.00728' ? '+H (Proton)' : adduct === '22.98977' ? '+Na' : '+K') : '-H'}</span></div>
+              <div class="item"><span class="label">Base Peak m/z:</span><span class="value">${chartPeaks.length > 0 ? chartPeaks.find(p => p.charge === basePeakCharge)?.mz.toFixed(2) : 'N/A'}</span></div>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <div style="font-weight: bold; font-size: 12px; margin-bottom: 10px; color: #374151;">Electrospray Ionization (ESI) Stick Spectrum</div>
+            <svg width="600" height="220">
+              <line x1="${paddingLeft}" y1="20" x2="${paddingLeft}" y2="${svgHeight - paddingBottom}" stroke="#E5E7EB" stroke-width="1" />
+              <line x1="${paddingLeft}" y1="${svgHeight - paddingBottom}" x2="580" y2="${svgHeight - paddingBottom}" stroke="#374151" stroke-width="2" />
+              
+              <!-- ticks and labels -->
+              <text x="320" y="210" fill="#6B7280" font-size="10" font-family="sans-serif" text-anchor="middle">Mass-to-Charge Ratio (m/z)</text>
+              <text x="15" y="100" fill="#6B7280" font-size="10" font-family="sans-serif" text-anchor="middle" transform="rotate(-90 15 100)">Relative Abundance (%)</text>
+              
+              ${stickElements}
+            </svg>
+          </div>
+
+          <div class="card">
+            <div class="section-title">Theoretical Peak List</div>
+            <table class="peaks-table">
+              <thead>
+                <tr>
+                  <th>Charge State</th>
+                  <th>m/z Ratio</th>
+                  <th>Relative Abundance</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${chartPeaks.map(p => `
+                  <tr style="${p.charge === basePeakCharge ? 'background: #ECFDF5; font-weight: bold;' : ''}">
+                    <td>${mode === 'negative' ? `-${p.charge}` : `+${p.charge}`}</td>
+                    <td>${p.mz.toFixed(4)}</td>
+                    <td>${(p.intensity * 100).toFixed(0)}%</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="signature-block">
+            <div>
+              <div class="sig-line" style="margin-top: 30px;">QC Date</div>
+            </div>
+            <div>
+              <div class="sig-line" style="margin-top: 30px;">Analyst Signature</div>
+            </div>
+          </div>
+
+          <div class="disclaimer">
+            ${RESEARCH_NOTE}
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   return (
     <section id="mass-spec" style={chromeOuterStyle}>
@@ -1701,33 +2204,99 @@ function MassSpecSection() {
 
         {chartPeaks.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', marginTop: 16, background: 'rgba(0,0,0,0.3)', padding: 20, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
-            <div style={{ fontSize: 11, color: '#A8B4C0', textAlign: 'center', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.1em' }}>ESI-MS Stick Plot Spectrum</div>
-            <div style={{ height: 160, display: 'flex', alignItems: 'flex-end', gap: 16, borderBottom: '2px solid rgba(255,255,255,0.15)', paddingBottom: 8, paddingLeft: 16, paddingRight: 16, position: 'relative' }}>
-              {chartPeaks.map((p, idx) => {
-                const heightPct = (p.intensity / maxIntensity) * 100;
-                const isBase = p.charge === basePeakCharge;
-                return (
-                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', flex: 1, minWidth: 40 }}>
-                    <span style={{ fontSize: 10, color: isBase ? '#68D391' : '#00E5FF', marginBottom: 4, fontFamily: 'monospace', fontWeight: isBase ? 'bold' : 'normal' }} className="calc-no-capitalize">
-                      {isBase ? 'BASE' : `z=${p.charge}`}
-                    </span>
-                    <div 
-                      title={`Charge: z=${p.charge}, m/z: ${p.mz}, Rel Intensity: ${(p.intensity * 100).toFixed(0)}%`}
-                      style={{
-                        width: 8,
-                        height: `${heightPct}%`,
-                        background: isBase ? '#68D391' : '#00E5FF',
-                        boxShadow: isBase ? '0 0 10px rgba(104,211,145,0.5)' : '0 0 8px rgba(0,229,255,0.3)',
-                        borderRadius: '4px 4px 0 0',
-                        transition: 'height 0.3s ease',
-                      }} 
-                    />
-                    <span style={{ fontSize: 9, color: '#A8B4C0', marginTop: 6, fontFamily: 'monospace' }} className="calc-no-capitalize">
-                      {p.mz}
-                    </span>
-                  </div>
-                );
-              })}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 11, color: '#A8B4C0', textTransform: 'uppercase', letterSpacing: '0.1em' }}>ESI-MS Stick Plot Spectrum</span>
+              <span style={{ fontSize: 11, color: '#00E5FF', fontFamily: 'monospace' }} className="calc-no-capitalize">
+                {hoveredPeak ? `m/z: ${hoveredPeak.mz.toFixed(2)} | Abundance: ${(hoveredPeak.intensity * 100).toFixed(0)}%` : `Base Peak z=${basePeakCharge}`}
+              </span>
+            </div>
+            <div style={{ height: 165, position: 'relative' }}>
+              <svg 
+                width="100%" 
+                height="100%" 
+                viewBox="0 0 600 165" 
+                preserveAspectRatio="none"
+                style={{ overflow: 'visible' }}
+              >
+                {/* Grid Lines */}
+                <line x1="50" y1="10" x2="50" y2="135" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                <line x1="50" y1="135" x2="580" y2="135" stroke="rgba(255,255,255,0.2)" strokeWidth="2.5" />
+                
+                {chartPeaks.map((p, idx) => {
+                  const x = 50 + ((p.mz - minMz) / (maxMz - minMz || 1)) * 530;
+                  const y = 135 - (p.intensity / maxIntensity) * 110;
+                  const isBase = p.charge === basePeakCharge;
+                  
+                  return (
+                    <g 
+                      key={idx}
+                      onMouseEnter={() => setHoveredPeak(p)}
+                      onMouseLeave={() => setHoveredPeak(null)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {/* Interactive wider hit box */}
+                      <line 
+                        x1={x} 
+                        y1="10" 
+                        x2={x} 
+                        y2="135" 
+                        stroke="transparent" 
+                        strokeWidth="16" 
+                      />
+                      
+                      {/* MS Peak Line */}
+                      <line 
+                        x1={x} 
+                        y1="135" 
+                        x2={x} 
+                        y2={y} 
+                        stroke={isBase ? '#68D391' : '#00E5FF'} 
+                        strokeWidth={hoveredPeak?.charge === p.charge ? '5' : '3'} 
+                        style={{ transition: 'stroke-width 0.1s' }}
+                      />
+                      
+                      {/* Dot at top of stick */}
+                      <circle 
+                        cx={x} 
+                        cy={y} 
+                        r={hoveredPeak?.charge === p.charge ? '5' : '3.5'} 
+                        fill={isBase ? '#68D391' : '#00E5FF'} 
+                        style={{ transition: 'r 0.1s' }}
+                      />
+
+                      {/* Charge label */}
+                      <text 
+                        x={x} 
+                        y={y - 8} 
+                        fill={isBase ? '#68D391' : '#A8B4C0'} 
+                        fontSize="9" 
+                        fontFamily="monospace" 
+                        textAnchor="middle"
+                        fontWeight={isBase ? 'bold' : 'normal'}
+                      >
+                        {isBase ? 'BASE' : `z=${p.charge}`}
+                      </text>
+
+                      {/* m/z label under axis */}
+                      <text 
+                        x={x} 
+                        y="150" 
+                        fill="#A8B4C0" 
+                        fontSize="9" 
+                        fontFamily="monospace" 
+                        textAnchor="middle"
+                      >
+                        {p.mz.toFixed(0)}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#A8B4C0', fontFamily: 'monospace', paddingLeft: 40, marginTop: 8 }}>
+              <span>{minMz} m/z</span>
+              <span>{Math.round((minMz + maxMz) / 2)} m/z</span>
+              <span>{maxMz} m/z</span>
             </div>
           </div>
         )}
@@ -1763,14 +2332,36 @@ function MassSpecSection() {
         </div>
 
         {peaks.length > 0 && (
-          <SaveToJournalButton
-            title="Mass Spec m/z Prediction"
-            noteText={`Sequence: ${seq}
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
+            <SaveToJournalButton
+              title="Mass Spec m/z Prediction"
+              noteText={`Sequence: ${seq}
 Ionization Mode: ${mode}
 Adduct Type: ${adduct}
 Predicted Peaks (charge, m/z, relative intensity):
 ${peaks.map(p => `- Charge ${mode === 'negative' ? `-${p.charge}` : `+${p.charge}`}: m/z ${p.mz.toFixed(4)} (${(p.intensity * 100).toFixed(0)}% intensity)`).join('\n')}`}
-          />
+            />
+            <button
+              type="button"
+              onClick={handlePrintMSReport}
+              style={{
+                background: 'transparent',
+                border: '1px solid #00E5FF',
+                color: '#00E5FF',
+                padding: '8px 16px',
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                marginTop: 12,
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0, 229, 255, 0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              Print Analytical Report
+            </button>
+          </div>
         )}
 
         <p style={noteStyle}>{RESEARCH_NOTE}</p>
@@ -2037,6 +2628,13 @@ function SolubilitySection() {
           )}
         </div>
 
+        {out?.bufferAdvice && (
+          <div style={{ margin: '12px 0', padding: 12, borderRadius: 8, background: 'rgba(0, 229, 255, 0.03)', border: '1px solid rgba(0, 229, 255, 0.12)', fontSize: 13, color: '#A8B2C1' }}>
+            <strong style={{ color: '#00E5FF', display: 'block', marginBottom: 4 }}>Solubility & Reconstitution Advice</strong>
+            {out.bufferAdvice}
+          </div>
+        )}
+
         {out && (
           <SaveToJournalButton
             title="Sequence Solubility Prediction"
@@ -2047,7 +2645,8 @@ GRAVY Score: ${gravy}
 Isoelectric Point (pI): ${pi}
 Sequence Length: ${len}
 Solution pH: ${pH}
-Notes: ${out.notes}`}
+Notes: ${out.notes}
+Advice: ${out.bufferAdvice}`}
           />
         )}
 

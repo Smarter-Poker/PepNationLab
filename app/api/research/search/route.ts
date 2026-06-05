@@ -141,6 +141,138 @@ async function logSearchQuery(
   }
 }
 
+function levenshteinDistance(a: string, b: string): number {
+  const tmp: number[][] = [];
+  for (let i = 0; i <= a.length; i++) {
+    tmp[i] = [i];
+  }
+  for (let j = 0; j <= b.length; j++) {
+    tmp[0][j] = j;
+  }
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      tmp[i][j] = Math.min(
+        tmp[i - 1][j] + 1, // deletion
+        tmp[i][j - 1] + 1, // insertion
+        tmp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1) // substitution
+      );
+    }
+  }
+  return tmp[a.length][b.length];
+}
+
+function findFuzzyCorrection(
+  query: string,
+  catalog: Array<{ slug: string; display_name: string; aliases: string[] | null }>
+): { display_name: string; slug: string } | null {
+  const q = query.toLowerCase().trim();
+  if (!q || q.length < 3) return null;
+
+  let bestMatch: typeof catalog[0] | null = null;
+  let bestDistance = Infinity;
+
+  for (const item of catalog) {
+    const names = [
+      item.display_name.toLowerCase(),
+      item.slug.toLowerCase(),
+      ...(item.aliases || []).map((a) => a.toLowerCase()),
+    ];
+
+    for (const name of names) {
+      if (!name) continue;
+      const dist = levenshteinDistance(q, name);
+      const maxAllowedDist = Math.max(1, Math.min(3, Math.floor(name.length * 0.35)));
+      if (dist <= maxAllowedDist && dist < bestDistance) {
+        bestDistance = dist;
+        bestMatch = item;
+      }
+    }
+  }
+
+  if (bestMatch && bestDistance > 0) {
+    return {
+      display_name: bestMatch.display_name,
+      slug: bestMatch.slug,
+    };
+  }
+  return null;
+}
+
+async function performSearch(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  queryStr: string,
+  limit: number,
+  offset: number,
+) {
+  const parsed = parseQuery(queryStr);
+  let { rows, total } = await runRankedSearch(supabase, parsed, limit, offset);
+
+  if (rows.length === 0) {
+    const trgm = await runFallbackTrigram(supabase, parsed, limit);
+    if (trgm.length > 0) {
+      rows = trgm;
+      total = trgm.length;
+    }
+  }
+
+  let vectorRows: SearchResultRow[] = [];
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.embedContent({
+        model: 'gemini-embedding-001',
+        contents: [queryStr],
+      });
+      const queryEmbedding = response.embeddings?.[0]?.values;
+      if (queryEmbedding) {
+        const { data: vectorMatches, error: vecErr } = await supabase.rpc('match_compounds_vector', {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.3,
+          match_limit: limit,
+        });
+        if (!vecErr && vectorMatches && vectorMatches.length > 0) {
+          vectorRows = (vectorMatches as Array<Record<string, unknown>>).map((r) => ({
+            slug: String(r.slug ?? ''),
+            display_name: String(r.display_name ?? ''),
+            evidence_tier: String(r.evidence_tier ?? ''),
+            wada_status: String(r.wada_status ?? 'not_listed'),
+            snippet:
+              String(r.plain_summary ?? '').slice(0, 160) +
+              (String(r.plain_summary ?? '').length > 160 ? '...' : ''),
+            score: typeof r.similarity === 'number' ? r.similarity : Number(r.similarity ?? 0),
+            knowledge_panel_url: `/research/compounds/${String(r.slug ?? '')}`,
+          }));
+        }
+      }
+    } catch (e) {
+      console.error('Semantic search embedding failed:', e);
+    }
+  }
+
+  let finalRows = rows;
+  if (vectorRows.length > 0) {
+    const mergedMap = new Map<string, SearchResultRow>();
+    for (const vr of vectorRows) {
+      mergedMap.set(vr.slug, vr);
+    }
+    for (const kr of rows) {
+      const existing = mergedMap.get(kr.slug);
+      if (existing) {
+        existing.score = Math.max(existing.score, kr.score) + 0.1;
+        if (kr.snippet) {
+          existing.snippet = kr.snippet;
+        }
+      } else {
+        mergedMap.set(kr.slug, kr);
+      }
+    }
+    finalRows = Array.from(mergedMap.values()).sort((a, b) => b.score - a.score);
+    total = finalRows.length;
+  }
+
+  return { finalRows, total, parsed };
+}
+
 async function handle(req: NextRequest, q: string, limit: number, offset: number) {
   const t0 = Date.now();
   const trimmed = (q || '').trim();
@@ -157,11 +289,8 @@ async function handle(req: NextRequest, q: string, limit: number, offset: number
     );
   }
 
-  const parsed = parseQuery(trimmed);
   const supabase = await createServiceClient();
 
-  // Pull a slim catalog for the intent classifier. The RLS read on compounds
-  // is public so the service client is fine here.
   const { data: catalogData } = await supabase
     .from('compounds')
     .select('slug, display_name, aliases, research_areas, category');
@@ -173,85 +302,28 @@ async function handle(req: NextRequest, q: string, limit: number, offset: number
     category: string | null;
   }>;
 
+  const autoCorrect = req.nextUrl.searchParams.get('autoCorrect') !== 'false';
+  let { finalRows, total, parsed } = await performSearch(supabase, trimmed, limit, offset);
+
+  let correctedQuery: string | null = null;
+  let originalQuery: string | null = null;
+
+  if (finalRows.length === 0 && autoCorrect) {
+    const correction = findFuzzyCorrection(trimmed, catalog);
+    if (correction) {
+      correctedQuery = correction.display_name;
+      originalQuery = trimmed;
+      const correctedResult = await performSearch(supabase, correction.display_name, limit, offset);
+      finalRows = correctedResult.finalRows;
+      total = correctedResult.total;
+      parsed = correctedResult.parsed;
+    }
+  }
+
   const intent = classifyIntent(parsed, { catalog });
-
-  let { rows, total } = await runRankedSearch(supabase, parsed, limit, offset);
-
-  if (rows.length === 0) {
-    const trgm = await runFallbackTrigram(supabase, parsed, limit);
-    if (trgm.length > 0) {
-      rows = trgm;
-      total = trgm.length;
-    }
-  }
-
-  // Attempt Semantic Vector Search via gemini-embedding-001
-  let vectorRows: SearchResultRow[] = [];
-  if (process.env.GEMINI_API_KEY) {
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.embedContent({
-        model: 'gemini-embedding-001',
-        contents: [trimmed],
-      });
-      const queryEmbedding = response.embeddings?.[0]?.values;
-      if (queryEmbedding) {
-        const { data: vectorMatches, error: vecErr } = await supabase.rpc('match_compounds_vector', {
-          query_embedding: queryEmbedding,
-          match_threshold: 0.3,
-          match_limit: limit
-        });
-        if (!vecErr && vectorMatches && vectorMatches.length > 0) {
-          vectorRows = (vectorMatches as Array<Record<string, unknown>>).map((r) => ({
-            slug: String(r.slug ?? ''),
-            display_name: String(r.display_name ?? ''),
-            evidence_tier: String(r.evidence_tier ?? ''),
-            wada_status: String(r.wada_status ?? 'not_listed'),
-            snippet: String(r.plain_summary ?? '').slice(0, 160) + (String(r.plain_summary ?? '').length > 160 ? '...' : ''),
-            score: typeof r.similarity === 'number' ? r.similarity : Number(r.similarity ?? 0),
-            knowledge_panel_url: `/research/compounds/${String(r.slug ?? '')}`,
-          }));
-        }
-      }
-    } catch (e) {
-      console.error('Semantic search embedding failed, falling back to text search:', e);
-    }
-  }
-
-  // Merge vector search results and keyword results
-  let finalRows = rows;
-  if (vectorRows.length > 0) {
-    const mergedMap = new Map<string, SearchResultRow>();
-    
-    // Add vector matches first
-    for (const vr of vectorRows) {
-      mergedMap.set(vr.slug, vr);
-    }
-    
-    // Add or merge keyword matches
-    for (const kr of rows) {
-      const existing = mergedMap.get(kr.slug);
-      if (existing) {
-        // Boost score if found in both
-        existing.score = Math.max(existing.score, kr.score) + 0.1;
-        // Keep the keyword headline snippet if available
-        if (kr.snippet) {
-          existing.snippet = kr.snippet;
-        }
-      } else {
-        mergedMap.set(kr.slug, kr);
-      }
-    }
-    
-    finalRows = Array.from(mergedMap.values()).sort((a, b) => b.score - a.score);
-    total = finalRows.length;
-  }
-
   const latencyMs = Date.now() - t0;
   const topSlug = finalRows[0]?.slug ?? null;
 
-  // Best-effort analytics — run safely in the background using Next.js `after`
-  void firstClientIp(req);
   after(async () => {
     await logSearchQuery(supabase, parsed, intent, total, topSlug, latencyMs);
   });
@@ -264,6 +336,8 @@ async function handle(req: NextRequest, q: string, limit: number, offset: number
       latencyMs,
       note: RESEARCH_NOTE,
       filters_applied: parsed.filters,
+      correctedQuery,
+      originalQuery,
     },
     { status: 200 },
   );
@@ -289,7 +363,6 @@ export async function POST(req: NextRequest) {
     if (typeof body?.limit === 'number') limit = body.limit;
     if (typeof body?.offset === 'number') offset = body.offset;
   } catch {
-    // fall through to URL params on bad JSON
     q = req.nextUrl.searchParams.get('q') ?? '';
   }
   limit = Math.max(1, Math.min(50, limit));

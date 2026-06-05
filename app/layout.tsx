@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import "./globals-round2.css";
 import { CartProvider } from "@/components/CartContext";
@@ -103,6 +104,7 @@ export default function RootLayout({
           <GlobalCallListener />
           <FirstRunNotificationPrompt />
           <SessionKeepalive />
+          <Script src="/sw-register.js" strategy="afterInteractive" />
         </ThemeProvider>
       </body>
     </html>

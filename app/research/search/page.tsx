@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-type SP = { q?: string; offset?: string };
+type SP = { q?: string; offset?: string; autoCorrect?: string };
 
 async function getBaseUrl(): Promise<string> {
   const h = await headers();
@@ -33,11 +33,13 @@ interface SearchApiResponse {
   total?: number;
   latencyMs?: number;
   note?: string;
+  correctedQuery?: string | null;
+  originalQuery?: string | null;
 }
 
-async function fetchSearch(query: string, offset: number, base: string): Promise<SearchApiResponse> {
+async function fetchSearch(query: string, offset: number, autoCorrect: string, base: string): Promise<SearchApiResponse> {
   try {
-    const url = `${base}/api/research/search?q=${encodeURIComponent(query)}&limit=20&offset=${offset}`;
+    const url = `${base}/api/research/search?q=${encodeURIComponent(query)}&limit=20&offset=${offset}&autoCorrect=${autoCorrect}`;
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return {};
     return (await res.json()) as SearchApiResponse;
@@ -62,6 +64,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
   const sp = await searchParams;
   const query = (sp?.q ?? '').trim();
   const offset = Math.max(0, Number(sp?.offset ?? 0) || 0);
+  const autoCorrect = sp?.autoCorrect ?? 'true';
 
   if (!query) {
     return (
@@ -84,7 +87,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
 
   const base = await getBaseUrl();
   const [searchData, instantAnswer] = await Promise.all([
-    fetchSearch(query, offset, base),
+    fetchSearch(query, offset, autoCorrect, base),
     fetchInstantAnswer(query, base),
   ]);
 
@@ -127,6 +130,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
           latencyMs={latencyMs}
           limit={20}
           offset={offset}
+          correctedQuery={searchData.correctedQuery}
+          originalQuery={searchData.originalQuery}
         />
       </div>
 

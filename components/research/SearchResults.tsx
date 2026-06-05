@@ -41,6 +41,8 @@ export interface SearchResultsProps {
   latencyMs?: number;
   limit?: number;
   offset?: number;
+  correctedQuery?: string | null;
+  originalQuery?: string | null;
 }
 
 function trackClick(query: string, slug: string, position: number, intent: SearchIntent | null) {
@@ -76,6 +78,8 @@ export default function SearchResults({
   latencyMs,
   limit = 20,
   offset = 0,
+  correctedQuery,
+  originalQuery,
 }: SearchResultsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -99,10 +103,39 @@ export default function SearchResults({
 
   return (
     <div style={{ width: '100%', maxWidth: 760, margin: '0 auto', padding: '0 16px 48px' }}>
+      {correctedQuery && originalQuery && (
+        <div 
+          className="glass-panel" 
+          style={{ 
+            padding: '14px 18px', 
+            borderRadius: 10, 
+            background: 'rgba(245,158,11,0.08)', 
+            border: '1px solid rgba(245,158,11,0.3)', 
+            marginBottom: 20,
+            fontSize: 14,
+            color: '#E2E8F0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}
+        >
+          <span style={{ color: '#F6AD55', fontWeight: 600 }}>Spelling Correction:</span>
+          <span>
+            Showing results for <strong style={{ color: '#FFFFFF' }}>{correctedQuery}</strong> instead of <em>{originalQuery}</em>.{' '}
+            <Link 
+              href={`/research/search?q=${encodeURIComponent(originalQuery)}&autoCorrect=false`} 
+              style={{ color: '#00C4BC', textDecoration: 'underline', fontWeight: 600 }}
+            >
+              Search instead for "{originalQuery}"
+            </Link>
+          </span>
+        </div>
+      )}
+
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, color: '#A8B4C0', fontSize: 13, marginBottom: 18 }}>
         <span>
           About {total.toLocaleString()} {total === 1 ? 'Result' : 'Results'} For{' '}
-          <strong style={{ color: '#FFFFFF' }}>{query}</strong>
+          <strong style={{ color: '#FFFFFF' }}>{correctedQuery || query}</strong>
         </span>
         {typeof latencyMs === 'number' && <span>({(latencyMs / 1000).toFixed(2)} Seconds)</span>}
       </div>
