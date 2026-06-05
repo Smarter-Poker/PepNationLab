@@ -7,10 +7,12 @@ export default function StorefrontBackButton({ dashLink }: { dashLink?: string }
 
   const handleBack = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (typeof window !== 'undefined' && window.history.length > 1) {
-      router.back();
-    } else {
-      router.push(dashLink || '/dashboard');
+    if (typeof window !== 'undefined') {
+      if (window.location.hash === '#store') {
+        router.back();
+      } else {
+        router.push(dashLink || '/dashboard');
+      }
     }
   };
 
