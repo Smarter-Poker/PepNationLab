@@ -8,6 +8,8 @@ import { getCompoundsBySlugs } from '@/lib/compounds-server';
 import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
 import CouponLinkCapture from '@/components/CouponLinkCapture';
 import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
+import StorefrontBackButton from '@/components/storefront/StorefrontBackButton';
+
 
 interface Props {
   params: Promise<{ agentSlug: string }>;
@@ -294,10 +296,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
       {/* Agent branded navbar */}
       <nav className="sf-nav glass-header" style={{ background: 'rgba(10, 16, 24, 0.85)' }}>
         {/* Back button */}
-        <Link href="/dashboard" className="sf-nav-back" aria-label="Back to Dashboard">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/back-arrow.png" width={42} height={42} alt="Back" style={{ objectFit: 'contain' }} />
-        </Link>
+        <StorefrontBackButton />
 
         <div className="sf-nav-brand">
           {agent.logo_url ? (

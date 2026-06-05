@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'next/navigation';
 
 interface AgentOverviewProps {
   activeResearchersCount: number;
@@ -21,46 +22,56 @@ export default function AgentOverview({
   isSubAgent: explicitIsSubAgent,
   onNavigate,
 }: AgentOverviewProps) {
+  const router = useRouter();
   const isSubAgent = explicitIsSubAgent ?? (userProfile?.is_sub_agent === true);
+
+  const handleNav = (href: string) => {
+    if (!href) return;
+    if (href.startsWith('http')) {
+      window.location.href = href;
+    } else {
+      router.push(href);
+    }
+  };
 
   const cardZones = isSubAgent ? [
     // --- SUB-AGENT (6 Rows) ---
     // Left Column
-    { id: 'visit_storefront', left: '4%', width: '44.5%', top: '3%', height: '14.5%', action: () => { window.location.href = storefrontUrl; } },
-    { id: 'messenger', left: '4%', width: '44.5%', top: '19%', height: '14.5%', action: () => { window.location.href = '/messenger'; } },
+    { id: 'visit_storefront', left: '4%', width: '44.5%', top: '3%', height: '14.5%', action: () => handleNav(storefrontUrl) },
+    { id: 'messenger', left: '4%', width: '44.5%', top: '19%', height: '14.5%', action: () => handleNav('/messenger') },
     { id: 'orders', left: '4%', width: '44.5%', top: '35%', height: '14.5%', action: () => onNavigate?.('Orders') },
     { id: 'products', left: '4%', width: '44.5%', top: '51%', height: '14.5%', action: () => onNavigate?.('Store Products') },
     { id: 'researchers', left: '4%', width: '44.5%', top: '67%', height: '14.5%', action: () => onNavigate?.('Researchers') },
     { id: 'sales', left: '4%', width: '44.5%', top: '83%', height: '14.5%', action: () => onNavigate?.('Sales & Accounting') },
     
     // Right Column
-    { id: 'wallet', left: '51.5%', width: '44.5%', top: '3%', height: '14.5%', action: () => { window.location.href = '/wallet'; } },
-    { id: 'lab_journal', left: '51.5%', width: '44.5%', top: '19%', height: '14.5%', action: () => { window.location.href = '/account/lab-journal'; } },
-    { id: 'research_library', left: '51.5%', width: '44.5%', top: '35%', height: '14.5%', action: () => { window.location.href = '/research'; } },
-    { id: 'account_settings', left: '51.5%', width: '44.5%', top: '51%', height: '14.5%', action: () => { window.location.href = '/account'; } },
-    { id: 'lab_tools', left: '51.5%', width: '44.5%', top: '67%', height: '14.5%', action: () => { window.location.href = '/lab-tools'; } },
-    { id: 'help_support', left: '51.5%', width: '44.5%', top: '83%', height: '14.5%', action: () => { window.location.href = '/dashboard/agent/help'; } },
+    { id: 'wallet', left: '51.5%', width: '44.5%', top: '3%', height: '14.5%', action: () => handleNav('/wallet') },
+    { id: 'lab_journal', left: '51.5%', width: '44.5%', top: '19%', height: '14.5%', action: () => handleNav('/account/lab-journal') },
+    { id: 'research_library', left: '51.5%', width: '44.5%', top: '35%', height: '14.5%', action: () => handleNav('/research') },
+    { id: 'account_settings', left: '51.5%', width: '44.5%', top: '51%', height: '14.5%', action: () => handleNav('/account') },
+    { id: 'lab_tools', left: '51.5%', width: '44.5%', top: '67%', height: '14.5%', action: () => handleNav('/lab-tools') },
+    { id: 'help_support', left: '51.5%', width: '44.5%', top: '83%', height: '14.5%', action: () => handleNav('/dashboard/agent/help') },
   ] : [
     // --- SUPER AGENT (8 Rows) ---
     // LEFT COLUMN
-    { id: 'visit_storefront', left: '4%', width: '44.5%', top: '3%', height: '10.5%', action: () => { window.location.href = storefrontUrl; } },
-    { id: 'messenger', left: '4%', width: '44.5%', top: '15%', height: '10.5%', action: () => { window.location.href = '/messenger'; } },
+    { id: 'visit_storefront', left: '4%', width: '44.5%', top: '3%', height: '10.5%', action: () => handleNav(storefrontUrl) },
+    { id: 'messenger', left: '4%', width: '44.5%', top: '15%', height: '10.5%', action: () => handleNav('/messenger') },
     { id: 'orders', left: '4%', width: '44.5%', top: '27%', height: '10.5%', action: () => onNavigate?.('Orders') },
     { id: 'products', left: '4%', width: '44.5%', top: '39%', height: '10.5%', action: () => onNavigate?.('Store Products') },
     { id: 'researchers', left: '4%', width: '44.5%', top: '51%', height: '10.5%', action: () => onNavigate?.('Researchers') },
     { id: 'sales', left: '4%', width: '44.5%', top: '63%', height: '10.5%', action: () => onNavigate?.('Sales & Accounting') },
     { id: 'coupons', left: '4%', width: '44.5%', top: '75%', height: '10.5%', action: () => onNavigate?.('Coupons') },
-    { id: 'lab_tools', left: '4%', width: '44.5%', top: '87%', height: '10.5%', action: () => { window.location.href = '/lab-tools'; } },
+    { id: 'lab_tools', left: '4%', width: '44.5%', top: '87%', height: '10.5%', action: () => handleNav('/lab-tools') },
 
     // RIGHT COLUMN
-    { id: 'wallet', left: '51.5%', width: '44.5%', top: '3%', height: '10.5%', action: () => { window.location.href = '/wallet'; } },
-    { id: 'lab_journal', left: '51.5%', width: '44.5%', top: '15%', height: '10.5%', action: () => { window.location.href = '/account/lab-journal'; } },
+    { id: 'wallet', left: '51.5%', width: '44.5%', top: '3%', height: '10.5%', action: () => handleNav('/wallet') },
+    { id: 'lab_journal', left: '51.5%', width: '44.5%', top: '15%', height: '10.5%', action: () => handleNav('/account/lab-journal') },
     { id: 'storefront_config', left: '51.5%', width: '44.5%', top: '27%', height: '10.5%', action: () => onNavigate?.('Storefront Config') },
     { id: 'my_agents', left: '51.5%', width: '44.5%', top: '39%', height: '10.5%', action: () => onNavigate?.(agentProfile?.is_super_agent ? 'My Agent Accounts' : 'My Sub-Agents') },
     { id: 'inventory', left: '51.5%', width: '44.5%', top: '51%', height: '10.5%', action: () => onNavigate?.('Inventory') },
-    { id: 'research_library', left: '51.5%', width: '44.5%', top: '63%', height: '10.5%', action: () => { window.location.href = '/research'; } },
-    { id: 'account_settings', left: '51.5%', width: '44.5%', top: '75%', height: '10.5%', action: () => { window.location.href = '/account'; } },
-    { id: 'help_support', left: '51.5%', width: '44.5%', top: '87%', height: '10.5%', action: () => { window.location.href = '/dashboard/agent/help'; } },
+    { id: 'research_library', left: '51.5%', width: '44.5%', top: '63%', height: '10.5%', action: () => handleNav('/research') },
+    { id: 'account_settings', left: '51.5%', width: '44.5%', top: '75%', height: '10.5%', action: () => handleNav('/account') },
+    { id: 'help_support', left: '51.5%', width: '44.5%', top: '87%', height: '10.5%', action: () => handleNav('/dashboard/agent/help') },
   ];
 
   return (
