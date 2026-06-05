@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { computeAgentCostForAgent } from '@/lib/pricing';
+import type { AgentTier } from '@/lib/pricing';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -74,20 +76,17 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: profData } = await supabase.from('profiles').select('tier').eq('id', agentId).single();
-    const tier = profData?.tier || 'tier_3';
-
-    const { data: overrides } = await supabase.from('product_tier_overrides').select('product_id, custom_multiplier').eq('tier_name', tier);
-    const overrideMap: Record<string, number> = {};
-    overrides?.forEach(o => { overrideMap[o.product_id as string] = Number(o.custom_multiplier); });
-
-    const { data: multData } = await supabase.from('pricing_tiers').select('multiplier').eq('tier_name', tier).single();
-    const globalMultiplier = Number(multData?.multiplier) || 1.7;
+    const tier = (profData?.tier as AgentTier | null) ?? 'tier_3';
 
     let updatedCount = 0;
-    const updates = agentProducts.map(ap => {
+    const updates = agentProducts.map(async ap => {
+       const productId = ap.product_id as string;
        const baseCost = Number((ap.products as any).base_cost);
-       const effectiveMultiplier = overrideMap[ap.product_id as string] ?? globalMultiplier;
-       const agentCostPer10 = baseCost * effectiveMultiplier;
+       
+       let agentCostPer10 = 0;
+       if (baseCost > 0) {
+         agentCostPer10 = await computeAgentCostForAgent(supabase, productId, agentId, tier);
+       }
        const retailPrice = agentCostPer10 * (1 + marginPercent / 100);
 
        return supabase

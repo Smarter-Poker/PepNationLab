@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { computeAgentCostForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
 
 // GET: Fetch the agent's current inventory levels for all active products
@@ -50,28 +51,6 @@ export async function GET() {
 
     const tier = ((profile?.tier as AgentTier | null) ?? 'tier_3') as AgentTier;
 
-    // ── Fetch global tier multiplier ───────────────────────────────────────────
-    const { data: tierRow } = await supabase
-      .from('pricing_tiers')
-      .select('multiplier')
-      .eq('tier_name', tier)
-      .maybeSingle();
-    const globalMultiplier = tierRow?.multiplier != null ? Number(tierRow.multiplier) : 1.7;
-
-    // ── Fetch per-product tier overrides ─────────────────────────────────────
-    const productIds = products.map(p => p.id);
-    const overrideMap: Record<string, number> = {};
-    if (productIds.length > 0) {
-      const { data: overrides } = await supabase
-        .from('product_tier_overrides')
-        .select('product_id, custom_multiplier')
-        .in('product_id', productIds)
-        .eq('tier_name', tier);
-      overrides?.forEach(o => {
-        overrideMap[o.product_id as string] = Number(o.custom_multiplier);
-      });
-    }
-
     // Fetch the agent's inventory
     const { data: inventory, error: inventoryError } = await supabase
       .from('agent_inventory')
@@ -84,10 +63,12 @@ export async function GET() {
 
     const inventoryMap = new Map(inventory?.map(i => [i.product_id, i.stock_count]) || []);
 
-    const result = products.map(p => {
+    const resultPromises = products.map(async p => {
       const baseCost = p.base_cost != null ? Number(p.base_cost) : 0;
-      const effectiveMultiplier = overrideMap[p.id] ?? globalMultiplier;
-      const agentCost = Math.round(baseCost * effectiveMultiplier * 100) / 100;
+      let agentCost = 0;
+      if (baseCost > 0) {
+        agentCost = await computeAgentCostForAgent(supabase, p.id, agentId, tier);
+      }
       
       const { base_cost: _stripped, ...safeProduct } = p;
       void _stripped;
@@ -98,6 +79,8 @@ export async function GET() {
         agent_cost: baseCost > 0 ? agentCost : null
       };
     });
+    
+    const result = await Promise.all(resultPromises);
 
     return NextResponse.json({ data: result });
   } catch (error) {

@@ -14,7 +14,7 @@
 
 import { NextResponse, type NextRequest, after } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { parseQuery, buildAutoWildcardTsquery, type ParsedQuery, type FieldFilter } from '@/lib/research/search-parser';
+import { parseQuery, buildAutoWildcardTsquery, type ParsedQuery } from '@/lib/research/search-parser';
 import { classifyIntent, type IntentMatch } from '@/lib/research/intent';
 import { GoogleGenAI } from '@google/genai';
 
@@ -37,26 +37,6 @@ function firstClientIp(req: NextRequest): string | null {
   const fwd = req.headers.get('x-forwarded-for');
   if (fwd) return fwd.split(',')[0].trim();
   return req.headers.get('x-real-ip');
-}
-
-function escSql(s: string): string {
-  return s.replace(/'/g, "''");
-}
-
-function buildHeadlineExpr(tsquery: string): string {
-  const safe = escSql(tsquery);
-  return (
-    `coalesce(ts_headline('english', coalesce(plain_summary, '') || ' ' || coalesce(mechanism, ''), ` +
-    `to_tsquery('english', '${safe}'), 'StartSel=<mark>, StopSel=</mark>, MaxFragments=2, MaxWords=30, MinWords=8'), '')`
-  );
-}
-
-function applyFilters(
-  filters: FieldFilter[],
-  builder: ReturnType<ReturnType<typeof createServiceClient> extends Promise<infer S> ? (s: S) => never : never>,
-) {
-  void filters;
-  void builder;
 }
 
 async function runRankedSearch(

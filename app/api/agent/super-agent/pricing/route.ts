@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { computeAgentCostForAgent } from '@/lib/pricing';
+import type { AgentTier } from '@/lib/pricing';
 
 export async function GET(req: NextRequest) {
   try {
@@ -50,25 +52,17 @@ export async function GET(req: NextRequest) {
       .eq('id', superAgentId)
       .single();
       
-    const tier = superAgent?.tier || 'tier_3';
-
-    // Fetch Tier Multipliers
-    const { data: tiers } = await supabase.from('pricing_tiers').select('tier_name, multiplier');
-    const tierMultipliers: Record<string, number> = {};
-    tiers?.forEach(t => { tierMultipliers[t.tier_name] = Number(t.multiplier); });
-
-    // Fetch Overrides
-    const { data: overrides } = await supabase.from('product_tier_overrides').select('product_id, custom_multiplier').eq('tier_name', tier);
-    const overrideMap: Record<string, number> = {};
-    overrides?.forEach(o => { overrideMap[o.product_id] = Number(o.custom_multiplier); });
+    const tier = (superAgent?.tier as AgentTier | null) ?? 'tier_3';
 
     // Merge pricing with products, calculating EXACT super agent cost
     const pricingMap = new Map(pricing?.map(p => [p.product_id, p]) || []);
     
-    const mergedData = products?.map(prod => {
+    const mergedDataPromises = products?.map(async prod => {
       const base = Number(prod.base_cost);
-      const mult = overrideMap[prod.id] ?? tierMultipliers[tier] ?? 1.7;
-      const exactCost = base * mult;
+      let exactCost = 0;
+      if (base > 0) {
+        exactCost = await computeAgentCostForAgent(supabase, prod.id, superAgentId, tier);
+      }
       
       const priceRow = pricingMap.get(prod.id);
       return {
@@ -80,6 +74,8 @@ export async function GET(req: NextRequest) {
         bulk_threshold: priceRow?.bulk_threshold ?? 100,
       };
     });
+
+    const mergedData = mergedDataPromises ? await Promise.all(mergedDataPromises) : [];
 
     return NextResponse.json({ data: mergedData });
   } catch (error) {

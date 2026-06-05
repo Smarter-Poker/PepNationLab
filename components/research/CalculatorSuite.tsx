@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import {
-  reconstitutionVolumeMl,
   drawVolumeMl,
   arrheniusStability,
   concentrationConvert,
@@ -14,10 +13,8 @@ import {
   estimateFmocSppsCost,
   predictSolubility,
   vialQuantityPower,
-  syringeTicks,
   type ConcentrationUnit,
 } from '@/lib/research/calculators';
-import IframeLink from '@/components/ui/IframeLink';
 import { toast } from 'sonner';
 
 const RESEARCH_NOTE = 'Research Use Only. Not Intended As Medical Advice Or Human Dosing.';
@@ -434,7 +431,6 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
   const dMassMg = unit === 'mcg' ? dMassNumeric / 1000 : dMassNumeric;
 
   const drawMl = drawVolumeMl(vMass, dilMl, dMassMg);
-  const ticks = drawMl !== null && isFinite(drawMl) ? syringeTicks(drawMl) : null;
 
   const isIgf = peptide.toLowerCase().includes('igf');
 
@@ -898,12 +894,6 @@ function DilutionSection() {
     if (!series || series.length < selectedTube) return null;
     return series[selectedTube - 1];
   }, [series, selectedTube]);
-
-  const fv = Number(finalVol);
-  const df = Number(factor);
-  const stockNeeded = (fv > 0 && df > 1) ? fv / df : null;
-  const diluentNeeded = stockNeeded !== null ? fv - stockNeeded : null;
-
   return (
     <section id="dilution" style={chromeOuterStyle}>
       <div style={chromeInnerStyle}>
@@ -1270,7 +1260,6 @@ function CostSection() {
 
   const dosesPerWeek = Number(frequency);
   const daysPerVialA = (outA && dosesPerWeek > 0) ? (outA.dosesPerVial / dosesPerWeek) * 7 : null;
-  const daysPerVialB = (outB && dosesPerWeek > 0) ? (outB.dosesPerVial / dosesPerWeek) * 7 : null;
 
   return (
     <section id="cost" style={chromeOuterStyle}>
@@ -2069,7 +2058,6 @@ Notes: ${out.notes}`}
 }
 
 function VialQuantitySection() {
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [groups, setGroups] = useState('2');
   const [subjectsPerGroup, setSubjectsPerGroup] = useState('8');
   const [dosesPerSubjectPerWeek, setDosesPerSubjectPerWeek] = useState('2');

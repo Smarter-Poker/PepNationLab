@@ -80,7 +80,7 @@ function buildSearchText(compound) {
     const scores = Object.entries(compound.efficacy_scores)
       .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}/100`)
       .join(', ');
-    if (scores) parts.push(`Efficacy: scores`);
+    if (scores) parts.push(`Efficacy: ${scores}`);
   }
   return parts.join('\n').slice(0, 3000);
 }

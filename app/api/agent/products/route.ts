@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { computeAgentCostForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
 
 export async function GET(req: NextRequest) {
@@ -20,14 +21,6 @@ export async function GET(req: NextRequest) {
 
   const tier = ((profile?.tier as AgentTier | null) ?? 'tier_3') as AgentTier;
 
-  // ── Fetch global tier multiplier ───────────────────────────────────────────
-  const { data: tierRow } = await supabase
-    .from('pricing_tiers')
-    .select('multiplier')
-    .eq('tier_name', tier)
-    .maybeSingle();
-  const globalMultiplier = tierRow?.multiplier != null ? Number(tierRow.multiplier) : 1.7;
-
   // ── Fetch agent products (with base_cost from products table) ─────────────
   const { data, error } = await supabase
     .from('agent_products')
@@ -44,32 +37,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
-  // ── Batch fetch per-product tier overrides (single query) ──────────────────
-  const productIds = (data ?? []).map(ap => ap.product_id).filter(Boolean) as string[];
-  const overrideMap: Record<string, number> = {};
-  if (productIds.length > 0) {
-    const { data: overrides } = await supabase
-      .from('product_tier_overrides')
-      .select('product_id, custom_multiplier')
-      .in('product_id', productIds)
-      .eq('tier_name', tier);
-    overrides?.forEach(o => {
-      overrideMap[o.product_id as string] = Number(o.custom_multiplier);
-    });
-  }
-
-  // ── Augment each product with agent_cost ────────────────────────────────────────────────────
-  // agent_cost = base_cost × effective_multiplier (per-product override wins
-  // over global tier multiplier). This is what the agent pays PNL per 10 vials.
-  // IMPORTANT: base_cost_raw and effective_multiplier are computed internally but
-  // must NOT be returned to the agent — they expose the wholesale cost. Only
-  // the computed agent_cost (what they pay) is returned.
-  const augmented = (data ?? []).map(ap => {
+  const augmentedPromises = (data ?? []).map(async ap => {
+    const productId = ap.product_id as string;
     const baseCost = (ap.products as any)?.base_cost != null
       ? Number((ap.products as any).base_cost)
       : 0;
-    const effectiveMultiplier = overrideMap[ap.product_id as string] ?? globalMultiplier;
-    const agentCost = Math.round(baseCost * effectiveMultiplier * 100) / 100;
+
+    let agentCost = 0;
+    if (baseCost > 0) {
+       agentCost = await computeAgentCostForAgent(supabase, productId, agentId, tier);
+    }
 
     // Strip base_cost from the nested products object before sending to client.
     const { base_cost: _stripped, ...safeProducts } = (ap.products as any) ?? {};
@@ -83,6 +60,8 @@ export async function GET(req: NextRequest) {
       // base_cost_raw and effective_multiplier intentionally omitted — cost leak.
     };
   });
+
+  const augmented = await Promise.all(augmentedPromises);
 
   return NextResponse.json({ data: augmented });
 }
@@ -133,34 +112,13 @@ export async function PATCH(req: NextRequest) {
   // matching the same effective-multiplier logic used in the GET handler.
   let agentCostPer10 = 0;
   {
-    const { data: prodData } = await supabase
-      .from('products')
-      .select('base_cost')
-      .eq('id', check.product_id)
-      .single();
     const { data: profData } = await supabase
       .from('profiles')
       .select('tier')
       .eq('id', gate.user.id)
       .single();
-    if (prodData?.base_cost != null && profData?.tier) {
-      // Check for per-product override first (mirrors GET handler logic).
-      const { data: overrideData } = await supabase
-        .from('product_tier_overrides')
-        .select('custom_multiplier')
-        .eq('product_id', check.product_id)
-        .eq('tier_name', profData.tier)
-        .maybeSingle();
-      if (overrideData?.custom_multiplier != null) {
-        agentCostPer10 = Number(prodData.base_cost) * Number(overrideData.custom_multiplier);
-      } else {
-        const { data: multData } = await supabase
-          .from('pricing_tiers')
-          .select('multiplier')
-          .eq('tier_name', profData.tier)
-          .single();
-        agentCostPer10 = Number(prodData.base_cost) * (Number(multData?.multiplier) || 1.7);
-      }
+    if (profData?.tier) {
+      agentCostPer10 = await computeAgentCostForAgent(supabase, check.product_id, gate.user.id, profData.tier as AgentTier);
     }
   }
 

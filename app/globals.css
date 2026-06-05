@@ -2421,3 +2421,24 @@ html[data-theme="light"] .messenger-back-btn {
     color: black !important;
   }
 }
+
+/*
+   CALCULATOR AUTO-CAPITALIZATION OVERRIDES
+*/
+.calc-container {
+  text-transform: capitalize !important;
+}
+.calc-container input,
+.calc-container select,
+.calc-container option,
+.calc-container textarea,
+.calc-container code,
+.calc-container pre,
+.calc-no-capitalize,
+.calc-no-capitalize * {
+  text-transform: none !important;
+}
+select option {
+  background-color: #0b0e14 !important;
+  color: #f3f4f6 !important;
+}
