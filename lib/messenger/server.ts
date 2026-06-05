@@ -63,12 +63,12 @@ export async function canInvite(callerId: string, targetUserId: string): Promise
   const svc = await createServiceClient();
   const { data: caller } = await svc
     .from('profiles')
-    .select('id, role, parent_agent_id, referring_agent_id')
+    .select('id, role, parent_agent_id, referring_agent_id, referring_sub_agent_id')
     .eq('id', callerId)
     .maybeSingle();
   const { data: target } = await svc
     .from('profiles')
-    .select('id, role, parent_agent_id, referring_agent_id')
+    .select('id, role, parent_agent_id, referring_agent_id, referring_sub_agent_id')
     .eq('id', targetUserId)
     .maybeSingle();
   if (!caller || !target) return false;
@@ -91,6 +91,7 @@ export async function canInvite(callerId: string, targetUserId: string): Promise
 
   if (caller.role === 'agent') {
     if (target.referring_agent_id === caller.id) return true;
+    if (target.referring_sub_agent_id === caller.id) return true;
     if (target.parent_agent_id === caller.id) return true;
     if (caller.parent_agent_id && target.id === caller.parent_agent_id) return true;
     return false;
@@ -98,6 +99,7 @@ export async function canInvite(callerId: string, targetUserId: string): Promise
 
   if (caller.role === 'researcher') {
     if (caller.referring_agent_id && target.id === caller.referring_agent_id) return true;
+    if (caller.referring_sub_agent_id && target.id === caller.referring_sub_agent_id) return true;
     return false;
   }
 

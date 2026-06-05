@@ -201,7 +201,7 @@ export async function POST(req: NextRequest) {
 
   const { data: me } = await svc
     .from('profiles')
-    .select('id, role, is_super_agent, is_sub_agent')
+    .select('id, role, is_super_agent, is_sub_agent, referring_agent_id, referring_sub_agent_id')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -249,6 +249,52 @@ export async function POST(req: NextRequest) {
         if (typeof c.counterparty_id !== 'string') return false;
         return !nameless({ full_name: c.counterparty_full_name, username: c.counterparty_username });
       });
+    }
+
+    if (me.role === 'researcher') {
+      const existingCounterparties = new Set(
+        conversations
+          .map((c) => c.counterparty_id)
+          .filter((id): id is string => typeof id === 'string')
+      );
+
+      const neededAgentIds: string[] = [];
+      if (me.referring_agent_id && !existingCounterparties.has(me.referring_agent_id)) {
+        neededAgentIds.push(me.referring_agent_id);
+      }
+      if (me.referring_sub_agent_id && !existingCounterparties.has(me.referring_sub_agent_id)) {
+        neededAgentIds.push(me.referring_sub_agent_id);
+      }
+
+      if (neededAgentIds.length > 0) {
+        const { data: agentProfiles } = await svc
+          .from('profiles')
+          .select('id, full_name, username, role, avatar_url')
+          .in('id', neededAgentIds)
+          .eq('is_active', true);
+
+        if (agentProfiles) {
+          for (const ap of agentProfiles) {
+            if (nameless(ap)) continue;
+            conversations.push({
+              conversation_id: `new:${ap.id}`,
+              type: 'direct',
+              title: null,
+              avatar_url: null,
+              last_message_text: null,
+              last_message_at: null,
+              unread_count: 0,
+              is_pinned: false,
+              is_muted: false,
+              counterparty_id: ap.id,
+              counterparty_full_name: ap.full_name,
+              counterparty_username: ap.username,
+              counterparty_role: ap.role,
+              counterparty_avatar_url: ap.avatar_url,
+            });
+          }
+        }
+      }
     }
   }
 
