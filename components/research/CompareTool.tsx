@@ -1414,6 +1414,13 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSlugs.join(',')]);
 
+  // Keep swipeIndex in bounds when compounds are added or removed
+  useEffect(() => {
+    if (swipeIndex >= selectedSlugs.length && selectedSlugs.length > 0) {
+      setSwipeIndex(selectedSlugs.length - 1);
+    }
+  }, [selectedSlugs.length, swipeIndex]);
+
   // Feature 11: Haptic feedback utility
   function haptic(ms: number | number[] = 40) {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(ms);
