@@ -28,15 +28,18 @@ export default function AttributeRadarChart({
   size = 280,
   animated = true,
 }: Props) {
-  if (!data || data.length < 2) return null;
-
   const [hoveredAxis, setHoveredAxis] = useState<number | null>(null);
   const [progress, setProgress] = useState(animated ? 0 : 1);
   const rafRef = useRef<number>(0);
   const startRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!animated) { setProgress(1); return; }
+    if (!data || data.length < 2) return;
+    if (!animated) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setProgress(1);
+      return;
+    }
     setProgress(0);
     const duration = 800;
     const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -49,7 +52,9 @@ export default function AttributeRadarChart({
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [animated, data.length]);
+  }, [animated, data]);
+
+  if (!data || data.length < 2) return null;
 
   const center = size / 2;
   const radius = center * 0.65;

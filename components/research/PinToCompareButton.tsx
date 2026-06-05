@@ -80,6 +80,7 @@ export default function PinToCompareButton({
   }, [compoundSlug]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     sync();
     window.addEventListener('pnl:compare-changed', sync);
     window.addEventListener('storage', sync);

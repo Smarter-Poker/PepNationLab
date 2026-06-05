@@ -29,8 +29,8 @@ import { useRouter } from 'next/navigation';
 
 import { ProtocolScheduler } from '../research/ProtocolScheduler';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RESEARCH_AREAS, researchAreaLabel } from '../../lib/compounds';
-import { ShoppingCart, Plus, Minus, X, Star, AlertTriangle, Scale, Target, Activity, Sparkles, Search, ArrowRight, Compass, Check } from 'lucide-react';
+import { RESEARCH_AREAS } from '../../lib/compounds';
+import { ShoppingCart, X, Sparkles, ArrowRight, Compass, Check } from 'lucide-react';
 import type { Compound } from '@/lib/compounds';
 import AutocompleteDropdown, { type Suggestion } from '../research/AutocompleteDropdown';
 
@@ -119,15 +119,7 @@ const getRiskColor = (risk?: string | null) => {
 // Internal helpers
 // --------------------------------------------------------------------------
 
-/** Six static goal chips. Title Case, no emojis. */
-const EXAMPLE_GOALS: ReadonlyArray<{ label: string; goal: string }> = [
-  { label: 'Recovery',        goal: 'Recover Faster From Training And Injury' },
-  { label: 'Weight Management', goal: 'Reduce Body Fat And Improve Metabolic Health' },
-  { label: 'Sleep',           goal: 'Improve Sleep Quality And Circadian Rhythm' },
-  { label: 'Cognitive',       goal: 'Sharpen Focus And Cognitive Performance' },
-  { label: 'Anti-Aging',      goal: 'Healthspan And Anti-Aging Research' },
-  { label: 'Immune',          goal: 'Strengthen Immune Response And Resilience' },
-] as const;
+
 
 const RESEARCH_AREA_LABELS: Record<string, string> = {
   weight_management:   'Weight Management\n& Fat Loss',
@@ -856,10 +848,11 @@ function GuidedDiscoveryWizard({
 
   useEffect(() => {
     if (open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setStep(0);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setState(s => ({ ...s, area: availableAreas[0] || 'healing' }));
+      const timer = window.setTimeout(() => {
+        setStep(0);
+        setState(s => ({ ...s, area: availableAreas[0] || 'healing' }));
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [open, availableAreas]);
 
@@ -1221,6 +1214,7 @@ export default function DiscoveryHero({
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     const trimmed = query.trim();
     if (trimmed.length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSuggestions([]);
       return;
     }
