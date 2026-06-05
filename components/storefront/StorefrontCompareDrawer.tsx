@@ -1152,21 +1152,39 @@ export default function StorefrontCompareDrawer({
                         {pc?.pros.map((pro, i) => <div key={`pro-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><ThumbsUp size={11} color="#68D391" style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{pro}</span></div>)}
                         {pc?.cons.map((con, i) => <div key={`con-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><ThumbsDown size={11} color="#FC8181" style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{con}</span></div>)}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => dispatchAddToCart(p.productName)}
-                        style={{
-                          background: primaryColor, border: 'none', color: '#04221F',
-                          padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
-                          cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                          transition: 'opacity 0.2s',
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                        onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                      >
-                        <Zap size={12} /> Add To Cart
-                      </button>
+                      <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                          {p.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={p.imageUrl} alt={p.productName} width={28} height={28} style={{ borderRadius: 6, objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: 28, height: 28, borderRadius: 6, background: `${primaryColor}20` }} />
+                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#FFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</div>
+                            {p.pricePerVialDollars != null && (
+                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#68D391' }}>
+                                ${Number(p.pricePerVialDollars).toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => dispatchAddToCart(p.productName)}
+                          style={{
+                            background: primaryColor, border: 'none', color: '#04221F',
+                            padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
+                            cursor: 'pointer', width: '100%', textAlign: 'center',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                            transition: 'opacity 0.2s',
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                          <Zap size={12} /> Add To Cart
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -1210,21 +1228,39 @@ export default function StorefrontCompareDrawer({
                         {c?.is_glp1 && <div style={{ fontSize: '0.72rem', color: '#FFF', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> GLP-1 / Incretin Class</div>}
                         {c?.sources?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div><div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{c.sources.slice(0, 3).map((src, si) => <a key={si} href={src.startsWith('http') ? src : undefined} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.68rem', color: '#FFF', opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>{src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si+1}</span> : src}</a>)}</div></div> : null}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => dispatchAddToCart(p.productName)}
-                        style={{
-                          background: primaryColor, border: 'none', color: '#04221F',
-                          padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
-                          cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                          transition: 'opacity 0.2s',
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                        onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                      >
-                        <Zap size={12} /> Add To Cart
-                      </button>
+                      <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                          {p.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={p.imageUrl} alt={p.productName} width={28} height={28} style={{ borderRadius: 6, objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: 28, height: 28, borderRadius: 6, background: `${primaryColor}20` }} />
+                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#FFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</div>
+                            {p.pricePerVialDollars != null && (
+                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#68D391' }}>
+                                ${Number(p.pricePerVialDollars).toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => dispatchAddToCart(p.productName)}
+                          style={{
+                            background: primaryColor, border: 'none', color: '#04221F',
+                            padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
+                            cursor: 'pointer', width: '100%', textAlign: 'center',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                            transition: 'opacity 0.2s',
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                          <Zap size={12} /> Add To Cart
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -1267,21 +1303,39 @@ export default function StorefrontCompareDrawer({
                         {c?.handling?.notes && <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, borderLeft: '2px solid rgba(255,255,255,0.08)', paddingLeft: 6 }}>{c.handling.notes}</div>}
                         {c?.coa_url && <a href={c.coa_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: color === primaryColor ? '#FFF' : color, textDecoration: 'none', fontWeight: 700 }}><BookOpen size={11} /> View COA</a>}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => dispatchAddToCart(p.productName)}
-                        style={{
-                          background: primaryColor, border: 'none', color: '#04221F',
-                          padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
-                          cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                          transition: 'opacity 0.2s',
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                        onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                      >
-                        <Zap size={12} /> Add To Cart
-                      </button>
+                      <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                          {p.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={p.imageUrl} alt={p.productName} width={28} height={28} style={{ borderRadius: 6, objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: 28, height: 28, borderRadius: 6, background: `${primaryColor}20` }} />
+                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#FFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</div>
+                            {p.pricePerVialDollars != null && (
+                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#68D391' }}>
+                                ${Number(p.pricePerVialDollars).toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => dispatchAddToCart(p.productName)}
+                          style={{
+                            background: primaryColor, border: 'none', color: '#04221F',
+                            padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
+                            cursor: 'pointer', width: '100%', textAlign: 'center',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                            transition: 'opacity 0.2s',
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                          <Zap size={12} /> Add To Cart
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -1312,21 +1366,39 @@ export default function StorefrontCompareDrawer({
                               <div style={{ fontWeight: 900, fontSize: '0.92rem', color: 'var(--white)', marginBottom: 4 }}>{v.item.p.productName}</div>
                               <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{v.reason}</div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => dispatchAddToCart(v.item.p.productName)}
-                              style={{
-                                background: v.color, border: 'none', color: '#04221F',
-                                padding: '6px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.74rem',
-                                cursor: 'pointer', marginTop: 'auto', width: '100%', textAlign: 'center',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                                transition: 'opacity 0.2s',
-                              }}
-                              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                            >
-                              <Zap size={11} /> Add To Cart
-                            </button>
+                            <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: `1px solid ${v.color}20` }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                {v.item.p.imageUrl ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={v.item.p.imageUrl} alt={v.item.p.productName} width={28} height={28} style={{ borderRadius: 6, objectFit: 'cover' }} />
+                                ) : (
+                                  <div style={{ width: 28, height: 28, borderRadius: 6, background: `${v.color}20` }} />
+                                )}
+                                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#FFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.item.p.productName}</div>
+                                  {v.item.p.pricePerVialDollars != null && (
+                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#68D391' }}>
+                                      ${Number(v.item.p.pricePerVialDollars).toFixed(2)}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => dispatchAddToCart(v.item.p.productName)}
+                                style={{
+                                  background: v.color, border: 'none', color: '#04221F',
+                                  padding: '6px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.74rem',
+                                  cursor: 'pointer', width: '100%', textAlign: 'center',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                                  transition: 'opacity 0.2s',
+                                }}
+                                onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                              >
+                                <Zap size={11} /> Add To Cart
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
