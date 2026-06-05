@@ -549,25 +549,31 @@ export default function MonographTabs({ compound, related = [] }: Props) {
             )}
 
             {/* External ID quick links in mechanism tab */}
-            {((compound as unknown as Record<string, unknown>).chembl_id || (compound as unknown as Record<string, unknown>).uniprot_id) && (
-              <>
-                <SectionDivider title="Database References" />
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {(compound as unknown as Record<string, unknown>).chembl_id && (
-                    <a href={`https://www.ebi.ac.uk/chembl/compound_report_card/${(compound as unknown as Record<string, unknown>).chembl_id}/`} target="_blank" rel="noopener noreferrer"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color: teal, textDecoration: 'none', fontWeight: 700, padding: '5px 10px', borderRadius: 6, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)' }}>
-                      <ExternalLink size={12} /> ChEMBL: {(compound as unknown as Record<string, unknown>).chembl_id as string}
-                    </a>
-                  )}
-                  {(compound as unknown as Record<string, unknown>).uniprot_id && (
-                    <a href={`https://www.uniprot.org/uniprotkb/${(compound as unknown as Record<string, unknown>).uniprot_id}/entry`} target="_blank" rel="noopener noreferrer"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color: '#9F7AEA', textDecoration: 'none', fontWeight: 700, padding: '5px 10px', borderRadius: 6, background: 'rgba(159,122,234,0.08)', border: '1px solid rgba(159,122,234,0.2)' }}>
-                      <ExternalLink size={12} /> UniProt: {(compound as unknown as Record<string, unknown>).uniprot_id as string}
-                    </a>
-                  )}
-                </div>
-              </>
-            )}
+            {(() => {
+              const ext = compound as unknown as Record<string, unknown>;
+              const chemblId = typeof ext.chembl_id === 'string' ? ext.chembl_id : null;
+              const uniprotId = typeof ext.uniprot_id === 'string' ? ext.uniprot_id : null;
+              if (!chemblId && !uniprotId) return null;
+              return (
+                <>
+                  <SectionDivider title="Database References" />
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {chemblId && (
+                      <a href={`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblId}/`} target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color: teal, textDecoration: 'none', fontWeight: 700, padding: '5px 10px', borderRadius: 6, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)' }}>
+                        <ExternalLink size={12} /> ChEMBL: {chemblId}
+                      </a>
+                    )}
+                    {uniprotId && (
+                      <a href={`https://www.uniprot.org/uniprotkb/${uniprotId}/entry`} target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color: '#9F7AEA', textDecoration: 'none', fontWeight: 700, padding: '5px 10px', borderRadius: 6, background: 'rgba(159,122,234,0.08)', border: '1px solid rgba(159,122,234,0.2)' }}>
+                        <ExternalLink size={12} /> UniProt: {uniprotId}
+                      </a>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
 

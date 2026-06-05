@@ -1923,12 +1923,15 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 const allKeys = [...new Set(selected.flatMap(c => Object.keys(c.efficacy_scores ?? {})))];
                 const leaders: { domain: string; compound: string; score: number; color: string }[] = [];
                 allKeys.forEach(key => {
-                  let best: { c: Compound; v: number; idx: number } | null = null;
+                  let bestIdx = -1;
+                  let bestVal = -Infinity;
                   selected.forEach((c, i) => {
                     const v = (c.efficacy_scores ?? {})[key];
-                    if (v != null && (best === null || v > best.v)) best = { c, v, idx: i };
+                    if (v != null && v > bestVal) { bestVal = v; bestIdx = i; }
                   });
-                  if (best && best.v >= 70) leaders.push({ domain: key.replace(/_/g, ' '), compound: best.c.display_name, score: best.v, color: colors[best.idx % colors.length] });
+                  if (bestIdx >= 0 && bestVal >= 70) {
+                    leaders.push({ domain: key.replace(/_/g, ' '), compound: selected[bestIdx].display_name, score: bestVal, color: colors[bestIdx % colors.length] });
+                  }
                 });
                 if (!leaders.length) return null;
                 // Group by compound
@@ -2464,6 +2467,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 </tbody>
               </table>
             </div>
+          </div>
           )}
           </>
         )}
