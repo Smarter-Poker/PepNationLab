@@ -1668,6 +1668,14 @@ export default function DiscoveryHero({
         onAddToCart={(id) => { setDrawerOpen(false); onAddToCart(id); }}
         onOpenProduct={(id) => { setDrawerOpen(false); onOpenProduct(id); }}
       />
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media (min-width: 769px) {
+          #discovery-search-input {
+            font-size: calc(max(16px, 1.86vw) * 1.5) !important;
+            padding: 14px 10px 0 76px !important;
+          }
+        }
+      ` }} />
     </>
   );
 }
