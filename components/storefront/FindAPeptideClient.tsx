@@ -1,0 +1,286 @@
+'use client';
+
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ShoppingCart } from 'lucide-react';
+import { toast } from 'sonner';
+import DiscoveryHero, { type MatchedProduct } from './StorefrontDiscovery';
+import { getProductImage } from '@/lib/categoryImage';
+import type { Compound } from '@/lib/compounds';
+
+interface ProductItem {
+  id: string;
+  product_id: string;
+  custom_name: string | null;
+  custom_description: string | null;
+  custom_image_url: string | null;
+  retail_price: number;
+  products: {
+    name: string;
+    description: string;
+    image_url: string | null;
+    category: string;
+    backorder_days: number;
+    unit_size: string | null;
+    unit_measure: string | null;
+    weight_oz: number | null;
+    inventory_count?: number | null;
+    low_stock_threshold?: number | null;
+    compound_slug?: string | null;
+  };
+}
+
+interface Props {
+  products: ProductItem[];
+  agentSlug: string;
+  primaryColor: string;
+  compoundsBySlug: Record<string, Compound>;
+  isStorefrontOwner: boolean;
+}
+
+interface GroupedProduct {
+  name: string;
+  category: string;
+  desc: string;
+  imageUrl: string | null;
+  variants: ProductItem[];
+  lowestPrice: number;
+  compoundSlug: string | null;
+}
+
+export default function FindAPeptideClient({
+  products,
+  agentSlug,
+  primaryColor,
+  compoundsBySlug,
+  isStorefrontOwner,
+}: Props) {
+  const router = useRouter();
+  const [cartItems, setCartItems] = useState<Record<string, number>>({});
+  const firstCartSave = useRef(true);
+
+  // Load cart on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`cart_${agentSlug}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          setCartItems(parsed);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [agentSlug]);
+
+  // Group products for resolving matches
+  const grouped = useMemo(() => {
+    const map = new Map<string, GroupedProduct>();
+    products.forEach(item => {
+      const name = item.products?.name ?? 'Research Compound';
+      if (!map.has(name)) {
+        map.set(name, {
+          name,
+          category: item.products?.category || 'Other',
+          desc: item.custom_description ?? item.products?.description ?? '',
+          imageUrl: getProductImage(
+            item.custom_image_url ?? item.products?.image_url ?? null,
+            item.products?.category || 'Other',
+            name,
+          ),
+          variants: [],
+          lowestPrice: item.retail_price || 0,
+          compoundSlug: item.products?.compound_slug ?? null,
+        });
+      }
+      const group = map.get(name)!;
+      group.variants.push(item);
+      if (item.retail_price < group.lowestPrice) {
+        group.lowestPrice = item.retail_price;
+      }
+    });
+
+    for (const group of map.values()) {
+      group.variants.sort((a, b) => {
+        const aSize = parseFloat(a.products?.unit_size || '0');
+        const bSize = parseFloat(b.products?.unit_size || '0');
+        return aSize - bSize;
+      });
+    }
+
+    return Array.from(map.values());
+  }, [products]);
+
+  // Sync cart to localStorage and check out compatibility
+  useEffect(() => {
+    if (firstCartSave.current) {
+      firstCartSave.current = false;
+      return;
+    }
+    try {
+      localStorage.setItem(`cart_${agentSlug}`, JSON.stringify(cartItems));
+
+      const pnlCart = Object.entries(cartItems)
+        .filter(([, qty]) => qty > 0)
+        .map(([vId, qty]) => {
+          const item = products.find(p => p.id === vId);
+          if (!item) return null;
+          const perVial = item.retail_price / 10;
+          const costPerVial = isStorefrontOwner && (item as any).cost_price != null
+            ? Number((item as any).cost_price) / 10
+            : perVial;
+          const sizeLabel = item.products?.unit_size
+            ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
+            : '';
+          return {
+            id: item.product_id,
+            name: `${item.products?.name || 'Product'} ${sizeLabel}`.trim(),
+            sku: item.product_id,
+            quantity: qty,
+            retailPrice: perVial,
+            costPrice: costPerVial,
+            weightOz: Number(item.products?.weight_oz) || 0.5,
+            agentSelfBuy: isStorefrontOwner,
+          };
+        }).filter(Boolean);
+
+      localStorage.setItem(`pnl_storefront_cart_${agentSlug}`, JSON.stringify({
+        items: pnlCart,
+        _savedAt: Date.now(),
+      }));
+    } catch {
+      // ignore
+    }
+  }, [cartItems, agentSlug, products, isStorefrontOwner]);
+
+  const addToCart = useCallback((variantId: string) => {
+    const item = products.find(p => p.id === variantId);
+    if (!item) return;
+    const maxQty = item.products?.inventory_count || 999;
+    
+    setCartItems(prev => {
+      const currentQty = prev[variantId] || 0;
+      if (currentQty >= maxQty) {
+        toast.error(`Maximum available stock (${maxQty}) reached.`);
+        return prev;
+      }
+      toast.success(`${item.products?.name || 'Product'} Added To Cart`);
+      return { ...prev, [variantId]: currentQty + 1 };
+    });
+  }, [products]);
+
+  const resolveProducts = useCallback((slugs: string[]) => {
+    const out: MatchedProduct[] = [];
+    for (const slug of slugs) {
+      const grp = grouped.find(g => g.compoundSlug === slug);
+      if (!grp) {
+        out.push({
+          product_id: '',
+          display_name: slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+          compound_slug: slug,
+          price_cents: 0,
+          evidence_tier: null,
+          rationale: '',
+          image_url: null,
+          in_stock: false,
+        });
+        continue;
+      }
+      const v0 = grp.variants[0];
+      const priceDollars = grp.lowestPrice || 0;
+      const evTier = compoundsBySlug?.[slug]?.evidence_tier ?? null;
+      out.push({
+        product_id: v0?.id || '',
+        display_name: grp.name,
+        compound_slug: slug,
+        price_cents: Math.round(priceDollars * 100),
+        evidence_tier: evTier,
+        rationale: '',
+        image_url: grp.imageUrl,
+        in_stock: true,
+      });
+    }
+    return out;
+  }, [grouped, compoundsBySlug]);
+
+  const totalCartItems = useMemo(() => {
+    return Object.values(cartItems).reduce((sum, qty) => sum + qty, 0);
+  }, [cartItems]);
+
+  return (
+    <div style={{ position: 'relative', width: '100%', padding: '0 var(--space-4)', boxSizing: 'border-box' }}>
+      <DiscoveryHero
+        compoundsBySlug={compoundsBySlug}
+        primaryColor={primaryColor}
+        onSelectArea={(area) => {
+          router.push(`/${agentSlug}?area=${encodeURIComponent(area)}`);
+        }}
+        onSearchStarted={(query) => {
+          router.push(`/${agentSlug}?q=${encodeURIComponent(query || '')}`);
+        }}
+        onAlreadyKnowClicked={() => {
+          router.push(`/${agentSlug}`);
+        }}
+        onAddToCart={addToCart}
+        onOpenProduct={(productId) => {
+          router.push(`/${agentSlug}?product=${encodeURIComponent(productId)}`);
+        }}
+        resolveProducts={resolveProducts}
+      />
+
+      {totalCartItems > 0 && (
+        <Link
+          href={`/checkout?agent=${encodeURIComponent(agentSlug)}`}
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            backgroundColor: '#C0C5CE',
+            color: '#0A1018',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.6), 0 0 0 2px rgba(255,255,255,0.1)',
+            zIndex: 999,
+            transition: 'transform 0.2s ease, background-color 0.2s ease',
+            cursor: 'pointer',
+          }}
+          className="floating-cart-btn"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.05)';
+            e.currentTarget.style.backgroundColor = '#DCD4C4';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.backgroundColor = '#C0C5CE';
+          }}
+        >
+          <ShoppingCart size={24} />
+          <span style={{
+            position: 'absolute',
+            top: '-4px',
+            right: '-4px',
+            background: '#00C4BC',
+            color: '#000000',
+            borderRadius: '50%',
+            width: '22px',
+            height: '22px',
+            fontSize: '0.75rem',
+            fontWeight: 900,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+          }}>
+            {totalCartItems}
+          </span>
+        </Link>
+      )}
+    </div>
+  );
+}
