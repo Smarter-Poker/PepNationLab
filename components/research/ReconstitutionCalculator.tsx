@@ -1,13 +1,13 @@
 'use client';
 
 /**
- * ReconstitutionCalculator — lab preparation tool (NOT dosing guidance).
- * Two modes:
- *   - "Add Diluent": enter vial mass + diluent volume; shows resulting
- *     concentration and a draw-volume table for example masses.
- *   - "Target Concentration": enter vial mass + desired concentration; shows
- *     the diluent volume to add.
- * All math comes from the pure helpers in `@/lib/compounds`.
+ * ReconstitutionCalculator — Lab Preparation Tool (NOT Dosing Guidance).
+ * Two Modes:
+ *   - "Add Diluent": Enter Vial Mass + Diluent Volume; Shows Resulting
+ *     Concentration And A Draw-Volume Table For Example Masses.
+ *   - "Target Concentration": Enter Vial Mass + Desired Concentration; Shows
+ *     The Diluent Volume To Add.
+ * All Math Comes From The Pure Helpers In `@/lib/compounds`.
  */
 import { useState } from 'react';
 import Link from 'next/link';
@@ -15,12 +15,52 @@ import { drawVolumeMl, reconstitutionVolumeMl } from '@/lib/compounds';
 
 const EXAMPLE_DRAW_MASSES_MG = [0.25, 0.5, 1, 2, 5];
 
+const inputStyleBase: React.CSSProperties = {
+  width: '100%',
+  height: '46px',
+  boxSizing: 'border-box',
+  background: 'rgba(255, 255, 255, 0.04)', // Semi-transparent glassmorphic background
+  backdropFilter: 'blur(12px)',
+  border: '1px solid rgba(255, 255, 255, 0.08)',
+  color: '#F3F4F6',
+  padding: '0 16px',
+  borderRadius: 8,
+  fontSize: 15,
+  fontFamily: 'monospace',
+  outline: 'none',
+  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+};
+
+function StyledInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  return (
+    <input 
+      {...props}
+      onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
+      onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        ...inputStyleBase,
+        borderColor: focused ? '#00E5FF' : hovered ? 'rgba(0, 229, 255, 0.35)' : 'rgba(255, 255, 255, 0.08)',
+        boxShadow: focused 
+          ? '0 0 12px rgba(0, 229, 255, 0.25), inset 0 2px 4px rgba(0,0,0,0.5)' 
+          : hovered 
+            ? '0 0 8px rgba(0, 229, 255, 0.1), inset 0 2px 4px rgba(0,0,0,0.2)' 
+            : 'inset 0 2px 4px rgba(0,0,0,0.2)',
+        ...props.style
+      }}
+    />
+  );
+}
+
 export default function ReconstitutionCalculator({
   defaultMassMg,
   onAddDiluent,
 }: {
   defaultMassMg?: number;
-  /** When provided, the diluent CTA becomes an "Add Bacteriostatic Water To Cart" button. */
+  /** When Provided, The Diluent CTA Becomes An "Add Bacteriostatic Water To Cart" Button. */
   onAddDiluent?: () => void;
 }) {
   const [mode, setMode] = useState<'diluent' | 'target'>('diluent');
@@ -36,50 +76,45 @@ export default function ReconstitutionCalculator({
     isFinite(mass) && isFinite(diluent) && diluent > 0 ? mass / diluent : null;
   const targetVolume = reconstitutionVolumeMl(mass, target);
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '8px 10px',
-    background: 'var(--black)',
-    border: '1px solid var(--grey-400)',
-    borderRadius: 'var(--radius-md)',
-    color: 'var(--white)',
-    fontSize: '0.9rem',
-  };
   const labelStyle: React.CSSProperties = {
     display: 'block',
     fontSize: '0.8rem',
     fontWeight: 700,
-    color: 'var(--silver)',
-    marginBottom: '4px',
+    color: '#9CA3AF',
+    marginBottom: '8px',
+    letterSpacing: '0.05em',
   };
   const tabBase: React.CSSProperties = {
-    padding: '6px 12px',
-    fontSize: '0.78rem',
+    padding: '8px 16px',
+    fontSize: '0.85rem',
     fontWeight: 700,
-    borderRadius: 'var(--radius-md)',
+    borderRadius: 8,
     cursor: 'pointer',
-    border: '1px solid var(--teal)',
+    border: '1px solid #00E5FF',
     background: 'transparent',
-    color: 'var(--silver)',
+    color: '#A8B2C1',
+    transition: 'all 0.2s',
   };
-  const tabActive: React.CSSProperties = { background: 'var(--teal)', color: 'var(--black)' };
+  const tabActive: React.CSSProperties = { background: '#00E5FF', color: '#000000' };
 
   return (
     <div
+      className="calc-container"
       style={{
-        border: '1px solid var(--grey-400)',
-        borderRadius: 'var(--radius-lg)',
-        padding: 'var(--space-4)',
-        background: 'var(--black)',
+        border: '1px solid rgba(0, 229, 255, 0.2)',
+        borderRadius: 16,
+        padding: 24,
+        background: 'radial-gradient(circle at 50% 0%, #111622 0%, #080a0f 100%)',
+        boxShadow: '0 16px 40px rgba(0,0,0,0.7), 0 0 24px rgba(0, 229, 255, 0.04)',
       }}
     >
-      <div style={{ marginBottom: 'var(--space-2)' }}>
-        <strong style={{ color: 'var(--teal)', fontSize: '0.95rem' }}>
+      <div style={{ marginBottom: 16 }}>
+        <strong style={{ color: '#00E5FF', fontSize: '0.95rem' }}>
           Lab Preparation Tool - Not Dosing Guidance
         </strong>
       </div>
 
-      <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
         <button
           type="button"
           onClick={() => setMode('diluent')}
@@ -96,12 +131,12 @@ export default function ReconstitutionCalculator({
         </button>
       </div>
 
-      <div className="grid-2" style={{ gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         <div>
           <label style={labelStyle} htmlFor="recon-mass">
-            Vial Amount (mg)
+            Vial Amount (<span className="calc-no-capitalize">mg</span>)
           </label>
-          <input
+          <StyledInput
             id="recon-mass"
             type="number"
             inputMode="decimal"
@@ -109,16 +144,15 @@ export default function ReconstitutionCalculator({
             step="any"
             value={massMg}
             onChange={(e) => setMassMg(e.target.value)}
-            style={inputStyle}
           />
         </div>
 
         {mode === 'diluent' ? (
           <div>
             <label style={labelStyle} htmlFor="recon-diluent">
-              Bacteriostatic Water To Add (mL)
+              Bacteriostatic Water To Add (<span className="calc-no-capitalize">mL</span>)
             </label>
-            <input
+            <StyledInput
               id="recon-diluent"
               type="number"
               inputMode="decimal"
@@ -126,15 +160,14 @@ export default function ReconstitutionCalculator({
               step="any"
               value={diluentMl}
               onChange={(e) => setDiluentMl(e.target.value)}
-              style={inputStyle}
             />
           </div>
         ) : (
           <div>
             <label style={labelStyle} htmlFor="recon-target">
-              Target Concentration (mg/mL)
+              Target Concentration (<span className="calc-no-capitalize">mg/mL</span>)
             </label>
-            <input
+            <StyledInput
               id="recon-target"
               type="number"
               inputMode="decimal"
@@ -142,7 +175,6 @@ export default function ReconstitutionCalculator({
               step="any"
               value={targetConc}
               onChange={(e) => setTargetConc(e.target.value)}
-              style={inputStyle}
             />
           </div>
         )}
@@ -150,10 +182,12 @@ export default function ReconstitutionCalculator({
 
       {mode === 'diluent' ? (
         <>
-          <p style={{ color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
+          <p style={{ color: '#E5E7EB', marginBottom: 16 }}>
             Resulting Concentration:{' '}
-            <strong style={{ color: 'var(--teal)' }}>
-              {concentration != null ? `${concentration.toFixed(3)} mg/mL` : '-'}
+            <strong style={{ color: '#00E5FF' }}>
+              {concentration != null ? (
+                <span className="calc-no-capitalize">{concentration.toFixed(3)} mg/mL</span>
+              ) : '-'}
             </strong>
           </p>
 
@@ -161,9 +195,9 @@ export default function ReconstitutionCalculator({
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr>
-                  <th style={thStyle}>Example Mass (mg)</th>
-                  <th style={thStyle}>Volume To Draw (mL)</th>
-                  <th style={thStyle}>Units (U-100 Syringe)</th>
+                  <th style={thStyle}>Example Mass (<span className="calc-no-capitalize">mg</span>)</th>
+                  <th style={thStyle}>Volume To Draw (<span className="calc-no-capitalize">mL</span>)</th>
+                  <th style={thStyle}>Units (<span className="calc-no-capitalize">U-100</span> Syringe)</th>
                 </tr>
               </thead>
               <tbody>
@@ -176,9 +210,9 @@ export default function ReconstitutionCalculator({
                     : `${Math.round(units)}`;
                   return (
                     <tr key={dm}>
-                      <td style={tdStyle}>{dm}</td>
-                      <td style={tdStyle}>{vol != null ? vol.toFixed(3) : '-'}</td>
-                      <td style={tdStyle}>{unitsDisplay}</td>
+                      <td style={tdStyle} className="calc-no-capitalize">{dm}</td>
+                      <td style={tdStyle} className="calc-no-capitalize">{vol != null ? vol.toFixed(3) : '-'}</td>
+                      <td style={tdStyle} className="calc-no-capitalize">{unitsDisplay}</td>
                     </tr>
                   );
                 })}
@@ -187,10 +221,12 @@ export default function ReconstitutionCalculator({
           </div>
         </>
       ) : (
-        <p style={{ color: 'var(--silver)' }}>
+        <p style={{ color: '#E5E7EB' }}>
           Bacteriostatic Water To Add:{' '}
-          <strong style={{ color: 'var(--teal)' }}>
-            {targetVolume != null ? `${targetVolume.toFixed(3)} mL` : '-'}
+          <strong style={{ color: '#00E5FF' }}>
+            {targetVolume != null ? (
+              <span className="calc-no-capitalize">{targetVolume.toFixed(3)} mL</span>
+            ) : '-'}
           </strong>
         </p>
       )}
@@ -200,26 +236,33 @@ export default function ReconstitutionCalculator({
           type="button"
           onClick={onAddDiluent}
           style={{
-            marginTop: 'var(--space-3)',
+            marginTop: 16,
             display: 'inline-flex',
             alignItems: 'center',
             gap: 8,
             padding: '10px 16px',
-            borderRadius: 'var(--radius-md)',
-            background: 'var(--teal)',
-            color: '#04221F',
+            borderRadius: 8,
+            background: '#00E5FF',
+            color: '#000000',
             border: 'none',
             fontWeight: 800,
             fontSize: '0.85rem',
             cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = '0 0 12px rgba(0, 229, 255, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = 'none';
           }}
         >
           Add Bacteriostatic Water To Cart
         </button>
       ) : (
-        <p style={{ marginTop: 'var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)' }}>
+        <p style={{ marginTop: 16, fontSize: '0.82rem', color: '#9CA3AF' }}>
           Need Diluent?{' '}
-          <Link href="/research/calculators#reconstitution" style={{ color: 'var(--teal)', fontWeight: 700 }}>
+          <Link href="/research/calculators#reconstitution" style={{ color: '#00E5FF', fontWeight: 700 }}>
             See Reconstitution Calculator.
           </Link>
         </p>
@@ -231,12 +274,12 @@ export default function ReconstitutionCalculator({
 const thStyle: React.CSSProperties = {
   textAlign: 'left',
   padding: '6px 8px',
-  borderBottom: '1px solid var(--grey-400)',
-  color: 'var(--silver)',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+  color: '#A8B2C1',
   fontWeight: 700,
 };
 const tdStyle: React.CSSProperties = {
   padding: '6px 8px',
-  borderBottom: '1px solid rgba(168,180,192,0.15)',
-  color: 'var(--white)',
+  borderBottom: '1px solid rgba(168,180,192,0.1)',
+  color: '#FFFFFF',
 };
