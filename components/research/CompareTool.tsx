@@ -1575,73 +1575,136 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                   </tr>
                 </thead>
                 <tbody>
-                  {ROWS.map(row => {
-                    if (row.kind === 'group') {
-                      const isCollapsed = collapsedGroups.has(row.label);
-                      return (
-                        <tr key={`g-${row.label}`} onClick={() => toggleGroup(row.label)}>
-                          <td style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10 }} colSpan={colSpan}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                              {isCollapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
-                              {row.label}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    }
+                  {(() => {
+                    const visibleRows: typeof ROWS = [];
+                    let currentGroupRow: typeof ROWS[number] | null = null;
+                    let currentGroupHasChildren = false;
 
-                    let currentGroup = '';
-                    const rowIdx = ROWS.indexOf(row);
-                    for (let i = rowIdx; i >= 0; i--) { if (ROWS[i].kind === 'group') { currentGroup = ROWS[i].label; break; } }
-                    if (collapsedGroups.has(currentGroup)) return null;
+                    for (const row of ROWS) {
+                      if (row.kind === 'group') {
+                        if (currentGroupRow && currentGroupHasChildren) {
+                          visibleRows.push(currentGroupRow);
+                        }
+                        currentGroupRow = row;
+                        currentGroupHasChildren = false;
+                      } else {
+                        // Check if group is collapsed
+                        let parentGroup = '';
+                        const rowIdx = ROWS.indexOf(row);
+                        for (let i = rowIdx; i >= 0; i--) {
+                          if (ROWS[i].kind === 'group') {
+                            parentGroup = ROWS[i].label;
+                            break;
+                          }
+                        }
+                        if (collapsedGroups.has(parentGroup)) {
+                          continue;
+                        }
 
-                    const values = displayedSelected.map(c => row.getValue(c));
-                    const allSame = values.every(v => v === values[0]);
-                    const isDiff = !allSame && displayedSelected.length > 1;
-
-                    if (hideIdentical && allSame && displayedSelected.length > 1) return null;
-
-                    const trStyle: React.CSSProperties = {};
-                    const tdLabelStyle: React.CSSProperties = { ...labelCellStyle };
-                    const valueCellStyle: React.CSSProperties = { ...cellStyle };
-
-                    if (diffMode) {
-                      if (isDiff) { trStyle.background = 'rgba(0,196,188,0.07)'; tdLabelStyle.background = 'linear-gradient(rgba(0,196,188,0.07),rgba(0,196,188,0.07)),#162230'; }
-                      else { tdLabelStyle.color = 'rgba(168,180,192,0.25)'; valueCellStyle.opacity = 0.25; }
-                    }
-
-                    const bestIndices: number[] = [];
-                    if (row.bestLogic && displayedSelected.length > 1 && !allSame) {
-                      const rawScores = displayedSelected.map(c => row.getRawScore ? row.getRawScore(c) : 0);
-                      const valid = rawScores.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
-                      if (valid.length > 0) {
-                        const best = row.bestLogic === 'max' ? Math.max(...valid) : Math.min(...valid);
-                        rawScores.forEach((s, i) => { if (s === best) bestIndices.push(i); });
+                        const values = displayedSelected.map(c => row.getValue(c));
+                        const allSame = values.every(v => v === values[0]);
+                        const isVisible = !(hideIdentical && allSame && displayedSelected.length > 1);
+                        if (isVisible) {
+                          currentGroupHasChildren = true;
+                          visibleRows.push(row);
+                        }
                       }
                     }
+                    if (currentGroupRow && currentGroupHasChildren) {
+                      visibleRows.push(currentGroupRow);
+                    }
 
-                    return (
-                      <tr key={row.label} style={trStyle} className="ct-row-hover">
-                        <td style={tdLabelStyle}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            {row.label}
-                            {row.glossaryTerm && <InCellGlossaryTooltip term={row.glossaryTerm} />}
-                          </div>
-                        </td>
-                        {displayedSelected.map((c, idx) => {
-                          const isWinner = bestIndices.includes(idx);
-                          return (
-                            <td key={c.slug} style={{ ...valueCellStyle, position: 'relative' }}>
-                              {isWinner && <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.6rem', background: '#00C4BC', color: '#04221F', padding: '1px 5px', borderRadius: 3, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}><Trophy size={9} /> Top Pick</div>}
-                              <div style={isWinner ? { borderLeft: '2px solid #00C4BC', paddingLeft: 7, marginLeft: -8 } : {}}>
-                                {row.render(c, maxHalfLife)}
+                    const controlCompound = displayedSelected.find(x => x.slug === controlSlug);
+
+                    return visibleRows.map((row) => {
+                      const rIdx = ROWS.indexOf(row);
+                      if (row.kind === 'group') {
+                        const isCollapsed = collapsedGroups.has(row.label);
+                        return (
+                          <tr key={`g-${row.label}`} onClick={() => toggleGroup(row.label)}>
+                            <td style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10 }} colSpan={colSpan}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                                {isCollapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+                                {row.label}
                               </div>
                             </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
+                          </tr>
+                        );
+                      }
+
+                      // Check collapsed state for parent group
+                      let currentGroupLabel = '';
+                      for (let i = rIdx; i >= 0; i--) {
+                        if (ROWS[i].kind === 'group') {
+                          currentGroupLabel = ROWS[i].label;
+                          break;
+                        }
+                      }
+
+                      if (collapsedGroups.has(currentGroupLabel)) {
+                        return null;
+                      }
+
+                      // Check differences
+                      const values = displayedSelected.map(c => row.getValue(c));
+                      const allSame = values.every(v => v === values[0]);
+                      const isDiff = !allSame && displayedSelected.length > 1;
+
+                      const trStyle: React.CSSProperties = {};
+                      const tdLabelStyle: React.CSSProperties = { ...labelCellStyle };
+                      const valueCellStyle: React.CSSProperties = { ...cellStyle };
+
+                      if (diffMode) {
+                        if (isDiff) {
+                          trStyle.background = 'rgba(0,196,188,0.07)';
+                          tdLabelStyle.background = 'linear-gradient(rgba(0,196,188,0.07),rgba(0,196,188,0.07)),#162230';
+                        } else {
+                          tdLabelStyle.color = 'rgba(168,180,192,0.25)';
+                          valueCellStyle.opacity = 0.25;
+                        }
+                      }
+
+                      // Winner Engine Calculation
+                      const bestIndices: number[] = [];
+                      if (row.bestLogic && displayedSelected.length > 1 && !allSame) {
+                        const rawScores = displayedSelected.map(c => row.getRawScore ? row.getRawScore(c) : 0);
+                        const valid = rawScores.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
+                        if (valid.length > 0) {
+                          const best = row.bestLogic === 'max' ? Math.max(...valid) : Math.min(...valid);
+                          rawScores.forEach((s, i) => {
+                            if (s === best) bestIndices.push(i);
+                          });
+                        }
+                      }
+
+                      return (
+                        <tr key={row.label} style={trStyle} className="ct-row-hover">
+                          <td style={tdLabelStyle}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              {row.label}
+                              {row.glossaryTerm && <InCellGlossaryTooltip term={row.glossaryTerm} />}
+                            </div>
+                          </td>
+                          {displayedSelected.map((c, idx) => {
+                            const isWinner = bestIndices.includes(idx);
+                            return (
+                              <td key={c.slug} style={{ ...valueCellStyle, position: 'relative' }}>
+                                {isWinner && (
+                                  <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.65rem', background: '#00C4BC', color: '#04221F', padding: '1px 5px', borderRadius: 3, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                                    <Trophy size={9} /> Top Pick
+                                  </div>
+                                )}
+                                <div style={isWinner ? { borderLeft: '2px solid #00C4BC', paddingLeft: 7, marginLeft: -8 } : {}}>
+                                  {row.render(c, maxHalfLife)}
+                                  {controlCompound && renderRelativeDelta(row.label, c, controlCompound)}
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>

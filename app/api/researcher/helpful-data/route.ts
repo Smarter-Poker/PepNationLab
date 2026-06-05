@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     // Collect all unique product IDs from orders and their most recent purchase date
     const purchasedProducts = new Map<string, string>();
     for (const order of (orders || [])) {
-      const items = (order.items as any[]) || [];
+      const items = (order.items as Array<{ product_id?: string }>) || [];
       for (const item of items) {
         if (item.product_id && !purchasedProducts.has(item.product_id)) {
           purchasedProducts.set(item.product_id, order.created_at);
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
     if (pError) throw pError;
 
     const slugs = Array.from(new Set((products || []).map(p => p.slug).filter(Boolean)));
-    let compoundsBySlug: Record<string, any> = {};
+    const compoundsBySlug: Record<string, { slug: string; half_life: string | null; mechanism: string | null; best_stacked_with: string[] | null }> = {};
     if (slugs.length > 0) {
       const { data: compounds } = await supabase
         .from('compounds')

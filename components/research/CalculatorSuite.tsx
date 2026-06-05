@@ -344,6 +344,7 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
 
   useEffect(() => {
     if (isIgf) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDiluentType('acetic-acid');
     } else {
       setDiluentType('bac-water');
@@ -460,7 +461,7 @@ Recommended Syringe Draw: ${drawMl !== null && isFinite(drawMl) ? Math.round(dra
   );
 }
 
-function TubesRack({ steps, currentStep, onSelectStep }: { steps: any[]; currentStep: number; onSelectStep: (idx: number) => void }) {
+function TubesRack({ steps, currentStep, onSelectStep }: { steps: Array<{ stepNumber: number; concentration: number; transferVolumeMl?: number; diluentVolumeMl?: number }>; currentStep: number; onSelectStep: (idx: number) => void }) {
   return (
     <div style={{ display: 'flex', gap: 16, overflowX: 'auto', padding: '16px', background: 'rgba(0,0,0,0.2)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', marginBottom: 20 }}>
       {steps.map((s, idx) => {

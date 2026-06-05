@@ -222,7 +222,7 @@ async function handle(req: NextRequest, q: string, limit: number, offset: number
           match_limit: limit
         });
         if (!vecErr && vectorMatches && vectorMatches.length > 0) {
-          vectorRows = vectorMatches.map((r: any) => ({
+          vectorRows = (vectorMatches as Array<Record<string, unknown>>).map((r) => ({
             slug: String(r.slug ?? ''),
             display_name: String(r.display_name ?? ''),
             evidence_tier: String(r.evidence_tier ?? ''),

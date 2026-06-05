@@ -113,8 +113,10 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
       if (!res.ok) {
         throw new Error(json.error || 'Failed to update stock');
       }
+      toast.success('Inventory stock updated successfully');
     } catch (err: any) {
       setError(err.message || 'Failed to update stock');
+      toast.error(err.message || 'Failed to update stock');
       fetchInventory();
     } finally {
       setSavingId(null);
