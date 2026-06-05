@@ -671,9 +671,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
               <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {displayName || 'User'}
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--teal)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {user.email}
-              </div>
             </div>
           </div>
         )}
