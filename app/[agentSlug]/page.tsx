@@ -8,8 +8,8 @@ import { getCompoundsBySlugs } from '@/lib/compounds-server';
 import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
 import CouponLinkCapture from '@/components/CouponLinkCapture';
 import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
-import StorefrontBackButton from '@/components/storefront/StorefrontBackButton';
 import PageLoader from '@/components/PageLoader';
+import Navbar from '@/components/Navbar';
 
 interface Props {
   params: Promise<{ agentSlug: string }>;
@@ -272,80 +272,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
       ['--black-2' as any]: '#000000'
     }}>
       <CouponLinkCapture />
-      <style dangerouslySetInnerHTML={{__html: `
-        .sf-nav { height: 60px; background: var(--black-2); border-bottom: 1px solid rgba(192,184,168,0.2); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; position: sticky; top: 0; z-index: 50; gap: 8px; }
-        .sf-nav-brand { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
-        .sf-nav-brand-text { min-width: 0; }
-        .sf-nav-brand-name { font-family: var(--font-brand); font-size: 0.85rem; font-weight: 800; color: #C0B8A8; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .sf-nav-brand-sub { font-size: 0.62rem; color: var(--grey-400); white-space: nowrap; }
-        .sf-nav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-        
-        .sf-btn-dash {
-          background: linear-gradient(180deg, rgba(40,45,50,0.8) 0%, rgba(15,20,25,0.9) 100%);
-          border-radius: 8px; color: var(--white); text-decoration: none;
-          border: 1px solid #C0B8A8;
-          box-shadow: inset 0 1px 1px rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.5);
-          transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
-          display: flex; align-items: center; justify-content: center; width: 88px; height: 34px; font-size: 0.75rem; font-weight: 700; white-space: nowrap;
-        }
-        .sf-btn-dash:hover {
-          transform: translateY(-1px);
-          border-color: #DCD4C4;
-          box-shadow: inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 12px rgba(0,0,0,0.6);
-        }
-        .sf-nav-back { display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: transparent; border: none; transition: transform 0.15s, filter 0.15s; }
-        .sf-nav-back:hover { transform: scale(1.05); filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
-        
-        .sf-btn-cart { 
-          display: flex; align-items: center; justify-content: center; width: 88px; height: 34px; font-size: 0.75rem; font-weight: 800; color: #fff; border-radius: 8px; text-decoration: none; white-space: nowrap;
-          border: 1px solid #C0B8A8;
-          box-shadow: inset 0 2px 4px rgba(255,255,255,0.25), 0 4px 12px rgba(0,0,0,0.5);
-          transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
-        }
-        .sf-btn-cart:hover {
-          transform: translateY(-1px);
-          border-color: #DCD4C4;
-          box-shadow: inset 0 2px 6px rgba(255,255,255,0.35), 0 6px 16px rgba(0,0,0,0.6);
-        }
-      `}} />
-
-      {/* Agent branded navbar */}
-      <nav className="sf-nav glass-header" style={{ background: 'rgba(0, 0, 0, 0.85)' }}>
-        {/* Back button */}
-        <StorefrontBackButton dashLink={dashLink} />
-
-        <div className="sf-nav-brand">
-          {agent.logo_url ? (
-            <img src={agent.logo_url} alt={displayName} style={{ height: 28, borderRadius: 5, flexShrink: 0 }} />
-          ) : null}
-          <div className="sf-nav-brand-text">
-            <div className="sf-nav-brand-name">Pep Nation&apos;s Research Store</div>
-          </div>
-        </div>
-
-        <div className="sf-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Link href="/dashboard" style={{ display: 'flex', background: 'none' }}>
-            <img 
-              src={
-                userProfile?.role === 'admin' ? '/nav-icons/admin-dashboard.png' :
-                userProfile?.role === 'agent' ? '/nav-icons/agent-dashboard.png' :
-                '/nav-icons/dashboard.png'
-              } 
-              alt="Dashboard" 
-              width={158} 
-              height={74} 
-              className="dashboard-icon"
-              style={{ width: 158, height: 'auto', objectFit: 'contain', display: 'block' }} 
-            />
-          </Link>
-          <Link
-            href={`/checkout?agent=${encodeURIComponent(agentSlug)}`}
-            style={{ display: 'flex', background: 'none' }}
-          >
-            <img src="/nav-icons/cart.png" width={158} height={76} className="dashboard-icon" alt="Cart" style={{ width: 158, height: 'auto', objectFit: 'contain', display: 'block' }} />
-          </Link>
-        </div>
-      </nav>
+      <Navbar agentSlug={agentSlug} />
+      <div style={{ height: 60 }} />
 
       {showRenameBanner ? (
         <StorefrontRenameBanner
