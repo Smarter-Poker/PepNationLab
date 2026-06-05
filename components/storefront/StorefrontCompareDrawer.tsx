@@ -1079,7 +1079,7 @@ export default function StorefrontCompareDrawer({
               {/* Top Pick Banner */}
               {sortedPinnedItems.length >= 2 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 8, padding: '10px 14px' }}>
-                  <Trophy size={16} color={primaryColor} />
+                  <img src="/images/badges/badge_top_pick.jpg" alt="Top Pick" style={{ width: 22, height: 22, borderRadius: '50%' }} />
                   <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#FFF' }}>Top Pick: {sortedPinnedItems[0].productName}</span>
                   <span style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}>· Leading with a composite score of {pinnedScores[0].total}/100</span>
                 </div>
@@ -1350,10 +1350,10 @@ export default function StorefrontCompareDrawer({
                   const mostStudied = [...ranked].sort((a, b) => b.s.breakdown.science - a.s.breakdown.science)[0];
                   const mostPractical = [...ranked].sort((a, b) => b.s.breakdown.handling - a.s.breakdown.handling)[0];
                   const verdicts = [
-                    { label: 'Overall Best', icon: <Trophy size={14} />, item: leader, color: primaryColor, reason: `Highest composite research score (${leader.s.total}/100)` },
-                    { label: 'Safest Profile', icon: <Shield size={14} />, item: safest, color: '#68D391', reason: `Best safety-to-evidence ratio in this comparison` },
-                    { label: 'Most Studied', icon: <BookOpen size={14} />, item: mostStudied, color: '#F6AD55', reason: `Deepest scientific literature footprint` },
-                    { label: 'Most Practical', icon: <Zap size={14} />, item: mostPractical, color: '#9F7AEA', reason: `Best handling & protocol practicality score` },
+                    { label: 'Overall Best Pick', icon: <img src="/images/badges/verdict_overall.jpg" alt="Overall Best" style={{ width: 18, height: 18, borderRadius: '50%' }} />, item: leader, color: primaryColor, reason: `Highest composite research score (${leader.s.total}/100)` },
+                    { label: 'Safest Profile', icon: <img src="/images/badges/verdict_safest.jpg" alt="Safest Profile" style={{ width: 18, height: 18, borderRadius: '50%' }} />, item: safest, color: '#68D391', reason: `Best safety-to-evidence ratio in this comparison` },
+                    { label: 'Most Research-Backed', icon: <img src="/images/badges/verdict_studied.jpg" alt="Most Studied" style={{ width: 18, height: 18, borderRadius: '50%' }} />, item: mostStudied, color: '#F6AD55', reason: `Deepest scientific literature footprint` },
+                    { label: 'Most Practical', icon: <img src="/images/badges/verdict_practical.jpg" alt="Most Practical" style={{ width: 18, height: 18, borderRadius: '50%' }} />, item: mostPractical, color: '#9F7AEA', reason: `Best handling & protocol practicality score` },
                   ];
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
@@ -1568,9 +1568,7 @@ export default function StorefrontCompareDrawer({
                               return (
                                 <td key={p.productName} style={{ ...valueCellStyle, position: 'relative', borderLeft: '1px solid rgba(168,180,192,0.18)' }}>
                                   {isWinner && (
-                                    <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.65rem', background: primaryColor, color: '#04221F', padding: '2px 6px', borderRadius: 4, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                                      <Trophy size={9} /> Top Pick
-                                    </div>
+                                    <img src="/images/badges/badge_top_pick.jpg" alt="Top Pick" style={{ position: 'absolute', top: 4, right: 4, width: 36, height: 36, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 2px 8px rgba(0,0,0,0.5)', zIndex: 10 }} />
                                   )}
                                   <div style={isWinner ? { borderLeft: `2px solid ${primaryColor}`, paddingLeft: 8, marginLeft: -10 } : {}}>
                                     {row.render(p, maxHalfLife)}

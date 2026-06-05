@@ -1107,7 +1107,7 @@ function FocusRowModal({ row, selected, maxHalfLife, controlCompound, topPickSlu
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
                   <span style={{ color, fontWeight: 900, fontSize: '0.88rem' }}>{c.display_name}</span>
-                  {isTop && <Trophy size={11} color="#FFF" style={{ marginLeft: 2 }} />}
+                  {isTop && <img src="/images/badges/badge_top_pick.jpg" alt="Top Pick" style={{ width: 16, height: 16, borderRadius: '50%', marginLeft: 4, verticalAlign: 'middle' }} />}
                 </div>
                 <div style={{ fontSize: '0.95rem', color: '#fff', lineHeight: 1.55 }}>{row.render(c, maxHalfLife)}</div>
                 {controlCompound && controlCompound.slug !== c.slug && (
@@ -1979,7 +1979,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 const sc = scores[i]; const color = colors[i % colors.length]; const isTop = c.slug === topPickSlug;
                 return (
                   <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', background: isTop ? 'rgba(0,196,188,0.12)' : `${color}10`, border: `1px solid ${isTop ? 'rgba(0,196,188,0.35)' : color + '28'}`, borderRadius: 20, flexShrink: 0 }}>
-                    {isTop && <Trophy size={9} color="#00C4BC" />}
+                    {isTop && <img src="/images/badges/badge_top_pick.jpg" alt="Top Pick" style={{ width: 14, height: 14, borderRadius: '50%', verticalAlign: 'middle', marginLeft: 4 }} />}
                     <span style={{ fontSize: '0.73rem', fontWeight: 800, color }}>{c.display_name.split(' ').slice(0, 2).join(' ')}</span>
                     <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'rgba(255,255,255,0.75)' }}>{sc.letter}</span>
                     <span style={{ fontSize: '0.64rem', color: 'rgba(255,255,255,0.4)' }}>{sc.total}</span>
@@ -2034,7 +2034,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                     <div key={c.slug} style={{ padding: 14, borderRadius: 12, background: isTop ? 'rgba(0,196,188,0.05)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isTop ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.07)'}` }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                         {getChoiceBadge(rankIndex)}
-                        {isTop && <Trophy size={13} color="#00C4BC" />}
+                        {isTop && <img src="/images/badges/badge_top_pick.jpg" alt="Top Pick" style={{ width: 20, height: 20, borderRadius: '50%' }} />}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
@@ -2102,7 +2102,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                         <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
                         <span style={{ fontWeight: 900, fontSize: '0.9rem', color: '#fff' }}>{c.display_name}</span>
-                        {isTop && <Trophy size={11} color="#00C4BC" />}
+                        {isTop && <img src="/images/badges/badge_top_pick.jpg" alt="Top Pick" style={{ width: 16, height: 16, borderRadius: '50%', marginLeft: 4 }} />}
                         <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color, fontWeight: 800 }}>Score: {scores[origIdx].total}/100</span>
                       </div>
                       <ProsConsCard pc={pc} />
@@ -2221,10 +2221,10 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 Which compound is best suited for different research contexts - based on composite scoring across evidence, safety, scientific backing, research coverage, and handling practicality.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 24 }}>
-                <RecommendationCard rec={recommendations.overall} label="Overall Best Pick" icon={<Trophy size={14} />} color="#00C4BC" />
-                <RecommendationCard rec={recommendations.safest} label="Safest Profile" icon={<Shield size={14} />} color="#68D391" />
-                <RecommendationCard rec={recommendations.mostStudied} label="Most Research-Backed" icon={<BookOpen size={14} />} color="#F6AD55" />
-                <RecommendationCard rec={recommendations.mostPractical} label="Most Practical" icon={<Zap size={14} />} color="#9F7AEA" />
+                <RecommendationCard rec={recommendations.overall} label="Overall Best Pick" icon={<img src="/images/badges/verdict_overall.jpg" alt="Overall Best" style={{ width: 18, height: 18, borderRadius: '50%' }} />} color="#00C4BC" />
+                <RecommendationCard rec={recommendations.safest} label="Safest Profile" icon={<img src="/images/badges/verdict_safest.jpg" alt="Safest Profile" style={{ width: 18, height: 18, borderRadius: '50%' }} />} color="#68D391" />
+                <RecommendationCard rec={recommendations.mostStudied} label="Most Research-Backed" icon={<img src="/images/badges/verdict_studied.jpg" alt="Most Studied" style={{ width: 18, height: 18, borderRadius: '50%' }} />} color="#F6AD55" />
+                <RecommendationCard rec={recommendations.mostPractical} label="Most Practical" icon={<img src="/images/badges/verdict_practical.jpg" alt="Most Practical" style={{ width: 18, height: 18, borderRadius: '50%' }} />} color="#9F7AEA" />
               </div>
               {/* Recommended contexts per compound */}
               <div>
@@ -2331,7 +2331,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', background: isTop ? 'rgba(0,196,188,0.08)' : `${color}0E`, border: `1px solid ${isTop ? 'rgba(0,196,188,0.3)' : color + '30'}`, borderRadius: 14, marginBottom: 16 }}>
                               <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
                               <Link href={`/research/${c.slug}`} style={{ color, fontWeight: 900, fontSize: '1.05rem', textDecoration: 'none', flex: 1 }}>{c.display_name}</Link>
-                              {isTop && <Trophy size={14} color="#00C4BC" />}
+                              {isTop && <img src="/images/badges/badge_top_pick.jpg" alt="Top Pick" style={{ width: 22, height: 22, borderRadius: '50%' }} />}
                               <div style={{ background: `${color}22`, color, fontSize: '0.8rem', fontWeight: 900, padding: '4px 10px', borderRadius: 8 }}>{sc.letter} · {sc.total}</div>
                             </div>
                             {/* Attribute list — all rows for this single compound */}
@@ -2453,9 +2453,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                                   return (
                                     <div key={c.slug} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: 10, background: isControl ? 'rgba(0,196,188,0.05)' : 'rgba(255,255,255,0.02)', borderRadius: 8, position: 'relative', border: isWinner ? '1px solid rgba(0,196,188,0.4)' : '1px solid transparent' }}>
                                       {isWinner && (
-                                        <div style={{ position: 'absolute', top: -8, right: 10, fontSize: '0.65rem', background: '#00C4BC', color: '#04221F', padding: '2px 6px', borderRadius: 4, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px', boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
-                                          <Trophy size={10} /> Top Pick
-                                        </div>
+                                        <img src="/images/badges/badge_top_pick.jpg" alt="Top Pick" style={{ position: 'absolute', top: -14, right: 10, width: 32, height: 32, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 2px 8px rgba(0,0,0,0.5)', zIndex: 10 }} />
                                       )}
                                       <div style={{ width: 80, fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', flexShrink: 0, marginTop: 2 }}>{c.display_name}</div>
                                       <div style={{ flex: 1, fontSize: '0.85rem', color: '#fff' }}>
@@ -2509,7 +2507,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                                 return (
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                                     {getChoiceBadge(rankIndex)}
-                                    {isTop && <Trophy size={13} color="#00C4BC" />}
+                                    {isTop && <img src="/images/badges/badge_top_pick.jpg" alt="Top Pick" style={{ width: 20, height: 20, borderRadius: '50%' }} />}
                                   </div>
                                 );
                               })()}
@@ -2697,9 +2695,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                             return (
                               <td key={c.slug} style={{ ...valueCellStyle, position: 'relative', background: rankBg ?? (c.slug === controlSlug ? 'rgba(0,196,188,0.04)' : undefined), ...controlStyleTd }}>
                                 {isWinner && (
-                                  <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.65rem', background: '#00C4BC', color: '#04221F', padding: '1px 5px', borderRadius: 3, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                                    <Trophy size={9} /> Top Pick
-                                  </div>
+                                  <img src="/images/badges/badge_top_pick.jpg" alt="Top Pick" style={{ position: 'absolute', top: 4, right: 4, width: 32, height: 32, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 2px 8px rgba(0,0,0,0.5)', zIndex: 10 }} />
                                 )}
                                 <div style={isWinner ? { borderLeft: '2px solid #00C4BC', paddingLeft: 7, marginLeft: -8 } : {}}>
                                   {isMobile ? (
