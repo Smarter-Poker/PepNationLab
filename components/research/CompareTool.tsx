@@ -1328,7 +1328,7 @@ function MechanismTab({ selected }: { selected: Compound[] }) {
                 {c.compound_class && (
                   <div>
                     <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Compound Class</div>
-                    <div style={{ fontSize: '0.82rem', color }}>{c.compound_class}</div>
+                    <div style={{ fontSize: '0.82rem', color: '#FFF' }}>{c.compound_class}</div>
                   </div>
                 )}
                 {c.molecular_target && (
@@ -1356,7 +1356,7 @@ function MechanismTab({ selected }: { selected: Compound[] }) {
                       {c.risk_reasons.map((r, ri) => (
                         <div key={ri} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
                           <AlertTriangle size={11} color={RISK_META[c.risk_level]?.color ?? '#F6AD55'} style={{ marginTop: 2, flexShrink: 0 }} />
-                          <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.65)', lineHeight: 1.4 }}>{r}</span>
+                          <span style={{ fontSize: '0.78rem', color: '#FFF', lineHeight: 1.4 }}>{r}</span>
                         </div>
                       ))}
                     </div>
@@ -1368,7 +1368,7 @@ function MechanismTab({ selected }: { selected: Compound[] }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       {c.sources.slice(0, 4).map((src, si) => (
                         <a key={si} href={src.startsWith('http') ? src : undefined} target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: '0.72rem', color: color, opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>
+                          style={{ fontSize: '0.72rem', color: '#FFF', opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>
                           {src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si + 1}</span> : src}
                         </a>
                       ))}
@@ -1379,7 +1379,7 @@ function MechanismTab({ selected }: { selected: Compound[] }) {
                 {c.is_stack && c.stack_rationale && (
                   <div>
                     <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Stack Rationale</div>
-                    <div style={{ fontSize: '0.82rem', color: '#9F7AEA', lineHeight: 1.55, fontStyle: 'italic' }}>{c.stack_rationale}</div>
+                    <div style={{ fontSize: '0.82rem', color: '#FFF', lineHeight: 1.55, fontStyle: 'italic' }}>{c.stack_rationale}</div>
                   </div>
                 )}
               </div>
