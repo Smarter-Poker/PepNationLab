@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import Link from 'next/link';
@@ -9,20 +9,193 @@ import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
 import CouponLinkCapture from '@/components/CouponLinkCapture';
 import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
 import StorefrontBackButton from '@/components/storefront/StorefrontBackButton';
-
+import PageLoader from '@/components/PageLoader';
 
 interface Props {
   params: Promise<{ agentSlug: string }>;
+}
+
+async function AgentStorefrontDataLoader({
+  agentSlug,
+  agent,
+}: {
+  agentSlug: string;
+  agent: any;
+}) {
+  const supabase = await createClient();
+
+  const { data: products } = await supabase
+    .from('agent_products')
+    .select(`
+      id,
+      product_id,
+      custom_name,
+      custom_description,
+      custom_image_url,
+      retail_price,
+      is_on_sale,
+      sale_price,
+      products (
+        name,
+        description,
+        image_url,
+        category,
+        backorder_days,
+        unit_size,
+        unit_measure,
+        weight_oz,
+        inventory_count,
+        low_stock_threshold,
+        base_cost,
+        compound_slug
+      )
+    `)
+    .eq('agent_id', agent.id)
+    .eq('is_visible', true)
+    .order('sort_order');
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return (
+      <AgentStorefrontLogin 
+        agentSlug={agentSlug} 
+        displayName={agent.display_name} 
+        primaryColor={agent.primary_color ?? '#00C4BC'} 
+        logoUrl={agent.logo_url} 
+      />
+    );
+  }
+
+  // Check if logged-in user belongs to THIS agent — CRITICAL SECURITY GATE
+  const { data: userProfile } = await supabase
+    .from('profiles')
+    .select('role, referring_agent_id, parent_agent_id, id, tier')
+    .eq('id', user.id)
+    .single();
+
+  // Determine if user has access to this specific storefront
+  const isAdmin = userProfile?.role === 'admin';
+  const isStorefrontOwner = userProfile?.id === agent.id;
+  const isSubAgent = userProfile?.role === 'agent' && userProfile?.parent_agent_id === agent.id;
+  const isDownlineResearcher = userProfile?.role === 'researcher' && userProfile?.referring_agent_id === agent.id;
+
+  const hasAccess = isAdmin || isStorefrontOwner || isSubAgent || isDownlineResearcher;
+
+  if (!hasAccess) {
+    // If the researcher is logged in but belongs to a DIFFERENT agent,
+    // redirect them to THEIR actual storefront instead of showing a login form.
+    if (userProfile?.role === 'researcher' && userProfile?.referring_agent_id) {
+      const { data: correctAgent } = await supabase
+        .from('agent_profiles')
+        .select('slug')
+        .eq('id', userProfile.referring_agent_id)
+        .maybeSingle();
+
+      if (correctAgent?.slug) {
+        redirect(`/${correctAgent.slug}`);
+      }
+    }
+
+    // Not a researcher or no referring agent — show the storefront login form.
+    return (
+      <AgentStorefrontLogin 
+        agentSlug={agentSlug} 
+        displayName={agent.display_name} 
+        primaryColor={agent.primary_color ?? '#00C4BC'} 
+        logoUrl={agent.logo_url} 
+        errorMessage="This Account Does Not Belong To This Store. Please Sign In With The Credentials Your Agent Gave You, Or Create A New Account."
+      />
+    );
+  }
+
+  const { data: inventory } = await supabase
+    .rpc('agent_inventory_for_storefront', { p_slug: agentSlug });
+
+  const inventoryMap = new Map(
+    (inventory as Array<{ product_id: string; stock_count: number }> | null)?.map(
+      (i) => [i.product_id, i.stock_count]
+    ) || []
+  );
+
+  const productIds = (products ?? [])
+    .map(p => p.product_id)
+    .filter((v): v is string => !!v);
+  const coaByProductId: Record<string, string> = {};
+  if (productIds.length > 0) {
+    const { data: lots } = await supabase
+      .from('product_lots')
+      .select('product_id, coa_storage_key, received_at')
+      .in('product_id', productIds)
+      .eq('is_active', true)
+      .not('coa_storage_key', 'is', null)
+      .order('received_at', { ascending: false });
+    for (const row of lots ?? []) {
+      if (!row.coa_storage_key) continue;
+      if (coaByProductId[row.product_id]) continue; 
+      const { data: pub } = supabase.storage
+        .from('product-coas')
+        .getPublicUrl(row.coa_storage_key);
+      if (pub?.publicUrl) coaByProductId[row.product_id] = pub.publicUrl;
+    }
+  }
+
+  let initialWishlistIds: string[] = [];
+  if (userProfile?.role === 'researcher') {
+    const { data: favRows } = await supabase
+      .from('researcher_favorites')
+      .select('product_id')
+      .eq('user_id', user.id);
+    initialWishlistIds = (favRows ?? []).map(r => r.product_id);
+  }
+
+  let productsWithCost: Array<Record<string, unknown>> =
+    (products ?? []) as unknown as Array<Record<string, unknown>>;
+  if (isStorefrontOwner && (products?.length ?? 0) > 0) {
+    const svc = await createServiceClient();
+    const ownerTier = ((userProfile as { tier?: AgentTier } | null)?.tier ?? 'tier_3') as AgentTier;
+    productsWithCost = await Promise.all(
+      (products ?? []).map(async (p) => {
+        let costPrice: number | null = null;
+        try {
+          costPrice = await computeAgentCostForAgent(svc, p.product_id, agent.id, ownerTier);
+        } catch {
+          costPrice = null;
+        }
+        return { ...(p as Record<string, unknown>), cost_price: costPrice };
+      })
+    );
+  }
+
+  const compoundsBySlug = await getCompoundsBySlugs(
+    (products ?? []).map((p) => (p.products as { compound_slug?: string | null })?.compound_slug)
+  );
+
+  const primaryColor = agent.primary_color ?? '#00C4BC';
+
+  return (
+    <AgentStorefrontGrid
+      products={productsWithCost as any}
+      inventoryMap={Object.fromEntries(inventoryMap)}
+      primaryColor={primaryColor}
+      agentSlug={agentSlug}
+      initialWishlistIds={initialWishlistIds}
+      agentId={agent.id}
+      coaByProductId={coaByProductId}
+      volumePricingEnabled={(agent as any).volume_pricing_enabled !== false}
+      isStorefrontOwner={isStorefrontOwner}
+      viewerTier={(userProfile as any)?.tier ?? 'tier_3'}
+      minOrderQty={agent.min_order_qty ?? 1}
+      minOverallQty={agent.min_overall_qty ?? 1}
+      compoundsBySlug={compoundsBySlug}
+    />
+  );
 }
 
 export default async function AgentStorefrontPage({ params }: Props) {
   const { agentSlug } = await params;
   const supabase = await createClient();
 
-  // Look up agent by slug — case-insensitive since the DB has a UNIQUE on
-  // lower(slug). Do NOT filter on is_active here; we want to render a
-  // "Storefront Paused" notice rather than 404 when the agent has put the
-  // store into vacation mode.
   const { data: agent, error } = await supabase
     .from('agent_profiles')
     .select(`
@@ -66,185 +239,28 @@ export default async function AgentStorefrontPage({ params }: Props) {
     );
   }
 
-  const { data: products } = await supabase
-    .from('agent_products')
-    .select(`
-      id,
-      product_id,
-      custom_name,
-      custom_description,
-      custom_image_url,
-      retail_price,
-      is_on_sale,
-      sale_price,
-      products (
-        name,
-        description,
-        image_url,
-        category,
-        backorder_days,
-        unit_size,
-        unit_measure,
-        weight_oz,
-        inventory_count,
-        low_stock_threshold,
-        base_cost,
-        compound_slug
-      )
-    `)
-    .eq('agent_id', agent.id)
-    .eq('is_visible', true)
-    .order('sort_order');
-
-
+  // We need user context JUST to determine the top navbar icons and rename banner,
+  // which is fine since getUser() is extremely fast (uses cookies)
+  // compared to resolving 50 product DB calls.
   const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return (
-      <AgentStorefrontLogin 
-        agentSlug={agentSlug} 
-        displayName={agent.display_name} 
-        primaryColor={agent.primary_color ?? '#00C4BC'} 
-        logoUrl={agent.logo_url} 
-      />
-    );
+  let userProfile = null;
+  if (user) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('role, id')
+      .eq('id', user.id)
+      .single();
+    userProfile = data;
   }
-
-  // Check if logged-in user belongs to THIS agent — CRITICAL SECURITY GATE
-  const { data: userProfile } = await supabase
-    .from('profiles')
-    .select('role, referring_agent_id, parent_agent_id, id, tier')
-    .eq('id', user.id)
-    .single();
-
-  // Determine if user has access to this specific storefront
-  const isAdmin = userProfile?.role === 'admin';
   const isStorefrontOwner = userProfile?.id === agent.id;
-  const isSubAgent = userProfile?.role === 'agent' && userProfile?.parent_agent_id === agent.id;
-  const isDownlineResearcher = userProfile?.role === 'researcher' && userProfile?.referring_agent_id === agent.id;
-
-  const hasAccess = isAdmin || isStorefrontOwner || isSubAgent || isDownlineResearcher;
-
   const dashLink = userProfile?.role === 'admin'
     ? '/admin'
     : (userProfile?.role === 'agent' || userProfile?.role === 'super_agent')
     ? '/dashboard/agent'
     : '/dashboard';
 
-  if (!hasAccess) {
-    // If the researcher is logged in but belongs to a DIFFERENT agent,
-    // redirect them to THEIR actual storefront instead of showing a login form.
-    if (userProfile?.role === 'researcher' && userProfile?.referring_agent_id) {
-      const { data: correctAgent } = await supabase
-        .from('agent_profiles')
-        .select('slug')
-        .eq('id', userProfile.referring_agent_id)
-        .maybeSingle();
-
-      if (correctAgent?.slug) {
-        const { redirect } = await import('next/navigation');
-        redirect(`/${correctAgent.slug}`);
-      }
-    }
-
-    // Not a researcher or no referring agent — show the storefront login form.
-    return (
-      <AgentStorefrontLogin 
-        agentSlug={agentSlug} 
-        displayName={agent.display_name} 
-        primaryColor={agent.primary_color ?? '#00C4BC'} 
-        logoUrl={agent.logo_url} 
-        errorMessage="This Account Does Not Belong To This Store. Please Sign In With The Credentials Your Agent Gave You, Or Create A New Account."
-      />
-    );
-  }
-
-
-  // Use SECDEF RPC scoped to this storefront's slug so anon visitors can
-  // see stock badges WITHOUT being able to read every agent's inventory.
-  // Replaces a direct `from('agent_inventory')` query that previously
-  // depended on a blanket "Public can read agent inventory USING(true)"
-  // policy (dropped in migration 20260605060000).
-  const { data: inventory } = await supabase
-    .rpc('agent_inventory_for_storefront', { p_slug: agentSlug });
-
-  const inventoryMap = new Map(
-    (inventory as Array<{ product_id: string; stock_count: number }> | null)?.map(
-      (i) => [i.product_id, i.stock_count]
-    ) || []
-  );
-
-  // Most-recent active lot with an attached COA, per product currently in the
-  // storefront. Used to render the "View Certificate Of Analysis" link in the
-  // product detail modal.
-  const productIds = (products ?? [])
-    .map(p => p.product_id)
-    .filter((v): v is string => !!v);
-  const coaByProductId: Record<string, string> = {};
-  if (productIds.length > 0) {
-    const { data: lots } = await supabase
-      .from('product_lots')
-      .select('product_id, coa_storage_key, received_at')
-      .in('product_id', productIds)
-      .eq('is_active', true)
-      .not('coa_storage_key', 'is', null)
-      .order('received_at', { ascending: false });
-    for (const row of lots ?? []) {
-      if (!row.coa_storage_key) continue;
-      if (coaByProductId[row.product_id]) continue; // keep most recent only
-      const { data: pub } = supabase.storage
-        .from('product-coas')
-        .getPublicUrl(row.coa_storage_key);
-      if (pub?.publicUrl) coaByProductId[row.product_id] = pub.publicUrl;
-    }
-  }
-
-  let initialWishlistIds: string[] = [];
-  if (userProfile?.role === 'researcher') {
-    const { data: favRows } = await supabase
-      .from('researcher_favorites')
-      .select('product_id')
-      .eq('user_id', user.id);
-    initialWishlistIds = (favRows ?? []).map(r => r.product_id);
-  }
-
-  // Augment each product with cost_price for the storefront-owner self-buy view.
-  // CRITICAL: this MUST equal what the agent is actually billed. Orders compute
-  // unit_cost_price as computeAgentCostForAgent(...) / 10, which (with the tier
-  // ladder v2 engine active) resolves the agent's house-tier markup / gamification
-  // rather than a flat legacy pricing_tiers multiplier. Reusing the canonical
-  // billing helper here keeps the displayed "Agent Direct Price" equal to the books.
-  let productsWithCost: Array<Record<string, unknown>> =
-    (products ?? []) as unknown as Array<Record<string, unknown>>;
-  if (isStorefrontOwner && (products?.length ?? 0) > 0) {
-    const svc = await createServiceClient();
-    const ownerTier = ((userProfile as { tier?: AgentTier } | null)?.tier ?? 'tier_3') as AgentTier;
-    productsWithCost = await Promise.all(
-      (products ?? []).map(async (p) => {
-        let costPrice: number | null = null;
-        try {
-          // Per-10-vial-pack wholesale cost (the grid divides by 10 for per-vial) —
-          // identical to orders/new unit_cost_price before its /10 conversion.
-          costPrice = await computeAgentCostForAgent(svc, p.product_id, agent.id, ownerTier);
-        } catch {
-          costPrice = null;
-        }
-        return { ...(p as Record<string, unknown>), cost_price: costPrice };
-      })
-    );
-  }
-
-  // Research monograph data for the product detail modal: fetch every compound
-  // referenced by a product on this storefront, keyed by slug. Server-side so
-  // the modal renders the full profile with no client round-trip.
-  const compoundsBySlug = await getCompoundsBySlugs(
-    (products ?? []).map((p) => (p.products as { compound_slug?: string | null })?.compound_slug)
-  );
-
   const primaryColor = agent.primary_color ?? '#00C4BC';
   const displayName = agent.display_name;
-  // First-view rename banner: shown ONLY to the storefront owner when they
-  // have never personalized their display_name (auto-provisioned at promotion).
   const showRenameBanner =
     isStorefrontOwner && (agent as { storefront_renamed_at?: string | null }).storefront_renamed_at == null;
 
@@ -362,24 +378,10 @@ export default async function AgentStorefrontPage({ params }: Props) {
       </section>
 
       {/* Products */}
-      <section style={{ paddingTop: 8, paddingBottom: 24 }}>
+      <section style={{ paddingTop: 8, paddingBottom: 24, position: 'relative', minHeight: '60vh' }}>
         <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 8px' }}>
-          <Suspense fallback={null}>
-            <AgentStorefrontGrid
-              products={productsWithCost as any}
-              inventoryMap={Object.fromEntries(inventoryMap)}
-              primaryColor={primaryColor}
-              agentSlug={agentSlug}
-              initialWishlistIds={initialWishlistIds}
-              agentId={agent.id}
-              coaByProductId={coaByProductId}
-              volumePricingEnabled={(agent as any).volume_pricing_enabled !== false}
-              isStorefrontOwner={isStorefrontOwner}
-              viewerTier={(userProfile as any)?.tier ?? 'tier_3'}
-              minOrderQty={agent.min_order_qty ?? 1}
-              minOverallQty={agent.min_overall_qty ?? 1}
-              compoundsBySlug={compoundsBySlug}
-            />
+          <Suspense fallback={<PageLoader open={true} title="Retrieving Live Inventory" subtitle="Pep Nation Lab is retrieving live inventory and pricing..." />}>
+            <AgentStorefrontDataLoader agentSlug={agentSlug} agent={agent} />
           </Suspense>
         </div>
       </section>
