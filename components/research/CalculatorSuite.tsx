@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   reconstitutionVolumeMl,
   drawVolumeMl,
@@ -264,7 +264,13 @@ const POPULAR_PEPTIDES = [
 
 const STANDARD_AA = new Set('ACDEFGHIKLMNPQRSTVWY');
 
-function VisualSyringe({ ml, size }: { ml: number; size: 0.3 | 0.5 | 1.0 }) {
+interface VisualSyringeProps {
+  ml: number;
+  size: 0.3 | 0.5 | 1.0;
+  onDrawMlChange?: (newMl: number) => void;
+}
+
+function VisualSyringe({ ml, size, onDrawMlChange }: VisualSyringeProps) {
   const maxMl = size;
   const pct = Math.min(100, Math.max(0, (ml / maxMl) * 100));
   const units = Math.round(ml * 100);
@@ -272,6 +278,38 @@ function VisualSyringe({ ml, size }: { ml: number; size: 0.3 | 0.5 | 1.0 }) {
   
   const tickCount = size === 1.0 ? 10 : size === 0.5 ? 5 : 3;
   const subdivisions = size === 1.0 ? 100 : size === 0.5 ? 50 : 30;
+
+  const [isDragging, setIsDragging] = useState(false);
+  const barrelRef = useRef<HTMLDivElement>(null);
+
+  const updateVolumeFromEvent = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!barrelRef.current || !onDrawMlChange) return;
+    const rect = barrelRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const width = rect.width;
+    const relativeX = Math.min(width, Math.max(0, clickX));
+    const pct = relativeX / width;
+    const newMl = pct * size;
+    onDrawMlChange(newMl);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!onDrawMlChange || !barrelRef.current) return;
+    setIsDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    updateVolumeFromEvent(e);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    updateVolumeFromEvent(e);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  };
   
   return (
     <div style={{ background: '#121620', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16, marginTop: 16 }}>
@@ -285,44 +323,69 @@ function VisualSyringe({ ml, size }: { ml: number; size: 0.3 | 0.5 | 1.0 }) {
           Warning: Dose Volume <span className="calc-no-capitalize">({ml.toFixed(3)} mL)</span> Exceeds Syringe Capacity <span className="calc-no-capitalize">({size} mL)</span>. Select A Larger Syringe Or Increase Reconstitution Diluent Volume.
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', height: 60, paddingLeft: 40, position: 'relative' }}>
-          {/* Plunger shaft */}
-          <div style={{ position: 'absolute', left: 0, width: 40, height: 8, background: '#4A5568', borderRadius: '4px 0 0 4px' }} />
-          {/* Plunger thumb press */}
-          <div style={{ position: 'absolute', left: 0, width: 4, height: 24, background: '#4A5568', borderRadius: 2 }} />
-          
-          {/* Syringe body barrel */}
-          <div style={{ flex: 1, height: 32, background: 'rgba(255,255,255,0.03)', border: '2px solid #718096', borderRadius: '0 4px 4px 0', position: 'relative', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-            {/* Liquid / Plunger fill */}
-            <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.3) 0%, rgba(0, 229, 255, 0.15) 100%)', borderRight: '4px solid #00E5FF', transition: 'width 0.4s ease-out' }} />
+        <>
+          {onDrawMlChange && (
+            <div style={{ fontSize: 11, color: '#A8B2C1', marginBottom: 8, fontStyle: 'italic', textTransform: 'capitalize' }}>
+              Click Or Drag Plunger Inside Barrel To Adjust Target Dose Volume
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', height: 60, paddingLeft: 40, position: 'relative' }}>
+            {/* Plunger shaft */}
+            <div style={{ position: 'absolute', left: 0, width: 40, height: 8, background: '#4A5568', borderRadius: '4px 0 0 4px' }} />
+            {/* Plunger thumb press */}
+            <div style={{ position: 'absolute', left: 0, width: 4, height: 24, background: '#4A5568', borderRadius: 2 }} />
             
-            {/* Major Ticks */}
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'space-between', pointerEvents: 'none', padding: '0 2px' }}>
-              {Array.from({ length: tickCount + 1 }).map((_, i) => {
-                const val = Math.round(i * (maxUnits / tickCount));
-                return (
-                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'space-between' }}>
-                    <div style={{ width: 2, height: 8, background: 'rgba(255,255,255,0.4)' }} />
-                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace', transform: 'translateY(-2px)' }}>{val}</span>
-                  </div>
-                );
-              })}
+            {/* Syringe body barrel */}
+            <div 
+              ref={barrelRef}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              style={{ 
+                flex: 1, 
+                height: 32, 
+                background: 'rgba(255,255,255,0.03)', 
+                border: '2px solid #718096', 
+                borderRadius: '0 4px 4px 0', 
+                position: 'relative', 
+                display: 'flex', 
+                alignItems: 'center', 
+                overflow: 'hidden',
+                cursor: onDrawMlChange ? 'ew-resize' : 'default',
+                touchAction: 'none',
+              }}
+            >
+              {/* Liquid / Plunger fill */}
+              <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.3) 0%, rgba(0, 229, 255, 0.15) 100%)', borderRight: '4px solid #00E5FF', transition: isDragging ? 'none' : 'width 0.4s ease-out' }} />
+              
+              {/* Major Ticks */}
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'space-between', pointerEvents: 'none', padding: '0 2px' }}>
+                {Array.from({ length: tickCount + 1 }).map((_, i) => {
+                  const val = Math.round(i * (maxUnits / tickCount));
+                  return (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'space-between' }}>
+                      <div style={{ width: 2, height: 8, background: 'rgba(255,255,255,0.4)' }} />
+                      <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace', transform: 'translateY(-2px)' }}>{val}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Minor Ticks */}
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'space-between', pointerEvents: 'none', padding: '0 2px' }}>
+                {Array.from({ length: subdivisions + 1 }).map((_, i) => {
+                  if (i % (maxUnits / tickCount) === 0) return <div key={i} />;
+                  return (
+                    <div key={i} style={{ width: 1, height: 4, background: 'rgba(255,255,255,0.15)' }} />
+                  );
+                })}
+              </div>
             </div>
-            {/* Minor Ticks */}
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'space-between', pointerEvents: 'none', padding: '0 2px' }}>
-              {Array.from({ length: subdivisions + 1 }).map((_, i) => {
-                if (i % (maxUnits / tickCount) === 0) return <div key={i} />;
-                return (
-                  <div key={i} style={{ width: 1, height: 4, background: 'rgba(255,255,255,0.15)' }} />
-                );
-              })}
-            </div>
+            {/* Needle attachment */}
+            <div style={{ width: 12, height: 8, background: '#718096', borderRadius: '0 2px 2px 0' }} />
+            {/* Needle line */}
+            <div style={{ width: 30, height: 1, background: '#E2E8F0' }} />
           </div>
-          {/* Needle attachment */}
-          <div style={{ width: 12, height: 8, background: '#718096', borderRadius: '0 2px 2px 0' }} />
-          {/* Needle line */}
-          <div style={{ width: 30, height: 1, background: '#E2E8F0' }} />
-        </div>
+        </>
       )}
     </div>
   );
@@ -336,6 +399,7 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
   const [unit, setUnit] = useState('mg');
   const [syringeSize, setSyringeSize] = useState<0.3 | 0.5 | 1.0>(1.0);
   const [diluentType, setDiluentType] = useState<'bac-water' | 'acetic-acid'>('bac-water');
+  const [showGuide, setShowGuide] = useState(false);
 
   const peptideList = useMemo(() => {
     const dbPeptides = compounds.map(c => ({
@@ -383,6 +447,168 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
     }
   }, [isIgf]);
 
+  const handleDrawMlChange = (newMl: number) => {
+    if (vMass <= 0 || dilMl <= 0) return;
+    const concentration = vMass / dilMl; // mg/mL
+    const desiredMg = newMl * concentration;
+    const finalVal = unit === 'mcg' ? desiredMg * 1000 : desiredMg;
+    const rounded = Number(finalVal.toFixed(3));
+    setDesiredMass(rounded.toString());
+  };
+
+  const totalDoses = dMassMg > 0 ? vMass / dMassMg : 0;
+  const showExhaustionWarning = dMassMg > vMass;
+
+  const getStabilityAdvice = () => {
+    const name = peptide.toLowerCase();
+    if (name.includes('tirzepatide') || name.includes('semaglutide') || name.includes('retatrutide')) {
+      return {
+        title: 'GLP-1 Stability Advice',
+        advice: 'GLP-1 Receptor Agonists Are Highly Sensitive To Thermal Stress And Vigorous Mechanical Agitation. Store At <span class="calc-no-capitalize">2-8°C (36-46°F)</span> And Protect From Light. Do Not Freeze. Reconstituted Vials Remain Thermally Stable For Up To 28 Days Under Proper Refrigeration. Swirl Gently To Mix; Do Not Shake.',
+      };
+    } else if (name.includes('bpc-157') || name.includes('bpc157')) {
+      return {
+        title: 'BPC-157 Stability Advice',
+        advice: 'BPC-157 Exhibits High Structural Resilience Compared To Most Peptides. However, Reconstituted Solutions In Bacteriostatic Water Must Be Kept Refrigerated At <span class="calc-no-capitalize">2-8°C</span> To Prevent Degradation And Inhibit Bacterial Proliferation. Reconstituted Solutions Are Best Used Within 30 Days.',
+      };
+    } else if (name.includes('igf') || name.includes('lr3')) {
+      return {
+        title: 'IGF-1 Stability Advice',
+        advice: 'IGF-1 Analogues Precipitate Rapidly In Standard Aqueous Solutions. Reconstitute In <span class="calc-no-capitalize">0.6%</span> Acetic Acid As Recommended Above To Maintain Stability. Keep Reconstituted Solutions Refrigerated At <span class="calc-no-capitalize">2-8°C</span> And Use Within 14 Days For Maximum Active Recoverability.',
+      };
+    } else {
+      return {
+        title: 'Standard Peptide Stability Advice',
+        advice: 'Lyophilized Peptides Are Fragile Biomolecules. Once Reconstituted, Keep Refrigerated At <span class="calc-no-capitalize">2-8°C (36-46°F)</span>. Protect Vials From Vibration, Thermal Shock, And Ultraviolet Light. Swirl Gently To Dissolve; Never Shake Reconstituted Vials.',
+      };
+    }
+  };
+
+  const stability = getStabilityAdvice();
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Pop-Up Blocker Prevented Opening The Print Layout. Please Enable Pop-Ups.');
+      return;
+    }
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Reconstitution Protocol Sheet - ${peptide}</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              color: #111827;
+              padding: 40px;
+              max-width: 600px;
+              margin: 0 auto;
+            }
+            .card {
+              border: 2px solid #10B981;
+              border-radius: 12px;
+              padding: 24px;
+              background: #F9FAFB;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            }
+            h1 {
+              font-size: 20px;
+              color: #047857;
+              margin-top: 0;
+              border-bottom: 2px solid #E5E7EB;
+              padding-bottom: 12px;
+              text-transform: capitalize;
+            }
+            .recipe-item {
+              margin: 16px 0;
+              font-size: 15px;
+              line-height: 1.5;
+            }
+            .recipe-label {
+              font-weight: bold;
+              color: #4B5563;
+              text-transform: capitalize;
+            }
+            .recipe-value {
+              font-family: monospace;
+              font-size: 16px;
+              color: #111827;
+              font-weight: bold;
+            }
+            .alert-box {
+              background: #FEF3C7;
+              border-left: 4px solid #F59E0B;
+              padding: 12px;
+              margin-top: 20px;
+              border-radius: 4px;
+              font-size: 13px;
+              color: #78350F;
+            }
+            .footer {
+              margin-top: 30px;
+              font-size: 11px;
+              color: #9CA3AF;
+              text-align: center;
+              font-style: italic;
+            }
+            @media print {
+              body { padding: 0; }
+              .card { border: 1px solid #10B981; box-shadow: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h1>Reconstitution Protocol Sheet</h1>
+            <div class="recipe-item">
+              <span class="recipe-label">Peptide Compound:</span>
+              <span class="recipe-value">${peptide}</span>
+            </div>
+            <div class="recipe-item">
+              <span class="recipe-label">Vial Mass:</span>
+              <span class="recipe-value">${vMass} mg</span>
+            </div>
+            <div class="recipe-item">
+              <span class="recipe-label">Reconstitution Diluent:</span>
+              <span class="recipe-value">${dilMl} mL (${diluentType === 'bac-water' ? 'Bacteriostatic Water' : '0.6% Acetic Acid'})</span>
+            </div>
+            <div class="recipe-item">
+              <span class="recipe-label">Desired Target Dose:</span>
+              <span class="recipe-value">${dMassNumeric} ${unit}</span>
+            </div>
+            <div class="recipe-item" style="background: #ECFDF5; padding: 12px; border-radius: 8px; border: 1px solid #A7F3D0; margin-top: 20px;">
+              <span class="recipe-label" style="font-size: 16px; color: #065F46;">Recommended Syringe Draw:</span>
+              <span class="recipe-value" style="font-size: 22px; color: #047857; display: block; margin-top: 4px;">
+                ${drawMl !== null && isFinite(drawMl) ? Math.round(drawMl * 100) : 0} Units
+              </span>
+              <span style="font-size: 12px; color: #065F46; display: block; margin-top: 2px;">
+                (${drawMl !== null && isFinite(drawMl) ? drawMl.toFixed(3) : 0} mL drawn on a ${syringeSize} mL insulin syringe)
+              </span>
+            </div>
+            
+            ${isIgf ? `
+              <div class="alert-box">
+                IGF-1 Stability Notice: Diluted In 0.6% Acetic Acid To Maintain Long-Term Solubility And Prevent Rapid Isoelectric Precipitation.
+              </div>
+            ` : ''}
+
+            <div class="footer">
+              ${RESEARCH_NOTE}
+            </div>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <section id="reconstitution" style={chromeOuterStyle}>
       <div style={chromeInnerStyle}>
@@ -402,11 +628,11 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 }}>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Step 2: Vial Mass (Mg)</div>
+            <div style={labelStyle}>Step 2: Vial Mass (<span className="calc-no-capitalize">mg</span>)</div>
             <StyledInput type="number" step="any" min={0} value={vialMass} placeholder="e.g. 5" onChange={(e) => setVialMass(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Step 3: Diluent Added (ML)</div>
+            <div style={labelStyle}>Step 3: Diluent Added (<span className="calc-no-capitalize">mL</span>)</div>
             <StyledInput type="number" step="any" min={0} value={diluentMl} placeholder="e.g. 2" onChange={(e) => setDiluentMl(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
@@ -420,14 +646,14 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
 
         {isIgf && (
           <div style={{ color: '#F6AD55', fontSize: 13, padding: '8px 12px', border: '1px solid rgba(246,173,85,0.3)', borderRadius: 6, background: 'rgba(246,173,85,0.05)', marginBottom: 12 }}>
-            Stability Warning: IGF-1 Family Peptides Precipitate Quickly In Neutral PH (Bac-Water). Reconstituting In 0.6% Acetic Acid Maintains Solubility And Shelf-Stability.
+            Stability Warning: <span className="calc-no-capitalize">IGF-1</span> Family Peptides Precipitate Quickly In Neutral <span className="calc-no-capitalize">pH</span> (Bacteriostatic Water). Reconstituting In <span className="calc-no-capitalize">0.6%</span> Acetic Acid Maintains Solubility And Shelf-Stability.
           </div>
         )}
 
         <div style={{ ...resultStyle, marginTop: 12 }}>
           {vMass > 0 && dilMl > 0 ? (
             <div style={{ color: '#00E5FF', fontWeight: 800, fontSize: 18 }}>
-              Add {dilMl} ML Of {diluentType === 'bac-water' ? 'Bacteriostatic Water' : '0.6% Acetic Acid'} To The Vial.
+              Add {dilMl} <span className="calc-no-capitalize">mL</span> Of {diluentType === 'bac-water' ? 'Bacteriostatic Water' : '0.6% Acetic Acid'} To The Vial.
             </div>
           ) : (
             <div style={{ fontSize: 14 }}>Enter Vial Mass And Diluent Volume Above.</div>
@@ -453,9 +679,9 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Insulin Syringe Capacity</div>
             <StyledSelect value={syringeSize} onChange={(e) => setSyringeSize(Number(e.target.value) as 0.3 | 0.5 | 1.0)}>
-              <option value="1.0">1.0 ML (100 Units)</option>
-              <option value="0.5">0.5 ML (50 Units)</option>
-              <option value="0.3">0.3 ML (30 Units)</option>
+              <option value="1.0"><span className="calc-no-capitalize">1.0 mL</span> (100 Units)</option>
+              <option value="0.5"><span className="calc-no-capitalize">0.5 mL</span> (50 Units)</option>
+              <option value="0.3"><span className="calc-no-capitalize">0.3 mL</span> (30 Units)</option>
             </StyledSelect>
           </label>
         </div>
@@ -467,25 +693,136 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
               <span style={{ fontSize: 28, color: '#68D391', fontWeight: 800, display: 'block', margin: '8px 0' }}>
                 {Math.round(drawMl * 100)} Units
               </span>
-              <span style={{ fontSize: 13, color: '#A8B4C0' }} className="calc-no-capitalize">({drawMl.toFixed(3)} mL of working solution)</span>
+              <span style={{ fontSize: 13, color: '#A8B4C0' }}>
+                (<span className="calc-no-capitalize">{drawMl.toFixed(3)} mL</span> Of Working Solution)
+              </span>
+              
+              {!showExhaustionWarning && totalDoses > 0 && (
+                <div style={{ marginTop: 16, borderTop: '1px dashed rgba(0, 229, 255, 0.2)', paddingTop: 12, fontSize: 13, color: '#A8B4C0' }}>
+                  Timeline Summary: This <span className="calc-no-capitalize">{vMass} mg</span> Vial Yields Approximately <strong>{Math.floor(totalDoses)}</strong> Draws Of <span className="calc-no-capitalize">{dMassNumeric} {unit}</span>.
+                </div>
+              )}
             </div>
-            <VisualSyringe ml={drawMl} size={syringeSize} />
+            
+            {showExhaustionWarning && (
+              <div style={{ color: '#FF6B6B', fontSize: 13, padding: '12px', border: '1px dashed rgba(255,107,107,0.3)', borderRadius: 6, background: 'rgba(255,107,107,0.05)', marginTop: 12, textAlign: 'center' }}>
+                Warning: Desired Target Dose <span className="calc-no-capitalize">({dMassNumeric} {unit})</span> Exceeds Total Vial Capacity <span className="calc-no-capitalize">({vMass} mg)</span>. Please Adjust Vial Mass Or Desired Target Dose.
+              </div>
+            )}
+            
+            <VisualSyringe ml={drawMl} size={syringeSize} onDrawMlChange={handleDrawMlChange} />
           </>
         ) : (
           <div style={{ ...resultStyle, marginTop: 20, fontSize: 14 }}>Enter A Desired Dose Above.</div>
         )}
 
+        {/* Dynamic Stability Advice Section */}
+        <div style={{ marginTop: 20, padding: 16, borderRadius: 10, background: 'rgba(0, 229, 255, 0.02)', border: '1px solid rgba(0, 229, 255, 0.1)', color: '#A8B2C1', fontSize: 13, lineHeight: 1.5 }}>
+          <h4 style={{ margin: '0 0 6px', color: '#00E5FF', fontSize: 14, fontWeight: 700 }}>
+            {stability.title}
+          </h4>
+          <p style={{ margin: 0 }} dangerouslySetInnerHTML={{ __html: stability.advice }} />
+        </div>
+
         {vMass > 0 && dilMl > 0 && (
-          <SaveToJournalButton
-            title={`Reconstitution Recipe - ${peptide}`}
-            noteText={`Peptide Name: ${peptide}
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
+            <SaveToJournalButton
+              title={`Reconstitution Recipe - ${peptide}`}
+              noteText={`Peptide Name: ${peptide}
 Vial Mass: ${vMass} mg
 Diluent Volume: ${dilMl} mL (${diluentType === 'bac-water' ? 'Bacteriostatic Water' : '0.6% Acetic Acid'})
 Target Dose: ${dMassNumeric} ${unit}
-Recommended Syringe Draw: ${drawMl !== null && isFinite(drawMl) ? Math.round(drawMl * 100) : 0} Units (on a ${syringeSize} mL syringe)`}
-            compoundSlug={compounds.find(c => c.display_name === peptide)?.slug || null}
-          />
+Recommended Syringe Draw: ${drawMl !== null && isFinite(drawMl) ? Math.round(drawMl * 100) : 0} Units (On A ${syringeSize} mL Syringe)`}
+              compoundSlug={compounds.find(c => c.display_name === peptide)?.slug || null}
+            />
+            <button
+              type="button"
+              onClick={handlePrint}
+              style={{
+                background: 'transparent',
+                border: '1px solid #00E5FF',
+                color: '#00E5FF',
+                padding: '8px 16px',
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                marginTop: 12,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(0, 229, 255, 0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              Print Protocol Sheet
+            </button>
+          </div>
         )}
+
+        {/* Needle Gauge & Syringe Ticks Reference Guide */}
+        <div style={{ marginTop: 24, borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: 16 }}>
+          <button
+            type="button"
+            onClick={() => setShowGuide(!showGuide)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#A8B2C1',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: 0,
+            }}
+          >
+            <svg 
+              style={{ transform: showGuide ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', width: 16, height: 16 }} 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            Needle Gauge & Syringe Ticks Reference Guide
+          </button>
+          
+          {showGuide && (
+            <div style={{ marginTop: 12, padding: 16, background: 'rgba(255, 255, 255, 0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>
+              <h4 style={{ margin: '0 0 8px', color: '#FFFFFF', fontSize: 14 }}>Reading Insulin Syringe Tick Marks</h4>
+              <p style={{ margin: '0 0 12px' }}>
+                Insulin Syringes Are Divided Into Units Rather Than Milliliters. For A Standard <span className="calc-no-capitalize">U-100</span> Concentration:
+              </p>
+              <ul style={{ margin: '0 0 16px', paddingLeft: 20 }}>
+                <li><strong style={{ color: '#E5E7EB' }}>1.0 <span className="calc-no-capitalize">mL</span> Syringe:</strong> Each Tick Mark Represents 2 Units (<span className="calc-no-capitalize">0.02 mL</span>). Major Numbers Are Placed Every 10 Units.</li>
+                <li><strong style={{ color: '#E5E7EB' }}>0.5 <span className="calc-no-capitalize">mL</span> Syringe:</strong> Each Tick Mark Represents 1 Unit (<span className="calc-no-capitalize">0.01 mL</span>). Major Numbers Are Placed Every 5 Or 10 Units.</li>
+                <li><strong style={{ color: '#E5E7EB' }}>0.3 <span className="calc-no-capitalize">mL</span> Syringe:</strong> Each Tick Mark Represents 1 Unit (<span className="calc-no-capitalize">0.01 mL</span>) Or 0.5 Units (<span className="calc-no-capitalize">0.005 mL</span>). Major Numbers Are Placed Every 5 Units.</li>
+              </ul>
+              
+              <h4 style={{ margin: '0 0 8px', color: '#FFFFFF', fontSize: 14 }}>Selecting Needle Gauge Sizes</h4>
+              <p style={{ margin: '0 0 12px' }}>
+                Needle Gauge (G) Measures The Thickness Of The Needle. Larger Gauge Numbers Indicate Thinner Needles:
+              </p>
+              <ul style={{ margin: '0 0 16px', paddingLeft: 20 }}>
+                <li><strong style={{ color: '#E5E7EB' }} className="calc-no-capitalize">31G (31 Gauge):</strong> Ultra-Thin Needle. Provides Minimal Discomfort. Recommended For Standard Aqueous Solutions.</li>
+                <li><strong style={{ color: '#E5E7EB' }} className="calc-no-capitalize">30G (30 Gauge):</strong> Slightly Thicker. Best For Viscous Diluents Or When Drawing Is Slow.</li>
+                <li><strong style={{ color: '#E5E7EB' }} className="calc-no-capitalize">29G (29 Gauge):</strong> Thicker Shaft. Suitable For Large Draw Volumes Or Viscous Carriers.</li>
+              </ul>
+              
+              <h4 style={{ margin: '0 0 8px', color: '#FFFFFF', fontSize: 14 }}>Subcutaneous Injection Guidelines</h4>
+              <p style={{ margin: 0 }}>
+                Subcutaneous Injections Are Placed Into The Fat Layer Directly Below The Skin. Typical Needle Lengths Range From <span className="calc-no-capitalize">4mm</span> To <span className="calc-no-capitalize">8mm</span> (5/16 Inch). Always Maintain Strict Aseptic Techniques, Disinfecting Vial Stopper Seals Prior To Extraction.
+              </p>
+            </div>
+          )}
+        </div>
 
         <p style={noteStyle}>{RESEARCH_NOTE}</p>
       </div>
