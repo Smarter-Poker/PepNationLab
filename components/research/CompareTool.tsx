@@ -539,8 +539,7 @@ export function scoreCompound(c: Compound, allSelected: Compound[] = []): Compou
     recommendedContexts.push('Multi-system or polypharmacology research');
   if (c.is_stack)
     recommendedContexts.push('Multi-compound combination research protocols');
-  if (c.wada_status === 'permitted')
-    recommendedContexts.push('Athlete-compliant research protocols');
+
 
   return {
     total,
@@ -627,9 +626,7 @@ function generateProsCons(c: Compound): ProsCons {
     c.risk_reasons.slice(0, 2).forEach(r => cons.push({ text: r, severity: 'medium', category: 'Safety' }));
   }
 
-  // WADA
-  if (c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') cons.push({ text: 'WADA Prohibited - not permitted for use by tested competitive athletes', severity: 'high', category: 'Safety' });
-  else if (c.wada_status === 'permitted') pros.push({ text: 'WADA Permitted - compliant for tested athletes in competitive sport', severity: 'medium', category: 'Safety' });
+
 
   // Citations
   const cites = c.pubmed_citation_count ?? 0;
@@ -974,11 +971,7 @@ const ROWS: Row[] = [
     }
   },
   { kind: 'data', label: 'Regulatory Status', getValue: c => c.regulatory, render: c => txt(c.regulatory) },
-  { kind: 'data', label: 'WADA Status', getValue: c => c.wada_status, render: c => {
-    const label = wadaLabel(c.wada_status);
-    const isProhibited = c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males';
-    return <span style={{ color: isProhibited ? '#FFF' : c.wada_status === 'permitted' ? '#68D391' : 'inherit', fontWeight: isProhibited ? 700 : 'inherit' }}>{label}</span>;
-  }},
+
 
   { kind: 'group', label: 'Pharmacology' },
   {
@@ -1064,7 +1057,7 @@ const ROW_EXPLANATIONS: Record<string, string> = {
   'PubMed Citations': 'Number of peer-reviewed papers indexed in PubMed. Higher counts = more thoroughly studied and validated compound.',
   'Clinical Trials': 'Registered human studies on ClinicalTrials.gov. Active = currently enrolling; Completed = finished, results may be published.',
   'Regulatory Status': 'The current regulatory classification in major pharmaceutical markets (FDA, EMA, etc.).',
-  'WADA Status': 'Whether this compound appears on the World Anti-Doping Agency prohibited list - tested athletes may not use prohibited compounds.',
+
   'Half-Life': 'How long the compound remains at 50% peak concentration after administration. Longer = less frequent dosing; Shorter = more frequent or pulse-based protocols.',
   'Typical Frequency': 'The administration interval most commonly reported in research protocols based on pharmacokinetic profile.',
   'Mechanism / PK': 'How this compound acts on biological targets (mechanism) and how the body processes it over time (absorption, distribution, metabolism, excretion).',
@@ -2526,7 +2519,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                               </div>
                               <div style={{ display: 'flex', gap: 3, marginTop: 4, flexWrap: 'wrap' }}>
                                 {c.evidence_tier === 'approved_drug' && <span style={{ background: 'rgba(104,211,145,0.15)', color: '#68D391', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}><Check size={9} /> FDA</span>}
-                                {(c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') && <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FFF', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}><X size={9} /> WADA Banned</span>}
+
                                 {c.is_stack && <span style={{ background: 'rgba(159,122,234,0.15)', color: '#9F7AEA', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>Stack</span>}
                                 {c.is_temp_sensitive && <span style={{ background: 'rgba(246,173,85,0.15)', color: '#F6AD55', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>Cold Chain</span>}
                                 {c.is_pro_angiogenic && <span style={{ background: 'rgba(246,173,85,0.12)', color: '#F6AD55', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>Angio Alert</span>}

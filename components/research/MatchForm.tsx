@@ -609,11 +609,7 @@ function MatchFormInner() {
                   <td style={{ padding: '12px', color: tierColor(results[0].evidenceTier) }}>{tierLabel(results[0].evidenceTier)}</td>
                   <td style={{ padding: '12px', color: tierColor(results[1].evidenceTier) }}>{tierLabel(results[1].evidenceTier)}</td>
                 </tr>
-                <tr style={{ borderBottom: '1px solid #1D2D3E' }}>
-                  <td style={{ padding: '12px', color: '#A8B4C0' }}>WADA Status</td>
-                  <td style={{ padding: '12px' }}>{wadaText(results[0].wadaStatus)}</td>
-                  <td style={{ padding: '12px' }}>{wadaText(results[1].wadaStatus)}</td>
-                </tr>
+
                 <tr style={{ borderBottom: '1px solid #1D2D3E' }}>
                   <td style={{ padding: '12px', color: '#A8B4C0' }}>Half-Life</td>
                   <td style={{ padding: '12px' }}>{results[0].halfLife || 'Unknown'}</td>

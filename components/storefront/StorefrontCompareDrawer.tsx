@@ -335,8 +335,7 @@ function generateProsConsPinned(p: PinnedItem, compoundsBySlug: Record<string, C
   else if (c?.risk_level === 'high') cons.push('High risk level - significant adverse event reports');
   else if (c?.risk_level === 'critical') cons.push('Critical risk designation - exercise extreme caution');
   
-  if (c?.wada_status === 'prohibited' || c?.wada_status === 'prohibited_males') cons.push('WADA Prohibited - not permitted in tested competitive sport');
-  else if (c?.wada_status === 'permitted') pros.push('WADA Permitted - compliant for tested athletes');
+
   
   const cites = c?.pubmed_citation_count ?? 0;
   if (cites >= 1000) pros.push(`Extensive scientific literature (${cites.toLocaleString()} PubMed citations)`);
@@ -568,11 +567,7 @@ export default function StorefrontCompareDrawer({
         getValue: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return c?.risk_level || NL; },
         render: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; const r = c?.risk_level ? RISK_META[c.risk_level] : null; return r ? <span style={{ color: r.color, fontWeight: 700 }}>{r.label}</span> : NL; }
       },
-      {
-        kind: 'data', label: 'WADA Status',
-        getValue: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return c?.wada_status || NL; },
-        render: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return c?.wada_status ? wadaLabel(c.wada_status) : NL; }
-      },
+
       {
         kind: 'data', label: 'PubMed Citations',
         bestLogic: 'max',
@@ -948,11 +943,7 @@ export default function StorefrontCompareDrawer({
                           border: `1px solid ${tier.color}55`,
                         }}>{tier.label}</span>
                       )}
-                      {c?.wada_status && (c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') && (
-                        <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FFF', padding: '2px 6px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                          <X size={10} /> WADA Banned
-                        </span>
-                      )}
+
                       {item.pricePerVialDollars != null && (
                         <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#FFF', fontFamily: 'var(--font-brand)' }}>
                           ${Number(item.pricePerVialDollars).toFixed(2)}/Vial
