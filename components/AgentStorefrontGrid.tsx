@@ -62,21 +62,25 @@ function StockBadge({ state }: { state: StockState }) {
   let fg = '#C0B8A8';
   let border = 'rgba(192,184,168,0.40)';
   let label = 'In Stock';
+  let badgeSrc = '/images/badges/badge_in_stock.jpg';
   if (state.kind === 'low_stock') {
     bg = 'rgba(246,173,85,0.15)';
     fg = '#00E5FF';
     border = 'rgba(246,173,85,0.40)';
     label = `Only ${state.count} Left`;
+    badgeSrc = '/images/badges/badge_in_stock.jpg';
   } else if (state.kind === 'backorder') {
     bg = 'rgba(168,180,192,0.15)';
     fg = '#A8B4C0';
     border = 'rgba(168,180,192,0.40)';
     label = `Backordered: Ships In ${state.days} Days`;
+    badgeSrc = '/images/badges/badge_out_of_stock.jpg';
   } else if (state.kind === 'out_of_stock') {
     bg = 'rgba(229,62,62,0.15)';
     fg = '#E53E3E';
     border = 'rgba(229,62,62,0.40)';
     label = 'Out Of Stock';
+    badgeSrc = '/images/badges/badge_out_of_stock.jpg';
   }
   return (
     <span
@@ -84,12 +88,12 @@ function StockBadge({ state }: { state: StockState }) {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 4,
+        gap: 6,
         fontSize: '0.65rem',
         fontWeight: 800,
         letterSpacing: '0.05em',
         textTransform: 'uppercase',
-        padding: '4px 10px',
+        padding: '3px 10px 3px 4px',
         borderRadius: 9999,
         background: bg,
         color: fg,
@@ -98,6 +102,7 @@ function StockBadge({ state }: { state: StockState }) {
         whiteSpace: 'nowrap',
       }}
     >
+      <img src={badgeSrc} alt={label} style={{ width: 14, height: 14, borderRadius: '50%', objectFit: 'cover' }} />
       {label}
     </span>
   );

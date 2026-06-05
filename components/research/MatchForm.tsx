@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Sparkles, ChevronRight, ShieldCheck, Printer, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RESEARCH_AREAS } from '@/lib/compounds';
+import { RESEARCH_AREAS, evidenceTier, RISK_META } from '@/lib/compounds';
 import type {
   EvidenceComfort,
   MatchResult,
@@ -514,9 +514,16 @@ function MatchFormInner() {
                               <span style={{ color: 'var(--teal, #00C4BC)', fontWeight: 800, fontSize: '1.4rem' }}>
                                 {idx + 1}. {r.displayName}
                               </span>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: '999px', color: tierColor(r.evidenceTier), border: `1px solid ${tierColor(r.evidenceTier)}` }}>
-                                {tierLabel(r.evidenceTier)}
-                              </span>
+                              {(() => {
+                                const meta = evidenceTier(r.evidenceTier);
+                                return meta.badgeUrl ? (
+                                  <img src={meta.badgeUrl} alt={meta.label} style={{ height: 26, borderRadius: 6, objectFit: 'contain' }} />
+                                ) : (
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: '999px', color: tierColor(r.evidenceTier), border: `1px solid ${tierColor(r.evidenceTier)}` }}>
+                                    {tierLabel(r.evidenceTier)}
+                                  </span>
+                                );
+                              })()}
                             </div>
                             <p style={{ margin: '8px 0 0', color: 'var(--silver-light, #D0DAE4)', lineHeight: 1.55, fontSize: '1rem' }}>
                               {r.rationale}
@@ -606,8 +613,26 @@ function MatchFormInner() {
                 </tr>
                 <tr style={{ borderBottom: '1px solid #1D2D3E' }}>
                   <td style={{ padding: '12px', color: '#A8B4C0' }}>Evidence Tier</td>
-                  <td style={{ padding: '12px', color: tierColor(results[0].evidenceTier) }}>{tierLabel(results[0].evidenceTier)}</td>
-                  <td style={{ padding: '12px', color: tierColor(results[1].evidenceTier) }}>{tierLabel(results[1].evidenceTier)}</td>
+                  <td style={{ padding: '12px' }}>
+                    {(() => {
+                      const meta = evidenceTier(results[0].evidenceTier);
+                      return meta.badgeUrl ? (
+                        <img src={meta.badgeUrl} alt={meta.label} style={{ height: 26, borderRadius: 6, objectFit: 'contain' }} />
+                      ) : (
+                        <span style={{ color: tierColor(results[0].evidenceTier) }}>{tierLabel(results[0].evidenceTier)}</span>
+                      );
+                    })()}
+                  </td>
+                  <td style={{ padding: '12px' }}>
+                    {(() => {
+                      const meta = evidenceTier(results[1].evidenceTier);
+                      return meta.badgeUrl ? (
+                        <img src={meta.badgeUrl} alt={meta.label} style={{ height: 26, borderRadius: 6, objectFit: 'contain' }} />
+                      ) : (
+                        <span style={{ color: tierColor(results[1].evidenceTier) }}>{tierLabel(results[1].evidenceTier)}</span>
+                      );
+                    })()}
+                  </td>
                 </tr>
 
                 <tr style={{ borderBottom: '1px solid #1D2D3E' }}>

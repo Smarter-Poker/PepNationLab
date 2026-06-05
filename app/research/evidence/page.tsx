@@ -64,6 +64,7 @@ export default async function EvidenceSafetyPage() {
       return {
         slug: c.slug,
         name: c.display_name,
+        riskLevel: c.risk_level,
         riskLabel: risk?.label ?? null,
         riskColor: risk?.color ?? null,
         riskBg: risk?.bg ?? null,

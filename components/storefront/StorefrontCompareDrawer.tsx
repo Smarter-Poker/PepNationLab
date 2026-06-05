@@ -552,6 +552,9 @@ export default function StorefrontCompareDrawer({
         getValue: (p: PinnedItem) => p.evidenceTierKey || NL,
         render: (p: PinnedItem) => {
           const tier = p.evidenceTierKey ? evidenceTier(p.evidenceTierKey) : null;
+          if (tier?.badgeUrl) {
+            return <img src={tier.badgeUrl} alt={tier.label} style={{ height: 26, borderRadius: 6, objectFit: 'contain' }} />;
+          }
           return tier ? (
             <span style={{ color: tier.color, fontWeight: 700, border: `1px solid ${tier.color}`, padding: '2px 8px', borderRadius: 999, fontSize: '0.7rem' }}>{tier.label}</span>
           ) : NL;
@@ -565,7 +568,14 @@ export default function StorefrontCompareDrawer({
           if (c?.risk_level === 'low') return 1; if (c?.risk_level === 'moderate') return 2; if (c?.risk_level === 'high') return 3; if (c?.risk_level === 'critical') return 4; return 5;
         },
         getValue: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return c?.risk_level || NL; },
-        render: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; const r = c?.risk_level ? RISK_META[c.risk_level] : null; return r ? <span style={{ color: r.color, fontWeight: 700 }}>{r.label}</span> : NL; }
+        render: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          const r = c?.risk_level ? RISK_META[c.risk_level] : null;
+          if (r?.badgeUrl) {
+            return <img src={r.badgeUrl} alt={r.label} style={{ height: 26, borderRadius: 6, objectFit: 'contain' }} />;
+          }
+          return r ? <span style={{ color: r.color, fontWeight: 700 }}>{r.label}</span> : NL;
+        }
       },
 
       {
@@ -1079,7 +1089,7 @@ export default function StorefrontCompareDrawer({
               {/* Top Pick Banner */}
               {sortedPinnedItems.length >= 2 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 8, padding: '10px 14px' }}>
-                  <img src="/images/badges/badge_top_pick.jpg" alt="Top Pick" style={{ width: 22, height: 22, borderRadius: '50%' }} />
+                  <img src="/images/badges/badge_top_pick.jpg" alt="Top Pick" style={{ height: 22, borderRadius: 4, objectFit: 'contain' }} />
                   <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#FFF' }}>Top Pick: {sortedPinnedItems[0].productName}</span>
                   <span style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}>· Leading with a composite score of {pinnedScores[0].total}/100</span>
                 </div>
@@ -1224,8 +1234,8 @@ export default function StorefrontCompareDrawer({
                         {c?.mechanism && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Mechanism of Action</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.mechanism}</div></div>}
                         {c?.pk_summary && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Pharmacokinetics</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.pk_summary}</div></div>}
                         {c?.risk_reasons?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Risk Considerations</div><div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>{c.risk_reasons.map((r, ri) => <div key={ri} style={{ display: 'flex', gap: 5, alignItems: 'flex-start' }}><AlertTriangle size={10} color={RISK_META[c.risk_level]?.color ?? '#F6AD55'} style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.72rem', color: '#FFF', lineHeight: 1.4 }}>{r}</span></div>)}</div></div> : null}
-                        {c?.is_pro_angiogenic && <div style={{ fontSize: '0.72rem', color: '#FFF', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={12} /> Pro-Angiogenic - Promotes New Vessel Growth</div>}
-                        {c?.is_glp1 && <div style={{ fontSize: '0.72rem', color: '#FFF', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> GLP-1 / Incretin Class</div>}
+                        {c?.is_pro_angiogenic && <img src="/images/badges/badge_angio_alert.jpg" alt="Angio Alert" style={{ height: 26, borderRadius: 6, objectFit: 'contain', alignSelf: 'flex-start' }} />}
+                        {c?.is_glp1 && <img src="/images/badges/badge_glp1.jpg" alt="GLP-1 Incretin" style={{ height: 26, borderRadius: 6, objectFit: 'contain', alignSelf: 'flex-start' }} />}
                         {c?.sources?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div><div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{c.sources.slice(0, 3).map((src, si) => <a key={si} href={src.startsWith('http') ? src : undefined} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.68rem', color: '#FFF', opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>{src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si+1}</span> : src}</a>)}</div></div> : null}
                       </div>
                       <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
@@ -1568,7 +1578,7 @@ export default function StorefrontCompareDrawer({
                               return (
                                 <td key={p.productName} style={{ ...valueCellStyle, position: 'relative', borderLeft: '1px solid rgba(168,180,192,0.18)' }}>
                                   {isWinner && (
-                                    <img src="/images/badges/badge_top_pick.jpg" alt="Top Pick" style={{ position: 'absolute', top: 4, right: 4, width: 36, height: 36, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 2px 8px rgba(0,0,0,0.5)', zIndex: 10 }} />
+                                    <img src="/images/badges/badge_top_pick.jpg" alt="Top Pick" style={{ position: 'absolute', top: 4, right: 4, height: 18, borderRadius: 4, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 2px 8px rgba(0,0,0,0.5)', zIndex: 10 }} />
                                   )}
                                   <div style={isWinner ? { borderLeft: `2px solid ${primaryColor}`, paddingLeft: 8, marginLeft: -10 } : {}}>
                                     {row.render(p, maxHalfLife)}

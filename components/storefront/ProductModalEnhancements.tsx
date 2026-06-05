@@ -893,9 +893,13 @@ export default function ProductModalEnhancements({
                     {labelText}
                   </span>
                   {tier && (
-                    <span style={{ fontSize: '0.64rem', color: tier.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      {tier.label}
-                    </span>
+                    tier.badgeUrl ? (
+                      <img src={tier.badgeUrl} alt={tier.label} style={{ height: 16, borderRadius: 3, objectFit: 'contain', marginTop: 2 }} />
+                    ) : (
+                      <span style={{ fontSize: '0.64rem', color: tier.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        {tier.label}
+                      </span>
+                    )
                   )}
                   {!sc.inStock && (
                     <span style={{ fontSize: '0.66rem', color: 'var(--grey-400)', fontWeight: 600 }}>
@@ -1003,9 +1007,13 @@ export default function ProductModalEnhancements({
                     {ref.display_name}
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.66rem', color: tier.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      {tier.label}
-                    </span>
+                    {tier.badgeUrl ? (
+                      <img src={tier.badgeUrl} alt={tier.label} style={{ height: 16, borderRadius: 3, objectFit: 'contain' }} />
+                    ) : (
+                      <span style={{ fontSize: '0.66rem', color: tier.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        {tier.label}
+                      </span>
+                    )}
                     <span style={{ fontSize: '0.7rem', color: primaryColor, fontWeight: 700 }}>
                       ${formatMoney((group.lowestPrice || 0) / 10)}/Vial
                     </span>
