@@ -695,14 +695,10 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           {/* Badges */}
           <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end', zIndex: 2 }}>
             {inCart && (
-              <div style={{ background: 'var(--teal)', color: 'var(--black)', padding: '2px 8px', borderRadius: 12, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <ShoppingCart size={10} /> In Cart
-              </div>
+              <img src="/images/badges/badge_in_cart.png" alt="In Cart" style={{ height: 18, objectFit: 'contain' }} />
             )}
             {item.is_on_sale && (
-              <div style={{ background: 'rgba(245,101,101,0.2)', border: '1px solid rgba(245,101,101,0.5)', color: '#F56565', padding: '2px 8px', borderRadius: 12, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', backdropFilter: 'blur(4px)', boxShadow: '0 0 10px rgba(245,101,101,0.2)' }}>
-                Price Drop
-              </div>
+              <img src="/images/badges/badge_price_drop.png" alt="Price Drop" style={{ height: 18, objectFit: 'contain' }} />
             )}
             {activeTab === 'pastOrders' && item.purchase_count && item.purchase_count > 1 && sortBy === 'frequent' && (
               <div style={{ background: 'rgba(234,179,8,0.2)', border: '1px solid rgba(234,179,8,0.5)', color: '#EAB308', padding: '2px 8px', borderRadius: 12, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', backdropFilter: 'blur(4px)' }}>
@@ -713,7 +709,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           
           {item.in_stock === false && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'grayscale(100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
-              <span style={{ background: 'var(--black)', color: 'var(--silver)', padding: '4px 12px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase', border: '1px solid rgba(255,255,255,0.1)' }}>Out of Stock</span>
+              <img src="/images/badges/badge_out_of_stock.png" alt="Out of Stock" style={{ height: 26, objectFit: 'contain' }} />
             </div>
           )}
         </div>

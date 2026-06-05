@@ -56,7 +56,11 @@ export default function ProductsPreview() {
                 <div style={{
                   position: 'absolute', top: 12, right: 12,
                 }}>
-                  <span className="badge badge-red" style={{ fontSize: '0.65rem' }}>Research Only</span>
+                  <img 
+                    src="/images/badges/badge_research_compound.png" 
+                    alt="Research Only" 
+                    style={{ height: 18, objectFit: 'contain' }} 
+                  />
                 </div>
               </div>
 
