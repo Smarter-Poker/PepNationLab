@@ -265,13 +265,10 @@ export default function AgentStorefrontGrid({
   compoundsBySlug = {},
 }: Props) {
   const [mounted, setMounted] = useState(false);
-  const [showStoreGrid, setShowStoreGrid] = useState(false);
+  const [showStoreGrid, setShowStoreGrid] = useState(true);
 
   const openGrid = useCallback(() => {
     if (typeof window !== 'undefined') {
-      if (window.location.hash !== '#store') {
-        window.history.pushState(null, '', window.location.pathname + window.location.search + '#store');
-      }
       setShowStoreGrid(true);
       try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
     }
@@ -279,37 +276,16 @@ export default function AgentStorefrontGrid({
 
   const closeGrid = useCallback(() => {
     if (typeof window !== 'undefined') {
-      if (window.location.hash === '#store') {
-        window.history.back();
-      } else {
-        setShowStoreGrid(false);
-        setFilterArea('');
-        setFilterCategory('all');
-        setSearchQuery('');
-        try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
-      }
+      setShowStoreGrid(false);
+      setFilterArea('');
+      setFilterCategory('all');
+      setSearchQuery('');
+      try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
     }
   }, []);
 
   useEffect(() => {
     setMounted(true);
-    if (typeof window !== 'undefined' && window.location.hash === '#store') {
-      setShowStoreGrid(true);
-    }
-    const handlePopState = () => {
-      if (typeof window !== 'undefined') {
-        if (window.location.hash !== '#store') {
-          setShowStoreGrid(false);
-          setFilterArea('');
-          setFilterCategory('all');
-          setSearchQuery('');
-        } else {
-          setShowStoreGrid(true);
-        }
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
   const [wishlist, setWishlist] = useState<Set<string>>(() => new Set(initialWishlistIds));
   const toggleWishlist = useCallback(async (productId: string) => {
@@ -1558,31 +1534,7 @@ export default function AgentStorefrontGrid({
 
       {showStoreGrid && (
         <>
-          <div style={{ marginBottom: 16 }}>
-            <button
-              onClick={() => {
-                closeGrid();
-              }}
-              style={{
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.2)',
-                color: '#fff',
-                padding: '8px 16px',
-                borderRadius: 8,
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 12H5M12 19l-7-7 7-7"/>
-              </svg>
-              Back To Store Map
-            </button>
-          </div>
+
       {filterArea && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12,

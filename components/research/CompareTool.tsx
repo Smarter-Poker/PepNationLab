@@ -22,12 +22,12 @@ import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   Search, X, PlusCircle, Check, Printer, Share2, Download,
-  ChevronDown, ChevronRight, GripHorizontal,
+  ChevronDown, ChevronRight, ChevronLeft, GripHorizontal,
   ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info,
   Zap, BookOpen, FlaskConical, Shield, Star,
   Clock, Thermometer, ArrowRight, BarChart3, Beaker,
   Scale, Syringe, Wrench, Hourglass, Filter, List, Smartphone, LayoutList, MoveUp, MoveDown,
-  Sparkles, Moon, Heart, Brain
+  Sparkles, Moon, Heart, Brain, FileText, Mic
 } from 'lucide-react';
 import { type Compound, evidenceTier, wadaLabel, researchAreaLabel, RISK_META } from '@/lib/compounds';
 import AttributeRadarChart, { type RadarDataPoint } from './AttributeRadarChart';
@@ -859,6 +859,94 @@ const ROWS: Row[] = [
   },
 ];
 
+// ─── ROW EXPLANATIONS (Feature 9 — Explain This) ────────────────────────────
+const ROW_EXPLANATIONS: Record<string, string> = {
+  'Research Summary': 'A plain-language overview of what this compound is primarily studied for in scientific research.',
+  'Studied For': 'The specific research applications or goals this compound has been actively investigated for in scientific literature.',
+  'Research Areas': 'The broader scientific and therapeutic categories this compound has been studied within. More areas = more versatile research utility.',
+  'Best Stacked With': 'Compounds that research protocols commonly combine with this one, typically for complementary mechanisms or additive outcomes.',
+  'Category': 'The primary classification of this compound based on its structural or functional characteristics.',
+  'Compound Class': 'The molecular or pharmacological family this compound belongs to (e.g., peptide, small molecule, SARM).',
+  'Molecular Target': 'The specific biological receptor, enzyme, or pathway this compound acts upon at the molecular level.',
+  'Aliases / AKA': 'Alternative names, research codes, or abbreviations used for this compound in scientific literature.',
+  'Parent Compound': 'The original compound this one is derived from or structurally related to.',
+  'Molecular Weight': 'The mass of a single molecule in Daltons (Da). Compounds under ~500 Da generally have better bioavailability; larger peptides typically require injection.',
+  'Amino Acid Sequence': 'The linear chain of amino acids constituting this peptide, determining its 3D structure and binding specificity.',
+  'CAS Number': 'The unique Chemical Abstracts Service registry number — a universal identifier across all scientific databases.',
+  'Year Discovered': 'When this compound was first synthesized or described in the scientific literature.',
+  'Pro-Angiogenic': 'Whether research indicates this compound promotes new blood vessel formation. A consideration when combining multiple compounds in research stacks.',
+  'GLP-1 Class': 'Whether this compound is a glucagon-like peptide-1 receptor agonist, modulating insulin/glucagon release, gastric emptying, and appetite.',
+  'Purity': 'The confirmed percentage of active compound in the preparation, validated by Certificate of Analysis (CoA). ≥99% is pharmaceutical-grade.',
+  'Evidence Tier': 'The regulatory and clinical development status — from FDA-Approved (highest, extensive human data) to Research Chemicals (earliest stage, minimal human data).',
+  'Risk Level': 'Safety classification based on documented adverse events in available literature. Low = minimal reported issues; Critical = significant concerns.',
+  'PubMed Citations': 'Number of peer-reviewed papers indexed in PubMed. Higher counts = more thoroughly studied and validated compound.',
+  'Clinical Trials': 'Registered human studies on ClinicalTrials.gov. Active = currently enrolling; Completed = finished, results may be published.',
+  'Regulatory Status': 'The current regulatory classification in major pharmaceutical markets (FDA, EMA, etc.).',
+  'WADA Status': 'Whether this compound appears on the World Anti-Doping Agency prohibited list — tested athletes may not use prohibited compounds.',
+  'Half-Life': 'How long the compound remains at 50% peak concentration after administration. Longer = less frequent dosing; Shorter = more frequent or pulse-based protocols.',
+  'Typical Frequency': 'The administration interval most commonly reported in research protocols based on pharmacokinetic profile.',
+  'Mechanism / PK': 'How this compound acts on biological targets (mechanism) and how the body processes it over time (absorption, distribution, metabolism, excretion).',
+  'Reported Findings': 'Key outcomes observed in available research literature — documented scientific observations, not medical claims.',
+  'Side Effects Noted': 'Adverse effects or tolerability concerns reported in scientific literature from research contexts.',
+  'Warnings': 'Specific safety flags or handling precautions noted in research literature.',
+  'Form': 'Physical state as supplied — typically lyophilized (freeze-dried) powder for injectable peptides.',
+  'Diluent': 'Recommended solution for reconstituting this compound. Correct diluent preserves stability and potency.',
+  'Storage Temp': 'Recommended temperature for maintaining full potency and preventing degradation over time.',
+  'Light Sensitive': 'Whether this compound degrades on exposure to UV/visible light — store in amber vials or dark conditions if yes.',
+  'Freeze / Thaw': 'Freeze-thaw cycle tolerance — critical for planning long-term storage and multi-use vial management.',
+  'Handling Notes': 'Additional preparation, storage, or usage recommendations specific to this compound.',
+  'Reconstituted Shelf Life': 'Days the compound remains stable after mixing with diluent. Shorter shelf life requires more frequent preparation batches.',
+};
+
+// ─── Focus Row Modal (Features 3 + 9: Focus Mode + Explain This) ──────────────
+function FocusRowModal({ row, selected, maxHalfLife, controlCompound, topPickSlug, onClose }: {
+  row: Row;
+  selected: Compound[];
+  maxHalfLife: number;
+  controlCompound: Compound | undefined;
+  topPickSlug: string | null;
+  onClose: () => void;
+}) {
+  if (row.kind !== 'data') return null;
+  const explanation = ROW_EXPLANATIONS[row.label];
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
+      <div style={{ background: '#0F1E2D', width: '100%', maxWidth: 520, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: '24px 24px 44px', boxShadow: '0 -16px 60px rgba(0,0,0,0.7)', animation: 'slideUp 0.3s ease-out', maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#fff' }}>{row.label}</h3>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.06)', border: 'none', color: '#A8B4C0', cursor: 'pointer', borderRadius: 8, padding: 6, display: 'flex' }}><X size={20} /></button>
+        </div>
+        {row.glossaryTerm && <div style={{ fontSize: '0.65rem', color: 'rgba(0,196,188,0.7)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>Glossary: {row.glossaryTerm}</div>}
+        {explanation && (
+          <div style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.18)', borderRadius: 10, padding: '10px 14px', marginBottom: 20, fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.65, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <Info size={13} style={{ color: '#00C4BC', flexShrink: 0, marginTop: 2 }} />
+            <span>{explanation}</span>
+          </div>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {selected.map((c, i) => {
+            const color = colors[i % colors.length];
+            const isTop = c.slug === topPickSlug;
+            return (
+              <div key={c.slug} style={{ padding: '14px 16px', background: isTop ? 'rgba(0,196,188,0.06)' : 'rgba(255,255,255,0.03)', border: `1px solid ${isTop ? 'rgba(0,196,188,0.28)' : color + '22'}`, borderRadius: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                  <span style={{ color, fontWeight: 900, fontSize: '0.88rem' }}>{c.display_name}</span>
+                  {isTop && <Trophy size={11} color="#00C4BC" style={{ marginLeft: 2 }} />}
+                </div>
+                <div style={{ fontSize: '0.95rem', color: '#fff', lineHeight: 1.55 }}>{row.render(c, maxHalfLife)}</div>
+                {controlCompound && controlCompound.slug !== c.slug && (
+                  <div style={{ marginTop: 6 }}>{renderRelativeDelta(row.label, c, controlCompound)}</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Animated Score Ring ──────────────────────────────────────────────────────
 function AnimatedScoreRing({ score, color }: { score: CompoundScore; color: string }) {
   const [displayPct, setDisplayPct] = useState(0);
@@ -1265,6 +1353,16 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
   const [showLandscapePrompt, setShowLandscapePrompt] = useState(true);
   const [reorderModalOpen, setReorderModalOpen] = useState(false);
   const [jumpMenuOpen, setJumpMenuOpen] = useState(false);
+  // ─── New Feature State ──────────────────────────────────────────────────
+  const [swipeIndex, setSwipeIndex] = useState(0);          // Feature 1: Swipe
+  const [swipeMode, setSwipeMode] = useState(true);         // Feature 1: default on
+  const [showWinnersOnly, setShowWinnersOnly] = useState(false); // Feature 2
+  const [focusRow, setFocusRow] = useState<Row | null>(null); // Features 3+9
+  const [cellColorCode, setCellColorCode] = useState(false); // Feature 4
+  const [compareHistory, setCompareHistory] = useState<string[][]>([]); // Feature 7
+  const [tableZoom, setTableZoom] = useState(1);             // Feature 10
+  const [voiceActive, setVoiceActive] = useState(false);    // Feature 12
+  const touchStartX = useRef(0);                            // Feature 1: touch tracking
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -1295,6 +1393,87 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Feature 7: Load compare history from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('pnl_compare_history');
+      if (stored) setCompareHistory(JSON.parse(stored));
+    } catch {}
+  }, []);
+
+  // Feature 7: Save compare history when selection changes (2+ compounds)
+  useEffect(() => {
+    if (selectedSlugs.length < 2) return;
+    setCompareHistory(prev => {
+      const key = selectedSlugs.join(',');
+      const filtered = prev.filter(h => h.join(',') !== key);
+      const newHistory = [selectedSlugs, ...filtered].slice(0, 5);
+      try { localStorage.setItem('pnl_compare_history', JSON.stringify(newHistory)); } catch {}
+      return newHistory;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSlugs.join(',')]);
+
+  // Feature 11: Haptic feedback utility
+  function haptic(ms: number | number[] = 40) {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(ms);
+  }
+
+  // Feature 12: Voice search
+  function startVoiceSearch() {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    haptic(30);
+    const rec = new SR();
+    rec.lang = 'en-US'; rec.interimResults = false; rec.maxAlternatives = 1;
+    setVoiceActive(true);
+    rec.onresult = (e: any) => { setSearchQuery(e.results[0][0].transcript); setIsSearchOpen(true); setVoiceActive(false); };
+    rec.onerror = () => setVoiceActive(false);
+    rec.onend = () => setVoiceActive(false);
+    rec.start();
+  }
+
+  // Feature 8: Share card — canvas-drawn PNG download / Web Share
+  async function handleShareCard() {
+    if (!selected.length) return;
+    haptic(60);
+    const W = 600, H = 130 + selected.length * 80;
+    const canvas = document.createElement('canvas');
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    const ctx = canvas.getContext('2d'); if (!ctx) return;
+    ctx.scale(dpr, dpr);
+    // Background
+    ctx.fillStyle = '#0D1B2A';
+    if ((ctx as any).roundRect) { (ctx as any).roundRect(0, 0, W, H, 16); ctx.fill(); } else { ctx.fillRect(0, 0, W, H); }
+    // Header line
+    ctx.fillStyle = '#00C4BC'; ctx.font = 'bold 13px system-ui,sans-serif'; ctx.fillText('PEP NATION LAB', 24, 32);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.font = 'bold 20px system-ui,sans-serif'; ctx.fillText('Compound Comparison', 24, 58);
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(24, 68); ctx.lineTo(W - 24, 68); ctx.stroke();
+    const cColors = ['#00C4BC', '#FF6B6B', '#FCA311', '#9F7AEA'];
+    selected.forEach((c, i) => {
+      const y = 80 + i * 80; const sc = scores[i]; const col = cColors[i % cColors.length]; const isTop = c.slug === topPickSlug;
+      ctx.fillStyle = col + '1A';
+      if ((ctx as any).roundRect) { (ctx as any).roundRect(20, y, W - 40, 66, 10); ctx.fill(); } else { ctx.fillRect(20, y, W - 40, 66); }
+      ctx.fillStyle = col; ctx.font = 'bold 16px system-ui,sans-serif'; ctx.textAlign = 'left'; ctx.fillText(c.display_name.slice(0, 30), 36, y + 26);
+      if (isTop) { ctx.fillStyle = '#00C4BC'; ctx.font = '11px system-ui,sans-serif'; ctx.fillText('\u2605 TOP PICK', 36, y + 46); }
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = 'bold 28px system-ui,sans-serif'; ctx.textAlign = 'right'; ctx.fillText(`${sc.total}`, W - 60, y + 32);
+      ctx.font = 'bold 13px system-ui,sans-serif'; ctx.fillStyle = col; ctx.fillText(`Grade ${sc.letter}`, W - 60, y + 52); ctx.textAlign = 'left';
+    });
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.font = '10px system-ui,sans-serif'; ctx.fillText('pepnationlab.com/research/compare', 24, H - 16);
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      const file = new File([blob], 'pepnationlab_compare.png', { type: 'image/png' });
+      if (typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] })) {
+        navigator.share({ title: 'PepNationLab Compare', files: [file] });
+      } else {
+        const url = URL.createObjectURL(blob); const a = document.createElement('a');
+        a.href = url; a.download = 'pepnationlab_compare.png';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+      }
+    });
+  }
+
   const bySlug = useMemo(() => new Map(compounds.map(c => [c.slug, c])), [compounds]);
   const selected = useMemo(() => selectedSlugs.map(s => bySlug.get(s)).filter((c): c is Compound => Boolean(c)), [selectedSlugs, bySlug]);
 
@@ -1317,12 +1496,13 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
 
   const addCompound = useCallback((slug: string) => {
     if (!slug) return;
+    haptic(40); // Feature 11
     setSelectedSlugs(prev => prev.includes(slug) || prev.length >= MAX_COLUMNS ? prev : [...prev, slug]);
     setSearchQuery('');
     setIsSearchOpen(false);
   }, []);
 
-  const removeCompound = useCallback((slug: string) => setSelectedSlugs(prev => prev.filter(s => s !== slug)), []);
+  const removeCompound = useCallback((slug: string) => { haptic([20, 10, 20]); setSelectedSlugs(prev => prev.filter(s => s !== slug)); }, []); // Feature 11
   const toggleGroup = useCallback((label: string) => setCollapsedGroups(prev => { const n = new Set(prev); if (n.has(label)) { n.delete(label); } else { n.add(label); } return n; }), []);
 
   function handleShare() {
@@ -1420,6 +1600,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         .popular-card:hover { background: rgba(0,196,188,0.08); border-color: rgba(0,196,188,0.3); transform: translateY(-1px); }
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeInDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.6; transform:scale(1.15); } }
       `}} />
       <div className="no-print" style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', marginBottom: 24, position: 'relative', zIndex: 50 }} ref={searchRef}>
         <div style={{ position: 'relative', flex: 1, minWidth: 240, maxWidth: 520 }}>
@@ -1431,8 +1612,18 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
             onChange={e => { setSearchQuery(e.target.value); setIsSearchOpen(true); }}
             onFocus={() => setIsSearchOpen(true)}
             disabled={!canAdd}
-            style={{ width: '100%', background: '#162230', color: '#fff', border: '1px solid rgba(168,180,192,0.2)', borderRadius: 8, padding: '12px 16px 12px 42px', fontSize: '0.95rem', outline: 'none', opacity: canAdd ? 1 : 0.5 }}
+            style={{ width: '100%', background: '#162230', color: '#fff', border: '1px solid rgba(168,180,192,0.2)', borderRadius: 8, padding: '12px 44px 12px 42px', fontSize: '0.95rem', outline: 'none', opacity: canAdd ? 1 : 0.5 }}
           />
+          {/* Feature 12: Voice search mic button */}
+          <button
+            type="button"
+            onClick={startVoiceSearch}
+            title="Voice search"
+            aria-label="Voice search"
+            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: voiceActive ? '#00C4BC' : 'transparent', border: 'none', color: voiceActive ? '#04221F' : 'rgba(168,180,192,0.45)', cursor: 'pointer', display: 'flex', padding: 5, borderRadius: 6, transition: 'all 0.2s' }}
+          >
+            <Mic size={16} style={{ animation: voiceActive ? 'pulse 0.7s ease-in-out infinite' : 'none' }} />
+          </button>
           {isSearchOpen && searchQuery.trim() && (
             <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6, background: '#162230', border: '1px solid rgba(168,180,192,0.2)', borderRadius: 8, overflow: 'hidden', boxShadow: '0 12px 30px rgba(0,0,0,0.6)', zIndex: 100 }}>
               {searchResults.length ? (
@@ -1726,6 +1917,28 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
           {/* ── TAB: ATTRIBUTE MATRIX ── */}
           {(activeTab === 'matrix') && (
             <>
+              {/* Feature 2, 4, 10: Matrix Controls */}
+              {selected.length >= 2 && (
+                <div className="no-print" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+                  <button type="button" onClick={() => { setShowWinnersOnly(v => !v); haptic(20); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, background: showWinnersOnly ? 'rgba(104,211,145,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${showWinnersOnly ? 'rgba(104,211,145,0.4)' : 'rgba(255,255,255,0.1)'}`, color: showWinnersOnly ? '#68D391' : '#A8B4C0', borderRadius: 8, padding: '7px 12px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
+                    <Trophy size={12} /> {showWinnersOnly ? 'Winners Only ✓' : 'Winners Only'}
+                  </button>
+                  <button type="button" onClick={() => { setCellColorCode(v => !v); haptic(20); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, background: cellColorCode ? 'rgba(0,196,188,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${cellColorCode ? 'rgba(0,196,188,0.4)' : 'rgba(255,255,255,0.1)'}`, color: cellColorCode ? '#00C4BC' : '#A8B4C0', borderRadius: 8, padding: '7px 12px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
+                    <BarChart3 size={12} /> {cellColorCode ? 'Color Rank ✓' : 'Color Rank'}
+                  </button>
+                  {!isMobile && (
+                    <div style={{ display: 'flex', gap: 4, marginLeft: 'auto', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)' }}>Zoom</span>
+                      <button type="button" onClick={() => setTableZoom(z => Math.max(0.7, parseFloat((z - 0.1).toFixed(1))))} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#A8B4C0', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>-</button>
+                      <span style={{ fontSize: '0.75rem', color: '#fff', minWidth: 36, textAlign: 'center', fontWeight: 700 }}>{Math.round(tableZoom * 100)}%</span>
+                      <button type="button" onClick={() => setTableZoom(z => Math.min(1.3, parseFloat((z + 0.1).toFixed(1))))} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#A8B4C0', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>+</button>
+                      {tableZoom !== 1 && <button type="button" onClick={() => setTableZoom(1)} style={{ background: 'transparent', border: 'none', color: 'rgba(168,180,192,0.45)', fontSize: '0.7rem', cursor: 'pointer', padding: '0 4px' }}>Reset</button>}
+                    </div>
+                  )}
+                </div>
+              )}
               {/* Toggle View Mode on Mobile */}
               {isMobile && (
                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
