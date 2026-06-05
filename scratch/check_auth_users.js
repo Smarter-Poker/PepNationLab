@@ -4,15 +4,14 @@ const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZi
 const supabase = createClient(url, key);
 
 async function run() {
-  const { data: profiles, error } = await supabase
-    .from('profiles')
-    .select('id, email, username, full_name, role');
-    
+  const { data: { users }, error } = await supabase.auth.admin.listUsers();
   if (error) {
     console.error(error);
-    return;
+  } else {
+    console.log(`Found ${users.length} auth users:`);
+    for (const u of users) {
+      console.log(`ID: ${u.id}, Email: ${u.email}`);
+    }
   }
-  
-  console.log(JSON.stringify(profiles, null, 2));
 }
 run();

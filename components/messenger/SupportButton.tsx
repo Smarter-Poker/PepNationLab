@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { LifeBuoy, X, Clock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -75,6 +75,7 @@ function isAfterHoursCentral(now: Date): boolean {
 function Inner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -96,9 +97,11 @@ function Inner() {
   const afterHours = useMemo(() => isAfterHoursCentral(new Date(nowTick)), [nowTick]);
 
   useEffect(() => {
-    // Mount-time visibility check: only on /messenger paths, hide for admins.
     if (typeof window === 'undefined') return;
-    if (!window.location.pathname.startsWith('/messenger')) return;
+    if (!pathname || !pathname.startsWith('/messenger')) {
+      setShow(false); // eslint-disable-line react-hooks/set-state-in-effect
+      return;
+    }
 
     let cancelled = false;
     (async () => {
@@ -112,13 +115,17 @@ function Inner() {
           .eq('id', user.id)
           .maybeSingle();
         if (cancelled) return;
-        if (profile?.role !== 'admin') setShow(true);
+        if (profile?.role !== 'admin') {
+          setShow(true);
+        } else {
+          setShow(false);
+        }
       } catch {
-        // Silent — button just stays hidden
+        setShow(false);
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [pathname]);
 
   // Honor URL params: openSupport=1 + optional orderId pre-fills + auto-opens.
   useEffect(() => {
@@ -126,13 +133,17 @@ function Inner() {
     const openFlag = searchParams.get('openSupport');
     const orderQ = searchParams.get('orderId');
     if (openFlag === '1') {
-      setTopic('Order Issue');
-      if (orderQ) setOrderId(orderQ);
-      setModalOpen(true);
-      setDidAutoOpen(true);
+      setTimeout(() => {
+        setTopic('Order Issue');
+        if (orderQ) setOrderId(orderQ);
+        setModalOpen(true);
+        setDidAutoOpen(true);
+      }, 0);
     } else if (orderQ && !modalOpen) {
       // Just pre-fill the field without forcing the modal open.
-      setOrderId(orderQ);
+      setTimeout(() => {
+        setOrderId(orderQ);
+      }, 0);
     }
   }, [show, didAutoOpen, searchParams, modalOpen]);
 
