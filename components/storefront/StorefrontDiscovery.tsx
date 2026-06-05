@@ -144,12 +144,20 @@ function labelForArea(area: string): string {
   return RESEARCH_AREA_LABELS[area] || area.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function capitalizeEveryWord(str: string): string {
+  if (!str) return '';
+  return str.replace(/\b\w/g, char => char.toUpperCase());
+}
+
 /** Collect the unique research areas the agent's catalog actually covers. */
 function deriveAvailableAreas(compoundsBySlug: Record<string, Compound>): string[] {
   const seen = new Set<string>();
   for (const c of Object.values(compoundsBySlug)) {
     for (const area of c.research_areas || []) {
-      if (typeof area === 'string' && area.length > 0) seen.add(area);
+      if (typeof area === 'string' && area.length > 0) {
+        if (area === 'hormonal' || area === 'supply') continue;
+        seen.add(area);
+      }
     }
   }
   // Sort so high-traffic areas float to the front; everything else alpha.

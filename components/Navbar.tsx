@@ -11,6 +11,7 @@ import NavbarWalletBadge from '@/components/NavbarWalletBadge';
 import WalletCard from '@/components/WalletCard';
 import { getRoleNavLinks } from '@/components/roleNavLinks';
 import MyQRCodeModal from './MyQRCodeModal';
+import { useMessengerStore } from '@/stores/messengerStore';
 
 function resolveTitle(pathname: string, role: string): string {
   if (pathname === '/')               return 'Pep Nation Lab';
@@ -122,6 +123,7 @@ const IP = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 
 export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: () => void; isOpen?: boolean; title?: string } = {}) {
   const router = useRouter();
   const pathname = usePathname();
+  const activeId = useMessengerStore((s) => s.activeConversationId);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
@@ -320,6 +322,16 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
     // 5. If on /research landing page
     if (pathname === '/research' || pathname === '/research/') {
       router.push(dashLink);
+      return;
+    }
+
+    // 5.5. If on /messenger
+    if (pathname.startsWith('/messenger')) {
+      if (activeId) {
+        router.back();
+      } else {
+        router.push(dashLink);
+      }
       return;
     }
 
