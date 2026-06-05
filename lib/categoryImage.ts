@@ -237,7 +237,7 @@ const PRESERVE_UPPERCASE = new Set([
 export function toTitleCase(name: string): string {
   if (!name) return name;
 
-  return name
+  const formatted = name
     .split(' ')
     .map(word => {
       // Fully parenthetical suffix e.g. "(Somatropin)" — leave as-is
@@ -275,6 +275,8 @@ export function toTitleCase(name: string): string {
         .join('-');
     })
     .join(' ');
+
+  return formatted.replace(/\b(Klow|KLOW)\s+Stack\b/g, 'KLOW STACK');
 }
 
 /**

@@ -185,9 +185,13 @@ export default async function proxy(request: NextRequest) {
       },
     },
   );
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data?.user ?? null;
+  } catch (err) {
+    console.error('[proxy.ts] Failed to retrieve user session:', err);
+  }
 
   const redirectWithCookies = (url: URL) => {
     const redirectResponse = NextResponse.redirect(url);
