@@ -114,7 +114,6 @@ export default function TrialsMetricsPanel({ compound }: Props) {
             </span>
           ) : 'No indexed publications found'}
           color={citPercentile.color}
-          icon="📄"
         />
         <StatCard
           label="Clinical Trials"
@@ -127,14 +126,12 @@ export default function TrialsMetricsPanel({ compound }: Props) {
             </span>
           ) : 'No registered trials found'}
           color={trialTier.color}
-          icon="🧪"
         />
         <StatCard
           label="Evidence Tier"
           value={<span style={{ fontSize: '1rem' }}>{tier.label}</span>}
           sub={tier.blurb}
           color={tier.color}
-          icon="🏅"
         />
         {compound.year_discovered && (
           <StatCard
@@ -142,7 +139,6 @@ export default function TrialsMetricsPanel({ compound }: Props) {
             value={compound.year_discovered}
             sub={ageContext ?? undefined}
             color="#9F7AEA"
-            icon="📅"
           />
         )}
       </div>
@@ -157,7 +153,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'rgba(255,255,255,0.7)' }}>
-              📊 Literature Depth
+              Literature Depth
             </div>
             <span style={{ fontSize: '0.68rem', color: citPercentile.color, fontWeight: 700 }}>
               {citPercentile.label} of peptide compounds
@@ -207,7 +203,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'rgba(255,255,255,0.7)' }}>
-              🧬 Trial Registry Summary
+              Trial Registry Summary
             </div>
             <span style={{
               fontSize: '0.68rem',
@@ -358,7 +354,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
-                ⚡ WADA Anti-Doping Status
+                WADA Anti-Doping Status
               </div>
               <span style={{
                 fontSize: '0.7rem',
@@ -394,7 +390,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
           padding: '14px 16px',
         }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 10 }}>
-            ⚠️ Risk Considerations ({risk?.label ?? compound.risk_level})
+            Risk Considerations ({risk?.label ?? compound.risk_level})
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {compound.risk_reasons.map((reason, i) => (
@@ -416,7 +412,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
           padding: '14px 16px',
         }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 10 }}>
-            🔗 External Research Databases
+            External Research Databases
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {chemblId && (

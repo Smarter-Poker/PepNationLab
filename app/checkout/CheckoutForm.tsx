@@ -1528,7 +1528,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 transition: 'all 0.3s ease',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <span style={{ fontSize: '1.1rem' }}>🔬</span>
                   <strong style={{ color: 'var(--white)', fontSize: '0.82rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                     Reconstitution Supplies
                   </strong>

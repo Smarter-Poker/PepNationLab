@@ -1794,7 +1794,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
     { id: 'proscons' as const, label: 'Pros & Cons', showAlways: false },
     { id: 'brief' as const, label: 'Analyst Brief', showAlways: false },
     ...(selected.some(c => c.efficacy_scores && Object.keys(c.efficacy_scores).length > 0)
-      ? [{ id: 'efficacy' as const, label: '📊 Efficacy', showAlways: false }]
+      ? [{ id: 'efficacy' as const, label: 'Efficacy', showAlways: false }]
       : []),
     { id: 'mechanism' as const, label: 'Mechanism', showAlways: false },
     { id: 'protocol' as const, label: 'Protocol', showAlways: false },
@@ -1898,7 +1898,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
           backdropFilter: 'blur(8px)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <AlertTriangle size={16} color="#FC8181" />
+            <AlertTriangle size={16} color="#FFF" />
             <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Research Safety & Compatibility Advisories
             </span>

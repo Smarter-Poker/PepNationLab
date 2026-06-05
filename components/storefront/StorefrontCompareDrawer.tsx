@@ -1048,7 +1048,7 @@ export default function StorefrontCompareDrawer({
                   backdropFilter: 'blur(8px)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <AlertTriangle size={16} color="#FC8181" />
+                    <AlertTriangle size={16} color="#FFF" />
                     <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       Research Safety & Compatibility Advisories
                     </span>

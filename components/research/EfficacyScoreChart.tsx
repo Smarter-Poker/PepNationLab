@@ -126,7 +126,7 @@ export default function EfficacyScoreChart({ scores, title, compact = false, acc
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
         <div>
           <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: accentColor, marginBottom: 3 }}>
-            📊 {title ?? 'Research Efficacy Profile'}
+            {title ?? 'Research Efficacy Profile'}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)' }}>
             Per-domain scores (0–100) based on compound metadata · {entries.length} application areas

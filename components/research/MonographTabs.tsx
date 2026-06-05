@@ -445,7 +445,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
           <div>
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: teal, marginBottom: 4 }}>
-                📊 Application Domain Efficacy Profile
+                Application Domain Efficacy Profile
               </div>
               <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', margin: 0, lineHeight: 1.6 }}>
                 Per-domain efficacy scores derived from compound research metadata. Scores represent the strength of research evidence and mechanistic alignment with each application area (0–100 scale).
@@ -783,7 +783,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
           <div>
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: teal, marginBottom: 4 }}>
-                📈 Research Metrics & External Databases
+                Research Metrics & External Databases
               </div>
               <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', margin: 0, lineHeight: 1.6 }}>
                 Quantitative research footprint: clinical trial registrations, peer-reviewed publications, regulatory classifications, and links to authoritative external databases.
