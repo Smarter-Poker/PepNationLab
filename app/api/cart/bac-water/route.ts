@@ -123,7 +123,6 @@ export async function POST(req: NextRequest) {
   // ── Identify BAC water vs peptides ─────────────────────────────────────────
   let alreadyInCart = false;
   let alreadyInCartQty = 0;
-  let bacWaterProductId: string | null = null;
 
   let peptideCount = 0;
   let totalPeptideVials = 0;
@@ -140,7 +139,6 @@ export async function POST(req: NextRequest) {
     if (isBacWater) {
       alreadyInCart = true;
       alreadyInCartQty = quantities[p.id] ?? 1;
-      bacWaterProductId = p.id;
       continue;
     }
 
@@ -189,11 +187,11 @@ export async function POST(req: NextRequest) {
     const { data: bacProducts } = await bacQuery.limit(10);
     
     if (bacProducts && bacProducts.length > 0) {
-      // Pick the 10ml variant if available, otherwise the first one
-      const preferredBac = bacProducts.find(p => 
-        p.unit_size === '10' || 
-        p.unit_size === '10ml' || 
-        p.unit_measure === 'ml' ||
+      // Prefer 10 mL variant — check by unit_size number or name keyword
+      const preferredBac = bacProducts.find(p =>
+        p.unit_size === '10' ||
+        p.unit_size === '10ml' ||
+        p.name.toLowerCase().includes('10 ml') ||
         p.name.toLowerCase().includes('10ml')
       ) ?? bacProducts[0];
 

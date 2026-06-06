@@ -84,8 +84,12 @@ interface Props {
   onAddVariantToCart: (variantId: string, qty: number) => void;
 }
 
+// Hard block: syringes are strictly forbidden on PepNationLab — never surface them
+const FORBIDDEN_SUPPLY = /syring/i;
+
 function pickSupply(grouped: ModalGroupedProductRef[], pattern: RegExp, currentSlug: string | null) {
   for (const g of grouped) {
+    if (FORBIDDEN_SUPPLY.test(g.name)) continue; // hard block — never show syringes
     if (g.compoundSlug && g.compoundSlug === currentSlug) continue;
     if (pattern.test(g.name)) return g;
     if (g.compoundSlug && pattern.test(g.compoundSlug)) return g;
