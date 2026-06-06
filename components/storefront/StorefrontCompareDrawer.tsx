@@ -16,6 +16,7 @@ import { evidenceTier, type Compound, RISK_META, researchAreaLabel, wadaLabel } 
 import InCellGlossaryTooltip from '../research/InCellGlossaryTooltip';
 import { scoreCompound, type CompoundScore } from '../research/CompareTool';
 import DynamicAddToCartButton from './DynamicAddToCartButton';
+import DynamicCompareButton from './DynamicCompareButton';
 
 interface PinnedItem {
   productName: string;
@@ -1028,44 +1029,19 @@ export default function StorefrontCompareDrawer({
               Compare ({pinned.length} Of {MAX_PINNED})
             </div>
             {pinned.length >= 2 && (
-              <button
-                type="button"
+              <DynamicCompareButton
+                type="compare"
                 onClick={() => setShowMatrix(true)}
-                style={{
-                  background: primaryColor, border: `1px solid ${primaryColor}`,
-                  color: '#04221F', borderRadius: 8, padding: '6px 16px',
-                  fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer',
-                  boxShadow: `0 2px 8px ${primaryColor}55`,
-                  display: 'flex', alignItems: 'center', gap: 6,
-                }}
-              >
-                <Scale size={14} />
-                Compare Attributes
-              </button>
+              />
             )}
-            <button
-              type="button"
+            <DynamicCompareButton
+              type={collapsed ? 'expand' : 'collapse'}
               onClick={() => setCollapsed((v) => !v)}
-              style={{
-                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
-                color: 'var(--white)', borderRadius: 8, padding: '6px 12px',
-                fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer',
-              }}
-            >
-              {collapsed ? 'Expand' : 'Collapse'}
-            </button>
-            <button
-              type="button"
+            />
+            <DynamicCompareButton
+              type="clear"
               onClick={clearAll}
-              aria-label="Clear All Pinned"
-              style={{
-                background: 'rgba(229,62,62,0.10)', border: '1px solid rgba(229,62,62,0.32)',
-                color: '#F08A8A', borderRadius: 8, padding: '6px 12px',
-                fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer',
-              }}
-            >
-              Clear All
-            </button>
+            />
           </div>
 
           {!collapsed && (
