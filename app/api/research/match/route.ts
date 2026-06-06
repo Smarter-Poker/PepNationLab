@@ -58,6 +58,7 @@ function parseInput(raw: unknown): MatchInput | null {
   if (!isRiskTolerance(obj.riskTolerance)) return null;
   return {
     goal: obj.goal,
+    goals: Array.isArray(obj.goals) ? obj.goals.filter((g): g is string => typeof g === 'string') : undefined,
     evidenceComfort: obj.evidenceComfort,
     wadaConstraint: obj.wadaConstraint,
     riskTolerance: obj.riskTolerance,
@@ -94,7 +95,53 @@ export async function POST(req: NextRequest) {
   }
 
   const compounds = await getAllCompounds();
-  const scoredData = scoreCompounds(input, compounds);
+  
+  const goals = input.goals && input.goals.length > 0 ? input.goals : [input.goal];
+  const allMatchesMap = new Map<string, any>();
+  const allExcludedMap = new Map<string, any>();
+
+  for (const g of goals) {
+    const singleInput = { ...input, goal: g };
+    const scoredData = scoreCompounds(singleInput, compounds);
+
+    for (const match of scoredData.matches) {
+      const existing = allMatchesMap.get(match.slug);
+      if (!existing || match.score > existing.score) {
+        allMatchesMap.set(match.slug, match);
+      }
+    }
+
+    for (const excl of scoredData.excluded) {
+      if (!allExcludedMap.has(excl.slug)) {
+        allExcludedMap.set(excl.slug, excl);
+      }
+    }
+  }
+
+  const matches = Array.from(allMatchesMap.values())
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.displayName.localeCompare(b.displayName);
+    })
+    .slice(0, 12);
+
+  // Detect synergistic stack relationships among the top results
+  for (let i = 0; i < matches.length; i++) {
+    for (let j = i + 1; j < matches.length; j++) {
+      const cA = compounds.find(c => c.slug === matches[i].slug);
+      const cB = compounds.find(c => c.slug === matches[j].slug);
+      if (cA && cB) {
+        const aHasB = cA.stack_components?.includes(cB.slug);
+        const bHasA = cB.stack_components?.includes(cA.slug);
+        if (aHasB || bHasA) {
+          matches[i].isStackPartner = true;
+          matches[j].isStackPartner = true;
+        }
+      }
+    }
+  }
+
+  const excluded = Array.from(allExcludedMap.values()).slice(0, 5);
 
   // Analytics log to db (awaited to prevent serverless termination)
   const supabase = await createServiceClient();
@@ -112,8 +159,8 @@ export async function POST(req: NextRequest) {
   if (error) console.error('[Match Analytics] Failed to insert', error);
 
   return NextResponse.json({ 
-    results: scoredData.matches, 
-    excluded: scoredData.excluded, 
+    results: matches, 
+    excluded: excluded, 
     note: RESEARCH_NOTE 
   });
 }

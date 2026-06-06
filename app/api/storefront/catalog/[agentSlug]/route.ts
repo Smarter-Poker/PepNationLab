@@ -100,11 +100,21 @@ export async function GET(
       `)
       .eq('agent_id', agent.id)
       .eq('is_visible', true)
-      .order('sort_order'),
+      .order('sort_order', { nullsFirst: false }),
 
     supabase
       .rpc('agent_inventory_for_storefront', { p_slug: agentSlug }),
   ]);
+
+  if (productsResult.error) {
+    console.error('[catalog api] Error fetching products:', productsResult.error);
+    return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+  }
+
+  if (inventoryResult.error) {
+    console.error('[catalog api] Error fetching inventory:', inventoryResult.error);
+    return NextResponse.json({ error: 'Failed to fetch inventory' }, { status: 500 });
+  }
 
   const products = productsResult.data ?? [];
   const inventory = inventoryResult.data as Array<{ product_id: string; stock_count: number }> | null;

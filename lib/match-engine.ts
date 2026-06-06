@@ -26,6 +26,7 @@ export type RiskTolerance = 'low_only' | 'moderate_ok' | 'any';
 
 export interface MatchInput {
   goal: string;
+  goals?: string[];
   evidenceComfort: EvidenceComfort;
   wadaConstraint: WadaConstraint;
   riskTolerance: RiskTolerance;

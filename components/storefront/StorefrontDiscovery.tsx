@@ -82,6 +82,10 @@ export interface DiscoveryHeroProps {
   onSearchStarted?: (query?: string) => void;
   /** Caller notified when user clicks Already Know Which Peptide You Need */
   onAlreadyKnowClicked?: () => void;
+  /** Automated search query passed from storefront zero-results fallback */
+  autoSearchQuery?: string;
+  /** Callback to clear the automated search query after consumption */
+  onAutoSearchConsumed?: () => void;
 }
 
 // --------------------------------------------------------------------------
@@ -1172,6 +1176,8 @@ export default function DiscoveryHero({
   primaryColor = '#00C4BC',
   onSearchStarted,
   onAlreadyKnowClicked,
+  autoSearchQuery,
+  onAutoSearchConsumed,
 }: DiscoveryHeroProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -1267,6 +1273,7 @@ export default function DiscoveryHero({
 
   const runMatch = useCallback(async (input: {
     goal: string;
+    goals?: string[];
     evidenceComfort?: 'strict_human_only' | 'investigational_ok' | 'preclinical_ok' | 'any';
     wadaConstraint?: 'wada_permitted_only' | 'no_constraint';
     riskTolerance?: 'low_only' | 'moderate_ok' | 'any';
@@ -1288,6 +1295,7 @@ export default function DiscoveryHero({
         body: JSON.stringify({
           input: {
             goal: input.goal,
+            goals: input.goals,
             evidenceComfort: input.evidenceComfort || 'preclinical_ok',
             wadaConstraint: input.wadaConstraint || 'no_constraint',
             riskTolerance: input.riskTolerance || 'moderate_ok',
@@ -1373,6 +1381,16 @@ export default function DiscoveryHero({
       setLoading(false);
     }
   }, [query, runMatch]);
+
+  useEffect(() => {
+    if (autoSearchQuery) {
+      setQuery(autoSearchQuery);
+      submitTypedGoal(autoSearchQuery);
+      if (onAutoSearchConsumed) {
+        onAutoSearchConsumed();
+      }
+    }
+  }, [autoSearchQuery, submitTypedGoal, onAutoSearchConsumed]);
 
   const submitFollowUp = useCallback(async (answer: string) => {
     if (!followUp) return;

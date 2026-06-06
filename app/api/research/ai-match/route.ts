@@ -15,7 +15,12 @@ const RESPONSE_SCHEMA = {
     },
     goal: {
       type: Type.STRING,
-      description: `The best matching research area. Must be one of the following exact keys: ${Object.keys(RESEARCH_AREAS).join(', ')}, or 'any'. If they want a general overview or don't specify a goal, use 'any'. If none match perfectly, choose the closest or default to 'any'.`,
+      description: `The best matching primary research area. Must be one of the following exact keys: ${Object.keys(RESEARCH_AREAS).join(', ')}, or 'any'.`,
+    },
+    goals: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: `List of all matching research areas, sorted from most relevant to least relevant. Must be populated with one or more keys from: ${Object.keys(RESEARCH_AREAS).join(', ')}.`,
     },
     evidenceComfort: {
       type: Type.STRING,
@@ -46,7 +51,7 @@ const RESPONSE_SCHEMA = {
       description: "Must be 'conservative', 'standard', or 'unlimited'. If they mention cost, cheap, budget, use 'conservative'. Default to 'standard'.",
     }
   },
-  required: ['goal', 'evidenceComfort', 'wadaConstraint', 'riskTolerance', 'excludeInjectables', 'requireLongHalfLife', 'preference', 'budget'],
+  required: ['goal', 'goals', 'evidenceComfort', 'wadaConstraint', 'riskTolerance', 'excludeInjectables', 'requireLongHalfLife', 'preference', 'budget'],
 };
 
 export async function POST(req: NextRequest) {
@@ -78,6 +83,9 @@ export async function POST(req: NextRequest) {
     try {
       const cleanText = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
       const result = JSON.parse(cleanText);
+      if (result && result.goal && !result.goals) {
+        result.goals = [result.goal];
+      }
       return NextResponse.json({ result });
     } catch (parseError: any) {
       console.error('JSON Parse Error:', parseError);

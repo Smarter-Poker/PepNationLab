@@ -232,21 +232,26 @@ self.addEventListener('fetch', (event) => {
   ) {
     event.respondWith(
       getCatalogFromCache(CATALOG_CACHE_NAME, event.request).then((cached) => {
-        // Always fire a background revalidation
-        const revalidate = fetch(event.request.clone()).then((networkResponse) => {
-          if (networkResponse.ok) {
-            putCatalogInCache(CATALOG_CACHE_NAME, event.request, networkResponse.clone());
-          }
-          return networkResponse;
-        }).catch(() => null);
-
         if (cached) {
-          // Serve stale immediately; background revalidation keeps it fresh
+          // Always fire a background revalidation
+          event.waitUntil(
+            fetch(event.request.clone()).then((networkResponse) => {
+              if (networkResponse.ok) {
+                putCatalogInCache(CATALOG_CACHE_NAME, event.request, networkResponse.clone());
+              }
+            }).catch(() => {})
+          );
+          // Serve stale immediately
           return cached.response;
         }
 
         // No cache — wait for network
-        return revalidate || fetch(event.request);
+        return fetch(event.request).then((networkResponse) => {
+          if (networkResponse.ok) {
+            putCatalogInCache(CATALOG_CACHE_NAME, event.request, networkResponse.clone());
+          }
+          return networkResponse;
+        });
       })
     );
     return;
@@ -381,16 +386,29 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method === 'GET' && (isStaticAsset || isResearchPage)) {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
-        const fetchPromise = fetch(event.request).then((networkResponse) => {
+        if (cachedResponse) {
+          // Update cache in the background
+          event.waitUntil(
+            fetch(event.request).then((networkResponse) => {
+              if (networkResponse.ok) {
+                caches.open(STATIC_CACHE_NAME).then((cache) => {
+                  cache.put(event.request, networkResponse.clone());
+                });
+              }
+            }).catch(() => {})
+          );
+          return cachedResponse;
+        }
+
+        // No cache — wait for network
+        return fetch(event.request).then((networkResponse) => {
           if (networkResponse.ok) {
             caches.open(STATIC_CACHE_NAME).then((cache) => {
               cache.put(event.request, networkResponse.clone());
             });
           }
           return networkResponse;
-        }).catch(() => null);
-
-        return cachedResponse || fetchPromise;
+        });
       })
     );
     return;

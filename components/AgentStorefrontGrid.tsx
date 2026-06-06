@@ -9,7 +9,7 @@ import RecommendationStrip, { type RecommendationItem } from './RecommendationSt
 import ProductMonograph from './research/ProductMonograph';
 import IframeLink from '@/components/ui/IframeLink';
 import DiscoveryHero, { type MatchedProduct } from './storefront/StorefrontDiscovery';
-import ProductModalEnhancements, { ClickableCategoryBadge, type ModalGroupedProductRef } from './storefront/ProductModalEnhancements';
+import ProductModalEnhancements, { type ModalGroupedProductRef } from './storefront/ProductModalEnhancements';
 import StorefrontCompareDrawer from './storefront/StorefrontCompareDrawer';
 import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
 import DynamicCartButton from './storefront/DynamicCartButton';
@@ -482,10 +482,39 @@ export default function AgentStorefrontGrid({
   const [searchQuery, setSearchQuery] = useState<string>(getInit('q'));
   const deferredSearch = useDeferredValue(searchQuery);
   const [activeCardIndex, setActiveCardIndex] = useState<number | null>(1);
-  // #1 zero-result fallback: when the JS search finds nothing, the empty-state
-  // CTA sets this to the raw query, closes the grid, and DiscoveryHero's
-  // useEffect auto-submits the AI match with it.
   const [aiSearchFallbackQuery, setAiSearchFallbackQuery] = useState<string>('');
+
+  const didYouMeanSuggestion = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q || q.length < 3) return null;
+
+    const canonicals = [
+      'BPC-157', 'TB-500', 'Tirzepatide', 'Semaglutide', 'Retatrutide',
+      'AOD-9604', 'GHK-Cu', 'Ipamorelin', 'Sermorelin', 'CJC-1295',
+      'KPV', 'Melanotan II', 'Epithalon', '5-Amino-1MQ', 'NAD+',
+      'Weight Loss', 'Muscle Growth', 'Immunity', 'Anti-Aging',
+      'Healing', 'Sexual Health', 'Skin & Hair'
+    ];
+
+    for (const term of canonicals) {
+      const termLower = term.toLowerCase();
+      if (q === termLower) return null;
+      
+      const cleanQ = q.replace(/[\s-_]+/g, '');
+      const cleanTerm = termLower.replace(/[\s-_]+/g, '');
+      if (cleanQ === cleanTerm) {
+        return term;
+      }
+      
+      if (Math.abs(cleanQ.length - cleanTerm.length) <= 2) {
+        const dist = getEditDistance(cleanQ, cleanTerm);
+        if (dist >= 1 && dist <= 2) {
+          return term;
+        }
+      }
+    }
+    return null;
+  }, [searchQuery]);
 
   const [pinnedNames, setPinnedNames] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set();
@@ -715,6 +744,14 @@ export default function AgentStorefrontGrid({
     setActiveCardIndex(1);
   }, [priceBounds.min, priceBounds.max, weightBounds.min, weightBounds.max]);
   const [detailProduct, setDetailProduct] = useState<GroupedProduct | null>(null);
+  const [showEli5, setShowEli5] = useState(false);
+
+  useEffect(() => {
+    if (!detailProduct) {
+      setShowEli5(false);
+    }
+  }, [detailProduct]);
+
   const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
@@ -2206,6 +2243,46 @@ export default function AgentStorefrontGrid({
         })}
       </div>
 
+      {/* Did You Mean Banner */}
+      {didYouMeanSuggestion && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 24,
+          padding: '12px 18px',
+          borderRadius: 14,
+          background: 'rgba(235, 178, 54, 0.08)',
+          border: '1px solid rgba(235, 178, 54, 0.25)',
+          backdropFilter: 'blur(8px)',
+        }}>
+          <Sparkles size={16} color="#EBB236" style={{ flexShrink: 0 }} />
+          <span style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.88rem', fontWeight: 500 }}>
+            Did you mean:{' '}
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery(didYouMeanSuggestion);
+                setActiveCardIndex(null);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#EBB236',
+                fontWeight: 700,
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                padding: 0,
+                fontSize: '0.88rem',
+              }}
+            >
+              {didYouMeanSuggestion}
+            </button>
+            ?
+          </span>
+        </div>
+      )}
+
       {/* Active Filter Banner */}
       {activeCardIndex !== null && activeCardIndex !== 1 && (
         <div style={{
@@ -3262,21 +3339,14 @@ export default function AgentStorefrontGrid({
                         </span>
                       );
                     })()}
-                    <ClickableCategoryBadge
-                      category={detailProduct.category}
-                      primaryColor={primaryColor}
-                      onClick={() => {
-                        const matchedCard = CARD_MAPPINGS.find(m => m.label === detailProduct.category);
-                        if (matchedCard) {
-                          setActiveCardIndex(matchedCard.index);
-                        } else {
-                          setFilterCategory(detailProduct.category);
-                        }
-                        setSearchQuery('');
-                        setFilterArea('');
-                        setDetailProduct(null);
-                      }}
-                    />
+                    <span style={{
+                      fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
+                      background: `${primaryColor}1A`, color: primaryColor, fontWeight: 700,
+                      textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap',
+                      border: `1px solid ${primaryColor}55`
+                    }}>
+                      {detailProduct.category}
+                    </span>
                     {detailProduct.variants.some(v => (v as any).is_on_sale) && (
                       <span style={{
                         fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
@@ -3292,6 +3362,40 @@ export default function AgentStorefrontGrid({
                   <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.7, marginTop: 'var(--space-3)', marginBottom: 0 }}>
                     {detailProduct.desc || 'Research Compound Available For Academic And Laboratory Use.'}
                   </p>
+
+                  {(() => {
+                    const c = detailProduct.compoundSlug ? compoundsBySlug[detailProduct.compoundSlug] : undefined;
+                    if (!c) return null;
+                    return (
+                      <div style={{ marginTop: 'var(--space-4)', display: 'flex', justifyContent: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowEli5(true)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: 0,
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s ease, filter 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'scale(1.04)';
+                            e.currentTarget.style.filter = 'brightness(1.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.filter = 'brightness(1)';
+                          }}
+                        >
+                          <img
+                            src="/images/simple-explanation-btn.png"
+                            alt="Simple Explanation"
+                            style={{ height: '36px', width: 'auto', display: 'block' }}
+                          />
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {(() => {
@@ -3696,6 +3800,160 @@ export default function AgentStorefrontGrid({
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {detailProduct && showEli5 && (() => {
+          const c = detailProduct.compoundSlug ? compoundsBySlug[detailProduct.compoundSlug] : undefined;
+          if (!c) return null;
+          const eli5Text = c.eli5_summary || c.plain_summary || `This compound is studied for: ${c.studied_for?.join(', ') || 'various biological effects'}. It targets: ${c.molecular_target || 'specific cellular mechanisms'}.`;
+          return (
+            <motion.div
+              key="eli5-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: 'fixed',
+                top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(0, 0, 0, 0.82)',
+                backdropFilter: 'blur(8px)',
+                zIndex: 1100,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px',
+              }}
+              onClick={() => setShowEli5(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: '100%',
+                  maxWidth: '460px',
+                  background: '#0F1923',
+                  border: '4px solid #8E98A7',
+                  borderRadius: '16px',
+                  boxShadow: '0 20px 50px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.05)',
+                  padding: '24px',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                }}
+              >
+                <button
+                  onClick={() => setShowEli5(false)}
+                  aria-label="Close explanation"
+                  style={{
+                    position: 'absolute',
+                    top: 16,
+                    right: 16,
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
+                    border: '1px solid rgba(190,200,210,0.30)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15), 0 2px 6px rgba(0,0,0,0.4)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <X size={14} stroke="#ffffff" strokeWidth={2.5} aria-hidden="true" />
+                </button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: `${primaryColor}20`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: `1px solid ${primaryColor}40`,
+                    color: primaryColor,
+                    flexShrink: 0,
+                  }}>
+                    <Brain size={20} strokeWidth={2} />
+                  </div>
+                  <div>
+                    <h3 style={{
+                      fontFamily: 'var(--font-brand)',
+                      fontSize: '1.45rem',
+                      color: 'var(--white)',
+                      margin: 0,
+                      lineHeight: 1.1,
+                    }}>
+                      Simple Explanation
+                    </h3>
+                    <p style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--grey-400)',
+                      margin: '2px 0 0',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      fontWeight: 600,
+                    }}>
+                      ELI5 Summary • {c.display_name}
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
+
+                <div style={{
+                  fontSize: '0.98rem',
+                  lineHeight: '1.65',
+                  color: '#D2D7DF',
+                  fontWeight: 400,
+                  maxHeight: '260px',
+                  overflowY: 'auto',
+                  paddingRight: '4px',
+                }}>
+                  {eli5Text}
+                </div>
+
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
+
+                <button
+                  type="button"
+                  onClick={() => setShowEli5(false)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
+                    border: '1px solid #8E98A7',
+                    borderRadius: '8px',
+                    color: 'var(--white)',
+                    fontFamily: 'var(--font-brand)',
+                    fontSize: '1.05rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'transform 0.15s ease, border-color 0.15s ease',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 10px rgba(0,0,0,0.3)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#ffffff';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#8E98A7';
+                    e.currentTarget.style.transform = 'none';
+                  }}
+                >
+                  Understood
+                </button>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
       </AnimatePresence>
     </div>
   );
