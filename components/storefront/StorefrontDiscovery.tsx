@@ -668,7 +668,7 @@ function MatchResultsDrawer({
                     {excluded.map((e, idx) => (
                       <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <span style={{ color: '#FFF', fontWeight: 600, fontSize: '0.9rem' }}>{e.displayName}</span>
-                        <span style={{ color: '#A8B4C0', fontSize: '0.85rem' }}>— {e.reason}</span>
+                        <span style={{ color: '#A8B4C0', fontSize: '0.85rem' }}>- {e.reason}</span>
                       </div>
                     ))}
                   </div>

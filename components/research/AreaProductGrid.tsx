@@ -906,7 +906,7 @@ export default function AreaProductGrid({
                     fontSize: '1.05rem',
                     fontWeight: 800,
                   }}>
-                    {p.agentProductId ? formatPrice(displayPrice) : '—'}
+                    {p.agentProductId ? formatPrice(displayPrice) : '-'}
                   </span>
                   {p.agentProductId && p.isOnSale && p.salePrice != null && (
                     <span style={{

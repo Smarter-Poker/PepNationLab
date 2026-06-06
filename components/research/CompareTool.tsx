@@ -2171,7 +2171,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
           )}
           {/* Popular Comparisons */}
           <div style={{ marginTop: 8 }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Popular Comparisons — Quick Start</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Popular Comparisons - Quick Start</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
               {POPULAR_COMPARISONS.filter(p => p.slugs.every(s => compounds.some(c => c.slug === s))).map(p => (
                 <button key={p.label} type="button" className="popular-card" onClick={() => { setSelectedSlugs(p.slugs.slice(0, MAX_COLUMNS)); }}>

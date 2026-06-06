@@ -14,7 +14,7 @@ import StorefrontCompareDrawer from './storefront/StorefrontCompareDrawer';
 import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
 import DynamicCartButton from './storefront/DynamicCartButton';
 import DynamicDetailButton from './storefront/DynamicDetailButton';
-import { evidenceTier, type Compound } from '@/lib/compounds';
+import { evidenceTier, EVIDENCE_TIER, RISK_META, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
 import { toast } from 'sonner';
@@ -3806,7 +3806,17 @@ export default function AgentStorefrontGrid({
         {detailProduct && showEli5 && (() => {
           const c = detailProduct.compoundSlug ? compoundsBySlug[detailProduct.compoundSlug] : undefined;
           if (!c) return null;
-          const eli5Text = c.eli5_summary || c.plain_summary || `This compound is studied for: ${c.studied_for?.join(', ') || 'various biological effects'}. It targets: ${c.molecular_target || 'specific cellular mechanisms'}.`;
+
+          const sanitize = (text: string | null | undefined): string => {
+            if (!text) return '';
+            return text.replace(/—/g, '-');
+          };
+
+          const rawText = c.eli5_summary || c.plain_summary || `This compound is studied for: ${c.studied_for?.join(', ') || 'various biological effects'}. It targets: ${c.molecular_target || 'specific cellular mechanisms'}.`;
+          const eli5Text = sanitize(rawText);
+          const tierInfo = EVIDENCE_TIER[c.evidence_tier] ?? { label: 'Research Chemical', color: '#A8B4C0' };
+          const riskInfo = RISK_META[c.risk_level] ?? { label: 'Unknown Risk', color: '#A8B4C0', bg: 'rgba(255,255,255,0.05)' };
+
           return (
             <motion.div
               key="eli5-overlay"
@@ -3816,8 +3826,8 @@ export default function AgentStorefrontGrid({
               style={{
                 position: 'fixed',
                 top: 0, left: 0, right: 0, bottom: 0,
-                background: 'rgba(0, 0, 0, 0.82)',
-                backdropFilter: 'blur(8px)',
+                background: 'rgba(0, 0, 0, 0.85)',
+                backdropFilter: 'blur(10px)',
                 zIndex: 1100,
                 display: 'flex',
                 alignItems: 'center',
@@ -3834,7 +3844,7 @@ export default function AgentStorefrontGrid({
                 onClick={(e) => e.stopPropagation()}
                 style={{
                   width: '100%',
-                  maxWidth: '460px',
+                  maxWidth: '520px',
                   background: '#0F1923',
                   border: '4px solid #8E98A7',
                   borderRadius: '16px',
@@ -3843,7 +3853,9 @@ export default function AgentStorefrontGrid({
                   position: 'relative',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '16px',
+                  gap: '20px',
+                  maxHeight: '90vh',
+                  overflowY: 'auto',
                 }}
               >
                 <button
@@ -3863,16 +3875,17 @@ export default function AgentStorefrontGrid({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    zIndex: 10,
                   }}
                 >
                   <X size={14} stroke="#ffffff" strokeWidth={2.5} aria-hidden="true" />
                 </button>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '4px' }}>
                   <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '10px',
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '12px',
                     background: `${primaryColor}20`,
                     display: 'flex',
                     alignItems: 'center',
@@ -3881,7 +3894,7 @@ export default function AgentStorefrontGrid({
                     color: primaryColor,
                     flexShrink: 0,
                   }}>
-                    <Brain size={20} strokeWidth={2} />
+                    <Brain size={22} strokeWidth={2} />
                   </div>
                   <div>
                     <h3 style={{
@@ -3901,24 +3914,158 @@ export default function AgentStorefrontGrid({
                       letterSpacing: '0.05em',
                       fontWeight: 600,
                     }}>
-                      ELI5 Summary • {c.display_name}
+                      ELI5 Summary • {sanitize(c.display_name)}
                     </p>
                   </div>
                 </div>
 
                 <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
 
+                {/* Main Summary Callout Box */}
                 <div style={{
-                  fontSize: '0.98rem',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  borderLeft: `3px solid ${primaryColor}`,
+                  borderRadius: '0 8px 8px 0',
+                  padding: '14px 16px',
+                  fontSize: '0.95rem',
                   lineHeight: '1.65',
                   color: '#D2D7DF',
                   fontWeight: 400,
-                  maxHeight: '260px',
-                  overflowY: 'auto',
-                  paddingRight: '4px',
                 }}>
                   {eli5Text}
                 </div>
+
+                {/* Key Research Parameters Grid */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '12px',
+                  background: 'rgba(255,255,255,0.01)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: '10px',
+                  padding: '14px',
+                }}>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '2px', letterSpacing: '0.02em' }}>
+                      Clinical Status
+                    </span>
+                    <span style={{ fontSize: '0.88rem', color: tierInfo.color, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: tierInfo.color }} />
+                      {sanitize(tierInfo.label)}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '2px', letterSpacing: '0.02em' }}>
+                      Safety Profile
+                    </span>
+                    <span style={{ fontSize: '0.88rem', color: riskInfo.color, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: riskInfo.color }} />
+                      {sanitize(riskInfo.label)}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '2px', letterSpacing: '0.02em' }}>
+                      Typical Frequency
+                    </span>
+                    <span style={{ fontSize: '0.88rem', color: 'var(--white)', fontWeight: 600 }}>
+                      {sanitize(c.typical_frequency || 'N/A')}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '2px', letterSpacing: '0.02em' }}>
+                      Research Half-Life
+                    </span>
+                    <span style={{ fontSize: '0.88rem', color: 'var(--white)', fontWeight: 600 }}>
+                      {sanitize(c.half_life || 'N/A')}
+                    </span>
+                  </div>
+
+                  {c.compound_class && (
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)', margin: '6px 0' }} />
+                      <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '2px', letterSpacing: '0.02em' }}>
+                        Compound Class
+                      </span>
+                      <span style={{ fontSize: '0.88rem', color: 'var(--white)', fontWeight: 600 }}>
+                        {sanitize(c.compound_class)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Studied Focus / Targets Section */}
+                {c.studied_for && c.studied_for.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <h4 style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--grey-400)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      fontWeight: 700,
+                      margin: 0,
+                    }}>
+                      Primary Research Focus
+                    </h4>
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '6px',
+                    }}>
+                      {c.studied_for.slice(0, 6).map((area, idx) => (
+                        <span key={idx} style={{
+                          fontSize: '0.75rem',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          background: 'rgba(255, 255, 255, 0.04)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          color: 'var(--grey-200)',
+                          fontWeight: 500,
+                        }}>
+                          {sanitize(area)}
+                        </span>
+                      ))}
+                      {c.studied_for.length > 6 && (
+                        <span style={{
+                          fontSize: '0.75rem',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          color: 'var(--grey-400)',
+                          fontWeight: 500,
+                        }}>
+                          +{c.studied_for.length - 6} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Mechanism of Action Section */}
+                {c.mechanism && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <h4 style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--grey-400)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      fontWeight: 700,
+                      margin: 0,
+                    }}>
+                      Mechanism of Action
+                    </h4>
+                    <p style={{
+                      fontSize: '0.85rem',
+                      lineHeight: '1.5',
+                      color: 'var(--grey-300)',
+                      margin: 0,
+                    }}>
+                      {sanitize(c.mechanism)}
+                    </p>
+                  </div>
+                )}
 
                 <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
 

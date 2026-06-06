@@ -322,7 +322,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
         <p style={{ fontSize: '0.75rem', color: 'var(--grey-600)' }}>
           Powered By{' '}
           <Link href="/" style={{ color: 'var(--teal)' }}>Pep Nation Lab</Link>
-          {' '}— Research Grade Peptides &amp; Authorized Laboratory Diluents.
+          {' '}- Research Grade Peptides &amp; Authorized Laboratory Diluents.
         </p>
       </footer>
 
@@ -343,6 +343,6 @@ export async function generateMetadata({ params }: Props) {
 
   return {
     title: `${agent.display_name} | Pep Nation Lab`,
-    description: `Research compounds from ${agent.display_name} — Research use only.`,
+    description: `Research compounds from ${agent.display_name} - Research use only.`,
   };
 }

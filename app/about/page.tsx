@@ -143,7 +143,7 @@ export default function AboutPage() {
               Pep Nation Lab Strictly Prohibits The Sale Of Needles, Syringes, Or Any Medical
               Injection Delivery Devices By Our Company Or Our Agents. We Only Provide
               Research-Grade Peptides And Authorized Laboratory Diluents Exclusively For In
-              Vitro Testing. Compliance is not a formality for us — it is the foundation the
+              Vitro Testing. Compliance is not a formality for us - it is the foundation the
               platform is built on.
             </p>
           </div>

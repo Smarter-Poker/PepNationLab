@@ -79,9 +79,9 @@ const td: React.CSSProperties = {
 };
 
 const num = (n: number) => n.toLocaleString('en-US');
-const mwDisp = (n: number | null) => (n == null ? '—' : `${n.toLocaleString('en-US', { maximumFractionDigits: 1 })} Da`);
-const countDisp = (n: number | null) => (n == null || n === 0 ? '—' : num(n));
-const yearDisp = (n: number | null) => (n == null ? '—' : String(n));
+const mwDisp = (n: number | null) => (n == null ? '-' : `${n.toLocaleString('en-US', { maximumFractionDigits: 1 })} Da`);
+const countDisp = (n: number | null) => (n == null || n === 0 ? '-' : num(n));
+const yearDisp = (n: number | null) => (n == null ? '-' : String(n));
 
 export default function CompoundDataTable({ rows }: { rows: DataRow[] }) {
   const router = useRouter();
