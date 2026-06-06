@@ -110,7 +110,7 @@ export default function AreaProductGrid({
 }: Props) {
   /* ── Sorting & Search ── */
   const [sortBy, setSortBy] = useState<SortKey>('evidence');
-  const [filterWada, setFilterWada] = useState(false);
+
   const [filterHalfLife, setFilterHalfLife] = useState(false);
   const [filterPrice, setFilterPrice] = useState(false);
   const [filterTrials, setFilterTrials] = useState(false);
@@ -346,10 +346,7 @@ export default function AreaProductGrid({
   const sorted = useMemo(() => {
     let arr = [...enriched];
 
-    // Apply Smart Filters
-    if (filterWada) {
-      arr = arr.filter(a => a.compound?.wadaStatus === 'permitted' || a.compound?.wadaStatus === 'not_listed');
-    }
+
     if (filterHalfLife) {
       arr = arr.filter(a => {
         if (!a.compound?.halfLife) return false;
@@ -397,7 +394,7 @@ export default function AreaProductGrid({
         break;
     }
     return arr;
-  }, [enriched, sortBy, filterWada, filterHalfLife, filterPrice, filterTrials]);
+  }, [enriched, sortBy, filterHalfLife, filterPrice, filterTrials]);
 
 
 

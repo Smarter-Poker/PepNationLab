@@ -755,22 +755,102 @@ export default function ProductModalEnhancements({
   onOpenProductByName,
   onAddVariantToCart,
 }: Props) {
-  // Phase 4: track current product to recently-viewed, and surface up to 5
-  // OTHERS that the same researcher recently looked at.
-  const [recentlyViewed, setRecentlyViewed] = useState<RecentItem[]>([]);
-  useEffect(() => {
-    if (!currentProductName) return;
-    writeRecentlyViewed({
-      name: currentProductName,
-      imageUrl: currentImageUrl ?? null,
-      pricePerVialDollars: currentBundlePriceDollars != null ? Number(currentBundlePriceDollars) / 10 : null,
-      viewedAt: Date.now(),
-    });
-    const timer = window.setTimeout(() => {
-      setRecentlyViewed(readRecentlyViewed().filter((r) => r.name !== currentProductName).slice(-5));
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [currentProductName, currentImageUrl, currentBundlePriceDollars]);
+  // Smart "Similar Products" logic displaying 3-5 similar peptides for comparison
+  const similarProducts = useMemo(() => {
+    if (!currentCompound) return [];
+
+    // 1. Get all valid compounds from compoundsBySlug
+    const allCompounds = Object.values(compoundsBySlug).filter(Boolean) as Compound[];
+    if (allCompounds.length === 0) return [];
+
+    // 2. Score and rank them relative to currentCompound using relatedCompounds
+    const rankedRefs = relatedCompounds(currentCompound, allCompounds, 15);
+
+    // 3. Map to storefront groups (ModalGroupedProductRef)
+    const items = rankedRefs
+      .map((ref) => {
+        const group = grouped.find((g) => g.compoundSlug === ref.slug) ?? null;
+        const comp = compoundsBySlug[ref.slug];
+        return { ref, group, comp };
+      })
+      // 4. Filter: Must be in stock, not the current product, and not a supply/accessory
+      .filter((x) => {
+        if (!x.group) return false;
+        if (x.group.name === currentProductName) return false;
+        if (x.comp && x.comp.evidence_tier === 'supply') return false;
+        if (FORBIDDEN_SUPPLY_NAME.test(x.group.name)) return false;
+        return true;
+      });
+
+    // 5. Fallback: If we don't have at least 3, fill in with products from the same category
+    if (items.length < 3) {
+      const existingSlugs = new Set(items.map((x) => x.ref.slug));
+      existingSlugs.add(currentCompound.slug);
+
+      const fallbackGroups = grouped.filter((g) => {
+        if (g.name === currentProductName) return false;
+        if (!g.compoundSlug) return false;
+        if (existingSlugs.has(g.compoundSlug)) return false;
+        if (FORBIDDEN_SUPPLY_NAME.test(g.name)) return false;
+
+        const comp = compoundsBySlug[g.compoundSlug];
+        if (!comp) return false;
+        if (comp.evidence_tier === 'supply') return false;
+
+        return comp.category === currentCompound.category;
+      });
+
+      for (const fg of fallbackGroups) {
+        if (items.length >= 5) break;
+        const comp = compoundsBySlug[fg.compoundSlug!];
+        items.push({
+          ref: {
+            slug: fg.compoundSlug!,
+            display_name: comp.display_name,
+            category: comp.category,
+            evidence_tier: comp.evidence_tier,
+          },
+          group: fg,
+          comp,
+        });
+      }
+    }
+
+    // 6. Fallback: If we STILL don't have 3, fill in with any other peptides
+    if (items.length < 3) {
+      const existingSlugs = new Set(items.map((x) => x.ref.slug));
+      existingSlugs.add(currentCompound.slug);
+
+      const anyPeptides = grouped.filter((g) => {
+        if (g.name === currentProductName) return false;
+        if (!g.compoundSlug) return false;
+        if (existingSlugs.has(g.compoundSlug)) return false;
+        if (FORBIDDEN_SUPPLY_NAME.test(g.name)) return false;
+
+        const comp = compoundsBySlug[g.compoundSlug];
+        if (!comp) return false;
+        if (comp.evidence_tier === 'supply') return false;
+        return true;
+      });
+
+      for (const fg of anyPeptides) {
+        if (items.length >= 5) break;
+        const comp = compoundsBySlug[fg.compoundSlug!];
+        items.push({
+          ref: {
+            slug: fg.compoundSlug!,
+            display_name: comp.display_name,
+            category: comp.category,
+            evidence_tier: comp.evidence_tier,
+          },
+          group: fg,
+          comp,
+        });
+      }
+    }
+
+    return items.slice(0, 5);
+  }, [currentCompound, compoundsBySlug, grouped, currentProductName]);
   const supplies = useMemo(() => {
     return SUPPLY_PATTERNS.map(({ key, pattern, label }) => ({
       key,
@@ -1051,57 +1131,61 @@ export default function ProductModalEnhancements({
         )}
       </div>
 
-      {recentlyViewed.length > 0 && (
-        <section aria-label="Recently Viewed">
+      {similarProducts.length > 0 && (
+        <section aria-label="Similar Products">
           <SectionTitle primaryColor={primaryColor}>
-            Recently Viewed
+            Similar Products
           </SectionTitle>
           <div style={{
             display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4,
             scrollSnapType: 'x mandatory',
           }}>
-            {recentlyViewed.slice().reverse().map((r) => (
-              <button
-                key={r.name}
-                type="button"
-                onClick={() => onOpenProductByName(r.name)}
-                style={{
-                  flex: '0 0 auto', scrollSnapAlign: 'start',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  padding: 8, borderRadius: 12,
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.10)',
-                  cursor: 'pointer', minWidth: 110, maxWidth: 140,
-                  color: 'var(--white)',
-                }}
-              >
-                {r.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={r.imageUrl}
-                    alt={r.name}
-                    width={56}
-                    height={56}
-                    style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', background: '#0F1923' }}
-                  />
-                ) : (
-                  <div style={{ width: 56, height: 56, borderRadius: 10, background: `${primaryColor}20` }} aria-hidden="true" />
-                )}
-                <span style={{
-                  fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.15,
-                  textAlign: 'center', maxWidth: 124,
-                  overflow: 'hidden', display: '-webkit-box',
-                  WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                }}>
-                  {r.name}
-                </span>
-                {r.pricePerVialDollars != null && (
-                  <span style={{ fontSize: '0.72rem', color: primaryColor, fontWeight: 800 }}>
-                    ${Number(r.pricePerVialDollars).toFixed(2)}/Vial
+            {similarProducts.map(({ group }) => {
+              if (!group) return null;
+              const pricePerVial = group.lowestPrice ? group.lowestPrice / 10 : null;
+              return (
+                <button
+                  key={group.name}
+                  type="button"
+                  onClick={() => onOpenProductByName(group.name)}
+                  style={{
+                    flex: '0 0 auto', scrollSnapAlign: 'start',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    padding: 8, borderRadius: 12,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.10)',
+                    cursor: 'pointer', minWidth: 110, maxWidth: 140,
+                    color: 'var(--white)',
+                  }}
+                >
+                  {group.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={group.imageUrl}
+                      alt={group.name}
+                      width={56}
+                      height={56}
+                      style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', background: '#0F1923' }}
+                    />
+                  ) : (
+                    <div style={{ width: 56, height: 56, borderRadius: 10, background: `${primaryColor}20` }} aria-hidden="true" />
+                  )}
+                  <span style={{
+                    fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.15,
+                    textAlign: 'center', maxWidth: 124,
+                    overflow: 'hidden', display: '-webkit-box',
+                    WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                  }}>
+                    {group.name}
                   </span>
-                )}
-              </button>
-            ))}
+                  {pricePerVial != null && (
+                    <span style={{ fontSize: '0.72rem', color: primaryColor, fontWeight: 800 }}>
+                      ${formatMoney(pricePerVial)}/Vial
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </section>
       )}

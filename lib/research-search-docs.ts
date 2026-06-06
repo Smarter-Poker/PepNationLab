@@ -107,7 +107,7 @@ export function buildResearchSearchDocs(compounds: Compound[]): SearchDoc[] {
     { title: 'Full Data Table', url: '/research/data', subtitle: 'Sortable Database', keywords: ['table', 'database', 'sort', 'filter', 'grid', 'spreadsheet', 'all compounds'] },
     { title: 'Compare Compounds', url: '/research/compare', subtitle: 'Side-By-Side', keywords: ['compare', 'versus', 'vs', 'side by side', 'difference'] },
     { title: 'Stacks & Combinations', url: '/research/stacks', subtitle: 'Combinations', keywords: ['stack', 'combination', 'combo', 'protocol'] },
-    { title: 'Evidence & Safety', url: '/research/evidence', subtitle: 'Evidence Hub', keywords: ['evidence', 'safety', 'wada', 'prohibited', 'risk'] },
+    { title: 'Evidence & Safety', url: '/research/evidence', subtitle: 'Evidence Hub', keywords: ['evidence', 'safety', 'risk'] },
     { title: 'Dosing & Unit Converter', url: '/research/converter', subtitle: 'Calculator', keywords: ['converter', 'calculator', 'dose', 'dosing', 'mg', 'mcg', 'iu', 'reconstitution', 'units'] },
     { title: 'References Library', url: '/research/references', subtitle: 'Citations', keywords: ['references', 'sources', 'citations', 'bibliography', 'studies'] },
     { title: 'Match Me To A Peptide', url: '/research/match', subtitle: 'Goal Matcher', keywords: ['match', 'recommend', 'suggestion', 'goal', 'which peptide'] },

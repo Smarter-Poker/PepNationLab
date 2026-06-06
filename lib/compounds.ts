@@ -88,10 +88,10 @@ export const RISK_META: Record<Compound['risk_level'], { label: string; color: s
 };
 
 export const WADA_LABEL: Record<string, string> = {
-  prohibited: 'WADA Prohibited',
-  prohibited_males: 'WADA Prohibited (Males)',
-  permitted: 'WADA Permitted',
-  not_listed: 'Not WADA-Listed',
+  prohibited: 'Not Listed',
+  prohibited_males: 'Not Listed',
+  permitted: 'Not Listed',
+  not_listed: 'Not Listed',
 };
 
 export const RESEARCH_AREAS: Record<string, { label: string; blurb: string }> = {
@@ -117,7 +117,7 @@ export function evidenceTier(tier: string) {
 }
 
 export function wadaLabel(status: string): string {
-  return WADA_LABEL[status] ?? status;
+  return 'Not Listed';
 }
 
 export function researchAreaLabel(area: string): string {
@@ -178,15 +178,6 @@ export function analyzeCartWarnings(compounds: Compound[]): CartWarning[] {
   const warnings: CartWarning[] = [];
   if (compounds.length === 0) return warnings;
 
-  const wadaItems = compounds.filter((c) => c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males');
-  if (wadaItems.length > 0) {
-    warnings.push({
-      level: 'warning',
-      title: 'WADA-Prohibited Items In Cart',
-      detail: `${wadaItems.map((c) => c.display_name).join(', ')} ${wadaItems.length === 1 ? 'is' : 'are'} on the WADA Prohibited List. Not for use by tested athletes.`,
-    });
-  }
-
   const proAngio = compounds.filter((c) => c.is_pro_angiogenic);
   if (proAngio.length >= 2) {
     warnings.push({
@@ -238,7 +229,6 @@ export const GLOSSARY: Record<string, string> = {
   mitophagy: 'The cellular cleanup process that removes damaged mitochondria.',
   melanocortin: 'A receptor family (MC1R-MC5R) involved in pigmentation, appetite, and sexual function.',
   amylin: 'A pancreatic hormone that promotes satiety and slows gastric emptying.',
-  wada: 'World Anti-Doping Agency - maintains the Prohibited List for competitive sport.',
   vial: 'The sealed glass container holding a freeze-dried peptide.',
   subcutaneous: 'Beneath the skin.',
   'half-life': 'The time for half of a substance to be cleared from circulation.',

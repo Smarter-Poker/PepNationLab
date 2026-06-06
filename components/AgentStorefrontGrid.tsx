@@ -903,8 +903,6 @@ export default function AgentStorefrontGrid({
       ['daily', 'weekly', 'biweekly', 'twice-weekly', 'monthly', 'dose', 'dosing', 'frequency', 'protocol', 'schedule', 'timing', 'pulsed', 'pulsatile', 'subcutaneous', 'sc', 'im', 'intravenous', 'iv', 'intranasal', 'topical', 'injection', 'inject', 'syringe', 'reconstitute', 'reconstitution', 'lyophilized', 'freeze-dried', 'vial', 'powder', 'cycle', 'on-cycle', 'off-cycle', 'sublingual', 'oral', 'intramuscular', 'infusion', 'bolus', 'once-weekly', 'once-daily'],
       // Pharmacokinetics / Half-life
       ['halflife', 'half-life', 'pharmacokinetics', 'pk', 'absorption', 'bioavailability', 'clearance', 'plasma', 'serum', 'tissue', 'distribution', 'fast-acting', 'longacting', 'long-acting', 'shortacting', 'short-acting', 'immediate-release', 'sustained-release', 'prolonged', 'extended', 'peak', 'trough', 'steady-state', 'accumulation'],
-      // WADA / Prohibited / Banned
-      ['wada', 'banned', 'prohibited', 'anti-doping', 'antidoping', 'doping', 'sport-ban', 'competition', 'testing', 'permissible', 'permitted', 'allowed', 'tested-sport', 'usada', 'nada', 'in-competition', 'out-of-competition', 'therapeutic-use-exemption', 'tue'],
       // Safety / Side Effects
       ['safe', 'safety', 'side-effect', 'sideeffect', 'adverse', 'risk', 'danger', 'reaction', 'tolerated', 'tolerance', 'wellbeing', 'benign', 'minimal-side-effects', 'no-side-effects', 'low-risk', 'nausea', 'headache', 'fatigue', 'irritation', 'allergy', 'contraindication', 'interaction'],
       // Discovery / Research Vintage
@@ -1164,9 +1162,6 @@ export default function AgentStorefrontGrid({
               // side_effects + warnings: allow filtering by side effect terms
               if (c.side_effects?.toLowerCase().includes(token)) recordMatch(15, `Side Effect Profile Match`);
               if (c.warnings?.toLowerCase().includes(token)) recordMatch(10, `Warnings Matched`);
-
-              // WADA status search (e.g., "banned", "prohibited", "permitted")
-              if (c.wada_status?.toLowerCase().includes(token)) recordMatch(15, `WADA Status: ${c.wada_status}`);
 
               // Half life search (e.g., "long acting", "short half life")
               if (c.half_life?.toLowerCase().includes(token)) recordMatch(12, `Half Life: ${c.half_life}`);

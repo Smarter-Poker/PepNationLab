@@ -35,12 +35,6 @@ const TIER_LABEL: Record<string, string> = {
   supply: 'Supply',
 };
 
-const WADA_LABEL: Record<string, string> = {
-  prohibited: 'WADA Prohibited',
-  prohibited_males: 'WADA Prohibited (Males)',
-  permitted: 'WADA Permitted',
-  not_listed: 'Not WADA-Listed',
-};
 
 const ACTION_LABEL: Record<string, string> = {
   keep: 'Keep',

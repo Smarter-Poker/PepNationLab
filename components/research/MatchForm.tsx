@@ -10,7 +10,6 @@ import type {
   EvidenceComfort,
   MatchResult,
   RiskTolerance,
-  WadaConstraint,
 } from '@/lib/match-engine';
 import CompoundDrawer from './CompoundDrawer';
 import { saveMatchAction } from '@/app/research/actions';
@@ -27,11 +26,6 @@ const EVIDENCE_OPTIONS: { value: EvidenceComfort; label: string; help: string }[
   { value: 'investigational_ok', label: 'Investigational Or Better', help: 'In active human clinical trials, or approved.' },
   { value: 'preclinical_ok', label: 'Preclinical Or Better', help: 'Animal or in-vitro evidence acceptable.' },
   { value: 'any', label: 'Any Evidence Level', help: 'Include research-only and exploratory compounds.' },
-];
-
-const WADA_OPTIONS: { value: WadaConstraint; label: string; help: string }[] = [
-  { value: 'wada_permitted_only', label: 'WADA Permitted Only', help: 'Exclude anything on the WADA Prohibited List.' },
-  { value: 'no_constraint', label: 'No WADA Constraint', help: 'Not Tested In Sport. Include WADA-Prohibited Compounds.' },
 ];
 
 const RISK_OPTIONS: { value: RiskTolerance; label: string; help: string }[] = [
@@ -62,13 +56,7 @@ function tierColor(tier: string): string {
   }
 }
 
-function wadaText(status: string): string {
-  if (status === 'permitted') return 'WADA Permitted';
-  if (status === 'prohibited') return 'WADA Prohibited';
-  if (status === 'prohibited_males') return 'WADA Prohibited (Males)';
-  if (status === 'not_listed') return 'Not WADA Listed';
-  return status;
-}
+
 
 function CircularScore({ score }: { score: number }) {
   const radius = 18;
@@ -213,7 +201,6 @@ function MatchFormInner() {
       if (data.result) {
         if (data.result.goal) setGoal(data.result.goal);
         if (data.result.evidenceComfort) setEvidenceComfort(data.result.evidenceComfort);
-        if (data.result.wadaConstraint) setWadaConstraint(data.result.wadaConstraint);
         if (data.result.riskTolerance) setRiskTolerance(data.result.riskTolerance);
         if (typeof data.result.excludeInjectables === 'boolean') setExcludeInjectables(data.result.excludeInjectables);
         if (typeof data.result.requireLongHalfLife === 'boolean') setRequireLongHalfLife(data.result.requireLongHalfLife);

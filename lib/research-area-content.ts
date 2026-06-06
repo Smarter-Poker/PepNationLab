@@ -23,7 +23,7 @@ export interface AreaContent {
   topCompounds: string[];
   /** 0-3 stack-component patterns where applicable. */
   topStacks?: string[];
-  /** 1 paragraph plain-prose covering side-effects, contraindications, WADA. */
+  /** 1 paragraph plain-prose covering side-effects and contraindications. */
   notableSafety: string;
   /** 3-6 peer-reviewed references -- real PubMed, NEJM, JAMA, FDA, EMA. */
   keyReferences: { citation: string; url?: string }[];
@@ -57,7 +57,7 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
     topCompounds: ['bpc-157', 'tb-500', 'ghk-cu', 'igf-1-lr3', 'll-37'],
     topStacks: ['BPC-157 + TB-500', 'BPC-157 + GHK-Cu'],
     notableSafety:
-      'BPC-157 and TB-500 have no characterized human adverse-event profile from controlled trials; theoretical pro-angiogenic stacking concerns exist when multiple angiogenic agents are combined. Both fall under WADA S0 (non-approved substance) and TB-500 is explicitly named on the WADA Prohibited List. GHK-Cu carries primarily local irritation and copper-sensitivity considerations. LL-37 at higher concentrations can show cytotoxicity in vitro. None should be assumed safe in pregnancy, active malignancy, or in tested athletes.',
+      'BPC-157 and TB-500 have no characterized human adverse-event profile from controlled trials; theoretical pro-angiogenic stacking concerns exist when multiple angiogenic agents are combined. GHK-Cu carries primarily local irritation and copper-sensitivity considerations. LL-37 at higher concentrations can show cytotoxicity in vitro. None should be assumed safe in pregnancy or active malignancy.',
     keyReferences: [
       {
         citation:
@@ -127,7 +127,7 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
     topCompounds: ['bpc-157', 'tb-500', 'ara-290', 'kpv', 'll-37'],
     topStacks: ['BPC-157 + TB-500', 'ARA-290 + BPC-157'],
     notableSafety:
-      'ARA-290 has been well tolerated in human trials with no clinically significant changes in hematocrit, blood pressure, or platelet count -- a deliberate engineering goal. BPC-157 and TB-500 lack human AE characterization. KPV has shown no significant toxicity in colitis models. All three remain investigational; assume WADA relevance under S0 unless explicitly cleared, and recognize that pro-angiogenic stacking with other tissue-repair agents has theoretical malignancy considerations that have not been clinically resolved.',
+      'ARA-290 has been well tolerated in human trials with no clinically significant changes in hematocrit, blood pressure, or platelet count -- a deliberate engineering goal. BPC-157 and TB-500 lack human AE characterization. KPV has shown no significant toxicity in colitis models. All three remain investigational, and recognize that pro-angiogenic stacking with other tissue-repair agents has theoretical malignancy considerations that have not been clinically resolved.',
     keyReferences: [
       {
         citation:
@@ -182,7 +182,7 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
     topCompounds: ['semaglutide', 'tirzepatide', 'tesamorelin', 'mots-c', '5-amino-1mq'],
     topStacks: ['CagriSema (cagrilintide + semaglutide)', 'Tesamorelin + Ipamorelin'],
     notableSafety:
-      'Incretin agents carry class-label warnings for thyroid C-cell tumors (rodent data, MTC contraindication), pancreatitis, gallbladder disease, gastroparesis-like delayed emptying, and -- with concomitant insulin or sulfonylureas -- hypoglycemia. Tesamorelin requires IGF-1 monitoring and is contraindicated in active malignancy and pituitary disorders. AICAR, MOTS-c, and several GHRH analogs are WADA-prohibited. Compounded GLP-1 products are not FDA-evaluated and have different impurity and stability profiles from the approved drugs.',
+      'Incretin agents carry class-label warnings for thyroid C-cell tumors (rodent data, MTC contraindication), pancreatitis, gallbladder disease, gastroparesis-like delayed emptying, and -- with concomitant insulin or sulfonylureas -- hypoglycemia. Tesamorelin requires IGF-1 monitoring and is contraindicated in active malignancy and pituitary disorders. Compounded GLP-1 products are not FDA-evaluated and have different impurity and stability profiles from the approved drugs.',
     keyReferences: [
       {
         citation:
@@ -468,7 +468,7 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
       'HCG, HMG, oxytocin, and bremelanotide are FDA-approved with extensive label data. Kisspeptin-10 has well-conducted UK and US academic stimulation-test trials. The weakest evidence sits with off-label biohacking protocols combining peptides outside the validated endocrine indications. Sermorelin and CJC-1295 are sometimes positioned for sexual-health benefit, but direct controlled trials in libido or erectile function are absent.',
     topCompounds: ['kisspeptin-10', 'hcg', 'hmg', 'oxytocin', 'sermorelin'],
     notableSafety:
-      'HCG and HMG carry ovarian hyperstimulation syndrome risk in fertility protocols. Bremelanotide can cause transient blood-pressure elevation, focal hyperpigmentation, and nausea (label-documented). Oxytocin nasal/IV use carries uterine and cardiovascular cautions. HCG is WADA-prohibited in males. Kisspeptin-10 has a clean safety profile in academic dosing but is not a chronic-use product. None of these peptides are appropriate for use without endocrine evaluation.',
+      'HCG and HMG carry ovarian hyperstimulation syndrome risk in fertility protocols. Bremelanotide can cause transient blood-pressure elevation, focal hyperpigmentation, and nausea (label-documented). Oxytocin nasal/IV use carries uterine and cardiovascular cautions. Kisspeptin-10 has a clean safety profile in academic dosing but is not a chronic-use product. None of these peptides are appropriate for use without endocrine evaluation.',
     keyReferences: [
       {
         citation:
@@ -500,7 +500,7 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
 
   performance: {
     overview:
-      'Performance peptide research centers on the growth-hormone (GH) and IGF-1 axis: GHRH analogs (sermorelin, CJC-1295, tesamorelin), ghrelin-mimetic GH secretagogues (GHRP-2, GHRP-6, hexarelin, ipamorelin), and downstream GH-fragment and IGF-1 derivatives. The unifying mechanism is amplification of endogenous pulsatile GH release rather than exogenous recombinant GH administration. Adjacent agents include follistatin (myostatin antagonism for muscle hypertrophy), AICAR (AMPK-driven endurance phenotype shift), and IGF-1 LR3 (long-acting IGF-1 analog). Every compound in this category is either FDA-approved for a narrow indication (tesamorelin for HIV lipodystrophy) or investigational/research-use-only, and almost all are WADA-prohibited.',
+      'Performance peptide research centers on the growth-hormone (GH) and IGF-1 axis: GHRH analogs (sermorelin, CJC-1295, tesamorelin), ghrelin-mimetic GH secretagogues (GHRP-2, GHRP-6, hexarelin, ipamorelin), and downstream GH-fragment and IGF-1 derivatives. The unifying mechanism is amplification of endogenous pulsatile GH release rather than exogenous recombinant GH administration. Adjacent agents include follistatin (myostatin antagonism for muscle hypertrophy), AICAR (AMPK-driven endurance phenotype shift), and IGF-1 LR3 (long-acting IGF-1 analog). Every compound in this category is either FDA-approved for a narrow indication (tesamorelin for HIV lipodystrophy) or investigational/research-use-only.',
     keyMechanisms: [
       'GHRH receptor agonism increasing GH pulse amplitude (sermorelin, CJC-1295, tesamorelin).',
       'Ghrelin/GHS-R1a receptor agonism producing synergistic GH release (GHRP-2, GHRP-6, ipamorelin, hexarelin).',
@@ -518,7 +518,7 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
       'Endurance phenotype and substrate utilization (AICAR, preclinical).',
     ],
     evidenceLandscape:
-      'Tesamorelin has FDA approval and the strongest controlled evidence for visceral adiposity. Sermorelin had US approval as a diagnostic and pediatric GH stimulation agent before discontinuation; it remains compounded. Ipamorelin and CJC-1295 have small mechanistic trials but no large efficacy studies. GHRP-2 has Japanese diagnostic approval. Follistatin and IGF-1 LR3 are preclinical in humans. AICAR has substantial animal endurance data but failed human translation and is WADA-banned.',
+      'Tesamorelin has FDA approval and the strongest controlled evidence for visceral adiposity. Sermorelin had US approval as a diagnostic and pediatric GH stimulation agent before discontinuation; it remains compounded. Ipamorelin and CJC-1295 have small mechanistic trials but no large efficacy studies. GHRP-2 has Japanese diagnostic approval. Follistatin and IGF-1 LR3 are preclinical in humans. AICAR has substantial animal endurance data but failed human translation.',
     topCompounds: ['cjc-1295-no-dac', 'ipamorelin', 'tesamorelin', 'sermorelin', 'igf-1-lr3'],
     topStacks: [
       'CJC-1295 + Ipamorelin (CJC/IPA)',
@@ -526,7 +526,7 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
       'GHRP-2 + CJC-1295',
     ],
     notableSafety:
-      'GH-axis activation carries class concerns: increased fasting glucose and insulin resistance, water retention, carpal-tunnel symptoms, arthralgia, and -- in chronic use -- theoretical malignancy considerations via IGF-1 elevation. Tesamorelin is contraindicated in active malignancy, pituitary disorders, and pregnancy. GHRP-6 causes notable hunger (ghrelin-receptor effect). IGF-1 LR3 has hypoglycemia risk. Every GH-axis peptide, follistatin, AICAR, and IGF-1 LR3 are on the WADA Prohibited List.',
+      'GH-axis activation carries class concerns: increased fasting glucose and insulin resistance, water retention, carpal-tunnel symptoms, arthralgia, and -- in chronic use -- theoretical malignancy considerations via IGF-1 elevation. Tesamorelin is contraindicated in active malignancy, pituitary disorders, and pregnancy. GHRP-6 causes notable hunger (ghrelin-receptor effect). IGF-1 LR3 has hypoglycemia risk.',
     keyReferences: [
       {
         citation:
@@ -546,11 +546,6 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
       {
         citation:
           'Sinha-Hikim I, et al. Effects of testosterone supplementation on skeletal muscle fiber hypertrophy and satellite cells. J Clin Endocrinol Metab. 2006;91(8):3024-33.',
-      },
-      {
-        citation:
-          'World Anti-Doping Agency. The Prohibited List. International Standard. Updated annually.',
-        url: 'https://www.wada-ama.org/en/prohibited-list',
       },
     ],
   },
@@ -630,7 +625,7 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
       'SS-31 has the strongest mitochondrial-peptide evidence: positive primary mitochondrial myopathy data (MMPOWER program), 2025 FDA approval for Barth syndrome, and a large literature on cardiolipin biology. Several large heart-failure and AMD endpoints have not been met. MOTS-c is mechanistically compelling but remains preclinical. NAD+ infusion protocols are widely used commercially but have limited controlled long-term outcome data. Glutathione has weak evidence as a parenteral antioxidant outside specific toxicology indications.',
     topCompounds: ['ss-31', 'mots-c', 'nad', 'glutathione', 'l-carnitine'],
     notableSafety:
-      'SS-31 has mild injection-site reactions and headache; generally well tolerated in mitochondrial myopathy trials. MOTS-c lacks human safety data. NAD+ infusions can cause chest pressure, flushing, and nausea during rapid administration. L-Carnitine has been associated with elevated TMAO and theoretical cardiovascular signals at chronic high doses. Glutathione parenteral use has rare bronchospasm and hypersensitivity reports. SS-31, MOTS-c, and several adjacent agents have potential WADA relevance; verify before competitive use.',
+      'SS-31 has mild injection-site reactions and headache; generally well tolerated in mitochondrial myopathy trials. MOTS-c lacks human safety data. NAD+ infusions can cause chest pressure, flushing, and nausea during rapid administration. L-Carnitine has been associated with elevated TMAO and theoretical cardiovascular signals at chronic high doses. Glutathione parenteral use has rare bronchospasm and hypersensitivity reports.',
     keyReferences: [
       {
         citation:
@@ -804,7 +799,7 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
     topCompounds: ['ara-290', 'bpc-157', 'tb-500', 'kpv', 'll-37'],
     topStacks: ['BPC-157 + TB-500', 'ARA-290 + BPC-157 (preclinical synergy)'],
     notableSafety:
-      'ARA-290 was deliberately engineered to avoid erythropoiesis effects and has shown clean safety in Phase 2 trials -- no clinically significant changes in hematocrit, platelets, or blood pressure. BPC-157 and TB-500 lack controlled human AE data. KPV has a minimal toxicity signal in preclinical work. LL-37 at high concentrations is cytotoxic. Pro-angiogenic stacking (BPC-157 + TB-500) carries the theoretical malignancy-progression caution noted elsewhere in this catalog. All four agents (BPC-157, TB-500, KPV, ARA-290) are investigational and fall under WADA S0 considerations.',
+      'ARA-290 was deliberately engineered to avoid erythropoiesis effects and has shown clean safety in Phase 2 trials -- no clinically significant changes in hematocrit, platelets, or blood pressure. BPC-157 and TB-500 lack controlled human AE data. KPV has a minimal toxicity signal in preclinical work. LL-37 at high concentrations is cytotoxic. Pro-angiogenic stacking (BPC-157 + TB-500) carries the theoretical malignancy-progression caution noted elsewhere in this catalog. All four agents (BPC-157, TB-500, KPV, ARA-290) are investigational.',
     keyReferences: [
       {
         citation:
@@ -863,7 +858,7 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
       'BPC-157 + GHK-Cu',
     ],
     notableSafety:
-      'BPC-157 and TB-500 lack human controlled safety data; pro-angiogenic stacking considerations apply. TB-500 is explicitly WADA-prohibited and BPC-157 falls under S0. GHK-Cu has local irritation and theoretical copper-accumulation concerns. IGF-1 LR3 carries hypoglycemia risk and theoretical malignancy considerations from chronic IGF-1 elevation. GH-axis agents (CJC-1295, ipamorelin) carry the GH-axis safety profile: glucose dysregulation, water retention, carpal-tunnel symptoms, and WADA prohibition. None are appropriate for athletes in tested competition or for individuals with active malignancy.',
+      'BPC-157 and TB-500 lack human controlled safety data; pro-angiogenic stacking considerations apply. GHK-Cu has local irritation and theoretical copper-accumulation concerns. IGF-1 LR3 carries hypoglycemia risk and theoretical malignancy considerations from chronic IGF-1 elevation. GH-axis agents (CJC-1295, ipamorelin) carry the GH-axis safety profile: glucose dysregulation, water retention, and carpal-tunnel symptoms. None are appropriate for individuals with active malignancy.',
     keyReferences: [
       {
         citation:

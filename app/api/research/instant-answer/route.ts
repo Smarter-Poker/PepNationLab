@@ -68,19 +68,7 @@ async function fetchCompoundCards(
   );
 }
 
-async function fetchWadaHistory(
-  supabase: Awaited<ReturnType<typeof createServiceClient>>,
-  slug: string,
-): Promise<Array<{ year: number; status: string; notes: string | null }>> {
-  const { data } = await supabase
-    .from('compound_wada_history')
-    .select('year, status, notes')
-    .eq('compound_slug', slug)
-    .order('year', { ascending: false });
-  return Array.isArray(data)
-    ? (data as Array<{ year: number; status: string; notes: string | null }>)
-    : [];
-}
+
 
 async function buildPayload(
   supabase: Awaited<ReturnType<typeof createServiceClient>>,
@@ -200,22 +188,7 @@ async function buildPayload(
       };
     }
 
-    case 'wada': {
-      const wadaHistory = await fetchWadaHistory(supabase, primary.slug);
-      return {
-        payload: {
-          kind: 'wada' as IntentKind,
-          compound: {
-            slug: primary.slug,
-            name: primary.display_name,
-            url: `/research/compounds/${primary.slug}`,
-          },
-          wada_status: primary.wada_status,
-          wada_history: wadaHistory,
-        },
-        kind: 'wada',
-      };
-    }
+
 
     case 'half_life': {
       const halfLifeText =

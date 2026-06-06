@@ -2,7 +2,7 @@
  * Match Me To A Peptide — deterministic scoring engine.
  *
  * Pure TypeScript, no React, no I/O. Given a researcher's stated primary goal,
- * evidence-tier comfort, WADA constraint, and risk tolerance, the engine ranks
+ * evidence-tier comfort, and risk tolerance, the engine ranks
  * the catalog and returns the top 5 candidate compounds with a plain-English
  * rationale.
  *
@@ -157,9 +157,7 @@ function goalMentionsBonus(goal: string, c: Compound): number {
 // Hard-reject gates.
 // --------------------------------------------------------------------------
 function failsWadaGate(c: Compound, constraint: WadaConstraint): boolean {
-  if (constraint === 'no_constraint') return false;
-  // Hard reject anything whose wada_status begins with "prohibited"
-  return typeof c.wada_status === 'string' && c.wada_status.toLowerCase().startsWith('prohibited');
+  return false;
 }
 
 function failsRiskGate(c: Compound, tolerance: RiskTolerance): boolean {

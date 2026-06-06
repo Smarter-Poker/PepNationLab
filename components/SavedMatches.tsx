@@ -57,7 +57,7 @@ export default function SavedMatches({ userId }: { userId: string }) {
               </div>
             </div>
             <Link 
-              href={`/research/match?run=true&goal=${encodeURIComponent(m.match_input.goal || '')}&risk=${m.match_input.riskTolerance || 'moderate_ok'}&comfort=${m.match_input.evidenceComfort || 'preclinical_ok'}&wada=${m.match_input.wadaConstraint || 'no_constraint'}&preference=${m.match_input.preference || 'either'}&budget=${m.match_input.budget || 'standard'}${m.match_input.excludeInjectables ? '&no_injectables=true' : ''}${m.match_input.requireLongHalfLife ? '&long_half_life=true' : ''}${m.match_input.excludeSlugs?.length ? m.match_input.excludeSlugs.map((s: string) => `&exclude=${s}`).join('') : ''}`}
+              href={`/research/match?run=true&goal=${encodeURIComponent(m.match_input.goal || '')}&risk=${m.match_input.riskTolerance || 'moderate_ok'}&comfort=${m.match_input.evidenceComfort || 'preclinical_ok'}&preference=${m.match_input.preference || 'either'}&budget=${m.match_input.budget || 'standard'}${m.match_input.excludeInjectables ? '&no_injectables=true' : ''}${m.match_input.requireLongHalfLife ? '&long_half_life=true' : ''}${m.match_input.excludeSlugs?.length ? m.match_input.excludeSlugs.map((s: string) => `&exclude=${s}`).join('') : ''}`}
               style={{
                 background: 'rgba(0,196,188,0.1)',
                 color: 'var(--teal, #00C4BC)',

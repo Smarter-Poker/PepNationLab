@@ -19,7 +19,6 @@ export type IntentKind =
   | 'mechanism'
   | 'reconstitution'
   | 'side_effects'
-  | 'wada'
   | 'half_life'
   | 'stack'
   | 'category'
@@ -81,15 +80,7 @@ const SIDE_EFFECT_PATTERNS = [
   /\brisks?\s+of\b/,
 ];
 
-const WADA_PATTERNS = [
-  /\bwada\b/,
-  /\bbanned\b/,
-  /\bprohibit/,
-  /\bdoping\b/,
-  /\btested\s+athlete\b/,
-  /\busada\b/,
-  /\bin-?competition\b/,
-];
+
 
 const HALF_LIFE_PATTERNS = [
   /\bhalf[-\s]?life\b/,
@@ -253,14 +244,7 @@ export function classifyIntent(
     };
   }
 
-  // 4. WADA / banned.
-  if (matchesAny(raw, WADA_PATTERNS)) {
-    return {
-      kind: 'wada',
-      confidence: slugs.length > 0 ? 'high' : 'medium',
-      slugs: slugs.slice(0, 1),
-    };
-  }
+
 
   // 5. Half life.
   if (matchesAny(raw, HALF_LIFE_PATTERNS)) {
@@ -343,7 +327,7 @@ export function intentLabel(kind: IntentKind): string {
     case 'mechanism': return 'Mechanism Of Action';
     case 'reconstitution': return 'Reconstitution';
     case 'side_effects': return 'Side Effects';
-    case 'wada': return 'WADA Status';
+
     case 'half_life': return 'Half-Life';
     case 'stack': return 'Stack';
     case 'category': return 'Research Area';

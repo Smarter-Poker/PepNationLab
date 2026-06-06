@@ -229,14 +229,7 @@ export const PEPTIDE_GLOSSARY: GlossaryEntry[] = [
     "term": "Sterile Filtration",
     "def": "A purification step that passes a liquid through a fine membrane, typically 0.22 micron, to remove microorganisms. It is used to render solutions free of viable contaminants."
   },
-  {
-    "term": "WADA",
-    "def": "The World Anti-Doping Agency, the international body that sets anti-doping standards for sport and publishes the Prohibited List. Many peptides appear on its list of prohibited substances."
-  },
-  {
-    "term": "Prohibited List",
-    "def": "The annually updated catalog published by WADA naming substances and methods banned in competitive sport. Researchers reference it to understand the regulatory status of compounds."
-  },
+
   {
     "term": "Research Use Only",
     "def": "A designation indicating a product is intended solely for laboratory research and not for human or veterinary use, diagnosis, or treatment. It signals that the material is not approved for clinical application."
@@ -374,11 +367,7 @@ export const PEPTIDE_FAQ: FaqEntry[] = [
     "q": "Why Do You Surface Side Effects And Warnings If These Are Not For Human Use?",
     "a": "We surface documented adverse effects and warnings from the scientific and regulatory literature so researchers have an honest, complete picture of a compound's known risk profile. Transparent hazard information supports safe laboratory handling and sound research judgment. It is reference material and is not an endorsement of human use in any form."
   },
-  {
-    "category": "Safety & Compliance",
-    "q": "What Does WADA-Prohibited Mean?",
-    "a": "WADA is the World Anti-Doping Agency, and a WADA-prohibited designation means a substance appears on the Prohibited List that governs competitive athletes. We flag this status as factual compliance information so researchers understand a compound's regulatory context. It is not advice about human use and does not change the research-only status of the material."
-  },
+
   {
     "category": "Safety & Compliance",
     "q": "Can These Compounds Be Resold Or Redistributed For Human Use?",
@@ -512,30 +501,7 @@ export const LEARN_GUIDES: Guide[] = [
       },
       {
         "heading": "Regulatory Status And Sources",
-        "body": "The regulatory and anti-doping block states FDA or EMA status and the WADA class. The sources block lists the key references behind the profile, from peer-reviewed literature and regulatory labels to DrugBank and PubChem entries.\n\nRead a monograph top to bottom and the page is verifiable: you can check the identity against a CoA, the claims against the cited studies, and the status against current regulatory and WADA lists."
-      }
-    ]
-  },
-  {
-    "slug": "wada-anti-doping",
-    "title": "WADA & Anti-Doping",
-    "intro": "Many compounds in this library are prohibited in sport. This guide explains what WADA is, what prohibited means, and which classes commonly appear on the list.",
-    "sections": [
-      {
-        "heading": "What WADA Is",
-        "body": "The World Anti-Doping Agency (WADA) maintains the international standard that governs which substances and methods are banned in sport. It publishes a Prohibited List that anti-doping organizations and most competitive sporting bodies adopt.\n\nA compound being on that list is a separate question from whether it is legal to research or whether it is an approved drug. Several catalog compounds are prohibited in sport regardless of their regulatory status."
-      },
-      {
-        "heading": "What Prohibited Means",
-        "body": "Prohibited means the substance or method is banned for athletes who fall under an anti-doping program, either at all times or in competition only. The growth-hormone-axis section of this catalog, for instance, is flagged as WADA-prohibited under class S2 (peptide hormones, growth factors and related substances) at all times.\n\nProhibition applies to the athlete and the competition context. It does not, by itself, describe pharmacology or safety; it is a sport-eligibility rule layered on top of everything else on a compound's page."
-      },
-      {
-        "heading": "Commonly Prohibited Classes",
-        "body": "Classes that commonly appear as prohibited include growth-hormone secretagogues and GH-releasing factors (GHRH analogs such as CJC-1295, and secretagogues such as the GHRP family and ipamorelin), GH and IGF-related agents, the metabolic modulator AICAR, and certain peptides such as TB-500 and the mitochondrial peptide MOTS-c.\n\nOther catalog compounds are noted as not specifically WADA-named, but the references add the caveat to verify, since status can change."
-      },
-      {
-        "heading": "Verify Against The Current List",
-        "body": "WADA updates its Prohibited List, and a compound's status can change between editions. Every anti-doping note in this library carries an explicit instruction to verify against the current WADA list before any competition context.\n\nTreat the per-compound note as a starting point and confirm the live list yourself. The authoritative source is WADA's published Prohibited List for the relevant year."
+        "body": "The regulatory block states FDA or EMA status. The sources block lists the key references behind the profile, from peer-reviewed literature and regulatory labels to DrugBank and PubChem entries.\n\nRead a monograph top to bottom and the page is verifiable: you can check the identity against a CoA, the claims against the cited studies, and the status against current regulatory lists."
       }
     ]
   },
@@ -569,11 +535,11 @@ export const LEARN_GUIDES: Guide[] = [
     "sections": [
       {
         "heading": "GHRH Analogs",
-        "body": "Growth-hormone-releasing hormone (GHRH) analogs are synthetic agonists of the GHRH receptor on the pituitary, prompting it to release growth hormone. Examples in the catalog include CJC-1295, where a DAC modification binds albumin to extend the half-life to several days and produce sustained rather than pulsatile growth-hormone release. The entire growth-hormone-axis class is WADA-prohibited under S2 and most members are research chemicals, not approved drugs."
+        "body": "Growth-hormone-releasing hormone (GHRH) analogs are synthetic agonists of the GHRH receptor on the pituitary, prompting it to release growth hormone. Examples in the catalog include CJC-1295, where a DAC modification binds albumin to extend the half-life to several days and produce sustained rather than pulsatile growth-hormone release. Most members of the growth-hormone-axis class are research chemicals, not approved drugs."
       },
       {
         "heading": "Growth-Hormone-Releasing Peptides And Secretagogues",
-        "body": "Secretagogues such as the GHRP family and ipamorelin act mainly through the ghrelin and GH-secretagogue receptor rather than the GHRH receptor, providing a second, complementary pathway to stimulate growth-hormone release. They are often discussed alongside GHRH analogs because the two mechanisms are studied in combination. Like the GHRH analogs, these are WADA-prohibited as GH secretagogues and carry the general GH-axis caveats around glucose tolerance."
+        "body": "Secretagogues such as the GHRP family and ipamorelin act mainly through the ghrelin and GH-secretagogue receptor rather than the GHRH receptor, providing a second, complementary pathway to stimulate growth-hormone release. They are often discussed alongside GHRH analogs because the two mechanisms are studied in combination. Like the GHRH analogs, these carry the general GH-axis caveats around glucose tolerance."
       },
       {
         "heading": "GLP-1 And Incretin Agonists",
@@ -593,7 +559,7 @@ export const LEARN_GUIDES: Guide[] = [
       },
       {
         "heading": "Mitochondrial Peptides",
-        "body": "Mitochondrial peptides target mitochondrial function and integrity. SS-31 (elamipretide) binds cardiolipin to stabilize the inner mitochondrial membrane and recently gained a narrow FDA approval for Barth syndrome, making it the strongest human evidence in its anti-aging-adjacent category, while remaining investigational for everything else. MOTS-c is a mitochondrial-derived peptide studied as a metabolic regulator and is noted as WADA-relevant; verify its current status before any competition context."
+        "body": "Mitochondrial peptides target mitochondrial function and integrity. SS-31 (elamipretide) binds cardiolipin to stabilize the inner mitochondrial membrane and recently gained a narrow FDA approval for Barth syndrome, making it the strongest human evidence in its anti-aging-adjacent category, while remaining investigational for everything else. MOTS-c is a mitochondrial-derived peptide studied as a metabolic regulator."
       }
     ]
   }
