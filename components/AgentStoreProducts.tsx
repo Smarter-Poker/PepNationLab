@@ -752,7 +752,7 @@ function PricingConfig({ agentId }: { agentId: string }) {
   // Dynamic pricing (small-order surcharges)
   const [enableDynamic, setEnableDynamic] = React.useState(true);
   const [minOrderQty, setMinOrderQty] = React.useState(1);
-  const [minOverallQty, setMinOverallQty] = React.useState(1);
+  const [minOverallQty, setMinOverallQty] = React.useState(3);
   const [dynamicTiers, setDynamicTiers] = React.useState([
     { min_qty: 1, max_qty: 2, surcharge_percent: 20 },
     { min_qty: 3, max_qty: 5, surcharge_percent: 15 },
@@ -761,7 +761,7 @@ function PricingConfig({ agentId }: { agentId: string }) {
   ]);
 
   // Bulk volume discounts
-  const [enableBulk, setEnableBulk] = React.useState(false);
+  const [enableBulk, setEnableBulk] = React.useState(true);
   const [bulkTiers, setBulkTiers] = React.useState([
     { min_qty: 100, discount_percent: 5 },
     { min_qty: 300, discount_percent: 10 },
@@ -786,6 +786,8 @@ function PricingConfig({ agentId }: { agentId: string }) {
       setLoaded(true);
     })();
   }, [agentId]);
+
+  const [showBulkExplain, setShowBulkExplain] = React.useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -820,16 +822,30 @@ function PricingConfig({ agentId }: { agentId: string }) {
     <div className="glass-panel" style={{ marginBottom: 'var(--space-4)' }}>
       <div className="" style={{ padding: 'var(--space-8)' }}>
       <h3 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Pricing & Discounts</h3>
-      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', marginBottom: 'var(--space-6)' }}>
+      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', marginBottom: 'var(--space-2)' }}>
         Configure quantity-based pricing and bulk volume discounts for your storefront.
       </p>
+      
+      <div style={{ background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)', padding: '12px 16px', borderRadius: 8, marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <div>
+          <h5 style={{ color: 'var(--teal)', fontSize: '0.9rem', margin: '0 0 4px 0' }}>Agent Direct Pricing Note</h5>
+          <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>
+            When you are logged in and ordering products for yourself, you will automatically receive your direct wholesale base cost at checkout, regardless of these storefront pricing configurations.
+          </p>
+        </div>
+      </div>
 
       {/* Dynamic Pricing Section */}
       <div style={{ marginBottom: 'var(--space-6)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
           <div>
-            <h4 style={{ color: 'var(--teal)', fontSize: '1rem', marginBottom: 2 }}>Dynamic Pricing</h4>
-            <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>Small-order surcharges for orders under 10 vials</p>
+            <h4 style={{ color: '#fff', fontSize: '1.05rem', marginBottom: 4 }}>Dynamic Pricing</h4>
+            <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Small-order surcharges for orders under 10 vials</p>
           </div>
           <button type="button" onClick={() => setEnableDynamic(!enableDynamic)} style={toggleStyle(enableDynamic)}>
             <span style={toggleDot(enableDynamic)} />
@@ -872,13 +888,30 @@ function PricingConfig({ agentId }: { agentId: string }) {
       <div style={{ marginBottom: 'var(--space-6)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
           <div>
-            <h4 style={{ color: 'var(--teal)', fontSize: '1rem', marginBottom: 2 }}>Bulk Volume Discounts</h4>
-            <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>Offer discounts for large quantity orders (100+ vials)</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 4 }}>
+              <h4 style={{ color: '#fff', fontSize: '1.05rem', margin: 0 }}>Bulk Volume Discounts</h4>
+              <button 
+                type="button" 
+                onClick={() => setShowBulkExplain(!showBulkExplain)}
+                style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: '0.7rem', padding: '2px 8px', borderRadius: 12, cursor: 'pointer', transition: 'background 0.2s' }}
+              >
+                {showBulkExplain ? 'Hide Explanation' : 'Explain Bulk Pricing'}
+              </button>
+            </div>
+            <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Offer discounts for large quantity orders (100+ vials)</p>
           </div>
           <button type="button" onClick={() => setEnableBulk(!enableBulk)} style={toggleStyle(enableBulk)}>
             <span style={toggleDot(enableBulk)} />
           </button>
         </div>
+
+        {showBulkExplain && (
+          <div style={{ background: 'var(--surface-2)', padding: '12px 16px', borderRadius: 8, marginBottom: 'var(--space-4)', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', margin: 0, lineHeight: 1.5 }}>
+              <strong>How it works:</strong> Bulk pricing automatically applies a percentage discount to the entire order subtotal when the customer's cart reaches a specific total vial count. For example, if a customer buys 50 vials of BPC-157 and 50 vials of TB-500, they reach the 100-vial tier and receive the discount off their total. This encourages larger overall purchases across your entire catalog.
+            </p>
+          </div>
+        )}
 
         {enableBulk && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
