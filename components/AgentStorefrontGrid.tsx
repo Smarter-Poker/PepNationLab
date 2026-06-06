@@ -1740,6 +1740,25 @@ export default function AgentStorefrontGrid({
           }
           .sf-modal-actions .sf-add-btn { flex: none; padding: 10px 28px; }
         }
+        .sf-product-card-nickel {
+          border: 4px solid transparent !important;
+          background-image: linear-gradient(#0F1923, #0F1923), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) !important;
+          background-origin: border-box !important;
+          background-clip: padding-box, border-box !important;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+          border-radius: var(--radius-xl) !important;
+          overflow: hidden !important;
+          display: flex !important;
+          flex-direction: column !important;
+          height: 100% !important;
+        }
+        .sf-product-price-nickel {
+          background: linear-gradient(135deg, #a0a8b4 0%, #cbd5e0 25%, #f7fafc 50%, #718096 75%, #a0a8b4 100%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+          text-shadow: none !important;
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8)) !important;
+        }
       `}} />
 
       {!showStoreGrid && (
@@ -1994,15 +2013,9 @@ export default function AgentStorefrontGrid({
               return (
                 <div
                   key={bundle.id}
-                  className="glass-panel"
+                  className="sf-product-card-nickel"
                   style={{
-                    display: 'flex',
-                    flexDirection: 'column',
                     padding: 'var(--space-5)',
-                    background: `linear-gradient(180deg, ${primaryColor}10 0%, var(--surface-2) 100%)`,
-                    border: `1px solid ${primaryColor}30`,
-                    borderRadius: 'var(--radius-lg)',
-                    boxShadow: `0 8px 32px rgba(0,0,0,0.4)`,
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-3)' }}>
@@ -2056,12 +2069,10 @@ export default function AgentStorefrontGrid({
                     borderTop: '1px solid rgba(255,255,255,0.06)',
                     paddingTop: 'var(--space-4)',
                   }}>
-                    <span style={{
+                    <span className="sf-product-price-nickel" style={{
                       fontSize: '1.3rem',
                       fontWeight: 800,
-                      color: primaryColor,
                       fontFamily: 'var(--font-brand)',
-                      textShadow: `0 0 10px ${primaryColor}40`,
                     }}>
                       ${formatPrice(bundle.price)}
                     </span>
@@ -2183,7 +2194,7 @@ export default function AgentStorefrontGrid({
 
           return (
             <motion.div
-              key={group.name} className="glass-panel hover-lift stagger-fade-in" variants={itemVariants}
+              key={group.name} className="sf-product-card-nickel hover-lift stagger-fade-in" variants={itemVariants}
               style={{
                 cursor: 'pointer'
               }}
@@ -2442,9 +2453,9 @@ export default function AgentStorefrontGrid({
                               ${displayOriginalPrice.toFixed(2)}
                             </span>
                           )}
-                          <span style={{
-                            fontSize: '1.2rem', fontWeight: 800, color: isOnSale ? '#F56565' : primaryColor,
-                            fontFamily: 'var(--font-brand)', textShadow: `0 0 10px ${isOnSale ? 'rgba(245,101,101,0.4)' : primaryColor + '40'}`
+                          <span className="sf-product-price-nickel" style={{
+                            fontSize: '1.2rem', fontWeight: 800,
+                            fontFamily: 'var(--font-brand)',
                           }}>
                             {displaySizeText} &nbsp;${displayPrice.toFixed(2)}
                           </span>
