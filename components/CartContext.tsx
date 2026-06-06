@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { getProductImage } from '@/lib/categoryImage';
+import DynamicAddToCartButton from '@/components/storefront/DynamicAddToCartButton';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -747,40 +748,12 @@ function SmartRecCard({
       </div>
 
       {/* Quick-add button */}
-      <button
-        type="button"
+      <DynamicAddToCartButton
         onClick={handleAdd}
-        style={{
-          margin: '7px 8px 8px',
-          borderRadius: 6,
-          border: added ? '1.5px solid rgba(104,211,145,0.5)' : '1.5px solid rgba(0,229,255,0.28)',
-          background: added ? 'rgba(104,211,145,0.1)' : 'rgba(0,229,255,0.07)',
-          color: added ? '#68D391' : 'var(--teal)',
-          fontSize: '0.68rem', fontWeight: 800, fontFamily: 'var(--font-brand)',
-          cursor: added ? 'default' : 'pointer',
-          padding: '5px 0', flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-          transition: 'all 0.2s ease',
-          letterSpacing: '0.02em',
-        }}
-        aria-label={added ? 'Added to cart' : `Add ${rec.name} to cart`}
-      >
-        {added ? (
-          <>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            Added!
-          </>
-        ) : (
-          <>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Add to Cart
-          </>
-        )}
-      </button>
+        isSmall={true}
+        justAdded={added}
+        style={{ margin: '7px 8px 8px', width: 'auto', flex: 'none' }}
+      />
     </div>
   );
 }

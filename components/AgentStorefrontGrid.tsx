@@ -11,6 +11,7 @@ import IframeLink from '@/components/ui/IframeLink';
 import DiscoveryHero, { type MatchedProduct } from './storefront/StorefrontDiscovery';
 import ProductModalEnhancements, { ClickableCategoryBadge, type ModalGroupedProductRef } from './storefront/ProductModalEnhancements';
 import StorefrontCompareDrawer from './storefront/StorefrontCompareDrawer';
+import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
 import { evidenceTier, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
@@ -3395,9 +3396,7 @@ export default function AgentStorefrontGrid({
                     >
                       Close
                     </button>
-                    <button
-                      className="sf-add-btn"
-                      style={{ background: `linear-gradient(180deg, ${primaryColor} 0%, ${primaryColor}cc 100%)` }}
+                    <DynamicAddToCartButton
                       onClick={() => {
                         const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
                         setCartItems(prev => ({
@@ -3409,9 +3408,8 @@ export default function AgentStorefrontGrid({
                         setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
                         setShowCartFloat(true);
                       }}
-                    >
-                      Add To Cart ({pendingQty})
-                    </button>
+                      pendingQty={pendingQty}
+                    />
                   </div>
                 </div>
               </div>

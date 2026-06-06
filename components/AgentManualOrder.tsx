@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
 
 interface AgentProduct {
   product_id: string;
@@ -173,9 +174,11 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
                   })}
                 </select>
               </div>
-              <button type="button" onClick={handleAddToCart} className="btn-silver" style={{ height: 42, padding: '0 24px', fontSize: '0.85rem' }}>
-                Add To Cart
-              </button>
+              <DynamicAddToCartButton
+                onClick={handleAddToCart}
+                isSmall={true}
+                style={{ height: 42 }}
+              />
             </div>
 
             {cart.length > 0 ? (
