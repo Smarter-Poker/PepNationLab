@@ -18,6 +18,7 @@ import { evidenceTier, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
 import { toast } from 'sonner';
+import { writeCatalogCache, isCatalogCacheFresh, readCatalogCache, CATALOG_TTL_MS } from '@/lib/storefront-cache';
 
 interface ProductItem {
   id: string;
@@ -270,6 +271,59 @@ const getEditDistance = (a: string, b: string) => {
   return matrix[a.length][b.length];
 };
 
+/**
+ * Background catalog cache refresher — stale-while-revalidate.
+ *
+ * Fires on mount and then every CATALOG_TTL_MS / 2 while the tab is open.
+ * Writes fresh product + compound data to localStorage so that the NEXT
+ * visit (or next soft-navigation back to this route) can render instantly
+ * from the stored payload without waiting for SSR.
+ *
+ * Does NOT update live React state — the SSR-hydrated props are always
+ * authoritative for the current render. The cache only benefits future visits.
+ */
+function useCatalogRefresh(agentSlug: string) {
+  const refreshIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const doRefresh = React.useCallback(async (force = false) => {
+    try {
+      // Skip if cache is still fresh and we're not forcing
+      if (!force) {
+        const cached = readCatalogCache(agentSlug);
+        if (cached && isCatalogCacheFresh(cached)) return;
+      }
+
+      const res = await fetch(`/api/storefront/catalog/${encodeURIComponent(agentSlug)}`, {
+        method: 'GET',
+        credentials: 'omit', // public endpoint — no cookies needed
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.products && Array.isArray(data.products)) {
+        writeCatalogCache(agentSlug, { ...data, fetchedAt: Date.now() });
+      }
+    } catch {
+      // Best-effort — never throw
+    }
+  }, [agentSlug]);
+
+  React.useEffect(() => {
+    // Immediate refresh on mount (checks TTL internally)
+    doRefresh(false);
+
+    // Recurring refresh at half the TTL to keep the cache warm
+    refreshIntervalRef.current = setInterval(
+      () => doRefresh(false),
+      CATALOG_TTL_MS / 2
+    );
+
+    return () => {
+      if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
+    };
+  }, [doRefresh]);
+}
+
 export default function AgentStorefrontGrid({
   products,
   inventoryMap,
@@ -288,6 +342,10 @@ export default function AgentStorefrontGrid({
 }: Props) {
   const [mounted, setMounted] = useState(false);
   const [showStoreGrid, setShowStoreGrid] = useState(true);
+
+  // Keep the localStorage catalog cache warm — fires on mount and every 5 min.
+  // Benefits: next navigation to this storefront renders instantly from cache.
+  useCatalogRefresh(agentSlug);
 
   const openGrid = useCallback(() => {
     if (typeof window !== 'undefined') {

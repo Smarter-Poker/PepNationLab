@@ -110,45 +110,59 @@ async function AgentStorefrontDataLoader({
     );
   }
 
-  const { data: inventory } = await supabase
-    .rpc('agent_inventory_for_storefront', { p_slug: agentSlug });
-
-  const inventoryMap = new Map(
-    (inventory as Array<{ product_id: string; stock_count: number }> | null)?.map(
-      (i) => [i.product_id, i.stock_count]
-    ) || []
-  );
-
+  // ── Run independent queries in parallel — saves ~2 sequential round-trips ──
   const productIds = (products ?? [])
     .map(p => p.product_id)
     .filter((v): v is string => !!v);
+
+  const isResearcher = userProfile?.role === 'researcher';
+
+  const [inventoryResult, lotsResult, wishlistResult] = await Promise.all([
+    // 1. Inventory counts
+    supabase.rpc('agent_inventory_for_storefront', { p_slug: agentSlug }),
+
+    // 2. COA PDFs (only if we have product IDs)
+    productIds.length > 0
+      ? supabase
+          .from('product_lots')
+          .select('product_id, coa_storage_key, received_at')
+          .in('product_id', productIds)
+          .eq('is_active', true)
+          .not('coa_storage_key', 'is', null)
+          .order('received_at', { ascending: false })
+      : Promise.resolve({ data: null }),
+
+    // 3. Wishlist (researchers only)
+    isResearcher
+      ? supabase
+          .from('researcher_favorites')
+          .select('product_id')
+          .eq('user_id', user.id)
+      : Promise.resolve({ data: null }),
+  ]);
+
+  // Build inventory map
+  const inventoryMap = new Map(
+    (inventoryResult.data as Array<{ product_id: string; stock_count: number }> | null)
+      ?.map(i => [i.product_id, i.stock_count]) ?? []
+  );
+
+  // Build COA URL map
   const coaByProductId: Record<string, string> = {};
-  if (productIds.length > 0) {
-    const { data: lots } = await supabase
-      .from('product_lots')
-      .select('product_id, coa_storage_key, received_at')
-      .in('product_id', productIds)
-      .eq('is_active', true)
-      .not('coa_storage_key', 'is', null)
-      .order('received_at', { ascending: false });
-    for (const row of lots ?? []) {
-      if (!row.coa_storage_key) continue;
-      if (coaByProductId[row.product_id]) continue; 
-      const { data: pub } = supabase.storage
-        .from('product-coas')
-        .getPublicUrl(row.coa_storage_key);
-      if (pub?.publicUrl) coaByProductId[row.product_id] = pub.publicUrl;
-    }
+  for (const row of lotsResult.data ?? []) {
+    if (!row.coa_storage_key) continue;
+    if (coaByProductId[row.product_id]) continue; // keep newest
+    const { data: pub } = supabase.storage
+      .from('product-coas')
+      .getPublicUrl(row.coa_storage_key);
+    if (pub?.publicUrl) coaByProductId[row.product_id] = pub.publicUrl;
   }
 
-  let initialWishlistIds: string[] = [];
-  if (userProfile?.role === 'researcher') {
-    const { data: favRows } = await supabase
-      .from('researcher_favorites')
-      .select('product_id')
-      .eq('user_id', user.id);
-    initialWishlistIds = (favRows ?? []).map(r => r.product_id);
-  }
+  // Wishlist IDs
+  const initialWishlistIds: string[] = (wishlistResult.data ?? []).map(
+    (r: { product_id: string }) => r.product_id
+  );
+
 
   let productsWithCost: Array<Record<string, unknown>> =
     (products ?? []) as unknown as Array<Record<string, unknown>>;

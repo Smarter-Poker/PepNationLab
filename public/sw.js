@@ -1,17 +1,42 @@
 // Pep Nation Lab service worker - web push receiver, offline caching, and IndexedDB replication.
-const CACHE_VERSION = 'pnl-sw-v3';
-const STATIC_CACHE_NAME = 'pnl-static-cache-v3';
-const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v3';
+// v4: Added catalog API caching and Supabase storage image caching.
+const CACHE_VERSION = 'pnl-sw-v4';
+const STATIC_CACHE_NAME = 'pnl-static-cache-v4';
+const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v4';
+const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v4';
+const IMAGE_CACHE_NAME = 'pnl-image-cache-v4';
+
+// Catalog cache TTL in the service worker (5 min = 300,000 ms)
+// Matches the s-maxage set on the API route's Cache-Control header.
+const CATALOG_SW_TTL_MS = 5 * 60 * 1000;
+// Product images from Supabase storage are considered immutable — 7 day cache
+const IMAGE_SW_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------
-// WEB PUSH NOTIFICATION HANDLERS
+// INSTALL & ACTIVATE — Clean up old caches
 // ---------------------------------------------------------------------
 
 self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  const keepCaches = new Set([
+    STATIC_CACHE_NAME,
+    DYNAMIC_CACHE_NAME,
+    CATALOG_CACHE_NAME,
+    IMAGE_CACHE_NAME,
+  ]);
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.filter((k) => !keepCaches.has(k)).map((k) => caches.delete(k))
+      )
+    ).then(() => self.clients.claim())
+  );
 });
+
+// ---------------------------------------------------------------------
+// WEB PUSH NOTIFICATION HANDLERS
+// ---------------------------------------------------------------------
 
 self.addEventListener('push', (event) => {
   if (!event.data) return;
@@ -157,13 +182,102 @@ async function searchOffline(queryStr) {
 }
 
 // ---------------------------------------------------------------------
+// CATALOG CACHE HELPERS
+// Helper to check if a cached Response is still within TTL.
+// We store the fetch timestamp as a custom header on the cached response.
+// ---------------------------------------------------------------------
+
+async function getCatalogFromCache(cacheName, request) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  if (!cached) return null;
+
+  const fetchedAt = cached.headers.get('x-pnl-cached-at');
+  if (!fetchedAt) return null;
+
+  const age = Date.now() - parseInt(fetchedAt, 10);
+  if (age > CATALOG_SW_TTL_MS) {
+    // Stale — return it anyway (stale-while-revalidate) but signal it's stale
+    return { response: cached, stale: true };
+  }
+  return { response: cached, stale: false };
+}
+
+async function putCatalogInCache(cacheName, request, response) {
+  if (!response.ok) return;
+  const cache = await caches.open(cacheName);
+  // Clone and add our timestamp header
+  const headers = new Headers(response.headers);
+  headers.set('x-pnl-cached-at', String(Date.now()));
+  const augmented = new Response(response.clone().body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+  await cache.put(request, augmented);
+}
+
+// ---------------------------------------------------------------------
 // FETCH INTERCEPTION & CACHING STRATEGY
 // ---------------------------------------------------------------------
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // 1. Compounds list: Network-first, write to IndexedDB, fallback to DB
+  // ── A. Catalog API — stale-while-revalidate, 5 min TTL ──────────────────────
+  // /api/storefront/catalog/[agentSlug]
+  if (
+    event.request.method === 'GET' &&
+    url.pathname.startsWith('/api/storefront/catalog/')
+  ) {
+    event.respondWith(
+      getCatalogFromCache(CATALOG_CACHE_NAME, event.request).then((cached) => {
+        // Always fire a background revalidation
+        const revalidate = fetch(event.request.clone()).then((networkResponse) => {
+          if (networkResponse.ok) {
+            putCatalogInCache(CATALOG_CACHE_NAME, event.request, networkResponse.clone());
+          }
+          return networkResponse;
+        }).catch(() => null);
+
+        if (cached) {
+          // Serve stale immediately; background revalidation keeps it fresh
+          return cached.response;
+        }
+
+        // No cache — wait for network
+        return revalidate || fetch(event.request);
+      })
+    );
+    return;
+  }
+
+  // ── B. Storefront recommendations — cache-first, 2 min TTL ─────────────────
+  if (
+    event.request.method === 'GET' &&
+    url.pathname.startsWith('/api/storefront/recommendations')
+  ) {
+    event.respondWith(
+      caches.open(DYNAMIC_CACHE_NAME).then((cache) =>
+        cache.match(event.request).then((cached) => {
+          if (cached) {
+            // Revalidate in background
+            fetch(event.request.clone()).then((r) => {
+              if (r.ok) cache.put(event.request, r.clone());
+            }).catch(() => {});
+            return cached;
+          }
+          return fetch(event.request).then((r) => {
+            if (r.ok) cache.put(event.request, r.clone());
+            return r;
+          });
+        })
+      )
+    );
+    return;
+  }
+
+  // ── C. Compounds list — network-first, write to IndexedDB ───────────────────
   if (url.pathname === '/api/research/compounds-list') {
     event.respondWith(
       fetch(event.request)
@@ -199,7 +313,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Search API: Network-first, fallback to IndexedDB local query
+  // ── D. Research search — network-first, offline fallback ────────────────────
   if (url.pathname === '/api/research/search') {
     event.respondWith(
       fetch(event.request)
@@ -215,7 +329,43 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Stale-While-Revalidate for static assets & pages
+  // ── E. Supabase product images — cache-first, 7 day TTL ─────────────────────
+  // These are immutable (content-addressed by storage key) so long caching is safe.
+  const isSupabaseImage =
+    (url.hostname.includes('.supabase.co') || url.hostname.includes('.supabase.in')) &&
+    url.pathname.includes('/storage/v1/object/public/');
+
+  if (event.request.method === 'GET' && isSupabaseImage) {
+    event.respondWith(
+      caches.open(IMAGE_CACHE_NAME).then((cache) =>
+        cache.match(event.request).then((cached) => {
+          if (cached) {
+            // Check age
+            const cachedAt = cached.headers.get('x-pnl-cached-at');
+            const age = cachedAt ? Date.now() - parseInt(cachedAt, 10) : Infinity;
+            if (age < IMAGE_SW_TTL_MS) return cached;
+          }
+          // Fetch and cache
+          return fetch(event.request).then((response) => {
+            if (response.ok && response.status === 200) {
+              const headers = new Headers(response.headers);
+              headers.set('x-pnl-cached-at', String(Date.now()));
+              const augmented = new Response(response.clone().body, {
+                status: response.status,
+                statusText: response.statusText,
+                headers,
+              });
+              cache.put(event.request, augmented);
+            }
+            return response;
+          }).catch(() => cached || new Response('', { status: 503 }));
+        })
+      )
+    );
+    return;
+  }
+
+  // ── F. Static assets & research pages — stale-while-revalidate ──────────────
   const isStaticAsset = 
     url.pathname.includes('/_next/') || 
     url.pathname.startsWith('/fonts/') || 
