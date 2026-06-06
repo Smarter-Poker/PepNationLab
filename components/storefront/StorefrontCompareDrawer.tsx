@@ -107,13 +107,39 @@ function txt(v: unknown): string {
 function parseHalfLifeHours(hl: string | null | undefined): number {
   if (!hl) return 0;
   const s = hl.toLowerCase();
-  const match = s.match(/(\d+(?:\.\d+)?)/);
-  if (!match) return 0;
-  const num = parseFloat(match[1]);
+  const regex = /(\d+(?:\.\d+)?)\s*(minute|min|hour|hr|h|day|wk|week)/g;
+  let match;
+  let maxHours = 0;
+  let found = false;
+  
+  while ((match = regex.exec(s)) !== null) {
+    found = true;
+    const val = parseFloat(match[1]);
+    const unit = match[2];
+    let hours = val;
+    if (unit.startsWith('min')) {
+      hours = val / 60;
+    } else if (unit.startsWith('day')) {
+      hours = val * 24;
+    } else if (unit.startsWith('wk') || unit.startsWith('week')) {
+      hours = val * 24 * 7;
+    }
+    if (hours > maxHours) {
+      maxHours = hours;
+    }
+  }
+  
+  if (found) {
+    return maxHours;
+  }
+  
+  const matchFallback = s.match(/(\d+(?:\.\d+)?)/);
+  if (!matchFallback) return 0;
+  const num = parseFloat(matchFallback[1]);
   if (s.includes('min')) return num / 60;
   if (s.includes('day')) return num * 24;
   if (s.includes('week')) return num * 24 * 7;
-  return num; // assume hours by default
+  return num;
 }
 
 const KNOWN_SYNERGIES = [
@@ -370,6 +396,200 @@ function generateProsConsPinned(p: PinnedItem, compoundsBySlug: Record<string, C
   
   return { pros, cons };
 }
+
+// Custom 3D SVG Icons
+const MatrixIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))', flexShrink: 0 }}>
+    <path d="M12 2L20 6.5L12 11L4 6.5L12 2Z" fill="url(#mtx-silver-top)" />
+    <path d="M4 6.5L12 11V20L4 15.5V6.5Z" fill="url(#mtx-silver-left)" />
+    <path d="M12 11L20 6.5V15.5L12 20V11Z" fill="url(#mtx-silver-right)" />
+    <path d="M6.67 5L14.67 9.5" stroke="#101419" strokeWidth="0.75" />
+    <path d="M9.33 3.5L17.33 8" stroke="#101419" strokeWidth="0.75" />
+    <path d="M17.33 3.5L9.33 8" stroke="#101419" strokeWidth="0.75" />
+    <path d="M14.67 5L6.67 9.5" stroke="#101419" strokeWidth="0.75" />
+    <path d="M4 11L12 15.5" stroke="#101419" strokeWidth="0.75" />
+    <path d="M4 14L12 18.5" stroke="#101419" strokeWidth="0.75" />
+    <path d="M6.67 8V17" stroke="#101419" strokeWidth="0.75" />
+    <path d="M9.33 9.5V18.5" stroke="#101419" strokeWidth="0.75" />
+    <path d="M12 15.5L20 11" stroke="#101419" strokeWidth="0.75" />
+    <path d="M12 18.5L20 14" stroke="#101419" strokeWidth="0.75" />
+    <path d="M14.67 9.5V18.5" stroke="#101419" strokeWidth="0.75" />
+    <path d="M17.33 8V17" stroke="#101419" strokeWidth="0.75" />
+    <path d="M14.67 5L17.33 6.5L14.67 8L12 6.5L14.67 5Z" fill="url(#mtx-blue-accent-top)" />
+    <path d="M17.33 6.5L20 8L17.33 9.5L14.67 8L17.33 6.5Z" fill="url(#mtx-blue-accent-top)" />
+    <path d="M17.33 9.5L20 8V11L17.33 12.5V9.5Z" fill="url(#mtx-blue-accent-right)" />
+    <path d="M14.67 11L17.33 9.5V12.5L14.67 14V11Z" fill="url(#mtx-blue-accent-right)" />
+    <defs>
+      <linearGradient id="mtx-silver-top" x1="12" y1="2" x2="12" y2="11" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#e8ecef" />
+        <stop offset="100%" stopColor="#8c97a5" />
+      </linearGradient>
+      <linearGradient id="mtx-silver-left" x1="4" y1="6.5" x2="12" y2="20" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#4e5866" />
+        <stop offset="100%" stopColor="#242b35" />
+      </linearGradient>
+      <linearGradient id="mtx-silver-right" x1="20" y1="6.5" x2="12" y2="20" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#6d7b8d" />
+        <stop offset="100%" stopColor="#353e4c" />
+      </linearGradient>
+      <linearGradient id="mtx-blue-accent-top" x1="12" y1="5" x2="20" y2="9.5" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#00e5ff" />
+        <stop offset="100%" stopColor="#0083b0" />
+      </linearGradient>
+      <linearGradient id="mtx-blue-accent-right" x1="17.33" y1="8" x2="20" y2="12.5" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#00b4d8" />
+        <stop offset="100%" stopColor="#005f73" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+const ProsConsIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))', flexShrink: 0 }}>
+    <path d="M12 4V19" stroke="url(#pc-metal-grad)" strokeWidth="2" strokeLinecap="round" />
+    <path d="M9 19H15" stroke="url(#pc-metal-grad)" strokeWidth="2.5" strokeLinecap="round" />
+    <path d="M11 4.5H13" stroke="url(#pc-metal-grad)" strokeWidth="2" strokeLinecap="round" />
+    <path d="M5 7L12 5.5L19 7" stroke="url(#pc-metal-grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M5 7L3.5 13H6.5L5 7Z" stroke="url(#pc-metal-grad)" strokeWidth="1" fill="none" />
+    <path d="M2.5 13C2.5 14.5 4.5 15 5 15C5.5 15 7.5 14.5 7.5 13H2.5Z" fill="url(#pc-blue-plate-grad)" stroke="url(#pc-metal-grad)" strokeWidth="0.75" />
+    <path d="M19 7L17.5 13H20.5L19 7Z" stroke="url(#pc-metal-grad)" strokeWidth="1" fill="none" />
+    <path d="M16.5 13C16.5 14.5 18.5 15 19 15C19.5 15 21.5 14.5 21.5 13H16.5Z" fill="url(#pc-blue-plate-grad)" stroke="url(#pc-metal-grad)" strokeWidth="0.75" />
+    <defs>
+      <linearGradient id="pc-metal-grad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="30%" stopColor="#a0a8b5" />
+        <stop offset="70%" stopColor="#707885" />
+        <stop offset="100%" stopColor="#404855" />
+      </linearGradient>
+      <linearGradient id="pc-blue-plate-grad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#00b4d8" />
+        <stop offset="100%" stopColor="#005f73" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+const BriefIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))', flexShrink: 0 }}>
+    <path d="M6 3H14L19 8V20C19 21.1 18.1 22 17 22H7C5.9 22 5 21.1 5 20V5C5 3.9 5.9 3 7 3H6Z" fill="url(#brf-sheet-grad)" stroke="url(#brf-metal-grad)" strokeWidth="1" />
+    <path d="M14 3V8H19L14 3Z" fill="url(#brf-fold-grad)" stroke="url(#brf-metal-grad)" strokeWidth="0.5" />
+    <path d="M8 11H16" stroke="url(#brf-blue-line-grad)" strokeWidth="2" strokeLinecap="round" />
+    <path d="M8 14H16" stroke="url(#brf-line-grad)" strokeWidth="2" strokeLinecap="round" />
+    <path d="M8 17H13" stroke="url(#brf-line-grad)" strokeWidth="2" strokeLinecap="round" />
+    <defs>
+      <linearGradient id="brf-sheet-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="100%" stopColor="#c0c8d0" />
+      </linearGradient>
+      <linearGradient id="brf-metal-grad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="100%" stopColor="#707885" />
+      </linearGradient>
+      <linearGradient id="brf-fold-grad" x1="14" y1="8" x2="19" y2="3" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#a0a8b5" />
+        <stop offset="100%" stopColor="#505865" />
+      </linearGradient>
+      <linearGradient id="brf-blue-line-grad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="#00e5ff" />
+        <stop offset="100%" stopColor="#007799" />
+      </linearGradient>
+      <linearGradient id="brf-line-grad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="#606875" />
+        <stop offset="100%" stopColor="#404855" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+const MechanismIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))', flexShrink: 0 }}>
+    <line x1="6" y1="18" x2="12" y2="15" stroke="url(#mec-bond-grad)" strokeWidth="2.5" />
+    <line x1="12" y1="15" x2="18" y2="18" stroke="url(#mec-bond-grad)" strokeWidth="2.5" />
+    <line x1="12" y1="15" x2="12" y2="7" stroke="url(#mec-bond-grad)" strokeWidth="2.5" />
+    <line x1="12" y1="7" x2="6" y2="4" stroke="url(#mec-bond-grad)" strokeWidth="2.5" />
+    <line x1="12" y1="7" x2="18" y2="4" stroke="url(#mec-bond-grad)" strokeWidth="2.5" />
+    <circle cx="6" cy="18" r="3" fill="url(#mec-atom-silver)" stroke="#404855" strokeWidth="0.5" />
+    <circle cx="18" cy="18" r="3" fill="url(#mec-atom-silver)" stroke="#404855" strokeWidth="0.5" />
+    <circle cx="6" cy="4" r="3" fill="url(#mec-atom-silver)" stroke="#404855" strokeWidth="0.5" />
+    <circle cx="18" cy="4" r="3" fill="url(#mec-atom-silver)" stroke="#404855" strokeWidth="0.5" />
+    <circle cx="12" cy="15" r="4.5" fill="url(#mec-atom-blue)" stroke="#005f73" strokeWidth="0.75" />
+    <circle cx="12" cy="7" r="4" fill="url(#mec-atom-blue-light)" stroke="#007e94" strokeWidth="0.5" />
+    <defs>
+      <linearGradient id="mec-bond-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#a0a8b5" />
+        <stop offset="100%" stopColor="#505865" />
+      </linearGradient>
+      <radialGradient id="mec-atom-silver" cx="35%" cy="35%" r="65%">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="40%" stopColor="#cfd4da" />
+        <stop offset="100%" stopColor="#606875" />
+      </radialGradient>
+      <radialGradient id="mec-atom-blue" cx="35%" cy="35%" r="65%">
+        <stop offset="0%" stopColor="#00f6ff" />
+        <stop offset="50%" stopColor="#00b4d8" />
+        <stop offset="100%" stopColor="#005f73" />
+      </radialGradient>
+      <radialGradient id="mec-atom-blue-light" cx="35%" cy="35%" r="65%">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="30%" stopColor="#00f6ff" />
+        <stop offset="100%" stopColor="#007e94" />
+      </radialGradient>
+    </defs>
+  </svg>
+);
+
+const ProtocolIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))', flexShrink: 0 }}>
+    <path d="M12 2C16 2 20 3.5 20 8.5C20 14.5 15.5 19.5 12 21.5C8.5 19.5 4 14.5 4 8.5C4 3.5 8 2 12 2Z" fill="url(#prt-shield-bg)" stroke="url(#prt-metal-grad)" strokeWidth="1.5" />
+    <path d="M12 4C15 4 18 5.2 18 9.2C18 13.7 14.5 18 12 19.8C9.5 18 6 13.7 6 9.2C6 5.2 9 4 12 4Z" fill="none" stroke="#00b4d8" strokeWidth="1" strokeOpacity="0.4" />
+    <path d="M9 11.5L11.5 14L15.5 9" stroke="url(#prt-check-grad)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    <defs>
+      <linearGradient id="prt-shield-bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#2c3540" />
+        <stop offset="50%" stopColor="#151b22" />
+        <stop offset="100%" stopColor="#070a0e" />
+      </linearGradient>
+      <linearGradient id="prt-metal-grad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="100%" stopColor="#707885" />
+      </linearGradient>
+      <linearGradient id="prt-check-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#00f6ff" />
+        <stop offset="100%" stopColor="#007e94" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+const VerdictIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))', flexShrink: 0 }}>
+    <circle cx="12" cy="12" r="9" fill="url(#vrd-target-dark)" stroke="url(#vrd-metal-grad)" strokeWidth="1.5" />
+    <circle cx="12" cy="12" r="6" fill="url(#vrd-target-light)" stroke="url(#vrd-metal-grad)" strokeWidth="0.75" />
+    <circle cx="12" cy="12" r="3" fill="url(#vrd-atom-blue)" stroke="#005f73" strokeWidth="0.5" />
+    <line x1="12" y1="12" x2="20" y2="4" stroke="url(#vrd-metal-grad)" strokeWidth="1.5" />
+    <path d="M19.5 4.5L21 3L18.5 3.5L17.5 4.5L19.5 6L19 8L21 5.5L19.5 4.5Z" fill="url(#vrd-atom-blue)" />
+    <circle cx="12" cy="12" r="1.5" fill="#ffffff" />
+    <defs>
+      <linearGradient id="vrd-target-dark" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#252a30" />
+        <stop offset="100%" stopColor="#0d0f12" />
+      </linearGradient>
+      <linearGradient id="vrd-target-light" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#4f5660" />
+        <stop offset="100%" stopColor="#1e2227" />
+      </linearGradient>
+      <radialGradient id="vrd-atom-blue" cx="35%" cy="35%" r="65%">
+        <stop offset="0%" stopColor="#00f6ff" />
+        <stop offset="50%" stopColor="#00b4d8" />
+        <stop offset="100%" stopColor="#005f73" />
+      </radialGradient>
+      <linearGradient id="vrd-metal-grad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="100%" stopColor="#707885" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
 
 export default function StorefrontCompareDrawer({ 
   primaryColor = '#00C4BC',
@@ -1130,20 +1350,54 @@ export default function StorefrontCompareDrawer({
               )}
 
               {/* Tab navigation */}
-              <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-                {([
-                  ['matrix', 'Matrix'],
-                  ['proscons', 'Pros & Cons'],
-                  ['brief', 'Analyst Brief'],
-                  ['mechanism', 'Mechanism'],
-                  ['protocol', 'Protocol'],
-                  ['verdict', 'Verdict'],
-                ] as const).map(([id, label]) => (
-                  <button key={id} type="button" onClick={() => setMatrixTab(id)}
-                    style={{ padding: '7px 12px', borderRadius: 8, fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', border: matrixTab === id ? `1px solid ${primaryColor}77` : '1px solid rgba(255,255,255,0.1)', background: matrixTab === id ? `${primaryColor}15` : 'rgba(255,255,255,0.04)', color: matrixTab === id ? '#FFF' : 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>
-                    {label}
-                  </button>
-                ))}
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, width: '100%' }}>
+                <div style={{ display: 'flex', padding: '3px', borderRadius: '9999px', background: 'linear-gradient(180deg, #d8d8d8 0%, #808080 35%, #505050 50%, #707070 65%, #c0c0c0 100%)', boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255,255,255,0.4)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 8px', borderRadius: '9999px', background: '#0a0d10', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.8)', overflowX: 'auto', maxWidth: '100%', scrollbarWidth: 'none' }}>
+                    {([
+                      ['matrix', 'Matrix', <MatrixIcon key="matrix" />],
+                      ['proscons', 'Pros & Cons', <ProsConsIcon key="proscons" />],
+                      ['brief', 'Analyst Brief', <BriefIcon key="brief" />],
+                      ['mechanism', 'Mechanism', <MechanismIcon key="mechanism" />],
+                      ['protocol', 'Protocol', <ProtocolIcon key="protocol" />],
+                      ['verdict', 'Verdict', <VerdictIcon key="verdict" />],
+                    ] as const).map(([id, label, icon]) => (
+                      <button key={id} type="button" onClick={() => setMatrixTab(id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 14px',
+                          borderRadius: '9999px',
+                          fontWeight: 700,
+                          fontSize: '0.78rem',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          border: '1px solid transparent',
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                          background: matrixTab === id ? 'linear-gradient(180deg, #1f2730 0%, #0d1117 100%)' : 'transparent',
+                          borderColor: matrixTab === id ? '#00C4BC' : 'transparent',
+                          color: matrixTab === id ? '#FFF' : 'rgba(255,255,255,0.6)',
+                          boxShadow: matrixTab === id ? '0 0 10px rgba(0, 196, 188, 0.3), inset 0 1px 0 rgba(255,255,255,0.08)' : 'none',
+                        }}
+                        onMouseOver={(e) => {
+                          if (matrixTab !== id) {
+                            e.currentTarget.style.color = '#FFF';
+                            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                          }
+                        }}
+                        onMouseOut={(e) => {
+                          if (matrixTab !== id) {
+                            e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+                            e.currentTarget.style.background = 'transparent';
+                          }
+                        }}
+                      >
+                        {icon}
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Pros & Cons Tab */}
@@ -1555,7 +1809,7 @@ export default function StorefrontCompareDrawer({
                         }
 
                         // Winner Engine Calculation
-                        const bestIndices: number[] = [];
+                        let bestIndices: number[] = [];
                         if (row.bestLogic && displayedPinned.length > 1 && !allSame) {
                           const scores = displayedPinned.map(p => row.getRawScore ? row.getRawScore(p) : 0);
                           const validScores = scores.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
@@ -1564,6 +1818,9 @@ export default function StorefrontCompareDrawer({
                             scores.forEach((s, idx) => {
                               if (s === bestValue) bestIndices.push(idx);
                             });
+                            if (bestIndices.length === displayedPinned.length) {
+                              bestIndices = [];
+                            }
                           }
                         }
 
