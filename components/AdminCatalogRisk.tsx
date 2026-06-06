@@ -177,7 +177,6 @@ export default function AdminCatalogRisk() {
                           </div>
                           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '6px 0' }}>
                             <Badge text={TIER_LABEL[row.evidence_tier] ?? row.evidence_tier} />
-                            {row.wada_status !== 'not_listed' && <Badge text={WADA_LABEL[row.wada_status] ?? row.wada_status} danger={row.wada_status.startsWith('prohibited')} />}
                             <Badge text={`Recommended: ${ACTION_LABEL[row.recommended_action]}`} />
                           </div>
                           <ul style={{ margin: '4px 0 0', paddingLeft: 18, color: 'var(--silver)', fontSize: '0.82rem', lineHeight: 1.5 }}>

@@ -459,7 +459,7 @@ function IsThisRightForMe({
   if (!compound) return null;
   const studied = (compound.studied_for || []).slice(0, 6);
   const areas = (compound.research_areas || []).slice(0, 6);
-  const isWadaProhibited = compound.wada_status === 'prohibited' || compound.wada_status === 'prohibited_males';
+  const isWadaProhibited = false;
   const isTempSensitive = compound.is_temp_sensitive;
   if (studied.length === 0 && areas.length === 0 && !isWadaProhibited && !isTempSensitive) return null;
 

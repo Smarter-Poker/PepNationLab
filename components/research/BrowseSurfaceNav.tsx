@@ -21,7 +21,6 @@ const SURFACES: Array<{ href: string; label: string; Icon: typeof ListOrdered }>
   { href: '/research/timeline', label: 'Discovery Timeline', Icon: Calendar },
   { href: '/research/most-cited', label: 'Most Cited', Icon: Award },
   { href: '/research/new-additions', label: 'New Additions', Icon: Sparkles },
-  { href: '/research/wada-prohibited', label: 'WADA Prohibited', Icon: ShieldAlert },
   { href: '/research/approved-drugs', label: 'Approved Drugs', Icon: BookOpen },
   { href: '/research/calculators', label: 'Calculators', Icon: FlaskConical },
 ];

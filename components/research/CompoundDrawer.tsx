@@ -127,8 +127,8 @@ export default function CompoundDrawer({ isOpen, onClose, result }: CompoundDraw
                 </div>
                 <div style={{ background: 'var(--grey-400, #162230)', padding: 'var(--space-3, 12px)', borderRadius: 'var(--radius-md, 8px)' }}>
                   <Activity size={20} color="#63B3ED" style={{ marginBottom: '8px' }} />
-                  <div style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>WADA Status</div>
-                  <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)', fontSize: '0.95rem', textTransform: 'capitalize' }}>{result.wadaStatus.replace('_', ' ')}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>Storage Temp</div>
+                  <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)', fontSize: '0.95rem' }}>{result.isTempSensitive ? 'Cold Storage' : 'Room Temp'}</div>
                 </div>
                 <div style={{ background: 'var(--grey-400, #162230)', padding: 'var(--space-3, 12px)', borderRadius: 'var(--radius-md, 8px)' }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '8px' }}>

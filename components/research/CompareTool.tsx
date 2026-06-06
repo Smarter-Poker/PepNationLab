@@ -29,7 +29,7 @@ import {
   Scale, Syringe, Wrench, Hourglass, Filter, List, Smartphone, LayoutList, MoveUp, MoveDown,
   Sparkles, Moon, Heart, Brain, FileText, Mic
 } from 'lucide-react';
-import { type Compound, evidenceTier, wadaLabel, researchAreaLabel, RISK_META } from '@/lib/compounds';
+import { type Compound, evidenceTier, researchAreaLabel, RISK_META } from '@/lib/compounds';
 import AttributeRadarChart, { type RadarDataPoint } from './AttributeRadarChart';
 import InCellGlossaryTooltip from './InCellGlossaryTooltip';
 
@@ -260,10 +260,6 @@ export function scoreCompound(c: Compound, allSelected: Compound[] = []): Compou
     c.risk_level === 'high'     ? 11 :
     c.risk_level === 'critical' ?  6 : 14; // unknown defaults to moderate-ish
 
-  // Bonus: WADA permitted (clean sport compliance)
-  if (c.wada_status === 'permitted')  safetyScore += 1.5;
-  // Bonus: not WADA-prohibited (permitted or not_listed)
-  if (c.wada_status !== 'prohibited' && c.wada_status !== 'prohibited_males') safetyScore += 0.5;
   // Bonus: not pro-angiogenic (safer profile)
   if (!c.is_pro_angiogenic)           safetyScore += 1;
   // Bonus: high purity (≥99%)
@@ -1328,7 +1324,7 @@ function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
 function RecommendationCard({ rec, label, icon, color }: { rec: { compound: Compound; score: CompoundScore; reason: string; secondaryLabel: string }; label: string; icon: React.ReactNode; color: string }) {
   const textColor = (color === '#00C4BC' || color === '#FC8181') ? '#FFF' : color;
   return (
-    <div style={{ padding: '12px 14px', borderRadius: 10, border: '4px solid transparent', background: `linear-gradient(${color}0c, ${color}0c) padding-box, linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) border-box`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div style={{ padding: '12px 14px', borderRadius: 10, background: `${color}08`, border: `1px solid ${color}25`, display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <div style={{ color, display: 'flex' }}>{icon}</div>
         <span style={{ fontSize: '0.67rem', fontWeight: 800, color: textColor, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
@@ -1427,7 +1423,7 @@ function MechanismTab({ selected }: { selected: Compound[] }) {
       </div>
       {/* Efficacy Scores section */}
       {selected.some(c => c.efficacy_scores && Object.keys(c.efficacy_scores).length > 0) && (
-        <div style={{ border: '3.5px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', borderRadius: 12, padding: 16 }}>
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16 }}>
           <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--white)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
             <BarChart3 size={15} color="#00C4BC" /> Efficacy Score Comparison
             <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', marginLeft: 6, fontWeight: 400 }}>(0–100 per application domain, sourced from compound metadata)</span>
@@ -2073,15 +2069,13 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         .ct-tab:hover { background: rgba(255,255,255,0.08) !important; border-color: #aab2bd !important; color: rgba(255,255,255,0.9) !important; }
         .ct-tab.active { background: rgba(0,196,188,0.1) !important; border: 2px solid transparent !important; background-image: linear-gradient(rgba(0,196,188,0.1), rgba(0,196,188,0.1)), linear-gradient(135deg, #4f5660 0%, #aab2bd 20%, #f5f7fa 40%, #7e8794 60%, #cbd2db 80%, #4f5660 100%) !important; background-origin: border-box !important; background-clip: padding-box, border-box !important; color: #FFF !important; box-shadow: 0 4px 12px rgba(0, 196, 188, 0.15) !important; }
         .ct-row-hover:hover td { background: rgba(255,255,255,0.015) !important; }
-        .popular-card { background: rgba(255,255,255,0.02) !important; border: 2px solid transparent !important; background-image: linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) !important; background-origin: border-box !important; background-clip: padding-box, border-box !important; border-radius: 12px !important; padding: 12px 14px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 4px; }
-        .popular-card:hover { background-image: linear-gradient(rgba(0,196,188,0.08), rgba(0,196,188,0.08)), linear-gradient(135deg, #aab2bd 0%, #f5f7fa 50%, #7e8794 100%) !important; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
-        .glass-panel { background: rgba(15, 25, 35, 0.75) !important; border: 4.5px solid transparent !important; background-image: linear-gradient(rgba(15, 25, 35, 0.75), rgba(15, 25, 35, 0.75)), linear-gradient(135deg, #4f5660 0%, #aab2bd 20%, #f5f7fa 40%, #7e8794 60%, #cbd2db 80%, #4f5660 100%) !important; background-origin: border-box !important; background-clip: padding-box, border-box !important; box-shadow: 0 16px 40px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08) !important; backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important; }
-        .inner-card-nickel { border: 3.5px solid transparent !important; background: linear-gradient(rgba(22, 34, 48, 0.35), rgba(22, 34, 48, 0.35)) padding-box, linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) border-box !important; border-radius: 12px !important; box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important; }
+        .popular-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 4px; }
+        .popular-card:hover { background: rgba(0,196,188,0.08); border-color: rgba(0,196,188,0.3); transform: translateY(-1px); }
         .action-btn-nickel { background: rgba(255,255,255,0.04) !important; border: 2px solid #7d8690 !important; color: #FFF !important; border-radius: 8px !important; padding: 7px 12px !important; font-size: 0.78rem !important; font-weight: 700 !important; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.2s; }
         .action-btn-nickel:hover { background: rgba(255,255,255,0.08) !important; border-color: #f0f2f5 !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important; }
         .search-input-nickel { width: 100%; background: #162230 !important; color: #fff !important; border: 2px solid #5a626c !important; border-radius: 8px !important; padding: 12px 44px 12px 42px !important; font-size: 0.95rem !important; outline: none !important; transition: all 0.2s; }
         .search-input-nickel:focus { border-color: #aab2bd !important; box-shadow: 0 0 10px rgba(170, 178, 189, 0.2) !important; }
-        .brief-paragraph { border-left: 3.5px solid transparent !important; border-image: linear-gradient(to bottom, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) 1 !important; padding-left: 14px; margin: 0; color: rgba(255,255,255,0.78); font-size: 0.88rem; line-height: 1.75; }
+        .brief-paragraph { border-left: 2px solid rgba(0,196,188,0.3) !important; padding-left: 14px; margin: 0; color: rgba(255,255,255,0.78); font-size: 0.88rem; line-height: 1.75; }
         .matrix-table { width: 100%; border-collapse: collapse; }
         .matrix-table th:not(:first-child), .matrix-table td:not(:first-child) { border-left: 3.5px solid rgba(142, 152, 167, 0.75) !important; }
         .matrix-table th, .matrix-table td { border-bottom: 3.5px solid rgba(142, 152, 167, 0.75) !important; }
@@ -2297,26 +2291,11 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                         height: '73%',
                         left: leftOffset,
                         width: '15.5%',
-                        border: isActive ? '1.5px solid #00C4BC' : '1.5px solid transparent',
-                        borderRadius: '8px',
+                        border: 'none',
                         background: 'transparent',
                         cursor: 'pointer',
                         outline: 'none',
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                        boxShadow: isActive ? '0 0 12px rgba(0, 196, 188, 0.5), inset 0 0 8px rgba(0, 196, 188, 0.2)' : 'none',
                         zIndex: 10,
-                      }}
-                      onMouseOver={(e) => {
-                        if (!isActive) {
-                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)';
-                          e.currentTarget.style.boxShadow = '0 0 8px rgba(255, 255, 255, 0.2)';
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (!isActive) {
-                          e.currentTarget.style.borderColor = 'transparent';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }
                       }}
                     />
                   );
@@ -2330,7 +2309,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
             <div className="glass-panel" style={{ borderRadius: 14, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* Top Pick Banner */}
               {topPickSlug && (
-                <div style={{ position: isMobile ? 'sticky' : 'relative', top: isMobile ? 10 : 'auto', zIndex: isMobile ? 40 : 'auto', display: 'flex', alignItems: 'center', gap: 10, border: '3.5px solid transparent', backgroundImage: 'linear-gradient(rgba(0,196,188,0.08), rgba(0,196,188,0.08)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', borderRadius: 10, padding: '10px 16px', backdropFilter: isMobile ? 'blur(10px)' : 'none', marginBottom: isMobile ? 12 : 0, cursor: 'pointer', boxShadow: isMobile ? '0 8px 24px rgba(0,0,0,0.5)' : 'none' }} onClick={() => setActiveTab('recommend')}>
+                <div style={{ position: isMobile ? 'sticky' : 'relative', top: isMobile ? 10 : 'auto', zIndex: isMobile ? 40 : 'auto', display: 'flex', alignItems: 'center', gap: 10, background: isMobile ? 'rgba(0,196,188,0.15)' : 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10, padding: '10px 16px', backdropFilter: isMobile ? 'blur(10px)' : 'none', marginBottom: isMobile ? 12 : 0, cursor: 'pointer', boxShadow: isMobile ? '0 8px 24px rgba(0,0,0,0.5)' : 'none' }} onClick={() => setActiveTab('recommend')}>
                   <Trophy size={17} color="#00C4BC" style={{ flexShrink: 0 }} />
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FFF' }}>Top Pick: {bySlug.get(topPickSlug)?.display_name}</span>
@@ -2349,7 +2328,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                   const sortedByScore = [...selected].map((x, idx) => ({ c: x, score: scores[idx].total })).sort((a, b) => b.score - a.score);
                   const rankIndex = sortedByScore.findIndex(x => x.c.slug === c.slug);
                   return (
-                    <div key={c.slug} className="inner-card-nickel" style={{ padding: 14 }}>
+                    <div key={c.slug} style={{ padding: 14, borderRadius: 12, background: isTop ? 'rgba(0,196,188,0.05)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isTop ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.07)'}` }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                         {getChoiceBadge(rankIndex)}
                         {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: 22, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />}
@@ -2553,7 +2532,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                     const score = scores[origIdx];
                     const color = colors[origIdx % colors.length];
                     return (
-                      <div key={c.slug} style={{ border: '3.5px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', padding: 12, borderRadius: 10 }}>
+                      <div key={c.slug} style={{ padding: 12, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
                           <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--white)' }}>{c.display_name}</span>

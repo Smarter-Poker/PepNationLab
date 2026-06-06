@@ -31,7 +31,7 @@ export interface FlaggedRow {
   reasons: string[];
 }
 
-type TabKey = 'evidence' | 'wada' | 'flags';
+type TabKey = 'evidence' | 'flags';
 
 export default function EvidenceSafetyTabs({
   groups,
@@ -46,7 +46,6 @@ export default function EvidenceSafetyTabs({
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode; color: string; count: number }[] = [
     { key: 'evidence', label: 'Evidence At A Glance', icon: <FlaskConical size={16} aria-hidden="true" />, color: '#00C4BC', count: groups.reduce((n, g) => n + g.items.length, 0) },
-    { key: 'wada', label: 'WADA-Prohibited', icon: <Ban size={16} aria-hidden="true" />, color: '#F6AD55', count: wada.length },
     { key: 'flags', label: 'Safety Flags', icon: <ShieldAlert size={16} aria-hidden="true" />, color: '#FF6B6B', count: flagged.length },
   ];
 
@@ -127,29 +126,6 @@ export default function EvidenceSafetyTabs({
           <p style={{ fontSize: '0.78rem', color: 'var(--grey-500, #6B7785)', marginTop: 'var(--space-3, 12px)' }}>
             Evidence Tiers Describe What Researchers Have Published, Not What A Compound Will Do For Any Individual.
           </p>
-        </section>
-      )}
-
-      {/* WADA-Prohibited */}
-      {active === 'wada' && (
-        <section>
-          <p style={{ fontSize: '0.9rem', color: 'var(--silver, #A8B4C0)', marginTop: 0, marginBottom: 'var(--space-4, 16px)', maxWidth: '760px' }}>
-            The Following Catalog Compounds Appear On, Or Map To Classes On, The WADA Prohibited List. Not For Use By
-            Tested Athletes. Status Can Change — Always Verify Against The Current WADA List Before Any Competition Context.
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-3, 12px)' }}>
-            {wada.map((c) => (
-              <Link
-                key={c.slug}
-                href={`/research/${c.slug}`}
-                className="glass-panel"
-                style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}
-              >
-                <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{c.name}</span>
-                <span style={{ fontSize: '0.74rem', color: '#F6AD55' }}>{c.label}</span>
-              </Link>
-            ))}
-          </div>
         </section>
       )}
 

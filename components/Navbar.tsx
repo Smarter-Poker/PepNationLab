@@ -297,7 +297,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
     const compoundPageMatch = pathname.match(/^\/research\/([a-zA-Z0-9_-]+)$/);
     const reservedResearchSlugs = [
       'areas', 'catalog', 'compare', 'stacks', 'calculators', 'about-areas', 
-      'approved-drugs', 'discontinued', 'orphan-drugs', 'wada-prohibited', 
+      'approved-drugs', 'discontinued', 'orphan-drugs', 
       'reading-queue', 'saved', 'timeline', 'in-pipeline', 'most-cited', 
       'most-studied-2026', 'new-additions', 'evidence', 'correlated', 'faq', 
       'glossary', 'api-docs', 'search-index', 'search', 'learn', 'data', 

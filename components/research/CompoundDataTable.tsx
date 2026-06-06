@@ -49,7 +49,6 @@ const COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
   { key: 'citations', label: 'Citations', numeric: true },
   { key: 'trials', label: 'Trials', numeric: true },
   { key: 'year', label: 'Discovered', numeric: true },
-  { key: 'wada', label: 'WADA' },
   { key: 'risk', label: 'Risk' },
 ];
 
@@ -205,7 +204,6 @@ export default function CompoundDataTable({ rows }: { rows: DataRow[] }) {
                 <td style={{ ...td, textAlign: 'right', color: r.citations ? 'var(--teal, #00C4BC)' : 'var(--silver, #A8B4C0)', fontWeight: r.citations ? 700 : 400 }}>{countDisp(r.citations)}</td>
                 <td style={{ ...td, textAlign: 'right', color: 'var(--silver, #A8B4C0)' }}>{countDisp(r.trials)}</td>
                 <td style={{ ...td, textAlign: 'right', color: 'var(--silver, #A8B4C0)' }}>{yearDisp(r.year)}</td>
-                <td style={{ ...td, color: 'var(--silver, #A8B4C0)' }}>{r.wada}</td>
                 <td style={td}>
                   <span style={{ color: r.riskColor, fontWeight: 700 }}>{r.risk}</span>
                 </td>

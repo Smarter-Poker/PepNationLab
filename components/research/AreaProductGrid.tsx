@@ -578,9 +578,6 @@ export default function AreaProductGrid({
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           {/* Smart Filters */}
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <button onClick={() => setFilterWada(!filterWada)} style={{
-              padding: '6px 12px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, border: `1px solid ${filterWada ? '#00C4BC' : 'rgba(255,255,255,0.1)'}`, background: filterWada ? 'rgba(0,196,188,0.15)' : 'transparent', color: filterWada ? '#00C4BC' : '#A8B4C0', cursor: 'pointer', transition: 'all 0.15s'
-            }}>WADA Permitted</button>
             <button onClick={() => setFilterHalfLife(!filterHalfLife)} style={{
               padding: '6px 12px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, border: `1px solid ${filterHalfLife ? '#00C4BC' : 'rgba(255,255,255,0.1)'}`, background: filterHalfLife ? 'rgba(0,196,188,0.15)' : 'transparent', color: filterHalfLife ? '#00C4BC' : '#A8B4C0', cursor: 'pointer', transition: 'all 0.15s'
             }}>Long Half-Life</button>
@@ -786,26 +783,6 @@ export default function AreaProductGrid({
                   {ti.label}
                 </span>
 
-                {/* WADA badge */}
-                {compound?.wadaStatus === 'prohibited' && (
-                  <span style={{
-                    position: 'absolute',
-                    top: 12,
-                    right: 12,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    padding: '4px 8px',
-                    borderRadius: 20,
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    background: 'rgba(229,62,62,0.15)',
-                    color: '#FC8181',
-                    border: '1px solid rgba(229,62,62,0.3)',
-                    backdropFilter: 'blur(6px)',
-                  }}>
-                    WADA
-                  </span>
-                )}
 
                 {/* On sale badge */}
                 {p.isOnSale && p.salePrice != null && (

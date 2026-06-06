@@ -115,7 +115,7 @@ function MatchFormInner() {
 
   const [goal, setGoal] = useState<string>(searchParams.get('goal') || goalOptions[0]?.value || 'tissue_repair');
   const [evidenceComfort, setEvidenceComfort] = useState<EvidenceComfort>((searchParams.get('comfort') as EvidenceComfort) || 'preclinical_ok');
-  const [wadaConstraint, setWadaConstraint] = useState<WadaConstraint>((searchParams.get('wada') as WadaConstraint) || 'no_constraint');
+  const wadaConstraint = 'no_constraint';
   const [riskTolerance, setRiskTolerance] = useState<RiskTolerance>((searchParams.get('risk') as RiskTolerance) || 'moderate_ok');
   const [excludeInjectables, setExcludeInjectables] = useState<boolean>(searchParams.get('no_injectables') === 'true');
   const [requireLongHalfLife, setRequireLongHalfLife] = useState<boolean>(searchParams.get('long_half_life') === 'true');
@@ -143,7 +143,6 @@ function MatchFormInner() {
     const params = new URLSearchParams();
     if (goal) params.set('goal', goal);
     if (evidenceComfort) params.set('comfort', evidenceComfort);
-    if (wadaConstraint) params.set('wada', wadaConstraint);
     if (riskTolerance) params.set('risk', riskTolerance);
     if (excludeInjectables) params.set('no_injectables', 'true');
     if (requireLongHalfLife) params.set('long_half_life', 'true');
@@ -151,7 +150,7 @@ function MatchFormInner() {
     if (budget && budget !== 'standard') params.set('budget', budget);
     excludeSlugs.forEach(s => params.append('exclude', s));
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, preference, budget, excludeSlugs, pathname, router]);
+  }, [goal, evidenceComfort, riskTolerance, excludeInjectables, requireLongHalfLife, preference, budget, excludeSlugs, pathname, router]);
 
   async function onSubmit(e?: React.FormEvent, overrides?: Record<string, unknown>) {
     if (e) e.preventDefault();
@@ -354,20 +353,9 @@ function MatchFormInner() {
 
         {step === 3 && (
           <motion.div key="step3" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
-            <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>WADA & Risk Tolerance</h2>
+            <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Risk Tolerance</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Set your safety constraints.</p>
             
-            <h3 style={{ color: 'white', fontSize: '1.2rem', marginBottom: '12px' }}>WADA Constraint</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-              {WADA_OPTIONS.map(o => (
-                <div key={o.value} onClick={() => setWadaConstraint(o.value)} className={`step-card ${wadaConstraint === o.value ? 'selected' : ''}`}>
-                  <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 4px 0' }}>{o.label}</h3>
-                  <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0 }}>{o.help}</p>
-                </div>
-              ))}
-            </div>
-
-            <h3 style={{ color: 'white', fontSize: '1.2rem', marginBottom: '12px' }}>Risk Tolerance</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {RISK_OPTIONS.map(o => (
                 <div key={o.value} onClick={() => setRiskTolerance(o.value)} className={`step-card ${riskTolerance === o.value ? 'selected' : ''}`}>
