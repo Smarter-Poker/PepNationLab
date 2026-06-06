@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import {
   Bell, ShieldCheck, Heart, History, MapPin, Gift, Wallet, ChevronRight,
   User, RotateCcw, FileCheck, LifeBuoy, FlaskConical, Clock,
+  Store, CreditCard, Building,
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -90,6 +91,13 @@ export default async function AccountHubPage() {
     { href: '/account/shelf-life', label: 'Reconstitution & Shelf Life', description: 'Log Reconstitution Dates And Track Remaining Shelf Life.', Icon: Clock },
     ...(isResearcher
       ? [{ href: '/account/referrals', label: 'Referrals', description: 'Share Your Code And Earn Store Credit.', Icon: Gift }]
+      : []),
+    ...(!isResearcher
+      ? [
+          { href: '/dashboard/agent?tab=Storefront+Config', label: 'Storefront Setup & Editing', description: 'Configure Your Public-Facing White-Label Storefront.', Icon: Store },
+          { href: '/dashboard/agent?tab=Storefront+Config', label: 'Preferred Payment Methods', description: 'Manage Zelle, Cash App, Venmo, And Apple Pay Handles.', Icon: CreditCard },
+          { href: '/dashboard/agent?tab=Storefront+Config', label: 'Warehouse Address', description: 'Ship-From Address Used For Generating Labels.', Icon: Building },
+        ]
       : []),
     { href: '/account/notifications', label: 'Notifications', description: 'Choose Which Alerts You Receive. The Bell In The Header Shows Your Live Feed.', Icon: Bell },
     { href: '/account/security', label: 'Security', description: 'Password, Two-Factor, Active Sessions, And Sign-In Activity.', Icon: ShieldCheck },
