@@ -401,8 +401,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [zip, setZip] = useState('');
   const [phone, setPhone] = useState('');
 
-  const [fulfillmentMethod, setFulfillmentMethod] = useState<'ship' | 'agent_pickup'>('ship');
-  const [shippingOption, setShippingOption] = useState<ShippingOption>('usps');
+  const [fulfillmentMethod, setFulfillmentMethod] = useState<'ship' | 'agent_pickup'>('agent_pickup');
+  const [shippingOption, setShippingOption] = useState<ShippingOption>('agent_pickup');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>(availablePaymentMethods[0]?.id ?? 'zelle');
 
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
@@ -1247,6 +1247,44 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                       gap: 4,
                       padding: 'var(--space-4)',
                       borderRadius: 'var(--radius-lg)',
+                      background: shippingOption === 'agent_pickup' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)',
+                      border: shippingOption === 'agent_pickup' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
+                      cursor: 'pointer',
+                      boxShadow: shippingOption === 'agent_pickup' ? 'var(--shadow-teal-sm)' : 'none',
+                      transition: 'all 0.25s ease'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <input
+                            type="radio"
+                            name="shippingOption"
+                            checked={shippingOption === 'agent_pickup'}
+                            onChange={() => {
+                              setShippingOption('agent_pickup');
+                              setFulfillmentMethod('agent_pickup');
+                            }}
+                            style={{ accentColor: 'var(--teal)' }}
+                          />
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <strong style={{ color: 'var(--white)', fontSize: '0.95rem', lineHeight: '1.2' }}>Free Shipping To Agent</strong>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: '2px' }}>7-10 Days</span>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#68D391' }}>
+                          Free
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>
+                        Zero cost shipping to your referring representative. Coordinate pickup directly.
+                      </span>
+                    </label>
+
+                    <label style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                      padding: 'var(--space-4)',
+                      borderRadius: 'var(--radius-lg)',
                       background: shippingOption === 'fedex' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)',
                       border: shippingOption === 'fedex' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
                       cursor: 'pointer',
@@ -1265,7 +1303,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                             }}
                             style={{ accentColor: 'var(--teal)' }}
                           />
-                          <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>FedEx / UPS (6-9 Days)</strong>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <strong style={{ color: 'var(--white)', fontSize: '0.95rem', lineHeight: '1.2' }}>FedEx - UPS</strong>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: '2px' }}>6-9 Days</span>
+                          </div>
                         </div>
                         <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--teal)' }}>
                           ${getShippingCost('fedex', totalWeightOz).toFixed(2)}
@@ -1300,7 +1341,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                             }}
                             style={{ accentColor: 'var(--teal)' }}
                           />
-                          <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>USPS / China Post (12-18 Days)</strong>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <strong style={{ color: 'var(--white)', fontSize: '0.95rem', lineHeight: '1.2' }}>USPS International</strong>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: '2px' }}>12-18 Days</span>
+                          </div>
                         </div>
                         <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--teal)' }}>
                           ${getShippingCost('usps', totalWeightOz).toFixed(2)}
@@ -1308,41 +1352,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                       </div>
                       <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>
                         Cheaper shipping. Base rate is $40 for the first 500g, plus $10 for each additional 500g.
-                      </span>
-                    </label>
-
-                    <label style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 4,
-                      padding: 'var(--space-4)',
-                      borderRadius: 'var(--radius-lg)',
-                      background: shippingOption === 'agent_pickup' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)',
-                      border: shippingOption === 'agent_pickup' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
-                      cursor: 'pointer',
-                      boxShadow: shippingOption === 'agent_pickup' ? 'var(--shadow-teal-sm)' : 'none',
-                      transition: 'all 0.25s ease'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <input
-                            type="radio"
-                            name="shippingOption"
-                            checked={shippingOption === 'agent_pickup'}
-                            onChange={() => {
-                              setShippingOption('agent_pickup');
-                              setFulfillmentMethod('agent_pickup');
-                            }}
-                            style={{ accentColor: 'var(--teal)' }}
-                          />
-                          <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>Free Shipping to Agent (7-10 Days)</strong>
-                        </div>
-                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#68D391' }}>
-                          Free
-                        </span>
-                      </div>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>
-                        Zero cost shipping to your referring representative. Coordinate pickup directly.
                       </span>
                     </label>
                   </div>
