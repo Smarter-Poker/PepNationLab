@@ -1,11 +1,11 @@
-import PageLoader from '@/components/PageLoader';
+import StorefrontSkeleton from '@/components/StorefrontSkeleton';
 
 export default function Loading() {
   return (
-    <PageLoader 
-      open={true} 
-      title="Accessing Storefront" 
-      subtitle="Pep Nation Lab is retrieving live inventory and pricing..." 
-    />
+    <div style={{ minHeight: '100vh', background: '#000', paddingTop: 68 }}>
+      <div style={{ maxWidth: 960, margin: '0 auto', padding: '16px 8px' }}>
+        <StorefrontSkeleton />
+      </div>
+    </div>
   );
 }

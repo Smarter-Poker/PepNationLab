@@ -10,6 +10,7 @@ import CouponLinkCapture from '@/components/CouponLinkCapture';
 import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
 import PageLoader from '@/components/PageLoader';
 import Navbar from '@/components/Navbar';
+import StorefrontSkeleton from '@/components/StorefrontSkeleton';
 
 interface Props {
   params: Promise<{ agentSlug: string }>;
@@ -286,7 +287,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
       {/* Products */}
       <section style={{ paddingTop: 8, paddingBottom: 24, position: 'relative', minHeight: '60vh' }}>
         <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 8px' }}>
-          <Suspense fallback={<PageLoader open={true} title="Retrieving Live Inventory" subtitle="Pep Nation Lab is retrieving live inventory and pricing..." />}>
+          <Suspense fallback={<StorefrontSkeleton />}>
             <AgentStorefrontDataLoader agentSlug={agentSlug} agent={agent} />
           </Suspense>
         </div>
