@@ -325,9 +325,10 @@ function useCatalogRefresh(agentSlug: string) {
     // server-side catalog API is what's actually scoped per agent_id. This
     // client-side listener just triggers a forced refresh when anything changes,
     // which is cheap (the API response is served from Vercel edge cache).
+    let supabase: ReturnType<typeof createClient> | null = null;
     let realtimeChannel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null;
     try {
-      const supabase = createClient();
+      supabase = createClient();
       realtimeChannel = supabase
         .channel(`catalog-invalidate-${agentSlug}`)
         .on(
@@ -350,7 +351,9 @@ function useCatalogRefresh(agentSlug: string) {
 
     return () => {
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
-      realtimeChannel?.unsubscribe();
+      if (supabase && realtimeChannel) {
+        supabase.removeChannel(realtimeChannel);
+      }
     };
   }, [doRefresh, agentSlug]);
 }
@@ -479,6 +482,10 @@ export default function AgentStorefrontGrid({
   const [searchQuery, setSearchQuery] = useState<string>(getInit('q'));
   const deferredSearch = useDeferredValue(searchQuery);
   const [activeCardIndex, setActiveCardIndex] = useState<number | null>(1);
+  // #1 zero-result fallback: when the JS search finds nothing, the empty-state
+  // CTA sets this to the raw query, closes the grid, and DiscoveryHero's
+  // useEffect auto-submits the AI match with it.
+  const [aiSearchFallbackQuery, setAiSearchFallbackQuery] = useState<string>('');
 
   const [pinnedNames, setPinnedNames] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set();
@@ -981,6 +988,9 @@ export default function AgentStorefrontGrid({
       'other', 'same', 'only', 'also', 'just', 'even', 'still', 'yet',
       'already', 'always', 'often', 'usually', 'generally', 'mainly', 'mostly',
       'highly', 'extremely', 'really', 'quite', 'rather', 'fairly',
+      // Quantifiers and degree words that add no compound signal
+      'low', 'high', 'higher', 'lower', 'no', 'never', 'none', 'less', 'fewer', 'least',
+      'fast', 'slow', 'quick', 'quickly', 'rapidly', 'slowly', 'better', 'worse',
       // Product-category noise (these are handled by concept groups, not raw tokens)
       'peptide', 'peptides', 'compound', 'compounds', 'supplement', 'supplements',
     ]);
@@ -997,11 +1007,19 @@ export default function AgentStorefrontGrid({
       ['brain', 'cognitive', 'nootropic', 'memory', 'focus', 'neuro', 'alzheimers', 'dementia', 'learning', 'adhd', 'attention', 'clarity', 'smart', 'mental', 'mindsharpness', 'brain-fog', 'brainfog', 'concentration', 'neurodegeneration', 'neuroprotect', 'neuroplasticity', 'processing', 'recall', 'intelligence', 'cognition', 'stroke', 'tbi', 'concussion', 'productivity'],
       // Skin / Anti-Aging / Cosmetic
       ['skin', 'antiaging', 'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow', 'complexion', 'youth', 'tanning', 'tan', 'melanin', 'sun', 'burn', 'brightening', 'dark-spots', 'spots', 'blemish', 'acne', 'pores', 'texture', 'dermis', 'anti-wrinkle', 'rejuvenate', 'rejuvenation', 'youthful', 'firming', 'hydration', 'hairloss', 'hair-loss', 'hairgrowth', 'balding', 'alopecia', 'scalp', 'pigment'],
-      // Energy / Endurance / Performance (cardio intentionally excluded — it maps to Cardiovascular, not Energy)
+      // Energy / Endurance / Performance
+      // NOTE: 'cardio' deliberately excluded — it maps to Cardiovascular, not Energy.
+      // fatigue/tired/exhausted/lethargic included: "I feel fatigued" is an energy
+      // complaint, not always a sleep complaint. Both groups now share these terms
+      // so searches like "chronic fatigue" surface both sleep AND energy compounds.
       ['energy', 'stamina', 'endurance', 'metabolism', 'mitochondrial', 'athletic',
        'performance', 'vitality', 'atp', 'cellular-energy', 'bioenergetics', 'nad',
        'nad+', 'ampk', 'exercise', 'exericse', 'sport', 'sports', 'workout', 'gym',
-       'running', 'marathon', 'cycling', 'vo2', 'power-output', 'anaerobic', 'aerobic'],
+       'running', 'marathon', 'cycling', 'vo2', 'power-output', 'anaerobic', 'aerobic',
+       // Energy-as-feeling synonyms (distinct from pure sleep context)
+       'fatigue', 'tired', 'exhausted', 'lethargic', 'lethargy', 'energized',
+       'energize', 'energise', 'low-energy', 'crash', 'burnout', 'sluggish',
+       'dragging', 'wired', 'alertness', 'alert', 'energetic'],
       // Diabetes / Metabolic / Insulin
       ['sugar', 'diabetes', 'insulin', 'glucose', 'glycemic', 'metabolic', 'a1c', 'type2', 'prediabetes', 'blood-sugar', 'bloodsugar', 'pancreas', 'leptin', 'ghrelin', 'satiety', 'incretin', 'glp1'],
       // Heart / Cardiovascular
@@ -1101,7 +1119,31 @@ export default function AgentStorefrontGrid({
       .replace(/cardio\s+in\s+a\s+syringe/g, 'aicar')
       .replace(/bone\s+density/g, 'bone')
       .replace(/sexual\s+health/g, 'sexual')
-      .replace(/gut\s+lining/g, 'leakygut');
+      .replace(/gut\s+lining/g, 'leakygut')
+      // ── Intent-phrase normalisers (#3 / #8) ──────────────────────────────
+      // These collapse common natural-language goal phrases into the canonical
+      // single token that the concept-group engine already understands.
+      .replace(/chronic\s+fatigue/g, 'fatigue energy')
+      .replace(/adrenal\s+fatigue/g, 'fatigue energy')
+      .replace(/brain\s+energy/g, 'nad energy cognitive')
+      .replace(/feel\s+more\s+energi[sz]ed?/g, 'energy')
+      .replace(/more\s+energy/g, 'energy')
+      .replace(/low\s+energy/g, 'energy')
+      .replace(/no\s+energy/g, 'energy')
+      .replace(/feel\s+energi[sz]ed?/g, 'energy')
+      .replace(/tired\s+all\s+the\s+time/g, 'fatigue energy')
+      .replace(/always\s+tired/g, 'fatigue energy')
+      .replace(/run\s+out\s+of\s+energy/g, 'energy fatigue')
+      .replace(/cellular\s+energy/g, 'cellular-energy nad atp')
+      .replace(/mitochondrial\s+support/g, 'mitochondrial energy')
+      .replace(/mental\s+energy/g, 'cognitive energy')
+      .replace(/brain\s+fog/g, 'brainfog cognitive')
+      .replace(/pre\s+workout/g, 'energy stamina workout')
+      .replace(/post\s+workout/g, 'recovery stamina')
+      .replace(/anti\s+aging/g, 'antiaging')
+      .replace(/joint\s+pain/g, 'joint pain')
+      .replace(/muscle\s+recovery/g, 'recovery muscle')
+      .replace(/skin\s+health/g, 'skin antiaging collagen');
 
     // Dynamically build the set of specific compound names, slugs, and aliases to prevent broad synonym expansion
     const SPECIFIC_COMPOUNDS = new Set<string>();
@@ -1362,6 +1404,9 @@ export default function AgentStorefrontGrid({
 
         if (maxTokenScore === 0 && !isNegative) {
           allTokensMatched = false;
+          // ── #5 Did You Mean tracking ──────────────────────────────────
+          // Even when the token didn't match, capture the Levenshtein reason
+          // so we can display a "Did you mean X?" banner above the results.
         } else if (maxTokenScore > 0 && isNegative) {
           // Negative token matched -> heavily penalize or disqualify
           totalScore -= 2000;
@@ -1369,11 +1414,16 @@ export default function AgentStorefrontGrid({
         } else if (maxTokenScore > 0 && !isNegative) {
           totalScore += maxTokenScore;
           if (!primaryReason && tokenReason) {
-            // Only surface a "Matched:" label when the reason is both:
-            //   a) a semantic/alias/typo match (not just name/description)
-            //   b) scored strongly enough (≥40) to be a genuine signal
-            // This prevents tangential expansion chains (energy→cardio→cardiovascular)
-            // from showing irrelevant match reasons.
+            // ── #2 Smarter Matched label ───────────────────────────────────
+            // Only surface a "Matched:" label when:
+            //   a) the reason is a semantic/alias/typo match (not name/description)
+            //   b) scored ≥40 (direct field hit, not expansion chain noise)
+            //
+            // Rewrite the reason text to show what the researcher TYPED, not
+            // the raw DB field value. E.g. instead of:
+            //   "Studied For: Mitochondrial Function And Energy Production"
+            // show:
+            //   "energy → Mitochondrial Function"
             const reasonStr = tokenReason as string;
             const isSemanticReason = (
               reasonStr.startsWith('Also Known As') ||
@@ -1384,7 +1434,19 @@ export default function AgentStorefrontGrid({
               reasonStr.startsWith('Did you mean')
             );
             if (isSemanticReason && maxTokenScore >= 40) {
-              primaryReason = tokenReason;
+              // Build a user-friendly label: "[typed keyword] → [field value]"
+              if (reasonStr.startsWith('Did you mean')) {
+                // Keep typo message as-is — it's already user-facing
+                primaryReason = reasonStr;
+              } else {
+                // Strip the field prefix ("Studied For: ", "Research Area: ", etc.)
+                // and prepend the user's token so it reads like:
+                //   "energy → Mitochondrial Function And Energy Production"
+                const fieldValue = reasonStr.replace(/^(Studied For|Research Area|Also Known As|Compound Class|Target):\s*/i, '');
+                // Truncate field value to first 40 chars to keep the tag compact
+                const short = fieldValue.length > 44 ? fieldValue.slice(0, 42) + '…' : fieldValue;
+                primaryReason = `${rawToken} → ${short}`;
+              }
             }
           }
         }
@@ -1441,7 +1503,17 @@ export default function AgentStorefrontGrid({
         }
       }
 
-      return { matches: isMatch, score: totalScore, reason: primaryReason };
+      // ── #6 Confidence tier ─────────────────────────────────────────────
+      // Attach a confidence level to each matched card based on score.
+      // High ≥ 200, Medium ≥ 60, Low = anything above 0 that still matched.
+      let confidenceTier: 'high' | 'medium' | 'low' | undefined;
+      if (isMatch && deferredSearch.trim()) {
+        if (totalScore >= 200) confidenceTier = 'high';
+        else if (totalScore >= 60) confidenceTier = 'medium';
+        else confidenceTier = 'low';
+      }
+
+      return { matches: isMatch, score: totalScore, reason: primaryReason, confidence: confidenceTier };
     },
     [deferredSearch, compoundsBySlug, semanticMatches]
   );
@@ -1953,6 +2025,8 @@ export default function AgentStorefrontGrid({
           }
           return out;
         }}
+        autoSearchQuery={aiSearchFallbackQuery}
+        onAutoSearchConsumed={() => setAiSearchFallbackQuery('')}
       />
       )}
 
@@ -2325,6 +2399,41 @@ export default function AgentStorefrontGrid({
                   ))}
                 </div>
 
+                {/* ── #1 Zero-Result AI Fallback ─────────────────────────────────────────
+                    When the fast JS search finds nothing, offer to run the AI match engine
+                    so the researcher always gets relevant results rather than a blank screen. */}
+                <div style={{
+                  margin: '0 auto 8px',
+                  padding: '16px 20px',
+                  background: 'rgba(192,197,206,0.06)',
+                  border: '1px solid rgba(192,197,206,0.18)',
+                  borderRadius: 16,
+                  maxWidth: 480,
+                }}>
+                  <p style={{ color: '#C0C5CE', fontSize: '0.88rem', fontWeight: 600, marginBottom: 12, lineHeight: 1.4 }}>
+                    Our AI Research Engine can scan the full catalog for compounds related to your goal.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Switch to the discovery view with the current query pre-loaded
+                      // so DiscoveryHero's useEffect auto-submits the AI match.
+                      setAiSearchFallbackQuery(deferredSearch.trim());
+                      closeGrid();
+                    }}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 8,
+                      background: '#C0C5CE', color: '#0A1018',
+                      border: 'none', borderRadius: 10,
+                      padding: '10px 20px', fontWeight: 900, fontSize: '0.9rem',
+                      cursor: 'pointer', boxShadow: '0 4px 16px rgba(192,197,206,0.25)',
+                    }}
+                  >
+                    <Sparkles size={16} aria-hidden />
+                    Search AI Research Library
+                  </button>
+                </div>
+
               </>
             ) : (
               <>
@@ -2381,9 +2490,10 @@ export default function AgentStorefrontGrid({
                 // is already cached by the time the user clicks to open the detail.
                 const seedId = activeVariant.product_id;
                 if (seedId) {
-                  router.prefetch(
+                  // Prefetch via standard fetch so it triggers the Service Worker cache
+                  fetch(
                     `/api/storefront/recommendations?product_id=${encodeURIComponent(seedId)}&agent_slug=${encodeURIComponent(agentSlug)}&limit=8`
-                  );
+                  ).catch(() => {});
                 }
               }}
               onClick={() => {
@@ -2560,17 +2670,29 @@ export default function AgentStorefrontGrid({
                 {(() => {
                   const { main, subtitle } = splitProductName(toTitleCase(group.name));
                   const searchReason = (group as any)._search?.reason;
+                  const confidence = (group as any)._search?.confidence as 'high' | 'medium' | 'low' | undefined;
+                  // ── #6 Confidence tier colour map ─────────────────────────
+                  const confidenceStyle: Record<'high' | 'medium' | 'low', { bg: string; border: string; color: string; label: string }> = {
+                    high:   { bg: 'rgba(79,209,197,0.12)',  border: 'rgba(79,209,197,0.35)',  color: '#4FD1C5', label: 'Strong Match' },
+                    medium: { bg: 'rgba(235,178,54,0.10)',  border: 'rgba(235,178,54,0.30)',  color: '#EBB236', label: 'Good Match'   },
+                    low:    { bg: 'rgba(160,174,192,0.08)', border: 'rgba(160,174,192,0.22)', color: '#A0AEC0', label: 'Partial Match' },
+                  };
+                  const cs = confidence ? confidenceStyle[confidence] : null;
                   return (
                     <div style={{ textAlign: 'center', marginBottom: 'var(--space-2)' }}>
-                      {searchReason && (
+                      {searchReason && cs && (
                         <div style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 6,
-                          background: 'rgba(235,178,54,0.1)', border: '1px solid rgba(235,178,54,0.3)',
-                          color: '#EBB236', fontSize: '0.65rem', fontWeight: 700, padding: '3px 8px',
-                          borderRadius: 'var(--radius-full)', textTransform: 'uppercase',
-                          marginBottom: 'var(--space-2)', letterSpacing: '0.03em'
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          background: cs.bg, border: `1px solid ${cs.border}`,
+                          color: cs.color, fontSize: '0.63rem', fontWeight: 700,
+                          padding: '3px 8px', borderRadius: 'var(--radius-full)',
+                          textTransform: 'uppercase', marginBottom: 'var(--space-2)',
+                          letterSpacing: '0.04em', maxWidth: '100%',
                         }}>
-                          <Sparkles size={10} /> {searchReason}
+                          <Sparkles size={9} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
+                            {cs.label}: {searchReason}
+                          </span>
                         </div>
                       )}
                       <h4 style={{
