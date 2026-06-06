@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { HelpCircle, X, Info } from 'lucide-react';
 
 // Hardcoded core glossary map for immediate comparison context
@@ -20,8 +21,18 @@ interface Props {
 
 export default function InCellGlossaryTooltip({ term }: Props) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   
-  const definition = GLOSSARY_MAP[term] || `Learn more about ${term} in the Glossary.`;
+  // Case-insensitive lookup in GLOSSARY_MAP
+  const matchedKey = Object.keys(GLOSSARY_MAP).find(
+    (key) => key.toLowerCase() === term.toLowerCase()
+  );
+  const displayTitle = matchedKey || term;
+  const definition = matchedKey ? GLOSSARY_MAP[matchedKey] : `Learn more about ${term} in the Glossary.`;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Disable body scroll when modal is open
   useEffect(() => {
@@ -60,7 +71,7 @@ export default function InCellGlossaryTooltip({ term }: Props) {
         <HelpCircle size={14} color="rgba(255,255,255,0.4)" style={{ cursor: 'help' }} />
       </button>
       
-      {open && (
+      {open && mounted && createPortal(
         <div 
           onClick={() => setOpen(false)}
           style={{
@@ -152,7 +163,7 @@ export default function InCellGlossaryTooltip({ term }: Props) {
                 fontFamily: 'var(--font-brand, system-ui, sans-serif)',
                 letterSpacing: '0.02em',
               }}>
-                {term}
+                {displayTitle}
               </h3>
             </div>
 
@@ -166,7 +177,8 @@ export default function InCellGlossaryTooltip({ term }: Props) {
               {definition}
             </p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       <style>{`
         @keyframes fadeIn {
