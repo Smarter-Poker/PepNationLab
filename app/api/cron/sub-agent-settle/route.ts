@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
         if (settlementId) {
           settled += 1;
         } else {
-          // RPC returned NULL — either nothing eligible (all rows had orders
+          // RPC returned NULL - either nothing eligible (all rows had orders
           // still in pending_customer_payment) or already settled this slot.
           skipped += 1;
         }

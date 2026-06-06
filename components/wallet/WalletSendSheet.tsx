@@ -166,7 +166,7 @@ export default function WalletSendSheet({
     }
   }
 
-  // Brushed-nickel tokens — thicker bezel for a premium feel.
+  // Brushed-nickel tokens - thicker bezel for a premium feel.
   const NICKEL_OUTER = 'linear-gradient(145deg, #c8c2b8 0%, #8a847c 32%, #5c5852 50%, #8a847c 68%, #c8c2b8 100%)';
   const NICKEL_BORDER = 'rgba(192,184,168,0.55)';
 
@@ -187,7 +187,7 @@ export default function WalletSendSheet({
         style={{
           width: '100%',
           maxWidth: 460,
-          // Outer brushed-nickel bezel — 3px thick.
+          // Outer brushed-nickel bezel - 3px thick.
           padding: 3,
           borderRadius: 16,
           background: NICKEL_OUTER,
@@ -195,7 +195,7 @@ export default function WalletSendSheet({
             '0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.35)',
         }}
       >
-        {/* Inner highlight rim — 2px */}
+        {/* Inner highlight rim - 2px */}
         <div
           style={{
             padding: 2,
@@ -204,7 +204,7 @@ export default function WalletSendSheet({
               'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.03) 50%, rgba(0,0,0,0.55) 100%)',
           }}
         >
-          {/* Inner surface — the actual modal content */}
+          {/* Inner surface - the actual modal content */}
           <div
             style={{
               padding: 'var(--space-5)',

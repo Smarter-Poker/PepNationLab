@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     // Only super-agents may view or configure sub-agent pricing.
     // Regular agents calling this endpoint would receive admin_cost
-    // (base_cost × multiplier) for all products — a wholesale cost leak.
+    // (base_cost × multiplier) for all products - a wholesale cost leak.
     const { data: superAgentCheck } = await supabase
       .from('profiles')
       .select('is_super_agent')

@@ -1,5 +1,5 @@
 /**
- * Pep Nation Lab — Vial Image Mapping
+ * Pep Nation Lab - Vial Image Mapping
  * Priority: individual product → category → default
  *
  * Rules (enforced in every image):
@@ -13,7 +13,7 @@
 // ─── Individual product name → image path ────────────────────────────────────
 // Key: lowercase product name (trimmed). Add new entries here as images are generated.
 const PRODUCT_IMAGE_MAP: Record<string, string> = {
-  // ── Weight Loss & Metabolism — RED cap ──────────────────────────────────────
+  // ── Weight Loss & Metabolism - RED cap ──────────────────────────────────────
   'tirzepatide':                              '/images/products/tirzepatide.png',
   'semaglutide':                              '/images/products/semaglutide.png',
   'ozempic':                                  '/images/products/semaglutide.png',
@@ -44,7 +44,7 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'cagri sema':                               '/images/products/cagrilintide-sema.png',
   'cagri+sema':                               '/images/products/cagrilintide-sema.png',
 
-  // ── Healing & Recovery — TEAL cap ───────────────────────────────────────────
+  // ── Healing & Recovery - TEAL cap ───────────────────────────────────────────
   'bpc-157':                                  '/images/products/bpc-157.png',
   'bpc 157':                                  '/images/products/bpc-157.png',
   'bpc157':                                   '/images/products/bpc-157.png',
@@ -69,7 +69,7 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'larazotide':                               '/images/products/larazotide.png',
   'larazotide acetate':                       '/images/products/larazotide.png',
 
-  // ── Growth Hormone Peptides — GOLD cap ──────────────────────────────────────
+  // ── Growth Hormone Peptides - GOLD cap ──────────────────────────────────────
   'hmg':                                      '/images/products/hmg.png',
   'human menopausal gonadotropin':            '/images/products/hmg.png',
   'sermorelin':                               '/images/products/sermorelin.png',
@@ -97,7 +97,7 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'mots-c':                                   '/images/products/mots-c.png',
   'mots c':                                   '/images/products/mots-c.png',
 
-  // ── Muscle Growth & Performance — ROYAL BLUE cap ────────────────────────────
+  // ── Muscle Growth & Performance - ROYAL BLUE cap ────────────────────────────
   'igf-1 lr3':                                '/images/products/igf-1-lr3.png',
   'igf1 lr3':                                 '/images/products/igf-1-lr3.png',
   'igf-1':                                    '/images/products/igf-1-lr3.png',
@@ -109,7 +109,7 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'follistatin-344':                          '/images/products/follistatin-344.png',
   'follistatin':                              '/images/products/follistatin-344.png',
 
-  // ── Sexual Health & Hormones — DEEP PURPLE cap ──────────────────────────────
+  // ── Sexual Health & Hormones - DEEP PURPLE cap ──────────────────────────────
   'pt-141':                                   '/images/products/pt-141.png',
   'pt141':                                    '/images/products/pt-141.png',
   'bremelanotide':                            '/images/products/pt-141.png',
@@ -118,7 +118,7 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'kisspeptin 10':                            '/images/products/kisspeptin-10.png',
   'kisspeptin':                               '/images/products/kisspeptin-10.png',
 
-  // ── Anti-Aging & Longevity — ROSE GOLD cap ──────────────────────────────────
+  // ── Anti-Aging & Longevity - ROSE GOLD cap ──────────────────────────────────
   'ghk-cu':                                   '/images/products/ghk-cu.png',
   'ghk cu':                                   '/images/products/ghk-cu.png',
   'copper peptide':                           '/images/products/ghk-cu.png',
@@ -135,7 +135,7 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'pinealon':                                 '/images/products/pinealon.png',
   'vilon':                                    '/images/products/vilon.png',
 
-  // ── Skin, Hair & Cosmetics — EMERALD GREEN cap ──────────────────────────────
+  // ── Skin, Hair & Cosmetics - EMERALD GREEN cap ──────────────────────────────
   'glow blend':                               '/images/products/glow-blend.png',
   'glow stack':                               '/images/products/glow-blend.png',
   'klow blend':                               '/images/products/klow-blend.png',
@@ -143,7 +143,7 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'snap-8':                                   '/images/products/snap-8.png',
   'snap8':                                    '/images/products/snap-8.png',
 
-  // ── Nootropics & Cognitive — SILVER/CHROME cap ──────────────────────────────
+  // ── Nootropics & Cognitive - SILVER/CHROME cap ──────────────────────────────
   'selank':                                   '/images/products/selank.png',
   'semax':                                    '/images/products/semax.png',
   'dihexa':                                   '/images/products/dihexa.png',
@@ -180,7 +180,7 @@ export function getProductVialImage(productName: string): string | null {
   const key = normalizeProductName(productName);
   // Exact match
   if (PRODUCT_IMAGE_MAP[key]) return PRODUCT_IMAGE_MAP[key];
-  // Partial match — check if any key is contained in the product name
+  // Partial match - check if any key is contained in the product name
   for (const [mapKey, img] of Object.entries(PRODUCT_IMAGE_MAP)) {
     if (key.includes(mapKey) || mapKey.includes(key)) return img;
   }
@@ -240,7 +240,7 @@ export function toTitleCase(name: string): string {
   const formatted = name
     .split(' ')
     .map(word => {
-      // Fully parenthetical suffix e.g. "(Somatropin)" — leave as-is
+      // Fully parenthetical suffix e.g. "(Somatropin)" - leave as-is
       if (word.startsWith('(') && word.endsWith(')')) return word;
 
       // Whole-word exact match (e.g. "BPC", "GLOW", "NAD+" stripped)
@@ -259,12 +259,12 @@ export function toTitleCase(name: string): string {
           // 1. Whole part exact match (e.g. "CJC", "DAC", "1295" skips)
           if (PRESERVE_UPPERCASE.has(part.toUpperCase())) return part.toUpperCase();
 
-          // 2. Leading-alpha prefix check — covers "CJC" in "CJC-1295",
+          // 2. Leading-alpha prefix check - covers "CJC" in "CJC-1295",
           //    "TB" in "TB500", "GHRP" in "GHRP-2"
           const leadAlpha = (part.match(/^[A-Za-z]+/)?.[0] ?? '').toUpperCase();
           if (leadAlpha && PRESERVE_UPPERCASE.has(leadAlpha)) return part.toUpperCase();
 
-          // 3. All-alpha content check — covers "1MQ" (alpha = "MQ"),
+          // 3. All-alpha content check - covers "1MQ" (alpha = "MQ"),
           //    "191AA" (alpha = "AA")
           const allAlpha = part.replace(/[^A-Za-z]/g, '').toUpperCase();
           if (allAlpha.length >= 2 && PRESERVE_UPPERCASE.has(allAlpha)) return part.toUpperCase();

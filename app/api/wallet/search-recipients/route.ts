@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
  * GET /api/wallet/search-recipients?q=<query>
  *
  * Live recipient search for the Send Funds sheet. Returns up to 8 active
- * profiles whose full_name, username, or email match the query — sorted
+ * profiles whose full_name, username, or email match the query - sorted
  * with exact-prefix matches first.
  *
  * Gated to admin / super_agent / agent (the same set requireAgent allows
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const q = (url.searchParams.get('q') || '').trim().toLowerCase();
 
-  // Empty query — return nothing. The sheet shows recent contacts client-side
+  // Empty query - return nothing. The sheet shows recent contacts client-side
   // when there's no input; we don't return every user on the platform here.
   if (q.length < 2) {
     return NextResponse.json({ results: [] });

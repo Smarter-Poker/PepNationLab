@@ -10,7 +10,7 @@
  * *immediately*, mirroring the call-ring path, so messages and notifications
  * land in seconds. The outbox row stays as the durability fallback.
  *
- * Never throws — notification side-effects must never break the caller.
+ * Never throws - notification side-effects must never break the caller.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -54,7 +54,7 @@ export async function deliverPushNow(
       if (result.ok) {
         sent += 1;
       } else if ((result as { expired?: boolean }).expired) {
-        // Permanently dead subscription — stop sending to it.
+        // Permanently dead subscription - stop sending to it.
         await supabase
           .from('push_subscriptions')
           .update({ is_active: false, last_failure_reason: 'expired' })

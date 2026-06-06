@@ -31,11 +31,11 @@ export async function POST(req: NextRequest) {
   if (fetchError || !invoice) return NextResponse.json({ error: 'Invoice Not Found' }, { status: 404 });
   if (invoice.invoice_status === 'paid') return NextResponse.json({ error: 'Invoice Already Paid' }, { status: 400 });
 
-  // Send reminder message FIRST — if this fails, status remains unchanged (no orphan)
+  // Send reminder message FIRST - if this fails, status remains unchanged (no orphan)
   const { error: sendError } = await service.from('internal_messages').insert({
     sender_id: user.id,
     receiver_id: invoice.receiver_id,
-    subject: `Payment Reminder — ${invoice.subject}`,
+    subject: `Payment Reminder - ${invoice.subject}`,
     body: `This is a reminder that your invoice "${invoice.subject}" ($${Number(invoice.invoice_amount || 0).toFixed(2)}) is overdue.
 
 Please remit payment as soon as possible to avoid any service interruptions.`,
@@ -44,7 +44,7 @@ Please remit payment as soon as possible to avoid any service interruptions.`,
 
   if (sendError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
-  // In-app notification — shows in bell immediately
+  // In-app notification - shows in bell immediately
   await notifyPaymentReminder(
     service,
     invoice.receiver_id,

@@ -1,4 +1,4 @@
-// R24 phase 6 — Account data-export worker.
+// R24 phase 6 - Account data-export worker.
 // Picks up one queued job and assembles a JSON dump for the user.
 // Authorized via CRON_SECRET; runs hourly via Vercel cron.
 import { NextResponse } from 'next/server';

@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
   // trg_enforce_referring_sub_agent_is_sub_agent trigger on any future
   // researcher UPDATE and breaking SACA accrual on future orders.
   // Past orders keep orders.referring_sub_agent_id snapshotted at order time
-  // and the existing ledger rows stay intact — already-settled commission
+  // and the existing ledger rows stay intact - already-settled commission
   // is permanent.
   const { data: clearedTags, error: clearTagsErr } = await supabase
     .from('profiles')
@@ -103,14 +103,14 @@ export async function POST(req: NextRequest) {
   }
   const detachedCount = (clearedTags ?? []).length;
 
-  // Demote — clear ALL the SACA fields together in one UPDATE so the
+  // Demote - clear ALL the SACA fields together in one UPDATE so the
   // CHECK constraints stay satisfied:
   //   profiles_sub_agent_must_have_parent     (NOT is_sub_agent OR parent IS NOT NULL)
   //   profiles_sub_agent_must_have_commission (NOT is_sub_agent OR commission_pct IS NOT NULL ...)
   // referring_agent_id is intentionally retained for sales attribution
   // back to the demoted user's original referring agent. tier is cleared
   // because the demoted user no longer has agent-side pricing. Any settled
-  // commission stays on prepaid_balance — sub-agents earned it before demotion.
+  // commission stays on prepaid_balance - sub-agents earned it before demotion.
   // referring_sub_agent_id on the demoted profile itself is also cleared
   // (a researcher should not be tagged to a no-longer-sub-agent).
   const now = new Date().toISOString();

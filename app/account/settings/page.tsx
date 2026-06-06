@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
 /**
- * /account/settings — Round 25 consolidation
+ * /account/settings - Round 25 consolidation
  * --------------------------------------------------------------
  * Pre-Round-25 this route mounted the OLD tabbed AccountClient
  * (Overview / Security / Notifications / Compliance / Danger Zone),

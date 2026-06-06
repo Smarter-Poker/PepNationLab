@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
 /**
- * /lab-tools — permanent redirect to the full CalculatorSuite.
+ * /lab-tools - permanent redirect to the full CalculatorSuite.
  * This route was previously used; keeping it live prevents 404s
  * for any bookmarks or external links.
  */

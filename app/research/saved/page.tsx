@@ -1,5 +1,5 @@
 /**
- * Saved Compounds — auth-gated personalization surface.
+ * Saved Compounds - auth-gated personalization surface.
  * Lists the signed-in user's saved compounds across collections.
  */
 import { redirect } from 'next/navigation';

@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
 
   // Step 1: Refund the existing label (if any). We must NOT proceed to step
   // 2 if either (a) Shippo rejects the refund or (b) our ledger write fails
-  // — otherwise we double-charge the platform card and leave the old
+  // - otherwise we double-charge the platform card and leave the old
   // purchase un-refunded in our books.
   if (purchase?.shippo_transaction_id) {
     if (purchase.created_at) {
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
       if (ageMs > ninetyDaysMs) {
         return NextResponse.json(
-          { error: 'Existing Label Is Past The 90-Day Refund Window — Cannot Reprint.' },
+          { error: 'Existing Label Is Past The 90-Day Refund Window - Cannot Reprint.' },
           { status: 422 },
         );
       }
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
     if (refundRpcErr) {
       console.error('[shippo-reprint] refund ledger RPC failed', refundRpcErr.message);
       return NextResponse.json(
-        { error: 'Refund Ledger Write Failed — Reprint Aborted.' },
+        { error: 'Refund Ledger Write Failed - Reprint Aborted.' },
         { status: 500 },
       );
     }
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Enqueue push for buyer — best-effort.
+  // Enqueue push for buyer - best-effort.
   try {
     const { data: orderFull } = await supabase
       .from('orders')

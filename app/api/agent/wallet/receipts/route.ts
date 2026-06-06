@@ -1,4 +1,4 @@
-// Round 24 Wallet — Receipt Vault
+// Round 24 Wallet - Receipt Vault
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 

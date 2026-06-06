@@ -10,7 +10,7 @@ const STORAGE_KEY = `pnl_disclaimer_${DISCLAIMER_VERSION}`;
  * Layer 1 of the mandatory 4-layer research-only disclaimer.
  *
  * Wraps the entire site so the Site Entry acknowledgment appears on ANY
- * first route a visitor lands on — not just the homepage. Acceptance is
+ * first route a visitor lands on - not just the homepage. Acceptance is
  * recorded in localStorage under a version-scoped key so bumping the
  * disclaimer version forces re-acknowledgment.
  */

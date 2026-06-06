@@ -8,7 +8,7 @@
  *
  * The Navbar is position:fixed (z-index 200). Children render inside a
  * wrapper that reserves --nav-offset of top padding so they aren't
- * occluded by the fixed header — individual /account/* page files don't
+ * occluded by the fixed header - individual /account/* page files don't
  * have to be edited.
  */
 import Navbar from '@/components/Navbar';

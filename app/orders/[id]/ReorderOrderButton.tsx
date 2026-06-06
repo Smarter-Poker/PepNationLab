@@ -67,7 +67,7 @@ export default function ReorderOrderButton({ orderId }: { orderId: string }) {
       }
 
       // Merge into per-agent cart additively. Identical algorithm to
-      // RefillsClient — keep them in sync if either changes.
+      // RefillsClient - keep them in sync if either changes.
       const cartKey = agentSlug
         ? `pnl_storefront_cart_${agentSlug}`
         : 'pnl_storefront_cart';
@@ -124,7 +124,7 @@ export default function ReorderOrderButton({ orderId }: { orderId: string }) {
             .forEach((k) => localStorage.removeItem(k));
         }
       } catch {
-        /* localStorage unavailable — still redirect to checkout below */
+        /* localStorage unavailable - still redirect to checkout below */
       }
 
       if (skipped.length > 0) {

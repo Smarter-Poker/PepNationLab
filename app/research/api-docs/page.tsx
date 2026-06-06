@@ -6,8 +6,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Research API Documentation — Pep Nation Lab',
-  description: 'Public Research API V1 — Endpoints, Authentication, And Rate Limits.',
+  title: 'Research API Documentation - Pep Nation Lab',
+  description: 'Public Research API V1 - Endpoints, Authentication, And Rate Limits.',
   robots: { index: true, follow: true },
 };
 

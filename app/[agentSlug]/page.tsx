@@ -26,7 +26,7 @@ async function AgentStorefrontDataLoader({
   const supabase = await createClient();
 
   // ── Fetch products and auth user in parallel ─────────────────────────────────
-  // Products are scoped to agent.id (from outer query) — safe to start immediately.
+  // Products are scoped to agent.id (from outer query) - safe to start immediately.
   const [productsResult, { data: { user } }] = await Promise.all([
     supabase
       .from('agent_products')
@@ -73,7 +73,7 @@ async function AgentStorefrontDataLoader({
     );
   }
 
-  // Check if logged-in user belongs to THIS agent — CRITICAL SECURITY GATE
+  // Check if logged-in user belongs to THIS agent - CRITICAL SECURITY GATE
   const { data: userProfile } = await supabase
     .from('profiles')
     .select('role, referring_agent_id, parent_agent_id, id, tier')
@@ -103,7 +103,7 @@ async function AgentStorefrontDataLoader({
       }
     }
 
-    // Not a researcher or no referring agent — show the storefront login form.
+    // Not a researcher or no referring agent - show the storefront login form.
     return (
       <AgentStorefrontLogin 
         agentSlug={agentSlug} 
@@ -115,7 +115,7 @@ async function AgentStorefrontDataLoader({
     );
   }
 
-  // ── Run independent queries in parallel — saves ~2 sequential round-trips ──
+  // ── Run independent queries in parallel - saves ~2 sequential round-trips ──
   const productIds = (products ?? [])
     .map(p => p.product_id)
     .filter((v): v is string => !!v);

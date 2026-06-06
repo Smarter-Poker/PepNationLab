@@ -1,7 +1,7 @@
 /**
  * Best-effort carrier detection from a tracking-number prefix/shape.
  *
- * This is a heuristic — there is overlap between USPS and FedEx all-digit
+ * This is a heuristic - there is overlap between USPS and FedEx all-digit
  * formats. Used only for UI display (a badge + a "Track With <Carrier>" link).
  * NEVER use the result to make money/payment decisions.
  */

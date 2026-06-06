@@ -13,18 +13,18 @@ export default function AdminAgents() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Modal State — Edit Contact
+  // Modal State - Edit Contact
   const [editingAgent, setEditingAgent] = useState<any | null>(null);
   const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Modal State — Edit Password
+  // Modal State - Edit Password
   const [passwordAgent, setPasswordAgent] = useState<any | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
 
-  // Modal State — Edit Account Details
+  // Modal State - Edit Account Details
   const [editingFullAgent, setEditingFullAgent] = useState<{ id: string; name: string } | null>(null);
 
   // Inline Tier Editing
@@ -34,7 +34,7 @@ export default function AdminAgents() {
   // Trust Toggle
   const [togglingTrust, setTogglingTrust] = useState<string | null>(null);
 
-  // Modal State — Create Agent
+  // Modal State - Create Agent
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
     firstName: '',
@@ -228,7 +228,7 @@ export default function AdminAgents() {
 
   const formatCurrency = (val: number) => `$${(Number(val) || 0).toFixed(2)}`;
 
-  // Inline tier change — saves immediately on select change
+  // Inline tier change - saves immediately on select change
   const handleTierChange = async (agentId: string, newTier: string) => {
     setTierSaving(prev => new Set([...prev, agentId]));
     try {
@@ -470,7 +470,7 @@ export default function AdminAgents() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
                   <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Credentials</span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--teal)' }}>{agent.username || '—'}</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--teal)' }}>{agent.username || '-'}</span>
                     <button
                       onClick={() => { setPasswordAgent(agent); setNewPassword(''); }}
                       style={{ fontSize: '0.75rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
@@ -793,7 +793,7 @@ export default function AdminAgents() {
                 This will create a new agent account with auth credentials and a storefront.
               </p>
             <form onSubmit={handleCreateAgent}>
-              {/* First + Last Name — top-aligned so both labels sit on the same row */}
+              {/* First + Last Name - top-aligned so both labels sit on the same row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>First Name</label>
@@ -886,7 +886,7 @@ export default function AdminAgents() {
                 />
               </div>
 
-              {/* Tier & Billing Mode — top-aligned, side by side (agents + super-agents only) */}
+              {/* Tier & Billing Mode - top-aligned, side by side (agents + super-agents only) */}
               {createForm.account_role !== 'researcher' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
@@ -993,7 +993,7 @@ export default function AdminAgents() {
               </>
               )}
 
-              {/* Commission / Markup Settings — agents only.
+              {/* Commission / Markup Settings - agents only.
                   Super-agents do NOT see this: they earn purely off the Tier 1/2/3
                   multiplier on the master catalog. The fixed/gamified markup
                   ladder is for agents who set their own retail prices. */}
@@ -1091,7 +1091,7 @@ export default function AdminAgents() {
                 Gamification Scale
               </h2>
               <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>
-                {caScaleType === 'custom' ? 'Customize The 5 Levels Of Gamification For This Agent.' : 'The Default House Scale — Starts At 20% And Rises To A 40% Maximum. Read Only.'}
+                {caScaleType === 'custom' ? 'Customize The 5 Levels Of Gamification For This Agent.' : 'The Default House Scale - Starts At 20% And Rises To A 40% Maximum. Read Only.'}
               </p>
               
               <div style={{ border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, overflow: 'hidden', marginBottom: 'var(--space-4)' }}>

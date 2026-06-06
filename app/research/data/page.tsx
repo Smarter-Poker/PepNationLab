@@ -1,5 +1,5 @@
 /**
- * Full Data Table — a sortable, filterable database grid of the entire catalog.
+ * Full Data Table - a sortable, filterable database grid of the entire catalog.
  * Server component maps every compound to a lightweight row and hands it to the
  * client CompoundDataTable. Research-use-only reference data.
  */
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
 const dash = (v: unknown) => {
   const s = (v ?? '').toString().trim();
-  return s || '—';
+  return s || '-';
 };
 
 // Compound numeric columns have been merged directly onto Compound.
@@ -40,7 +40,7 @@ export default async function ResearchDataPage() {
       target: dash(c.molecular_target),
       halfLife: dash(c.half_life),
       wada: wadaLabel(c.wada_status),
-      risk: risk?.label ?? '—',
+      risk: risk?.label ?? '-',
       riskColor: risk?.color ?? '#A8B4C0',
       mw: c.molecular_weight_da ?? null,
       citations: c.pubmed_citation_count ?? null,
@@ -63,7 +63,7 @@ export default async function ResearchDataPage() {
           Full Data Table
         </h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1.05rem', marginTop: 'var(--space-2, 8px)', maxWidth: '760px' }}>
-          Every Compound In One Sortable, Filterable Grid — Category, Class, Evidence Tier, Molecular Target, Molecular
+          Every Compound In One Sortable, Filterable Grid - Category, Class, Evidence Tier, Molecular Target, Molecular
           Weight, Half-Life, PubMed Citations, Clinical Trials, Year Discovered, WADA Status, And Risk. Click Any Column
           To Sort. For Laboratory Research Only.
         </p>

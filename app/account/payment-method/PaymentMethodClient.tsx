@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * PaymentMethodClient — Round 25
+ * PaymentMethodClient - Round 25
  * --------------------------------------------------------------
  * Full CRUD over the user's payment methods.
  *

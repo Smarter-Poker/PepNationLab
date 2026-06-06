@@ -25,7 +25,7 @@ export async function GET() {
     .single();
 
   if (!profile || profile.is_sub_agent !== true) {
-    return NextResponse.json({ error: 'Forbidden — Sub-Agents Only.' }, { status: 403 });
+    return NextResponse.json({ error: 'Forbidden - Sub-Agents Only.' }, { status: 403 });
   }
 
   // Parent profile (read-only display)

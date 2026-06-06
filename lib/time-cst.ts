@@ -1,7 +1,7 @@
 /**
  * Time helpers anchored to America/Chicago. Used by the weekly invoice
  * cron so billing weeks match the spec ("Mon 00:00 CT → Sun 23:59:59 CT")
- * year-round, including across DST transitions. Pure functions — no I/O.
+ * year-round, including across DST transitions. Pure functions - no I/O.
  */
 
 /** True if America/Chicago is observing CDT (daylight savings) at `at`. */
@@ -17,7 +17,7 @@ function isCdt(at: Date): boolean {
 /**
  * Convert a YYYY-MM-DD calendar date in America/Chicago into an ISO
  * timestamptz string representing 00:00:00 local on that date. Honors
- * DST automatically — CDT (Mar-Nov) → -05:00, CST (Nov-Mar) → -06:00.
+ * DST automatically - CDT (Mar-Nov) → -05:00, CST (Nov-Mar) → -06:00.
  *
  * Example:
  *   chicagoMidnightIso('2026-06-15') === '2026-06-15T00:00:00-05:00'  (CDT)
@@ -28,7 +28,7 @@ export function chicagoMidnightIso(dateStr: string): string {
     throw new Error(`chicagoMidnightIso: expected YYYY-MM-DD, got ${dateStr}`);
   }
   // Probe at noon UTC on the same calendar day so we're far from any DST
-  // transition window — formatToParts will reliably return CST or CDT.
+  // transition window - formatToParts will reliably return CST or CDT.
   const probe = new Date(`${dateStr}T12:00:00Z`);
   const offset = isCdt(probe) ? '-05:00' : '-06:00';
   return `${dateStr}T00:00:00${offset}`;

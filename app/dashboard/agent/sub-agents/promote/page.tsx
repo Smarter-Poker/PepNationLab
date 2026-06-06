@@ -161,7 +161,7 @@ export default function PromoteSubAgentPage() {
         Their Account As Digital Credits Every Sunday Night.
       </p>
 
-      {/* Share link card — shown only after a successful promotion */}
+      {/* Share link card - shown only after a successful promotion */}
       {shareLink && (
         <div className="glass-panel" style={{ padding: '16px', marginBottom: '20px', border: '1px solid #10B981' }}>
           <div style={{ fontSize: '12px', opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', color: '#10B981' }}>

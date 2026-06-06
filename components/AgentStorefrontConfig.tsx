@@ -14,11 +14,11 @@ interface AgentStorefrontConfigProps {
   setLogoUrl: (val: string) => void;
   primaryColor: string;
   setPrimaryColor: (val: string) => void;
-  // Warehouse address (JSONB) — read/write directly to agent_profiles.
+  // Warehouse address (JSONB) - read/write directly to agent_profiles.
   warehouseAddress?: Record<string, any> | null;
-  // Vacation mode — flips agent_profiles.is_active.
+  // Vacation mode - flips agent_profiles.is_active.
   isActive?: boolean | null;
-  // Volume (tiered) pricing — on by default, agents can disable.
+  // Volume (tiered) pricing - on by default, agents can disable.
   volumePricingEnabled: boolean;
   setVolumePricingEnabled: (val: boolean) => void;
   agentId: string;
@@ -58,7 +58,7 @@ export default function AgentStorefrontConfig({
   const [displayNameReservationToken, setDisplayNameReservationToken] = React.useState<string | null>(null);
 
   // One-shot slug auto-suggestion. Triggers only when slug is empty and the
-  // user starts typing a display name — once accepted (or once they touch
+  // user starts typing a display name - once accepted (or once they touch
   // the slug field), we never overwrite again.
   const slugWasAutoFilledRef = React.useRef(false);
   React.useEffect(() => {
@@ -70,7 +70,7 @@ export default function AgentStorefrontConfig({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [displayName]);
 
-  // Warehouse address local state — mirrors agent_profiles.warehouse_address.
+  // Warehouse address local state - mirrors agent_profiles.warehouse_address.
   const [whName, setWhName] = React.useState(warehouseAddress?.name ?? '');
   const [whStreet1, setWhStreet1] = React.useState(warehouseAddress?.street1 ?? '');
   const [whStreet2, setWhStreet2] = React.useState(warehouseAddress?.street2 ?? '');
@@ -154,7 +154,7 @@ export default function AgentStorefrontConfig({
 
       if (updateError) {
         if ((updateError as any).code === '23505') {
-          throw new Error('Display Name Is Already Taken — Try Another.');
+          throw new Error('Display Name Is Already Taken - Try Another.');
         }
         throw new Error(updateError.message);
       }

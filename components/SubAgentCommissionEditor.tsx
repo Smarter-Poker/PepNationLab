@@ -15,7 +15,7 @@ const inputStyle: React.CSSProperties = {
  * Per-sub-agent commission + velocity editor for a super-agent.
  * Self-contained: renders its own trigger button and modal, loads current state
  * on open, and posts to /api/agent/super-agent/commission-plan. Blind by design
- * — the super-agent's own House wholesale tier is never referenced.
+ * - the super-agent's own House wholesale tier is never referenced.
  */
 export default function SubAgentCommissionEditor({ subAgentId, name }: { subAgentId: string; name: string }) {
   const [open, setOpen] = useState(false);

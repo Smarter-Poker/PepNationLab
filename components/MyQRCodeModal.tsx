@@ -1,14 +1,14 @@
 'use client';
 
 /**
- * MyQRCodeModal — premium brushed-nickel restyle.
+ * MyQRCodeModal - premium brushed-nickel restyle.
  *
  * Visual layer: matches the existing platform "metal" aesthetic
  * (.glass-panel + . + .metal-text + .glass-panel)
  * used across AdminAgents, AgentBundles, AdminAnalytics, etc.
  *
  * Event-bubble defenses retained from prior fix:
- *   1. `readyToClose` flag — backdrop close handler is a no-op for the first
+ *   1. `readyToClose` flag - backdrop close handler is a no-op for the first
  *      120ms after open so the click that opened cannot immediately close it.
  *   2. e.target === e.currentTarget check on the backdrop.
  *   3. All inner controls stopPropagation to prevent bubble-close.
@@ -205,7 +205,7 @@ export default function MyQRCodeModal({
         padding: 'max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)) 16px',
       }}
     >
-      {/* X close button — nickel pill, top-right */}
+      {/* X close button - nickel pill, top-right */}
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onClose(); }}
@@ -242,7 +242,7 @@ export default function MyQRCodeModal({
           overflowY: 'auto',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18,
         }}>
-          {/* Title — gradient metal text */}
+          {/* Title - gradient metal text */}
           <h2
             className="metal-text"
             style={{
@@ -319,7 +319,7 @@ export default function MyQRCodeModal({
                 {data.description}
               </p>
 
-              {/* URL — embossed inset panel */}
+              {/* URL - embossed inset panel */}
               <div className="glass-panel" style={{
                 padding: '10px 14px',
                 fontSize: '0.78rem',
@@ -332,7 +332,7 @@ export default function MyQRCodeModal({
                 {data.url}
               </div>
 
-              {/* Action buttons — Download (nickel) + Share + Copy (ghost) */}
+              {/* Action buttons - Download (nickel) + Share + Copy (ghost) */}
               <div style={{
                 display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
                 gap: 10, width: '100%', marginTop: 4,

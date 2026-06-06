@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
-  // Admin released the order to shipping — enqueue the Shippo label job now.
+  // Admin released the order to shipping - enqueue the Shippo label job now.
   // This is deferred from agent approval (the agent now parks orders at
   // admin_approval_pending) so labels are only ever created AFTER the admin
   // gate, never for an order an agent approved but an admin has not released.
@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
     if (orderRow?.buyer_id) {
       const short = shortOrderId(id);
       const trk = orderRow.tracking_number || tracking_number || null;
-      // In-app notification — writes to notifications table → shows in bell immediately
+      // In-app notification - writes to notifications table → shows in bell immediately
       await notifyAdminOrderStatusChange(supabase, orderRow.buyer_id, id, short, status, trk);
 
       // Web push for supported statuses

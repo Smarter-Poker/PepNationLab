@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * ReconstitutionCalculator — Lab Preparation Tool (NOT Dosing Guidance).
+ * ReconstitutionCalculator - Lab Preparation Tool (NOT Dosing Guidance).
  * Two Modes:
  *   - "Add Diluent": Enter Vial Mass + Diluent Volume; Shows Resulting
  *     Concentration And A Draw-Volume Table For Example Masses.

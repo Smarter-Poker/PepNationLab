@@ -89,7 +89,7 @@ export default function AdminCouponsPage() {
       }));
       setAgents(list);
     } catch {
-      // Non-fatal — agent picker just stays empty
+      // Non-fatal - agent picker just stays empty
     }
   }
 

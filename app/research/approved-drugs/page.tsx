@@ -1,5 +1,5 @@
 /**
- * Approved drugs — compounds with FDA/EMA/other regulatory approval.
+ * Approved drugs - compounds with FDA/EMA/other regulatory approval.
  * Progressive disclosure: category filter tabs.
  */
 

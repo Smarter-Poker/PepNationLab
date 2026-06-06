@@ -2,11 +2,11 @@
  * Lightweight NCBI E-utilities client.
  *
  * Uses public endpoints:
- *   esearch.fcgi — ID list for a query
- *   efetch.fcgi  — full article records for given PMIDs
+ *   esearch.fcgi - ID list for a query
+ *   efetch.fcgi  - full article records for given PMIDs
  *
  * Rate limit: 3 requests/second without an API key, 10 req/s with one
- * (PUBMED_API_KEY env). The client never throws — it returns null on
+ * (PUBMED_API_KEY env). The client never throws - it returns null on
  * network or parse failure so callers (the weekly cron) can move on to
  * the next compound.
  *

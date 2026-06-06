@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * LandingSearchOverlay — the live, in-place search for the image-hotspot research
+ * LandingSearchOverlay - the live, in-place search for the image-hotspot research
  * landing page. Renders the search input + button at the baked-in search-bar
  * coordinates, and shows an instant results dropdown as the user types (lazy-
  * loading the universal index from /research/search-index on first focus).
@@ -74,7 +74,7 @@ export default function LandingSearchOverlay({
 
   return (
     <>
-      {/* Search input — positioned over the baked-in search bar */}
+      {/* Search input - positioned over the baked-in search bar */}
       <form
         onSubmit={onSubmit}
         style={{
@@ -160,7 +160,7 @@ export default function LandingSearchOverlay({
         >
           {results.length === 0 ? (
             <div style={{ padding: '14px 16px', color: '#A8B4C0', fontSize: '0.85rem' }}>
-              No Matches — Press Enter To Browse The Catalog.
+              No Matches - Press Enter To Browse The Catalog.
             </div>
           ) : (
             results.map((hit) => {

@@ -6,7 +6,7 @@ export const money = (n: number): string =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(n) || 0);
 
 export const fmtDate = (s: string | null | undefined): string => {
-  if (!s) return '—';
+  if (!s) return '-';
   const iso = /^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s}T00:00:00` : s;
   const d = new Date(iso);
   return isNaN(d.getTime())
@@ -29,5 +29,5 @@ const STATUS_LABEL: Record<string, string> = {
 
 export const statusLabel = (s: string | null | undefined): string => {
   const k = (s || '').toLowerCase();
-  return STATUS_LABEL[k] || k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || '—';
+  return STATUS_LABEL[k] || k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || '-';
 };

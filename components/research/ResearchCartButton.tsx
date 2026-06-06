@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * ResearchCartButton — dispatches the `pnl:add-to-cart-by-name` custom event
+ * ResearchCartButton - dispatches the `pnl:add-to-cart-by-name` custom event
  * that the StorefrontCompareDrawer and agent storefronts listen to. Allows
  * researchers to add a compound to their active cart directly from any Research
  * Library page without needing to navigate to the store.

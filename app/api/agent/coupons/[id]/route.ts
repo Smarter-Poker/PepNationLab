@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
  *   Toggle is_active (body: { is_active: boolean }) OR update mutable fields
  *   (max_uses, max_uses_per_user, expires_at, starts_at, new_customers_only,
  *    min_order_amount, notes). discount_type / discount_value / code are
- *    locked once created — agents create a new coupon to change those.
+ *    locked once created - agents create a new coupon to change those.
  *
  * DELETE /api/agent/coupons/[id]
  *   SOFT-deletes by stamping deleted_at. Preserves redemption history /

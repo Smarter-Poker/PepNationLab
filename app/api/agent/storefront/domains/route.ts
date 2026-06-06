@@ -1,4 +1,4 @@
-// R24 phase 6 — Custom domains.
+// R24 phase 6 - Custom domains.
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, createServiceClient } from '@/lib/supabase/server';

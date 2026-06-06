@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
  * skip the realtime allow-list for admins (otherwise admins miss
  * notifications from non-downline DMs once the sidebar filter from
  * round-22 is applied). The pre-existing /api/auth/resolve does NOT
- * return role — it's a username→email lookup — so calling it from
+ * return role - it's a username→email lookup - so calling it from
  * the messenger shell was a no-op.
  */
 export async function POST(req: NextRequest) {

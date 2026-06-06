@@ -26,7 +26,7 @@ export default function LegalDocument({
   return (
     <section className="section">
       <div className="container-sm">
-        {/* Visible DRAFT badge — teal on black */}
+        {/* Visible DRAFT badge - teal on black */}
         <div
           style={{
             display: 'inline-flex',
@@ -50,7 +50,7 @@ export default function LegalDocument({
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          Draft — Pending Attorney Review
+          Draft - Pending Attorney Review
         </div>
 
         {/* Counsel review explanation */}
@@ -82,7 +82,7 @@ export default function LegalDocument({
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           <p style={{ fontSize: '0.78rem', color: 'var(--silver)', margin: 0, lineHeight: 1.6 }}>
-            <strong style={{ color: 'var(--red)' }}>Template Document — Attorney Review Required.</strong>{' '}
+            <strong style={{ color: 'var(--red)' }}>Template Document - Attorney Review Required.</strong>{' '}
             This document is a working template provided for platform completeness.
             It must be reviewed and approved by qualified legal counsel before public launch.
           </p>

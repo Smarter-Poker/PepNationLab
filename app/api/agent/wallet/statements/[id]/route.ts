@@ -1,4 +1,4 @@
-// Round 24 Wallet — statement detail
+// Round 24 Wallet - statement detail
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 

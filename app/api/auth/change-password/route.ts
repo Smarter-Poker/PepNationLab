@@ -9,7 +9,7 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 // Also used to "skip" (clears the flag without changing password).
 //
 // fix-47: rate-limited 10/min/user. The skip path is cheap but a real
-// password change hits Supabase auth + writes profiles — worth gating to
+// password change hits Supabase auth + writes profiles - worth gating to
 // deter abuse from a stolen session token.
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);

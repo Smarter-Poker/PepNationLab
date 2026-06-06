@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * EvidenceSafetyTabs — splits the Evidence & Safety hub into three categories
+ * EvidenceSafetyTabs - splits the Evidence & Safety hub into three categories
  * the reader taps between (Evidence At A Glance / WADA-Prohibited / Safety
  * Flags) so only one block shows at a time instead of one long scroll. All data
  * is computed server-side and passed in as serializable props. Research-Use-Only.

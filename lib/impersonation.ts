@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 /**
  * Admin impersonation context.
  *
- * Impersonation is NOT a full auth swap — the underlying Supabase session
+ * Impersonation is NOT a full auth swap - the underlying Supabase session
  * stays bound to the admin user. The `pnl_impersonation` cookie carries a
  * server-issued session id plus the impersonator/target identifiers. We
  * verify the row in `impersonation_sessions` is still open (ended_at IS NULL)

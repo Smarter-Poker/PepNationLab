@@ -24,7 +24,7 @@ export async function computeStatement(
 ): Promise<{ ok: true; data: ComputeResult } | { ok: false; error: string }> {
   const weekEnd = addDays(weekStart, 6);
   // Billing weeks live in America/Chicago. Mon 00:00 CT → next Mon 00:00 CT
-  // — matches the spec ("Week ends Sunday 23:59:59 CST") and handles DST.
+  // - matches the spec ("Week ends Sunday 23:59:59 CST") and handles DST.
   const rangeStart = chicagoMidnightIso(weekStart);
   const rangeEndExclusive = chicagoMidnightIso(addDays(weekStart, 7));
 
@@ -91,7 +91,7 @@ export async function computeStatement(
         totalCogs += (Number(item.unit_cost_price) || 0) * qty;
       } else {
         // Super-agent statement covers a sub-agent's order. Legacy rows can
-        // have a NULL unit_super_agent_cost — fall back to unit_cost_price
+        // have a NULL unit_super_agent_cost - fall back to unit_cost_price
         // (the order's snapshot of the agent's own cost) instead of $0 so we
         // never under-bill historical orders.
         const superCost = Number(item.unit_super_agent_cost);
@@ -137,7 +137,7 @@ export async function persistStatement(
   | { ok: true; statementId: string; skipped: true; reason: 'paid' }
   | { ok: false; error: string }
 > {
-  // Refuse to overwrite a paid statement — even when force=true. A paid
+  // Refuse to overwrite a paid statement - even when force=true. A paid
   // statement is settled history; regenerating it would silently roll back
   // the agent's balance and corrupt the ledger.
   const { data: existing } = await supabase

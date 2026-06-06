@@ -45,7 +45,7 @@ export default async function AdminProductsPage() {
     multipliers[t.tier_name] = t.multiplier;
   });
 
-  // Per-product overrides — keyed by `${product_id}:${tier_name}`. The client
+  // Per-product overrides - keyed by `${product_id}:${tier_name}`. The client
   // component prefers the override when present and falls back to the global
   // multiplier otherwise.
   const productIds = (products ?? []).map((p) => p.id);

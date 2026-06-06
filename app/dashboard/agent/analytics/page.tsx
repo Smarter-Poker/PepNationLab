@@ -91,7 +91,7 @@ export default async function AgentAnalyticsPage() {
   }
   const topRanked = Array.from(productCounts.values()).sort((a, b) => b.views - a.views).slice(0, 10);
 
-  // Conversion funnel — ordered steps from first visit to completed order.
+  // Conversion funnel - ordered steps from first visit to completed order.
   // Bar widths are proportional to the top of the funnel (pageviews); each
   // row also shows step-over-step conversion against the previous stage.
   const funnelSteps = [

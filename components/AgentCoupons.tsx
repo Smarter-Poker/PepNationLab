@@ -92,18 +92,18 @@ const SECTION_LABEL: React.CSSProperties = {
 };
 
 function fmtMoney(n: number | null | undefined): string {
-  if (n == null) return '—';
+  if (n == null) return '-';
   return `$${Number(n).toFixed(2)}`;
 }
 
 function fmtDate(s: string | null): string {
-  if (!s) return '—';
+  if (!s) return '-';
   try { return new Date(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); }
   catch { return s; }
 }
 
 function fmtDateTime(s: string | null): string {
-  if (!s) return '—';
+  if (!s) return '-';
   try {
     return new Date(s).toLocaleString(undefined, {
       month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
@@ -372,7 +372,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
   }
 
   async function deleteCoupon(coupon: Coupon) {
-    if (!confirm(`Archive Coupon "${coupon.code}" — Redemption History Is Preserved.\n\nResearchers Will No Longer Be Able To Redeem This Code. Continue?`)) return;
+    if (!confirm(`Archive Coupon "${coupon.code}" - Redemption History Is Preserved.\n\nResearchers Will No Longer Be Able To Redeem This Code. Continue?`)) return;
     const previous = coupons;
     setCoupons((prev) => prev.filter((c) => c.id !== coupon.id));
     try {
@@ -570,7 +570,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
             Discount Coupons
           </h3>
           <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem', margin: '6px 0 0', lineHeight: 1.5, maxWidth: 720 }}>
-            Build Promotional Codes Your Referred Researchers Redeem At Checkout. Schedule Activations, Cap Usage, And Broadcast To Your Downline — Every Rule Is Enforced Server-Side.
+            Build Promotional Codes Your Referred Researchers Redeem At Checkout. Schedule Activations, Cap Usage, And Broadcast To Your Downline - Every Rule Is Enforced Server-Side.
           </p>
         </div>
 
@@ -911,13 +911,13 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
                 <div style={{ ...SECTION_LABEL, color: 'var(--silver)', marginBottom: 8 }}>Starter Templates</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <button type="button" onClick={() => applyTemplate('launch')} className="btn-silver" style={{ textAlign: 'left', fontSize: '0.8rem', padding: '8px 12px', minHeight: 0 }}>
-                    Welcome 10% — First-Time Researchers, 30 Days
+                    Welcome 10% - First-Time Researchers, 30 Days
                   </button>
                   <button type="button" onClick={() => applyTemplate('loyalty')} className="btn-silver" style={{ textAlign: 'left', fontSize: '0.8rem', padding: '8px 12px', minHeight: 0 }}>
-                    Loyalty 15% — Orders Over $100, No Expiration
+                    Loyalty 15% - Orders Over $100, No Expiration
                   </button>
                   <button type="button" onClick={() => applyTemplate('bulk')} className="btn-silver" style={{ textAlign: 'left', fontSize: '0.8rem', padding: '8px 12px', minHeight: 0 }}>
-                    Bulk $25 Off — Capped At 50 Uses, 14 Days
+                    Bulk $25 Off - Capped At 50 Uses, 14 Days
                   </button>
                 </div>
               </div>
@@ -1429,7 +1429,7 @@ function RedemptionsModal({
                 <tbody>
                   {data.redemptions.map((r) => (
                     <tr key={r.order_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                      <td style={{ padding: '8px 6px', color: 'var(--white)' }}>{r.buyer_name || '—'}</td>
+                      <td style={{ padding: '8px 6px', color: 'var(--white)' }}>{r.buyer_name || '-'}</td>
                       <td style={{ padding: '8px 6px', fontFamily: 'monospace' }}>{r.order_id.slice(0, 8)}</td>
                       <td style={{ padding: '8px 6px' }}>{fmtDateTime(r.created_at)}</td>
                       <td style={{ padding: '8px 6px', textAlign: 'right' }}>{fmtMoney(r.subtotal)}</td>

@@ -14,7 +14,7 @@ interface Bundle {
   created_at: string;
 }
 
-// GET /api/agent/bundles — List all bundles for the current agent
+// GET /api/agent/bundles - List all bundles for the current agent
 export async function GET(req: NextRequest) {
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ data: profile?.bundles_config || [] });
 }
 
-// POST /api/agent/bundles — Create a new bundle
+// POST /api/agent/bundles - Create a new bundle
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ success: true, bundle: newBundle });
 }
 
-// PATCH /api/agent/bundles — Toggle a bundle on/off
+// PATCH /api/agent/bundles - Toggle a bundle on/off
 export async function PATCH(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -137,7 +137,7 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ success: true });
 }
 
-// DELETE /api/agent/bundles — Delete a bundle
+// DELETE /api/agent/bundles - Delete a bundle
 export async function DELETE(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;

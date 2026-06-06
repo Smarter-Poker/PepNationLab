@@ -60,7 +60,7 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
               { num: '2', text: <><strong style={{color:'var(--white)'}}>Not FDA Approved.</strong> None of our products have been evaluated or approved by the FDA for use in humans or animals. These are not drugs, supplements, food, or medical devices.</> },
               { num: '3', text: <><strong style={{color:'var(--white)'}}>You Are a Qualified Researcher.</strong> You are at least <strong style={{color:'var(--white)'}}>21 years of age</strong> and a qualified scientist, researcher, or institutional purchaser with the training, facilities, and authority to handle research-grade chemical compounds.</> },
               { num: '4', text: <><strong style={{color:'var(--white)'}}>No Human or Animal Use.</strong> You will NOT use these products for any human or veterinary purpose, and will NOT provide them to anyone for consumption or injection.</> },
-              { num: '5', text: <><strong style={{color:'var(--white)'}}>Banned Items.</strong> Pep Nation Lab <strong style={{color:'var(--red)'}}>NEVER</strong> sells BAC water, needles, syringes, or any injection delivery devices — and neither do any of our agents. Period.</> },
+              { num: '5', text: <><strong style={{color:'var(--white)'}}>Banned Items.</strong> Pep Nation Lab <strong style={{color:'var(--red)'}}>NEVER</strong> sells BAC water, needles, syringes, or any injection delivery devices - and neither do any of our agents. Period.</> },
               { num: '6', text: <><strong style={{color:'var(--white)'}}>Indemnification.</strong> You assume full responsibility for safe handling, storage, and disposal of all products and agree to hold Pep Nation Lab LLC harmless from any claims arising from your use of these products.</> },
               { num: '7', text: <><strong style={{color:'var(--white)'}}>Legal Compliance.</strong> You are solely responsible for ensuring your purchase and use complies with all applicable local, state, federal, and international laws.</> },
             ].map(({ num, text }) => (
@@ -144,14 +144,14 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
               letterSpacing: '0.05em'
             }}
           >
-            I Understand And Agree — Enter Site
+            I Understand And Agree - Enter Site
           </button>
           <button
             className="btn btn-ghost w-full"
             onClick={() => window.location.href = 'https://www.google.com'}
             style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}
           >
-            I Do Not Agree — Exit
+            I Do Not Agree - Exit
           </button>
         </div>
 

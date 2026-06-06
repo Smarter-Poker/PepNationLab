@@ -1,7 +1,7 @@
 /**
  * UniProt REST client. https://rest.uniprot.org
  * Used by /api/cron/uniprot-sync to populate compound_orthologs and the
- * receptors[] array on compounds. Never throws — returns null or [] on
+ * receptors[] array on compounds. Never throws - returns null or [] on
  * any network/parse failure so the cron skips to the next compound.
  */
 

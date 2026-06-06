@@ -30,7 +30,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
-    // Unified shape — target_type tells the UI which path to use for Pay Now
+    // Unified shape - target_type tells the UI which path to use for Pay Now
     // and which API the print view hits.
     const merged = [
       ...(weekly ?? []).map((s) => ({ ...s, target_type: 'statement' as const, bills_from: 'admin' as const })),

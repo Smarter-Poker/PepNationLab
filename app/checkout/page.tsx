@@ -13,7 +13,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const params = await searchParams;
-  // Sanitize the agentSlug — only allow alphanumeric + hyphens/underscores
+  // Sanitize the agentSlug - only allow alphanumeric + hyphens/underscores
   const rawAgent = params.agent ?? null;
   const agentSlug = typeof rawAgent === 'string' && /^[a-zA-Z0-9_-]+$/.test(rawAgent) ? rawAgent : null;
 
@@ -93,7 +93,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
       }
     }
   } catch {
-    // Non-blocking — checkout still works without agent handles
+    // Non-blocking - checkout still works without agent handles
   }
 
   return (

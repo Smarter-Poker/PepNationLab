@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { StickyNote, Loader2 } from 'lucide-react';
 
 /**
- * Customer Support v2 — Admin Internal Notes.
+ * Customer Support v2 - Admin Internal Notes.
  *
  * Renders an internal-notes list scoped to a single support conversation.
  * Backed by /api/messenger/support/[id]/notes (admin-only). The component

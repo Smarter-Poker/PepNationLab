@@ -45,7 +45,7 @@ export interface EnqueueWebhookArgs {
 /**
  * Enqueue a webhook event to every admin endpoint that subscribes plus the
  * specific agent's endpoints that subscribe to this event type. Best-effort:
- * never throws — webhook side-effects must not break the caller.
+ * never throws - webhook side-effects must not break the caller.
  *
  * Returns the count of delivery rows inserted.
  */
@@ -115,7 +115,7 @@ export interface DeliverWebhookResult {
 /**
  * Deliver a single pending webhook. Loads the row + endpoint, signs the body,
  * POSTs with a 10-second timeout, and updates status / attempts / backoff.
- * Never throws — returns { ok: false } on transport failure.
+ * Never throws - returns { ok: false } on transport failure.
  */
 export async function deliverWebhook(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -243,7 +243,7 @@ export async function deliverWebhook(
       : `http_${statusCode ?? 0}`;
 
     if (is4xx) {
-      // Permanent failure — endpoint is configured wrong or rejected the call.
+      // Permanent failure - endpoint is configured wrong or rejected the call.
       await supabase
         .from('webhook_deliveries')
         .update({

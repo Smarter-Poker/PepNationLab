@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * WalletStatusStrip — Round 24
+ * WalletStatusStrip - Round 24
  * --------------------------------------------------------------
  * A one-line at-a-glance row that replaces the full WalletCard inside
  * the Sales tab. Shows: Balance · Owed This Week · Pay Now deep-link.

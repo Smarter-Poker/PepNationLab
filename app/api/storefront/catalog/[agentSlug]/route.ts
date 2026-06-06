@@ -26,7 +26,7 @@ import type { StorefrontCatalogPayload } from '@/lib/storefront-cache';
  *   - Client: localStorage via lib/storefront-cache.ts (10 min TTL).
  *   - Service Worker: intercepts this URL and applies cache-first strategy.
  *
- * Public route — no auth required. Rate limited 120/min/IP.
+ * Public route - no auth required. Rate limited 120/min/IP.
  */
 
 export const dynamic = 'force-dynamic'; // prevents static generation, allows edge caching
@@ -46,7 +46,7 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid agent slug' }, { status: 400 });
   }
 
-  // Rate limit — catalog is called on every storefront visit
+  // Rate limit - catalog is called on every storefront visit
   const ip = getClientIp(req);
   const rl = await rateLimit({ key: 'storefront_catalog', limit: 120, windowSeconds: 60, identifier: ip });
   if (!rl.allowed) {
@@ -119,7 +119,7 @@ export async function GET(
   const products = productsResult.data ?? [];
   const inventory = inventoryResult.data as Array<{ product_id: string; stock_count: number }> | null;
 
-  // ── 3. COA URLs — only if we have product IDs ───────────────────────────────
+  // ── 3. COA URLs - only if we have product IDs ───────────────────────────────
   const productIds = products
     .map((p) => p.product_id)
     .filter((v): v is string => !!v && UUID_RE.test(v));

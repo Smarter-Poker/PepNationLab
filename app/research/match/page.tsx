@@ -1,5 +1,5 @@
 /**
- * Match Me To A Peptide — Research Library page.
+ * Match Me To A Peptide - Research Library page.
  *
  * Server component. Loads the compound catalog so the page can show how many
  * compounds the engine is choosing from, then renders the client-side form.

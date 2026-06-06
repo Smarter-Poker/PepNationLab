@@ -62,7 +62,7 @@ const baseInput: MatchInput = {
   riskTolerance: 'any',
 };
 
-describe('scoreCompounds — evidence-comfort gate', () => {
+describe('scoreCompounds - evidence-comfort gate', () => {
   it('strict_human_only filters out preclinical and research_chemical compounds', () => {
     const compounds: Compound[] = [
       makeCompound({
@@ -127,7 +127,7 @@ describe('scoreCompounds — evidence-comfort gate', () => {
   });
 });
 
-describe('scoreCompounds — WADA gate', () => {
+describe('scoreCompounds - WADA gate', () => {
   it('wada_permitted_only filters out WADA-prohibited compounds', () => {
     const compounds: Compound[] = [
       makeCompound({
@@ -186,7 +186,7 @@ describe('scoreCompounds — WADA gate', () => {
   });
 });
 
-describe('scoreCompounds — risk gate', () => {
+describe('scoreCompounds - risk gate', () => {
   it('low_only excludes any compound with risk_level=high', () => {
     const compounds: Compound[] = [
       makeCompound({
@@ -251,7 +251,7 @@ describe('scoreCompounds — risk gate', () => {
   });
 });
 
-describe('scoreCompounds — ranking and cap', () => {
+describe('scoreCompounds - ranking and cap', () => {
   it('returns results sorted by score descending', () => {
     const compounds: Compound[] = [
       // No research_areas hit, only keyword match -> +20 + comfort

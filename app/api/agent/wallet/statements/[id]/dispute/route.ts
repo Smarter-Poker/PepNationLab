@@ -1,4 +1,4 @@
-// Wallet — dispute a weekly statement. Records disputed_at + dispute_reason on
+// Wallet - dispute a weekly statement. Records disputed_at + dispute_reason on
 // the agent's own statement. Cannot dispute a paid statement. Admin reviews via
 // the existing admin statements surface.
 import { NextResponse } from 'next/server';

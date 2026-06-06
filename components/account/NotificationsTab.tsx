@@ -255,7 +255,7 @@ export default function NotificationsTab() {
                       />
                     </td>
                     <td style={{ textAlign: 'center', padding: 'var(--space-3)' }}>
-                      <span style={{ color: 'var(--silver)', fontSize: '0.78rem' }}>—</span>
+                      <span style={{ color: 'var(--silver)', fontSize: '0.78rem' }}>-</span>
                     </td>
                   </tr>
                 ))}
@@ -404,7 +404,7 @@ function CellToggle({
   ariaLabel: string;
 }) {
   if (unsupported) {
-    return <span style={{ color: 'var(--silver)', fontSize: '0.78rem' }}>—</span>;
+    return <span style={{ color: 'var(--silver)', fontSize: '0.78rem' }}>-</span>;
   }
   return (
     <button

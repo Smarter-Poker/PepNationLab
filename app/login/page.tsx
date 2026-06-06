@@ -24,10 +24,10 @@ function LoginPageInner() {
     let authEmail: string;
 
     if (raw.includes('@')) {
-      // Admin logging in with their real email — use as-is
+      // Admin logging in with their real email - use as-is
       authEmail = raw;
     } else {
-      // Everyone else — resolve username → email via server
+      // Everyone else - resolve username → email via server
       const res = await fetch('/api/auth/resolve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,21 +53,21 @@ function LoginPageInner() {
       return;
     }
 
-    // Single-session enforcement — deferred to avoid a race condition in
+    // Single-session enforcement - deferred to avoid a race condition in
     // incognito mode where the signOut RPC can race against the new session
     // cookie being written, causing silent logout. We fire it 3 seconds after
-    // navigation starts — by then the session cookie is safely committed.
+    // navigation starts - by then the session cookie is safely committed.
     // Best-effort: failures are ignored (old sessions expire naturally).
     const supabaseForSignOut = supabase; // capture ref
 
     const redirectTo = searchParams.get('redirect') ?? '/dashboard';
     
     // Wait until Supabase confirms the session is readable locally (max 3s).
-    // On mobile incognito the cookie write is async — navigating too soon
+    // On mobile incognito the cookie write is async - navigating too soon
     // means the server request arrives before the cookie exists.
     for (let i = 0; i < 15; i++) {
       const { data: { session } } = await supabase.auth.getSession();
-      // round-23: removed `console.log('Session access_token:', ...)` —
+      // round-23: removed `console.log('Session access_token:', ...)` -
       // was leaking the bearer token to the browser console in production.
       if (session?.access_token) break;
       await new Promise(r => setTimeout(r, 200));

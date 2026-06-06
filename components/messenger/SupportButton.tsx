@@ -7,7 +7,7 @@ import { LifeBuoy, X, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 /**
- * Customer Support v2 — Floating Support Button.
+ * Customer Support v2 - Floating Support Button.
  *
  * Visible only on /messenger, hidden for admin (they're the sink, not the
  * seeker). Click opens a small pre-chat topic picker modal asking for:
@@ -52,7 +52,7 @@ function isUuid(s: string): boolean {
  * - Saturday or Sunday (any time) → after hours
  *
  * Uses Intl.DateTimeFormat with timeZone='America/Chicago' so it's DST-correct.
- * Returns false on SSR (no window) to avoid hydration mismatch — the banner
+ * Returns false on SSR (no window) to avoid hydration mismatch - the banner
  * is a non-critical, post-mount add-on.
  */
 function isAfterHoursCentral(now: Date): boolean {
@@ -209,7 +209,7 @@ function Inner() {
               ...(clientMessageId ? { clientMessageId } : {}),
             }),
           });
-          // Realtime will pick this up — no need to read response.
+          // Realtime will pick this up - no need to read response.
           void supabase;
         } catch {
           // Description send is best-effort; the conversation is already open.
@@ -223,7 +223,7 @@ function Inner() {
       // after the redirect lands them in the thread.
       if (afterHours) {
         toast(
-          'Thanks — Your Support Thread Is Open. Requests After 5pm Central Typically Get Answered The Next Business Day.',
+          'Thanks - Your Support Thread Is Open. Requests After 5pm Central Typically Get Answered The Next Business Day.',
           { duration: 7000 },
         );
       }
@@ -358,7 +358,7 @@ function Inner() {
                     <strong style={{ color: '#FFE9B7', display: 'block', marginBottom: 2 }}>
                       Outside Business Hours
                     </strong>
-                    Requests Received After 5pm Central Typically Get Answered The Next Business Day. Your Thread Will Still Be Created — We Will Reply As Soon As We Are Back.
+                    Requests Received After 5pm Central Typically Get Answered The Next Business Day. Your Thread Will Still Be Created - We Will Reply As Soon As We Are Back.
                   </span>
                 </div>
               )}

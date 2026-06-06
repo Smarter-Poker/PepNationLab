@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * AreaContentTabs — progressive disclosure for the Research Area hub page.
+ * AreaContentTabs - progressive disclosure for the Research Area hub page.
  * Tabs: Overview | Compounds | Evidence | Safety | References
  * Teal/black, Title Case, no emoji, 44px touch targets.
  */

@@ -5,8 +5,8 @@
  *
  * A one-time, post-sign-in modal that asks the user to turn on push
  * notifications (real device enrollment via enablePush), then nudges them to
- * finish setting up their account. Shows once per (account + device) — tracked
- * in localStorage keyed by user id — and only when push is actually supported
+ * finish setting up their account. Shows once per (account + device) - tracked
+ * in localStorage keyed by user id - and only when push is actually supported
  * and not already enabled on this device. iOS only exposes PushManager inside
  * the installed home-screen app, so in a plain Safari tab this self-suppresses.
  */

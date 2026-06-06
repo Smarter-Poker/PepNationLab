@@ -5,7 +5,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
-// All sales are final — no refunds or exchanges. Cancellation simply voids
+// All sales are final - no refunds or exchanges. Cancellation simply voids
 // the order and commission rows. No refund_type parameter is accepted.
 const CancelSchema = z.object({
   reason: z.string().min(1).max(500),
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     handler: async () => {
       const service = await createServiceClient();
 
-      // cancel_order RPC: pass 'none' as refund_type — all sales are final.
+      // cancel_order RPC: pass 'none' as refund_type - all sales are final.
       const { error: rpcError } = await service.rpc('cancel_order', {
         p_order_id: id,
         p_reason: parsed.data.reason,

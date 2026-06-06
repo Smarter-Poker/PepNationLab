@@ -305,7 +305,7 @@ export default function NewProductPage() {
               </p>
             </div>
 
-            {/* Live tier price preview — reads REAL multipliers from DB */}
+            {/* Live tier price preview - reads REAL multipliers from DB */}
             {validCost && (
               <div style={{
                 marginTop: 'var(--space-4)',
@@ -367,7 +367,7 @@ export default function NewProductPage() {
               <div>
                 <div style={{ fontSize: '0.88rem', fontWeight: 700, color: invCount > 0 ? 'var(--teal)' : '#00E5FF' }}>
                   {invCount > 0
-                    ? `In Stock — Ships Now (${form.inventory_count} Units)`
+                    ? `In Stock - Ships Now (${form.inventory_count} Units)`
                     : `Out of Stock / Backordered`}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginTop: 2 }}>
@@ -404,7 +404,7 @@ export default function NewProductPage() {
 
             <div style={{ marginTop: 'var(--space-3)', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
               Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Out of Stock / Backordered".
-              When Restocked, Storefronts Instantly Update To "In Stock — Ships Now."
+              When Restocked, Storefronts Instantly Update To "In Stock - Ships Now."
             </div>
           </div>
         </div>
@@ -420,7 +420,7 @@ export default function NewProductPage() {
                 style={{ accentColor: 'var(--teal)', width: 18, height: 18 }}
               />
               <div>
-                <div style={{ fontWeight: 600 }}>Active — Visible In Agent Catalogs</div>
+                <div style={{ fontWeight: 600 }}>Active - Visible In Agent Catalogs</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginTop: 2 }}>
                   Uncheck To Save As Draft Without Publishing
                 </div>

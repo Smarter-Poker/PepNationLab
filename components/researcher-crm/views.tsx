@@ -1,13 +1,13 @@
 'use client';
 
 /**
- * R30 Phase 4 — Advanced researcher CRM views.
+ * R30 Phase 4 - Advanced researcher CRM views.
  *
  * Three sibling views to the rich list table:
  *  - KanbanView: lifecycle pipeline columns (Lead → New → First Order →
  *    Active → VIP → At Risk → Churned). Each card shows name, LTV, days
  *    since last order, churn risk; drag-free for now (status is computed,
- *    not user-editable) — this is a visual pipeline, not a CRM-write tool.
+ *    not user-editable) - this is a visual pipeline, not a CRM-write tool.
  *  - ChartsView: revenue line (12 weeks), day-of-week heatmap (7×12),
  *    top customers bar (top 10 by LTV).
  *  - AcquisitionView: source attribution donut + conversion funnel
@@ -595,7 +595,7 @@ export function ChartsView({
 }
 
 /* ============================================================================
-   Acquisition View — sources + funnel
+   Acquisition View - sources + funnel
    ========================================================================== */
 
 export function AcquisitionView({
@@ -734,7 +734,7 @@ export function AcquisitionView({
 }
 
 /* ============================================================================
-   Insights fetcher hook — keeps the network call out of the parent
+   Insights fetcher hook - keeps the network call out of the parent
    ========================================================================== */
 
 export function useInsights(enabled: boolean): InsightsPayload | null {
@@ -749,7 +749,7 @@ export function useInsights(enabled: boolean): InsightsPayload | null {
         const j = (await r.json()) as InsightsPayload;
         if (alive) setData(j);
       } catch {
-        /* network error — view shows loading placeholder */
+        /* network error - view shows loading placeholder */
       }
     })();
     return () => {

@@ -11,15 +11,15 @@
  *   - read       : 120 / minute (get-conversations, get-messages, list-*)
  *   - upload     : 10 / minute  (upload-media)
  *   - default    : 60 / minute  (state-mutating writes that aren't sends/reacts)
- *   - admin      : 200 / minute (admin moderation routes — privileged)
+ *   - admin      : 200 / minute (admin moderation routes - privileged)
  *   - call_start : 5 / minute   (per-pair start-call throttle; audit15 fix-18)
  *
- * Cron routes deliberately do NOT pass through the limiter — they are
+ * Cron routes deliberately do NOT pass through the limiter - they are
  * system-internal and already gated by Bearer CRON_SECRET.
  *
  * Upstash REST is used when configured, otherwise we fall back to the
  * in-memory token-bucket implemented in `lib/rate-limit.ts`. Either way the
- * limiter "fails open" — if the limiter itself errors, the request is
+ * limiter "fails open" - if the limiter itself errors, the request is
  * allowed through. A rate limiter that locks users out on its own bug is
  * worse than no limiter at all.
  *
@@ -60,7 +60,7 @@ const BUCKETS: Record<MessengerBucket, BucketConfig> = {
   admin: { key: 'messenger_admin', limit: 200, windowSeconds: 60 },
   // audit15 fix-18 (B2): per-pair burst guard. Callers pass identifier as
   // `${callerId}:${targetId}` so a single user can still call many distinct
-  // targets at the higher `default` rate — only the pairwise burst is gated.
+  // targets at the higher `default` rate - only the pairwise burst is gated.
   call_start: { key: 'messenger_call_start', limit: 5, windowSeconds: 60 },
 };
 

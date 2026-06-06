@@ -6,7 +6,7 @@
  * as the rest of the app: hamburger drawer, back arrow, message bell,
  * notification bell, wallet badge, and the Dashboard pill.
  *
- * The Navbar is position:fixed (z-index 200) — actual content sits below
+ * The Navbar is position:fixed (z-index 200) - actual content sits below
  * via the WalletPage component's `paddingTop: calc(var(--nav-offset, 60px) + 12px)`,
  * which is already in place.
  */

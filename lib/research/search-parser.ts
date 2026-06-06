@@ -11,7 +11,7 @@
  *   - prefix*                 -> wildcard suffix
  *   - bare token              -> plain term, ANDed with everything else
  *
- * Pure module — no IO, safe in client or server.
+ * Pure module - no IO, safe in client or server.
  *
  * Consumers (new in v3):
  *   - app/api/research/search/route.ts

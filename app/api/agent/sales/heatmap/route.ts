@@ -1,4 +1,4 @@
-// R24 phase 6 — Sales heatmap. Buckets orders by (day_of_week, hour) over a range.
+// R24 phase 6 - Sales heatmap. Buckets orders by (day_of_week, hour) over a range.
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { parseRange } from '@/lib/sales-range';

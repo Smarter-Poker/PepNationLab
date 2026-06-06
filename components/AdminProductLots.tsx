@@ -308,7 +308,7 @@ export default function AdminProductLots({ productId }: Props) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
                   <span style={{ fontSize: '0.75rem', color: 'var(--grey-500)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Dates</span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.8rem' }}>
-                    <span>Mfg: {lot.manufactured_at ?? '—'}</span>
+                    <span>Mfg: {lot.manufactured_at ?? '-'}</span>
                     <span>Rcv: {lot.received_at}</span>
                   </div>
                 </div>
@@ -316,7 +316,7 @@ export default function AdminProductLots({ productId }: Props) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '130px' }}>
                   <span style={{ fontSize: '0.75rem', color: 'var(--grey-500)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Expires</span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{lot.expires_at ?? '—'}</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{lot.expires_at ?? '-'}</span>
                     {xClass === 'expired' && (
                       <span className="badge" style={{ background: 'rgba(229,62,62,0.2)', color: '#FCA5A5', fontSize: '0.65rem' }}>Expired</span>
                     )}

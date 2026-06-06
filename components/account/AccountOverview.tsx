@@ -177,7 +177,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
             </button>
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--silver)', marginTop: 'var(--space-3)' }}>Email</div>
-          <div style={{ color: 'var(--white)', fontSize: '0.9rem', marginTop: 2 }}>{userEmail || '—'}</div>
+          <div style={{ color: 'var(--white)', fontSize: '0.9rem', marginTop: 2 }}>{userEmail || '-'}</div>
         </div>
 
         <ProfileCompletenessRing percent={completeness} />

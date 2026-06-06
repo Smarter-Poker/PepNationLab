@@ -8,7 +8,7 @@
  * Shippo account key instead of per-agent keys. Per-agent Shippo API keys
  * in `agent_profiles.shippo_api_key` are deprecated and ignored.
  *
- * Guards: requireAgent — caller must own the order (or be the parent super-agent).
+ * Guards: requireAgent - caller must own the order (or be the parent super-agent).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     // GATE: an agent may only purchase a label AFTER the order has cleared the
     // mandatory admin-approval gate. Pre-gate statuses (pending_customer_payment,
-    // agent_approval_pending, admin_approval_pending) must never be shippable —
+    // agent_approval_pending, admin_approval_pending) must never be shippable -
     // buying a label there would skip admin release and push the order straight
     // into the shipping pipeline. Only approved_ship (the admin-released ship
     // state) or an order already in_fulfillment may have a label purchased.
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
 
     const { trackingNumber, labelUrl } = result;
 
-    // Awaited in-app + push notification — never blocks shipping.
+    // Awaited in-app + push notification - never blocks shipping.
     if (order.buyer_id) {
       try {
         const short = shortOrderId(orderId);

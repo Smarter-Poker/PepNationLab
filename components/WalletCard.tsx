@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Lab Wallet — unified balance + transaction history card.
+ * Lab Wallet - unified balance + transaction history card.
  *
  * Renders for ANY role from the single GET /api/wallet snapshot. Researchers see
  * their store-credit "Lab Wallet" balance; agents / super-agents / sub-agents see
@@ -84,7 +84,7 @@ export default function WalletCard() {
   }
 
   const isResearcher = data.role === 'researcher';
-  // Show the credit line whenever a limit exists — agents on credit frequently
+  // Show the credit line whenever a limit exists - agents on credit frequently
   // have a null account_type, so gating strictly on 'credit' hid the whole line
   // and left the wallet looking empty ($0 prepaid, nothing else).
   const hasCreditLine = data.creditLimit != null && data.creditLimit > 0;

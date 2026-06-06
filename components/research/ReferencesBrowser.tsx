@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * ReferencesBrowser — searchable list of every source cited across the catalog.
+ * ReferencesBrowser - searchable list of every source cited across the catalog.
  * Each reference links out via the global in-app overlay (data-inapp="1"), so
  * the user is never redirected away from pepnationlab.com.
  *

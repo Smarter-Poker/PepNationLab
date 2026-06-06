@@ -40,7 +40,7 @@ export default function ProductTierOverrides() {
       const oData = await overridesRes.json();
       const pData = await productsRes.json();
 
-      // Both endpoints may return a bare array or a { data: [...] } envelope —
+      // Both endpoints may return a bare array or a { data: [...] } envelope -
       // normalize before using array methods.
       const overrideList = Array.isArray(oData) ? oData : (oData?.data ?? []);
       const productList = Array.isArray(pData) ? pData : (pData?.data ?? []);

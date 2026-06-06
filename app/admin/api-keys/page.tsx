@@ -67,7 +67,7 @@ export default async function ApiKeysPage({
 
       {newKey ? (
         <div style={{ padding: 16, border: '1px solid #00C4BC', borderRadius: 8, marginBottom: 24, background: 'rgba(0,196,188,0.06)' }}>
-          <p style={{ fontWeight: 700, marginBottom: 8 }}>New Key Generated — Copy It Now (Shown Only Once)</p>
+          <p style={{ fontWeight: 700, marginBottom: 8 }}>New Key Generated - Copy It Now (Shown Only Once)</p>
           <code style={{ display: 'block', padding: 12, background: '#050A0F', borderRadius: 6, wordBreak: 'break-all' }}>
             {newKey}
           </code>

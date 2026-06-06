@@ -1,1 +1,1 @@
-// Removed 2026-05-29: PepNationLab has no Twilio account. Use lib/push-enqueue.ts for buyer notifications. throw new Error('lib/twilio.ts has been removed — do not import');
+// Removed 2026-05-29: PepNationLab has no Twilio account. Use lib/push-enqueue.ts for buyer notifications. throw new Error('lib/twilio.ts has been removed - do not import');

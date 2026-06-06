@@ -6,7 +6,7 @@ import { requireAgent } from '@/lib/admin-auth';
  * GET /api/agent/sub-agents
  *
  * SACA Phase 2: Returns the caller's sub-agents under the new commission model.
- * Any agent or super-agent may call this — sub-agents themselves are rejected
+ * Any agent or super-agent may call this - sub-agents themselves are rejected
  * (the no-nesting rule applies here too).
  *
  * Response: { data: SubAgentRow[] }

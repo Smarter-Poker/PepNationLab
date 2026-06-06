@@ -19,7 +19,7 @@ import React from 'react';
  * their full account + notification settings through them.
  *
  * Note: direct entries for `/account/security` and `/account/notifications`
- * are intentionally NOT surfaced in the hamburger menu — both are tabs inside
+ * are intentionally NOT surfaced in the hamburger menu - both are tabs inside
  * the /account (Account Settings) page, so duplicating them in the drawer just
  * adds visual noise. The underlying pages are still routed and reachable from
  * the Account Settings UI.

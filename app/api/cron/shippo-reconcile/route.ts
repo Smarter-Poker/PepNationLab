@@ -5,8 +5,8 @@
  *
  * For each agent with label purchases in the trailing 7-day window,
  * compares:
- *   SUM(shipping_label_purchases.agent_charged_cents)  — what we paid Shippo
- *   SUM(orders.shipping_cost * 100)                    — what we charged customers
+ *   SUM(shipping_label_purchases.agent_charged_cents)  - what we paid Shippo
+ *   SUM(orders.shipping_cost * 100)                    - what we charged customers
  *
  * A variance > 5% OR > $50 triggers an admin_audit_log entry flagged as
  * 'shippo_reconcile_variance' so staff can investigate.

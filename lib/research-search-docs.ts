@@ -1,5 +1,5 @@
 /**
- * buildResearchSearchDocs — assembles the universal search index for the
+ * buildResearchSearchDocs - assembles the universal search index for the
  * Research Library from every searchable entity: compounds, stacks, research
  * areas, learn guides, glossary terms, and FAQ entries. Pure (no server imports)
  * so it can run in a server component and hand the flat doc list to the client
@@ -101,7 +101,7 @@ export function buildResearchSearchDocs(compounds: Compound[]): SearchDoc[] {
     });
   }
 
-  // Tools & sections — so the search doubles as navigation.
+  // Tools & sections - so the search doubles as navigation.
   const TOOLS: { title: string; url: string; subtitle: string; keywords: string[] }[] = [
     { title: 'Search Everything', url: '/research/search', subtitle: 'Universal Search', keywords: ['search', 'find', 'lookup'] },
     { title: 'Full Data Table', url: '/research/data', subtitle: 'Sortable Database', keywords: ['table', 'database', 'sort', 'filter', 'grid', 'spreadsheet', 'all compounds'] },

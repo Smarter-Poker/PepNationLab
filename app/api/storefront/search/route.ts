@@ -9,24 +9,24 @@ import { GoogleGenAI } from '@google/genai';
  *
  * Public, server-side faceted search over a single agent's visible storefront
  * catalog. The client component (AgentStorefrontGrid) does facet filtering on
- * the SSR payload by default — this route is the same shape so the client can
+ * the SSR payload by default - this route is the same shape so the client can
  * fall through to the API once a catalog exceeds the SSR-friendly size.
  *
  * Body: {
- *   slug,              // required — agent_profiles.slug (case-insensitive)
+ *   slug,              // required - agent_profiles.slug (case-insensitive)
  *   q?,                // free-text product name match
  *   category?,         // single category string
  *   minPrice?,         // numeric, retail_price >= minPrice
  *   maxPrice?,         // numeric, retail_price <= maxPrice
- *   inStock?,          // boolean — only products with positive agent stock
- *   bulk?,             // boolean — only products with admin_bulk_price NOT NULL
+ *   inStock?,          // boolean - only products with positive agent stock
+ *   bulk?,             // boolean - only products with admin_bulk_price NOT NULL
  *   minWeight?,        // numeric (oz)
  *   maxWeight?,        // numeric (oz)
  *   sort?,             // 'popular' | 'name_asc' | 'name_desc' | 'price_low' | 'price_high' | 'newest'
  *   limit?,            // 1..500, default 50
  * }
  *
- * Rate limited to 60 requests / IP / minute. Public — no auth required.
+ * Rate limited to 60 requests / IP / minute. Public - no auth required.
  * Returns 200 with { products: [] } when the slug does not resolve, so the
  * client never has to special-case 404 vs empty-catalog.
  */

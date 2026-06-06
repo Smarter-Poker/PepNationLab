@@ -167,7 +167,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
     }
   };
 
-  // Canonical per-role hamburger menu — identical on every page for a given
+  // Canonical per-role hamburger menu - identical on every page for a given
   // role. Null for researchers / logged-out, who keep the generic drawer links.
   const roleLinks = user
     ? getRoleNavLinks(role, {
@@ -281,7 +281,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    // Clear catalog caches — prevents stale product data for the next user
+    // Clear catalog caches - prevents stale product data for the next user
     // (especially important on shared / public devices)
     evictAllCatalogCaches();
     window.location.replace('/');
@@ -373,7 +373,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
   const isStorefront = activeAgentSlug && pathname === `/${activeAgentSlug}`;
   const showBack = pathname !== '/' && !isStorefront;
 
-  // QR popup details — sub-agents recruit via /invite?ref (no storefront);
+  // QR popup details - sub-agents recruit via /invite?ref (no storefront);
   // agents/super-agents share their storefront slug.
 
   return (

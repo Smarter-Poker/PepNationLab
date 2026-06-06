@@ -1,4 +1,4 @@
-// Round 24 Sales — Tax-Ready CSV per state.
+// Round 24 Sales - Tax-Ready CSV per state.
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';

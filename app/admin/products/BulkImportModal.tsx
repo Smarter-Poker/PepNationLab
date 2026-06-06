@@ -514,7 +514,7 @@ export default function BulkImportModal({ onClose }: { onClose: () => void }) {
                     <ul style={{ fontSize: '0.78rem', color: 'var(--silver)', paddingLeft: 'var(--space-4)', margin: 0 }}>
                       {imageResult.uploaded.map((u, i) => (
                         <li key={i}>
-                          {u.file} — Matched By {u.matched_by}
+                          {u.file} - Matched By {u.matched_by}
                         </li>
                       ))}
                     </ul>

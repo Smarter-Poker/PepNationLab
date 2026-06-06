@@ -10,7 +10,7 @@
  * keeping a fallback means a broken Upstash deploy can never lock users out.
  *
  * Errors from the Upstash call are swallowed (allow the request, log a
- * warning) — a rate limiter that hard-fails open requests is worse than no
+ * warning) - a rate limiter that hard-fails open requests is worse than no
  * rate limiter at all.
  *
  * Callers (added in the same change set):
@@ -157,7 +157,7 @@ export async function rateLimit(input: RateLimitInput): Promise<RateLimitResult>
   if (url && token) {
     const remote = await upstashRateLimit(bucketKey, limit, windowSeconds, url, token);
     if (remote) return remote;
-    // Upstash unavailable — degrade to in-memory rather than hard-fail.
+    // Upstash unavailable - degrade to in-memory rather than hard-fail.
   }
 
   return inMemoryRateLimit(bucketKey, limit, windowSeconds);

@@ -271,7 +271,7 @@ export function subscribeCallSignals(userId: string, handlers: CallSignalHandler
   return ch;
 }
 
-// audit15 fix-12 (S7): per-target broadcast channel pool — public channels
+// audit15 fix-12 (S7): per-target broadcast channel pool - public channels
 // (HOTFIX fix-38: reverted from private:true).
 const CHANNEL_POOL_MAX = 32;
 const CHANNEL_POOL_IDLE_MS = 60_000;

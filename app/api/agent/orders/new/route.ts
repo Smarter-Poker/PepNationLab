@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     // SACA: sub-agents do not own a storefront and therefore cannot create
     // manual orders. They can only earn commission on orders placed via the
-    // parent's storefront — manual order creation belongs to the storefront
+    // parent's storefront - manual order creation belongs to the storefront
     // owner. Reject with a clear error instead of silently failing on the
     // empty agent_products query below.
     if ((agentProfile as { is_sub_agent?: boolean | null }).is_sub_agent === true) {
@@ -184,8 +184,8 @@ export async function POST(req: NextRequest) {
           user_id: admin.id,
           title: finalAutoStatus === 'admin_approval_pending' ? 'Manual Order Needs Admin Approval' : 'Manual Order Auto-Approved',
           body: finalAutoStatus === 'admin_approval_pending' 
-            ? `Order #${short} ($${totalStr}) — Agent Created & Approved. Needs Admin Release (${fulfillmentMsg}).`
-            : `Order #${short} ($${totalStr}) — Agent Created & Auto-Approved on Credit Line. (${fulfillmentMsg}).`,
+            ? `Order #${short} ($${totalStr}) - Agent Created & Approved. Needs Admin Release (${fulfillmentMsg}).`
+            : `Order #${short} ($${totalStr}) - Agent Created & Auto-Approved on Credit Line. (${fulfillmentMsg}).`,
           type: 'system',
           url: `/admin/orders?status=${finalAutoStatus}`,
         }));

@@ -5,13 +5,13 @@
  * `buyLabel(input)` from lib/shippo.ts, which uses the platform account key.
  *
  * Each label_jobs row must have:
- *   order_id         — the parent order
- *   agent_id         — used by buyLabel to verify order ownership (can be NULL
+ *   order_id         - the parent order
+ *   agent_id         - used by buyLabel to verify order ownership (can be NULL
  *                      for admin-created jobs, in which case we use the order's agent_id)
- *   service_level_token — optional preferred carrier
- *   origin_id        — optional override origin
- *   attempts         — retry counter
- *   status           — pending | succeeded | failed
+ *   service_level_token - optional preferred carrier
+ *   origin_id        - optional override origin
+ *   attempts         - retry counter
+ *   status           - pending | succeeded | failed
  *
  * Job lifecycle: pending → (this run) → succeeded | failed
  * Max attempts: 3. Permanent failure writes admin_audit_log.
@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
           .lt('attempts', MAX_ATTEMPTS)
           .select('id');
         if (!claimedRows || claimedRows.length === 0) {
-          // Lost the race — another worker is handling this row.
+          // Lost the race - another worker is handling this row.
           continue;
         }
 
@@ -162,7 +162,7 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
-        // Success — update job row. Guard against a webhook racing us to
+        // Success - update job row. Guard against a webhook racing us to
         // mark the same row succeeded (the webhook also updates label_jobs
         // by id, see app/api/webhooks/shippo/route.ts:handleTransaction).
         await supabase.from('label_jobs').update({
@@ -186,7 +186,7 @@ export async function GET(req: NextRequest) {
         if (orderRow?.buyer_id) {
           try {
             const short = shortOrderId(orderId);
-            // In-app notification — shows in bell immediately
+            // In-app notification - shows in bell immediately
             await notifyOrderShipped(supabase, orderRow.buyer_id, orderId, short, result.trackingNumber ?? undefined);
             // Web push
             await enqueueOrderPush(supabase, { userId: orderRow.buyer_id, orderId, event: 'order_shipped', tracking: result.trackingNumber });

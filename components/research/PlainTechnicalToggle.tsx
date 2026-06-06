@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * PlainTechnicalToggle — two-button switch between a plain-language summary and
+ * PlainTechnicalToggle - two-button switch between a plain-language summary and
  * the technical view (children). If `plain` is null the toggle is hidden and
  * children render alone. Defaults to the Technical view.
  */

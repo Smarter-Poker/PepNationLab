@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 /**
- * Reorder button — used inline on the researcher's order history rows.
+ * Reorder button - used inline on the researcher's order history rows.
  *
  * The order list itself is server-rendered for SEO / initial-paint reasons,
  * but the Reorder action has to be a client interaction so we keep this in

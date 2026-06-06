@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * LearnGuidesExplorer — progressive-disclosure view of the education guides.
+ * LearnGuidesExplorer - progressive-disclosure view of the education guides.
  * Instead of rendering all guides as one endless scroll, the reader picks a
  * single guide from a button rail and sees only that guide's sections. Keeps
  * the platform style (teal/black, Title Case, no emoji, 44px touch targets).
@@ -21,7 +21,7 @@ export default function LearnGuidesExplorer() {
 
   return (
     <div>
-      {/* Category button rail — pick one guide */}
+      {/* Category button rail - pick one guide */}
       <nav
         aria-label="Guides"
         style={{

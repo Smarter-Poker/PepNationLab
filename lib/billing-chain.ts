@@ -21,7 +21,7 @@ export type ChainCheckResult =
 /**
  * Walks the billing chain and refuses the transaction if either
  *   (a) the transacting agent OR ANY ancestor in their chain is
- *       is_transactions_frozen — the freeze cascade rolls DOWN, so
+ *       is_transactions_frozen - the freeze cascade rolls DOWN, so
  *       both the transacting account itself AND every upline must be
  *       clear, OR
  *   (b) any credit-line tier on the billed chain would exceed its
@@ -40,7 +40,7 @@ export async function assertChainCanTransact(
 ): Promise<ChainCheckResult> {
   const freezeRoot = transactingAgentId ?? billedAgentId;
 
-  // 1) Freeze check — starts at the transacting account so the
+  // 1) Freeze check - starts at the transacting account so the
   //    sub-agent's own freeze state is included in the walk.
   const { data: frozenRows, error: frozenErr } = await supabase.rpc('is_chain_frozen', {
     p_agent_id: freezeRoot,
@@ -61,7 +61,7 @@ export async function assertChainCanTransact(
     };
   }
 
-  // 2) Hierarchical credit-line check — bubbles up the BILLED chain
+  // 2) Hierarchical credit-line check - bubbles up the BILLED chain
   //    (credit limits live on the billed tier, not the transacting one).
   const { data: chainRows, error: chainErr } = await supabase.rpc('check_credit_chain', {
     p_billed_agent_id: billedAgentId,

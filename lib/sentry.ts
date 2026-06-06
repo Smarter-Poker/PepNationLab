@@ -3,7 +3,7 @@
  *
  * Centralized error reporter used by error boundaries and any server-side
  * catch blocks that want to forward exceptions to Sentry. Safe to call when
- * Sentry is not configured — falls back to console.error and returns.
+ * Sentry is not configured - falls back to console.error and returns.
  *
  * Resolution order for the DSN:
  *   - Server runtime:  SENTRY_DSN
@@ -22,7 +22,7 @@ export function captureError(
   err: unknown,
   ctx?: Record<string, unknown>
 ): void {
-  // Always log for local visibility — this is the cheapest, most reliable
+  // Always log for local visibility - this is the cheapest, most reliable
   // signal a developer can see.
   // eslint-disable-next-line no-console
   console.error('[captureError]', err, ctx ?? null);
@@ -36,7 +36,7 @@ export function captureError(
   // host app's error boundary.
   try {
     // Resolve via a variable so the bundler treats this as a runtime lookup,
-    // not a static dependency — keeps the build green when @sentry/nextjs is
+    // not a static dependency - keeps the build green when @sentry/nextjs is
     // not yet installed in the local node_modules.
     const mod = '@sentry/nextjs';
     // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
@@ -45,6 +45,6 @@ export function captureError(
       Sentry.captureException(err, ctx ? { extra: ctx } : undefined);
     }
   } catch {
-    // Sentry not installed or failed to load — already logged to console.
+    // Sentry not installed or failed to load - already logged to console.
   }
 }

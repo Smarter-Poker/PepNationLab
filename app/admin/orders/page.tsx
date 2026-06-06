@@ -60,8 +60,8 @@ const STATUS_LABELS: Record<string, string> = {
   pending_customer_payment: "Pending Payment",
   agent_approval_pending: "Agent Approval Pending",
   admin_approval_pending: "Admin Approval Pending",
-  approved_ship: "Approved — Ship",
-  approved_pickup: "Approved — Pickup",
+  approved_ship: "Approved - Ship",
+  approved_pickup: "Approved - Pickup",
   in_fulfillment: "In Fulfillment",
   shipped: "Shipped",
   delivered: "Delivered",
@@ -148,7 +148,7 @@ function AdminOrdersPageInner() {
       const res = await fetch(`/api/admin/orders/${selectedOrder.id}/cancel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // All sales are final — no refund_type param. The API always uses 'none'.
+        // All sales are final - no refund_type param. The API always uses 'none'.
         body: JSON.stringify({ reason: cancelReason.trim() }),
       });
       const json = await res.json();
@@ -1035,7 +1035,7 @@ function AdminOrdersPageInner() {
                     </div>
                     <div>
                       Username: @
-                      {selectedOrder.profiles?.email?.split("@")[0] ?? "—"}
+                      {selectedOrder.profiles?.email?.split("@")[0] ?? "-"}
                     </div>
                     {selectedOrder.profiles?.phone && (
                       <div>Phone: {selectedOrder.profiles?.phone}</div>
@@ -1549,7 +1549,7 @@ function AdminOrdersPageInner() {
                 }}
               >
                 Order Total ${Number(selectedOrder.total).toFixed(2)}. All Sales
-                Are Final — This Action Cannot Be Undone.
+                Are Final - This Action Cannot Be Undone.
               </p>
 
               <div

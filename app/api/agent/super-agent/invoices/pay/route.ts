@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // B-07: Only open invoices can be marked paid — prevent re-paying settled/cancelled invoices
+    // B-07: Only open invoices can be marked paid - prevent re-paying settled/cancelled invoices
     if (invoice.status !== 'open') {
       return NextResponse.json(
         { error: `Invoice cannot be marked paid (current status: ${invoice.status}).` },

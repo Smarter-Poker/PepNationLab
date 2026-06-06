@@ -1,4 +1,4 @@
-// Wallet commissions — reads the real sub_agent_commission_ledger.
+// Wallet commissions - reads the real sub_agent_commission_ledger.
 // Schema: sub_agent_id, order_id, commission_pct, gross_product_subtotal,
 // commission_amount (NUMERIC dollars), status text CHECK in (pending|settled|voided),
 // accrued_at, settled_at, voided_at.

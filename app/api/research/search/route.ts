@@ -8,7 +8,7 @@
  * similarity for a typo on a single short token.
  *
  * Best-effort analytics: writes one row to search_queries per request.
- * Response always carries a RESEARCH_NOTE — nothing here is dosing or
+ * Response always carries a RESEARCH_NOTE - nothing here is dosing or
  * medical advice.
  */
 
@@ -52,7 +52,7 @@ async function runRankedSearch(
   // and the tsvector column at once. Supabase JS doesn't yet expose tsquery
   // operators directly. We hit a SECURITY DEFINER RPC if one exists; otherwise
   // we run a raw SELECT through the PostgREST .rpc('search_compounds_rank').
-  // Foundation migration shipped this function — see
+  // Foundation migration shipped this function - see
   // 20260603100000_research_v3_foundation.sql.
   const { data, error } = await supabase.rpc('search_compounds_rank', {
     p_tsquery: tsquery,

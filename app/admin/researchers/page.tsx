@@ -108,7 +108,7 @@ function ResearchersAdminPageInner() {
   const [createRole, setCreateRole] = useState<'agent' | 'researcher'>('agent');
   const [newParentAgentId, setNewParentAgentId] = useState('');
 
-  // Live username availability — fires when the modal is mounted with a typed
+  // Live username availability - fires when the modal is mounted with a typed
   // username. Mirrors the storefront register form + the agent create-researcher
   // modal so the operator sees green/red feedback before they press submit.
   const newUsernameCheck = useAvailability({
@@ -138,7 +138,7 @@ function ResearchersAdminPageInner() {
         setUnpaidAgentIds(ids);
       }
     } catch {
-      // best-effort — Outstanding filter falls back to empty set
+      // best-effort - Outstanding filter falls back to empty set
     }
   }
 
@@ -258,7 +258,7 @@ function ResearchersAdminPageInner() {
       });
       const json = await res.json();
       if (res.ok) {
-        toast.success(`Researcher Account Created — Username: ${json.username || newUsername}`);
+        toast.success(`Researcher Account Created - Username: ${json.username || newUsername}`);
         await fetchProfiles();
         setActiveTab('researchers');
         closeModal();
@@ -831,7 +831,7 @@ function ResearchersAdminPageInner() {
                       const v = e.target.value;
                       setNewFirstName(v);
                       // Auto-populate the storefront display name + slug from the
-                      // first name only — far cleaner than dragging the last name
+                      // first name only - far cleaner than dragging the last name
                       // through .toLowerCase().replace(...) and getting hyphenated
                       // surnames in the URL.
                       const combined = `${v} ${newLastName}`.trim();
@@ -953,9 +953,9 @@ function ResearchersAdminPageInner() {
                 <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">Pricing Tier</label>
                   <select className="form-input" value={newTier} onChange={e => setNewTier(e.target.value as any)} required>
-                    <option value="tier_1">Tier 1 — Best Pricing (50% House)</option>
-                    <option value="tier_2">Tier 2 — Standard Pricing (60% House)</option>
-                    <option value="tier_3">Tier 3 — Entry Pricing (70% House)</option>
+                    <option value="tier_1">Tier 1 - Best Pricing (50% House)</option>
+                    <option value="tier_2">Tier 2 - Standard Pricing (60% House)</option>
+                    <option value="tier_3">Tier 3 - Entry Pricing (70% House)</option>
                   </select>
                 </div>
                 <div className="form-group" style={{ marginTop: 0 }}>
@@ -975,7 +975,7 @@ function ResearchersAdminPageInner() {
               )}
               {newAccountType === 'prepaid' && (
                 <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                  <label className="form-label">Starting Prepaid Balance ($) — Optional</label>
+                  <label className="form-label">Starting Prepaid Balance ($) - Optional</label>
                   <input type="number" className="form-input" placeholder="0.00" value={newPrepaidBalance}
                     onChange={e => setNewPrepaidBalance(e.target.value)} min="0" step="0.01" />
                 </div>
@@ -1005,8 +1005,8 @@ function ResearchersAdminPageInner() {
                 <input type="checkbox" checked style={inputStyle} disabled />
                 <span style={{ color: 'var(--grey-400)' }}>
                   {createRole === 'researcher'
-                    ? 'Researcher Will Log In With Their Username — You Set It Above'
-                    : 'Agent Will Log In With Their Username — You Set It Above'}
+                    ? 'Researcher Will Log In With Their Username - You Set It Above'
+                    : 'Agent Will Log In With Their Username - You Set It Above'}
                 </span>
               </label>
 
@@ -1063,9 +1063,9 @@ function ResearchersAdminPageInner() {
                     <div className="form-group" style={{ marginTop: 0 }}>
                       <label className="form-label">Pricing Tier</label>
                       <select className="form-input" value={formTier} onChange={e => setFormTier(e.target.value as any)} required>
-                        <option value="tier_1">Tier 1 — Best Pricing</option>
-                        <option value="tier_2">Tier 2 — Standard Pricing</option>
-                        <option value="tier_3">Tier 3 — Entry Pricing</option>
+                        <option value="tier_1">Tier 1 - Best Pricing</option>
+                        <option value="tier_2">Tier 2 - Standard Pricing</option>
+                        <option value="tier_3">Tier 3 - Entry Pricing</option>
                       </select>
                     </div>
                     <div className="form-group" style={{ marginTop: 0 }}>

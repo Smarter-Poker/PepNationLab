@@ -6,7 +6,7 @@
  * file existed, every order surface (researcher list, agent list, admin list,
  * and the order-detail variants) maintained its OWN 4-method dictionary, so
  * orders paid via apple_cash / paypal / google_wallet / wise / chime rendered
- * as raw lowercase slugs ("apple_cash") or worse — admin's screen showed them
+ * as raw lowercase slugs ("apple_cash") or worse - admin's screen showed them
  * uppercased ("APPLE_CASH") because the dict was missing.
  *
  * Import this from every consumer so the UI never drifts again.
@@ -54,7 +54,7 @@ export function paymentMethodLabel(slug: string | null | undefined): string {
   if (slug in PAYMENT_METHOD_LABELS) {
     return PAYMENT_METHOD_LABELS[slug as PaymentMethodSlug];
   }
-  // Fallback for any future slug not yet mapped — keep it readable.
+  // Fallback for any future slug not yet mapped - keep it readable.
   return slug
     .split('_')
     .map((w) => (w.length ? w[0].toUpperCase() + w.slice(1) : w))

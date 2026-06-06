@@ -26,7 +26,7 @@ export default function NavbarWalletBadge() {
         if (!res.ok) throw new Error(json.error);
         if (!cancelled) setData(json);
       } catch {
-        // Ignore — the icon stays a working link regardless of the snapshot.
+        // Ignore - the icon stays a working link regardless of the snapshot.
       }
     })();
     return () => {
@@ -34,7 +34,7 @@ export default function NavbarWalletBadge() {
     };
   }, []);
 
-  // Always route every role — admins included — to the unified /wallet page.
+  // Always route every role - admins included - to the unified /wallet page.
   // Admins have prepaid_balance like everyone else (seeded $100k) and need the
   // same Send/Spend/Activity view; sending them to /admin instead hid the
   // wallet entirely. The snapshot fetch above just primes the SWR; the actual

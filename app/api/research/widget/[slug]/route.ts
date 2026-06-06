@@ -46,7 +46,7 @@ export async function GET(
   const areas = Array.isArray(data.research_areas) ? (data.research_areas as string[]).slice(0, 3).join(' · ') : '';
   const tier = String(data.evidence_tier ?? '').replace(/_/g, ' ');
   const wada = String(data.wada_status ?? 'not_listed').replace(/_/g, ' ');
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(data.display_name)} — Pep Nation Lab</title><style>
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(data.display_name)} - Pep Nation Lab</title><style>
     :root { --bg:#050A0F; --surface:#0F1923; --surface-2:#162230; --teal:#00C4BC; --white:#FFFFFF; --silver:#A8B4C0; --silver-2:#D0DAE4; --red:#E53E3E; }
     *{box-sizing:border-box} html,body{margin:0;padding:0;background:var(--bg);color:var(--white);font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.5}
     .card{padding:18px 20px;background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%);border:1px solid rgba(255,255,255,0.08);border-radius:14px;max-width:520px;margin:8px}

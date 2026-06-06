@@ -19,7 +19,7 @@ export async function createClient() {
               cookieStore.set(name, value, options);
             });
           } catch {
-            // Called from Server Component — cookies can't be set
+            // Called from Server Component - cookies can't be set
           }
         },
       },
@@ -51,7 +51,7 @@ export async function createServiceClient() {
     {
       cookies: {
         getAll() { return []; },
-        setAll() { /* service role — no cookie setting needed */ },
+        setAll() { /* service role - no cookie setting needed */ },
       },
       global: {
         fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }),
@@ -61,7 +61,7 @@ export async function createServiceClient() {
 }
 
 /**
- * createAdminClient — uses raw @supabase/supabase-js (NOT @supabase/ssr).
+ * createAdminClient - uses raw @supabase/supabase-js (NOT @supabase/ssr).
  * This is the ONLY client that truly bypasses RLS with the service role key.
  * Use this for server-side operations that must write across RLS boundaries
  * (e.g. creating/updating researcher profiles from an agent route).

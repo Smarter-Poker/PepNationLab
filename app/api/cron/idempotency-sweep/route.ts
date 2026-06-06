@@ -14,7 +14,7 @@ export const runtime = 'nodejs';
  * 24 hours, so without this sweep the table would grow indefinitely.
  *
  * Auth: Vercel cron Authorization: Bearer ${CRON_SECRET}.
- * Schedule: vercel.json — daily at 04:00 UTC (low-traffic window).
+ * Schedule: vercel.json - daily at 04:00 UTC (low-traffic window).
  *
  * Idempotent by design: cron_runs claims via the UNIQUE (job_name,
  * partition_key) constraint, so even if the schedule double-fires we

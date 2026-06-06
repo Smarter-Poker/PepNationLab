@@ -5,7 +5,7 @@ import Link from 'next/link';
 export default function HeroSection() {
   return (
     <section className="hero-bg section" style={{
-      // 100dvh (dynamic viewport) is iOS-Safari-safe — 100vh leaks behind
+      // 100dvh (dynamic viewport) is iOS-Safari-safe - 100vh leaks behind
       // the URL bar and chrome, causing the section to extend past the
       // viewport and prevent reaching the next section.
       minHeight: 'calc(100dvh - 64px)',
@@ -95,7 +95,7 @@ export default function HeroSection() {
               <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
             <p style={{ fontSize: '0.8rem', color: 'var(--silver)', margin: 0 }}>
-              All Products Are <strong style={{ color: 'var(--red)' }}>Strictly For In Vitro Research Use Only</strong> — 
+              All Products Are <strong style={{ color: 'var(--red)' }}>Strictly For In Vitro Research Use Only</strong> - 
               Not For Human Or Animal Consumption. Qualified Researchers Only.
             </p>
           </div>

@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
       await adminAuth.updateUserById(user.id, { email: syntheticEmail });
     }
   } catch {
-    // swallow — audit log captures the change
+    // swallow - audit log captures the change
   }
 
   await service

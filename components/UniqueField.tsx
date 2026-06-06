@@ -202,7 +202,7 @@ export function UniqueField(props: Props) {
             lineHeight: 1.3,
           }}
         >
-          {/* Tone-specific icon — pure SVG, no emojis */}
+          {/* Tone-specific icon - pure SVG, no emojis */}
           {msg.tone === 'success' && (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={msg.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <polyline points="20 6 9 17 4 12" />

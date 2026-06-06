@@ -1,7 +1,7 @@
 /**
  * POST /api/agent/storefront-config/shippo-key/rotate
  *
- * LEGACY — decommissioned as part of Shippo Platform Account migration M1.
+ * LEGACY - decommissioned as part of Shippo Platform Account migration M1.
  * Per-agent Shippo keys are no longer used. All label purchasing goes through
  * the platform-account credentials managed at Admin → Settings → Shipping.
  *

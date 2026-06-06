@@ -19,7 +19,7 @@ interface CallRow {
   answered_at: string | null;
 }
 
-// fix-39: defensive ceiling — refuse to mint a token if the call has been
+// fix-39: defensive ceiling - refuse to mint a token if the call has been
 // 'active' for longer than any plausible session length. A stale active
 // row (cron sweep missed, LiveKit room long-dead) would otherwise lure
 // clients into trying to connect to a dead room and crashing on mount.
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     const anchor = Date.parse(anchorIso);
     if (Number.isFinite(anchor) && Date.now() - anchor > MAX_CALL_LIFETIME_MS) {
       // Auto-sweep this stale row so future requests don't trip the same
-      // path. Best-effort — log and ignore failure.
+      // path. Best-effort - log and ignore failure.
       try {
         await svc
           .from('messenger_calls')

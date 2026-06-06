@@ -12,10 +12,10 @@ const money = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(n) || 0);
 
 const fmtDate = (s: string | null | undefined): string => {
-  if (!s) return '—';
+  if (!s) return '-';
   const iso = /^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s}T00:00:00` : s;
   const d = new Date(iso);
-  return isNaN(d.getTime()) ? (s ?? '—') : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  return isNaN(d.getTime()) ? (s ?? '-') : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -77,7 +77,7 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
         .select('full_name')
         .eq('id', row.super_agent_id)
         .maybeSingle();
-      billsFrom = superAgent?.full_name ? `Super Agent — ${superAgent.full_name}` : 'Super Agent';
+      billsFrom = superAgent?.full_name ? `Super Agent - ${superAgent.full_name}` : 'Super Agent';
     } else {
       billsFrom = 'Super Agent';
     }
@@ -107,7 +107,7 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
   return (
     <html lang="en">
       <head>
-        <title>{invoiceNumber} — Pep Nation Lab</title>
+        <title>{invoiceNumber} - Pep Nation Lab</title>
         <style>{`
           @page { margin: 18mm; }
           @media print {

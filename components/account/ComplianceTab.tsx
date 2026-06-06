@@ -79,7 +79,7 @@ export default function ComplianceTab({ disclaimerAccepted, disclaimerAcceptedAt
             Last Accepted
           </dt>
           <dd style={{ color: 'var(--white)', margin: 0 }}>
-            {acceptedAt ? new Date(acceptedAt).toLocaleString() : '—'}
+            {acceptedAt ? new Date(acceptedAt).toLocaleString() : '-'}
           </dd>
         </dl>
 

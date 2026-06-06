@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import AdminShippingSettingsClient from './AdminShippingSettingsClient';
 
 export const metadata: Metadata = {
-  title: 'Shipping Settings — Admin — Pep Nation Lab',
+  title: 'Shipping Settings - Admin - Pep Nation Lab',
   description: 'Manage Shippo platform connection, warehouse origins, and shipping configuration.',
   robots: { index: false, follow: false },
 };

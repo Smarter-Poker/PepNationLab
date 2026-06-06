@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * CompareTool — Phase 2
+ * CompareTool - Phase 2
  * Full side-by-side comparison tool with:
  * - 5 tabs: Matrix | Pros & Cons | Analyst Brief | Mechanism | Protocol
  * - Weighted scoring engine (0–100) with animated score rings
@@ -199,17 +199,17 @@ const KNOWN_SYNERGIES = [
 
 // ─── SCORING ENGINE v2 ────────────────────────────────────────────────────────
 //
-// New 100-point composite system — 6 scored dimensions with a guaranteed floor
+// New 100-point composite system - 6 scored dimensions with a guaranteed floor
 // so every quality research compound we carry achieves a minimum B- (80+).
 //
 // Dimension weights (max points):
-//   Evidence Strength     — 28 pts  (base tier + documentation bonuses)
-//   Safety Profile        — 24 pts  (risk level + safety factor bonuses)
-//   Research Breadth      — 16 pts  (areas, studied_for, stacking compat)
-//   Scientific Backing    — 14 pts  (citations + trials, low thresholds)
-//   Protocol Practicality — 10 pts  (half-life, shelf-life, handling docs)
-//   Data Completeness     —  8 pts  (profile richness reward)
-//   Total possible        — 100 pts
+//   Evidence Strength     - 28 pts  (base tier + documentation bonuses)
+//   Safety Profile        - 24 pts  (risk level + safety factor bonuses)
+//   Research Breadth      - 16 pts  (areas, studied_for, stacking compat)
+//   Scientific Backing    - 14 pts  (citations + trials, low thresholds)
+//   Protocol Practicality - 10 pts  (half-life, shelf-life, handling docs)
+//   Data Completeness     -  8 pts  (profile richness reward)
+//   Total possible        - 100 pts
 //
 // Floor guarantee: base tiers are calibrated so even a bare-minimum
 // research_chemical at "low" risk reaches ~80 before bonuses.
@@ -229,7 +229,7 @@ export function scoreCompound(c: Compound, allSelected: Compound[] = []): Compou
   const hlHours = parseHalfLifeHours(c.half_life);
 
   // ── 1. EVIDENCE STRENGTH (max 28) ──────────────────────────────────────────
-  // Base by evidence tier — floors raised substantially
+  // Base by evidence tier - floors raised substantially
   let evidenceScore =
     c.evidence_tier === 'approved_drug'    ? 24 :
     c.evidence_tier === 'investigational'  ? 21 :
@@ -253,7 +253,7 @@ export function scoreCompound(c: Compound, allSelected: Compound[] = []): Compou
   evidenceScore = Math.min(28, Math.round(evidenceScore));
 
   // ── 2. SAFETY PROFILE (max 24) ──────────────────────────────────────────────
-  // Base by risk level — all raised with meaningful floors
+  // Base by risk level - all raised with meaningful floors
   let safetyScore =
     c.risk_level === 'low'      ? 20 :
     c.risk_level === 'moderate' ? 16 :
@@ -276,20 +276,20 @@ export function scoreCompound(c: Compound, allSelected: Compound[] = []): Compou
   const areaCount    = (c.research_areas ?? []).length;
   const studiedCount = (c.studied_for ?? []).length;
 
-  // Areas — up to 9 points (1.5 each, max 6 areas needed for full)
+  // Areas - up to 9 points (1.5 each, max 6 areas needed for full)
   let coverageScore = Math.min(9, areaCount * 1.5);
-  // Studied-for specificity — up to 4 points
+  // Studied-for specificity - up to 4 points
   coverageScore += Math.min(4, studiedCount * 0.8);
-  // Stack compatibility known — bonus up to 2
+  // Stack compatibility known - bonus up to 2
   const stackWith = (c.best_stacked_with ?? []).length;
   coverageScore += Math.min(2, stackWith * 0.5);
-  // Is a purpose-built stack compound — bonus 1
+  // Is a purpose-built stack compound - bonus 1
   if (c.is_stack && (c.stack_components ?? []).length >= 2) coverageScore += 1;
 
   coverageScore = Math.min(16, Math.round(coverageScore));
 
   // ── 4. SCIENTIFIC BACKING (max 14) ──────────────────────────────────────────
-  // Citations — log-scaled, very accessible thresholds
+  // Citations - log-scaled, very accessible thresholds
   const cites = c.pubmed_citation_count ?? 0;
   let citeScore =
     cites >= 5000 ? 8 :
@@ -302,7 +302,7 @@ export function scoreCompound(c: Compound, allSelected: Compound[] = []): Compou
     cites >= 20   ? 4 :
     cites >= 5    ? 3.5 : 3;  // even 1-4 citations = 3 pts (compounds are in journals)
 
-  // Trial score — accessible thresholds
+  // Trial score - accessible thresholds
   const totalTrials = (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0);
   let trialScore =
     totalTrials >= 100 ? 6 :
@@ -347,7 +347,7 @@ export function scoreCompound(c: Compound, allSelected: Compound[] = []): Compou
   const handlingScore = Math.min(10, Math.round(hlScore + shelfScore));
 
   // ── 6. DATA COMPLETENESS BONUS (max 8) ─────────────────────────────────────
-  // Rewards richly documented compounds — incentivizes good catalog quality
+  // Rewards richly documented compounds - incentivizes good catalog quality
   let completeness = 0;
   if (c.plain_summary || c.eli5_summary)  completeness += 1;
   if (c.eli5_summary && c.plain_summary)  completeness += 0.5; // both = richer
@@ -1067,7 +1067,7 @@ const ROWS: Row[] = [
   },
 ];
 
-// ─── ROW EXPLANATIONS (Feature 9 — Explain This) ────────────────────────────
+// ─── ROW EXPLANATIONS (Feature 9 - Explain This) ────────────────────────────
 const ROW_EXPLANATIONS: Record<string, string> = {
   'Research Summary': 'A plain-language overview of what this compound is primarily studied for in scientific research.',
   'Studied For': 'The specific research applications or goals this compound has been actively investigated for in scientific literature.',
@@ -1884,7 +1884,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
     rec.start();
   }
 
-  // Feature 8: Share card — canvas-drawn PNG download / Web Share
+  // Feature 8: Share card - canvas-drawn PNG download / Web Share
   async function handleShareCard() {
     if (!selected.length) return;
     haptic(60);
@@ -2186,7 +2186,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 28, paddingBottom: isMobile ? 70 : 0 }}>
 
-          {/* Feature 5: Quick Compare Bar — sticky strip with compact scores */}
+          {/* Feature 5: Quick Compare Bar - sticky strip with compact scores */}
           {selected.length >= 2 && (
             <div className="no-print hide-scroll" style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(9,18,28,0.96)', borderBottom: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(14px)', display: 'flex', gap: 8, padding: '8px 12px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', borderRadius: isMobile ? 0 : 10, scrollbarWidth: 'none' }}>
               {selected.map((c, i) => {
@@ -2258,7 +2258,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
             </div>
           )}
 
-          {/* Score Summary Panel — always visible */}
+          {/* Score Summary Panel - always visible */}
           {selected.length >= 2 && (
             <div className="glass-panel" style={{ borderRadius: 14, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* Top Pick Banner */}
@@ -2335,7 +2335,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                   </div>
                 ) : (
                   <div style={{ marginTop: 4 }}>
-                    <div style={{ textAlign: 'center', fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Research Profile Radar — hover axes for details</div>
+                    <div style={{ textAlign: 'center', fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Research Profile Radar - hover axes for details</div>
                     <AttributeRadarChart data={radarData} colors={colors} compoundNames={selected.map(c => c.display_name)} size={320} animated />
                     <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginTop: 6 }}>
                       {selected.map((c, i) => (
@@ -2572,7 +2572,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                   )}
 
                   {swipeMode && selected.length >= 2 ? (
-                    /* SWIPE MODE — one compound's full profile, swipe left/right */
+                    /* SWIPE MODE - one compound's full profile, swipe left/right */
                     <div
                       onTouchStart={e => { touchStartX.current = e.touches[0].clientX; }}
                       onTouchEnd={e => {
@@ -2601,7 +2601,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                               {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: 22, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />}
                               <div style={{ background: `${color}22`, color, fontSize: '0.8rem', fontWeight: 900, padding: '4px 10px', borderRadius: 8 }}>{sc.letter} · {sc.total}</div>
                             </div>
-                            {/* Attribute list — all rows for this single compound */}
+                            {/* Attribute list - all rows for this single compound */}
                             {(() => {
                               let lastGroup = '';
                               return ROWS.map(row => {
@@ -2664,7 +2664,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                       </div>
                     </div>
                   ) : (
-                    /* STACK MODE — existing all-compounds accordion */
+                    /* STACK MODE - existing all-compounds accordion */
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       {(() => {
                         const controlCompound = displayedSelected.find(x => x.slug === controlSlug);

@@ -27,7 +27,7 @@ async function getDefaultTierMultiplier(supabase: ServiceClient, tier: AgentTier
   const { data } = await supabase.from('pricing_tiers').select('multiplier').eq('tier_name', tier).maybeSingle();
   // Safety fallback: 1.7 = tier_3 (highest standard multiplier).
   // 7.0 was a placeholder left from initial development and would charge
-  // agents 7× wholesale cost if the DB row is missing — catastrophic.
+  // agents 7× wholesale cost if the DB row is missing - catastrophic.
   const multiplier = data?.multiplier != null ? Number(data.multiplier) : 1.7;
   return setCache(key, multiplier);
 }
@@ -80,7 +80,7 @@ export async function computeSubAgentBaselineCost(supabase: ServiceClient, produ
   return computeAgentCostForAgent(supabase, productId, superAgentId, superTier);
 }
 
-/* ── 5-Tier Gamification Ladder (v2) — flag-gated ──────────────────────────
+/* ── 5-Tier Gamification Ladder (v2) - flag-gated ──────────────────────────
    Active only when NEXT_PUBLIC_TIER_LADDER_V2 === '1'. Until the flag is set,
    computeAgentCostForAgent() falls through to the legacy per-tier multiplier
    path below, so production pricing is byte-for-byte unchanged. */
@@ -88,7 +88,7 @@ export async function computeSubAgentBaselineCost(supabase: ServiceClient, produ
 export function isTierLadderV2(): boolean {
   // Engine ACTIVATED. The 5-tier ladder is live by default. Pre-existing accounts
   // were grandfathered onto a Fixed-Scale-Override at their prior pricing, so the
-  // volume ladder is never auto-applied to them — being volume-driven vs a fixed
+  // volume ladder is never auto-applied to them - being volume-driven vs a fixed
   // "hard percentage" is a per-account choice (admin House Tier Lock / super-agent
   // plan). Hard kill-switch: set NEXT_PUBLIC_TIER_LADDER_V2='0' to revert to legacy.
   return process.env.NEXT_PUBLIC_TIER_LADDER_V2 !== '0';

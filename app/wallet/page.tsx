@@ -1,4 +1,4 @@
-// Round 24 Wallet — /wallet shell
+// Round 24 Wallet - /wallet shell
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import WalletPage from '@/components/wallet/WalletPage';

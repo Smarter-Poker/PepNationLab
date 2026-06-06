@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * R28 — HelpHint
+ * R28 - HelpHint
  *
  * Small inline "Learn more" pill that deep-links to a specific FAQ answer
  * via the `#faq-<id>` hash. Mount next to any UI element where buyers

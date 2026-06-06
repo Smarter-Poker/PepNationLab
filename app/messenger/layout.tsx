@@ -1,5 +1,5 @@
 /**
- * Messenger layout — Facebook-style mobile-first.
+ * Messenger layout - Facebook-style mobile-first.
  *
  * Architecture:
  *  - Navbar is position:fixed (floats above everything at z-index:200).
@@ -46,7 +46,7 @@ export default function MessengerLayout({ children }: { children: React.ReactNod
       <div style={{ height: 'var(--nav-offset, 60px)', flexShrink: 0 }} />
 
       {/* Shell: fills ALL remaining space below the Navbar.
-          flex:1 1 0 + minHeight:0 is the Facebook pattern — allows
+          flex:1 1 0 + minHeight:0 is the Facebook pattern - allows
           the child to shrink below its natural height so it never
           overflows the 100dvh boundary. */}
       <div

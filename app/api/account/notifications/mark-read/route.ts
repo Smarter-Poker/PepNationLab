@@ -5,8 +5,8 @@ import { assertSameOrigin } from '@/lib/csrf';
 export const dynamic = 'force-dynamic';
 
 /** POST /api/account/notifications/mark-read
- *  Body: { ids: number[] }  — mark specific notification IDs as read
- *  Body: { all: true }      — mark ALL notifications as read
+ *  Body: { ids: number[] }  - mark specific notification IDs as read
+ *  Body: { all: true }      - mark ALL notifications as read
  */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);

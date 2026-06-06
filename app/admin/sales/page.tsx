@@ -247,14 +247,14 @@ export default function AdminSalesPage() {
                       </td>
                       <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                         <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--teal)', background: 'rgba(192,184,168,0.1)', padding: '2px 8px', borderRadius: 4, border: '1px solid rgba(192,184,168,0.3)' }}>
-                          {agent.tier ? (TIER_LABELS[agent.tier] ?? agent.tier) : '—'}
+                          {agent.tier ? (TIER_LABELS[agent.tier] ?? agent.tier) : '-'}
                         </span>
                       </td>
                       <td style={{ padding: 'var(--space-3) var(--space-4)', fontSize: '0.88rem', color: 'var(--silver)', fontWeight: 600 }}>{agent.order_count}</td>
                       <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                         {agent.pending_count > 0 ? (
                           <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--red)', background: 'rgba(229,62,62,0.1)', padding: '2px 8px', borderRadius: 4 }}>{agent.pending_count}</span>
-                        ) : <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)' }}>—</span>}
+                        ) : <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)' }}>-</span>}
                       </td>
                       <td style={{ padding: 'var(--space-3) var(--space-4)', fontSize: '0.9rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
                         ${agent.total_revenue.toFixed(2)}

@@ -328,7 +328,7 @@ export default function NotificationCenterClient({
               )}
             </section>
 
-            {/* Per-type push controls — every notification, by category */}
+            {/* Per-type push controls - every notification, by category */}
             <section style={{ background: SURFACE, border: BORDER, borderRadius: 14, padding: '20px 22px' }}>
               <h2 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700, margin: '0 0 4px' }}>
                 Choose Which Alerts You Receive

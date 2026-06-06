@@ -1,5 +1,5 @@
 /**
- * GET /research/search-index — public, read-only universal search index for the
+ * GET /research/search-index - public, read-only universal search index for the
  * Research Library (compounds, stacks, areas, guides, glossary, FAQ). Served
  * under the already-public /research prefix so it needs no middleware change.
  * Lets the client landing page run instant in-place search without a per-

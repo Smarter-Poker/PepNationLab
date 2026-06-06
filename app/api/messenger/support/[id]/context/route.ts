@@ -73,7 +73,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   }
   lifetimeSpend = Math.round(lifetimeSpend * 100) / 100;
 
-  // Cart snapshot — derive item_count + subtotal from the JSONB cart_state.
+  // Cart snapshot - derive item_count + subtotal from the JSONB cart_state.
   const { data: cartRow } = await svc
     .from('profiles')
     .select('cart_state, cart_updated_at')
@@ -96,7 +96,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   }
   cartSubtotal = Math.round(cartSubtotal * 100) / 100;
 
-  // Referring agent — include storefront slug from agent_profiles.
+  // Referring agent - include storefront slug from agent_profiles.
   let referringAgent: { id: string; full_name: string | null; username: string | null; slug: string | null } | null = null;
   if (prof?.referring_agent_id) {
     const { data: ag } = await svc

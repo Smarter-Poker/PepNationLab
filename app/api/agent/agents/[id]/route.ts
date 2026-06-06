@@ -96,7 +96,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .order('created_at', { ascending: false })
       .limit(30);
 
-    // Sales summary via aggregate RPC — accurate across the agent's full order
+    // Sales summary via aggregate RPC - accurate across the agent's full order
     // history (the previous 500-row page-sum under-counted high-volume agents).
     const { data: summaryRows } = await supabase.rpc('agent_sales_summary', { p_agent_id: id });
     const summary = Array.isArray(summaryRows) ? summaryRows[0] : summaryRows;

@@ -43,7 +43,7 @@ function fmtMoney(v: number | null | undefined): string {
 }
 
 function fmtDate(s: string | null | undefined): string {
-  if (!s) return '—';
+  if (!s) return '-';
   try {
     return new Date(s).toLocaleDateString();
   } catch {

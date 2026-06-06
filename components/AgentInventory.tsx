@@ -409,7 +409,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
               {alerts.map(alert => (
                 <div key={alert.product_id} className="glass-panel" style={{ padding: '12px 16px', fontSize: '0.85rem' }}>
-                  <strong style={{ color: 'var(--white)' }}>{alert.name}</strong> — {alert.message} 
+                  <strong style={{ color: 'var(--white)' }}>{alert.name}</strong> - {alert.message} 
                   <span style={{ marginLeft: 12, color: '#00E5FF' }}>(Stock: {alert.current_stock} / Reorder Point: {alert.reorder_point})</span>
                 </div>
               ))}

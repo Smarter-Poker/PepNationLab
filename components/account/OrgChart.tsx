@@ -32,7 +32,7 @@ export default function OrgChart() {
           color: depth === 0 ? 'var(--black)' : 'var(--white)',
           fontWeight: 700, fontSize: '0.85rem',
         }}>
-          {node.full_name ?? node.username ?? '—'}
+          {node.full_name ?? node.username ?? '-'}
           <span style={{ color: depth === 0 ? '#000a' : 'var(--grey-500)', fontWeight: 500, marginLeft: 8, fontSize: '0.72rem' }}>
             {node.role}
           </span>

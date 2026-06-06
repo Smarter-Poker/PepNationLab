@@ -1,4 +1,4 @@
-// Wallet Receipt Vault — short-lived signed URL for one payment proof.
+// Wallet Receipt Vault - short-lived signed URL for one payment proof.
 // Authorizes the caller: the proof's order must belong to this agent (orders.agent_id)
 // or the caller uploaded it (payment_proofs.uploader_id). Bucket: payment-proofs (private).
 import { NextResponse } from 'next/server';

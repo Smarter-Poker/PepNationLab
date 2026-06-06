@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 
 // round-19: expanded emoji set spanning faces, gestures, hearts, animals,
 // food, activities, travel, objects, symbols, and party. Was a tiny 30-
-// emoji quick list — now ~400+ across categories.
+// emoji quick list - now ~400+ across categories.
 const EMOJI_QUICK = [
   // Faces & expressions
   '\u{1F600}', '\u{1F603}', '\u{1F604}', '\u{1F601}', '\u{1F606}', '\u{1F605}',
@@ -86,7 +86,7 @@ interface Props {
 
 export default function EmojiPicker({ onPick, onClose }: Props) {
   // round-19: portal-render the picker into document.body with
-  // position:fixed so it's visible above EVERY ancestor — no overflow,
+  // position:fixed so it's visible above EVERY ancestor - no overflow,
   // transform, or word-break rule from globals-round2.css can clip it.
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);

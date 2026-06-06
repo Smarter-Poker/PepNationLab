@@ -29,7 +29,7 @@ function fmtRemaining(ms: number): string {
  * flash sale exists. Hides itself on admin / api paths so it doesn't
  * intrude on the admin dashboard.
  *
- * Mount once in app/layout.tsx — pathname check keeps it scoped.
+ * Mount once in app/layout.tsx - pathname check keeps it scoped.
  */
 export default function FlashSaleBanner() {
   const [sale, setSale] = useState<ActiveSale | null>(null);
@@ -80,7 +80,7 @@ export default function FlashSaleBanner() {
   const remaining = endsAtMs - now;
   if (remaining <= 0) return null;
 
-  const message = sale.banner_text || `Flash Sale: ${sale.discount_pct}% Off — Ends Soon`;
+  const message = sale.banner_text || `Flash Sale: ${sale.discount_pct}% Off - Ends Soon`;
 
   return (
     <div

@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ unreadCount: count ?? 0 });
   }
 
-  // Full inbox — received messages
+  // Full inbox - received messages
   const { data, error } = await service
     .from('internal_messages')
     .select('*, sender_profile:profiles!internal_messages_sender_id_fkey(full_name, email, username)')
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
 
   const senderRole = senderProfile.role;
 
-  // Admin can message anyone — skip auth checks
+  // Admin can message anyone - skip auth checks
   if (senderRole !== 'admin') {
     // Get receiver details
     const { data: receiverProfile } = await service

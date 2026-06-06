@@ -1,4 +1,4 @@
-// R24 phase 6 — Storefront theme builder API.
+// R24 phase 6 - Storefront theme builder API.
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, createServiceClient } from '@/lib/supabase/server';

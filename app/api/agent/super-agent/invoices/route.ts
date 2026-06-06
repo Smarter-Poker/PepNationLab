@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'sub_agent_id and week_start are required' }, { status: 400 });
     }
 
-    // Verify caller is a Super Agent (or admin) — required to bypass paid invoices.
+    // Verify caller is a Super Agent (or admin) - required to bypass paid invoices.
     const { data: callerProfile } = await supabase
       .from('profiles')
       .select('is_super_agent, role')
@@ -205,7 +205,7 @@ export async function POST(req: NextRequest) {
       type: 'invoice'
     });
 
-    // In-app notification — shows in bell immediately via Realtime
+    // In-app notification - shows in bell immediately via Realtime
     await notifyInvoiceGenerated(supabase, sub_agent_id, week_start, totalOwed).catch(() => { /* best-effort */ });
 
     return NextResponse.json({ success: true, invoiceId: invoice.id });

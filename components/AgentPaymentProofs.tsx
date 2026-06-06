@@ -5,7 +5,7 @@ import IframeLink from '@/components/ui/IframeLink';
 
 /**
  * Read-only payment-proof viewer for non-buyer surfaces (agent dashboard,
- * admin detail panel). Fetches via the same GET endpoint the buyer uses —
+ * admin detail panel). Fetches via the same GET endpoint the buyer uses -
  * RLS on `payment_proofs` lets the order's agent (or admin) read.
  */
 interface Proof {

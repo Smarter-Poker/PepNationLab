@@ -88,8 +88,8 @@ export default async function StatusPage() {
             ok={report?.checks?.db?.ok ?? false}
             detail={
               report?.checks?.db?.ok
-                ? `Healthy — ${report?.checks?.db?.latency_ms ?? '?'} ms`
-                : `Error — ${report?.checks?.db?.error ?? 'unreachable'}`
+                ? `Healthy - ${report?.checks?.db?.latency_ms ?? '?'} ms`
+                : `Error - ${report?.checks?.db?.error ?? 'unreachable'}`
             }
           />
           <ComponentRow
@@ -98,7 +98,7 @@ export default async function StatusPage() {
             detail={
               report?.checks?.cron?.ok
                 ? `Last Run ${report?.checks?.cron?.lag_minutes ?? '?'} Minutes Ago`
-                : `Lag — ${report?.checks?.cron?.error ?? 'no runs recorded'}`
+                : `Lag - ${report?.checks?.cron?.error ?? 'no runs recorded'}`
             }
           />
         </div>

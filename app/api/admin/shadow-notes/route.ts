@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * fix-55 #3: admin-only Shadow CRM notes attached to any profile.
- * Subjects can never see notes about themselves — admin_shadow_notes
+ * Subjects can never see notes about themselves - admin_shadow_notes
  * RLS enforces is_admin() for every operation.
  */
 

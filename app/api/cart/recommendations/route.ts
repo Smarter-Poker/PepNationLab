@@ -9,24 +9,24 @@ import { assertSameOrigin } from '@/lib/csrf';
  * Smart cart recommendation engine. Accepts all product IDs currently in cart
  * and returns the best complementary products using a multi-signal approach:
  *
- *   Signal 1 — Compound Stack Compatibility (compounds.best_stacked_with + stack_components)
+ *   Signal 1 - Compound Stack Compatibility (compounds.best_stacked_with + stack_components)
  *              The compound science library explicitly tags which compounds
  *              stack well together. This is the highest-quality signal.
  *
- *   Signal 2 — Real Co-Purchase Order History (get_copurchase_recommendations RPC)
+ *   Signal 2 - Real Co-Purchase Order History (get_copurchase_recommendations RPC)
  *              Products that real researchers actually bought together.
  *              Scores higher the more co-purchase pairs we observe.
  *
- *   Signal 3 — Same Category Companions
+ *   Signal 3 - Same Category Companions
  *              Products in the same research area (tissue repair, cognition, etc.)
  *
- *   Signal 4 — BAC Water (always guaranteed to surface if not already in cart)
+ *   Signal 4 - BAC Water (always guaranteed to surface if not already in cart)
  *              Every peptide order needs bacteriostatic water for reconstitution.
  *
  * Returns recommendations sorted by score, with a human-readable `reason` field
  * so the UI can explain WHY each item is recommended.
  *
- * Public route — no auth required. Rate limited 60/min/IP.
+ * Public route - no auth required. Rate limited 60/min/IP.
  */
 
 export const dynamic = 'force-dynamic';
@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
     } catch { /* ignore RPC failures */ }
   }
 
-  // ── 4. BAC Water — always surface if not in cart ──────────────────────────────
+  // ── 4. BAC Water - always surface if not in cart ──────────────────────────────
   let bacWaterId: string | null = null;
   try {
     const { data: bacRow } = await supabase

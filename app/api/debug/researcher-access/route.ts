@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 /**
  * GET /api/debug/researcher-access
  * Returns the current user's role, referring_agent_id, and the matching agent slug.
- * TEMPORARY DEBUG ENDPOINT — remove after diagnosing the storefront routing bug.
+ * TEMPORARY DEBUG ENDPOINT - remove after diagnosing the storefront routing bug.
  */
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
@@ -50,9 +50,9 @@ export async function GET(req: NextRequest) {
       : profile?.role !== 'researcher'
       ? `WRONG_ROLE: ${profile?.role}`
       : !profile?.referring_agent_id
-      ? 'NO_REFERRING_AGENT_ID — researcher was not created through an agent'
+      ? 'NO_REFERRING_AGENT_ID - researcher was not created through an agent'
       : !agentProfile
-      ? 'AGENT_PROFILE_NOT_FOUND — referring_agent_id does not match any agent_profiles.id'
+      ? 'AGENT_PROFILE_NOT_FOUND - referring_agent_id does not match any agent_profiles.id'
       : !agentProfile.is_active
       ? 'AGENT_INACTIVE'
       : 'ACCESS_SHOULD_WORK',

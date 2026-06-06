@@ -64,7 +64,7 @@ export async function GET() {
       warehouse_origin: origin,
       // Flags the UI that this agent still relies on the old JSONB field.
       uses_legacy_warehouse: hasLegacyWarehouse && !a.warehouse_origin_id,
-      // No warehouse at all — will fall through to platform default.
+      // No warehouse at all - will fall through to platform default.
       uses_platform_default: !a.warehouse_origin_id && !hasLegacyWarehouse,
     };
   });

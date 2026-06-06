@@ -34,7 +34,7 @@ export interface EnqueuePushArgs {
  * Look up the recipient's notification_preferences, honour push opt-outs,
  * and insert a pending row into push_outbox. Returns the new row id, or
  * null when suppressed (push disabled, globally muted, per-type opt-out,
- * no prefs row). NEVER throws — notification side-effects must not break
+ * no prefs row). NEVER throws - notification side-effects must not break
  * the caller.
  */
 export async function enqueuePush(

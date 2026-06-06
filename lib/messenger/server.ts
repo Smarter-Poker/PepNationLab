@@ -167,7 +167,7 @@ export async function isBlockedEither(a: string, b: string): Promise<boolean> {
   const svc = await createServiceClient();
   const { data, error } = await svc.rpc('fn_is_blocked_either', { p_a: a, p_b: b });
   if (error) {
-    console.error('[messenger] isBlockedEither rpc failed — failing closed', {
+    console.error('[messenger] isBlockedEither rpc failed - failing closed', {
       a, b,
       code: (error as { code?: string }).code,
       message: error.message,

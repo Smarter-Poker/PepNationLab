@@ -1,4 +1,4 @@
-// Admin Dispute Queue — list disputed weekly statements and resolve them.
+// Admin Dispute Queue - list disputed weekly statements and resolve them.
 // Resolving records dispute_resolved_at/resolution + an admin note (atomic RPC
 // resolve_statement_dispute). Unresolved disputes are surfaced first.
 import { NextResponse } from 'next/server';

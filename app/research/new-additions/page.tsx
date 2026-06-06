@@ -1,5 +1,5 @@
 /**
- * New additions — the 40 most recently added compounds.
+ * New additions - the 40 most recently added compounds.
  * Progressive disclosure: category filter tabs + chronological "All" view.
  */
 

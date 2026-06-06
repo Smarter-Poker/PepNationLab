@@ -1,5 +1,5 @@
 /**
- * References Library — aggregates every source cited across all compounds into a
+ * References Library - aggregates every source cited across all compounds into a
  * single deduped, searchable bibliography. Each source opens in the in-app
  * overlay (never redirects away). Server component; client browser handles search.
  *
@@ -65,7 +65,7 @@ export default async function ReferencesPage() {
           References Library
         </h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1.05rem', marginTop: 'var(--space-2, 8px)', maxWidth: '660px' }}>
-          Every Source Behind The Catalog, In One Place — Regulatory Labels, Peer-Reviewed Literature, And Reference
+          Every Source Behind The Catalog, In One Place - Regulatory Labels, Peer-Reviewed Literature, And Reference
           Databases. Each Link Opens In-App. For Laboratory Research Only.
         </p>
       </header>

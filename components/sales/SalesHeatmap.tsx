@@ -51,7 +51,7 @@ export default function SalesHeatmap({ preset }: { preset: string }) {
                     const cell = cells.find(c => c.dow === dow && c.hour === h);
                     const orders = cell?.orders ?? 0;
                     return (
-                      <td key={h} title={`${DOW[dow]} ${h}:00 — ${orders} orders`}
+                      <td key={h} title={`${DOW[dow]} ${h}:00 - ${orders} orders`}
                         style={{
                           width: 16, height: 16, background: color(orders), borderRadius: 2,
                           padding: 0, margin: 0, border: '1px solid rgba(0,0,0,0.2)',

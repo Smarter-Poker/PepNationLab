@@ -4,8 +4,8 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 /**
  * GET /api/storefront/recommendations
- *   ?product_id=<uuid>   required — the "seed" product the researcher is viewing
- *   ?agent_slug=<slug>   optional — when present, only recommend products the
+ *   ?product_id=<uuid>   required - the "seed" product the researcher is viewing
+ *   ?agent_slug=<slug>   optional - when present, only recommend products the
  *                        agent actually sells; pull retail_price from agent_products
  *   ?limit=<int>         optional, default 6, capped at 24
  *
@@ -15,7 +15,7 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
  *   3. Always filter out: seed product, inactive products, banned products.
  *   4. When agent_slug resolves, intersect with that agent's visible catalog.
  *
- * Public route (no auth required) — recommendations are shown on public
+ * Public route (no auth required) - recommendations are shown on public
  * agent storefronts and to anonymous researchers. Rate limited 60 req / IP / min.
  */
 
@@ -45,7 +45,7 @@ interface AgentProductRow {
 }
 
 export async function GET(req: NextRequest) {
-  // Rate limit by IP — public endpoint, 60/min.
+  // Rate limit by IP - public endpoint, 60/min.
   const ip = getClientIp(req);
   const rl = await rateLimit({
     key: 'storefront_recommendations',

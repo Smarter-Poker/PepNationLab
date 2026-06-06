@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
   if (!purchase.shippo_transaction_id) {
     return NextResponse.json(
-      { error: 'Label Purchase Has No Shippo Transaction ID — Cannot Refund.' },
+      { error: 'Label Purchase Has No Shippo Transaction ID - Cannot Refund.' },
       { status: 422 },
     );
   }
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
     if (ageMs > ninetyDaysMs) {
       return NextResponse.json(
-        { error: 'Refund Window Expired — Label Is More Than 90 Days Old.' },
+        { error: 'Refund Window Expired - Label Is More Than 90 Days Old.' },
         { status: 422 },
       );
     }
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
   // Request refund from Shippo.
   const refundResult = await refundLabel(purchase.shippo_transaction_id);
 
-  // Shippo rejected the refund (4xx) — do NOT flip our ledger to refunded.
+  // Shippo rejected the refund (4xx) - do NOT flip our ledger to refunded.
   if (!refundResult.ok) {
     return NextResponse.json(
       { error: 'Shippo Refund Request Was Rejected.' },
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (rpcErr) {
-    // Generic body — do not echo PG internals to the caller.
+    // Generic body - do not echo PG internals to the caller.
     console.error('[shippo-refund] RPC failed', rpcErr.message);
     return NextResponse.json(
       { error: 'Refund Ledger Write Failed.' },

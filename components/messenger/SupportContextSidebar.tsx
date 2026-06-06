@@ -17,12 +17,12 @@ import {
 } from 'lucide-react';
 
 /**
- * Customer Support v2 — Researcher Context Sidebar.
+ * Customer Support v2 - Researcher Context Sidebar.
  *
  * Admin-only right-rail panel that surfaces the researcher's profile,
  * lifetime spend, recent orders, the linked order (if support_order_id
  * is set on the conversation), the cart snapshot, the referring agent,
- * and the topic line — plus the internal-notes panel for the active
+ * and the topic line - plus the internal-notes panel for the active
  * support thread. Self-gates on:
  *   - admin role
  *   - conversation.is_support === true
@@ -33,7 +33,7 @@ import {
  *
  * Layout modes:
  *   - default (inline=false / unset): legacy fixed-position right rail.
- *   - inline=true: renders as a plain block — used when mounted inside
+ *   - inline=true: renders as a plain block - used when mounted inside
  *     the Customer Support widget's left column.
  */
 
@@ -91,9 +91,9 @@ function dollars(n: number | null | undefined): string {
 }
 
 function shortDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return '—';
+  if (!Number.isFinite(d.getTime())) return '-';
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
@@ -141,7 +141,7 @@ function resolveRoleLabel(researcher: ContextPayload['researcher']): string | nu
 function StatusPill({ status }: { status: string }) {
   const lower = (status || '').toLowerCase();
   // Neutral grey-on-white chrome for "in-progress / awaiting" status
-  // (previously the bright yellow palette — removed per user request).
+  // (previously the bright yellow palette - removed per user request).
   const NEUTRAL = { bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.18)', fg: 'var(--white, #fff)' };
   const palette: Record<string, { bg: string; border: string; fg: string }> = {
     delivered: { bg: 'rgba(80,200,120,0.12)', border: 'rgba(80,200,120,0.55)', fg: '#9BE3B4' },
@@ -176,7 +176,7 @@ function StatusPill({ status }: { status: string }) {
 
 interface SupportContextSidebarProps {
   conversationId: string;
-  /** When true, renders as a plain in-flow block — no fixed positioning,
+  /** When true, renders as a plain in-flow block - no fixed positioning,
    *  no z-index, no maxHeight. Used by the Customer Support widget which
    *  mounts this inside its left column. */
   inline?: boolean;
@@ -223,7 +223,7 @@ export default function SupportContextSidebar({
         setData(json);
         setShow(true);
       } catch {
-        /* silent — sidebar just stays hidden */
+        /* silent - sidebar just stays hidden */
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -627,7 +627,7 @@ export default function SupportContextSidebar({
               </div>
             )}
 
-            {/* Internal notes panel — admin-only, scoped to this thread */}
+            {/* Internal notes panel - admin-only, scoped to this thread */}
             <SupportInternalNotes conversationId={conversationId} />
           </div>
         )}

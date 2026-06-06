@@ -143,7 +143,7 @@ export default function ConversationList({ selfId }: Props) {
           }}
         >
           <ChevronLeft size={16} aria-hidden="true" />
-          <span style={{ color: 'var(--grey-400, #A8B4C0)', fontWeight: 500 }}>Back —</span>
+          <span style={{ color: 'var(--grey-400, #A8B4C0)', fontWeight: 500 }}>Back -</span>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {currentParent.parentLabel}
           </span>

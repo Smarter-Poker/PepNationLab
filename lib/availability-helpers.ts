@@ -25,11 +25,11 @@ export function normalizeNfkc(raw: string): string {
 /**
  * Block scripts mixed into a Latin-base slug. We use a small confusable map
  * (Cyrillic + Greek lookalikes) because the long tail produces false positives
- * on legitimate non-Latin names — but mixed-script slugs are always suspicious.
+ * on legitimate non-Latin names - but mixed-script slugs are always suspicious.
  *
  * Detection: if the string contains ANY codepoint above the Basic Latin range
  * AND the field is 'slug' or 'username', reject. Display_name is more
- * permissive — we still flag mixed-script + Latin-base, but allow purely
+ * permissive - we still flag mixed-script + Latin-base, but allow purely
  * non-Latin display names through.
  */
 export function isMixedScriptLatinSuspect(s: string): boolean {
@@ -46,7 +46,7 @@ export function isMixedScriptLatinSuspect(s: string): boolean {
 }
 
 /**
- * Cheap confusable check — does the string contain a Cyrillic / Greek code
+ * Cheap confusable check - does the string contain a Cyrillic / Greek code
  * point that visually resembles a Latin letter? Useful for usernames where
  * we allow some Unicode but want to reject homoglyph attacks.
  */
@@ -67,7 +67,7 @@ export function containsConfusableCodepoint(s: string): boolean {
 /* ── Edit distance + similar-name detection ─────────────────────────────── */
 
 /**
- * Levenshtein with early termination at maxDist + 1 — O(m*n) worst case but
+ * Levenshtein with early termination at maxDist + 1 - O(m*n) worst case but
  * we bail as soon as we know the answer is > maxDist.
  */
 export function levenshtein(a: string, b: string, maxDist = 3): number {
@@ -97,7 +97,7 @@ export function levenshtein(a: string, b: string, maxDist = 3): number {
 /**
  * Returns true when the candidate is visually close enough to the existing
  * name that we should surface a soft "similar to existing" warning. Tuned
- * conservatively — false positives here are annoying.
+ * conservatively - false positives here are annoying.
  *
  * Rule:
  *   - exact match: not similar (it's already a collision, caller handles)

@@ -27,7 +27,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem('pnl-theme') as Theme | null;
       if (saved === 'light' || saved === 'dark') initial = saved;
     } catch {
-      // localStorage unavailable (private browsing, quota full) — stay dark
+      // localStorage unavailable (private browsing, quota full) - stay dark
     }
     setThemeState(initial);
     document.documentElement.setAttribute('data-theme', initial);
@@ -39,7 +39,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem('pnl-theme', t);
     } catch {
-      // localStorage unavailable — theme works for session but won't persist
+      // localStorage unavailable - theme works for session but won't persist
     }
   };
 

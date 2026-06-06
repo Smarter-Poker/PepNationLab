@@ -1,9 +1,9 @@
 /**
- * research-search — a pure, dependency-free universal search ranker for the
+ * research-search - a pure, dependency-free universal search ranker for the
  * Research Library. It scores a flat list of SearchDoc records (compounds,
  * guides, FAQ, glossary terms, research areas, stacks) against a free-text
  * query with token, prefix, substring, keyword, and light fuzzy (edit-distance)
- * matching. Runs instantly client-side over a few hundred docs — no network.
+ * matching. Runs instantly client-side over a few hundred docs - no network.
  *
  * Research-use-only platform: this is a search index over factual reference
  * content; it produces no dosing or medical advice.

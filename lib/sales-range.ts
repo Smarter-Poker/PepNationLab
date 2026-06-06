@@ -1,4 +1,4 @@
-// Round 24 Sales — shared date-range parser.
+// Round 24 Sales - shared date-range parser.
 // All Sales APIs accept ?range=preset|custom&start=ISO&end=ISO.
 
 export type RangePreset = 'today' | '7d' | '30d' | 'mtd' | 'qtd' | 'ytd' | 'custom';

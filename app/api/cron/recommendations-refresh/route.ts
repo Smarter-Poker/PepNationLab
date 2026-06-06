@@ -10,7 +10,7 @@ import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
  *   - product_popular_60d
  *
  * Auth: CRON_SECRET bearer (assertCronAuth, constant-time compare).
- * Idempotency: cron_runs partition keyed to the UTC date — replays inside
+ * Idempotency: cron_runs partition keyed to the UTC date - replays inside
  * the same day short-circuit instead of refreshing again.
  *
  * Strategy: try the CONCURRENTLY refresh wrapper first; if it fails (which
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   const partition = new Date().toISOString().slice(0, 10);
   const claim = await claimCronRun('recommendations_refresh', partition);
   if (!claim) {
-    // Already ran today — short-circuit cleanly.
+    // Already ran today - short-circuit cleanly.
     return NextResponse.json({ ok: true, skipped: true, reason: 'already_ran_today' });
   }
 
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     }
   } catch (err) {
     // An unhandled JS exception (env var missing, network error, etc.) must
-    // still settle the cron_run row — otherwise it stays 'running' forever
+    // still settle the cron_run row - otherwise it stays 'running' forever
     // and blocks all future daily runs until manually deleted from the DB.
     const msg = err instanceof Error ? err.message : 'unexpected exception';
     await finishCronRun(claim.id, 'failed', msg);

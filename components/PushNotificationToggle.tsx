@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * PushNotificationToggle — the single, real device-push enrollment control
+ * PushNotificationToggle - the single, real device-push enrollment control
  * PLUS the full per-category notification preferences.
  *
  * Device side: wraps the full enablePush() flow from lib/push-client (request

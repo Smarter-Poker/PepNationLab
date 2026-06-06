@@ -67,7 +67,7 @@ export interface PushSendResult {
 }
 
 /**
- * Send a single encrypted web-push notification. Never throws — all failures
+ * Send a single encrypted web-push notification. Never throws - all failures
  * are returned as `{ ok: false, error }`. `expired` is true when the push
  * service indicates the subscription is permanently dead (HTTP 404 / 410)
  * so the caller can deactivate the subscription row.

@@ -14,7 +14,7 @@ import IframeLink from '@/components/ui/IframeLink';
 const money = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(n) || 0);
 
-// Title Case status labels — the API returns raw enum text (e.g. pending_payment)
+// Title Case status labels - the API returns raw enum text (e.g. pending_payment)
 // which must never reach the UI per the platform Title Case rule.
 const STATUS_LABEL: Record<string, string> = {
   paid: 'Paid',
@@ -25,7 +25,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 const statusLabel = (s: string | null | undefined): string => {
   const k = (s || '').toLowerCase();
-  return STATUS_LABEL[k] || k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || '—';
+  return STATUS_LABEL[k] || k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || '-';
 };
 
 // Color-code statuses so the agent can scan history at a glance.
@@ -44,7 +44,7 @@ const statusColors = (s: string | null | undefined): { fg: string; bg: string } 
 // Consistent, human-readable dates. Date-only strings (YYYY-MM-DD) are pinned to
 // local midnight so they don't slip a day in negative-offset timezones.
 const fmtDate = (s: string | null | undefined): string => {
-  if (!s) return '—';
+  if (!s) return '-';
   const iso = /^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s}T00:00:00` : s;
   const d = new Date(iso);
   return isNaN(d.getTime())
@@ -228,7 +228,7 @@ export default function WalletPage({
                 <div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Next Statement</div>
                   <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>
-                    {summary.nextStatementDate ? fmtDate(summary.nextStatementDate) : '—'}
+                    {summary.nextStatementDate ? fmtDate(summary.nextStatementDate) : '-'}
                   </div>
                 </div>
               </div>
@@ -319,7 +319,7 @@ export default function WalletPage({
                             color: 'var(--white)', cursor: 'pointer', minHeight: 44,
                           }}>
                             <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-                              <span>Week Of {fmtDate(s.week_start)} — {billsFromLabel}</span>
+                              <span>Week Of {fmtDate(s.week_start)} - {billsFromLabel}</span>
                               <span style={{ fontSize: '0.72rem', color: isOverdue ? '#ff6b6b' : 'var(--grey-500)' }}>
                                 {s.due_date ? `${isOverdue ? 'Was Due' : 'Due'} ${fmtDate(s.due_date)}` : 'Awaiting Payment'}
                               </span>

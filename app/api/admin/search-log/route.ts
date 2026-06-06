@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
  * The /admin/search client posts here when a query returns nothing across
  * every entity. The admin_search_no_results_log table backs an internal
  * "what are admins looking for that we don't have" report. Strictly
- * fire-and-forget — every error path returns 204 so the client UI never
+ * fire-and-forget - every error path returns 204 so the client UI never
  * has to handle a failure.
  */
 export async function POST(req: NextRequest) {
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       user_agent: ua,
     });
   } catch {
-    // logger — never fail loud
+    // logger - never fail loud
   }
 
   return new NextResponse(null, { status: 204 });

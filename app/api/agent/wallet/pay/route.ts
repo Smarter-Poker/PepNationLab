@@ -1,4 +1,4 @@
-// Invoice v2 — unified Pay Now endpoint.
+// Invoice v2 - unified Pay Now endpoint.
 // Calls pay_invoice(target_type, target_id, handle, amount, proof_id) which
 // marks the invoice paid AND credits the payee's prepaid_balance.
 import { NextResponse } from 'next/server';

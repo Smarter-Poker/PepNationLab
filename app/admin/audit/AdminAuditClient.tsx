@@ -259,7 +259,7 @@ export default function AdminAuditClient({
                     >
                       {r.target_type && r.target_id
                         ? `${r.target_type}:${r.target_id.slice(0, 8)}`
-                        : "—"}
+                        : "-"}
                     </td>
                     <td
                       style={{
@@ -267,7 +267,7 @@ export default function AdminAuditClient({
                         color: "var(--silver)",
                       }}
                     >
-                      {r.summary || "—"}
+                      {r.summary || "-"}
                     </td>
                   </tr>
                 ))

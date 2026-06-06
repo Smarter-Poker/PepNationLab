@@ -10,7 +10,7 @@ import { assertSameOrigin } from '@/lib/csrf';
  * and a clean 409 surface when the slug collides with another agent OR
  * the database CHECK denylist (reserved words like admin/api/login/etc).
  *
- * Optional body: `reservationToken` — when supplied (and unexpired), the
+ * Optional body: `reservationToken` - when supplied (and unexpired), the
  * server consumes it BEFORE the UPDATE so a competing simultaneous signup
  * trying the same slug loses the race. The 90-second token TTL lets a slow
  * typist finish their flow without losing the slug to a fast bot.

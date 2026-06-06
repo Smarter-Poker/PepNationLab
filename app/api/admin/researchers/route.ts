@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (rawQuery) {
-    // P0 1.23: PostgREST .or() injection — sanitize syntax-significant chars.
+    // P0 1.23: PostgREST .or() injection - sanitize syntax-significant chars.
     const sanitized = rawQuery.replace(/[%,():"'\\]/g, '').trim().slice(0, 60);
     if (sanitized) {
       dbQuery = dbQuery.or(

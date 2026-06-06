@@ -12,7 +12,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * fix-57 #1: Reparent an agent under a different parent agent (or to null = root).
  *
  * Cycle guard: we fetch the downline of agentId via fn_admin_downline_tree
- * and reject if parentAgentId appears among the descendants — otherwise the
+ * and reject if parentAgentId appears among the descendants - otherwise the
  * tree would form a loop.
  */
 export async function POST(req: NextRequest) {

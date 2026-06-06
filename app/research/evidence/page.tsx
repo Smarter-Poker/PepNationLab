@@ -1,5 +1,5 @@
 /**
- * Evidence & Safety Reference — a cross-compound hub that surfaces how strong
+ * Evidence & Safety Reference - a cross-compound hub that surfaces how strong
  * the evidence is for each catalog compound, which compounds are WADA-prohibited,
  * and which carry notable safety flags. Server component computes the data and
  * hands it to EvidenceSafetyTabs, which shows one category at a time (Evidence /

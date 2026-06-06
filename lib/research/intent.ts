@@ -1,7 +1,7 @@
 /**
  * Intent classifier for the Research Library v3 search engine.
  *
- * Pure heuristic — no LLM call, no IO. Reads a ParsedQuery (from
+ * Pure heuristic - no LLM call, no IO. Reads a ParsedQuery (from
  * lib/research/search-parser.ts) plus an optional compound catalog and
  * returns a structured IntentMatch that /api/research/instant-answer
  * uses to build the position-0 knowledge card.
@@ -221,12 +221,12 @@ export function classifyIntent(
 
   const slugs = opts.catalog ? extractSlugs(parsed, opts.catalog) : [];
 
-  // 1. Comparison — needs two or more slugs, and a comparison connective.
+  // 1. Comparison - needs two or more slugs, and a comparison connective.
   if (slugs.length >= 2 && detectComparison(raw)) {
     return { kind: 'comparison', confidence: 'high', slugs: slugs.slice(0, 4) };
   }
 
-  // 2. Reconstitution — strong verbal cue, attach the first matched slug if any.
+  // 2. Reconstitution - strong verbal cue, attach the first matched slug if any.
   if (matchesAny(raw, RECONSTITUTION_PATTERNS)) {
     return {
       kind: 'reconstitution',
@@ -296,18 +296,18 @@ export function classifyIntent(
     };
   }
 
-  // 11. Category / research area — only fires if no slug-anchored intent matched.
+  // 11. Category / research area - only fires if no slug-anchored intent matched.
   const cat = detectCategoryArea(parsed);
   if (cat) {
     return { kind: 'category', area: cat.area, confidence: cat.confidence, slugs };
   }
 
-  // 12. Definition — "what is X" plus exactly one slug.
+  // 12. Definition - "what is X" plus exactly one slug.
   if (matchesAny(raw, DEFINITION_PATTERNS) && slugs.length === 1) {
     return { kind: 'definition', confidence: 'high', slugs };
   }
 
-  // 13. Bare compound name (single slug, single term) — treat as definition
+  // 13. Bare compound name (single slug, single term) - treat as definition
   //     with medium confidence so the knowledge panel renders.
   if (
     slugs.length === 1 &&

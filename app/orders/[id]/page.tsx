@@ -504,7 +504,7 @@ export default async function OrderDetailPage(
             <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.3s' }}>
               <RecommendationStrip
                 title="You May Also Like"
-                /* Pre-resolve each item href server-side — passing a
+                /* Pre-resolve each item href server-side - passing a
                    `buildHref` function across the server-to-client
                    component boundary throws "Functions cannot be passed
                    directly to Client Components" under React 19 + Next 16. */
@@ -543,7 +543,7 @@ export default async function OrderDetailPage(
                   </div>
                 </div>
               ) : (
-                /* Primary method not set — show ALL enabled methods as alternatives */
+                /* Primary method not set - show ALL enabled methods as alternatives */
                 (() => {
                   const allEnabled = Object.entries(paymentHandles)
                     .filter(([, v]) => v && v.trim().length > 0);
@@ -578,7 +578,7 @@ export default async function OrderDetailPage(
             </div>
           )}
 
-          {/* Payment Proof Upload (buyer only — RLS enforces) */}
+          {/* Payment Proof Upload (buyer only - RLS enforces) */}
           <PaymentProofUpload
             orderId={order.id}
             uploadDisabled={order.status === 'cancelled' || order.status === 'delivered'}
@@ -610,7 +610,7 @@ export default async function OrderDetailPage(
             </div>
           )}
 
-          {/* Lot Numbers & COA (R26 placeholder — wired to order_items.lot_number / coa_url;
+          {/* Lot Numbers & COA (R26 placeholder - wired to order_items.lot_number / coa_url;
               real values are stamped at fulfillment time. Until then, each line item
               shows "Pending" so buyers know the surface exists.) */}
           <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', animationDelay: '0.55s' }}>

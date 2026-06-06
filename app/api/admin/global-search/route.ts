@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
   const wants = (s: Scope) => scope === 'all' || scope === s;
   const tokens = q.length >= 2 ? tokenize(q) : [];
 
-  // USERS — AND-of-tokens, each token OR-matches across name/username/email
+  // USERS - AND-of-tokens, each token OR-matches across name/username/email
   let usersP: any;
   if (wants('users') && tokens.length > 0) {
     let builder = svc
@@ -136,7 +136,7 @@ export async function GET(req: NextRequest) {
     storefrontsP = Promise.resolve({ data: [] });
   }
 
-  // ORDERS — RPC owns the search logic (fuzzy + structured filters)
+  // ORDERS - RPC owns the search logic (fuzzy + structured filters)
   let ordersP: any;
   if (wants('orders') && (tokens.length > 0 || hasOrderFilters)) {
     ordersP = svc.rpc('fn_admin_search_orders', {

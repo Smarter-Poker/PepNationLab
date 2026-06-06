@@ -44,7 +44,7 @@ export default function AdminSettingsClient({ profile }: AdminSettingsClientProp
           </div>
           <div>
             <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</span>
-            <p style={{ color: 'var(--white)', fontSize: '0.9rem', margin: '4px 0 0' }}>{profile.full_name || '—'}</p>
+            <p style={{ color: 'var(--white)', fontSize: '0.9rem', margin: '4px 0 0' }}>{profile.full_name || '-'}</p>
           </div>
         </div>
       </div>
@@ -59,7 +59,7 @@ export default function AdminSettingsClient({ profile }: AdminSettingsClientProp
       <div style={{ marginTop: 'var(--space-6)' }}>
         <PushNotificationToggle
           title="Notification Settings"
-          description="Enable Push Notifications On This Device For Incoming Calls And New Messages — Even When The App Is Closed."
+          description="Enable Push Notifications On This Device For Incoming Calls And New Messages - Even When The App Is Closed."
         />
       </div>
 

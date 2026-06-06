@@ -19,7 +19,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Agent ID is required' }, { status: 400 });
     }
 
-    // Block modifying another admin's contact info — prevents account takeover via email change.
+    // Block modifying another admin's contact info - prevents account takeover via email change.
     const { data: targetProfile } = await supabase
       .from('profiles')
       .select('role')
@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Cannot Modify Another Admin\'s Contact Info Via This Route' }, { status: 403 });
     }
 
-    // Validate email format before pushing it to auth.users + profiles —
+    // Validate email format before pushing it to auth.users + profiles -
     // an invalid value would otherwise fail mid-update and leak a provider error.
     if (email !== undefined && email !== null && email !== '') {
       if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {

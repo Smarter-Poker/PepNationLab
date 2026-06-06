@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 
   // Code-level ownership check: allow the order's buyer OR the order's agent
   // (and admins checked via profile below). This provides defense-in-depth
-  // beyond RLS — ensures agents can view payment proofs to approve orders.
+  // beyond RLS - ensures agents can view payment proofs to approve orders.
   const { data: orderCheck } = await service
     .from('orders')
     .select('buyer_id, agent_id')
@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
       .createSignedUrl(key, 86400);
 
     if (!order.agent_id) {
-      // Direct to admin — fetch admins and drop notifications
+      // Direct to admin - fetch admins and drop notifications
       const { data: admins } = await service.from('profiles').select('id').eq('role', 'admin');
       if (admins && admins.length > 0) {
         const payload = admins.map(a => ({

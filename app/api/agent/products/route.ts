@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
       products: safeProducts,
       agent_cost: baseCost > 0 ? agentCost : null,
       agent_tier: tier,
-      // base_cost_raw and effective_multiplier intentionally omitted — cost leak.
+      // base_cost_raw and effective_multiplier intentionally omitted - cost leak.
     };
   });
 
@@ -106,7 +106,7 @@ export async function PATCH(req: NextRequest) {
 
   // ── Compute agent cost for server-side floor enforcement ──────────────────
   // Hard rule: agents can NEVER list for less than their wholesale cost.
-  // We compute it here even though the client enforces it too — a bypassed
+  // We compute it here even though the client enforces it too - a bypassed
   // client-side check must not allow below-cost listings to reach the DB.
   // Per-product tier overrides take priority over the global tier multiplier,
   // matching the same effective-multiplier logic used in the GET handler.
@@ -124,7 +124,7 @@ export async function PATCH(req: NextRequest) {
 
   // ── Resolve the price to store ────────────────────────────────────────────
   // Priority: explicit retail_price (direct $ entry) takes precedence over
-  // margin_percent. When the agent types a dollar amount, that IS the price —
+  // margin_percent. When the agent types a dollar amount, that IS the price -
   // we save retail_price directly and back-compute margin_percent so the DB
   // trigger column stays consistent. When only margin_percent arrives (e.g.
   // from the bulk-margin flow), let the DB trigger recalculate retail_price.
@@ -134,7 +134,7 @@ export async function PATCH(req: NextRequest) {
   if (retail_price !== undefined && Number.isFinite(Number(retail_price))) {
     resolvedRetailPrice = Number(retail_price);
   } else if (margin_percent !== undefined && Number.isFinite(Number(margin_percent))) {
-    // Markup-% only path — DB trigger will recalculate retail_price.
+    // Markup-% only path - DB trigger will recalculate retail_price.
     resolvedMarginPercent = Number(margin_percent);
     if (agentCostPer10 > 0) {
       resolvedRetailPrice = agentCostPer10 * (1 + resolvedMarginPercent / 100);

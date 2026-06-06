@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * CompoundDataTable — a sortable, filterable "database" grid of the whole
+ * CompoundDataTable - a sortable, filterable "database" grid of the whole
  * catalog. Click any column header to sort (numeric columns sort by value,
  * empty values sink to the bottom); type to filter across name, category,
  * class, and target. Each row links to the full monograph and can be added to

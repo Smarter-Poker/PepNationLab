@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
         // FINANCIAL ROLLBACK: refund the prepaid deduction since the order
         // status update failed. Use the canonical refund_prepaid_balance RPC
         // (positive amount = add back). If the refund ALSO fails the user
-        // has been debited with no order — log explicitly + write an
+        // has been debited with no order - log explicitly + write an
         // 'adjustment' audit row (the allowed enum value) flagged as
         // UNRESOLVED so an admin can reconcile manually.
         try {
@@ -273,8 +273,8 @@ export async function POST(req: NextRequest) {
           user_id: admin.id,
           title: finalAutoStatus === 'admin_approval_pending' ? 'Order Needs Admin Approval' : 'Order Auto-Approved',
           body: finalAutoStatus === 'admin_approval_pending'
-            ? `Order #${short} ($${totalStr}) — Agent Approved (${fulfillmentMsg}). Review And Release To Fulfillment.`
-            : `Order #${short} ($${totalStr}) — Agent Approved (${fulfillmentMsg}). Auto-Approved on Credit Line.`,
+            ? `Order #${short} ($${totalStr}) - Agent Approved (${fulfillmentMsg}). Review And Release To Fulfillment.`
+            : `Order #${short} ($${totalStr}) - Agent Approved (${fulfillmentMsg}). Auto-Approved on Credit Line.`,
           type: 'system',
           url: `/admin/orders?status=${finalAutoStatus}`,
         }));

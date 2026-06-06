@@ -1,5 +1,5 @@
 /**
- * POST /api/research/match — Match Me To A Peptide.
+ * POST /api/research/match - Match Me To A Peptide.
  *
  * Public route. No authentication. The endpoint accepts a structured form
  * payload describing the researcher's stated goal and risk preferences, runs

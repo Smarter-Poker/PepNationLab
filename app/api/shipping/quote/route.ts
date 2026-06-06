@@ -15,7 +15,7 @@
  * `estimated: true` in the response so the UI shows "Estimated Shipping").
  *
  * Auth: authenticated user (any role). Public callers via agent storefronts
- * are allowed — the rate does not expose sensitive data.
+ * are allowed - the rate does not expose sensitive data.
  */
 
 import type { NextRequest } from 'next/server';
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Auth — must be signed in.
+  // Auth - must be signed in.
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {

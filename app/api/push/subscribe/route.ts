@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
   // is signed in on that device right now. If this same endpoint was previously
   // registered to a DIFFERENT user (e.g. the device was switched from one
   // account to another), deactivate those stale rows so calls/messages meant for
-  // the old account never ring this device — which otherwise looks like the two
+  // the old account never ring this device - which otherwise looks like the two
   // accounts are "linked".
   await service
     .from('push_subscriptions')

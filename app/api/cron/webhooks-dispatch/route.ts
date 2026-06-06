@@ -41,7 +41,7 @@ function sign(secret: string, body: string): string {
   return createHmac('sha256', secret).update(body).digest('hex');
 }
 
-// Constant-time secret comparison for the cron auth — already done by
+// Constant-time secret comparison for the cron auth - already done by
 // assertCronAuth, this is just a defensive import keeping crypto warm.
 void timingSafeEqual;
 
@@ -196,7 +196,7 @@ export async function GET(req: Request) {
       attempted++;
       const ep = epById.get(d.endpoint_id);
       if (!ep) {
-        // Endpoint was deleted out from under us — mark delivery failed.
+        // Endpoint was deleted out from under us - mark delivery failed.
         await admin
           .from('webhook_deliveries')
           .update({

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Research Browser — client-side faceted search over the compound catalog.
+ * Research Browser - client-side faceted search over the compound catalog.
  * Pure presentation: filtering happens in-memory on props already fetched by
  * the parent server component. Research-use-only framing throughout.
  */

@@ -1,5 +1,5 @@
 /**
- * Order status state machine — extracted so the bulk-update endpoint and the
+ * Order status state machine - extracted so the bulk-update endpoint and the
  * single-update endpoint share one source of truth.
  */
 
@@ -34,7 +34,7 @@ export const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 
 // The shipping role acts ONLY on post-admin-gate states. It must never be able
 // to pull a pre-gate order (pending_customer_payment / agent_approval_pending /
-// admin_approval_pending) into fulfillment — that would skip admin release.
+// admin_approval_pending) into fulfillment - that would skip admin release.
 export const SHIPPING_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
   approved_ship: ['in_fulfillment'],
   in_fulfillment: ['shipped'],

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * InAppBrowser — a full-screen in-app overlay that opens external URLs inside an
+ * InAppBrowser - a full-screen in-app overlay that opens external URLs inside an
  * <iframe> so the user is NEVER redirected away from pepnationlab.com. Built
  * natively for PepNationLab (no Smarter.Poker imports, per the platform's
  * zero-cross-contamination rule).
@@ -15,7 +15,7 @@
  * Embedding reality: some sources (PubMed, FDA, DrugBank) send X-Frame-Options
  * DENY and refuse to render in a frame. We cannot detect that cross-origin, so
  * after a short grace period we surface an in-overlay fallback panel (title +
- * selectable URL + Copy Link) — still without ever redirecting the user away.
+ * selectable URL + Copy Link) - still without ever redirecting the user away.
  *
  * Research-Use-Only platform. Title Case on all user-facing text. No emojis.
  */

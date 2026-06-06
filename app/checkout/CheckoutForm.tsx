@@ -39,7 +39,7 @@ interface CheckoutFormProps {
   userProfile: Profile;
   userEmail: string;
   tierMultipliers: Record<string, number>;
-  /** Which agent storefront initiated this checkout — enforces closed-loop isolation */
+  /** Which agent storefront initiated this checkout - enforces closed-loop isolation */
   agentSlug?: string | null;
   /** Payment handles configured by the agent (from agent_profiles.payment_handles) */
   agentPaymentHandles?: Record<string, string>;
@@ -77,7 +77,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   // Admins are intentionally excluded: they don't have agent_profiles rows.
   const isAgentSelfBuy = isAgentByRole && !isSubAgent;
   // Coupons are blocked both for legit agent self-buys AND for sub-agents
-  // (sub-agents earn commission as digital credits weekly — no checkout stack).
+  // (sub-agents earn commission as digital credits weekly - no checkout stack).
   const couponDisabled = isAgentSelfBuy || isSubAgent;
 
   // Derive available payment methods from what the agent has actually configured.
@@ -94,13 +94,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const { cart: contextCart, cartSubtotal: contextSubtotal, clearCart } = useCart();
   const router = useRouter();
 
-  // The per-agent cart key — ONLY reads this agent's cart, never another agent's.
+  // The per-agent cart key - ONLY reads this agent's cart, never another agent's.
   // If no agentSlug (admin/direct checkout), reads legacy global key as fallback.
   const storefrontCartKey = agentSlug
     ? `pnl_storefront_cart_${agentSlug}`
     : 'pnl_storefront_cart';
 
-  // Storefront orders written by AgentStorefrontGrid — bypass CartContext refresh
+  // Storefront orders written by AgentStorefrontGrid - bypass CartContext refresh
   // (which validates agent_product ids, not master product ids).
   const [storefrontCart, setStorefrontCart] = useState<Array<{
     id: string; name: string; sku: string; quantity: number;
@@ -120,7 +120,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           if (parsed.items.length > 0) setStorefrontCart(parsed.items);
           if (typeof parsed._savedAt === 'number') setCartSavedAt(parsed._savedAt);
         } else if (Array.isArray(parsed) && parsed.length > 0) {
-          // Legacy format: plain array (no timestamp — treat as not stale to avoid false warnings)
+          // Legacy format: plain array (no timestamp - treat as not stale to avoid false warnings)
           setStorefrontCart(parsed);
         }
       }
@@ -134,7 +134,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const totalCartQty = cart.reduce((sum, item) => sum + item.quantity, 0);
   const meetsOverallMin = totalCartQty >= minOverallQty;
 
-  // Always use costPrice for subtotal — for agent self-buy this IS their tier price.
+  // Always use costPrice for subtotal - for agent self-buy this IS their tier price.
   const cartSubtotal = storefrontCart.length > 0
     ? storefrontCart.reduce((sum, item) => sum + item.costPrice * item.quantity, 0)
     : contextSubtotal;
@@ -1082,7 +1082,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           pro-angiogenic / multiple GLP-1 agents, and cold-chain handling. */}
       <CartWarnings productIds={cart.map((item) => item.id)} />
 
-      {/* Stale cart warning — shown if the cart is older than 24 hours */}
+      {/* Stale cart warning - shown if the cart is older than 24 hours */}
       {cartIsStale && (
         <div style={{ background: 'rgba(245, 158, 11, 0.07)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-5)', display: 'flex', gap: 10, alignItems: 'center' }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>

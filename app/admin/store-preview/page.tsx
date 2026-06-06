@@ -13,7 +13,7 @@ export default async function AdminStorePreviewPage() {
 
   const supabase = await createServiceClient();
 
-  // Fetch all products — inventory_count and in_stock live directly on the products table
+  // Fetch all products - inventory_count and in_stock live directly on the products table
   // (migration 20260521000002_product_inventory added them as columns, not a separate table)
   const { data: productsData, error } = await supabase
     .from('products')

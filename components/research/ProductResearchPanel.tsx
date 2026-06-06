@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * ProductResearchPanel — research content shown INSIDE the product detail modal
+ * ProductResearchPanel - research content shown INSIDE the product detail modal
  * as an in-app popup (no route navigation, no new browser tab). Premium thick
  * brushed-nickel frame, the global back arrow, short paragraphs, Title Case prose.
  *
@@ -66,7 +66,7 @@ function toFahrenheit(value?: string | null): string | null {
 
 // Ban em/en dashes from FAQ copy (platform request). Replace with a comma.
 function noEmDash(value: string): string {
-  return value.replace(/\s*[—–]\s*/g, ', ');
+  return value.replace(/\s*[-–]\s*/g, ', ');
 }
 
 function Para({ children }: { children: React.ReactNode }) {

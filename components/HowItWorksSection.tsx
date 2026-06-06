@@ -51,7 +51,7 @@ export default function HowItWorksSection() {
             <span style={{ color: 'var(--teal)' }}>Serious Researchers</span>
           </h2>
           <p style={{ maxWidth: 480, margin: 'var(--space-4) auto 0', fontSize: '0.95rem' }}>
-            From Account Creation To Compound Delivery — A Streamlined Platform 
+            From Account Creation To Compound Delivery - A Streamlined Platform 
             Designed Around The Needs Of Professional Research Labs.
           </p>
         </div>

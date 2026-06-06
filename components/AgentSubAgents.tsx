@@ -45,7 +45,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
   const [loadingPricing, setLoadingPricing] = useState(false);
   const [pricingError, setPricingError] = useState<string | null>(null);
   const [pricingSuccess, setPricingSuccess] = useState<string | null>(null);
-  // Controlled inputs per product — keyed by product id.
+  // Controlled inputs per product - keyed by product id.
   const [costInputs, setCostInputs] = useState<Record<string, string>>({});
   const [bulkCostInputs, setBulkCostInputs] = useState<Record<string, string>>({});
   const [bulkThreshInputs, setBulkThreshInputs] = useState<Record<string, string>>({});

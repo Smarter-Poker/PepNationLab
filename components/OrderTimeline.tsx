@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * OrderTimeline — visual progress bar for a researcher's order.
+ * OrderTimeline - visual progress bar for a researcher's order.
  *
  * Renders a 5-step horizontal tracker:
  *   Order Placed -> Approved -> Label Created -> Out For Delivery -> Arrived
@@ -11,7 +11,7 @@
  * completed / current / upcoming node states. Cancelled orders render a single
  * neutral "Cancelled" banner instead of the rail.
  *
- * No network, no data fetching — the parent already has the order row.
+ * No network, no data fetching - the parent already has the order row.
  */
 
 const STEPS = ['Order Placed', 'Approved', 'Label Created', 'Out For Delivery', 'Arrived'] as const;

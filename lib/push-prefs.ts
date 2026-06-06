@@ -84,7 +84,7 @@ export function pushTypeAllowed(prefs: PushTypePrefs, key: string): boolean {
 /**
  * Map a lower-level enqueuePush `event` string to its canonical PushTypeKey.
  * Returns null for events with no per-type toggle (test pushes, generic
- * marketing) — meaning "do not apply the per-type gate to this event".
+ * marketing) - meaning "do not apply the per-type gate to this event".
  */
 export function eventToTypeKey(event: string): PushTypeKey | null {
   switch (event) {

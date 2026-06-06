@@ -89,14 +89,14 @@ export async function GET(req: NextRequest) {
 
   // audit15 fix-25 (B9): emit Sentry metrics so dashboards can graph
   // these counts and alerts can fire on spikes. recordCallMetric
-  // emits one event per metric (info level) — even zero values are
+  // emits one event per metric (info level) - even zero values are
   // useful for confirming the cron is running.
   recordCallMetric('mark_missed_calls.marked_missed', markedMissed);
   recordCallMetric('mark_missed_calls.closed_stale_active', closedStaleActive);
 
   // High-signal alert when stale-active sweeps trigger. A sustained
   // non-zero rate here means users are losing calls without a clean
-  // hangup — pages don't close cleanly, sendBeacon failing, etc.
+  // hangup - pages don't close cleanly, sendBeacon failing, etc.
   if (closedStaleActive > 0) {
     captureCallEvent(
       `Cron mark-missed-calls swept ${closedStaleActive} stale active calls (>4h old)`,

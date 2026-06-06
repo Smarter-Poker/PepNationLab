@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
  * is_sub_agent=true) we surface the parent super-agent's storefront,
  * since that is where their researchers' orders land.
  *
- * Admins editing on behalf of others get null fields — they should pass
+ * Admins editing on behalf of others get null fields - they should pass
  * an explicit slug from the page they came from.
  */
 export async function GET() {

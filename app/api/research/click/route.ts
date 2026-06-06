@@ -7,7 +7,7 @@
  * matching row exists, inserts a standalone click record so we still
  * capture the signal.
  *
- * Returns 204 unconditionally — never blocks or surfaces an error to
+ * Returns 204 unconditionally - never blocks or surfaces an error to
  * the client. Public route; rate-limited per IP.
  */
 
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', (existing as { id: string }).id);
     } else {
-      // No prior row in the 5-minute window — capture a fresh one.
+      // No prior row in the 5-minute window - capture a fresh one.
       await supabase.from('search_queries').insert({
         query_text: query,
         query_normalized: queryNormalized,

@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     .eq('id', userId)
     .single();
 
-  // Guard: target must be a researcher or sub-agent — NEVER an admin or another agent
+  // Guard: target must be a researcher or sub-agent - NEVER an admin or another agent
   // at a different branch. The referring_agent_id check enforces ownership.
   if (!targetProfile || !['researcher', 'agent'].includes(targetProfile.role)) {
     return NextResponse.json({ error: 'User Not Found' }, { status: 404 });

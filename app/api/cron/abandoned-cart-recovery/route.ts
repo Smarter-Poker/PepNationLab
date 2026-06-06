@@ -29,7 +29,7 @@ interface Variant {
  *  4. Stop when all steps have been delivered
  *
  * Attribution: when an order is later placed, /api/orders updates
- * abandoned_cart_reminders.recovered_order_id matching that user — the
+ * abandoned_cart_reminders.recovered_order_id matching that user - the
  * admin dashboard reads sent vs recovered to compute win rate.
  */
 export async function GET(req: Request) {

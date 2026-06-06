@@ -30,7 +30,7 @@ import { assertSameOrigin } from '@/lib/csrf';
  *     alreadyInCartQty: number,          // how many are already in cart
  *   }
  *
- * Public route — no auth required. Rate limited 60/min/IP.
+ * Public route - no auth required. Rate limited 60/min/IP.
  */
 
 export const dynamic = 'force-dynamic';
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
     const { data: bacProducts } = await bacQuery.limit(10);
     
     if (bacProducts && bacProducts.length > 0) {
-      // Prefer 10 mL variant — check by unit_size number or name keyword
+      // Prefer 10 mL variant - check by unit_size number or name keyword
       const preferredBac = bacProducts.find(p =>
         p.unit_size === '10' ||
         p.unit_size === '10ml' ||
@@ -234,7 +234,7 @@ export async function POST(req: NextRequest) {
         }
       }
     }
-  } catch { /* ignore — BAC water lookup is best-effort */ }
+  } catch { /* ignore - BAC water lookup is best-effort */ }
 
   return NextResponse.json({
     vialsNeeded,

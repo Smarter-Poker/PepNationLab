@@ -1,7 +1,7 @@
 /**
  * GET /api/cron/companion-papers-compute
  * Weekly recompute of compound_companion_papers using PMID co-occurrence
- * across compound_pubmed_cache.pmid_list. Naive Jaccard — cheap and
+ * across compound_pubmed_cache.pmid_list. Naive Jaccard - cheap and
  * defensible at this corpus size.
  */
 import { NextResponse } from 'next/server';

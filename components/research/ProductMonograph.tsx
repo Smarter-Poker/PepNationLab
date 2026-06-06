@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * ProductMonograph — research access shown inside the storefront product detail
+ * ProductMonograph - research access shown inside the storefront product detail
  * modal. This is the STANDARD template for every compound: a break line under
  * the description, then five premium brushed-metal buttons (Research, Findings,
  * Preparation, Spec Sheet, FAQs) on a single row. Each button opens the

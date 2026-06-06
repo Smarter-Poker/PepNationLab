@@ -439,7 +439,7 @@ export default function AdminShippingSettingsClient() {
       </h1>
 
       {/* ------------------------------------------------------------------ */}
-      {/* CARD 1 — Account Status                                             */}
+      {/* CARD 1 - Account Status                                             */}
       {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
@@ -600,7 +600,7 @@ export default function AdminShippingSettingsClient() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* CARD 2 — Warehouse Origins                                          */}
+      {/* CARD 2 - Warehouse Origins                                          */}
       {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
@@ -725,7 +725,7 @@ export default function AdminShippingSettingsClient() {
                     )}
                   </div>
                   <div style={{ color: 'var(--silver)', fontSize: '0.82rem' }}>
-                    {o.name}{o.company ? ` — ${o.company}` : ''} &middot; {o.street1}{o.street2 ? ` ${o.street2}` : ''}, {o.city}, {o.state} {o.zip}
+                    {o.name}{o.company ? ` - ${o.company}` : ''} &middot; {o.street1}{o.street2 ? ` ${o.street2}` : ''}, {o.city}, {o.state} {o.zip}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
@@ -753,7 +753,7 @@ export default function AdminShippingSettingsClient() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* CARD 3 — Shipping Defaults / Test Address                           */}
+      {/* CARD 3 - Shipping Defaults / Test Address                           */}
       {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
@@ -797,7 +797,7 @@ export default function AdminShippingSettingsClient() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* CARD 4 — Rate Cards (informational)                                 */}
+      {/* CARD 4 - Rate Cards (informational)                                 */}
       {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
@@ -819,7 +819,7 @@ export default function AdminShippingSettingsClient() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* CARD 4.5 — Agent Warehouses                                          */}
+      {/* CARD 4.5 - Agent Warehouses                                          */}
       {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
@@ -863,7 +863,7 @@ export default function AdminShippingSettingsClient() {
                   {agent.warehouse_origin ? (
                     <span style={{ color: 'var(--teal)', fontSize: '0.85rem' }}>
                       <Check size={13} style={{ display: 'inline', marginRight: 4 }} />
-                      {agent.warehouse_origin.label} — {agent.warehouse_origin.city}, {agent.warehouse_origin.state}
+                      {agent.warehouse_origin.label} - {agent.warehouse_origin.city}, {agent.warehouse_origin.state}
                     </span>
                   ) : agent.uses_legacy_warehouse ? (
                     <span style={{ color: '#f59e0b', fontSize: '0.85rem' }}>
@@ -891,7 +891,7 @@ export default function AdminShippingSettingsClient() {
                   >
                     <option value="">No Assignment (Platform Default)</option>
                     {origins.filter((o) => o.is_active).map((o) => (
-                      <option key={o.id} value={o.id}>{o.label} — {o.city}, {o.state}</option>
+                      <option key={o.id} value={o.id}>{o.label} - {o.city}, {o.state}</option>
                     ))}
                   </select>
                   <button
@@ -912,7 +912,7 @@ export default function AdminShippingSettingsClient() {
                           if (!r.ok) throw new Error(d.error ?? 'Assign Failed');
                           showToast(`${agent.display_name} Now Ships From ${d.origin_label}.`, 'ok');
                         } else {
-                          // Clear the assignment — call DELETE on whichever origin they currently have.
+                          // Clear the assignment - call DELETE on whichever origin they currently have.
                           if (!agent.warehouse_origin_id) {
                             showToast('Agent Already Has No Assignment.', 'ok');
                             return;
@@ -955,7 +955,7 @@ export default function AdminShippingSettingsClient() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* CARD 5 — Webhook Status                                             */}
+      {/* CARD 5 - Webhook Status                                             */}
       {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
@@ -999,7 +999,7 @@ export default function AdminShippingSettingsClient() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* CARD 6 — Reconciliation                                             */}
+      {/* CARD 6 - Reconciliation                                             */}
       {/* ------------------------------------------------------------------ */}
       <section className="card">
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>

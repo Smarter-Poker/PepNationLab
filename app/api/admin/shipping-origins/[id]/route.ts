@@ -1,6 +1,6 @@
 /**
- * PATCH  /api/admin/shipping-origins/[id]  — update a shipping origin
- * DELETE /api/admin/shipping-origins/[id]  — soft-delete (is_active=false)
+ * PATCH  /api/admin/shipping-origins/[id]  - update a shipping origin
+ * DELETE /api/admin/shipping-origins/[id]  - soft-delete (is_active=false)
  *
  * PATCH accepts any subset of the shipping origin fields. If is_default is
  * set to true, the existing default is cleared atomically first. If
@@ -26,7 +26,7 @@ interface RouteParams {
 }
 
 // ---------------------------------------------------------------------------
-// PATCH — update
+// PATCH - update
 // ---------------------------------------------------------------------------
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const csrfErr = assertSameOrigin(req);
@@ -99,7 +99,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       }
       updates.shippo_address_id = validation.shippoAddressId ?? null;
     } catch {
-      // Shippo unavailable — proceed without re-validating.
+      // Shippo unavailable - proceed without re-validating.
     }
   }
 
@@ -138,7 +138,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 }
 
 // ---------------------------------------------------------------------------
-// DELETE — soft delete
+// DELETE - soft delete
 // ---------------------------------------------------------------------------
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
   const csrfErr = assertSameOrigin(req);
@@ -162,7 +162,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   }
 
   if (existing.is_default) {
-    // Refuse to soft-delete the default — it would break label creation.
+    // Refuse to soft-delete the default - it would break label creation.
     return NextResponse.json(
       { error: 'Cannot Deactivate The Default Shipping Origin. Set Another Origin As Default First.' },
       { status: 409 },

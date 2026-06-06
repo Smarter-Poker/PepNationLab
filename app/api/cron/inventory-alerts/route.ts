@@ -17,7 +17,7 @@
  * Idempotency: `claimCronRun('inventory_alerts', YYYY-MM-DD)` keeps a
  * re-trigger inside the same UTC day from running the body twice.
  *
- * Push delivery: writing to `notifications` is enough — push is delivered by
+ * Push delivery: writing to `notifications` is enough - push is delivered by
  * /api/cron/push-dispatch which reads the table and respects per-type prefs.
  * The `low_stock` push type defaults ON; agents can mute it from
  * /account/notifications if they want to.

@@ -12,19 +12,19 @@ export const dynamic = 'force-dynamic';
  * Send real wallet funds to a recipient account.
  *
  * Who may send: admin, super_agent, agent, or sub_agent (researchers cannot send).
- * No network or amount restriction — any valid sender may send to ANY account as
+ * No network or amount restriction - any valid sender may send to ANY account as
  * long as their wallet balance (or credit line) covers it. wallet_transfer is the
  * sole funds gate.
  *
- * Money model: wallet_transfer debits the sender (their wallet balance, or — for
- * credit-line agents — billed to their credit line so they owe it on their weekly
+ * Money model: wallet_transfer debits the sender (their wallet balance, or - for
+ * credit-line agents - billed to their credit line so they owe it on their weekly
  * statement) and credits the recipient's wallet, recording a transaction on BOTH
  * sides. Every movement is real money and fully audited.
  *
  * Body: { recipientId?: uuid, recipientEmail?: string, amount: number, note?: string }
  */
 
-// PostgREST `.ilike` treats the value as a LIKE pattern — `%` and `_` are
+// PostgREST `.ilike` treats the value as a LIKE pattern - `%` and `_` are
 // wildcards. When we want case-insensitive EQUALITY on a user-supplied email
 // or username we must escape those metacharacters so the lookup matches only
 // the literal string. Without this, "@gmail.com%" would route a transfer to
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   const issuerId = gate.user.id;
 
   // Per-user rate limit. 20 sends per minute is more than any legitimate
-  // operator will need — it primarily defeats scripted drains, double-click
+  // operator will need - it primarily defeats scripted drains, double-click
   // duplicates, and the spam-the-bell denial-of-service vector.
   const rl = await rateLimit({
     key: 'credits_send',
@@ -123,8 +123,8 @@ export async function POST(req: NextRequest) {
     ? `${issuerName}: ${note}`
     : `From ${issuerName}`;
 
-  // Move the funds atomically: debit the sender (their wallet balance, or — for
-  // credit-line agents — billed to their credit line so they owe it on their
+  // Move the funds atomically: debit the sender (their wallet balance, or - for
+  // credit-line agents - billed to their credit line so they owe it on their
   // weekly statement) and credit the recipient's wallet. Records a transaction
   // on BOTH sides. Admin sends are debited from the admin wallet too.
   const { data: transfer, error: transferErr } = await service.rpc('wallet_transfer', {
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
   });
   if (transferErr) {
     // The RPC raises check_violation for self-send / bad amount / insufficient
-    // funds or credit — surface those as a clean 400 to the sender.
+    // funds or credit - surface those as a clean 400 to the sender.
     const msg = String(transferErr.message || '');
     const isGuard = /check_violation|Insufficient|Cannot Send|Greater Than Zero|Account Not Found/i.test(msg);
     console.error('wallet_transfer failed:', msg);

@@ -60,7 +60,7 @@ const STATUS_LABELS: Record<string, string> = {
   agent_approval_pending: 'Approval Pending',
   admin_approval_pending: 'Pending Approval',
   approved_ship: 'Approved',
-  approved_pickup: 'Approved — Pickup',
+  approved_pickup: 'Approved - Pickup',
   in_fulfillment: 'In Fulfillment',
   shipped: 'Shipped',
   delivered: 'Delivered',
@@ -449,7 +449,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
       }}
       className="researcher-sidebar"
       >
-        {/* Sidebar header — name + role */}
+        {/* Sidebar header - name + role */}
         <div style={{
           padding: '16px 16px 12px',
           borderBottom: '1px solid rgba(192,184,168,0.08)',
@@ -565,7 +565,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
 
         {tab === 'overview' ? (
           <>
-          {/* ── OVERVIEW TAB — Full-Screen Image, no padding, no heading ── */}
+          {/* ── OVERVIEW TAB - Full-Screen Image, no padding, no heading ── */}
           {tab === 'overview' && (
             <div style={{
               width: '100%',
@@ -575,7 +575,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
               alignItems: 'flex-start',
               background: '#000',
             }}>
-              {/* Portrait panel — width-driven, aspect-ratio fills screen */}
+              {/* Portrait panel - width-driven, aspect-ratio fills screen */}
               <div style={{
                 position: 'relative',
                 flexShrink: 0,
@@ -588,7 +588,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                 backgroundPosition: 'top left',
                 backgroundSize: '100% 100%',
               }}>
-                {/* Invisible click zones — percentages map 1:1 to image pixels */}
+                {/* Invisible click zones - percentages map 1:1 to image pixels */}
                  {[
                   { key: 'store',       top: '3.0%',  height: '11.0%', action: () => navigateWithLoader(agentSlug ? `/${agentSlug}` : '/products') },
                   { key: 'library',     top: '14.0%', height: '11.0%', action: () => navigateWithLoader('/research') },

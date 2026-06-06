@@ -1,5 +1,5 @@
 /**
- * Reading Queue — auth-gated personalization surface.
+ * Reading Queue - auth-gated personalization surface.
  * Lists the signed-in user's reading queue with mark-as-read.
  */
 import { redirect } from 'next/navigation';

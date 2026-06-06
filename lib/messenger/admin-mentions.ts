@@ -26,7 +26,7 @@ export function hasAdminMention(text: string | null | undefined): boolean {
   return ADMIN_MENTION_RE.test(text);
 }
 
-// Accept any Supabase-compatible client — the real generated client's
+// Accept any Supabase-compatible client - the real generated client's
 // PostgrestFilterBuilder return type is a superset of what we use here.
 interface ServiceClientLike {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -123,7 +123,7 @@ export default function StatementDetailModal({
                     borderRadius: 8, padding: 10,
                   }}>
                     <summary style={{ cursor: 'pointer', color: 'var(--white)', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                      <span>{o.buyer_name} — {fmtDate(o.order_created_at)}</span>
+                      <span>{o.buyer_name} - {fmtDate(o.order_created_at)}</span>
                       <strong style={{ color: 'var(--teal)' }}>{money(Number(o.total || 0))}</strong>
                     </summary>
                     <ul style={{ listStyle: 'none', padding: '10px 0 0', margin: 0, fontSize: '0.85rem' }}>

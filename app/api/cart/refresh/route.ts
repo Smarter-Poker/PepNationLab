@@ -9,7 +9,7 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
  * client can update its local cart, and flags any item that is no longer
  * available (deleted, deactivated, or banned) so the client can drop it.
  *
- * Public endpoint — no auth required. We only echo the rows the caller
+ * Public endpoint - no auth required. We only echo the rows the caller
  * already references (anonymous shoppers must be able to see live prices on
  * the storefront), and we never reveal cost prices.
  *

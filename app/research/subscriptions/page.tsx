@@ -1,5 +1,5 @@
 /**
- * Subscriptions — auth-gated personalization surface.
+ * Subscriptions - auth-gated personalization surface.
  * Lists the signed-in user's per-compound notification subscriptions.
  */
 import { redirect } from 'next/navigation';

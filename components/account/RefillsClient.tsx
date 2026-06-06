@@ -95,7 +95,7 @@ export default function RefillsClient() {
 
       if (items.length === 0) throw new Error('No Items Available To Reorder.');
 
-      // CRITICAL: a reorder must only ever ADD to the cart — it must NEVER replace
+      // CRITICAL: a reorder must only ever ADD to the cart - it must NEVER replace
       // or empty whatever the buyer already has. We merge the reorder items into the
       // existing cart for THIS storefront, combining quantities for items already
       // present. We write BOTH cart representations so the items show up whether the
@@ -137,7 +137,7 @@ export default function RefillsClient() {
             .filter((k) => k.startsWith('pnl_storefront_cart_') && k !== cartKey)
             .forEach((k) => localStorage.removeItem(k));
         }
-      } catch { /* localStorage may be unavailable — fall through to redirect */ }
+      } catch { /* localStorage may be unavailable - fall through to redirect */ }
 
       if (skipped.length > 0) {
         toast.message('Some Items Were Not Available', {

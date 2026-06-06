@@ -7,8 +7,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * GET  /api/agent/coupons        — list non-deleted coupons owned by caller
- * POST /api/agent/coupons        — create a single coupon
+ * GET  /api/agent/coupons        - list non-deleted coupons owned by caller
+ * POST /api/agent/coupons        - create a single coupon
  *
  * v2 additions:
  *   - starts_at:            optional ISO timestamp; if set, RPC refuses redemption before it

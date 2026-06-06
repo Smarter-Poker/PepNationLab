@@ -12,7 +12,7 @@ export interface GamificationStep {
 
 // The house default scale: starts at 20% and climbs to a 40% ceiling across the
 // five monthly-volume tiers ($0 / $2.5K / $7.5K / $20K / $50K+). This ladder is
-// read-only in the UI — "See Default Gamification Levels" never lets it change.
+// read-only in the UI - "See Default Gamification Levels" never lets it change.
 export const DEFAULT_GAMIFICATION_LADDER: GamificationStep[] = [
   { level: 3, name: 'Rookie',  min_volume: 0,     bonus_pct: 20 },
   { level: 2, name: 'Pro',     min_volume: 5000,  bonus_pct: 30 },
@@ -28,7 +28,7 @@ export function freshDefaultLadder(): GamificationStep[] {
   return DEFAULT_GAMIFICATION_LADDER.map((s) => ({ ...s }));
 }
 
-// True when a loaded ladder is byte-for-byte the canonical default — used on the
+// True when a loaded ladder is byte-for-byte the canonical default - used on the
 // edit screen to decide whether to show the agent as "Default" (read-only) or
 // "Custom" (adjustable).
 export function isDefaultLadder(

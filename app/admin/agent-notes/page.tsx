@@ -65,7 +65,7 @@ export default function AdminAgentNotesPage() {
           setPeople(rows);
         }
       } catch {
-        // Silent — picker will just be empty
+        // Silent - picker will just be empty
       } finally {
         setLoadingPeople(false);
       }

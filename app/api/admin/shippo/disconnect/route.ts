@@ -2,7 +2,7 @@
  * DELETE /api/admin/shippo/disconnect
  *
  * Deactivates the active platform_shippo_credentials row. Does NOT delete
- * the row — the ledger must remain intact. Simply sets is_active = false.
+ * the row - the ledger must remain intact. Simply sets is_active = false.
  *
  * Guards: admin role + recent MFA (5 min) + same-origin CSRF.
  */

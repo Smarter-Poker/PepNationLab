@@ -16,12 +16,12 @@
  *        - If response_status is 0 → 425 Too Early (in-flight elsewhere)
  *        - Else → return cached response (the replay path)
  *
- * 5xx responses are NOT cached — the row is DELETED so the client may
+ * 5xx responses are NOT cached - the row is DELETED so the client may
  * retry. 2xx and 4xx ARE cached so a double-clicker gets back the same
  * outcome.
  *
  * If `key` is null/undefined the wrapper is a no-op and just runs the
- * handler — this lets callers opt in only when the client sends a key.
+ * handler - this lets callers opt in only when the client sends a key.
  */
 
 import { NextResponse } from 'next/server';
@@ -130,7 +130,7 @@ export async function withIdempotency(opts: IdempotencyOptions): Promise<NextRes
   const isConflict = !!insertErr && (insertErr as { code?: string }).code === '23505';
 
   if (insertErr && !isConflict) {
-    // Storage failure — fail open so the action still works (mostly).
+    // Storage failure - fail open so the action still works (mostly).
     // We log and just run the handler unwrapped.
     console.error('[idempotency] insert failed:', insertErr);
     return handler();
@@ -145,7 +145,7 @@ export async function withIdempotency(opts: IdempotencyOptions): Promise<NextRes
 
     if (!existing) {
       // Race lost the conflict and now the row is gone (expired sweep?).
-      // Just run the handler — safer than refusing a real request.
+      // Just run the handler - safer than refusing a real request.
       return handler();
     }
 
@@ -176,12 +176,12 @@ export async function withIdempotency(opts: IdempotencyOptions): Promise<NextRes
     return NextResponse.json(existing.response_body, { status: existing.response_status });
   }
 
-  // We own the row — run the handler.
+  // We own the row - run the handler.
   let response: NextResponse;
   try {
     response = await handler();
   } catch (err) {
-    // Handler threw. Don't cache — let the client retry.
+    // Handler threw. Don't cache - let the client retry.
     await admin.from('idempotency_keys').delete().eq('key', key);
     throw err;
   }
@@ -189,7 +189,7 @@ export async function withIdempotency(opts: IdempotencyOptions): Promise<NextRes
   const status = response.status;
 
   if (status >= 500) {
-    // Internal error — don't cache; allow retry.
+    // Internal error - don't cache; allow retry.
     await admin.from('idempotency_keys').delete().eq('key', key);
     return response;
   }

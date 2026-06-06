@@ -216,7 +216,7 @@ export default function SecurityTab({ userEmail }: Props) {
                     {f.friendly_name || f.factor_type.toUpperCase()}
                   </div>
                   <div style={{ color: 'var(--silver)', fontSize: '0.75rem', marginTop: 2 }}>
-                    Added {f.created_at ? new Date(f.created_at).toLocaleDateString() : '—'}
+                    Added {f.created_at ? new Date(f.created_at).toLocaleDateString() : '-'}
                   </div>
                   <div
                     style={{

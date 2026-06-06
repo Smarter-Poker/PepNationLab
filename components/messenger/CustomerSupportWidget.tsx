@@ -24,13 +24,13 @@ import MessagePane from './MessagePane';
 import SupportContextSidebar from './SupportContextSidebar';
 
 /**
- * Admin Customer Support widget — v7 (full-screen modal).
+ * Admin Customer Support widget - v7 (full-screen modal).
  *
  * Visible only on /messenger to a user whose profile.role === 'admin'.
  * Bottom bar opens a fixed inset:0 overlay that mounts the real messenger
- * MessagePane in the center column, so admin gets the full feature set —
+ * MessagePane in the center column, so admin gets the full feature set -
  * text, photos, videos, voice, files, links, calls, threads, reactions,
- * pins, expiry — for free, by reuse. Emoji + schedule-send buttons are
+ * pins, expiry - for free, by reuse. Emoji + schedule-send buttons are
  * intentionally hidden inside the modal (see global CSS at the bottom).
  *
  * v7: when a single thread is focused, the Researcher Context expands to
@@ -411,7 +411,7 @@ function CustomerSupportWidgetInner() {
 
       if (afterHours) {
         toast(
-          'Thanks — Your Support Thread Is Open. Requests After 5pm Central Typically Get Answered The Next Business Day.',
+          'Thanks - Your Support Thread Is Open. Requests After 5pm Central Typically Get Answered The Next Business Day.',
           { duration: 7000 },
         );
       }
@@ -447,7 +447,7 @@ function CustomerSupportWidgetInner() {
 
   // Force the unread badge to 0 for whichever conversation is currently
   // active in the messenger store. The server sometimes returns a stale
-  // unread_count for a conversation the admin is actively viewing — e.g.
+  // unread_count for a conversation the admin is actively viewing - e.g.
   // when realtime fires fetchInbox INSIDE MessagePane's 1s mark-read
   // debounce window. This helper guarantees the UI never re-lights the
   // red chip on the thread the admin is looking at, even on subsequent
@@ -501,7 +501,7 @@ function CustomerSupportWidgetInner() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversationId, lastReadMessageId: lastMsgId }),
       });
-    } catch { /* best-effort — next inbox poll will reconcile */ }
+    } catch { /* best-effort - next inbox poll will reconcile */ }
   }, []);
 
   useEffect(() => {
@@ -567,7 +567,7 @@ function CustomerSupportWidgetInner() {
 
   // Hard isolation: the set of conversation IDs that live in this inbox.
   // The center MessagePane only renders when the active conversation is in
-  // this set — non-support threads (e.g., the main messenger's prior active
+  // this set - non-support threads (e.g., the main messenger's prior active
   // conversation) are blocked from leaking into the Customer Support modal.
   const supportThreadIds = useMemo(
     () => new Set(rows.map((r) => r.conversation_id)),
@@ -576,7 +576,7 @@ function CustomerSupportWidgetInner() {
 
   // First-time auto-open: when the modal opens and the rows have loaded,
   // immediately select the most-recent support thread so the user never
-  // sees a blank center pane or — worse — the main messenger's previous
+  // sees a blank center pane or - worse - the main messenger's previous
   // active conversation flashing through. Triggers exactly once per open.
   const autoOpenedThisCycleRef = useRef(false);
   useEffect(() => {
@@ -597,7 +597,7 @@ function CustomerSupportWidgetInner() {
       if (target) {
         setMessengerActive(target);
         // Auto-open path bypasses goToConversation, so fire mark-read here
-        // explicitly — otherwise the auto-opened thread keeps its unread
+        // explicitly - otherwise the auto-opened thread keeps its unread
         // badge lit even though the admin is actively viewing it.
         void markRowRead(target);
       }
@@ -675,7 +675,7 @@ function CustomerSupportWidgetInner() {
   }, [rows]);
 
   function goToConversation(id: string) {
-    // Stay in the full-screen modal — set active in the shared store so the
+    // Stay in the full-screen modal - set active in the shared store so the
     // embedded MessagePane renders this support thread. Closing the modal
     // restores the messenger's previous active conversation.
     setStatusPopoverFor(null);
@@ -689,7 +689,7 @@ function CustomerSupportWidgetInner() {
   }
 
   async function setStatus(conversationId: string, status: SupportStatus) {
-    // Resolving a thread also clears its unread badge — the admin has
+    // Resolving a thread also clears its unread badge - the admin has
     // explicitly worked the conversation, so no point keeping the red chip.
     setRows((prev) => prev.map((r) => {
       if (r.conversation_id !== conversationId) return r;
@@ -822,7 +822,7 @@ function CustomerSupportWidgetInner() {
                       <strong style={{ color: '#FFE9B7', display: 'block', marginBottom: 2 }}>
                         Outside Business Hours
                       </strong>
-                      Requests Received After 5pm Central Typically Get Answered The Next Business Day. Your Thread Will Still Be Created — We Will Reply As Soon As We Are Back.
+                      Requests Received After 5pm Central Typically Get Answered The Next Business Day. Your Thread Will Still Be Created - We Will Reply As Soon As We Are Back.
                     </span>
                   </div>
                 )}
@@ -1126,7 +1126,7 @@ function CustomerSupportWidgetInner() {
             background: 'var(--surface-0, #050A0F)',
           }}
         >
-          {/* Top app-bar: title + close — close returns to the collapsed bar. */}
+          {/* Top app-bar: title + close - close returns to the collapsed bar. */}
           <div
             style={{
               display: 'flex',
@@ -1245,7 +1245,7 @@ function CustomerSupportWidgetInner() {
             </button>
           </header>
 
-          {/* Filter tabs — equal-width flex, tighter font, no scroll bar */}
+          {/* Filter tabs - equal-width flex, tighter font, no scroll bar */}
           <div
             role="tablist"
             aria-label="Support Inbox Filter"
@@ -1797,7 +1797,7 @@ function CustomerSupportWidgetInner() {
             )}
           </div>
 
-          {/* Footer pinned with flex-shrink:0 — only shows when the full list is visible.
+          {/* Footer pinned with flex-shrink:0 - only shows when the full list is visible.
               In focused (single-thread) mode we hide it so the Researcher Context can
               consume all remaining space below the contact card. */}
           {!focusedRow && (
@@ -1838,7 +1838,7 @@ function CustomerSupportWidgetInner() {
           </footer>
           )}
 
-          {/* Researcher Context — was a separate right-rail panel; now lives
+          {/* Researcher Context - was a separate right-rail panel; now lives
               INSIDE the left column. Only shows when a support thread is
               selected. Collapsible via the same `contextCollapsed` state so
               the inbox list gets the full column height when hidden. */}
@@ -1937,19 +1937,19 @@ function CustomerSupportWidgetInner() {
                   </strong>
                   <p style={{ fontSize: '0.86rem', maxWidth: 380, lineHeight: 1.5, margin: 0 }}>
                     Pick A Support Thread From The Left To Open It Here. You’ll
-                    Get The Full Messenger — Text, Photos, Videos, Voice Notes,
-                    Files, And Links — Without Leaving Customer Support.
+                    Get The Full Messenger - Text, Photos, Videos, Voice Notes,
+                    Files, And Links - Without Leaving Customer Support.
                   </p>
                 </div>
               )}
             </main>
 
-            {/* right_rail_removed — context now lives inside the left column. */}
+            {/* right_rail_removed - context now lives inside the left column. */}
           </div>
         </div>
       )}
 
-      {/* Collapsed bar — brushed-nickel top edge, no decorative icon, title centered.
+      {/* Collapsed bar - brushed-nickel top edge, no decorative icon, title centered.
             Right-side cluster (unread chip + chevron) is absolutely positioned so the
             title stays geometrically centered regardless of its width. */}
       <button
@@ -2102,7 +2102,7 @@ function CustomerSupportWidgetInner() {
         }
         /* Customer Support v6: hide the composer's emoji + schedule-send buttons
            while the modal is open. Admins reply through the support modal
-           with text/photo/video/file only — emoji and scheduled-send are
+           with text/photo/video/file only - emoji and scheduled-send are
            noise here. The selectors target the composer buttons by their
            stable aria-labels so we don't need to fork MessageComposer. */
         .cs-widget-overlay button[aria-label="Insert Emoji"],

@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * SequenceViewer — renders a peptide's amino-acid sequence as color-coded residue
+ * SequenceViewer - renders a peptide's amino-acid sequence as color-coded residue
  * tiles (by side-chain class), with a residue count, a legend, and a copy button.
  * Accepts 3-letter dash-joined sequences (Gly-Glu-Pro-...) or contiguous 1-letter
  * codes (QEQLERALNSS), and gracefully renders nothing when the "sequence" is a
- * descriptive string (small molecule, combination, n/a, etc.) — the monograph
+ * descriptive string (small molecule, combination, n/a, etc.) - the monograph
  * still shows the raw sequence text as a fact in that case.
  *
  * Research-use-only: a structural reference view, not dosing or medical content.

@@ -8,7 +8,7 @@ import { rateLimit } from '@/lib/rate-limit';
  * Researcher Reorder.
  *
  * Clones a prior order into a new pending order for the same buyer + agent.
- * Prices are re-resolved from the current `agent_products` row — we do NOT
+ * Prices are re-resolved from the current `agent_products` row - we do NOT
  * trust the previous unit price because the agent may have repriced since.
  * Items whose product has been banned, removed from the catalog, or hidden
  * from the agent's storefront are dropped and returned in `skipped[]`.

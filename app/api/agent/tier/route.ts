@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
  *
  * House-tier gamification state for the calling agent (Super Agent / standalone).
  * Returns `enabled:false` when the tier-ladder v2 flag is off so the UI hides.
- * Blind-pricing: exposes the agent's own tier + progress only — never upline data.
+ * Blind-pricing: exposes the agent's own tier + progress only - never upline data.
  */
 export async function GET() {
   const gate = await requireAgent();

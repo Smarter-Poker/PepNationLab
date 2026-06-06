@@ -12,7 +12,7 @@ import { createClient } from '@/lib/supabase/client';
  * single router.refresh() so the KPI tiles, sparkline, leaderboard,
  * and audit log all update without manual reload.
  *
- * Pure side-effect component — renders nothing.
+ * Pure side-effect component - renders nothing.
  */
 export default function AdminDashboardRealtime() {
   const router = useRouter();
@@ -35,7 +35,7 @@ export default function AdminDashboardRealtime() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, scheduleRefresh)
       .subscribe();
 
-    // Refresh when the tab returns to the foreground after being hidden — the
+    // Refresh when the tab returns to the foreground after being hidden - the
     // Realtime connection drops on long hidden tabs.
     const onVisible = () => {
       if (document.visibilityState === 'visible') scheduleRefresh();

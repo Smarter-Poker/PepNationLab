@@ -13,13 +13,13 @@ export const dynamic = 'force-dynamic';
  * shows nothing.
  *
  * Categories:
- *   Orders        — pending_customer_payment, agent_approval_pending,
+ *   Orders        - pending_customer_payment, agent_approval_pending,
  *                   stale_approved_ship, shipped_no_tracking
- *   Inventory     — out_of_stock_active_products
- *   Financial     — negative_prepaid_balance, open_statements_past_due
- *   Coupons       — expired_active_coupons
- *   Researchers   — researchers_first_login, abandoned_carts
- *   Agent setup   — active_agents_no_warehouse
+ *   Inventory     - out_of_stock_active_products
+ *   Financial     - negative_prepaid_balance, open_statements_past_due
+ *   Coupons       - expired_active_coupons
+ *   Researchers   - researchers_first_login, abandoned_carts
+ *   Agent setup   - active_agents_no_warehouse
  *
  * Cache-Control: 30s private + 60s SWR.
  */
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Nudges Query Failed' }, { status: 500 });
   }
 
-  // Postgres bigint serializes as string over PostgREST — coerce here.
+  // Postgres bigint serializes as string over PostgREST - coerce here.
   // Null/undefined → 0 so an older DB function shape never throws here.
   const row = (data ?? {}) as Record<string, number | string | null>;
   const num = (v: unknown): number => {

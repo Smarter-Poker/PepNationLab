@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * AgentResearcherCRMv2 — Full Premium Build
+ * AgentResearcherCRMv2 - Full Premium Build
  *
  * Changes in this version:
  *  - Props: onResetPassword, onPromote, onToggleAutoApprove, isSuperAgent
@@ -319,7 +319,7 @@ function GoalHeader({ goal, onSetGoal }: {
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: '0.69rem', color: '#7A8B9E', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>This Month's Goal</div>
           <div style={{ fontSize: '1.05rem', color: '#FFFFFF', fontWeight: 800, marginTop: 2 }}>
-            {fmtInt(goal.achieved_count)} <span style={{ color: '#7A8B9E', fontWeight: 400 }}>of</span> {goal.target_count != null ? fmtInt(goal.target_count) : '—'} New Researchers
+            {fmtInt(goal.achieved_count)} <span style={{ color: '#7A8B9E', fontWeight: 400 }}>of</span> {goal.target_count != null ? fmtInt(goal.target_count) : '-'} New Researchers
           </div>
         </div>
       </div>
@@ -512,7 +512,7 @@ function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag
               </span>
             )}
           </div>
-          <span style={{ fontSize: '0.7rem', color: '#5A6A7A', display: 'block' }}>@{r.username || '—'}</span>
+          <span style={{ fontSize: '0.7rem', color: '#5A6A7A', display: 'block' }}>@{r.username || '-'}</span>
           {r.tags.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 3 }}>
               {r.tags.map(t => <span key={t.id} style={{ fontSize: '0.6rem', padding: '1px 6px', borderRadius: 999, background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.28)', color: '#00C4BC', fontWeight: 700 }}>{t.tag}</span>)}
@@ -635,7 +635,7 @@ function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag
               <div style={{ fontSize: '0.63rem', color: '#60A5FA', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}><Bell size={10} /> Upcoming Reminders</div>
               {r.reminders!.map(rem => (
                 <div key={rem.id} style={{ fontSize: '0.78rem', color: '#E6EEF6', marginBottom: 2 }}>
-                  • {rem.title} <span style={{ color: '#7A8B9E', fontSize: '0.70rem' }}> — {new Date(rem.remind_at).toLocaleDateString()}</span>
+                  • {rem.title} <span style={{ color: '#7A8B9E', fontSize: '0.70rem' }}> - {new Date(rem.remind_at).toLocaleDateString()}</span>
                 </div>
               ))}
             </div>
@@ -722,7 +722,7 @@ function ActivityFeed({ items }: { items: ActivityItem[] }) {
             <li key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none', fontSize: '0.78rem', color: '#B0B8C4' }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 <strong style={{ color: '#FFFFFF' }}>{a.researcher_name}</strong>
-                {a.meta ? ` — ${a.meta}` : ''}
+                {a.meta ? ` - ${a.meta}` : ''}
               </span>
               <span style={{ color: '#5A6A7A', fontSize: '0.71rem', whiteSpace: 'nowrap' }}>{daysAgo(a.at)}</span>
             </li>
@@ -789,7 +789,7 @@ export default function AgentResearcherCRMv2({
       const r = await fetch('/api/agent/researchers/v2', { cache: 'no-store' });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const raw = await r.json() as any;
-      // Normalise field names — API uses created_at/last_sign_in_at, UI uses joined_at/last_login
+      // Normalise field names - API uses created_at/last_sign_in_at, UI uses joined_at/last_login
       if (raw.researchers) {
         raw.researchers = raw.researchers.map((r: any) => ({
           ...r,
@@ -954,7 +954,7 @@ export default function AgentResearcherCRMv2({
             <span style={{ fontSize: '0.8rem', color: '#F59E0B', fontWeight: 700 }}>
               {neverLoggedIn} Researcher{neverLoggedIn !== 1 ? 's' : ''} Haven't Logged In Yet
             </span>
-            <span style={{ fontSize: '0.75rem', color: '#7A8B9E' }}>— They haven't activated their account</span>
+            <span style={{ fontSize: '0.75rem', color: '#7A8B9E' }}>- They haven't activated their account</span>
           </div>
           <button type="button" onClick={messageNeverLoggedIn}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 9, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.32)', color: '#F59E0B', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
@@ -973,7 +973,7 @@ export default function AgentResearcherCRMv2({
         <KpiCard label="Repeat Rate" value={`${Math.round(safe(k.repeat_rate.value))}%`} spark={k.repeat_rate.spark ?? []} delta={k.repeat_rate.delta_pct} color="#A78BFA" />
         <KpiCard label="New This Month" value={fmtInt(k.new_this_month.value)} spark={k.new_this_month.spark ?? []} delta={k.new_this_month.delta_pct} onClick={() => { setTab('list'); setFilter('new'); }} />
         <KpiCard label="At Risk" value={fmtInt(k.at_risk.value)} spark={k.at_risk.spark ?? []} delta={k.at_risk.delta_pct} color="#F59E0B" onClick={() => { setTab('list'); setFilter('at_risk'); }} />
-        <KpiCard label="Best Researcher" value={k.best_customer.label || '—'} spark={k.best_customer.spark ?? []} delta={k.best_customer.delta_pct} color="#FACC15" subtitle={k.best_customer.value > 0 ? fmtUSD(k.best_customer.value) : undefined} />
+        <KpiCard label="Best Researcher" value={k.best_customer.label || '-'} spark={k.best_customer.spark ?? []} delta={k.best_customer.delta_pct} color="#FACC15" subtitle={k.best_customer.value > 0 ? fmtUSD(k.best_customer.value) : undefined} />
         <KpiCard label="Commission Earned" value={fmtUSD(k.lifetime_commission.value)} spark={k.lifetime_commission.spark ?? []} delta={k.lifetime_commission.delta_pct} color="#2DD4BF" />
       </div>
 

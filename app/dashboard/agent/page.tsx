@@ -32,7 +32,7 @@ export default async function AgentDashboardPage() {
 
   // SACA: sub-agents are role='agent' + is_sub_agent=true. They have no
   // agent_profiles row, no agent_products, no agent_inventory, no storefront
-  // — every query below returns empty for them and the full agent dashboard
+  // - every query below returns empty for them and the full agent dashboard
   // exposes config they cannot own. Send them to the dedicated sub-agent
   // dashboard (already covered by /dashboard but a direct hit on this URL
   // would bypass that). This is a defense-in-depth complement to the

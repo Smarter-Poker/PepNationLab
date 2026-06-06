@@ -125,7 +125,7 @@ export default function AgentDashboardClient({
 
   // Whitelist of valid tabs. Any unknown / malformed ?tab= value (e.g. a link
   // whose "&" terminated the query string, leaving "Sales ") must fall back to
-  // the default tab — otherwise the main panel renders blank and looks broken.
+  // the default tab - otherwise the main panel renders blank and looks broken.
   const VALID_TABS = ['Overview', 'Sales & Accounting', 'Orders', 'Researchers', 'My Sub-Agents', 'My Agent Accounts', 'Store Products', 'Research Bundles', 'Inventory', 'Coupons', 'Storefront Config', 'Settings'] as const;
   type AgentTabName = typeof VALID_TABS[number];
   const resolveTab = (t: unknown): AgentTabName =>
@@ -250,7 +250,7 @@ export default function AgentDashboardClient({
       if (!res.ok) {
         setCrError(json.error || 'Failed To Create Researcher Account');
       } else {
-        setCrSuccess(`Researcher Account Created — Username: ${json.username}`);
+        setCrSuccess(`Researcher Account Created - Username: ${json.username}`);
         setResearcherList(prev => [...prev, {
           id: json.userId,
           email: `${json.username}@internal.auth`,
@@ -404,7 +404,7 @@ export default function AgentDashboardClient({
   };
 
   // Compute stats. Order count excludes cancelled to stay consistent with
-  // the revenue total below — otherwise the dashboard would proudly count
+  // the revenue total below - otherwise the dashboard would proudly count
   // cancelled orders while excluding their revenue, which reads as a bug.
   const activeResearchersCount = researcherList.length;
   const nonCancelledOrders = orders.filter((o) => o.status !== 'cancelled');
@@ -628,7 +628,7 @@ export default function AgentDashboardClient({
         )}
 
 
-        {/* TAB: Overview — full-bleed image fills 100dvh minus navbar */}
+        {/* TAB: Overview - full-bleed image fills 100dvh minus navbar */}
         {activeTab === 'Overview' && (
           <div style={{
             animation: 'fadeIn 0.3s ease-out',
@@ -862,7 +862,7 @@ export default function AgentDashboardClient({
 
                     <form onSubmit={handleCreateResearcher} style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
 
-                      {/* R31: First + Last Name — top-aligned grid */}
+                      {/* R31: First + Last Name - top-aligned grid */}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18, alignItems: 'start' }}>
                         <div>
                           <label style={{
@@ -963,7 +963,7 @@ export default function AgentDashboardClient({
                             else e.currentTarget.style.border = '1px solid #2a3045';
                           }}
                         />
-                        {/* Live availability status row — green/red/amber/silver */}
+                        {/* Live availability status row - green/red/amber/silver */}
                         {crUsernameMsg && (
                           <div
                             id="cr-username-status"
@@ -1082,7 +1082,7 @@ export default function AgentDashboardClient({
             )}
 
 
-            {/* My Researchers — premium header with action + full CRM below */}
+            {/* My Researchers - premium header with action + full CRM below */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
               {/* Action header */}
@@ -1096,7 +1096,7 @@ export default function AgentDashboardClient({
               }}>
                 <div>
                   <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em', margin: 0 }}>My Researchers</h3>
-                  <p style={{ fontSize: '0.78rem', color: '#6A7A8A', margin: '4px 0 0' }}>Your full researcher team — manage, message, and track from here</p>
+                  <p style={{ fontSize: '0.78rem', color: '#6A7A8A', margin: '4px 0 0' }}>Your full researcher team - manage, message, and track from here</p>
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                   {researcherList.length > 0 && (
@@ -1314,7 +1314,7 @@ function SettingsPasswordForm() {
 }
 
 /* ─────────────────────────────────────────────────────
-   ThemeToggleCard — Dark / Light mode toggle in Settings
+   ThemeToggleCard - Dark / Light mode toggle in Settings
    ───────────────────────────────────────────────────── */
 function ThemeToggleCard() {
   const { theme, toggleTheme } = useTheme();

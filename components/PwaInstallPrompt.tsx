@@ -54,7 +54,7 @@ export default function PwaInstallPrompt() {
       await deferred.prompt();
       await deferred.userChoice;
     } catch {
-      // ignore — Safari/Firefox may not implement prompt.
+      // ignore - Safari/Firefox may not implement prompt.
     } finally {
       setBusy(false);
       setVisible(false);

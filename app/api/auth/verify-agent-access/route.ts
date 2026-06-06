@@ -12,7 +12,7 @@ import { assertSameOrigin } from '@/lib/csrf';
  *
  * The userId from the request body is accepted as a fallback when the session
  * cookie hasn't propagated yet (common on mobile incognito immediately after
- * signInWithPassword). We validate it against the service client — the real
+ * signInWithPassword). We validate it against the service client - the real
  * security gate is that only a correctly-signed Supabase JWT can produce a
  * valid userId that matches a real profile row.
  */
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createServiceClient();
 
-  // Prefer the session cookie user — fall back to the body-supplied userId.
+  // Prefer the session cookie user - fall back to the body-supplied userId.
   // On mobile incognito the cookie may not be readable by the server on the
   // very first request after signInWithPassword (timing/cookie propagation).
   let resolvedUserId: string | null = null;
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     const supabaseAuth = await createClient();
     const { data: { user } } = await supabaseAuth.auth.getUser();
     if (user?.id) resolvedUserId = user.id;
-  } catch { /* cookie unreadable — fall through to body userId */ }
+  } catch { /* cookie unreadable - fall through to body userId */ }
 
   // If session cookie didn't resolve, use the body userId (must be a valid UUID)
   if (!resolvedUserId && bodyUserId && typeof bodyUserId === 'string' && /^[0-9a-f-]{36}$/i.test(bodyUserId)) {

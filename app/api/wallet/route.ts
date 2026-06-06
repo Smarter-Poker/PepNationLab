@@ -11,13 +11,13 @@ export const dynamic = 'force-dynamic';
  * one wallet view so a single <WalletCard/> can render for researchers, sub-agents,
  * agents, super-agents, and admins:
  *
- *   - store_credits        — legacy researcher store credit (vestigial; balance = SUM(amount)).
- *   - prepaid_balance      — the unified wallet balance for every role, with the
+ *   - store_credits        - legacy researcher store credit (vestigial; balance = SUM(amount)).
+ *   - prepaid_balance      - the unified wallet balance for every role, with the
  *                            balance_transactions ledger (transfers, charges, payouts).
  *
  * Every read is hard-scoped to the caller's own id (user_id / agent_id). The
  * service client is used only so the aggregates are not affected by RLS edge
- * cases — it never reads another user's rows.
+ * cases - it never reads another user's rows.
  */
 
 type WalletTxn = {
@@ -116,7 +116,7 @@ export async function GET() {
   const walletTxns: WalletTxn[] = (btRows ?? []).map((r) => {
     const type = (r.type as string) || '';
     // A credit-line transfer bills the credit line, so the prepaid-balance
-    // snapshots don't move (delta 0) — the true debit is the full amount.
+    // snapshots don't move (delta 0) - the true debit is the full amount.
     // For everything else prefer the exact ledger delta when it is non-zero,
     // otherwise derive the sign from the transaction type.
     const hasSnaps = r.balance_before != null && r.balance_after != null;

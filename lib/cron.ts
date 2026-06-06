@@ -61,7 +61,7 @@ export async function claimCronRun(
     .single();
 
   if (error || !data) {
-    // Unique-violation (already ran) or transient — treat as not-claimed.
+    // Unique-violation (already ran) or transient - treat as not-claimed.
     return null;
   }
 

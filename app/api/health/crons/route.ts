@@ -71,7 +71,7 @@ export async function GET() {
     }
   }
 
-  // Anything in cron_runs that isn't in the known list — could be ad-hoc,
+  // Anything in cron_runs that isn't in the known list - could be ad-hoc,
   // legacy, or a misnamed job. Surface so operators can clean up.
   const knownNames = new Set(KNOWN_CRONS.map((k) => k.job_name));
   for (const r of rows ?? []) {

@@ -671,7 +671,7 @@ export default function ProductCatalogClient({
                           const sizeLabel =
                             v.unit_size && v.unit_measure
                               ? `${v.unit_size}${v.unit_measure}`
-                              : (v.sku ?? "—");
+                              : (v.sku ?? "-");
                           const vCost = Number(v.base_cost);
                           return (
                             <tr
@@ -964,7 +964,7 @@ export default function ProductCatalogClient({
 
               <div style={{ marginBottom: "var(--space-5)" }}>
                 <label className="form-label">
-                  Effective At (Optional — Empty = Now)
+                  Effective At (Optional - Empty = Now)
                 </label>
                 <input
                   type="datetime-local"

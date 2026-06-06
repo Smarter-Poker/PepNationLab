@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 /**
  * Lightweight client capture for ?coupon= URL parameters on a storefront
  * page. When present, stashes the code in localStorage so the checkout
- * form can auto-apply it. Invisible at render time — pure side-effect.
+ * form can auto-apply it. Invisible at render time - pure side-effect.
  *
  * Lifetime: cleared after the checkout form picks it up, or after 30 days
  * if the user never finishes checkout.

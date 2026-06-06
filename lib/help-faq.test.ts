@@ -52,7 +52,7 @@ const ALLOWED_QUERY_TABS = new Set([
 // R29.1: em-dash is banned from all user-facing FAQ copy. Test runs against
 // every q, every a, every links[].label so accidental paste-ins are caught
 // in CI before they reach production.
-const EM_DASH = '—';
+const EM_DASH = '-';
 
 describe('FAQ catalog structural invariants', () => {
   it('every category has at least one item', () => {

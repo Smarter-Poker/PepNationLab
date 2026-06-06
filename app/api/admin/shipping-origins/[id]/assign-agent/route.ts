@@ -13,7 +13,7 @@
  *   Sets agent_profiles.warehouse_origin_id = null for the specified agent,
  *   reverting to the platform default shipping origin.
  *
- * Guards: requireAdmin — no MFA required for this read-ish assignment.
+ * Guards: requireAdmin - no MFA required for this read-ish assignment.
  */
 
 import type { NextRequest } from 'next/server';
@@ -29,7 +29,7 @@ interface RouteParams {
 }
 
 // ---------------------------------------------------------------------------
-// POST — assign this origin to an agent
+// POST - assign this origin to an agent
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest, { params }: RouteParams) {
   const csrfErr = assertSameOrigin(req);
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 }
 
 // ---------------------------------------------------------------------------
-// DELETE — unassign (revert to platform default)
+// DELETE - unassign (revert to platform default)
 // ---------------------------------------------------------------------------
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
   const csrfErr = assertSameOrigin(req);

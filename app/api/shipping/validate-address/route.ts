@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     const result = await validateAddress(addr);
     return NextResponse.json(result);
   } catch (err) {
-    // Shippo not configured or unavailable — return a soft ok so checkout
+    // Shippo not configured or unavailable - return a soft ok so checkout
     // doesn't block. The server-side label purchase will validate again.
     const msg = err instanceof Error ? err.message : 'Shippo unavailable';
     return NextResponse.json({

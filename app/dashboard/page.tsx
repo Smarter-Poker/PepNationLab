@@ -25,7 +25,7 @@ export default async function DashboardPage({
   if (role === 'admin') redirect('/admin');
   if (role === 'shipping') redirect('/shipping');
   // SACA: sub-agents have role='agent' + is_sub_agent=true. They get their
-  // own dashboard at /dashboard/sub-agent — NEVER the full agent dashboard,
+  // own dashboard at /dashboard/sub-agent - NEVER the full agent dashboard,
   // which would expose storefront config they don't own and order management
   // they can't action. Check before the agent/super_agent redirect below.
   if ((profile as { is_sub_agent?: boolean | null })?.is_sub_agent === true) {

@@ -234,7 +234,7 @@ export default function MessagePane({ userId }: Props) {
       return;
     }
 
-    // Check the dismiss flag FIRST — if the user dismissed, hide regardless
+    // Check the dismiss flag FIRST - if the user dismissed, hide regardless
     // of permission state. Previously the denied check ran before this,
     // causing the "dismissed" banner to reappear on every conversation switch.
     const dismissed = window.sessionStorage.getItem(PUSH_DISMISS_KEY) === '1';
@@ -1034,7 +1034,7 @@ export default function MessagePane({ userId }: Props) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          // Messenger conversation header — fixed 12px padding all sides.
+          // Messenger conversation header - fixed 12px padding all sides.
           // The messenger layout's spacer already reserves --nav-offset
           // (60px + safe-top) ABOVE this header, so adding safe-top here
           // again created a ~60px empty band that pushed Anna+icons way

@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    // Always show success — do not reveal whether an account exists.
+    // Always show success - do not reveal whether an account exists.
     setSent(true);
   }
 

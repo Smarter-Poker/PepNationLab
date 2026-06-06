@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
  * is_active also makes the agent's list correctly show "Expired" /
  * "Exhausted" without waiting for an attempted redemption.
  *
- * Idempotent — safe to invoke at any cadence.
+ * Idempotent - safe to invoke at any cadence.
  */
 export async function GET(req: Request) {
   const unauth = assertCronAuth(req);

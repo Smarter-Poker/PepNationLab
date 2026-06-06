@@ -4,7 +4,7 @@ import { calculateShippingCost, ShippingOption } from '@/lib/shipping';
 
 /**
  * Returns the weight-based shipping rate for a given total weight and shipping option.
- * Public endpoint — no auth required.
+ * Public endpoint - no auth required.
  *
  * Called by CheckoutForm to keep client preview in sync with server charges.
  */

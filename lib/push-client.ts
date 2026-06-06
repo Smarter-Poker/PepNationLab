@@ -92,7 +92,7 @@ export async function enablePush(): Promise<EnableResult> {
       try {
         await subscription.unsubscribe();
       } catch {
-        // Best-effort — proceed to re-subscribe regardless.
+        // Best-effort - proceed to re-subscribe regardless.
       }
       subscription = null;
     }

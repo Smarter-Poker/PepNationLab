@@ -1,5 +1,5 @@
 /**
- * GlossaryText — pure presentational. Wraps any known glossary term found in
+ * GlossaryText - pure presentational. Wraps any known glossary term found in
  * `text` in an <abbr> with a dotted underline + title tooltip definition. Builds
  * an array of React nodes (no dangerouslySetInnerHTML). If no terms match, the
  * text renders unchanged.

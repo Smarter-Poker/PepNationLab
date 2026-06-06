@@ -12,7 +12,7 @@ interface Transaction {
   id: string;
   agent_id: string;
   type: string;
-  // Postgres numeric serializes as string over PostgREST — keep loose typing
+  // Postgres numeric serializes as string over PostgREST - keep loose typing
   // and coerce with Number(...) at render time.
   amount: number | string;
   balance_before: number | string;

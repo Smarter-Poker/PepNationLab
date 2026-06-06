@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 type Field = 'slug' | 'username' | 'display_name';
 
 /**
- * Fallback embedded reserved set — used only if the DB read of
+ * Fallback embedded reserved set - used only if the DB read of
  * public.reserved_slugs fails (e.g., transient outage). Kept small and
  * narrow; the authoritative list is the DB table.
  */
@@ -106,7 +106,7 @@ function validateDisplayName(raw: string, _reserved: Set<string>): Validation {
   const nfkc = normalizeNfkc(raw);
   if (nfkc.length < 2) return { ok: false, reason: 'Display Name Must Be At Least 2 Characters.', reasonCode: 'invalid_format' };
   if (nfkc.length > 60) return { ok: false, reason: 'Display Name Must Be 60 Characters Or Fewer.', reasonCode: 'invalid_format' };
-  // Display name is the friendliest field — we allow mixed scripts and
+  // Display name is the friendliest field - we allow mixed scripts and
   // non-Latin entirely. But we still block obvious profanity.
   if (containsProfanity(nfkc)) {
     return { ok: false, reason: POLITELY_REJECT_REASON, reasonCode: 'profanity' };
@@ -127,7 +127,7 @@ async function logFailedAttempt(
     caller_id: string | null;
   },
 ) {
-  // Fire-and-forget — never block the response on the audit write. The
+  // Fire-and-forget - never block the response on the audit write. The
   // route's primary job is to answer the user; the log is best-effort.
   try {
     await supabase.from('availability_failed_attempts').insert(payload);
@@ -333,17 +333,17 @@ export async function GET(req: NextRequest) {
         normalized: value,
         reason:
           field === 'slug'
-            ? 'That Storefront URL Slug Is Already Taken — Try Another.'
+            ? 'That Storefront URL Slug Is Already Taken - Try Another.'
             : field === 'username'
-              ? 'That Username Is Already Taken — Try Another.'
-              : 'That Display Name Is Already Taken — Try Another.',
+              ? 'That Username Is Already Taken - Try Another.'
+              : 'That Display Name Is Already Taken - Try Another.',
         suggestions,
       },
       { status: 200, headers: { 'Cache-Control': 'private, no-store, max-age=0' } },
     );
   }
 
-  // Available — issue a soft reservation and probe for similar names in
+  // Available - issue a soft reservation and probe for similar names in
   // parallel. Both are best-effort; if either fails, the response still
   // carries available:true.
   const [reservationToken, similarTo] = await Promise.all([

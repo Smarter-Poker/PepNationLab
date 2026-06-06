@@ -1,4 +1,4 @@
-// R24 hotfix — Sales auto-insights.
+// R24 hotfix - Sales auto-insights.
 // Uses real schema: agent_inventory.stock_count, derives dormancy via orders join.
 // All RPC calls use user-authed client so SECURITY DEFINER caller-check passes.
 import { NextResponse } from 'next/server';
@@ -33,7 +33,7 @@ export async function GET() {
     });
   });
 
-  // Dormant researchers — derive last_order via orders join
+  // Dormant researchers - derive last_order via orders join
   const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const { data: researchers } = await svc
     .from('profiles')
@@ -60,7 +60,7 @@ export async function GET() {
     }
   }
 
-  // Goal progress — call agent_sales_kpis via USER-authed client
+  // Goal progress - call agent_sales_kpis via USER-authed client
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
   const { data: goal } = await svc
     .from('agent_sales_goals')

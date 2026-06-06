@@ -273,15 +273,15 @@ const getEditDistance = (a: string, b: string) => {
 };
 
 /**
- * Background catalog cache refresher — stale-while-revalidate.
+ * Background catalog cache refresher - stale-while-revalidate.
  *
  * 1. Fires on mount (checks TTL, skips if still fresh).
  * 2. Refreshes every CATALOG_TTL_MS / 2 to keep the cache warm.
  * 3. Subscribes to Supabase Realtime on the agent_products table so that
  *    any admin update (price change, visibility toggle, new product) evicts
- *    the cache and re-fetches within seconds — not the next TTL expiry.
+ *    the cache and re-fetches within seconds - not the next TTL expiry.
  *
- * Does NOT update live React state — the SSR-hydrated props are always
+ * Does NOT update live React state - the SSR-hydrated props are always
  * authoritative for the current render. The cache only benefits future visits.
  */
 function useCatalogRefresh(agentSlug: string) {
@@ -297,7 +297,7 @@ function useCatalogRefresh(agentSlug: string) {
 
       const res = await fetch(`/api/storefront/catalog/${encodeURIComponent(agentSlug)}`, {
         method: 'GET',
-        credentials: 'omit', // public endpoint — no cookies needed
+        credentials: 'omit', // public endpoint - no cookies needed
         headers: { Accept: 'application/json' },
       });
       if (!res.ok) return;
@@ -306,7 +306,7 @@ function useCatalogRefresh(agentSlug: string) {
         writeCatalogCache(agentSlug, { ...data, fetchedAt: Date.now() });
       }
     } catch {
-      // Best-effort — never throw
+      // Best-effort - never throw
     }
   }, [agentSlug]);
 
@@ -321,7 +321,7 @@ function useCatalogRefresh(agentSlug: string) {
     );
 
     // ── Realtime: evict + re-fetch the moment any product is updated ────────
-    // Listens for INSERT/UPDATE/DELETE on agent_products (any agent) — the
+    // Listens for INSERT/UPDATE/DELETE on agent_products (any agent) - the
     // server-side catalog API is what's actually scoped per agent_id. This
     // client-side listener just triggers a forced refresh when anything changes,
     // which is cheap (the API response is served from Vercel edge cache).
@@ -346,7 +346,7 @@ function useCatalogRefresh(agentSlug: string) {
         )
         .subscribe();
     } catch {
-      // Realtime unavailable — gracefully degrade to interval-only refresh
+      // Realtime unavailable - gracefully degrade to interval-only refresh
     }
 
     return () => {
@@ -377,7 +377,7 @@ export default function AgentStorefrontGrid({
   const [mounted, setMounted] = useState(false);
   const [showStoreGrid, setShowStoreGrid] = useState(true);
 
-  // Keep the localStorage catalog cache warm — fires on mount and every 5 min.
+  // Keep the localStorage catalog cache warm - fires on mount and every 5 min.
   // Benefits: next navigation to this storefront renders instantly from cache.
   useCatalogRefresh(agentSlug);
 
@@ -1009,7 +1009,7 @@ export default function AgentStorefrontGrid({
       // Common auxiliary / modal verbs
       'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
       'should', 'may', 'might', 'must', 'can', 'shall',
-      // Generic search-intent verbs — no field match signal
+      // Generic search-intent verbs - no field match signal
       'want', 'need', 'looking', 'look', 'find', 'get', 'give', 'help', 'make',
       'use', 'using', 'used', 'try', 'trying', 'tried', 'know', 'show', 'work',
       'feel', 'feeling', 'like', 'take', 'taking', 'takes', 'increase',
@@ -1045,7 +1045,7 @@ export default function AgentStorefrontGrid({
       // Skin / Anti-Aging / Cosmetic
       ['skin', 'antiaging', 'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow', 'complexion', 'youth', 'tanning', 'tan', 'melanin', 'sun', 'burn', 'brightening', 'dark-spots', 'spots', 'blemish', 'acne', 'pores', 'texture', 'dermis', 'anti-wrinkle', 'rejuvenate', 'rejuvenation', 'youthful', 'firming', 'hydration', 'hairloss', 'hair-loss', 'hairgrowth', 'balding', 'alopecia', 'scalp', 'pigment'],
       // Energy / Endurance / Performance
-      // NOTE: 'cardio' deliberately excluded — it maps to Cardiovascular, not Energy.
+      // NOTE: 'cardio' deliberately excluded - it maps to Cardiovascular, not Energy.
       // fatigue/tired/exhausted/lethargic included: "I feel fatigued" is an energy
       // complaint, not always a sleep complaint. Both groups now share these terms
       // so searches like "chronic fatigue" surface both sleep AND energy compounds.
@@ -1375,7 +1375,7 @@ export default function AgentStorefrontGrid({
               if (c.plain_summary?.toLowerCase().includes(token)) recordMatch(20, `Matched Summary`);
 
               // ── Phase 2 fields ──────────────────────────────────────────
-              // eli5_summary: rich plain-English description — great for phrase/concept searches
+              // eli5_summary: rich plain-English description - great for phrase/concept searches
               if (c.eli5_summary?.toLowerCase().includes(token)) recordMatch(25, `Matched Description`);
 
               // best_stacked_with: helps discovery via "what stacks with X"
@@ -1473,7 +1473,7 @@ export default function AgentStorefrontGrid({
             if (isSemanticReason && maxTokenScore >= 40) {
               // Build a user-friendly label: "[typed keyword] → [field value]"
               if (reasonStr.startsWith('Did you mean')) {
-                // Keep typo message as-is — it's already user-facing
+                // Keep typo message as-is - it's already user-facing
                 primaryReason = reasonStr;
               } else {
                 // Strip the field prefix ("Studied For: ", "Research Area: ", etc.)
@@ -3107,7 +3107,7 @@ export default function AgentStorefrontGrid({
                   </div>
                 )}
 
-                {/* Smart Cart: Researchers Also Order — filtered to only non-cart items */}
+                {/* Smart Cart: Researchers Also Order - filtered to only non-cart items */}
                 {(recommendations.length > 0 || recommendationsLoading) && (
                   <div style={{ marginTop: 8, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                     <RecommendationStrip
@@ -3800,7 +3800,7 @@ export default function AgentStorefrontGrid({
 
           const sanitize = (text: string | null | undefined): string => {
             if (!text) return '';
-            return text.replace(/—/g, '-');
+            return text.replace(/-/g, '-');
           };
 
           const rawText = c.eli5_summary || c.plain_summary || `This compound is studied for: ${c.studied_for?.join(', ') || 'various biological effects'}. It targets: ${c.molecular_target || 'specific cellular mechanisms'}.`;
@@ -3991,7 +3991,7 @@ export default function AgentStorefrontGrid({
                       flexWrap: 'wrap',
                       gap: '6px',
                     }}>
-                      {c.studied_for.slice(0, 6).map((area, idx) => (
+                      {c.studied_for.map((area, idx) => (
                         <span key={idx} style={{
                           fontSize: '0.75rem',
                           padding: '4px 10px',
@@ -4004,18 +4004,6 @@ export default function AgentStorefrontGrid({
                           {sanitize(area)}
                         </span>
                       ))}
-                      {c.studied_for.length > 6 && (
-                        <span style={{
-                          fontSize: '0.75rem',
-                          padding: '4px 10px',
-                          borderRadius: '6px',
-                          background: 'rgba(255, 255, 255, 0.02)',
-                          color: 'var(--grey-400)',
-                          fontWeight: 500,
-                        }}>
-                          +{c.studied_for.length - 6} more
-                        </span>
-                      )}
                     </div>
                   </div>
                 )}

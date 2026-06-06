@@ -58,7 +58,7 @@ function ProgressRing({ progress, label, sub }: { progress: number; label: strin
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Agent Tier Widget — house tier ladder (Super/standalone) OR sub-agent
+   Agent Tier Widget - house tier ladder (Super/standalone) OR sub-agent
    commission mini-ladder. Renders nothing when the v2 flag is off.
    ══════════════════════════════════════════════════════════════════════════ */
 export default function AgentTierWidget() {
@@ -105,7 +105,7 @@ export default function AgentTierWidget() {
                 Your Commission Tier
               </h3>
               <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: '0 0 12px' }}>
-                Base {comm!.base_pct ?? 0}%{comm!.cap_pct != null ? ` / Up To ${comm!.cap_pct}%` : ''} — {money(comm!.month_retail ?? 0)} Sold This Month
+                Base {comm!.base_pct ?? 0}%{comm!.cap_pct != null ? ` / Up To ${comm!.cap_pct}%` : ''} - {money(comm!.month_retail ?? 0)} Sold This Month
               </p>
               {comm!.next ? (
                 <div style={{ fontSize: '0.85rem', color: 'var(--silver-light)' }}>

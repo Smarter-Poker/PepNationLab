@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * AttributeRadarChart — Phase 2
+ * AttributeRadarChart - Phase 2
  * Full SVG radar with animated entry, hover tooltips showing per-axis score,
  * and percentage labels on the rings. Supports 2–8 compounds, 2–12 axes.
  */
@@ -200,7 +200,7 @@ export default function AttributeRadarChart({
     );
   });
 
-  // Compound polygons — animated
+  // Compound polygons - animated
   const numCompounds = data[0].scores.length;
   const polygons = Array.from({ length: numCompounds }, (_, cIdx) => {
     const pts = data.map((d, i) => {

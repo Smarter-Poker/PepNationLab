@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { assertCronAuth } from '@/lib/cron';
 
 /**
- * fix-55 #4: DEPRECATED — agent-from-sender cart reminder cron.
+ * fix-55 #4: DEPRECATED - agent-from-sender cart reminder cron.
  *
  * Cart-recovery is now an admin-/platform-owned workflow. Per user
  * direction, agents / super-agents / sub-agents no longer DM

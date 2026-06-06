@@ -7,7 +7,7 @@ const money = (cents: number) =>
     .format((Number(cents) || 0) / 100);
 
 function Delta({ d }: { d: number | null }) {
-  if (d === null || !isFinite(d)) return <span style={{ color: 'var(--grey-500)', fontSize: '0.75rem' }}>—</span>;
+  if (d === null || !isFinite(d)) return <span style={{ color: 'var(--grey-500)', fontSize: '0.75rem' }}>-</span>;
   const up = d >= 0;
   const color = up ? '#2ed573' : '#ff4757';
   return (

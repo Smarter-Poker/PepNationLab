@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  // Admin gate — only admins should be probing the live create-researcher flow.
+  // Admin gate - only admins should be probing the live create-researcher flow.
   const userClient = await createClient();
   const { data: { user }, error: authErr } = await userClient.auth.getUser();
   if (authErr || !user) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
@@ -175,9 +175,9 @@ export async function POST(req: NextRequest) {
 
   // Pick one real account of each role to act as the "caller" for that scenario.
   // If a role has no eligible account in the DB, we mark that scenario as skipped
-  // and report it — but don't fail the overall run.
+  // and report it - but don't fail the overall run.
 
-  // ADMIN — use the calling admin themselves
+  // ADMIN - use the calling admin themselves
   const { data: adminP } = await admin
     .from('profiles')
     .select('id, role, is_super_agent, is_sub_agent, parent_agent_id, username')
@@ -221,7 +221,7 @@ export async function POST(req: NextRequest) {
     scenarios.sub_agent = { role_label: 'sub_agent', ok: false, skipped: true, reason: 'no active sub_agent profile found' };
   }
 
-  // Overall verdict — pass if every role that COULD be tested passed.
+  // Overall verdict - pass if every role that COULD be tested passed.
   const failures = Object.values(scenarios).filter((s) => !s.ok && !s.skipped);
   const allOk = failures.length === 0;
 

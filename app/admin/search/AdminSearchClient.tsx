@@ -9,7 +9,7 @@ import { paymentMethodLabel, PAYMENT_METHOD_SLUGS } from '@/lib/payment-method-l
 
 // fix-52:  ships items #1-5, 9-15 from the global-search deep-dive.
 // fix-52b: abort in-flight fetch on unmount, router.push for Enter-key nav.
-// fix-52c: empty state is now blank — Tips + Recent Searches removed.
+// fix-52c: empty state is now blank - Tips + Recent Searches removed.
 // fix-53:  operational nudges panel on empty state.
 // fix-53b: nudge icon uses palette teal (was off-palette amber).
 // fix-54:  expand nudges from 5 to 11 categories (fulfillment / inventory /
@@ -39,7 +39,7 @@ const ORDER_STATUSES = [
   'cancelled',
 ] as const;
 
-// PAYMENT_METHODS removed in R26 — use PAYMENT_METHOD_SLUGS from @/lib/payment-method-labels
+// PAYMENT_METHODS removed in R26 - use PAYMENT_METHOD_SLUGS from @/lib/payment-method-labels
 // (canonical 9-method list keeps this filter dropdown in sync with the rest of the platform).
 
 interface UserHit { id: string; full_name: string | null; username: string | null; email: string | null; role: string; is_super_agent?: boolean | null }
@@ -103,7 +103,7 @@ const BLANK_FILTERS: OrderFilters = { status: '', payment: '', from: '', to: '',
 const INITIAL_GROUP_VISIBLE = 25;
 
 function formatMoney(v: number | null | undefined): string {
-  if (v == null) return '—';
+  if (v == null) return '-';
   return `$${Number(v).toFixed(2)}`;
 }
 
@@ -268,7 +268,7 @@ export default function AdminSearchClient() {
         const json = (await res.json()) as Nudges;
         if (!aborted) setNudges(json);
       } catch {
-        // Silent — nudges are decorative, not load-blocking.
+        // Silent - nudges are decorative, not load-blocking.
       }
     })();
     return () => { aborted = true; };

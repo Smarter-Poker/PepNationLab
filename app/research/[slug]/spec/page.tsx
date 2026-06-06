@@ -1,5 +1,5 @@
 /**
- * Technical Data Sheet — print-friendly spec sheet for one compound.
+ * Technical Data Sheet - print-friendly spec sheet for one compound.
  * Server component: fetches the compound and renders all identity, handling,
  * regulatory, evidence, and source fields in a clean, printable layout, plus a
  * QR code that links to the public compound profile (for vial labels).
@@ -206,7 +206,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
             Research Use Only
           </p>
           <p style={{ fontSize: '0.74rem', color: 'var(--silver)', margin: '4px 0 0' }}>
-            Pep Nation Lab — Not For Human Or Veterinary Use. Information Provided For Laboratory Research Purposes Only.
+            Pep Nation Lab - Not For Human Or Veterinary Use. Information Provided For Laboratory Research Purposes Only.
           </p>
         </footer>
       </section>

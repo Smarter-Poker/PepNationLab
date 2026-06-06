@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
     email: internalEmail,
     password,
     // internal.auth accounts have no real inbox to confirm, so mark the email
-    // confirmed immediately — otherwise password sign-in is rejected with
+    // confirmed immediately - otherwise password sign-in is rejected with
     // "email_not_confirmed" and the new agent/super-agent can never log in.
     email_confirm: true,
     user_metadata: {

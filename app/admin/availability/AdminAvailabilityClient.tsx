@@ -198,7 +198,7 @@ export default function AdminAvailabilityClient() {
                       }}>{r.reason_code}</span>
                       {r.reason}
                     </td>
-                    <td style={{ padding: '6px 12px', color: 'var(--silver)', fontFamily: 'monospace' }}>{r.ip || '—'}</td>
+                    <td style={{ padding: '6px 12px', color: 'var(--silver)', fontFamily: 'monospace' }}>{r.ip || '-'}</td>
                   </tr>
                 ))}
               </tbody>

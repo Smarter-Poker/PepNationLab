@@ -5,7 +5,7 @@
  * - Inserts into `notifications` table (in-app bell feed)
  * - Optionally queues a web push via push_outbox if user opted in
  *
- * Always fire-and-forget from API routes — never let a notification failure
+ * Always fire-and-forget from API routes - never let a notification failure
  * block the primary operation (order creation, message send, etc.)
  */
 
@@ -46,7 +46,7 @@ export interface NotifyOptions {
  * Enqueue an in-app notification + optional web push.
  *
  * Uses the service/admin client (bypasses RLS so any user can be notified).
- * Never throws — all errors are swallowed and logged.
+ * Never throws - all errors are swallowed and logged.
  */
 export async function notify(
   supabase: SupabaseClient,
@@ -323,7 +323,7 @@ export async function notifyTierLevelUp(
     userId: agentId,
     type: 'tier_levelup',
     title: `Level Up: ${newLevelName}`,
-    body: `Achievement Unlocked. You reached the ${newLevelName} tier — your Agent Cost just dropped. Keep the momentum going.`,
+    body: `Achievement Unlocked. You reached the ${newLevelName} tier - your Agent Cost just dropped. Keep the momentum going.`,
     url: '/dashboard/agent?tab=overview',
   });
 }
@@ -517,7 +517,7 @@ export async function notifyCouponRedeemed(
     userId: agentId,
     type: 'coupon_redeemed',
     title: `Coupon ${code} Redeemed`,
-    body: `A researcher used ${code} on order #${shortId} — ${discount} off a ${total} order.`,
+    body: `A researcher used ${code} on order #${shortId} - ${discount} off a ${total} order.`,
     url: `/dashboard/agent?tab=Coupons`,
   });
 }
@@ -534,7 +534,7 @@ export async function notifySupportMessage(
   await notify(supabase, {
     userId: adminId,
     type: 'support_message',
-    title: `Support — ${senderName}`,
+    title: `Support - ${senderName}`,
     body,
     url: `/messenger?conversation=${conversationId}`,
   });

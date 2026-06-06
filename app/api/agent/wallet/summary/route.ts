@@ -1,4 +1,4 @@
-// Round 24 Wallet — summary endpoint
+// Round 24 Wallet - summary endpoint
 // Powers WalletStatusStrip and the /wallet hero card.
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
@@ -19,7 +19,7 @@ export async function GET() {
     .single();
   if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
 
-  // Owed this week — sum of open / pending statements
+  // Owed this week - sum of open / pending statements
   const { data: openStmts } = await svc
     .from('weekly_statements')
     .select('id, total_owed, status, week_start, week_end, due_date')
@@ -33,7 +33,7 @@ export async function GET() {
   );
   const hasOpenStatement = (openStmts ?? []).length > 0;
 
-  // Next statement date — Sunday 23:59 UTC of current week
+  // Next statement date - Sunday 23:59 UTC of current week
   const now = new Date();
   const dow = now.getUTCDay();
   const daysUntilSunday = (7 - dow) % 7;
@@ -47,7 +47,7 @@ export async function GET() {
   const { data: forecast } = await supabase.rpc('forecast_next_statement', { p_agent_id: user.id });
   if (typeof forecast === 'number') forecastNext = forecast;
 
-  // Admins (and anyone without a positive credit line) are prepaid — their
+  // Admins (and anyone without a positive credit line) are prepaid - their
   // wallet is funded by prepaid_balance, not by a credit line. account_type
   // is sometimes NULL for admin accounts (the seed didn't set it), so we
   // can't blindly check `=== 'prepaid'`. Treat the explicit 'prepaid' enum,

@@ -72,7 +72,7 @@ export default function AdminFlashSalesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: !s.is_active }),
       });
-      toast.success(s.is_active ? 'Sale Deactivated' : 'Sale Activated — Banner Live Globally');
+      toast.success(s.is_active ? 'Sale Deactivated' : 'Sale Activated - Banner Live Globally');
       load();
     } catch { toast.error('Network Error'); }
   };

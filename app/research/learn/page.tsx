@@ -1,5 +1,5 @@
 /**
- * Learn hub — foundational, research-use-only education guides covering what
+ * Learn hub - foundational, research-use-only education guides covering what
  * peptides are, evidence tiers, reconstitution, storage, reading a monograph,
  * WADA, quality verification, and the major peptide classes. Server shell;
  * the interactive guide-picker (LearnGuidesExplorer) shows one guide at a time
@@ -31,7 +31,7 @@ export default function LearnHubPage() {
           Peptide Education Hub
         </h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1.05rem', marginTop: 'var(--space-2, 8px)', maxWidth: '720px' }}>
-          Foundational Guides To Research Peptides — What They Are, How Evidence Is Graded, How They Are Prepared And
+          Foundational Guides To Research Peptides - What They Are, How Evidence Is Graded, How They Are Prepared And
           Stored, And How To Read Every Page In This Library. Pick A Topic Below. For Laboratory Research Only. Not
           Medical Advice Or Dosing Guidance.
         </p>

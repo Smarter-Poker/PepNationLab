@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * R35 Phase 3 & 4 — Compare drawer for agent storefronts.
+ * R35 Phase 3 & 4 - Compare drawer for agent storefronts.
  *
  * Fixed, bottom-anchored drawer that lets a researcher pin up to 3 products
  * from the modal's "Pin To Compare" button and view them side by side.

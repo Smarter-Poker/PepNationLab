@@ -1,7 +1,7 @@
 /**
  * Lightweight CSV + printable HTML (PDF) export helpers.
  *
- * No third-party libraries — keeps the bundle small and avoids loading large
+ * No third-party libraries - keeps the bundle small and avoids loading large
  * PDF generators on the client. PDF output is produced by opening a
  * print-styled HTML document in a new tab and letting the user pick
  * "Save As PDF" from the browser print dialog.
@@ -41,7 +41,7 @@ export function exportCSV(
 
 /**
  * Trigger a browser download of a CSV string.
- * Client-only — guards against SSR by checking for `document`.
+ * Client-only - guards against SSR by checking for `document`.
  */
 export function downloadCSV(filename: string, content: string): void {
   if (typeof document === 'undefined') return;
@@ -141,7 +141,7 @@ export function downloadPrintablePDF(html: string, filename: string): void {
   const url = URL.createObjectURL(blob);
   const win = window.open(url, '_blank', 'noopener,noreferrer');
   if (!win) {
-    // Popup blocked — degrade to an anchor download.
+    // Popup blocked - degrade to an anchor download.
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', filename);

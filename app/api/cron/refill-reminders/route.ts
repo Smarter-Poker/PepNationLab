@@ -1,7 +1,7 @@
 /**
  * GET /api/cron/refill-reminders
  *
- * Global 21-day refill / reorder drip (platform-wide auto-deploy — no per-agent
+ * Global 21-day refill / reorder drip (platform-wide auto-deploy - no per-agent
  * toggle). Once a day this finds fulfilled orders that are ~21 days old and, for
  * each buyer, sends:
  *   1. A web push + in-app bell notification (gated by the refill_reminder push
@@ -9,7 +9,7 @@
  *   2. A conversational Messenger direct message FROM the agent who sold the
  *      order, nudging the researcher to reorder.
  *
- * Email is intentionally NOT used — email is disabled platform-wide.
+ * Email is intentionally NOT used - email is disabled platform-wide.
  *
  * Idempotency:
  *   - claimCronRun('refill_reminders', YYYY-MM-DD) ensures one run per day.
@@ -117,8 +117,8 @@ export async function GET(req: Request) {
         console.error('[refill-reminders] buyer failed:', buyerId, err);
       }
 
-      // 3. Stamp every eligible order for this buyer as reminded — even if the
-      // DM failed — so the drip never loops and re-spams.
+      // 3. Stamp every eligible order for this buyer as reminded - even if the
+      // DM failed - so the drip never loops and re-spams.
       const { error: markErr } = await svc
         .from('orders')
         .update({ refill_reminder_sent_at: new Date().toISOString() })

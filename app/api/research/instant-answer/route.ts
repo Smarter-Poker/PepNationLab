@@ -5,7 +5,7 @@
  * the parsed query into an IntentKind via lib/research/intent.ts, then
  * pulls the minimum compound data needed to render the relevant card.
  *
- * Returns { kind: 'none' } when the intent is too weak to render a card —
+ * Returns { kind: 'none' } when the intent is too weak to render a card -
  * the search route still renders the ranked results below in that case.
  */
 
@@ -80,7 +80,7 @@ async function buildPayload(
 
   const cards = await fetchCompoundCards(supabase, intent.slugs);
 
-  // Category card needs no compound — just the area meta.
+  // Category card needs no compound - just the area meta.
   if (intent.kind === 'category') {
     const area = intent.area && RESEARCH_AREAS[intent.area];
     if (!area) return { payload: { kind: 'none' as IntentKind }, kind: 'none' };

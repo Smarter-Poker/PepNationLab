@@ -1,5 +1,5 @@
 /**
- * Research Library index — the entry point to the PepNationLab Research section.
+ * Research Library index - the entry point to the PepNationLab Research section.
  * Server component: fetches the full compound catalog, renders research-area
  * tiles, quick links, the Ask The Lab assistant, and the faceted browser.
  * Research-use-only framing throughout.

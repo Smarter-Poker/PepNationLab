@@ -112,7 +112,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             try { localStorage.setItem(`pnl_sales_goal_${agentId}`, String(dollars)); } catch { /* ignore */ }
           }
         }
-      } catch { /* offline — keep cache */ }
+      } catch { /* offline - keep cache */ }
       finally { if (!cancelled) setGoalLoaded(true); }
     })();
     return () => { cancelled = true; };
@@ -129,7 +129,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ target_cents: Math.round(v * 100) }),
         });
-      } catch { /* best-effort — cached locally */ }
+      } catch { /* best-effort - cached locally */ }
     }
   }, [agentId]);
 
@@ -380,7 +380,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     const monthTag = `${new Date().getFullYear()}-${new Date().getMonth()}`;
     const celebrate = (msg: string) => { try { toast.success(msg); } catch { /* ignore */ } burstConfetti(); };
     try {
-      // Milestones — seed silently on the first loaded pass (orders are in by now,
+      // Milestones - seed silently on the first loaded pass (orders are in by now,
       // since we only run when !loading), celebrate only on a later crossing.
       if (!milestoneSeeded.current) {
         if (localStorage.getItem(mKey) == null) localStorage.setItem(mKey, String(achievedMax));
@@ -389,11 +389,11 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         const prevM = Number(localStorage.getItem(mKey) || '0');
         if (achievedMax > prevM) {
           const m = MILESTONES.find((x) => x.amount === achievedMax);
-          celebrate(`Milestone Unlocked — ${m?.label ?? fmt(achievedMax)}`);
+          celebrate(`Milestone Unlocked - ${m?.label ?? fmt(achievedMax)}`);
           localStorage.setItem(mKey, String(achievedMax));
         }
       }
-      // Goal — only evaluate once the REAL goal has loaded from the server, so we
+      // Goal - only evaluate once the REAL goal has loaded from the server, so we
       // never fire on a goal that was already met when the page opened (the goal
       // arrives async and starts at a cached/default value).
       if (goalLoaded && goal > 0) {
@@ -401,7 +401,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           if (a.monthRevenue >= goal) localStorage.setItem(gKey, monthTag);
           goalSeeded.current = true;
         } else if (a.monthRevenue >= goal && localStorage.getItem(gKey) !== monthTag) {
-          celebrate('Monthly Goal Reached — Nice Work!');
+          celebrate('Monthly Goal Reached - Nice Work!');
           localStorage.setItem(gKey, monthTag);
         }
       }
@@ -553,7 +553,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
                   <div className="sa-stat" style={{ marginTop: 6 }}>{fmt(a.monthRevenue)}</div>
                   <div style={{ color: 'var(--grey-400)', fontSize: '0.8rem', marginTop: 2 }}>Of {fmt(goal)} Target</div>
                   <div style={{ marginTop: 8, fontSize: '0.8rem', fontWeight: 700, color: onTrack ? '#00FF9D' : '#FFB020' }}>
-                    {goal <= 0 ? 'Set A Goal To Track Pace' : onTrack ? `On Track — Ahead By ${fmt(paceGap)}` : `Behind Pace By ${fmt(paceGap)}`}
+                    {goal <= 0 ? 'Set A Goal To Track Pace' : onTrack ? `On Track - Ahead By ${fmt(paceGap)}` : `Behind Pace By ${fmt(paceGap)}`}
                   </div>
                 </>
               )}
@@ -574,7 +574,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '14px 0' }} />
             <div className="sa-label">Personal Best Day</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 6 }}>
-              <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#00E5FF', fontFamily: 'var(--font-brand)' }}>{a.best.revenue > 0 ? fmt(a.best.revenue) : '—'}</span>
+              <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#00E5FF', fontFamily: 'var(--font-brand)' }}>{a.best.revenue > 0 ? fmt(a.best.revenue) : '-'}</span>
               {a.best.date && <span style={{ color: 'var(--grey-400)', fontSize: '0.78rem' }}>On {new Date(a.best.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
             </div>
           </div>
@@ -725,7 +725,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             ) : <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem' }}>No Payments Recorded Yet.</p>}
             {a.bestWeekday >= 0 && (
               <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '0.82rem', color: 'var(--silver)' }}>
-                Your Strongest Day Is <strong style={{ color: 'var(--white)' }}>{WEEKDAYS[a.bestWeekday]}</strong> — {fmt(a.bestWeekdayRev)} Lifetime
+                Your Strongest Day Is <strong style={{ color: 'var(--white)' }}>{WEEKDAYS[a.bestWeekday]}</strong> - {fmt(a.bestWeekdayRev)} Lifetime
               </div>
             )}
           </div>

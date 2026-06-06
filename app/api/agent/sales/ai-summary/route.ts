@@ -1,4 +1,4 @@
-// R24 phase 6 — AI Weekly Summary.
+// R24 phase 6 - AI Weekly Summary.
 // Compares this week vs last and produces a 2-sentence narrative.
 // Uses Anthropic Claude API if ANTHROPIC_API_KEY is set; otherwise returns a
 // deterministic rule-based summary so the feature still ships without keys.
@@ -38,7 +38,7 @@ export async function GET() {
   } else if (revDelta >= 0) {
     summary = `Revenue is up ${Math.abs(revDelta).toFixed(1)}% week-over-week (${money(Number(c.revenue_cents))} vs ${money(Number(p.revenue_cents))}). Orders ${c.orders_count} vs ${p.orders_count}.`;
   } else {
-    summary = `Revenue is down ${Math.abs(revDelta).toFixed(1)}% week-over-week (${money(Number(c.revenue_cents))} vs ${money(Number(p.revenue_cents))}). Orders ${c.orders_count} vs ${p.orders_count} — worth investigating which products softened.`;
+    summary = `Revenue is down ${Math.abs(revDelta).toFixed(1)}% week-over-week (${money(Number(c.revenue_cents))} vs ${money(Number(p.revenue_cents))}). Orders ${c.orders_count} vs ${p.orders_count} - worth investigating which products softened.`;
   }
 
   // If ANTHROPIC_API_KEY is set, upgrade to a real narrative.

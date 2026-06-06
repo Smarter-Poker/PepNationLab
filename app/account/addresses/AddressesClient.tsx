@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * AddressesClient — Round 25
+ * AddressesClient - Round 25
  * --------------------------------------------------------------
  * Two kinds of saved addresses on one screen:
  *   - Ship-To  : where the user receives orders

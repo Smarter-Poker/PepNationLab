@@ -72,7 +72,7 @@ export const PAYMENT_METHODS = [
 export type PaymentKey = (typeof PAYMENT_METHODS)[number]['key'];
 
 /* ─────────────────────────────────────────────────────────
-   PaymentMethodsPanel — Settings tab UI
+   PaymentMethodsPanel - Settings tab UI
    ───────────────────────────────────────────────────────── */
 interface PaymentMethodsPanelProps {
   agentId: string;
@@ -86,7 +86,7 @@ export default function PaymentMethodsPanel({
   initialHandles,
   onSaveSuccess,
 }: PaymentMethodsPanelProps) {
-  // Build initial state from existing handles — a key present and non-empty = enabled
+  // Build initial state from existing handles - a key present and non-empty = enabled
   const buildInitial = () => {
     const state: Record<PaymentKey, { enabled: boolean; handle: string }> = {} as any;
     for (const m of PAYMENT_METHODS) {
@@ -146,7 +146,7 @@ export default function PaymentMethodsPanel({
 
     setSaving(true);
     try {
-      // Build payment_handles object — only include enabled methods with non-empty handles
+      // Build payment_handles object - only include enabled methods with non-empty handles
       const handles: Record<string, string> = {};
       for (const m of PAYMENT_METHODS) {
         // Always write all keys. Disabled = empty string.
@@ -232,7 +232,7 @@ export default function PaymentMethodsPanel({
                 transition: 'all 0.2s ease',
               }}
             >
-              {/* Header row — toggle */}
+              {/* Header row - toggle */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -269,7 +269,7 @@ export default function PaymentMethodsPanel({
                     </span>
                     {state.enabled && state.handle.trim() && (
                       <span style={{ fontSize: '0.92rem', color: 'var(--white)', fontWeight: 400 }}>
-                        — {state.handle}
+                        - {state.handle}
                       </span>
                     )}
                     {state.enabled && !state.handle.trim() && (
@@ -309,7 +309,7 @@ export default function PaymentMethodsPanel({
                 </div>
               </div>
 
-              {/* Expandable handle input — visible only when enabled */}
+              {/* Expandable handle input - visible only when enabled */}
               {state.enabled && (
                 <div style={{
                   padding: '0 var(--space-4) var(--space-4)',

@@ -1,5 +1,5 @@
 /**
- * EvidenceBadge — pure presentational pill showing a compound's evidence tier.
+ * EvidenceBadge - pure presentational pill showing a compound's evidence tier.
  * Color and label derive from `evidenceTier()` in the shared lib.
  */
 import { evidenceTier } from '@/lib/compounds';

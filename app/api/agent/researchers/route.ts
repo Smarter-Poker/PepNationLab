@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 /**
  * GET /api/agent/researchers
  *
- * Returns the caller's downline researchers — accounts where:
+ * Returns the caller's downline researchers - accounts where:
  *   role = 'researcher'
  *   referring_agent_id = caller
  *   is_active = true

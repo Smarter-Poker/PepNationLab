@@ -8,7 +8,7 @@ import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
 
 export interface AreaProduct {
   productId: string;
-  agentProductId: string | null; // agent_products.id — used as cart variant key
+  agentProductId: string | null; // agent_products.id - used as cart variant key
   productName: string;
   compoundSlug: string;
   category: string;
@@ -68,7 +68,7 @@ export async function getAreaProducts(
   let isStorefrontOwner = false;
 
   if (role === 'admin') {
-    // Admin: show products from a default context — if they have their own agent_profile, use it.
+    // Admin: show products from a default context - if they have their own agent_profile, use it.
     // Otherwise we'll fallback to the first active agent in the system below.
     const { data: adminAgent } = await supabase.from('agent_profiles').select('id').eq('id', profile.id).maybeSingle();
     if (adminAgent) {
@@ -153,7 +153,7 @@ export async function getAreaProducts(
     );
   }
 
-  // Assemble final product list — only include products the agent actually carries
+  // Assemble final product list - only include products the agent actually carries
   const result: AreaProduct[] = [];
   for (const mp of masterProducts) {
     const ap = apMap.get(mp.id);

@@ -32,7 +32,7 @@ const CheckoutSchema = z.object({
   idempotencyKey: z.string().uuid().optional().nullable(),
   wholesale: z.boolean().optional(),
 
-  /** Which agent storefront initiated this checkout — used for closed-loop catalog validation */
+  /** Which agent storefront initiated this checkout - used for closed-loop catalog validation */
   agentSlug: z.string().regex(/^[a-zA-Z0-9_-]+$/).optional().nullable(),
 });
 
@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
     tiers?.forEach(t => { tierMultipliers[t.tier_name] = Number(t.multiplier); });
 
     // fix-57 #2: fetch active flash sale (if any). Single row max.
-    // Applied to researcher retail pricing only — agent self-buys and
+    // Applied to researcher retail pricing only - agent self-buys and
     // wholesale restocks are exempt (already at wholesale tier).
     const wholesaleExplicit = explicitWholesale === true &&
       (profile.role === 'agent' || profile.role === 'super_agent') &&
@@ -388,7 +388,7 @@ export async function POST(request: NextRequest) {
       let costPrice = retailPrice;
       let superAgentCost = null;
       // Wholesale buyers (agent self-buy + sub-agents) always pay flat tier
-      // cost — no volume/bulk discount and no retail markup. Dynamic pricing
+      // cost - no volume/bulk discount and no retail markup. Dynamic pricing
       // applies to researchers only.
       const isWholesalePurchase = isAgentSelfBuy || isSubAgent;
 
@@ -601,7 +601,7 @@ export async function POST(request: NextRequest) {
 
     // Velocity caps (flag-gated, additive). A researcher order placed through a
     // sub-agent's storefront is held against that sub-agent's virtual velocity
-    // cap — a ceiling on unsettled (pre-shipment) order value. This does NOT
+    // cap - a ceiling on unsettled (pre-shipment) order value. This does NOT
     // touch the super-agent's House credit; that is decremented later by the
     // existing billing path when the order is Approved for Shipment. The check
     // only ever ADDS a rejection, so flag-off behavior is byte-identical and the
@@ -1000,7 +1000,7 @@ export async function POST(request: NextRequest) {
         tag: `order-placed-${order.id}`,
       });
     } catch {
-      // Never propagate — notifications are best-effort
+      // Never propagate - notifications are best-effort
     }
 
     return NextResponse.json({

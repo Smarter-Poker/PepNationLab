@@ -88,7 +88,7 @@ export default function AgentNetworkMap() {
           Network Map
         </h3>
         <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0 }}>
-          Your Downline At A Glance — Revenue And Commission Per Sub-Agent
+          Your Downline At A Glance - Revenue And Commission Per Sub-Agent
         </p>
       </div>
 

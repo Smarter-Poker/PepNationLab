@@ -15,7 +15,7 @@ interface Props {
  * Drop-in freeze / unfreeze toggle for any downline row. The component
  * posts to /api/agent/freeze; the RPC enforces that the caller is an
  * admin or a transitive ancestor of the target. Frozen accounts can
- * still log in and view — but every order approval refuses (the
+ * still log in and view - but every order approval refuses (the
  * approve route walks the chain and returns 423 on the first frozen
  * tier).
  */
@@ -42,7 +42,7 @@ export default function AgentFreezeToggle({
       setReason(pendingReason.trim() || 'Account Frozen By Upline');
       setAskingFreeze(false);
       setPendingReason('');
-      toast.success(`${targetName || 'Account'} Frozen — Downline Cannot Transact Until Unfrozen`);
+      toast.success(`${targetName || 'Account'} Frozen - Downline Cannot Transact Until Unfrozen`);
       onChanged?.({ frozen: true, reason: pendingReason.trim() || 'Account Frozen By Upline' });
     } catch (e: any) {
       toast.error('Freeze Failed: ' + (e.message || 'Unknown'));
@@ -64,7 +64,7 @@ export default function AgentFreezeToggle({
       if (!res.ok) throw new Error(j.error || 'unfreeze_failed');
       setFrozen(false);
       setReason(null);
-      toast.success(`${targetName || 'Account'} Unfrozen — Transactions Resumed`);
+      toast.success(`${targetName || 'Account'} Unfrozen - Transactions Resumed`);
       onChanged?.({ frozen: false, reason: null });
     } catch (e: any) {
       toast.error('Unfreeze Failed: ' + (e.message || 'Unknown'));
@@ -89,7 +89,7 @@ export default function AgentFreezeToggle({
           type="text"
           value={pendingReason}
           onChange={(e) => setPendingReason(e.target.value)}
-          placeholder="Reason (e.g. Unpaid Invoice — Week Of Aug 4)"
+          placeholder="Reason (e.g. Unpaid Invoice - Week Of Aug 4)"
           maxLength={500}
           style={{
             padding: '10px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.12)',

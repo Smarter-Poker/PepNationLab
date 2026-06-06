@@ -1,10 +1,10 @@
 /**
  * POST /api/agent/storefront-config/shippo-key
  *
- * DEPRECATED — This endpoint is now a no-op stub.
+ * DEPRECATED - This endpoint is now a no-op stub.
  *
  * PepNationLab migrated to a Platform Shippo Account in M1 (2026-06-01).
- * Per-agent Shippo API keys are no longer used — all labels are purchased
+ * Per-agent Shippo API keys are no longer used - all labels are purchased
  * through the single platform account key stored in
  * `platform_shippo_credentials`. The admin connects and rotates that key
  * from Settings → Shipping → Account Connection.

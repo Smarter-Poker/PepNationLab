@@ -30,7 +30,7 @@ function fmtMoney(v: number | null | undefined): string {
 }
 
 function fmtDate(s: string | null | undefined): string {
-  if (!s) return '—';
+  if (!s) return '-';
   try {
     return new Date(s).toLocaleDateString();
   } catch {
@@ -105,8 +105,8 @@ export default function SubAgentsPage() {
                     <div style={{ fontWeight: 600 }}>{r.full_name || r.username || 'Unnamed'}</div>
                     <div style={{ fontSize: '12px', opacity: 0.7 }}>{r.email || r.username || r.id.slice(0, 8)}</div>
                   </td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>{r.commission_pct == null ? '—' : `${Number(r.commission_pct)}%`}</td>
-                  <td style={{ padding: '8px', textTransform: 'capitalize' }}>{r.account_type || '—'}</td>
+                  <td style={{ padding: '8px', textAlign: 'right' }}>{r.commission_pct == null ? '-' : `${Number(r.commission_pct)}%`}</td>
+                  <td style={{ padding: '8px', textTransform: 'capitalize' }}>{r.account_type || '-'}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{fmtMoney(r.credit_limit)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{fmtMoney(r.prepaid_balance)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{fmtMoney(r.pending_commission)}</td>

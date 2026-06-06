@@ -1198,7 +1198,7 @@ function ConcentrationSection({ compounds }: { compounds: CompoundListItem[] }) 
           {result === null
             ? 'Enter A Molecular Weight (Da) To Convert Between Mass And Molar Units.'
             : from === to
-            ? <>Same Unit Selected — No Conversion Needed: <strong className="calc-no-capitalize">{Number(value).toPrecision(6)}</strong> <span className="calc-no-capitalize">{to}</span></>
+            ? <>Same Unit Selected - No Conversion Needed: <strong className="calc-no-capitalize">{Number(value).toPrecision(6)}</strong> <span className="calc-no-capitalize">{to}</span></>
             : <>Converted: <strong className="calc-no-capitalize">{result.toPrecision(6)}</strong> <span className="calc-no-capitalize">{to}</span></>
           }
         </div>
@@ -1300,7 +1300,7 @@ function StabilitySection() {
           {days === null
             ? 'Enter Valid Inputs (Temperatures Must Be Above −273°C).'
             : ea.trim() !== '' && Number(ea) === 0
-            ? 'Activation Energy Cannot Be Zero — Temperature Has No Effect At Ea=0.'
+            ? 'Activation Energy Cannot Be Zero - Temperature Has No Effect At Ea=0.'
             : <>Predicted Shelf: <strong>{days.toFixed(1)} Days</strong> At {tTo}°C</>
           }
         </div>

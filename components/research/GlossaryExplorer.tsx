@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * GlossaryExplorer — progressive-disclosure glossary. The reader taps a letter
+ * GlossaryExplorer - progressive-disclosure glossary. The reader taps a letter
  * to see only that letter's terms (instead of every letter at once), or types
  * in the search box to filter across all terms. Teal/black, Title Case headings,
  * no emoji, 44px touch targets. Research-Use-Only.

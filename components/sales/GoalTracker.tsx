@@ -80,7 +80,7 @@ export default function GoalTracker({ revenueCents }: { revenueCents: number }) 
               <div style={{ width: `${pct}%`, height: '100%', background: 'var(--teal)', transition: 'width 0.3s' }} />
             </div>
             <div style={{ color: 'var(--grey-300)', fontSize: '0.85rem', marginTop: 6 }}>
-              {money(revenue)} Of {money(target_cents)} — {pct}%
+              {money(revenue)} Of {money(target_cents)} - {pct}%
             </div>
           </>
         ) : (

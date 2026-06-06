@@ -32,7 +32,7 @@ class CallOverlayErrorBoundary extends React.Component<
         });
       }).catch(() => {});
     } catch {
-      // Sentry helper missing — fall through silently.
+      // Sentry helper missing - fall through silently.
     }
   }
   handleClose = () => {
@@ -108,7 +108,7 @@ class CallOverlayErrorBoundary extends React.Component<
 
 /**
  * fix-42: merge dedupe helper. The realtime layer has two INSERT sources for
- * the same call.id: postgres_changes (no caller_name — it's not a DB column)
+ * the same call.id: postgres_changes (no caller_name - it's not a DB column)
  * and the explicit ch.send broadcast (caller_name populated). Whichever lands
  * first becomes the cached row. The identity-only dedupe used pre-fix-42
  * silently dropped the second event, so caller_name was lost when
@@ -242,11 +242,11 @@ export default function GlobalCallListener() {
         if (c.initiator_id === user.id) return;
 
         if (activeCallRef.current) {
-          console.log('[GLOBAL CALL] Ignored signal — already active in a call');
+          console.log('[GLOBAL CALL] Ignored signal - already active in a call');
           return;
         }
 
-        // fix-42: merge dedupe — preserve caller fields across the race
+        // fix-42: merge dedupe - preserve caller fields across the race
         // between postgres_changes (no name) and broadcast (has name).
         setIncomingCalls((cur) => {
           const idx = cur.findIndex((x) => x.id === c.id);
@@ -258,7 +258,7 @@ export default function GlobalCallListener() {
         if (c.status !== 'ringing') {
           setIncomingCalls((cur) => cur.filter((x) => x.id !== c.id));
         } else {
-          // Still ringing — merge into existing entry so caller_name from
+          // Still ringing - merge into existing entry so caller_name from
           // a delayed broadcast is preserved.
           setIncomingCalls((cur) => {
             const idx = cur.findIndex((x) => x.id === c.id);

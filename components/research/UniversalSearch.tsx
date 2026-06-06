@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * UniversalSearch — a Google-style instant search over the entire Research
+ * UniversalSearch - a Google-style instant search over the entire Research
  * Library: compounds, stacks, research areas, learn guides, glossary terms, and
  * FAQ. Types-as-you-go with fuzzy/typo-tolerant ranking (lib/research-search),
  * grouped result badges, keyboard navigation, and example chips. All results
@@ -129,7 +129,7 @@ export default function UniversalSearch({
         <div style={{ marginTop: 'var(--space-4, 16px)' }}>
           <p style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)', margin: '0 0 var(--space-3, 12px)' }}>
             {results.length === 0
-              ? 'No Matches — Try A Different Term Or Goal.'
+              ? 'No Matches - Try A Different Term Or Goal.'
               : `${results.length} Result${results.length === 1 ? '' : 's'} Across Compounds, Areas, Guides, Glossary, And FAQ`}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

@@ -50,7 +50,7 @@ function bindGestureUnlock(target: AudioContext) {
 
 /**
  * Returns the shared AudioContext, creating it on first call. Returns
- * null in SSR / unsupported environments — callers should gracefully
+ * null in SSR / unsupported environments - callers should gracefully
  * no-op when they receive null.
  *
  * The context is registered for gesture-based unlock on creation, so
@@ -71,7 +71,7 @@ export function getSharedAudioContext(): AudioContext | null {
 }
 
 /**
- * Optional explicit unlock — callers that have access to a real user
+ * Optional explicit unlock - callers that have access to a real user
  * gesture (e.g. CallButton click handler) can invoke this to resume
  * the context immediately, bypassing the deferred listener. Safe to
  * call repeatedly.

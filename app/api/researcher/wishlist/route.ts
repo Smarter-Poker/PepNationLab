@@ -3,7 +3,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 
 /**
- * Wishlist route — thin wrapper over researcher_favorites.
+ * Wishlist route - thin wrapper over researcher_favorites.
  * GET returns enriched product rows. POST/DELETE accept { productId }.
  */
 export async function GET(_req: NextRequest) {

@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
         const trackingNum = typeof order.tracking_number === 'string' ? order.tracking_number : null;
         if (buyerId) {
           const short = shortOrderId(id);
-          // In-app notification — shows in bell immediately via Realtime
+          // In-app notification - shows in bell immediately via Realtime
           await notifyAdminOrderStatusChange(supabase, buyerId, id, short, target, trackingNum);
           // Web push
           let event: BulkPushEvent | null = null;

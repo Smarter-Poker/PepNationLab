@@ -94,7 +94,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     ? `${Number(coupon.discount_value)}% Off`
     : `$${Number(coupon.discount_value).toFixed(2)} Off`;
   const expiresLine = coupon.expires_at
-    ? ` — Expires ${new Date(coupon.expires_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+    ? ` - Expires ${new Date(coupon.expires_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
     : '';
 
   const slug = storefront?.slug ?? '';

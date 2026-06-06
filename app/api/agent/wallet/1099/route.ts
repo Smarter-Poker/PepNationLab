@@ -1,4 +1,4 @@
-// R24 hotfix — 1099-NEC summary. Reads agent_commissions (NUMERIC dollars,
+// R24 hotfix - 1099-NEC summary. Reads agent_commissions (NUMERIC dollars,
 // status enum: pending/approved/paid/void). Sums settled (status='paid').
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
@@ -47,6 +47,6 @@ export async function GET(req: Request) {
     },
     box1_nonemployee_compensation_cents: totalCents,
     transactions_count: (rows ?? []).length,
-    note: '1099-NEC eligibility depends on whether total compensation meets the IRS threshold ($600+ for tax year 2025-2026). This summary is informational only — consult a tax professional before filing.',
+    note: '1099-NEC eligibility depends on whether total compensation meets the IRS threshold ($600+ for tax year 2025-2026). This summary is informational only - consult a tax professional before filing.',
   });
 }

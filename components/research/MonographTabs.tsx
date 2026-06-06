@@ -1,15 +1,15 @@
 'use client';
 
 /**
- * MonographTabs v2 — comprehensive compound research profile with 8 tabs:
- *   1. Overview       — summary, key facts, purity, identity, stack components
- *   2. Analytics      — efficacy scores chart (NEW), top application domains
- *   3. Mechanism      — MOA, molecular target, PK summary
- *   4. Studied For    — studied_for, research_areas, benefits, best_stacked_with
- *   5. Handling       — reconstitution, shelf life, storage, half-life, PK
- *   6. Safety         — warnings, side_effects, risk_reasons, WADA detail
- *   7. Research Data  — trials metrics, citations, external DB links (NEW)
- *   8. Sources        — linked references
+ * MonographTabs v2 - comprehensive compound research profile with 8 tabs:
+ *   1. Overview       - summary, key facts, purity, identity, stack components
+ *   2. Analytics      - efficacy scores chart (NEW), top application domains
+ *   3. Mechanism      - MOA, molecular target, PK summary
+ *   4. Studied For    - studied_for, research_areas, benefits, best_stacked_with
+ *   5. Handling       - reconstitution, shelf life, storage, half-life, PK
+ *   6. Safety         - warnings, side_effects, risk_reasons, WADA detail
+ *   7. Research Data  - trials metrics, citations, external DB links (NEW)
+ *   8. Sources        - linked references
  *
  * Research-Use-Only. Title Case on prose via `capitalize`.
  */
@@ -146,7 +146,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
   const hasTrialsData = (compound.pubmed_citation_count ?? 0) > 0 || (compound.active_trial_count ?? 0) > 0 || (compound.completed_trial_count ?? 0) > 0 || compound.year_discovered;
   const hasStackData = compound.best_stacked_with && compound.best_stacked_with.length > 0;
 
-  // Build tabs — only show tabs with content
+  // Build tabs - only show tabs with content
   const tabs: Array<{ key: string; label: string; icon: React.ReactNode; badge?: string }> = [
     { key: 'overview', label: 'Overview', icon: <Microscope size={15} aria-hidden="true" /> },
   ];
@@ -390,7 +390,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                   {compound.is_pro_angiogenic && (
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, background: 'rgba(246,173,85,0.1)', border: '1px solid rgba(246,173,85,0.25)' }}>
                       <AlertTriangle size={13} color="#F6AD55" />
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#F6AD55' }}>Pro-Angiogenic — promotes new vessel growth</span>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#F6AD55' }}>Pro-Angiogenic - promotes new vessel growth</span>
                     </div>
                   )}
                   {compound.is_stack && compound.stack_components && compound.stack_components.length > 0 && (
@@ -455,7 +455,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
             {hasEfficacy && (
               <EfficacyScoreChart
                 scores={compound.efficacy_scores!}
-                title={`${compound.display_name} — Research Efficacy Profile`}
+                title={`${compound.display_name} - Research Efficacy Profile`}
                 accentColor={teal}
               />
             )}
@@ -489,7 +489,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 <SectionDivider title="Research Coverage" />
                 <div style={{ marginBottom: 14 }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 8 }}>
-                    {compound.research_areas.length} Application Area{compound.research_areas.length > 1 ? 's' : ''} — {compound.research_areas.length >= 6 ? 'Exceptionally broad' : compound.research_areas.length >= 4 ? 'Wide coverage' : compound.research_areas.length >= 2 ? 'Moderate coverage' : 'Focused scope'}
+                    {compound.research_areas.length} Application Area{compound.research_areas.length > 1 ? 's' : ''} - {compound.research_areas.length >= 6 ? 'Exceptionally broad' : compound.research_areas.length >= 4 ? 'Wide coverage' : compound.research_areas.length >= 2 ? 'Moderate coverage' : 'Focused scope'}
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {compound.research_areas.map((area) => (
@@ -609,7 +609,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               </div>
             )}
 
-            {/* Best Stacked With — now shown here with links */}
+            {/* Best Stacked With - now shown here with links */}
             {hasStackData && (
               <>
                 <SectionDivider title="Stack Compatibility" />
@@ -661,7 +661,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               <Fact label="Form" value={h.form} />
               <Fact label="Diluent" value={h.diluent} />
               <Fact label="Storage Temperature" value={h.storage_temp} />
-              <Fact label="Light Sensitive" value={h.light_sensitive == null ? null : h.light_sensitive ? 'Yes — Protect from light' : 'No'} />
+              <Fact label="Light Sensitive" value={h.light_sensitive == null ? null : h.light_sensitive ? 'Yes - Protect from light' : 'No'} />
               <Fact label="Freeze / Thaw" value={h.freeze_thaw} />
               <Fact label="Typical Frequency" value={compound.typical_frequency} />
               <Fact
@@ -677,7 +677,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 <div style={{ display: 'flex', gap: 'var(--space-3)', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.88rem', alignItems: 'center' }}>
                   <span style={{ flex: '0 0 42%', color: 'var(--silver)', fontWeight: 700 }}>Purity</span>
                   <span style={{ flex: 1, color: compound.purity_percentage >= 99 ? '#68D391' : '#F6AD55', fontWeight: 800 }}>
-                    {compound.purity_percentage}% {compound.purity_percentage >= 99 ? '— Pharmaceutical Grade' : compound.purity_percentage >= 98 ? '— High Purity' : '— Research Grade'}
+                    {compound.purity_percentage}% {compound.purity_percentage >= 99 ? '- Pharmaceutical Grade' : compound.purity_percentage >= 98 ? '- High Purity' : '- Research Grade'}
                   </span>
                 </div>
               )}
@@ -714,7 +714,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                   </div>
                   <span style={{ fontSize: '0.8rem', fontWeight: 800, color: risk.color }}>{risk.label} Risk</span>
                 </div>
-                {/* Risk reasons — full list */}
+                {/* Risk reasons - full list */}
                 {compound.risk_reasons && compound.risk_reasons.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {compound.risk_reasons.map((reason, i) => (

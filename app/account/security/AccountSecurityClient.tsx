@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * AccountSecurityClient — Round 25
+ * AccountSecurityClient - Round 25
  * --------------------------------------------------------------
  * Audit findings (pre-Round-25):
  *   - Only MFA TOTP enroll/unenroll was wired.

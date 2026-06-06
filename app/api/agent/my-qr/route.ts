@@ -1,4 +1,4 @@
-// R24 hotfix — Unified "My QR Code" endpoint (bulletproofed).
+// R24 hotfix - Unified "My QR Code" endpoint (bulletproofed).
 // Returns the storefront URL the current user should advertise via QR.
 // Sub-agents inherit their PARENT agent's storefront and append ?ref=<sub_agent_id>
 // so order attribution credits them correctly.
@@ -17,7 +17,7 @@ export async function GET(_req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'unauthorized', message: 'Please Sign In' }, { status: 401 });
 
-    // CRITICAL: createServiceClient is async — must be awaited.
+    // CRITICAL: createServiceClient is async - must be awaited.
     const svc = await createServiceClient();
 
     const { data: profile, error: pErr } = await svc

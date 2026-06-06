@@ -616,7 +616,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
                   {/* round-15 fix: revert to ORIGINAL conditional render.
                       Send button only appears once the user starts typing
                       (text.trim() non-empty) or while sending. Cleaner UI
-                      when the field is idle — matches the user's reference
+                      when the field is idle - matches the user's reference
                       desktop screenshot of how the composer should behave. */}
                   {text.trim() || sending ? (
                     <>

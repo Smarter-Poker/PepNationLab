@@ -1,5 +1,5 @@
 /**
- * lib/shippo.ts — Shippo Platform Account integration (M1 rewrite)
+ * lib/shippo.ts - Shippo Platform Account integration (M1 rewrite)
  *
  * This module replaces the original per-agent-key implementation. Every Shippo
  * call now resolves a single platform-account token (from the
@@ -13,21 +13,21 @@
  * writes the new bookkeeping columns on `orders`.
  *
  * Public surface:
- *   getActiveKey(agentId?)        — resolve {token, mode, accountScope?}
- *   validateAddress(addr)         — POST /addresses?validate=true
- *   quoteRates(input)             — POST /shipments, filtered/sorted rates
- *   buyLabel(input)               — POST /transactions, idempotent on order_id
- *   refundLabel(transactionId)    — POST /refunds
- *   subscribeTracking(tracking, carrier) — POST /tracks/{carrier}/{tracking}
- *   getTracking(tracking, carrier)       — GET  /tracks/{carrier}/{tracking}
- *   purchaseLabelForOrder(...)    — back-compat shim used by admin bulk route
+ *   getActiveKey(agentId?)        - resolve {token, mode, accountScope?}
+ *   validateAddress(addr)         - POST /addresses?validate=true
+ *   quoteRates(input)             - POST /shipments, filtered/sorted rates
+ *   buyLabel(input)               - POST /transactions, idempotent on order_id
+ *   refundLabel(transactionId)    - POST /refunds
+ *   subscribeTracking(tracking, carrier) - POST /tracks/{carrier}/{tracking}
+ *   getTracking(tracking, carrier)       - GET  /tracks/{carrier}/{tracking}
+ *   purchaseLabelForOrder(...)    - back-compat shim used by admin bulk route
  *
  * Environment:
- *   SHIPPO_PLATFORM_TOKEN  — production token (shippo_live_…)
- *   SHIPPO_TEST_TOKEN      — sandbox token   (shippo_test_…)
- *   SHIPPO_ENCRYPTION_KEY  — base64 32-byte AES-256-GCM key (lib/shippo-crypto)
- *   NEXT_PUBLIC_SHIPPO_MODE — 'test' | 'live' (UI badge only)
- *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY — used for the lib-internal admin
+ *   SHIPPO_PLATFORM_TOKEN  - production token (shippo_live_…)
+ *   SHIPPO_TEST_TOKEN      - sandbox token   (shippo_test_…)
+ *   SHIPPO_ENCRYPTION_KEY  - base64 32-byte AES-256-GCM key (lib/shippo-crypto)
+ *   NEXT_PUBLIC_SHIPPO_MODE - 'test' | 'live' (UI badge only)
+ *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY - used for the lib-internal admin
  *     client that writes the audit ledger row.
  *
  * Notes:
@@ -62,9 +62,9 @@ export type ShippoMode = 'test' | 'live';
 export interface ActiveKey {
   /** Plaintext bearer used in `Authorization: ShippoToken <token>`. */
   token: string;
-  /** 'test' or 'live' — inferred from the token prefix. */
+  /** 'test' or 'live' - inferred from the token prefix. */
   mode: ShippoMode;
-  /** Source of truth — admin DB row, env bootstrap, or legacy per-agent key. */
+  /** Source of truth - admin DB row, env bootstrap, or legacy per-agent key. */
   source: 'platform_db' | 'env' | 'legacy_agent';
   /** Optional managed-account scope (Platform Account M2/M3). */
   accountScope?: string;
@@ -129,7 +129,7 @@ export interface BuyLabelInput {
   originId?: string | null;
   /** Optional label file type (`PDF`, `PDF_4x6`, `PNG`, `ZPL_203`). */
   labelFileType?: 'PDF' | 'PDF_4x6' | 'PNG' | 'ZPL_203';
-  /** Optional label_jobs.id FK — set by the cron so webhook can update ledger row. */
+  /** Optional label_jobs.id FK - set by the cron so webhook can update ledger row. */
   labelJobId?: string | null;
 }
 
@@ -816,7 +816,7 @@ async function resolveOrigin(
     .maybeSingle();
   if (def) return { id: def.id, address: def as AddressInput };
 
-  // Legacy JSONB warehouse — auto-migrate into a shipping_origins row so the FK is satisfied.
+  // Legacy JSONB warehouse - auto-migrate into a shipping_origins row so the FK is satisfied.
   const wh = (agentProfile?.warehouse_address || null) as Record<string, unknown> | null;
   if (wh && typeof wh === 'object') {
     const street1 = String(wh.street1 || wh.street || '').trim();
@@ -973,7 +973,7 @@ export type PurchaseLabelResult = PurchaseLabelOk | PurchaseLabelErr;
  * Back-compat: existing admin bulk route imports this. Now routes through
  * `buyLabel`, which writes the audit ledger and uses the platform key.
  *
- * The `_supabase` argument is accepted for compatibility but unused — the
+ * The `_supabase` argument is accepted for compatibility but unused - the
  * admin client is created internally to ensure the audit row write is RLS-safe.
  */
 export async function purchaseLabelForOrder(

@@ -1,5 +1,5 @@
 /**
- * Peptide Expert shared library (pure — no server imports, safe in client or
+ * Peptide Expert shared library (pure - no server imports, safe in client or
  * server components). Types, label maps, glossary, reconstitution + shelf-life
  * math, and the cart-warning analyzer that power the Research section.
  *
@@ -245,7 +245,7 @@ export interface RelatedCompoundRef {
   display_name: string;
   category: string | null;
   evidence_tier: string;
-  /** Primary research areas — included so callers can render area pills without a second lookup. */
+  /** Primary research areas - included so callers can render area pills without a second lookup. */
   research_areas: string[];
   /** True when this compound explicitly lists the target in its best_stacked_with field (or vice-versa). */
   is_best_stack_match: boolean;
@@ -293,7 +293,7 @@ export function relatedCompounds(
       s += 3;
     }
 
-    // best_stacked_with is the strongest signal — explicitly curated pairs (+7 each direction)
+    // best_stacked_with is the strongest signal - explicitly curated pairs (+7 each direction)
     const cNorm = c.slug.toLowerCase();
     const cNameNorm = cName.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     if (targetBestWith.has(cNorm) || targetBestWith.has(cNameNorm)) s += 7;

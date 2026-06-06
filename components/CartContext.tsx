@@ -369,7 +369,7 @@ function BacWaterCalculator({
 
   const { vialsNeeded, alreadyInCart, alreadyInCartQty, bacWaterProduct, totalPeptideVials, totalMlNeeded } = result;
 
-  // All covered — show a green confirmation
+  // All covered - show a green confirmation
   if (alreadyInCart && alreadyInCartQty >= vialsNeeded) {
     return (
       <div
@@ -388,7 +388,7 @@ function BacWaterCalculator({
           <polyline points="20 6 9 17 4 12" />
         </svg>
         <span style={{ fontSize: '0.78rem', color: '#68D391', fontWeight: 700 }}>
-          BAC Water covered — {alreadyInCartQty} vial{alreadyInCartQty !== 1 ? 's' : ''} in cart for {totalPeptideVials} peptide vial{totalPeptideVials !== 1 ? 's' : ''}
+          BAC Water covered - {alreadyInCartQty} vial{alreadyInCartQty !== 1 ? 's' : ''} in cart for {totalPeptideVials} peptide vial{totalPeptideVials !== 1 ? 's' : ''}
         </span>
       </div>
     );
@@ -776,7 +776,7 @@ function CartDrawer() {
 
   const cartIds = new Set(cart.map(i => i.id));
 
-  // Quick-add handler — fetches live pricing before adding
+  // Quick-add handler - fetches live pricing before adding
   const handleQuickAdd = useCallback(async (rec: SmartRec) => {
     try {
       const res = await fetch('/api/cart/refresh', {
@@ -805,7 +805,7 @@ function CartDrawer() {
     }
   }, [addToCart]);
 
-  // BAC water add handler — adds the specified quantity
+  // BAC water add handler - adds the specified quantity
   const handleAddBacWater = useCallback(async (product: SmartRec, qty: number) => {
     try {
       const res = await fetch('/api/cart/refresh', {

@@ -158,7 +158,7 @@ export default async function AdminDashboard() {
     },
     {
       label: 'GMV Trend',
-      value: delta.direction === 'flat' ? '—' : `${delta.direction === 'up' ? '+' : '-'}${delta.pct.toFixed(1)}%`,
+      value: delta.direction === 'flat' ? '-' : `${delta.direction === 'up' ? '+' : '-'}${delta.pct.toFixed(1)}%`,
       sub: 'Last 7 Vs Prior 7',
       href: '/admin/sales',
       color: delta.direction === 'up' ? '#68D391' : delta.direction === 'down' ? 'var(--red)' : 'var(--grey-400)',

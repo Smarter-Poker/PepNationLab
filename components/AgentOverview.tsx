@@ -105,7 +105,7 @@ export default function AgentOverview({
         /* ── Hero panel ───────────────────────────────────────────────────── *
          *
          * Width drives height (aspect-ratio derives height from width).
-         * 4 px total horizontal inset (2 px each side) — shows full brushed-
+         * 4 px total horizontal inset (2 px each side) - shows full brushed-
          * nickel frame with minimal dark border.
          *
          * background-size: 100% 100% → image fills the container exactly with

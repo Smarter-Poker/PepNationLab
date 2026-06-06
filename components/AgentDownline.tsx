@@ -262,7 +262,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
               {caError && <div style={{ background: 'rgba(255,0,0,0.1)', color: '#FFAAAA', padding: '12px', borderRadius: '6px', marginBottom: 'var(--space-4)', fontSize: '0.85rem', border: '1px solid rgba(255,0,0,0.3)' }}>{caError}</div>}
 
               <form onSubmit={handleCreateAgent} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                {/* R31: First + Last Name — top-aligned grid so every create-account
+                {/* R31: First + Last Name - top-aligned grid so every create-account
                     form across admin / super-agent / agent looks the same. */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', alignItems: 'start' }}>
                   <div>
@@ -531,7 +531,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 Gamification Scale
               </h2>
               <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>
-                {caScaleType === 'custom' ? 'Customize The 3 Levels Of Gamification For This Agent.' : 'The Default House Scale — Starts At 20% And Rises To A 40% Maximum. Read Only.'}
+                {caScaleType === 'custom' ? 'Customize The 3 Levels Of Gamification For This Agent.' : 'The Default House Scale - Starts At 20% And Rises To A 40% Maximum. Read Only.'}
               </p>
               
               <div style={{ border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, overflow: 'hidden', marginBottom: 'var(--space-4)' }}>

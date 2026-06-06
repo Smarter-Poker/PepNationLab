@@ -7,9 +7,9 @@ const money = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(n) || 0);
 
 const fmtDate = (s: string | null) => {
-  if (!s) return '—';
+  if (!s) return '-';
   const d = new Date(s);
-  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
 type Req = {
@@ -63,7 +63,7 @@ export default function AdminCreditIncreasesPage() {
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || 'failed');
-      toast.success(decision === 'approved' ? `Approved — New Limit ${money(j.result?.new_limit || r.requested_limit)}` : 'Request Denied');
+      toast.success(decision === 'approved' ? `Approved - New Limit ${money(j.result?.new_limit || r.requested_limit)}` : 'Request Denied');
       load();
     } catch (e: any) {
       toast.error(e.message || 'Failed');

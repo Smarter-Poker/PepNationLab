@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import SupportContextSidebar from '@/components/messenger/SupportContextSidebar';
 
 /**
- * Customer Support v2 — thin client wrapper.
+ * Customer Support v2 - thin client wrapper.
  *
  * The layout file is a server component, so we can't call useSearchParams()
  * there. This mount reads ?conversation= and only renders the sidebar when

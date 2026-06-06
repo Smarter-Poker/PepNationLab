@@ -1,5 +1,5 @@
 /**
- * Compare Compounds page — hosts the interactive side-by-side comparison tool.
+ * Compare Compounds page - hosts the interactive side-by-side comparison tool.
  * Server component fetches the catalog and hands it to the client tool.
  * Research-use-only framing throughout.
  */

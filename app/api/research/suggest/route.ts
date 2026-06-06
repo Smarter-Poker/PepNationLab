@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = await createServiceClient();
 
-  // 1. Compound suggestions — call the same FTS RPC the search route uses,
+  // 1. Compound suggestions - call the same FTS RPC the search route uses,
   //    asking for the top 6 hits only.
   const compoundSuggestions: Suggestion[] = [];
   if (tsquery) {
@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 2. Research-area suggestions — pure in-memory scan.
+  // 2. Research-area suggestions - pure in-memory scan.
   const areaCandidates: Array<{ s: Suggestion; score: number }> = [];
   for (const [key, meta] of Object.entries(RESEARCH_AREAS)) {
     const score = scoreArea(qNorm, key, meta.label);

@@ -1,5 +1,5 @@
 /**
- * Compound monograph — the full Research-Use-Only detail page for one compound.
+ * Compound monograph - the full Research-Use-Only detail page for one compound.
  *
  * Server component. Renders:
  *   - MedicalSubstance JSON-LD (SEO entity for Google / Bing / ChatGPT indexers)
@@ -36,14 +36,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!compound) return { title: 'Compound | Research | Pep Nation Lab' };
   const name = compound.display_name;
   const summary = (compound.plain_summary ?? '').slice(0, 155);
-  // Open this monograph to indexing — it's pure RUO reference content.
+  // Open this monograph to indexing - it's pure RUO reference content.
   return {
     title: `${name} | Research Library | Pep Nation Lab`,
     description: summary || `${name} research-use-only reference: mechanism, evidence, handling, and references.`,
     robots: { index: true, follow: true },
     alternates: { canonical: `https://pepnationlab.com/research/${slug}` },
     openGraph: {
-      title: `${name} — Pep Nation Lab Research Library`,
+      title: `${name} - Pep Nation Lab Research Library`,
       description: summary,
       url: `https://pepnationlab.com/research/${slug}`,
       type: 'article',
@@ -73,7 +73,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   }>;
 
 
-  // Build MedicalSubstance JSON-LD — only emit fields that exist on the row.
+  // Build MedicalSubstance JSON-LD - only emit fields that exist on the row.
   const c: Record<string, unknown> = compound as unknown as Record<string, unknown>;
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -109,7 +109,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
       <MonographTabs compound={compound} related={related} />
 
-      {/* Personalization rail — server emits markup; the buttons handle auth themselves. */}
+      {/* Personalization rail - server emits markup; the buttons handle auth themselves. */}
       <div
         style={{
           maxWidth: '1100px',
@@ -134,7 +134,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         />
       </div>
 
-      {/* Visualization rail — each component fails gracefully when its data is missing. */}
+      {/* Visualization rail - each component fails gracefully when its data is missing. */}
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 var(--space-4, 16px) var(--space-6, 32px)', display: 'grid', gap: 'var(--space-4, 16px)' }}>
         {sequence && typeof sequence === 'string' && sequence.length >= 3 && (
           <SequenceMotifViewer sequence={sequence} />
@@ -148,7 +148,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         {bindings.length > 0 && <ReceptorAffinityHeatmap bindings={bindings} />}
       </div>
 
-      {/* Right-rail knowledge panel — desktop only via CSS in the component. */}
+      {/* Right-rail knowledge panel - desktop only via CSS in the component. */}
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 var(--space-4, 16px) var(--space-7, 48px)' }}>
         <CompoundKnowledgePanel compound={compound} />
       </div>

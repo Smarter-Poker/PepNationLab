@@ -1,4 +1,4 @@
-// R24 phase 6 — Auto-Pay toggle. When enabled and prepaid balance covers the
+// R24 phase 6 - Auto-Pay toggle. When enabled and prepaid balance covers the
 // statement, the late-fees cron auto-pays. Otherwise no-op.
 import { NextResponse } from 'next/server';
 import { z } from 'zod';

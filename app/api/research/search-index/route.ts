@@ -1,5 +1,5 @@
 /**
- * GET /api/research/search-index — public, read-only universal search index for
+ * GET /api/research/search-index - public, read-only universal search index for
  * the Research Library (compounds, stacks, areas, guides, glossary, FAQ). Lets
  * the client landing page run instant in-place search without a per-keystroke
  * round-trip. Cached at the edge. Research-use-only; no dosing, no user data.

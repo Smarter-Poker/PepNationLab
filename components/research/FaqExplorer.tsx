@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * FaqExplorer — progressive-disclosure FAQ. The reader picks one category from
+ * FaqExplorer - progressive-disclosure FAQ. The reader picks one category from
  * a button rail and sees only that category's questions (each still a collapsed
  * disclosure), instead of every category at once. Teal/black, Title Case, no
  * emoji, 44px touch targets. Research-Use-Only.

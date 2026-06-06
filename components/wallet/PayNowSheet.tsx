@@ -32,7 +32,7 @@ export default function PayNowSheet({
     if (!stmt) return;
     setSubmitting(true);
     try {
-      // Invoice v2 — send target_type so the unified pay_invoice RPC routes
+      // Invoice v2 - send target_type so the unified pay_invoice RPC routes
       // both weekly_statements and agent_invoices correctly. Defaults to
       // 'statement' when not present so older callers still work.
       const targetType = stmt.target_type ?? 'statement';
@@ -42,7 +42,7 @@ export default function PayNowSheet({
         body: JSON.stringify({
           target_type: targetType,
           target_id: stmt.id,
-          // Backward compat — older /api/agent/wallet/pay versions still
+          // Backward compat - older /api/agent/wallet/pay versions still
           // expect statement_id; harmless when the v2 route ignores it.
           statement_id: targetType === 'statement' ? stmt.id : undefined,
           handle,
@@ -52,7 +52,7 @@ export default function PayNowSheet({
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || 'pay_failed');
-      toast.success('Marked Paid — Recipient Wallet Topped Off');
+      toast.success('Marked Paid - Recipient Wallet Topped Off');
       onPaid();
     } catch (e: any) {
       toast.error('Pay Failed: ' + (e.message || 'Unknown'));
@@ -88,7 +88,7 @@ export default function PayNowSheet({
                 }}>
                 {openStatements.map((s) => (
                   <option key={s.id} value={s.id}>
-                    Week Of {fmtDate(s.week_start)} — {money(Number(s.total_owed || 0))}
+                    Week Of {fmtDate(s.week_start)} - {money(Number(s.total_owed || 0))}
                     {s.target_type === 'agent_invoice' ? ' (Super Agent Invoice)' : ''}
                   </option>
                 ))}

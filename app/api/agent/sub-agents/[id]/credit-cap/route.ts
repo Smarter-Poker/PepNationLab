@@ -7,7 +7,7 @@ import { assertSameOrigin } from '@/lib/csrf';
  * PATCH /api/agent/sub-agents/[id]/credit-cap
  *
  * SACA Phase 2: Parent adjusts a sub-agent's payment model and virtual
- * credit cap. The credit cap is a virtual ceiling — the real limit is the
+ * credit cap. The credit cap is a virtual ceiling - the real limit is the
  * parent's own admin-assigned credit, debited at order approval. Raising
  * or lowering the cap does not affect existing orders or commissions; it
  * only changes how much new credit the sub-agent can run before being
@@ -118,7 +118,7 @@ export async function PATCH(
         unchanged: true,
         account_type: finalPaymentModel,
         credit_limit: finalCreditLimit,
-        message: 'No Changes Applied — Values Already Match.',
+        message: 'No Changes Applied - Values Already Match.',
       });
     }
 

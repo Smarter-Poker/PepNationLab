@@ -55,7 +55,7 @@ export async function PATCH(req: NextRequest) {
   const validStatuses = ['pending', 'paid', 'overdue', 'cancelled'];
   if (!validStatuses.includes(status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
 
-  // B-06: Enforce invoice state machine — fetch current status first
+  // B-06: Enforce invoice state machine - fetch current status first
   const { data: current, error: fetchErr } = await service
     .from('internal_messages')
     .select('invoice_status')
@@ -99,7 +99,7 @@ export async function PATCH(req: NextRequest) {
       type: 'notification',
     });
 
-    // In-app notification — shows in bell immediately
+    // In-app notification - shows in bell immediately
     const titleMap: Record<string, string> = {
       paid:      `Invoice Marked Paid`,
       overdue:   `Invoice Overdue`,

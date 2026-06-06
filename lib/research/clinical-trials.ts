@@ -5,7 +5,7 @@
  *
  * Used by app/api/cron/trials-sync/route.ts to keep
  * compound_clinical_trials in sync with the public registry. Returns []
- * on network or parse failure — never throws — so the cron can move on
+ * on network or parse failure - never throws - so the cron can move on
  * to the next compound.
  */
 

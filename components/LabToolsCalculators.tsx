@@ -4,11 +4,11 @@ import { useMemo, useState } from 'react';
 import { drawVolumeMl } from '@/lib/compounds';
 
 /**
- * Lab Tools — Reconstitution & Dosing Math.
+ * Lab Tools - Reconstitution & Dosing Math.
  *
  * Pure Client-Side Calculator (No Network, No Data). Helps A Researcher Work
  * Out How Much Bacteriostatic Water To Add To A Lyophilised Vial And How Much
- * To Draw For A Target Amount. For Research Calculation Purposes Only — Not
+ * To Draw For A Target Amount. For Research Calculation Purposes Only - Not
  * Medical Advice And Not Dosing Guidance For Use In Humans.
  *
  * All Math Delegates To The Canonical Helpers In @/lib/compounds So This
@@ -30,14 +30,14 @@ const round = (n: number, dp = 2) => {
 
 /** Format A Dose Count With Commas; Show "<1" For Fractional Sub-Unit Results. */
 function formatDoseCount(n: number): string {
-  if (n <= 0) return '—';
+  if (n <= 0) return '-';
   if (n < 1) return '<1';
   return Math.floor(n).toLocaleString();
 }
 
 /** Format Syringe Units; Show "<1 u" For Sub-Unit Draws Instead Of "0 u". */
 function formatUnits(units: number): string {
-  if (units <= 0) return '—';
+  if (units <= 0) return '-';
   if (units < 0.1) return '<0.1 u';
   return `${round(units, 1)} u`;
 }

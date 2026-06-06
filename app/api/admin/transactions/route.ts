@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'description is required' }, { status: 400 });
   }
 
-  // Fetch current agent balance server-side — NEVER trust caller-supplied balance values.
+  // Fetch current agent balance server-side - NEVER trust caller-supplied balance values.
   // Using balance_before/balance_after from the request body would allow fraudulent
   // ledger entries with arbitrary balance snapshots.
   const { data: agentProfile, error: profileErr } = await supabase
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
       description: description.trim(),
       reference_id: reference_id ?? null,
       reference_type: reference_type ?? null,
-      created_by: gate.userId, // always set to the authenticated admin — never caller-supplied
+      created_by: gate.userId, // always set to the authenticated admin - never caller-supplied
     })
     .select('id')
     .single();

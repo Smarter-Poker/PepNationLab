@@ -5,7 +5,7 @@
  * gets a uniform record. Action names are namespaced under
  * `messenger_call.` so a single LIKE filter surfaces the whole stream.
  *
- * All inserts are best-effort — a telemetry failure must never block the
+ * All inserts are best-effort - a telemetry failure must never block the
  * actual call flow, so every call is wrapped in try/catch with a console
  * warning.
  */
@@ -31,11 +31,11 @@ export interface CallTelemetryPayload {
   ring_ms?: number;
   /** ms from answered_at to ended_at (only meaningful for hangup of active). */
   talk_ms?: number;
-  /** terminal reason — 'declined' | 'missed_timeout' | 'ended_before_answer' | 'ended' */
+  /** terminal reason - 'declined' | 'missed_timeout' | 'ended_before_answer' | 'ended' */
   reason?: string;
-  /** participant count when terminal — useful for group call analytics. */
+  /** participant count when terminal - useful for group call analytics. */
   participant_count?: number;
-  /** any additional context — kept generic so we can extend without schema changes. */
+  /** any additional context - kept generic so we can extend without schema changes. */
   [key: string]: unknown;
 }
 

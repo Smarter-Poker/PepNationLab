@@ -59,7 +59,7 @@ export async function GET() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 50);
 
-  // Active bursts in the last 10 minutes — used by the alert tile.
+  // Active bursts in the last 10 minutes - used by the alert tile.
   const tenMinPerIp = new Map<string, number>();
   for (const row of ipBurstRes.data ?? []) {
     if ((row as any).occurred_at < sinceTenMin) continue;

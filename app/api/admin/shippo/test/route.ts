@@ -6,7 +6,7 @@
  * Calls validateAddress using the active platform Shippo key.
  * Returns the raw AddressValidationResult. Updates last_validated_at on success.
  *
- * Guards: admin role + same-origin CSRF (no MFA required — read-ish action).
+ * Guards: admin role + same-origin CSRF (no MFA required - read-ish action).
  */
 
 import type { NextRequest } from 'next/server';

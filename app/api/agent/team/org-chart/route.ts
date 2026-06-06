@@ -1,4 +1,4 @@
-// R24 phase 6 — Org chart for super-agent/agent downline.
+// R24 phase 6 - Org chart for super-agent/agent downline.
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 

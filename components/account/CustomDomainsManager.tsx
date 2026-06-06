@@ -24,7 +24,7 @@ export default function CustomDomainsManager() {
       });
       if (!r.ok) { const j = await r.json(); throw new Error(j.error || 'failed'); }
       setNewHost('');
-      toast.success('Domain Added — Pending Verification');
+      toast.success('Domain Added - Pending Verification');
       load();
     } catch (e: any) { toast.error('Failed: ' + (e.message || 'Unknown')); }
     finally { setSaving(false); }
@@ -40,7 +40,7 @@ export default function CustomDomainsManager() {
     <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
       <h3 style={{ color: 'var(--white)', marginTop: 0 }}>Custom Domains</h3>
       <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem' }}>
-        Point Your Domain CNAME To pepnationlab.com — Approval Required.
+        Point Your Domain CNAME To pepnationlab.com - Approval Required.
       </p>
       <form onSubmit={add} style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <input type="text" value={newHost} onChange={e => setNewHost(e.target.value)} required

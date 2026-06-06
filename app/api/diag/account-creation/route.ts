@@ -12,7 +12,7 @@ function step(name: string, started: number): StepResult {
 }
 
 async function safeDelete(admin: ReturnType<typeof createAdminClient>, userId: string): Promise<void> {
-  // Best-effort cleanup — ignore failures, the route must always tear down.
+  // Best-effort cleanup - ignore failures, the route must always tear down.
   try { await admin.from('disclaimer_acceptances').delete().eq('user_id', userId); } catch { /* noop */ }
   try { await admin.from('admin_audit_log').delete().eq('entity_id', userId); } catch { /* noop */ }
   try { await admin.from('profiles').delete().eq('id', userId); } catch { /* noop */ }
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  // Admin gate — only the platform owner runs the diagnostic. We can't use
+  // Admin gate - only the platform owner runs the diagnostic. We can't use
   // requireAdmin here because that's middleware-bound; we just inline the
   // role check against the caller's profile.
   const userClient = await createClient();
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   let errorMessage: string | null = null;
 
   try {
-    // STEP 1 — pick an active agent to act as referring_agent_id.
+    // STEP 1 - pick an active agent to act as referring_agent_id.
     let s = Date.now();
     const { data: refAgent } = await admin
       .from('profiles')
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
     steps.push({ ...step('pick_referring_agent', s), detail: refAgent.id });
 
-    // STEP 2 — auth.admin.createUser. Fires handle_new_user trigger which
+    // STEP 2 - auth.admin.createUser. Fires handle_new_user trigger which
     // inserts a partial profile row. Historically this is where the route
     // fails if SUPABASE_SERVICE_ROLE_KEY is missing in the deploy env.
     s = Date.now();
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     createdUserId = authData.user.id;
     steps.push({ ...step('auth_admin_createUser', s), detail: createdUserId });
 
-    // STEP 3 — verify handle_new_user trigger inserted a partial profile row.
+    // STEP 3 - verify handle_new_user trigger inserted a partial profile row.
     s = Date.now();
     const { data: triggerRow } = await admin
       .from('profiles')
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     }
     steps.push({ ...step('verify_trigger_insert', s), detail: `role=${triggerRow.role}` });
 
-    // STEP 4 — upsert the full profile (the historically-broken step that
+    // STEP 4 - upsert the full profile (the historically-broken step that
     // fails when the broken @supabase/ssr-based service client is used).
     s = Date.now();
     const { data: upsertedRows, error: upsertErr } = await admin
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
     if (!upsertedRows?.[0]) throw new Error('profile_upsert_returned_no_rows');
     steps.push({ ...step('profile_upsert', s) });
 
-    // STEP 5 — read-back to confirm referring_agent_id stuck (it would
+    // STEP 5 - read-back to confirm referring_agent_id stuck (it would
     // silently be reverted if a protect_profile_columns-style trigger
     // matched the calling context).
     s = Date.now();

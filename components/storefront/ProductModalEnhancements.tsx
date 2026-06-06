@@ -1,36 +1,36 @@
 'use client';
 
 /**
- * R35 Phase 2 + 3 — Product modal enhancements for agent storefronts.
+ * R35 Phase 2 + 3 - Product modal enhancements for agent storefronts.
  *
  * Sections rendered below the existing product modal body, in order:
  *
  *   PHASE 2
- *     1. IsThisRightForMe         — collapsible expander that surfaces the
+ *     1. IsThisRightForMe         - collapsible expander that surfaces the
  *                                   compound's studied_for + research areas +
  *                                   WADA + cold-chain in a researcher-friendly
  *                                   "Is This Right For My Research?" panel
  *                                   (PHASE 3 addition).
- *     2. StackComponentsCards     — when the current compound is itself a
+ *     2. StackComponentsCards     - when the current compound is itself a
  *                                   stack (e.g., KLOW = TB10+BPC10+GHK50+KPV10),
  *                                   each component is rendered as a tappable
  *                                   mini-card.
- *     3. SaveVsSeparately         — for stacks where every component is also
+ *     3. SaveVsSeparately         - for stacks where every component is also
  *                                   stocked on this storefront, compute the
  *                                   sum vs the stack price.
- *     4. SuppliesYouNeed          — Bac. Water + Acetic Acid + Alcohol Swabs.
+ *     4. SuppliesYouNeed          - Bac. Water + Acetic Acid + Alcohol Swabs.
  *                                   We NEVER suggest syringes; that is enforced
  *                                   both by an allow-list and a hard
  *                                   FORBIDDEN_SUPPLY_NAME block.
- *     5. CompoundsStudiedWithThis — ranked via lib/compounds.relatedCompounds.
+ *     5. CompoundsStudiedWithThis - ranked via lib/compounds.relatedCompounds.
  *
  *   PHASE 3
- *     6. ReconstitutionCalc       — inline lab-prep calculator using
+ *     6. ReconstitutionCalc       - inline lab-prep calculator using
  *                                   lib/compounds.reconstitutionVolumeMl()
  *                                   and drawVolumeMl(). Optional, collapsible.
  *
  *   COMPARE
- *     7. PinToCompareButton       — renders a small action button that fires
+ *     7. PinToCompareButton       - renders a small action button that fires
  *                                   the custom DOM event `pnl:compare-add`
  *                                   with the current product payload. The
  *                                   compare drawer (StorefrontCompareDrawer)
@@ -42,7 +42,7 @@
  * grid filters to that category).
  *
  * Caller: components/AgentStorefrontGrid.tsx. Pure presentational client
- * component — no fs, no fetch.
+ * component - no fs, no fetch.
  */
 
 import { useMemo, useState, useEffect } from 'react';
@@ -88,12 +88,12 @@ interface Props {
   onToggleBulkPricing?: () => void;
 }
 
-// Hard block: syringes are strictly forbidden on PepNationLab — never surface them
+// Hard block: syringes are strictly forbidden on PepNationLab - never surface them
 const FORBIDDEN_SUPPLY = /syring/i;
 
 function pickSupply(grouped: ModalGroupedProductRef[], pattern: RegExp, currentSlug: string | null) {
   for (const g of grouped) {
-    if (FORBIDDEN_SUPPLY.test(g.name)) continue; // hard block — never show syringes
+    if (FORBIDDEN_SUPPLY.test(g.name)) continue; // hard block - never show syringes
     if (g.compoundSlug && g.compoundSlug === currentSlug) continue;
     if (pattern.test(g.name)) return g;
     if (g.compoundSlug && pattern.test(g.compoundSlug)) return g;
@@ -572,26 +572,37 @@ function IsThisRightForMe({
 function ReconstitutionCalc({
   defaultVialMassMg,
   primaryColor,
+  productName,
 }: {
   defaultVialMassMg: number | null | undefined;
   primaryColor: string;
+  productName?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [vialMass, setVialMass] = useState<number>(defaultVialMassMg && defaultVialMassMg > 0 ? defaultVialMassMg : 10);
-  const [targetConc, setTargetConc] = useState<number>(2);
-  const [desiredMass, setDesiredMass] = useState<number>(0.25);
+  
+  const extractedMg = useMemo(() => {
+    if (defaultVialMassMg && defaultVialMassMg > 0) return defaultVialMassMg;
+    if (productName) {
+      const match = productName.match(/(\d+(?:\.\d+)?)\s*mg/i);
+      if (match) return Number(match[1]);
+    }
+    return 10;
+  }, [defaultVialMassMg, productName]);
+
+  const [vialMass, setVialMass] = useState<number | ''>(extractedMg);
+  const [doseType, setDoseType] = useState<'concentrated' | 'regular' | 'diluted'>('regular');
+  const [targetConc, setTargetConc] = useState<number | ''>(extractedMg / 2);
+  const [desiredMass, setDesiredMass] = useState<number | ''>(0.25);
 
   useEffect(() => {
-    if (defaultVialMassMg && defaultVialMassMg > 0) {
-      const timer = window.setTimeout(() => {
-        setVialMass(defaultVialMassMg);
-      }, 0);
-      return () => window.clearTimeout(timer);
-    }
-  }, [defaultVialMassMg]);
+    setVialMass(extractedMg);
+    if (doseType === 'concentrated') setTargetConc(extractedMg / 1);
+    else if (doseType === 'regular') setTargetConc(extractedMg / 2);
+    else if (doseType === 'diluted') setTargetConc(extractedMg / 3);
+  }, [extractedMg, doseType]);
 
-  const diluentMl = reconstitutionVolumeMl(vialMass, targetConc);
-  const drawMl = diluentMl ? drawVolumeMl(vialMass, diluentMl, desiredMass) : null;
+  const diluentMl = (typeof vialMass === 'number' && typeof targetConc === 'number' && targetConc > 0) ? reconstitutionVolumeMl(vialMass, targetConc) : null;
+  const drawMl = (diluentMl && typeof vialMass === 'number' && typeof desiredMass === 'number' && desiredMass > 0) ? drawVolumeMl(vialMass, diluentMl, desiredMass) : null;
 
   return (
     <section aria-label="Reconstitution Calculator" style={{
@@ -636,6 +647,29 @@ function ReconstitutionCalc({
           <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
             Research-Use Lab Prep Only. Volume Of Diluent To Add Equals Mass Divided By Target Concentration.
           </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 4, marginBottom: 4 }}>
+            {(['concentrated', 'regular', 'diluted'] as const).map(type => (
+              <button
+                key={type}
+                onClick={() => setDoseType(type)}
+                style={{
+                  flex: 1,
+                  padding: '6px 0',
+                  borderRadius: 6,
+                  border: `1px solid ${doseType === type ? primaryColor : 'rgba(255,255,255,0.1)'}`,
+                  background: doseType === type ? `${primaryColor}20` : 'rgba(255,255,255,0.02)',
+                  color: doseType === type ? 'var(--white)' : 'var(--grey-400)',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  textTransform: 'capitalize',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s'
+                }}
+              >
+                {type} Dose
+              </button>
+            ))}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: 10 }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <span style={{ fontSize: '0.68rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em', minHeight: '28px', display: 'flex', alignItems: 'flex-end' }}>Vial Mass (Mg)</span>
@@ -674,6 +708,7 @@ function ReconstitutionCalc({
               <input
                 type="number"
                 inputMode="decimal"
+                step="0.25"
                 value={desiredMass || ''}
                 onChange={(e) => setDesiredMass(Number(e.target.value))}
                 style={{
@@ -785,7 +820,7 @@ export default function ProductModalEnhancements({
   showBulkPricing = false,
   onToggleBulkPricing,
 }: Props) {
-  // Smart "Similar Products" — ranked by relatedCompounds scorer which now
+  // Smart "Similar Products" - ranked by relatedCompounds scorer which now
   // weights best_stacked_with highest (+7 per direction), then compound class
   // (+4), research area overlap (+3 each), etc.
   const similarProducts = useMemo(() => {
@@ -794,7 +829,7 @@ export default function ProductModalEnhancements({
     const allCompounds = Object.values(compoundsBySlug).filter(Boolean) as Compound[];
     if (allCompounds.length === 0) return [];
 
-    // Score and rank — fetch up to 15 candidates so we have room to filter
+    // Score and rank - fetch up to 15 candidates so we have room to filter
     const rankedRefs = relatedCompounds(currentCompound, allCompounds, 15);
 
     // Map to storefront groups, keep only stocked items that aren't the current product
@@ -863,7 +898,34 @@ export default function ProductModalEnhancements({
       }
     }
 
-    return items.slice(0, 5);
+    let finalItems = items.slice(0, 5);
+    
+    // Always suggest BAC water
+    if (currentCompound.slug !== 'bac-water') {
+      const hasBacWater = finalItems.some(x => x.ref.slug === 'bac-water');
+      if (!hasBacWater) {
+        const bacWaterGroup = grouped.find(g => g.compoundSlug === 'bac-water');
+        if (bacWaterGroup) {
+          const comp = compoundsBySlug['bac-water'];
+          if (comp) {
+            if (finalItems.length >= 5) finalItems.pop(); // Keep max 5
+            finalItems.unshift({
+              ref: {
+                slug: 'bac-water',
+                display_name: comp.display_name,
+                category: comp.category,
+                evidence_tier: comp.evidence_tier,
+                research_areas: comp.research_areas || [],
+                is_best_stack_match: true,
+              },
+              group: bacWaterGroup,
+            });
+          }
+        }
+      }
+    }
+
+    return finalItems;
   }, [currentCompound, compoundsBySlug, grouped, currentProductName]);
   const supplies = useMemo(() => {
     // Peptides that require 0.6% Acetic Acid for initial reconstitution due to
@@ -1114,6 +1176,7 @@ export default function ProductModalEnhancements({
       <ReconstitutionCalc
         defaultVialMassMg={currentVialMassMg ?? null}
         primaryColor={primaryColor}
+        productName={currentProductName}
       />
 
       <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
@@ -1171,7 +1234,7 @@ export default function ProductModalEnhancements({
               Similar Products
             </SectionTitle>
             <div style={{
-              display: 'flex', gap: 10, overflowX: 'auto', padding: '12px 6px 8px 6px',
+              display: 'flex', gap: 10, overflowX: 'auto', padding: '24px 6px 8px 6px',
               scrollSnapType: 'x mandatory',
             }}>
             {similarProducts.map(({ ref, group }) => {
@@ -1189,8 +1252,8 @@ export default function ProductModalEnhancements({
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                     padding: '10px 8px', borderRadius: 16,
                     background: '#0F1923',
-                    border: '4px solid #8E98A7',
-                    cursor: 'pointer', minWidth: 148, maxWidth: 172,
+                    border: '4px solid #B0C4DE',
+                    cursor: 'pointer', minWidth: 280, maxWidth: 300,
                     color: 'var(--white)',
                     position: 'relative',
                     boxShadow: '0 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
@@ -1214,12 +1277,12 @@ export default function ProductModalEnhancements({
                     <img
                       src={group.imageUrl}
                       alt={group.name}
-                      width={128}
-                      height={128}
-                      style={{ width: 128, height: 128, borderRadius: 10, objectFit: 'cover', background: '#0F1923' }}
+                      width={256}
+                      height={256}
+                      style={{ width: 256, height: 256, borderRadius: 10, objectFit: 'cover', background: '#0F1923' }}
                     />
                   ) : (
-                    <div style={{ width: 128, height: 128, borderRadius: 10, background: `${primaryColor}20` }} aria-hidden="true" />
+                    <div style={{ width: 256, height: 256, borderRadius: 10, background: `${primaryColor}20` }} aria-hidden="true" />
                   )}
                   <span style={{
                     fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.15,
@@ -1248,7 +1311,7 @@ export default function ProductModalEnhancements({
                     </div>
                   )}
                   {pricePerVial != null && (
-                    <span style={{ fontSize: '0.72rem', color: '#A8B4C0', fontWeight: 800 }}>
+                    <span style={{ fontSize: '0.8rem', color: '#B0C4DE', fontWeight: 800 }}>
                       ${formatMoney(pricePerVial)}/Vial
                     </span>
                   )}

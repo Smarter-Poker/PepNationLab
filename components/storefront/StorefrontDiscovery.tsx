@@ -634,7 +634,7 @@ function MatchResultsDrawer({
               {!loading && outOfCatalog.length > 0 && (
                 <div style={{ marginTop: 14 }}>
                   <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
-                    Also Studied For This Goal — Not Currently Stocked Here
+                    Also Studied For This Goal - Not Currently Stocked Here
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {outOfCatalog.map((r) => (
@@ -1155,7 +1155,7 @@ function GuidedDiscoveryWizard({
 }
 
 // --------------------------------------------------------------------------
-// DiscoveryHero — the default export
+// DiscoveryHero - the default export
 // --------------------------------------------------------------------------
 
 function buildGoalFromWizard(state: WizardState): string {

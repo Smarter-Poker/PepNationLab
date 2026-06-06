@@ -1,5 +1,5 @@
 /**
- * R30 — Researcher CRM was rebuilt as AgentResearcherCRMv2.
+ * R30 - Researcher CRM was rebuilt as AgentResearcherCRMv2.
  *
  * This file is now a thin re-export so every existing importer (the agent
  * dashboard, future surfaces) picks up the new build without any wiring

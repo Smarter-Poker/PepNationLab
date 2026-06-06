@@ -7,7 +7,7 @@
  * sendWebPush directly, bypassing the cron tick.
  *
  * Both paths share the same payload shape so a duplicate (cron + inline)
- * delivery is harmless — the browser collapses by tag.
+ * delivery is harmless - the browser collapses by tag.
  */
 
 import { createServiceClient } from '@/lib/supabase/server';
@@ -17,7 +17,7 @@ import { pushTypeAllowed } from '@/lib/push-prefs';
 /**
  * Filter call targets to those who have NOT turned off "Incoming Calls" in
  * their Notification Preferences (push_type_prefs.call_incoming === false).
- * Missing prefs row or absent key = allowed (default on). Never throws — a
+ * Missing prefs row or absent key = allowed (default on). Never throws - a
  * prefs read error must never block a real call ring.
  */
 async function callAllowedTargets(
@@ -120,7 +120,7 @@ export async function enqueueCallRingPush(input: CallRingPushInput): Promise<num
 /**
  * Best-effort low-latency dispatch path. Reads active subscriptions for
  * each target and sends directly via web-push. Does NOT depend on the
- * outbox cron — caller still inserts an outbox row for durability if
+ * outbox cron - caller still inserts an outbox row for durability if
  * the user's device is offline now.
  *
  * Failures are swallowed; the outbox cron retries.

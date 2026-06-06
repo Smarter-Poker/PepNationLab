@@ -409,7 +409,7 @@ export default function Messaging({
         <div style={{ maxHeight: 120, overflowY: 'auto', borderBottom: '1px solid rgba(255,255,255,0.04)', padding: '4px 16px' }}>
           {searchResults.slice(0, 5).map((r: any) => (
             <div key={r.id} style={{ padding: '4px 0', fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-              <span style={{ color: 'var(--teal)', fontWeight: 600 }}>{formatTime(r.created_at)}</span> — {r.body?.substring(0, 80)}
+              <span style={{ color: 'var(--teal)', fontWeight: 600 }}>{formatTime(r.created_at)}</span> - {r.body?.substring(0, 80)}
             </div>
           ))}
         </div>
@@ -574,7 +574,7 @@ export default function Messaging({
                         </div>
                       )}
 
-                      {/* Hover actions — react / reply */}
+                      {/* Hover actions - react / reply */}
                       {!isDeleted && (
                         <div className="msg-hover-actions" style={{
                           position: 'absolute', top: -6,

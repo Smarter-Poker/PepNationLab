@@ -1,4 +1,4 @@
-// Admin Agent Payments — record a weekly-bill payment / send credit to an agent
+// Admin Agent Payments - record a weekly-bill payment / send credit to an agent
 // or super-agent account. Prepaid agents get their prepaid_balance topped up;
 // credit-line agents have their running credit_used paid down. Backed by the
 // atomic SECURITY DEFINER admin_credit_account RPC. A full payoff marks the

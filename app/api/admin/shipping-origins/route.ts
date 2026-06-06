@@ -1,6 +1,6 @@
 /**
- * GET  /api/admin/shipping-origins  — list all shipping origins
- * POST /api/admin/shipping-origins  — create a new shipping origin
+ * GET  /api/admin/shipping-origins  - list all shipping origins
+ * POST /api/admin/shipping-origins  - create a new shipping origin
  *
  * On POST: validates address via Shippo before persisting. If validation
  * returns isValid=false, returns 422 with the validation messages and
@@ -24,7 +24,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 export const dynamic = 'force-dynamic';
 
 // ---------------------------------------------------------------------------
-// GET — list
+// GET - list
 // ---------------------------------------------------------------------------
 export async function GET() {
   const gate = await requireAdmin();
@@ -65,7 +65,7 @@ export async function GET() {
 }
 
 // ---------------------------------------------------------------------------
-// POST — create
+// POST - create
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   const csrfErr = assertSameOrigin(req);
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
     }
     shippoAddressId = validation.shippoAddressId ?? null;
   } catch (err) {
-    // Shippo unavailable or no credentials — save the origin but warn.
+    // Shippo unavailable or no credentials - save the origin but warn.
     const msg = 'Shippo unavailable';
     validationWarning = `Address Not Validated: ${msg}`;
   }

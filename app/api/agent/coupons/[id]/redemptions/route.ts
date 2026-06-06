@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 /**
  * GET /api/agent/coupons/[id]/redemptions
  *
- * Returns every redemption of the coupon — buyer (researcher) name,
+ * Returns every redemption of the coupon - buyer (researcher) name,
  * order id, order date, subtotal, discount, and current status.
  * Owned by the calling agent (or any admin).
  */

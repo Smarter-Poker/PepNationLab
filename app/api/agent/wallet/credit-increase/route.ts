@@ -1,4 +1,4 @@
-// Round 24 Wallet — credit increase request
+// Round 24 Wallet - credit increase request
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
 
   // Notify the reviewers: every admin (who approve/deny on /admin/credit-increases)
   // plus the requester's parent super-agent (FYI), with an in-app bell entry AND a
-  // gated web push. Best-effort — a notification failure must not fail the request.
+  // gated web push. Best-effort - a notification failure must not fail the request.
   try {
     const requesterName =
       (profile?.full_name && String(profile.full_name).trim()) ||

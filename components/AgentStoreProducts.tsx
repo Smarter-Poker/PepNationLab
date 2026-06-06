@@ -515,7 +515,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                         <button
                           onClick={() => toggleVisibility(p)}
                           style={{ width: 70, height: 32, minWidth: 70, minHeight: 32, borderRadius: 16, border: '1px solid rgba(0,0,0,0.45)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.12)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.45)' }}
-                          title={p.is_visible ? 'On — Tap To Hide' : 'Off — Tap To Show'}
+                          title={p.is_visible ? 'On - Tap To Hide' : 'Off - Tap To Show'}
                           aria-label={p.is_visible ? 'Visibility On' : 'Visibility Off'}
                           aria-checked={p.is_visible}
                           role="switch"
@@ -704,7 +704,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               <button
                                 onClick={() => toggleVisibility(p)}
                                 style={{ width: 70, height: 32, minWidth: 70, minHeight: 32, borderRadius: 16, border: '1px solid rgba(0,0,0,0.45)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.12)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.45)' }}
-                                title={p.is_visible ? 'On — Tap To Hide' : 'Off — Tap To Show'}
+                                title={p.is_visible ? 'On - Tap To Hide' : 'Off - Tap To Show'}
                                 aria-label={p.is_visible ? 'Visibility On' : 'Visibility Off'}
                                 aria-checked={p.is_visible}
                                 role="switch"

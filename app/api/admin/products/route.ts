@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
 
-  // List mode: no `id` supplied — return the catalog summary used by the
+  // List mode: no `id` supplied - return the catalog summary used by the
   // tier-override editor and admin dashboards. Preserves the historical
   // detail-by-id behavior below when `id` IS present.
   if (!id) {
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       base_cost: parsedBaseCost,
       unit_size: unit_size || null,
       unit_measure: unit_measure || 'mg',
-      // in_stock is managed by DB trigger (sync_product_stock_status) — derived from inventory_count
+      // in_stock is managed by DB trigger (sync_product_stock_status) - derived from inventory_count
       inventory_count: inventory_count ?? 0,
       low_stock_threshold: low_stock_threshold ?? 5,
       backorder_days: backorder_days ?? 14,
@@ -125,7 +125,7 @@ export async function PATCH(req: NextRequest) {
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
   for (const field of ALLOWED_FIELDS) {
     if (field in raw) {
-      // Guard base_cost against zero or negative values — these would cascade
+      // Guard base_cost against zero or negative values - these would cascade
       // corrupt pricing to all agent_products via recalculate_agent_product_prices.
       if (field === 'base_cost') {
         const cost = Number(raw[field]);
@@ -138,7 +138,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (Object.keys(updates).length === 1) {
-    // Only updated_at — nothing actually changed
+    // Only updated_at - nothing actually changed
     return NextResponse.json({ success: true });
   }
 

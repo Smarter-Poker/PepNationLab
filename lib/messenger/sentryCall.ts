@@ -3,7 +3,7 @@
  *
  * Centralizes error and event reporting so the surface has a single tagged
  * stream operators can filter on. All helpers swallow Sentry setup errors
- * — telemetry must never break a real call.
+ * - telemetry must never break a real call.
  */
 
 import * as Sentry from '@sentry/nextjs';
@@ -35,7 +35,7 @@ function safe<T>(fn: () => T): void {
   try {
     fn();
   } catch (err) {
-    // Sentry itself failed — silently drop. Console only.
+    // Sentry itself failed - silently drop. Console only.
     if (typeof console !== 'undefined') {
       console.warn('[messenger.call] sentry helper threw', err);
     }

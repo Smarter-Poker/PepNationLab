@@ -5,7 +5,7 @@
  *   { connected: boolean; mode: 'test'|'live'|null; last4: string|null;
  *     last_validated_at: string|null; webhook_configured: boolean }
  *
- * The API key is never returned — only the last4 display token.
+ * The API key is never returned - only the last4 display token.
  *
  * Guards: admin role only (no MFA needed for a read).
  */

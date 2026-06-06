@@ -21,7 +21,7 @@ export async function lookupEpar(generic_name: string): Promise<EmaEparHit | nul
   const g = (generic_name || '').trim();
   if (!g) return null;
   try {
-    // Probe — we cannot reliably parse the published XLSX from an Edge
+    // Probe - we cannot reliably parse the published XLSX from an Edge
     // runtime, so verify the file is reachable and return a defensible
     // record without a hard dependency on it. The cron route logs a
     // 'deferred' counter for unreachable sources.

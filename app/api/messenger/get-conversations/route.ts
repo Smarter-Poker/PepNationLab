@@ -87,7 +87,7 @@ async function buildDownlineRows(
   const members = new Map<string, typeof membersData[0]>();
   for (const m of membersData) {
     if (m.id === viewerId) continue;
-    // Skip downline members with no usable identity — they were almost
+    // Skip downline members with no usable identity - they were almost
     // certainly created by an E2E/test path and should not render.
     if (nameless(m)) continue;
     members.set(m.id, m);
@@ -121,7 +121,7 @@ async function buildDownlineRows(
 
   // Preserve existing conversations with admins, groups, and announcements.
   // Direct conversations whose counterparty did not resolve OR is nameless
-  // are dropped silently — they were the source of the "Direct Message /
+  // are dropped silently - they were the source of the "Direct Message /
   // No Messages Yet" mess.
   for (const c of existing) {
     if (typeof c.counterparty_id === 'string' && byCounterparty.has(c.counterparty_id)) {

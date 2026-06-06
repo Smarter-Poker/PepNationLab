@@ -169,7 +169,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
                     const name = p.custom_name || p.products.name;
                     const size = p.products.unit_size ? ` (${p.products.unit_size}${p.products.unit_measure})` : '';
                     return (
-                      <option key={p.product_id} value={p.product_id}>{name}{size} — ${p.retail_price}</option>
+                      <option key={p.product_id} value={p.product_id}>{name}{size} - ${p.retail_price}</option>
                     );
                   })}
                 </select>

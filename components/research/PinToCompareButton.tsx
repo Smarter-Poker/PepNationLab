@@ -1,17 +1,17 @@
 'use client';
 
 /**
- * PinToCompareButton — writes a compound to the `pnl:compare` localStorage
+ * PinToCompareButton - writes a compound to the `pnl:compare` localStorage
  * key shared with StorefrontCompareDrawer. Pin from anywhere in the Research
  * Library and the bottom compare drawer activates automatically.
  *
  * Props:
- *   compoundSlug   — the compound's slug (used as compoundSlug in pinned items)
- *   compoundName   — display name
- *   evidenceTierKey — optional tier key for the score engine
- *   productName    — optional product name (falls back to compoundName)
- *   imageUrl       — optional product image url
- *   pricePerVialDollars — optional price
+ *   compoundSlug   - the compound's slug (used as compoundSlug in pinned items)
+ *   compoundName   - display name
+ *   evidenceTierKey - optional tier key for the score engine
+ *   productName    - optional product name (falls back to compoundName)
+ *   imageUrl       - optional product image url
+ *   pricePerVialDollars - optional price
  */
 
 import { useState, useEffect, useCallback } from 'react';

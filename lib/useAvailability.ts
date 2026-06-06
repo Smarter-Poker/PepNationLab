@@ -5,14 +5,14 @@ import { useEffect, useRef, useState } from 'react';
 export type AvailabilityField = 'slug' | 'username' | 'display_name';
 
 export type AvailabilityStatus =
-  | 'idle'        // no value, or below min length — render nothing
+  | 'idle'        // no value, or below min length - render nothing
   | 'checking'    // debounce window active or fetch in flight
   | 'available'   // server says good to go
   | 'similar'     // (DEPRECATED) the hook no longer produces this; kept in the type for raw-signal callers
   | 'taken'       // server says someone else owns this
-  | 'invalid'     // format failed — server returned available=false with a format reason
+  | 'invalid'     // format failed - server returned available=false with a format reason
   | 'reserved'    // server says this string is blocked by platform (RESERVED_SLUGS / profanity / brand)
-  | 'error';      // network / server failed — UI should fall back to "we'll re-check on submit"
+  | 'error';      // network / server failed - UI should fall back to "we'll re-check on submit"
 
 export interface AvailabilityResult {
   status: AvailabilityStatus;
@@ -28,7 +28,7 @@ export interface AvailabilityResult {
   /** When a name is technically available but visually overlaps an existing
    *  storefront (Levenshtein ≤ 2 or shared prefix), the server returns the
    *  conflicting name here. We expose it for analytics/telemetry but the
-   *  hook no longer flips status to 'similar' — available means available. */
+   *  hook no longer flips status to 'similar' - available means available. */
   similarTo: string | null;
   /** Up to 5 pre-checked alternatives the server suggests on a collision.
    *  Always [] when the field is currently available. */
@@ -43,7 +43,7 @@ interface UseAvailabilityOpts {
   /** UUID of the row that owns the current value, so editing your own
    *  storefront's slug doesn't flag you as a collision against yourself. */
   excludeId?: string | null;
-  /** Default 400 ms — feels live without hammering the endpoint. */
+  /** Default 400 ms - feels live without hammering the endpoint. */
   debounceMs?: number;
   /** Min length before the hook fires. Default 3 (matches slug). */
   minLength?: number;
@@ -73,7 +73,7 @@ interface AvailabilityServerResponse {
  *
  * For full UX (green message, suggestion chips, URL preview, reservation
  * token plumbing) prefer the <UniqueField/> component from
- * components/UniqueField.tsx — it bundles the hook + the status row + the
+ * components/UniqueField.tsx - it bundles the hook + the status row + the
  * suggestion chips + the live URL preview into a single drop-in.
  */
 export function useAvailability(opts: UseAvailabilityOpts): AvailabilityResult {
@@ -153,7 +153,7 @@ export function useAvailability(opts: UseAvailabilityOpts): AvailabilityResult {
           // Available means available, period. The server may also report a
           // visually-similar existing name via json.similarTo for analytics
           // purposes, but we intentionally do NOT surface that as a yellow
-          // "Very Close To..." warning — too many false positives, and the
+          // "Very Close To..." warning - too many false positives, and the
           // platform rule is "if the name is free, the user can have it."
           // The 'similar' status remains in the type definition for any caller
           // that wants the raw signal, but this hook never produces it.
@@ -161,7 +161,7 @@ export function useAvailability(opts: UseAvailabilityOpts): AvailabilityResult {
         } else if (json.reserved === true) {
           setStatus('reserved');
         } else if (json.reason && !json.reason.toLowerCase().includes('already')) {
-          // Format failure — distinguishable from collision so the UI can
+          // Format failure - distinguishable from collision so the UI can
           // explain "letters only" vs. "someone else has this".
           setStatus('invalid');
         } else {
@@ -201,18 +201,18 @@ export function useAvailability(opts: UseAvailabilityOpts): AvailabilityResult {
  * render (idle).
  *
  * Color tokens (intentionally bright so the cue is unmissable):
- *   - checking — silver
- *   - available — bright mint #34D399 with explicit success copy
- *   - similar — (DEPRECATED) collapsed onto 'available' — see note below
- *   - taken — red #FC8181
- *   - reserved — red #FC8181 with the platform-reserved reason
- *   - invalid — amber #FFD175 (format failed)
- *   - error — silver (graceful fallback message)
+ *   - checking - silver
+ *   - available - bright mint #34D399 with explicit success copy
+ *   - similar - (DEPRECATED) collapsed onto 'available' - see note below
+ *   - taken - red #FC8181
+ *   - reserved - red #FC8181 with the platform-reserved reason
+ *   - invalid - amber #FFD175 (format failed)
+ *   - error - silver (graceful fallback message)
  */
 export function availabilityMessage(r: AvailabilityResult): {
   color: string;
   text: string;
-  /** Hint for UIs that want to render a different icon — 'success' renders a
+  /** Hint for UIs that want to render a different icon - 'success' renders a
    *  check, 'warn' renders a triangle, 'error' renders an X, 'info' renders
    *  a spinner-like dot. */
   tone: 'success' | 'warn' | 'error' | 'info';
@@ -226,12 +226,12 @@ export function availabilityMessage(r: AvailabilityResult): {
       // Platform rule: if the server confirmed the name is available, the user
       // can have it. We do NOT surface the "Very Close To..." soft warning any
       // longer. Render the green Available message exactly like 'available'.
-      // This is the belt-and-suspenders guard — the hook above no longer
+      // This is the belt-and-suspenders guard - the hook above no longer
       // transitions into 'similar', but if any caller produces it out-of-band
       // (or a stale bundle is still running), the message stays green.
       return { color: '#34D399', text: 'This Name Is Available', tone: 'success' };
     case 'taken':
-      return { color: '#FC8181', text: r.reason || 'Already Taken — Try Another.', tone: 'error' };
+      return { color: '#FC8181', text: r.reason || 'Already Taken - Try Another.', tone: 'error' };
     case 'reserved':
       return { color: '#FC8181', text: r.reason || 'That Name Is Reserved By The Platform.', tone: 'error' };
     case 'invalid':
@@ -239,7 +239,7 @@ export function availabilityMessage(r: AvailabilityResult): {
     case 'error':
       return {
         color: 'var(--silver, #C0B8A8)',
-        text: 'Could Not Verify Right Now — We Will Re-Check On Submit.',
+        text: 'Could Not Verify Right Now - We Will Re-Check On Submit.',
         tone: 'info',
       };
     case 'idle':

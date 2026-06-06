@@ -1,5 +1,5 @@
 /**
- * Glossary — an A-to-Z reference of peptide-science terms. Server shell hands
+ * Glossary - an A-to-Z reference of peptide-science terms. Server shell hands
  * the terms to GlossaryExplorer, which shows one letter at a time (or search
  * results) instead of every letter at once. Pure static content from
  * lib/research-education. Definitions are factual and research-framed.

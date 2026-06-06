@@ -1,12 +1,12 @@
 /**
- * Research Area hub — deep landing page for one of the 15 research-areas.
+ * Research Area hub - deep landing page for one of the 15 research-areas.
  * Server component. Progressive disclosure via AreaContentTabs.
  *
  * Tabs: Overview | Compounds | Evidence | Safety | References
  *
  * The Compounds tab now renders a full product grid with images, pricing
  * from the user's agent storefront, add-to-cart, sorting, and a comparison
- * tool — bridging the research library and the store.
+ * tool - bridging the research library and the store.
  */
 
 import type { CSSProperties } from 'react';
@@ -170,7 +170,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     });
   }
 
-  // ── Compounds tab — full product grid with images, pricing, cart, compare ──
+  // ── Compounds tab - full product grid with images, pricing, cart, compare ──
   tabs.push({
     key: 'compounds',
     label: `Compounds (${compounds.length})`,

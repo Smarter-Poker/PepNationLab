@@ -130,7 +130,7 @@ export default async function SuperAgentRollupPage() {
         Super-Agent Rollup
       </h1>
       <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-5)' }}>
-        Aggregate Activity Across {rows.length} Sub-Agent{rows.length === 1 ? '' : 's'} — Last 30 Days.
+        Aggregate Activity Across {rows.length} Sub-Agent{rows.length === 1 ? '' : 's'} - Last 30 Days.
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>

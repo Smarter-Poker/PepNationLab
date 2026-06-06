@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Statement ID Required.' }, { status: 400 });
     }
 
-    // Confirm the statement exists before flipping a financial state — an
+    // Confirm the statement exists before flipping a financial state - an
     // unknown id would otherwise silently return success with zero rows updated.
     const { data: existingStmt } = await supabase
       .from('weekly_statements')

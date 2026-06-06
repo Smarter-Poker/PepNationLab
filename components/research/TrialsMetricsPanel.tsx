@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * TrialsMetricsPanel — Analytics panel for clinical trials, citations,
+ * TrialsMetricsPanel - Analytics panel for clinical trials, citations,
  * and research maturity. Shown on individual compound monograph pages.
  *
  * Surfaces data that was previously just raw numbers:
@@ -44,10 +44,10 @@ function trialsTier(total: number): { label: string; color: string } {
 function researchAge(yearDiscovered: number | null | undefined): string | null {
   if (!yearDiscovered) return null;
   const age = new Date().getFullYear() - yearDiscovered;
-  if (age < 5) return `Very New (${age} years) — emerging research`;
-  if (age < 15) return `Modern (${age} years) — actively expanding research base`;
-  if (age < 30) return `Established (${age} years) — mature research trajectory`;
-  return `Well-Established (${age} years) — decades of research literature`;
+  if (age < 5) return `Very New (${age} years) - emerging research`;
+  if (age < 15) return `Modern (${age} years) - actively expanding research base`;
+  if (age < 30) return `Established (${age} years) - mature research trajectory`;
+  return `Well-Established (${age} years) - decades of research literature`;
 }
 
 interface StatCardProps {
@@ -106,7 +106,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
         <StatCard
           label="PubMed Citations"
-          value={citations > 0 ? citations.toLocaleString() : '—'}
+          value={citations > 0 ? citations.toLocaleString() : '-'}
           sub={citations > 0 ? (
             <span>
               <span style={{ color: citPercentile.color, fontWeight: 700 }}>{citPercentile.label}</span>
@@ -117,7 +117,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
         />
         <StatCard
           label="Clinical Trials"
-          value={totalTrials > 0 ? totalTrials : '—'}
+          value={totalTrials > 0 ? totalTrials : '-'}
           sub={totalTrials > 0 ? (
             <span>
               <span style={{ color: '#68D391', fontWeight: 700 }}>{active} Active</span>

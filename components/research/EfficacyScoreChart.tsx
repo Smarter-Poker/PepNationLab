@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * EfficacyScoreChart — renders the efficacy_scores JSON object as an
+ * EfficacyScoreChart - renders the efficacy_scores JSON object as an
  * animated, ranked horizontal bar chart with color-coded tiers.
  *
  * Scores 80-100 → teal (strong)

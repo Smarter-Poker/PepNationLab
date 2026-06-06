@@ -7,7 +7,7 @@ import { z } from 'zod';
  * /api/account/payment-method  (Round 25)
  * ---------------------------------------
  * GET   returns { default_payment_method, payment_handles }
- * PUT   accepts a partial — { default_payment_method? , payment_handles? }
+ * PUT   accepts a partial - { default_payment_method? , payment_handles? }
  *        - default_payment_method: one of the 9 enum slugs, or null
  *        - payment_handles: object keyed by method slug -> string handle
  *

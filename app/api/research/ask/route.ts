@@ -93,7 +93,7 @@ function scoreCompound(qTokens: Set<string>, qPhrase: string, row: CompoundRow):
   const aliases = (row.aliases ?? []).map((a) => a.toLowerCase());
   const keywords = (row.search_keywords ?? []).map((k) => k.toLowerCase());
 
-  // 1. Exact / direct name or alias hit — strongest signal.
+  // 1. Exact / direct name or alias hit - strongest signal.
   if (name === qPhrase || aliases.includes(qPhrase)) {
     score += 12;
     reason = 'Direct Name Match';
@@ -130,7 +130,7 @@ function scoreCompound(qTokens: Set<string>, qPhrase: string, row: CompoundRow):
   const nameTokens = tokenize([row.display_name, ...(row.aliases ?? [])].join(' '));
   for (const t of nameTokens) if (qTokens.has(t)) score += 2;
 
-  // 5. Prose / structured fields — lighter weight.
+  // 5. Prose / structured fields - lighter weight.
   const proseTokens = tokenize(
     [
       row.mechanism ?? '',
@@ -178,7 +178,7 @@ async function handle(q: string) {
   if (!query) {
     return NextResponse.json({
       matches: [],
-      message: 'Search By Goal, Symptom, Or Compound Name — Try "Fat Loss", "Joint Pain", Or "BPC-157".',
+      message: 'Search By Goal, Symptom, Or Compound Name - Try "Fat Loss", "Joint Pain", Or "BPC-157".',
       note: RESEARCH_NOTE,
     });
   }

@@ -15,7 +15,7 @@ const UnfreezeBody = z.object({
   target_id: z.string().uuid(),
 });
 
-// POST /api/agent/freeze — freeze a downline (or any account if admin).
+// POST /api/agent/freeze - freeze a downline (or any account if admin).
 // The freeze_account RPC enforces the ancestor-or-admin authorization +
 // writes admin_audit_log atomically.
 export async function POST(req: Request) {
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true, result: data });
 }
 
-// DELETE /api/agent/freeze — unfreeze a downline.
+// DELETE /api/agent/freeze - unfreeze a downline.
 export async function DELETE(req: Request) {
   const csrf = assertSameOrigin(req as any);
   if (csrf) return csrf;

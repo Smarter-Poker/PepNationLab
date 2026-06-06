@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   const svc = await createServiceClient();
 
-  // Audit9: idempotent replay — same client_message_id from the same
+  // Audit9: idempotent replay - same client_message_id from the same
   // (conversation_id, sender_id) returns the existing row instead of creating
   // a duplicate. The DB unique index enforces this even on race.
   if (parsed.data.clientMessageId) {
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
 
   if (insErr) {
     const code = (insErr as { code?: string }).code;
-    // Audit9: idempotency race — return the existing row on unique violation.
+    // Audit9: idempotency race - return the existing row on unique violation.
     if (code === '23505' && parsed.data.clientMessageId) {
       const { data: existing } = await svc
         .from('messenger_messages')
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Awaited in-app notification + push to all OTHER conversation participants.
-  // Never blocks the response — notification side-effects must not slow sends.
+  // Never blocks the response - notification side-effects must not slow sends.
   try {
     // Get sender display name + role (role drives the support-notification branch)
     const { data: senderProfile } = await svc
@@ -174,9 +174,9 @@ export async function POST(req: NextRequest) {
     // Customer Support v2: if this is a support thread AND the sender is not
     // admin, fire a dedicated support_message notification to the admin
     // participant(s) so the bell + push announce a researcher reply. The
-    // standard new_message notification continues firing alongside this —
+    // standard new_message notification continues firing alongside this -
     // the support_message helper gives admins a distinct, jump-to-thread bell
-    // entry titled "Support — <name>" so the support inbox is the canonical
+    // entry titled "Support - <name>" so the support inbox is the canonical
     // surface and is not buried under generic chat noise.
     let isSupport = false;
     if (senderRole !== 'admin') {
@@ -217,7 +217,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (participants && participants.length > 0) {
-      // Build notification body — truncate long messages
+      // Build notification body - truncate long messages
       const isMedia = !cleanText && parsed.data.mediaUrl;
       const rawBody = cleanText ?? (isMedia ? 'Media Attachment' : 'New Message');
       const body = rawBody.length > 120 ? `${rawBody.slice(0, 117)}…` : rawBody;
@@ -274,7 +274,7 @@ export async function POST(req: NextRequest) {
       );
     }
   } catch {
-    // Never propagate — notifications are best-effort
+    // Never propagate - notifications are best-effort
   }
 
   // Broadcast to the sender's notify channel so their OTHER devices update the sidebar

@@ -157,7 +157,7 @@ ${order.tracking_number ? `<div class="muted">Tracking: ${escape(order.tracking_
 </div>
 
 <div class="footer">
-  Pep Nation Lab — All Products For In Vitro Research Use Only.<br />
+  Pep Nation Lab - All Products For In Vitro Research Use Only.<br />
   Receipt Reference: <code>${escape(order.id)}</code><br />
   Retrieved: ${escape(issuedAt)}
 </div>

@@ -7,16 +7,16 @@ import AgentFreezeToggle from '@/components/AgentFreezeToggle';
 import AdminTierOverrideControl from '@/components/AdminTierOverrideControl';
 
 /**
- * AgentAccountDetail — full management drawer for a single downline FULL agent.
+ * AgentAccountDetail - full management drawer for a single downline FULL agent.
  *
  * Opened from AgentDownline ("My Agent Accounts") when a Super Agent clicks an
  * agent name. Lets the Super Agent:
  *   - Edit First/Last Name + Storefront Display Name
  *   - Switch Payment Model (Prepaid / Credit Line) and set the Credit Limit
  *   - Choose the Markup Structure: Fixed Markup or Gamification Scale
- *     (FULL AGENTS ONLY — super-agents use the Tier 1/2/3 multiplier)
+ *     (FULL AGENTS ONLY - super-agents use the Tier 1/2/3 multiplier)
  *   - Activate / Deactivate the account (also toggles the storefront)
- *   - Freeze / Unfreeze transactions (Invoice v2 — login keeps working,
+ *   - Freeze / Unfreeze transactions (Invoice v2 - login keeps working,
  *     order approval refuses; cascades down the chain)
  *   - Give Wallet Credit (adds to prepaid balance, recorded in the ledger)
  *   - Review Sales History + the Wallet Ledger
@@ -45,7 +45,7 @@ type Detail = {
     commission_active_since: string | null;
     is_active: boolean;
     is_sub_agent?: boolean;
-    // Invoice v2 — freeze state surfaced on the detail row so the panel
+    // Invoice v2 - freeze state surfaced on the detail row so the panel
     // shows the current toggle position without a separate request.
     is_transactions_frozen?: boolean;
     frozen_at?: string | null;
@@ -86,7 +86,7 @@ type Detail = {
 const fmtMoney = (v: number | null | undefined) => `$${(Number(v) || 0).toFixed(2)}`;
 const fmtPct = (n: number) => `${Number.isInteger(n) ? n : Number(n.toFixed(1))}%`;
 const fmtDate = (s: string | null | undefined) => {
-  if (!s) return '—';
+  if (!s) return '-';
   try { return new Date(s).toLocaleDateString(); } catch { return String(s); }
 };
 const fmtLastSignIn = (s: string | null | undefined) => {
@@ -451,7 +451,7 @@ export default function AgentAccountDetail({
                         {detail.sales.recent.map((o) => (
                           <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', gap: 8 }}>
                             <span style={{ color: 'var(--silver)', fontFamily: 'monospace' }}>#{o.id.slice(0, 8).toUpperCase()}</span>
-                            <span style={{ color: 'var(--grey-400)', flex: 1, textAlign: 'center' }}>{o.buyer_name || '—'}</span>
+                            <span style={{ color: 'var(--grey-400)', flex: 1, textAlign: 'center' }}>{o.buyer_name || '-'}</span>
                             <span style={{ color: 'var(--grey-400)' }}>{fmtDate(o.created_at)}</span>
                             <span style={{ color: o.status === 'cancelled' ? 'var(--grey-500)' : 'var(--teal)', minWidth: 70, textAlign: 'right' }}>{titleCaseStatus(o.status)}</span>
                             <span style={{ color: 'var(--white)', fontWeight: 700, minWidth: 70, textAlign: 'right' }}>{fmtMoney(o.total)}</span>
@@ -526,7 +526,7 @@ export default function AgentAccountDetail({
                       </div>
                     </div>
 
-                    {/* Invoice v2 — Transactions Freeze (separate from full account deactivation).
+                    {/* Invoice v2 - Transactions Freeze (separate from full account deactivation).
                         Frozen accounts can still log in and view; order approval refuses for
                         them AND their downline. */}
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 'var(--space-4)' }}>

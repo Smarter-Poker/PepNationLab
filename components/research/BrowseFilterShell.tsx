@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * BrowseFilterShell — universal progressive-disclosure wrapper for browse pages.
+ * BrowseFilterShell - universal progressive-disclosure wrapper for browse pages.
  *
  * Accepts an array of { key, label, count, children } groups. Renders a sticky
  * button rail; clicking a tab reveals only that group's content. Default is the
@@ -14,7 +14,7 @@ export interface BrowseGroup {
   key: string;
   /** Display name shown on the button */
   label: string;
-  /** Item count shown as a badge — pass 0 to still show the group */
+  /** Item count shown as a badge - pass 0 to still show the group */
   count: number;
   children: ReactNode;
 }

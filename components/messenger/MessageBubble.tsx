@@ -309,7 +309,7 @@ export default function MessageBubble({
     if (message.message_type === 'video' && message.media_url) {
       // round-21: bubble shows ONLY the video player (no filename/size
       // caption below). Append #t=0.1 to force iOS Safari to render the
-      // first frame at 0.1s as the static thumbnail — without this, iOS
+      // first frame at 0.1s as the static thumbnail - without this, iOS
       // shows a black box until tapped. The native <video controls>
       // overlays its own play button so the bubble looks like a
       // tappable thumbnail with a play icon, matching the user's ask.

@@ -1,5 +1,5 @@
 /**
- * Storefront Catalog Cache — Client-Side localStorage + Service Worker helpers.
+ * Storefront Catalog Cache - Client-Side localStorage + Service Worker helpers.
  *
  * Implements a stale-while-revalidate pattern for the AgentStorefrontGrid:
  *   1. On first mount, read from localStorage (instant render if cache is fresh).
@@ -69,7 +69,7 @@ export interface StorefrontCatalogPayload {
   fetchedAt: number; // unix ms timestamp
 }
 
-/** What gets stored in localStorage — the payload plus a version tag. */
+/** What gets stored in localStorage - the payload plus a version tag. */
 interface CachedEntry {
   version: string;
   payload: StorefrontCatalogPayload;
@@ -121,12 +121,12 @@ export function writeCatalogCache(agentSlug: string, payload: StorefrontCatalogP
     const entry: CachedEntry = { version: CATALOG_CACHE_VERSION, payload };
     const serialised = JSON.stringify(entry);
     if (serialised.length > CATALOG_MAX_BYTES) {
-      console.warn('[PNL] Catalog cache payload too large — skipping localStorage write');
+      console.warn('[PNL] Catalog cache payload too large - skipping localStorage write');
       return;
     }
     localStorage.setItem(cacheKey(agentSlug), serialised);
   } catch (e) {
-    // QuotaExceededError — silently swallow
+    // QuotaExceededError - silently swallow
     console.warn('[PNL] localStorage write failed:', e);
   }
 }

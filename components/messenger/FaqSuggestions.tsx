@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * R28.1 — Inline FAQ suggestions for the messenger composer.
+ * R28.1 - Inline FAQ suggestions for the messenger composer.
  *
  * Renders a small chip row above the composer textarea when the user is
  * composing a message to admin/support and the typed draft matches one or
@@ -10,7 +10,7 @@
  * the message goes out.
  *
  * Behaviour:
- *   - Hidden unless `enabled` is true (parent decides — typically when the
+ *   - Hidden unless `enabled` is true (parent decides - typically when the
  *     conversation's counterparty role is 'admin')
  *   - Hidden unless the draft is at least 5 characters of real text
  *   - Debounces the draft 200ms before running suggestFaq()
@@ -19,7 +19,7 @@
  *     losing their draft
  *   - Fires a sendBeacon to /api/analytics/faq-click on click so we can
  *     measure deflection rate from the support funnel
- *   - Dismissible via the X button — once dismissed for this draft, stays
+ *   - Dismissible via the X button - once dismissed for this draft, stays
  *     hidden until the next time the textarea is fully cleared
  */
 

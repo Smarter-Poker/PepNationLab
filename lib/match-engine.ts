@@ -1,5 +1,5 @@
 /**
- * Match Me To A Peptide — deterministic scoring engine.
+ * Match Me To A Peptide - deterministic scoring engine.
  *
  * Pure TypeScript, no React, no I/O. Given a researcher's stated primary goal,
  * evidence-tier comfort, and risk tolerance, the engine ranks
@@ -266,7 +266,7 @@ function buildRationale(
 // Top-level scoring.
 // --------------------------------------------------------------------------
 function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: string; breakdown: ScoreBreakdown } | { failReason: string } {
-  // Hard gates first — if any of these fail, the compound is excluded from
+  // Hard gates first - if any of these fail, the compound is excluded from
   // results entirely. We model that as returning { failReason } so callers can surface it.
   if (failsEvidenceGate(c, input.evidenceComfort)) return { failReason: 'Does not meet requested evidence comfort level.' };
   if (failsWadaGate(c, input.wadaConstraint)) return { failReason: 'Contains WADA-prohibited substances.' };

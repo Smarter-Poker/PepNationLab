@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     const supabase = await createServiceClient();
 
     // 1. Generate Admin Statements for all top-level Agents & Super Agents
-    //    (parent_agent_id IS NULL — sub-agents are billed by their super
+    //    (parent_agent_id IS NULL - sub-agents are billed by their super
     //    agent, not by admin). Prepaid accounts are skipped: they were
     //    already debited atomically at order-approval time.
     const { data: adminBilledAgents, error: adminAgentsError } = await supabase
@@ -51,7 +51,7 @@ export async function GET(req: Request) {
           continue;
         }
 
-        // Prevent double billing — skip if any row exists for this week.
+        // Prevent double billing - skip if any row exists for this week.
         const { data: existingStmt } = await supabase
           .from('weekly_statements')
           .select('id, status')
@@ -66,7 +66,7 @@ export async function GET(req: Request) {
           const saved = await persistStatement(supabase, agent.id, weekStart, computed.data);
           if (saved.ok) {
             statementsGenerated++;
-            // Skip notify for $0 statements — pointless ping, common when an
+            // Skip notify for $0 statements - pointless ping, common when an
             // agent had no activity that week.
             if (computed.data.totalOwed > 0) {
               await supabase.from('internal_messages').insert({
@@ -94,7 +94,7 @@ export async function GET(req: Request) {
 
     if (!subAgentsError && subAgents) {
       // CST/CDT-aware billing week. rangeStart = Mon 00:00 Chicago,
-      // rangeEndExclusive = next Mon 00:00 Chicago — exactly the
+      // rangeEndExclusive = next Mon 00:00 Chicago - exactly the
       // "Mon → Sun 23:59:59 CT" window the spec calls for.
       const rangeStart = chicagoMidnightIso(weekStart);
       const weekEnd = addDays(weekStart, 6);

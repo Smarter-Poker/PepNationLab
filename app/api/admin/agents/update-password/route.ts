@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
   }
 
-  // Block resetting another admin's password — prevents horizontal privilege escalation.
+  // Block resetting another admin's password - prevents horizontal privilege escalation.
   // Admins should use the Supabase dashboard or their own account settings for self-reset.
   const { data: targetProfile } = await supabase
     .from('profiles')

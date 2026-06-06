@@ -1,5 +1,5 @@
 /**
- * R28 — POST /api/analytics/faq-click
+ * R28 - POST /api/analytics/faq-click
  *
  * Anonymous beacon endpoint called by HelpHint and the help page when a
  * user opens a FAQ answer. Records a row in `public.faq_clicks` via the
@@ -8,10 +8,10 @@
  *
  * Body: { faqId: string; source?: string | null }
  * Auth: not required. User id + role stamped when the caller is signed in.
- * CSRF: skipped — sendBeacon does not carry CSRF tokens. Per-IP rate limit
+ * CSRF: skipped - sendBeacon does not carry CSRF tokens. Per-IP rate limit
  *       guards against spam. Allow-list of FAQ ids guards against junk.
  *
- * Failures never bubble back to the client — telemetry is best-effort.
+ * Failures never bubble back to the client - telemetry is best-effort.
  */
 import { NextResponse, type NextRequest } from 'next/server';
 import crypto from 'crypto';

@@ -98,7 +98,7 @@ function getKey(): Buffer {
 }
 
 /**
- * Test helper — clears the cached key so subsequent calls re-read the env.
+ * Test helper - clears the cached key so subsequent calls re-read the env.
  * Not used in production code paths; safe to keep for future tests.
  */
 export function _resetKeyCacheForTests(): void {
@@ -113,7 +113,7 @@ export function _resetKeyCacheForTests(): void {
  * Encrypt a UTF-8 string (an API token, a webhook signing secret).
  * Returns `{ciphertext, iv, tag}` ready to write into BYTEA columns.
  *
- * Throws if `plaintext` is empty — empty secrets are a configuration bug,
+ * Throws if `plaintext` is empty - empty secrets are a configuration bug,
  * not a valid state.
  */
 export function encryptSecret(plaintext: string): EncryptedSecret {
@@ -142,7 +142,7 @@ export function encryptSecret(plaintext: string): EncryptedSecret {
 /**
  * Decrypt a `{ciphertext, iv, tag}` triple back to the original UTF-8 string.
  *
- * Throws if the tag does not verify — that means the row was tampered with
+ * Throws if the tag does not verify - that means the row was tampered with
  * or the SHIPPO_ENCRYPTION_KEY changed since the row was written. In either
  * case the caller MUST NOT use a returned partial plaintext (Node's GCM
  * decipher throws before any partial bytes leak, but we wrap with a
@@ -177,7 +177,7 @@ export function decryptSecret(input: {
     ]);
     return plaintext.toString('utf8');
   } catch {
-    // Don't echo the underlying error to the caller — it may contain crypto
+    // Don't echo the underlying error to the caller - it may contain crypto
     // internals that look like leak vectors. Generic message; the caller's
     // own logger picks up Sentry breadcrumb.
     throw new Error('decryptSecret: authentication failed (tampered ciphertext or wrong key)');
@@ -189,7 +189,7 @@ export function decryptSecret(input: {
 // ---------------------------------------------------------------------------
 
 /**
- * Returns the last 4 characters of an API token — used for the admin UI's
+ * Returns the last 4 characters of an API token - used for the admin UI's
  * "sk_..a7c2" pill so we never round-trip the live key through the browser.
  *
  * Padded with leading dots if the token is shorter than 4 chars (shouldn't

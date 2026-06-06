@@ -1,5 +1,5 @@
 /**
- * Historical timeline — every compound plotted by decade.
+ * Historical timeline - every compound plotted by decade.
  * Server component wraps BrowseFilterShell for progressive disclosure.
  */
 

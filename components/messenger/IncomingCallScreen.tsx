@@ -115,7 +115,7 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
     // context. Once the browser caches the grant for this origin, LiveKit's
     // subsequent getUserMedia (inside LiveKitRoom) reuses the permission
     // without re-prompting. On iOS Safari especially, this is the only way
-    // "Allow" persists — the prompt MUST fire inside a click handler, not a
+    // "Allow" persists - the prompt MUST fire inside a click handler, not a
     // later async chain. Tracks are stopped immediately; we only want the
     // grant.
     if (action === 'accept') {

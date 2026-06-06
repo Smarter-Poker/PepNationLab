@@ -1,5 +1,5 @@
 /**
- * FAQ — general peptide and research-library questions. Server shell hands the
+ * FAQ - general peptide and research-library questions. Server shell hands the
  * questions to FaqExplorer, which shows one category at a time via a button
  * rail instead of every category at once. Pure static content from
  * lib/research-education. Research-use-only framing.
