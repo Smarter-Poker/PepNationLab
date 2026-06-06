@@ -48,6 +48,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { ArrowRight, Plus, Beaker, ChevronDown, ChevronUp, BookmarkPlus, AlertCircle, CheckCircle2, Shield, AlertTriangle, BookOpen, Trophy, Clock, Sparkles, Thermometer } from 'lucide-react';
 import PinToCompareButton from '../research/PinToCompareButton';
+import DynamicDetailButton from './DynamicDetailButton';
 import { scoreCompound } from '../research/CompareTool';
 import {
   evidenceTier,
@@ -83,6 +84,8 @@ interface Props {
   onOpenProductByName: (name: string) => void;
   onAddVariantToCart: (variantId: string, qty: number) => void;
   children?: React.ReactNode;
+  showBulkPricing?: boolean;
+  onToggleBulkPricing?: () => void;
 }
 
 // Hard block: syringes are strictly forbidden on PepNationLab — never surface them
@@ -779,6 +782,8 @@ export default function ProductModalEnhancements({
   onOpenProductByName,
   onAddVariantToCart,
   children,
+  showBulkPricing = false,
+  onToggleBulkPricing,
 }: Props) {
   // Smart "Similar Products" — ranked by relatedCompounds scorer which now
   // weights best_stacked_with highest (+7 per direction), then compound class
@@ -1105,68 +1110,6 @@ export default function ProductModalEnhancements({
         </>
       )}
 
-      {studiedWith.length > 0 && (
-        <>
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-          <section aria-label="Compounds Studied With This One">
-            <SectionTitle primaryColor={primaryColor}>
-              Compounds Studied With This One
-            </SectionTitle>
-            <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: -4, marginBottom: 10 }}>
-              Ranked By Shared Research Areas And Mechanism - All Currently Stocked Here.
-            </div>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(min(160px, 100%), 1fr))',
-              gap: 10,
-            }}>
-              {studiedWith.map(({ ref, group }) => {
-                if (!group) return null;
-                const tier = evidenceTier(ref.evidence_tier);
-                return (
-                  <button
-                    key={ref.slug}
-                    type="button"
-                    onClick={() => onOpenProductBySlug(ref.slug)}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-                      gap: 6,
-                      padding: '10px 12px',
-                      borderRadius: 12,
-                      background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.10)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      color: 'var(--white)',
-                      minHeight: 76,
-                    }}
-                  >
-                    <span style={{ fontWeight: 800, fontSize: '0.86rem', lineHeight: 1.2 }}>
-                      {ref.display_name}
-                    </span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      {tier.badgeUrl ? (
-                        <img src={tier.badgeUrl} alt={tier.label} style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
-                      ) : (
-                        <span style={{ fontSize: '0.66rem', color: tier.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          {tier.label}
-                        </span>
-                      )}
-                      <span style={{ fontSize: '0.7rem', color: primaryColor, fontWeight: 700 }}>
-                        ${formatMoney((group.lowestPrice || 0) / 10)}/Vial
-                      </span>
-                    </div>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 'auto', fontSize: '0.72rem', color: 'var(--grey-300)', fontWeight: 600 }}>
-                      View Details <ArrowRight size={11} aria-hidden="true" />
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        </>
-      )}
-
       <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
       <ReconstitutionCalc
         defaultVialMassMg={currentVialMassMg ?? null}
@@ -1174,7 +1117,26 @@ export default function ProductModalEnhancements({
       />
 
       <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 16,
+        margin: '16px 0',
+        flexWrap: 'wrap',
+      }}>
+        <DynamicDetailButton
+          type="bulk"
+          onClick={onToggleBulkPricing || (() => {})}
+          style={{
+            height: 38,
+            width: 180,
+            filter: showBulkPricing
+              ? 'brightness(1.2) drop-shadow(0 0 6px rgba(255, 255, 255, 0.3))'
+              : 'none',
+          }}
+        />
         {currentCompoundSlug && currentProductName && (
           <PinToCompareButton
             compoundSlug={currentCompoundSlug}
@@ -1186,6 +1148,10 @@ export default function ProductModalEnhancements({
             }
             evidenceTierKey={currentCompound?.evidence_tier ?? undefined}
             category={currentCompound?.category ?? null}
+            style={{
+              height: 38,
+              width: 180,
+            }}
           />
         )}
       </div>
@@ -1205,9 +1171,9 @@ export default function ProductModalEnhancements({
               Similar Products
             </SectionTitle>
             <div style={{
-              display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6,
-            scrollSnapType: 'x mandatory',
-          }}>
+              display: 'flex', gap: 10, overflowX: 'auto', padding: '12px 6px 8px 6px',
+              scrollSnapType: 'x mandatory',
+            }}>
             {similarProducts.map(({ ref, group }) => {
               if (!group) return null;
               const pricePerVial = group.lowestPrice ? group.lowestPrice / 10 : null;
@@ -1221,19 +1187,13 @@ export default function ProductModalEnhancements({
                   style={{
                     flex: '0 0 auto', scrollSnapAlign: 'start',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                    padding: '10px 8px', borderRadius: 14,
-                    background: ref.is_best_stack_match
-                      ? `linear-gradient(160deg, ${primaryColor}18 0%, rgba(255,255,255,0.04) 100%)`
-                      : 'rgba(255,255,255,0.04)',
-                    border: ref.is_best_stack_match
-                      ? `1.5px solid ${primaryColor}55`
-                      : '1px solid rgba(255,255,255,0.10)',
-                    cursor: 'pointer', minWidth: 116, maxWidth: 144,
+                    padding: '10px 8px', borderRadius: 16,
+                    background: '#0F1923',
+                    border: '4px solid #8E98A7',
+                    cursor: 'pointer', minWidth: 148, maxWidth: 172,
                     color: 'var(--white)',
                     position: 'relative',
-                    boxShadow: ref.is_best_stack_match
-                      ? `0 0 0 1px ${primaryColor}22, inset 0 1px 0 rgba(255,255,255,0.08)`
-                      : 'none',
+                    boxShadow: '0 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
                   }}
                 >
                   {/* "Pairs Well Together" badge for explicit best_stacked_with matches */}
@@ -1254,16 +1214,16 @@ export default function ProductModalEnhancements({
                     <img
                       src={group.imageUrl}
                       alt={group.name}
-                      width={64}
-                      height={64}
-                      style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'cover', background: '#0F1923' }}
+                      width={128}
+                      height={128}
+                      style={{ width: 128, height: 128, borderRadius: 10, objectFit: 'cover', background: '#0F1923' }}
                     />
                   ) : (
-                    <div style={{ width: 64, height: 64, borderRadius: 10, background: `${primaryColor}20` }} aria-hidden="true" />
+                    <div style={{ width: 128, height: 128, borderRadius: 10, background: `${primaryColor}20` }} aria-hidden="true" />
                   )}
                   <span style={{
                     fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.15,
-                    textAlign: 'center', maxWidth: 128,
+                    textAlign: 'center', maxWidth: 156,
                     overflow: 'hidden', display: '-webkit-box',
                     WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
                   }}>
@@ -1279,7 +1239,7 @@ export default function ProductModalEnhancements({
                           background: 'rgba(255,255,255,0.07)',
                           border: '1px solid rgba(255,255,255,0.12)',
                           color: 'var(--grey-300)',
-                          whiteSpace: 'nowrap', maxWidth: 120,
+                          whiteSpace: 'nowrap', maxWidth: 140,
                           overflow: 'hidden', textOverflow: 'ellipsis',
                         }}>
                           {label}
@@ -1288,7 +1248,7 @@ export default function ProductModalEnhancements({
                     </div>
                   )}
                   {pricePerVial != null && (
-                    <span style={{ fontSize: '0.72rem', color: primaryColor, fontWeight: 800 }}>
+                    <span style={{ fontSize: '0.72rem', color: '#A8B4C0', fontWeight: 800 }}>
                       ${formatMoney(pricePerVial)}/Vial
                     </span>
                   )}

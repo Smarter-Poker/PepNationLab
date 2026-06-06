@@ -60,6 +60,7 @@ interface Props {
   category?: string | null;
   size?: 'sm' | 'md';
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export default function PinToCompareButton({
@@ -71,6 +72,7 @@ export default function PinToCompareButton({
   pricePerVialDollars,
   category,
   size = 'md',
+  style = {},
 }: Props) {
   const [pinned, setPinned] = useState(false);
   const [full, setFull] = useState(false);
@@ -142,9 +144,12 @@ export default function PinToCompareButton({
           cursor: 'pointer',
           outline: 'none',
           position: 'relative',
-          display: 'inline-block',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           width: buttonWidth,
           transition: 'transform 0.15s',
+          ...style,
         }}
         onMouseOver={e => e.currentTarget.style.transform = 'scale(1.02)'}
         onMouseOut={e => e.currentTarget.style.transform = 'none'}
@@ -154,7 +159,8 @@ export default function PinToCompareButton({
           alt="Pinned to Compare"
           style={{
             width: '100%',
-            height: 'auto',
+            height: '100%',
+            objectFit: 'contain',
             display: 'block',
             filter: 'drop-shadow(0 0 6px #00C4BC) brightness(1.1)',
           }}
@@ -173,6 +179,7 @@ export default function PinToCompareButton({
           justifyContent: 'center',
           boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
           border: '1px solid #FFF',
+          zIndex: 10,
         }}>
           <Check size={10} color="#04221F" strokeWidth={3} />
         </div>
@@ -193,9 +200,12 @@ export default function PinToCompareButton({
         cursor: full ? 'not-allowed' : 'pointer',
         opacity: full ? 0.4 : 1,
         outline: 'none',
-        display: 'inline-block',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         width: buttonWidth,
         transition: 'transform 0.15s',
+        ...style,
       }}
       onMouseOver={e => { if(!full) e.currentTarget.style.transform = 'scale(1.02)'; }}
       onMouseOut={e => e.currentTarget.style.transform = 'none'}
@@ -205,7 +215,8 @@ export default function PinToCompareButton({
         alt="Pin to Compare"
         style={{
           width: '100%',
-          height: 'auto',
+          height: '100%',
+          objectFit: 'contain',
           display: 'block',
         }}
       />

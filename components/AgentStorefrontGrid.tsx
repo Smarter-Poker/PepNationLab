@@ -3680,6 +3680,8 @@ export default function AgentStorefrontGrid({
                   }))}
                   compoundsBySlug={compoundsBySlug || {}}
                   primaryColor={primaryColor}
+                  showBulkPricing={showBulkPricing}
+                  onToggleBulkPricing={() => setShowBulkPricing(prev => !prev)}
                   onOpenProductBySlug={(slug) => {
                     const grp = grouped.find((g) => g.compoundSlug === slug);
                     if (grp) {
@@ -3699,17 +3701,7 @@ export default function AgentStorefrontGrid({
                     setShowCartFloat(true);
                   }}
                 >
-                  <div style={{ marginTop: 'var(--space-6)', marginBottom: 'var(--space-3)' }}>
-                    <DynamicDetailButton
-                      type="bulk"
-                      onClick={() => setShowBulkPricing(prev => !prev)}
-                      style={{
-                        filter: showBulkPricing
-                          ? 'brightness(1.2) drop-shadow(0 0 6px rgba(255, 255, 255, 0.3))'
-                          : 'none',
-                      }}
-                    />
-                    {showBulkPricing && (
+                  {showBulkPricing && (
                       <div style={{
                         marginTop: 10,
                         border: '1px solid rgba(255,255,255,0.12)',
@@ -3773,7 +3765,6 @@ export default function AgentStorefrontGrid({
                         </div>
                       </div>
                     )}
-                  </div>
                 </ProductModalEnhancements>
 
                 <div className="sf-modal-actions" style={{ alignItems: 'center' }}>
