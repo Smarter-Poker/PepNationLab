@@ -13,6 +13,7 @@ import ProductModalEnhancements, { ClickableCategoryBadge, type ModalGroupedProd
 import StorefrontCompareDrawer from './storefront/StorefrontCompareDrawer';
 import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
 import DynamicCartButton from './storefront/DynamicCartButton';
+import DynamicDetailButton from './storefront/DynamicDetailButton';
 import { evidenceTier, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
@@ -3295,20 +3296,15 @@ export default function AgentStorefrontGrid({
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)', marginTop: 'var(--space-5)' }}>
                   <div>
-                    <button
-                      type="button"
+                    <DynamicDetailButton
+                      type="bulk"
                       onClick={() => setShowBulkPricing(prev => !prev)}
                       style={{
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                        padding: '10px 16px', borderRadius: 10, cursor: 'pointer',
-                        border: `1px solid ${primaryColor}55`,
-                        background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
-                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 3px 8px rgba(0,0,0,0.45)',
-                        color: primaryColor, fontSize: '0.82rem', fontWeight: 700,
+                        filter: showBulkPricing
+                          ? 'brightness(1.2) drop-shadow(0 0 6px rgba(255, 255, 255, 0.3))'
+                          : 'none',
                       }}
-                    >
-                      {showBulkPricing ? 'Hide Bulk Pricing' : 'See Bulk Pricing'}
-                    </button>
+                    />
                     {showBulkPricing && (
                       <div style={{
                         position: 'absolute', bottom: 80, left: 24, right: 24,
@@ -3373,13 +3369,11 @@ export default function AgentStorefrontGrid({
                     )}
                   </div>
 
-                  <div className="sf-modal-actions">
-                    <button
-                      className="sf-close-btn"
+                  <div className="sf-modal-actions" style={{ alignItems: 'center' }}>
+                    <DynamicDetailButton
+                      type="close"
                       onClick={() => setDetailProduct(null)}
-                    >
-                      Close
-                    </button>
+                    />
                     <DynamicAddToCartButton
                       onClick={() => {
                         const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
