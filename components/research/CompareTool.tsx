@@ -1328,7 +1328,7 @@ function RecommendationCard({ rec, label, icon, color }: { rec: { compound: Comp
       padding: '12px 14px',
       borderRadius: 10,
       border: '2px solid transparent',
-      backgroundImage: `linear-gradient(${color}08, ${color}08), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)`,
+      backgroundImage: `linear-gradient(#0F161E, #0F161E), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)`,
       backgroundOrigin: 'border-box',
       backgroundClip: 'padding-box, border-box',
       display: 'flex',
@@ -2033,7 +2033,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         .ct-tab { background: rgba(255,255,255,0.03) !important; border: 4px solid #5a626c !important; color: rgba(255,255,255,0.5) !important; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .ct-tab:hover { background: rgba(255,255,255,0.08) !important; border-color: #aab2bd !important; color: rgba(255,255,255,0.9) !important; }
-        .ct-tab.active { background: rgba(0,196,188,0.1) !important; border: 4px solid transparent !important; background-image: linear-gradient(rgba(0,196,188,0.1), rgba(0,196,188,0.1)), linear-gradient(135deg, #4f5660 0%, #aab2bd 20%, #f5f7fa 40%, #7e8794 60%, #cbd2db 80%, #4f5660 100%) !important; background-origin: border-box !important; background-clip: padding-box, border-box !important; color: #FFF !important; box-shadow: 0 4px 12px rgba(0, 196, 188, 0.15) !important; }
+        .ct-tab.active { background: #0e3035 !important; border: 4px solid transparent !important; background-image: linear-gradient(#0e3035, #0e3035), linear-gradient(135deg, #4f5660 0%, #aab2bd 20%, #f5f7fa 40%, #7e8794 60%, #cbd2db 80%, #4f5660 100%) !important; background-origin: border-box !important; background-clip: padding-box, border-box !important; color: #FFF !important; box-shadow: 0 4px 12px rgba(0, 196, 188, 0.15) !important; }
         .ct-row-hover:hover td { background: rgba(255,255,255,0.015) !important; }
         .popular-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 4px; }
         .popular-card:hover { background: rgba(0,196,188,0.08); border-color: rgba(0,196,188,0.3); transform: translateY(-1px); }
@@ -2050,7 +2050,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         .efficacy-table th, .efficacy-table td { border-bottom: 2px solid rgba(142, 152, 167, 0.75) !important; }
         .glass-panel {
           border: 4px solid transparent !important;
-          background-image: linear-gradient(rgba(15, 25, 35, 0.65), rgba(15, 25, 35, 0.65)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) !important;
+          background-image: linear-gradient(#0F161E, #0F161E), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) !important;
           background-origin: border-box !important;
           background-clip: padding-box, border-box !important;
           backdrop-filter: blur(16px);
@@ -2216,13 +2216,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 width: '100%',
                 maxWidth: '993px',
                 aspectRatio: '993 / 148',
-                userSelect: 'none',
-                border: '4px solid transparent',
-                backgroundImage: 'linear-gradient(#0F161E, #0F161E), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
-                backgroundOrigin: 'border-box',
-                backgroundClip: 'padding-box, border-box',
-                borderRadius: '9999px',
-                overflow: 'hidden'
+                userSelect: 'none'
               }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
@@ -2273,7 +2267,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                   position: isMobile ? 'sticky' : 'relative', top: isMobile ? 10 : 'auto', zIndex: isMobile ? 40 : 'auto',
                   display: 'flex', alignItems: 'center', gap: 10,
                   border: '2px solid transparent',
-                  backgroundImage: `linear-gradient(${isMobile ? 'rgba(0,196,188,0.15)' : 'rgba(0,196,188,0.08)'}, ${isMobile ? 'rgba(0,196,188,0.15)' : 'rgba(0,196,188,0.08)'}), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)`,
+                  backgroundImage: 'linear-gradient(#0f2628, #0f2628), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
                   backgroundOrigin: 'border-box',
                   backgroundClip: 'padding-box, border-box',
                   borderRadius: 10, padding: '10px 16px', backdropFilter: isMobile ? 'blur(10px)' : 'none', marginBottom: isMobile ? 12 : 0, cursor: 'pointer', boxShadow: isMobile ? '0 8px 24px rgba(0,0,0,0.5)' : 'none'
@@ -2300,8 +2294,8 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                       padding: 14, borderRadius: 12,
                       border: '2px solid transparent',
                       backgroundImage: isTop
-                        ? `linear-gradient(rgba(0,196,188,0.05), rgba(0,196,188,0.05)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)`
-                        : `linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)`,
+                        ? 'linear-gradient(#102127, #102127), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)'
+                        : 'linear-gradient(#0F161E, #0F161E), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
                       backgroundOrigin: 'border-box',
                       backgroundClip: 'padding-box, border-box'
                     }}>

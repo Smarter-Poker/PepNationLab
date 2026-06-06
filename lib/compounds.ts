@@ -245,6 +245,10 @@ export interface RelatedCompoundRef {
   display_name: string;
   category: string | null;
   evidence_tier: string;
+  /** Primary research areas — included so callers can render area pills without a second lookup. */
+  research_areas: string[];
+  /** True when this compound explicitly lists the target in its best_stacked_with field (or vice-versa). */
+  is_best_stack_match: boolean;
 }
 
 /**
@@ -259,14 +263,28 @@ export function relatedCompounds(
 ): RelatedCompoundRef[] {
   const targetAreas = new Set((target.research_areas || []).map((a) => a.toLowerCase()));
   const targetStack = new Set((target.stack_components || []).map((s) => s.toLowerCase()));
+  // Normalised slugs/names from best_stacked_with on the target
+  const targetBestWith = new Set(
+    (target.best_stacked_with || []).map((s) => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))
+  );
 
   const score = (c: Compound): number => {
     if (c.slug === target.slug) return -1;
     let s = 0;
+
+    // Shared research areas (+3 each)
     for (const a of c.research_areas || []) if (targetAreas.has(a.toLowerCase())) s += 3;
+
+    // Same compound class (+4)
     if (c.compound_class && target.compound_class && c.compound_class === target.compound_class) s += 4;
+
+    // Same product category (+1)
     if (c.category && target.category && c.category === target.category) s += 1;
+
+    // Overlapping stack components (+2)
     if ((c.stack_components || []).some((x) => targetStack.has(x.toLowerCase()))) s += 2;
+
+    // Stack component cross-reference (+3)
     const cName = c.display_name.toLowerCase();
     if (
       (target.stack_components || []).some((x) => x.toLowerCase() === c.slug || x.toLowerCase() === cName) ||
@@ -274,6 +292,18 @@ export function relatedCompounds(
     ) {
       s += 3;
     }
+
+    // best_stacked_with is the strongest signal — explicitly curated pairs (+7 each direction)
+    const cNorm = c.slug.toLowerCase();
+    const cNameNorm = cName.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    if (targetBestWith.has(cNorm) || targetBestWith.has(cNameNorm)) s += 7;
+    const cBestWith = new Set(
+      (c.best_stacked_with || []).map((s2) => s2.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))
+    );
+    const targetNorm = target.slug.toLowerCase();
+    const targetNameNorm = target.display_name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    if (cBestWith.has(targetNorm) || cBestWith.has(targetNameNorm)) s += 7;
+
     return s;
   };
 
@@ -282,12 +312,23 @@ export function relatedCompounds(
     .filter((x) => x.s > 0)
     .sort((a, b) => b.s - a.s || a.c.display_name.localeCompare(b.c.display_name))
     .slice(0, limit)
-    .map((x) => ({
-      slug: x.c.slug,
-      display_name: x.c.display_name,
-      category: x.c.category,
-      evidence_tier: x.c.evidence_tier,
-    }));
+    .map((x) => {
+      const cNorm = x.c.slug.toLowerCase();
+      const cNameNorm = x.c.display_name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const isBestStack = targetBestWith.has(cNorm) || targetBestWith.has(cNameNorm) ||
+        (x.c.best_stacked_with || []).some((s2) => {
+          const n = s2.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+          return n === target.slug || n === target.display_name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        });
+      return {
+        slug: x.c.slug,
+        display_name: x.c.display_name,
+        category: x.c.category,
+        evidence_tier: x.c.evidence_tier,
+        research_areas: x.c.research_areas || [],
+        is_best_stack_match: isBestStack,
+      };
+    });
 }
 
 export interface StackAnalysis {

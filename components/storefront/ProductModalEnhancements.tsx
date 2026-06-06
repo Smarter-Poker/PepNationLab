@@ -84,22 +84,8 @@ interface Props {
   onAddVariantToCart: (variantId: string, qty: number) => void;
 }
 
-const SUPPLY_PATTERNS: Array<{ key: string; pattern: RegExp; label: string }> = [
-  { key: 'bac_water', pattern: /bac\.?\s*water|bacteriostatic/i, label: 'Bac. Water' },
-  { key: 'acetic_acid', pattern: /acetic\s*acid/i, label: 'Acetic Acid' },
-  { key: 'alcohol_swabs', pattern: /alcohol\s*(swabs?|pads?|prep)/i, label: 'Alcohol Swabs' },
-];
-
-// Hard block for items that should NEVER appear anywhere (syringes).
-const FORBIDDEN_SUPPLY_NAME = /syring/i;
-
-// Items that should not appear in the "Similar Products" recommendation strip.
-// Bac. Water, acids, and swabs are supplies/accessories, not comparable peptides.
-const SIMILAR_PRODUCTS_EXCLUDED = /syring|bac\.?\s*water|bacteriostatic|acetic\s*acid|alcohol\s*swab|alcohol\s*pad/i;
-
 function pickSupply(grouped: ModalGroupedProductRef[], pattern: RegExp, currentSlug: string | null) {
   for (const g of grouped) {
-    if (FORBIDDEN_SUPPLY_NAME.test(g.name)) continue;
     if (g.compoundSlug && g.compoundSlug === currentSlug) continue;
     if (pattern.test(g.name)) return g;
     if (g.compoundSlug && pattern.test(g.compoundSlug)) return g;
@@ -756,98 +742,82 @@ export default function ProductModalEnhancements({
   primaryColor,
   onOpenProductBySlug,
   onOpenProductByName,
-  onAddVariantToCart,
+  onAddVariant,
 }: Props) {
-  // Smart "Similar Products" logic displaying 3-5 similar peptides for comparison
+  // Smart "Similar Products" — ranked by relatedCompounds scorer which now
+  // weights best_stacked_with highest (+7 per direction), then compound class
+  // (+4), research area overlap (+3 each), etc.
   const similarProducts = useMemo(() => {
     if (!currentCompound) return [];
 
-    // 1. Get all valid compounds from compoundsBySlug
     const allCompounds = Object.values(compoundsBySlug).filter(Boolean) as Compound[];
     if (allCompounds.length === 0) return [];
 
-    // 2. Score and rank them relative to currentCompound using relatedCompounds
+    // Score and rank — fetch up to 15 candidates so we have room to filter
     const rankedRefs = relatedCompounds(currentCompound, allCompounds, 15);
 
-    // 3. Map to storefront groups (ModalGroupedProductRef)
+    // Map to storefront groups, keep only stocked items that aren't the current product
     const items = rankedRefs
       .map((ref) => {
         const group = grouped.find((g) => g.compoundSlug === ref.slug) ?? null;
-        const comp = compoundsBySlug[ref.slug];
-        return { ref, group, comp };
+        return { ref, group };
       })
-      // 4. Filter: Must be in stock, not the current product, and not a supply/accessory
-      .filter((x) => {
-        if (!x.group) return false;
-        if (x.group.name === currentProductName) return false;
-        if (x.comp && x.comp.evidence_tier === 'supply') return false;
-        if (SIMILAR_PRODUCTS_EXCLUDED.test(x.group.name)) return false;
-        return true;
-      });
+      .filter((x) => x.group !== null && x.group.name !== currentProductName);
 
-    // 5. Fallback: If we don't have at least 3, fill in with products from the same category
+    // If scored matches are fewer than 3, pad with same-category products
     if (items.length < 3) {
       const existingSlugs = new Set(items.map((x) => x.ref.slug));
       existingSlugs.add(currentCompound.slug);
 
-      const fallbackGroups = grouped.filter((g) => {
-        if (g.name === currentProductName) return false;
-        if (!g.compoundSlug) return false;
+      const fallback = grouped.filter((g) => {
+        if (g.name === currentProductName || !g.compoundSlug) return false;
         if (existingSlugs.has(g.compoundSlug)) return false;
-        if (SIMILAR_PRODUCTS_EXCLUDED.test(g.name)) return false;
-
         const comp = compoundsBySlug[g.compoundSlug];
-        if (!comp) return false;
-        if (comp.evidence_tier === 'supply') return false;
-
-        return comp.category === currentCompound.category;
+        return comp?.category === currentCompound.category;
       });
 
-      for (const fg of fallbackGroups) {
+      for (const fg of fallback) {
         if (items.length >= 5) break;
         const comp = compoundsBySlug[fg.compoundSlug!];
+        if (!comp) continue;
         items.push({
           ref: {
             slug: fg.compoundSlug!,
             display_name: comp.display_name,
             category: comp.category,
             evidence_tier: comp.evidence_tier,
+            research_areas: comp.research_areas || [],
+            is_best_stack_match: false,
           },
           group: fg,
-          comp,
         });
       }
     }
 
-    // 6. Fallback: If we STILL don't have 3, fill in with any other peptides
+    // Final fallback: any other stocked peptide
     if (items.length < 3) {
       const existingSlugs = new Set(items.map((x) => x.ref.slug));
       existingSlugs.add(currentCompound.slug);
 
-      const anyPeptides = grouped.filter((g) => {
-        if (g.name === currentProductName) return false;
-        if (!g.compoundSlug) return false;
-        if (existingSlugs.has(g.compoundSlug)) return false;
-        if (SIMILAR_PRODUCTS_EXCLUDED.test(g.name)) return false;
-
-        const comp = compoundsBySlug[g.compoundSlug];
-        if (!comp) return false;
-        if (comp.evidence_tier === 'supply') return false;
-        return true;
+      const anyPeptide = grouped.filter((g) => {
+        if (g.name === currentProductName || !g.compoundSlug) return false;
+        return !existingSlugs.has(g.compoundSlug);
       });
 
-      for (const fg of anyPeptides) {
+      for (const fg of anyPeptide) {
         if (items.length >= 5) break;
         const comp = compoundsBySlug[fg.compoundSlug!];
+        if (!comp) continue;
         items.push({
           ref: {
             slug: fg.compoundSlug!,
             display_name: comp.display_name,
             category: comp.category,
             evidence_tier: comp.evidence_tier,
+            research_areas: comp.research_areas || [],
+            is_best_stack_match: false,
           },
           group: fg,
-          comp,
         });
       }
     }
@@ -1140,12 +1110,14 @@ export default function ProductModalEnhancements({
             Similar Products
           </SectionTitle>
           <div style={{
-            display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4,
+            display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6,
             scrollSnapType: 'x mandatory',
           }}>
-            {similarProducts.map(({ group }) => {
+            {similarProducts.map(({ ref, group }) => {
               if (!group) return null;
               const pricePerVial = group.lowestPrice ? group.lowestPrice / 10 : null;
+              // Show up to 2 research area labels
+              const areaLabels = (ref.research_areas || []).slice(0, 2).map(researchAreaLabel);
               return (
                 <button
                   key={group.name}
@@ -1153,34 +1125,73 @@ export default function ProductModalEnhancements({
                   onClick={() => onOpenProductByName(group.name)}
                   style={{
                     flex: '0 0 auto', scrollSnapAlign: 'start',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                    padding: 8, borderRadius: 12,
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.10)',
-                    cursor: 'pointer', minWidth: 110, maxWidth: 140,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                    padding: '10px 8px', borderRadius: 14,
+                    background: ref.is_best_stack_match
+                      ? `linear-gradient(160deg, ${primaryColor}18 0%, rgba(255,255,255,0.04) 100%)`
+                      : 'rgba(255,255,255,0.04)',
+                    border: ref.is_best_stack_match
+                      ? `1.5px solid ${primaryColor}55`
+                      : '1px solid rgba(255,255,255,0.10)',
+                    cursor: 'pointer', minWidth: 116, maxWidth: 144,
                     color: 'var(--white)',
+                    position: 'relative',
+                    boxShadow: ref.is_best_stack_match
+                      ? `0 0 0 1px ${primaryColor}22, inset 0 1px 0 rgba(255,255,255,0.08)`
+                      : 'none',
                   }}
                 >
+                  {/* "Pairs Well Together" badge for explicit best_stacked_with matches */}
+                  {ref.is_best_stack_match && (
+                    <div style={{
+                      position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)',
+                      background: primaryColor, color: '#fff',
+                      fontSize: '0.58rem', fontWeight: 800, letterSpacing: '0.04em',
+                      padding: '2px 8px', borderRadius: 99,
+                      whiteSpace: 'nowrap', textTransform: 'uppercase',
+                      boxShadow: `0 2px 6px ${primaryColor}60`,
+                    }}>
+                      Pairs Well
+                    </div>
+                  )}
                   {group.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={group.imageUrl}
                       alt={group.name}
-                      width={56}
-                      height={56}
-                      style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', background: '#0F1923' }}
+                      width={64}
+                      height={64}
+                      style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'cover', background: '#0F1923' }}
                     />
                   ) : (
-                    <div style={{ width: 56, height: 56, borderRadius: 10, background: `${primaryColor}20` }} aria-hidden="true" />
+                    <div style={{ width: 64, height: 64, borderRadius: 10, background: `${primaryColor}20` }} aria-hidden="true" />
                   )}
                   <span style={{
                     fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.15,
-                    textAlign: 'center', maxWidth: 124,
+                    textAlign: 'center', maxWidth: 128,
                     overflow: 'hidden', display: '-webkit-box',
                     WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
                   }}>
                     {group.name}
                   </span>
+                  {/* Research area pills */}
+                  {areaLabels.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'center' }}>
+                      {areaLabels.map((label) => (
+                        <span key={label} style={{
+                          fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.02em',
+                          padding: '2px 6px', borderRadius: 99,
+                          background: 'rgba(255,255,255,0.07)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          color: 'var(--grey-300)',
+                          whiteSpace: 'nowrap', maxWidth: 120,
+                          overflow: 'hidden', textOverflow: 'ellipsis',
+                        }}>
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {pricePerVial != null && (
                     <span style={{ fontSize: '0.72rem', color: primaryColor, fontWeight: 800 }}>
                       ${formatMoney(pricePerVial)}/Vial
