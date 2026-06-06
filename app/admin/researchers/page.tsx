@@ -502,7 +502,7 @@ function ResearchersAdminPageInner() {
 
       {/* Tabs & Search */}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
-        <div style={{ display: 'flex', gap: 'var(--space-2)', background: 'var(--black-2)', padding: 4, borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', padding: 8, borderRadius: 24, background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)' }}>
           {[
             { id: 'researchers', label: 'Researchers' },
             { id: 'agents', label: 'Agents & Super Agents' },
@@ -556,10 +556,10 @@ function ResearchersAdminPageInner() {
           flexWrap: 'wrap',
           gap: 'var(--space-3)',
           marginBottom: 'var(--space-6)',
-          padding: 'var(--space-4)',
-          background: 'var(--surface-1)',
-          border: 'var(--border-subtle)',
-          borderRadius: 'var(--radius-md)',
+          padding: 'var(--space-6)',
+          borderRadius: 24,
+          background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)',
+          boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)',
           alignItems: 'flex-end',
         }}
       >
@@ -655,7 +655,7 @@ function ResearchersAdminPageInner() {
           <p style={{ color: 'var(--red)', fontSize: '0.9rem' }}>{error}</p>
         </div>
       ) : filteredProfiles.length === 0 ? (
-        <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
+        <div className="hover-lift stagger-fade-in" style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', animationDelay: '0.1s' }}>
           <div className="" style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
             <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem' }}>No Matching Profiles Found</p>
           </div>
@@ -665,7 +665,7 @@ function ResearchersAdminPageInner() {
           {paginatedProfiles.map((profile, index) => {
             const ap = Array.isArray(profile.agent_profiles) ? profile.agent_profiles[0] : profile.agent_profiles;
             return (
-              <div key={profile.id} className="glass-panel hover-lift stagger-fade-in" style={{ opacity: profile.is_active ? 1 : 0.6, animationDelay: `${0.1 + Math.min(index, 5) * 0.1}s` }}>
+              <div key={profile.id} className="hover-lift stagger-fade-in" style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', opacity: profile.is_active ? 1 : 0.6, animationDelay: `${0.1 + Math.min(index, 5) * 0.1}s` }}>
                 <div className="" style={{
                   padding: 'var(--space-5)',
                   display: 'flex',
@@ -678,7 +678,7 @@ function ResearchersAdminPageInner() {
                 <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
                   <div style={{
                     width: 44, height: 44, borderRadius: '50%',
-                    background: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' ? '#D69E2E' : 'var(--teal)',
+                    background: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' ? 'var(--silver)' : 'var(--teal)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontWeight: 700, color: '#fff', fontSize: '1rem',
                   }}>
@@ -690,9 +690,9 @@ function ResearchersAdminPageInner() {
                         {profile.full_name || 'No Name Provided'}
                       </span>
                       <span className="badge" style={{
-                        background: profile.role === 'admin' ? 'rgba(229,62,62,0.15)' : profile.role === 'super_agent' ? 'rgba(214,158,46,0.15)' : 'rgba(192,184,168,0.15)',
-                        color: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' ? '#D69E2E' : 'var(--teal)',
-                        borderColor: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' ? '#D69E2E' : 'var(--teal)',
+                        background: profile.role === 'admin' ? 'rgba(229,62,62,0.15)' : profile.role === 'super_agent' ? 'rgba(192,184,168,0.15)' : 'rgba(192,184,168,0.15)',
+                        color: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' ? 'var(--silver)' : 'var(--teal)',
+                        borderColor: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' ? 'var(--silver)' : 'var(--teal)',
                       }}>
                         {ROLE_LABELS[profile.role] ?? profile.role}
                       </span>
@@ -798,9 +798,9 @@ function ResearchersAdminPageInner() {
 
       {/* CREATE NEW AGENT MODAL */}
       {modalMode === 'create_agent' && (
-        <div style={{ position: 'fixed', inset: 0, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
-          <div className="glass-panel hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 580, maxHeight: '92vh', overflowY: 'auto' }}>
-            <div className="" style={{ padding: 'var(--space-6)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
+          <div className="hover-lift stagger-fade-in" style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', width: '100%', maxWidth: 580, maxHeight: '92vh', overflowY: 'auto' }}>
+            <div className="" style={{ padding: 'var(--space-2)' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>
                 {createRole === 'researcher' ? 'Create New Researcher' : 'Create New Agent'}
               </h2>
@@ -925,7 +925,7 @@ function ResearchersAdminPageInner() {
 
               {createRole === 'researcher' && (
                 <>
-                  <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: 'var(--space-4) 0' }} />
+                  <div style={{ marginBottom: 'var(--space-6)' }}></div>
                   <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Account Owner</h4>
                   <div className="form-group" style={{ marginBottom: 'var(--space-5)' }}>
                     <label className="form-label">Assign To Agent</label>
@@ -946,7 +946,7 @@ function ResearchersAdminPageInner() {
 
               {createRole === 'agent' && (
               <>
-              <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: 'var(--space-4) 0' }} />
+              <div style={{ marginBottom: 'var(--space-6)' }}></div>
 
               <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Pricing & Billing</h4>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
@@ -981,7 +981,7 @@ function ResearchersAdminPageInner() {
                 </div>
               )}
 
-              <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: 'var(--space-4) 0' }} />
+              <div style={{ marginBottom: 'var(--space-6)' }}></div>
 
               <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Storefront Setup</h4>
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
@@ -1034,9 +1034,9 @@ function ResearchersAdminPageInner() {
 
       {/* UPGRADE / CONFIGURE MODAL */}
       {(modalMode === 'upgrade' || modalMode === 'edit') && selectedProfile && (
-        <div style={{ position: 'fixed', inset: 0, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
-          <div className="glass-panel hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="" style={{ padding: 'var(--space-6)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
+          <div className="hover-lift stagger-fade-in" style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="" style={{ padding: 'var(--space-2)' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>
               {modalMode === 'upgrade' ? 'Upgrade User To Agent' : 'Configure Agent Profile'}
             </h2>
@@ -1091,7 +1091,7 @@ function ResearchersAdminPageInner() {
                       Leave blank to use the standard Pricing Tier. If set, this exact percentage will be used for all their product base costs.
                     </p>
                   </div>
-                  <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: 'var(--space-5) 0' }} />
+                  <div style={{ marginBottom: 'var(--space-6)' }}></div>
                   <h4 style={{ fontSize: '0.9rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Agent Storefront Configuration</h4>
                   <div className="form-group">
                     <label className="form-label">Storefront Display Name</label>
@@ -1122,9 +1122,9 @@ function ResearchersAdminPageInner() {
 
       {/* BALANCE ADJUSTMENT MODAL */}
       {modalMode === 'balance' && selectedProfile && (
-        <div style={{ position: 'fixed', inset: 0, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: 400 }}>
-            <div className="" style={{ padding: 'var(--space-6)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
+          <div style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', width: '100%', maxWidth: 400 }}>
+            <div className="" style={{ padding: 'var(--space-2)' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Adjust Prepaid Balance</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)' }}>
               {selectedProfile.full_name}{selectedProfile.username ? ` (@${selectedProfile.username})` : ''}
@@ -1189,9 +1189,9 @@ function ResearchersAdminPageInner() {
 
       {/* QR CODE MODAL */}
       {modalMode === 'qr' && selectedProfile && resolvedAgentProfile && (
-        <div style={{ position: 'fixed', inset: 0, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: 420 }}>
-            <div className="" style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
+          <div style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', width: '100%', maxWidth: 420 }}>
+            <div className="" style={{ padding: 'var(--space-2)', textAlign: 'center' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Storefront QR Code</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
               {resolvedAgentProfile.display_name} (@{resolvedAgentProfile.slug})
