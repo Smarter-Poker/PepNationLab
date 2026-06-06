@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { HelpCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { HelpCircle, X, Info } from 'lucide-react';
 
 // Hardcoded core glossary map for immediate comparison context
 const GLOSSARY_MAP: Record<string, string> = {
@@ -23,50 +23,161 @@ export default function InCellGlossaryTooltip({ term }: Props) {
   
   const definition = GLOSSARY_MAP[term] || `Learn more about ${term} in the Glossary.`;
 
+  // Disable body scroll when modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
   return (
-    <div 
-      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginLeft: 6 }}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onClick={() => setOpen(!open)}
-    >
-      <HelpCircle size={14} color="rgba(255,255,255,0.4)" style={{ cursor: 'help' }} />
+    <>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+        style={{
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          margin: 0,
+          marginLeft: 6,
+          display: 'inline-flex',
+          alignItems: 'center',
+          cursor: 'pointer',
+          outline: 'none',
+          verticalAlign: 'middle',
+        }}
+        aria-label={`View explanation for ${term}`}
+      >
+        <HelpCircle size={14} color="rgba(255,255,255,0.4)" style={{ cursor: 'help' }} />
+      </button>
       
       {open && (
-        <div style={{
-          position: 'absolute',
-          bottom: '100%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          marginBottom: 8,
-          width: 220,
-          padding: '10px 14px',
-          background: 'var(--surface-1)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 8,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-          zIndex: 100,
-          color: 'var(--silver)',
-          fontSize: '0.75rem',
-          lineHeight: 1.4,
-          fontWeight: 400,
-          pointerEvents: 'none'
-        }}>
-          <div style={{ fontWeight: 600, color: 'var(--white)', marginBottom: 4 }}>{term}</div>
-          {definition}
-          <div style={{
-            position: 'absolute',
-            bottom: -5,
-            left: '50%',
-            transform: 'translateX(-50%) rotate(45deg)',
-            width: 10,
-            height: 10,
-            background: 'var(--surface-1)',
-            borderRight: '1px solid rgba(255,255,255,0.1)',
-            borderBottom: '1px solid rgba(255,255,255,0.1)'
-          }} />
+        <div 
+          onClick={() => setOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 999999,
+            background: 'rgba(0,0,0,0.65)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            animation: 'fadeIn 0.2s ease-out',
+          }}
+        >
+          {/* Framed pop up with Brushed Nickel finish */}
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'relative',
+              width: '100%',
+              maxWidth: '360px',
+              borderRadius: '16px',
+              padding: '24px',
+              background: 'rgba(15, 25, 35, 0.95)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05)',
+              backdropFilter: 'blur(20px)',
+              // Brushed Nickel Border
+              border: '3.5px solid transparent',
+              backgroundImage: 'linear-gradient(rgba(15, 25, 35, 0.95), rgba(15, 25, 35, 0.95)), linear-gradient(135deg, #4f5660 0%, #aab2bd 20%, #f5f7fa 40%, #7e8794 60%, #cbd2db 80%, #4f5660 100%)',
+              backgroundOrigin: 'border-box',
+              backgroundClip: 'padding-box, border-box',
+              animation: 'scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            }}
+          >
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              style={{
+                position: 'absolute',
+                top: 14,
+                right: 14,
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'rgba(255,255,255,0.6)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s ease',
+                outline: 'none',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.color = '#FFF';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+              }}
+            >
+              <X size={14} />
+            </button>
+
+            {/* Content */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <div style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: 'rgba(0,196,188,0.1)',
+                border: '1px solid rgba(0,196,188,0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Info size={16} color="#00C4BC" />
+              </div>
+              <h3 style={{
+                margin: 0,
+                fontSize: '1.15rem',
+                fontWeight: 900,
+                color: '#FFF',
+                fontFamily: 'var(--font-brand, system-ui, sans-serif)',
+                letterSpacing: '0.02em',
+              }}>
+                {term}
+              </h3>
+            </div>
+
+            <p style={{
+              margin: 0,
+              fontSize: '0.88rem',
+              color: 'rgba(255,255,255,0.75)',
+              lineHeight: 1.6,
+              fontWeight: 400,
+            }}>
+              {definition}
+            </p>
+          </div>
         </div>
       )}
-    </div>
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
+    </>
   );
 }

@@ -17,11 +17,12 @@ export const metadata: Metadata = {
 export default async function CompareCompoundsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ add?: string }>;
+  searchParams: Promise<{ add?: string; compare?: string }>;
 }) {
-  const { add } = await searchParams;
+  const params = await searchParams;
+  const rawCompare = params.compare ?? params.add ?? '';
   const compounds = await getAllCompounds();
-  const initialSlugs = (add ?? '')
+  const initialSlugs = rawCompare
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
