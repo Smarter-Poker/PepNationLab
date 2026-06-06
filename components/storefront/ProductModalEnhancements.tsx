@@ -954,7 +954,7 @@ export default function ProductModalEnhancements({
                   </span>
                   {tier && (
                     tier.badgeUrl ? (
-                      <img src={tier.badgeUrl} alt={tier.label} style={{ height: '22px', width: 'auto', maxWidth: 'none', borderRadius: 3, objectFit: 'contain', marginTop: 2, flexShrink: 0 }} />
+                      <img src={tier.badgeUrl} alt={tier.label} style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', marginTop: 2, flexShrink: 0 }} />
                     ) : (
                       <span style={{ fontSize: '0.64rem', color: tier.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         {tier.label}
@@ -1068,7 +1068,7 @@ export default function ProductModalEnhancements({
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     {tier.badgeUrl ? (
-                      <img src={tier.badgeUrl} alt={tier.label} style={{ height: '22px', width: 'auto', maxWidth: 'none', borderRadius: 3, objectFit: 'contain', flexShrink: 0 }} />
+                      <img src={tier.badgeUrl} alt={tier.label} style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
                     ) : (
                       <span style={{ fontSize: '0.66rem', color: tier.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         {tier.label}

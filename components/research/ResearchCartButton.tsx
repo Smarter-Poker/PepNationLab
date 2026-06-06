@@ -10,7 +10,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { ShoppingCart, Check } from 'lucide-react';
+import DynamicAddToCartButton from '../storefront/DynamicAddToCartButton';
 
 interface Props {
   productName: string;
@@ -36,33 +36,13 @@ export default function ResearchCartButton({ productName, compoundName, size = '
     setTimeout(() => setJustAdded(false), 2000);
   }, [productName]);
 
-  const teal = '#00C4BC';
   const isSmall = size === 'sm';
-  const label = compoundName ?? productName;
 
   return (
-    <button
-      type="button"
+    <DynamicAddToCartButton
       onClick={handleClick}
-      title={`Add ${label} to cart`}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: isSmall ? 4 : 6,
-        padding: isSmall ? '5px 10px' : '8px 14px',
-        borderRadius: isSmall ? 7 : 9,
-        border: justAdded ? `1px solid ${teal}` : '1px solid rgba(0,196,188,0.35)',
-        background: justAdded ? `${teal}20` : `${teal}10`,
-        color: teal,
-        fontSize: isSmall ? '0.72rem' : '0.82rem',
-        fontWeight: 700,
-        cursor: 'pointer',
-        whiteSpace: 'nowrap',
-        transition: 'all 0.2s',
-      }}
-    >
-      {justAdded ? <Check size={isSmall ? 11 : 13} /> : <ShoppingCart size={isSmall ? 11 : 13} />}
-      {justAdded ? 'Added!' : isSmall ? 'Add To Cart' : 'Add To Cart'}
-    </button>
+      isSmall={isSmall}
+      justAdded={justAdded}
+    />
   );
 }

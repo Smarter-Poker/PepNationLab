@@ -31,6 +31,7 @@ import { ProtocolScheduler } from '../research/ProtocolScheduler';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RESEARCH_AREAS } from '../../lib/compounds';
 import { ShoppingCart, X, Sparkles, ArrowRight, Compass, Check } from 'lucide-react';
+import DynamicAddToCartButton from './DynamicAddToCartButton';
 import type { Compound } from '@/lib/compounds';
 import AutocompleteDropdown, { type Suggestion } from '../research/AutocompleteDropdown';
 
@@ -614,19 +615,11 @@ function MatchResultsDrawer({
                           >
                             View Details
                           </button>
-                          <button
-                            type="button"
+                          <DynamicAddToCartButton
                             onClick={() => onAddToCart(r.product_id)}
-                            style={{
-                              background: '#C0C5CE', color: '#0A1018',
-                              border: 0, fontWeight: 900, fontSize: '0.82rem',
-                              padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
-                              display: 'inline-flex', alignItems: 'center', gap: 6,
-                              minHeight: 40,
-                            }}
-                          >
-                            <ShoppingCart size={14} aria-hidden /> Add To Cart
-                          </button>
+                            isSmall={true}
+                            style={{ minHeight: 40, height: 40, width: 'auto' }}
+                          />
                         </div>
                       </div>
                     </div>

@@ -6,6 +6,7 @@ import { toTitleCase } from '@/lib/categoryImage';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FlaskConical, Dna, ArrowRight, X } from 'lucide-react';
+import DynamicAddToCartButton from '../storefront/DynamicAddToCartButton';
 
 /* ─── Interfaces ─── */
 
@@ -966,55 +967,53 @@ export default function AreaProductGrid({
 
                 {/* Actions Row */}
                 <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-                  <button
-                    onClick={() => addToCart(p)}
-                    disabled={outOfStock || !p.agentProductId}
-                    style={{
-                      flex: 1,
-                      height: 44,
-                      background: outOfStock || !p.agentProductId
-                        ? 'rgba(255,255,255,0.06)'
-                        : '#00C4BC',
-                      color: outOfStock || !p.agentProductId
-                        ? '#718096'
-                        : '#000000',
-                      border: 'none',
-                      borderRadius: 10,
-                      fontWeight: 800,
-                      fontSize: '0.88rem',
-                      cursor: outOfStock || !p.agentProductId ? 'not-allowed' : 'pointer',
-                      transition: 'opacity 0.15s, transform 0.1s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 6,
-                    }}
-                    onMouseEnter={e => {
-                      if (!outOfStock && p.agentProductId) {
-                        (e.currentTarget as HTMLButtonElement).style.opacity = '0.88';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget as HTMLButtonElement).style.opacity = '1';
-                    }}
-                  >
-                    {outOfStock ? 'Out Of Stock' : !p.agentProductId ? 'Not Carried' : (
-                      <>
-                        Add To Cart
-                        {inCart > 0 && (
-                          <span style={{
-                            background: 'rgba(0,0,0,0.2)',
-                            borderRadius: 8,
-                            padding: '2px 7px',
-                            fontSize: '0.72rem',
-                            fontWeight: 700,
-                          }}>
-                            {inCart}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </button>
+                  {outOfStock ? (
+                    <button
+                      disabled
+                      style={{
+                        flex: 1,
+                        height: 44,
+                        background: 'rgba(255,255,255,0.06)',
+                        color: '#718096',
+                        border: 'none',
+                        borderRadius: 10,
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        cursor: 'not-allowed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      Out Of Stock
+                    </button>
+                  ) : !p.agentProductId ? (
+                    <button
+                      disabled
+                      style={{
+                        flex: 1,
+                        height: 44,
+                        background: 'rgba(255,255,255,0.06)',
+                        color: '#718096',
+                        border: 'none',
+                        borderRadius: 10,
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        cursor: 'not-allowed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      Not Carried
+                    </button>
+                  ) : (
+                    <DynamicAddToCartButton
+                      onClick={() => addToCart(p)}
+                      pendingQty={inCart}
+                      style={{ flex: 1, height: 44, width: 'auto' }}
+                    />
+                  )}
 
                   {/* Add to Stack Button */}
                   {!outOfStock && p.agentProductId && (

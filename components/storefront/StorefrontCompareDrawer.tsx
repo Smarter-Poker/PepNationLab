@@ -15,6 +15,7 @@ import { X, Scale, ChevronDown, ChevronRight, GripHorizontal, ChevronLeft, Thumb
 import { evidenceTier, type Compound, RISK_META, researchAreaLabel, wadaLabel } from '@/lib/compounds';
 import InCellGlossaryTooltip from '../research/InCellGlossaryTooltip';
 import { scoreCompound, type CompoundScore } from '../research/CompareTool';
+import DynamicAddToCartButton from './DynamicAddToCartButton';
 
 interface PinnedItem {
   productName: string;
@@ -1136,21 +1137,11 @@ export default function StorefrontCompareDrawer({
                         </span>
                       )}
                     </div>
-                    <button
-                      type="button"
+                    <DynamicAddToCartButton
                       onClick={() => dispatchAddToCart(item.productName)}
-                      style={{
-                        background: primaryColor, border: 'none', color: '#04221F',
-                        padding: '6px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.74rem',
-                        cursor: 'pointer', marginTop: 'auto', width: '100%',
-                        textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                        transition: 'opacity 0.2s',
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                      onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                    >
-                      <Zap size={11} /> Add To Cart
-                    </button>
+                      isSmall={true}
+                      style={{ marginTop: 'auto', width: '100%' }}
+                    />
                   </div>
                 );
               })}
@@ -1375,21 +1366,11 @@ export default function StorefrontCompareDrawer({
                             )}
                           </div>
                         </div>
-                        <button
-                          type="button"
+                        <DynamicAddToCartButton
                           onClick={() => dispatchAddToCart(p.productName)}
-                          style={{
-                            background: primaryColor, border: 'none', color: '#04221F',
-                            padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
-                            cursor: 'pointer', width: '100%', textAlign: 'center',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                            transition: 'opacity 0.2s',
-                          }}
-                          onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                        >
-                          <Zap size={12} /> Add To Cart
-                        </button>
+                          isSmall={true}
+                          style={{ width: '100%' }}
+                        />
                       </div>
                     </div>
                   );
@@ -1472,21 +1453,11 @@ export default function StorefrontCompareDrawer({
                             )}
                           </div>
                         </div>
-                        <button
-                          type="button"
+                        <DynamicAddToCartButton
                           onClick={() => dispatchAddToCart(p.productName)}
-                          style={{
-                            background: primaryColor, border: 'none', color: '#04221F',
-                            padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
-                            cursor: 'pointer', width: '100%', textAlign: 'center',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                            transition: 'opacity 0.2s',
-                          }}
-                          onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                        >
-                          <Zap size={12} /> Add To Cart
-                        </button>
+                          isSmall={true}
+                          style={{ width: '100%' }}
+                        />
                       </div>
                     </div>
                   );
@@ -1566,21 +1537,11 @@ export default function StorefrontCompareDrawer({
                             )}
                           </div>
                         </div>
-                        <button
-                          type="button"
+                        <DynamicAddToCartButton
                           onClick={() => dispatchAddToCart(p.productName)}
-                          style={{
-                            background: primaryColor, border: 'none', color: '#04221F',
-                            padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem',
-                            cursor: 'pointer', width: '100%', textAlign: 'center',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                            transition: 'opacity 0.2s',
-                          }}
-                          onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                        >
-                          <Zap size={12} /> Add To Cart
-                        </button>
+                          isSmall={true}
+                          style={{ width: '100%' }}
+                        />
                       </div>
                     </div>
                   );
@@ -1636,21 +1597,11 @@ export default function StorefrontCompareDrawer({
                                   )}
                                 </div>
                               </div>
-                              <button
-                                type="button"
+                              <DynamicAddToCartButton
                                 onClick={() => dispatchAddToCart(v.item.p.productName)}
-                                style={{
-                                  background: v.color, border: 'none', color: '#04221F',
-                                  padding: '6px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.74rem',
-                                  cursor: 'pointer', width: '100%', textAlign: 'center',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                                  transition: 'opacity 0.2s',
-                                }}
-                                onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                              >
-                                <Zap size={11} /> Add To Cart
-                              </button>
+                                isSmall={true}
+                                style={{ width: '100%' }}
+                              />
                             </div>
                           </div>
                         ))}
@@ -1868,21 +1819,10 @@ export default function StorefrontCompareDrawer({
                               </div>
                             </div>
                           </div>
-                          <button
-                            type="button"
+                          <DynamicAddToCartButton
                             onClick={() => dispatchAddToCart(p.productName)}
-                            style={{
-                              background: primaryColor, border: 'none', color: '#04221F',
-                              padding: '10px 16px', borderRadius: 8, fontWeight: 800, fontSize: '0.85rem',
-                              cursor: 'pointer', width: '100%', textAlign: 'center',
-                              boxShadow: `0 2px 8px ${primaryColor}33`,
-                              transition: 'opacity 0.2s',
-                            }}
-                            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                          >
-                            Add To Cart
-                          </button>
+                            style={{ width: '100%' }}
+                          />
                         </td>
                       ))}
                     </tr>

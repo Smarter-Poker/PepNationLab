@@ -1,0 +1,116 @@
+'use client';
+
+import React from 'react';
+
+interface DynamicAddToCartButtonProps {
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  disabled?: boolean;
+  pendingQty?: number;
+  isSmall?: boolean;
+  style?: React.CSSProperties;
+  justAdded?: boolean;
+}
+
+export default function DynamicAddToCartButton({
+  onClick,
+  disabled = false,
+  pendingQty = 0,
+  isSmall = false,
+  style = {},
+  justAdded = false,
+}: DynamicAddToCartButtonProps) {
+  const [isPressed, setIsPressed] = React.useState(false);
+
+  // Aspect ratio is 896 / 251 = ~3.57
+  const baseWidth = isSmall ? 130 : 180;
+  const baseHeight = Math.round(baseWidth / 3.57);
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        if (!disabled) onClick(e);
+      }}
+      disabled={disabled}
+      onMouseDown={() => setIsPressed(true)}
+      onMouseUp={() => setIsPressed(false)}
+      onMouseLeave={() => setIsPressed(false)}
+      style={{
+        background: 'none',
+        border: 'none',
+        padding: 0,
+        margin: 0,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        outline: 'none',
+        width: baseWidth,
+        height: baseHeight,
+        opacity: disabled ? 0.45 : 1,
+        transform: isPressed ? 'scale(0.96)' : 'scale(1)',
+        transition: 'transform 0.1s ease, opacity 0.2s',
+        flexShrink: 0,
+        ...style,
+      }}
+    >
+      <img
+        src="/images/add-to-cart-dynamic.png"
+        alt="Add To Cart"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          display: 'block',
+          filter: justAdded ? 'hue-rotate(90deg) brightness(1.2) drop-shadow(0 0 4px #68D391)' : 'none',
+        }}
+      />
+      {justAdded ? (
+        <span
+          style={{
+            position: 'absolute',
+            background: '#68D391',
+            color: '#000',
+            fontSize: '0.62rem',
+            fontWeight: 900,
+            borderRadius: '9999px',
+            padding: '1px 6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 6px rgba(104, 211, 145, 0.4)',
+            border: '1px solid #0a0f14',
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+          }}
+        >
+          ✓ Added
+        </span>
+      ) : pendingQty > 0 ? (
+        <span
+          style={{
+            position: 'absolute',
+            top: -6,
+            right: -6,
+            background: '#00C4BC',
+            color: '#000',
+            fontSize: '0.7rem',
+            fontWeight: 900,
+            borderRadius: '9999px',
+            minWidth: 18,
+            height: 18,
+            padding: '0 4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 6px rgba(0, 196, 188, 0.4)',
+            border: '1.5px solid #0a0f14',
+          }}
+        >
+          {pendingQty}
+        </span>
+      ) : null}
+    </button>
+  );
+}
