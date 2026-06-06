@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
+import { calculateShippingCost, getCarrierName } from '@/lib/shipping';
 
 
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
@@ -16,6 +17,7 @@ const CheckoutSchema = z.object({
     quantity: z.number().int().min(1)
   })).min(1, 'Cart cannot be empty.'),
   fulfillmentMethod: z.enum(['ship', 'agent_pickup']),
+  shippingOption: z.enum(['fedex', 'usps', 'agent_pickup']).optional(),
   paymentMethod: z.enum(['zelle', 'cashapp', 'venmo', 'apple_pay', 'apple_cash', 'paypal', 'google_wallet', 'wise', 'chime']),
   shippingAddress: z.object({
     fullName: z.string().min(1),
@@ -72,6 +74,7 @@ export async function POST(request: NextRequest) {
       items,
       shippingAddress,
       fulfillmentMethod,
+      shippingOption,
       paymentMethod,
       couponCode,
       idempotencyKey,
@@ -590,26 +593,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate shipping costs
-    let shippingCost = 0;
-    if (fulfillmentMethod === 'ship') {
-      const { data: shippingRates } = await serviceSupabase
-        .from('shipping_rates')
-        .select('rate, min_weight_oz, max_weight_oz')
-        .lte('min_weight_oz', totalWeightOz)
-        .gt('max_weight_oz', totalWeightOz)
-        .order('min_weight_oz', { ascending: false })
-        .limit(1);
-
-      if (shippingRates && shippingRates.length > 0) {
-        shippingCost = Number(shippingRates[0].rate);
-      } else {
-        console.warn(
-          '[orders] No shipping_rates row matched weight=%s oz; falling back to $12.00',
-          totalWeightOz
-        );
-        shippingCost = 12.00;
-      }
-    }
+    const actualShippingOption = shippingOption || (fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'usps');
+    const shippingCost = calculateShippingCost(actualShippingOption, totalWeightOz);
 
     const grossTotal = Math.max(0, subtotal - discountAmount) + shippingCost;
     const total = Math.max(0, grossTotal);
@@ -828,6 +813,7 @@ export async function POST(request: NextRequest) {
         payment_method: paymentMethod,
         shipping_address: shippingAddress ?? null,
         shipping_cost: shippingCost,
+        carrier: getCarrierName(actualShippingOption),
         subtotal: subtotal,
         discount_amount: discountAmount,
         coupon_code: appliedCouponCode,

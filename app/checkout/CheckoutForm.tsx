@@ -9,6 +9,7 @@ import { US_STATES } from '@/lib/us-states';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
 import { toTitleCase } from '@/lib/categoryImage';
 import { createClient } from '@/lib/supabase/client';
+import { calculateShippingCost as getShippingCost, ShippingOption } from '@/lib/shipping';
 
 type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'paypal' | 'apple_cash' | 'google_wallet' | 'wise' | 'chime';
 
@@ -401,6 +402,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [phone, setPhone] = useState('');
 
   const [fulfillmentMethod, setFulfillmentMethod] = useState<'ship' | 'agent_pickup'>('ship');
+  const [shippingOption, setShippingOption] = useState<ShippingOption>('usps');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>(availablePaymentMethods[0]?.id ?? 'zelle');
 
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
@@ -623,7 +625,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     if (shippingFetchAbortRef.current) shippingFetchAbortRef.current.abort();
     const ctrl = new AbortController();
     shippingFetchAbortRef.current = ctrl;
-    if (fulfillmentMethod === 'agent_pickup') {
+    if (shippingOption === 'agent_pickup') {
       setLiveShippingRate(0);
       return;
     }
@@ -632,20 +634,20 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         const res = await fetch('/api/shipping-preview', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ weightOz: totalWeightOz, fulfillment: fulfillmentMethod }),
+          body: JSON.stringify({ weightOz: totalWeightOz, shippingOption }),
           signal: ctrl.signal,
         });
         if (!res.ok) return;
         const json = await res.json();
         setLiveShippingRate(Number(json.rate) || 0);
       } catch {
-        const fallback = totalWeightOz <= 1 ? 8 : totalWeightOz <= 4 ? 12 : totalWeightOz <= 8 ? 16 : totalWeightOz <= 16 ? 20 : 28;
+        const fallback = getShippingCost(shippingOption, totalWeightOz);
         setLiveShippingRate(fallback);
       }
     })();
     return () => ctrl.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalWeightOz, fulfillmentMethod]);
+  }, [totalWeightOz, shippingOption]);
 
   // Auto-apply ?coupon= from a marketing link (set by CouponLinkCapture
   // on the agent storefront). Fires once when the form is mounted in an
@@ -679,13 +681,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   if (!storefrontLoaded) return null;
 
   const calculateShippingCost = () => {
-    if (fulfillmentMethod === 'agent_pickup') return 0;
+    if (shippingOption === 'agent_pickup') return 0;
     if (liveShippingRate !== null) return liveShippingRate;
-    if (totalWeightOz <= 1.0) return 8.00;
-    if (totalWeightOz <= 4.0) return 12.00;
-    if (totalWeightOz <= 8.0) return 16.00;
-    if (totalWeightOz <= 16.0) return 20.00;
-    return 28.00;
+    return getShippingCost(shippingOption, totalWeightOz);
   };
 
   const shippingCost = calculateShippingCost();
@@ -857,6 +855,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             phone
           } : null,
           fulfillmentMethod,
+          shippingOption,
           paymentMethod,
           couponCode: couponDisabled ? null : (appliedCoupon?.code || null),
           idempotencyKey: getIdempotencyKey(),
@@ -1147,6 +1146,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
       <div className="checkout-grid">
         <style>{`
+          .fulfillment-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+            gap: var(--space-4) !important;
+          }
           .step-buttons {
             display: flex;
             justify-content: space-between;
@@ -1243,24 +1247,32 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                       gap: 4,
                       padding: 'var(--space-4)',
                       borderRadius: 'var(--radius-lg)',
-                      background: fulfillmentMethod === 'ship' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)',
-                      border: fulfillmentMethod === 'ship' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
+                      background: shippingOption === 'fedex' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)',
+                      border: shippingOption === 'fedex' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
                       cursor: 'pointer',
-                      boxShadow: fulfillmentMethod === 'ship' ? 'var(--shadow-teal-sm)' : 'none',
+                      boxShadow: shippingOption === 'fedex' ? 'var(--shadow-teal-sm)' : 'none',
                       transition: 'all 0.25s ease'
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <input
-                          type="radio"
-                          name="fulfillmentMethod"
-                          checked={fulfillmentMethod === 'ship'}
-                          onChange={() => setFulfillmentMethod('ship')}
-                          style={{ accentColor: 'var(--teal)' }}
-                        />
-                        <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>Ship Delivery</strong>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <input
+                            type="radio"
+                            name="shippingOption"
+                            checked={shippingOption === 'fedex'}
+                            onChange={() => {
+                              setShippingOption('fedex');
+                              setFulfillmentMethod('ship');
+                            }}
+                            style={{ accentColor: 'var(--teal)' }}
+                          />
+                          <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>FedEx / UPS (6-9 Days)</strong>
+                        </div>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--teal)' }}>
+                          ${getShippingCost('fedex', totalWeightOz).toFixed(2)}
+                        </span>
                       </div>
                       <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>
-                        Shipped Securely By USPS/UPS With Dynamic Weight Shipping Fees.
+                        Fast shipping. Base rate is $80 for the first 500g, plus $10 for each additional 500g.
                       </span>
                     </label>
 
@@ -1270,24 +1282,67 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                       gap: 4,
                       padding: 'var(--space-4)',
                       borderRadius: 'var(--radius-lg)',
-                      background: fulfillmentMethod === 'agent_pickup' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)',
-                      border: fulfillmentMethod === 'agent_pickup' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
+                      background: shippingOption === 'usps' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)',
+                      border: shippingOption === 'usps' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
                       cursor: 'pointer',
-                      boxShadow: fulfillmentMethod === 'agent_pickup' ? 'var(--shadow-teal-sm)' : 'none',
+                      boxShadow: shippingOption === 'usps' ? 'var(--shadow-teal-sm)' : 'none',
                       transition: 'all 0.25s ease'
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <input
-                          type="radio"
-                          name="fulfillmentMethod"
-                          checked={fulfillmentMethod === 'agent_pickup'}
-                          onChange={() => setFulfillmentMethod('agent_pickup')}
-                          style={{ accentColor: 'var(--teal)' }}
-                        />
-                        <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>Agent Pickup</strong>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <input
+                            type="radio"
+                            name="shippingOption"
+                            checked={shippingOption === 'usps'}
+                            onChange={() => {
+                              setShippingOption('usps');
+                              setFulfillmentMethod('ship');
+                            }}
+                            style={{ accentColor: 'var(--teal)' }}
+                          />
+                          <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>USPS / China Post (12-18 Days)</strong>
+                        </div>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--teal)' }}>
+                          ${getShippingCost('usps', totalWeightOz).toFixed(2)}
+                        </span>
                       </div>
                       <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>
-                        Zero Cost Hand-Off. Must Coordinate Directly With Referring Representative.
+                        Cheaper shipping. Base rate is $40 for the first 500g, plus $10 for each additional 500g.
+                      </span>
+                    </label>
+
+                    <label style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                      padding: 'var(--space-4)',
+                      borderRadius: 'var(--radius-lg)',
+                      background: shippingOption === 'agent_pickup' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)',
+                      border: shippingOption === 'agent_pickup' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
+                      cursor: 'pointer',
+                      boxShadow: shippingOption === 'agent_pickup' ? 'var(--shadow-teal-sm)' : 'none',
+                      transition: 'all 0.25s ease'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <input
+                            type="radio"
+                            name="shippingOption"
+                            checked={shippingOption === 'agent_pickup'}
+                            onChange={() => {
+                              setShippingOption('agent_pickup');
+                              setFulfillmentMethod('agent_pickup');
+                            }}
+                            style={{ accentColor: 'var(--teal)' }}
+                          />
+                          <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>Free Shipping to Agent (7-10 Days)</strong>
+                        </div>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#68D391' }}>
+                          Free
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>
+                        Zero cost shipping to your referring representative. Coordinate pickup directly.
                       </span>
                     </label>
                   </div>
@@ -1844,17 +1899,19 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                <span style={{ color: 'var(--grey-400)' }}>Weight Shipping</span>
-                {fulfillmentMethod === 'ship' ? (
+                <span style={{ color: 'var(--grey-400)' }}>
+                  {shippingOption === 'fedex' ? 'FedEx / UPS Fast' : shippingOption === 'usps' ? 'USPS / China Post Cheap' : 'Fulfillment'}
+                </span>
+                {shippingOption !== 'agent_pickup' ? (
                   <strong style={{ color: 'var(--white)' }}>${shippingCost.toFixed(2)}</strong>
                 ) : (
-                  <strong style={{ color: 'var(--teal)' }}>Free Pickup</strong>
+                  <strong style={{ color: 'var(--teal)' }}>Free Shipping to Agent</strong>
                 )}
               </div>
 
-              {fulfillmentMethod === 'ship' && (
+              {shippingOption !== 'agent_pickup' && (
                 <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textAlign: 'right', marginTop: -4 }}>
-                  Total Weight: {totalWeightOz.toFixed(1)} Oz
+                  Total Weight: {totalWeightOz.toFixed(1)} Oz ({(totalWeightOz * 28.3495).toFixed(0)}g)
                 </div>
               )}
 
