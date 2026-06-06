@@ -351,8 +351,8 @@ export default function AgentStorefrontConfig({
             </button>
           </div>
         </div>
+        </div>
       </div>
     </div>
-
   );
 }
