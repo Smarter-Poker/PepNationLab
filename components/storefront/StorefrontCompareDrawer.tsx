@@ -67,8 +67,8 @@ function dispatchAddToCart(productName: string) {
 
 const cellStyle: React.CSSProperties = {
   padding: 'var(--space-3, 12px)',
-  borderBottom: '2.5px solid rgba(142, 152, 167, 0.55)',
-  borderLeft: '2.5px solid rgba(142, 152, 167, 0.55)',
+  borderBottom: '3.5px solid rgba(142, 152, 167, 0.75)',
+  borderLeft: '3.5px solid rgba(142, 152, 167, 0.75)',
   verticalAlign: 'top',
   fontSize: '0.88rem',
   color: 'var(--white, #FFFFFF)',
@@ -82,15 +82,15 @@ const labelCellStyle: React.CSSProperties = {
   position: 'sticky',
   left: 0,
   zIndex: 10,
-  boxShadow: 'inset -2.5px 0 0 rgba(142, 152, 167, 0.55)',
+  boxShadow: 'inset -3.5px 0 0 rgba(142, 152, 167, 0.75)',
   borderLeft: 'none',
 };
 
 const groupCellStyle: React.CSSProperties = {
   padding: 'var(--space-3, 12px)',
   background: 'linear-gradient(rgba(192,197,206,0.1), rgba(192,197,206,0.1)), #0F161E',
-  borderTop: '2.5px solid rgba(142, 152, 167, 0.75)',
-  borderBottom: '2.5px solid rgba(142, 152, 167, 0.75)',
+  borderTop: '3.5px solid rgba(142, 152, 167, 0.85)',
+  borderBottom: '3.5px solid rgba(142, 152, 167, 0.85)',
   color: '#FFF',
   fontWeight: 800,
   fontSize: '0.72rem',
@@ -1064,7 +1064,7 @@ export default function StorefrontCompareDrawer({
             maxWidth: 980,
             pointerEvents: 'auto',
             background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)',
-            border: '3.5px solid transparent',
+            border: '4.5px solid transparent',
             borderBottom: 'none',
             backgroundImage: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%), linear-gradient(135deg, #4f5660 0%, #aab2bd 20%, #f5f7fa 40%, #7e8794 60%, #cbd2db 80%, #4f5660 100%)',
             backgroundOrigin: 'border-box',
@@ -1140,7 +1140,7 @@ export default function StorefrontCompareDrawer({
                     style={{
                       position: 'relative',
                       padding: 10, borderRadius: 12,
-                      border: '2.5px solid transparent',
+                      border: '3.5px solid transparent',
                       backgroundImage: 'linear-gradient(rgba(255,255,255,0.04), rgba(255,255,255,0.04)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
                       backgroundOrigin: 'border-box',
                       backgroundClip: 'padding-box, border-box',
@@ -1232,7 +1232,7 @@ export default function StorefrontCompareDrawer({
           padding: 'var(--space-4, 16px)'
         }}>
           <div style={{
-            border: '3.5px solid transparent',
+            border: '4.5px solid transparent',
             borderRadius: 'var(--radius-xl, 16px)',
             backgroundImage: 'linear-gradient(#0F161E, #0F161E), linear-gradient(135deg, #4f5660 0%, #aab2bd 20%, #f5f7fa 40%, #7e8794 60%, #cbd2db 80%, #4f5660 100%)',
             backgroundOrigin: 'border-box',
@@ -1292,7 +1292,7 @@ export default function StorefrontCompareDrawer({
             <div style={{ overflowY: 'auto', padding: '24px', flex: 1 }}>
               {activeSynergies.length > 0 && (
                 <div style={{
-                  border: '2.5px solid transparent',
+                  border: '3.5px solid transparent',
                   backgroundImage: 'linear-gradient(rgba(20, 25, 30, 0.6), rgba(20, 25, 30, 0.6)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
                   backgroundOrigin: 'border-box',
                   backgroundClip: 'padding-box, border-box',
@@ -1332,7 +1332,7 @@ export default function StorefrontCompareDrawer({
 
               {/* Top Pick Banner */}
               {sortedPinnedItems.length >= 2 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, border: '2.5px solid transparent', backgroundImage: 'linear-gradient(rgba(0,196,188,0.08), rgba(0,196,188,0.08)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', borderRadius: 8, padding: '10px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, border: '3.5px solid transparent', backgroundImage: 'linear-gradient(rgba(0,196,188,0.08), rgba(0,196,188,0.08)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', borderRadius: 8, padding: '10px 14px' }}>
                   <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: '36px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
                   <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#FFF' }}>Top Pick: {sortedPinnedItems[0].productName}</span>
                   <span style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}>· Leading with a composite score of {pinnedScores[0].total}/100</span>
@@ -1341,12 +1341,12 @@ export default function StorefrontCompareDrawer({
 
               {/* Score Ring Summary Panel */}
               {sortedPinnedItems.length >= 2 && (
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(190px, 1fr))`, gap: 12, marginBottom: 16, padding: 14, border: '3px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', borderRadius: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(190px, 1fr))`, gap: 12, marginBottom: 16, padding: 14, border: '4.5px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', borderRadius: 10 }}>
                   {displayedPinned.map((p, idx) => {
                     const score = pinnedScores[idx];
                     const color = colors[idx % colors.length];
                     return (
-                      <div key={p.productName} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 10, border: '2.5px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', borderRadius: 8 }}>
+                      <div key={p.productName} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 10, border: '3.5px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', borderRadius: 8 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           {getChoiceBadge(idx)}
                         </div>
@@ -1435,7 +1435,7 @@ export default function StorefrontCompareDrawer({
                   const color = colors[idx % colors.length];
                   const score = pinnedScores[idx];
                   return (
-                    <div key={p.productName} style={{ padding: 14, borderRadius: 10, border: '2.5px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div key={p.productName} style={{ padding: 14, borderRadius: 10, border: '3.5px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                         {getChoiceBadge(idx)}
                         <span style={{ color: 'var(--white)', fontWeight: 850 }}>{p.productName}</span>
@@ -1485,7 +1485,7 @@ export default function StorefrontCompareDrawer({
               </div>
 
               {/* Analyst Brief Tab */}
-              <div style={{ display: (matrixTab === 'brief' && analystBriefLines.length > 0) ? 'block' : 'none', padding: 16, borderRadius: 10, border: '3px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', marginBottom: 20 }}>
+              <div style={{ display: (matrixTab === 'brief' && analystBriefLines.length > 0) ? 'block' : 'none', padding: 16, borderRadius: 10, border: '4px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', marginBottom: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                   <Info size={15} color={primaryColor} />
                   <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--white)' }}>Analyst Brief</span>
@@ -1507,7 +1507,7 @@ export default function StorefrontCompareDrawer({
                   const color = colors[idx % colors.length];
                   const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
                   return (
-                    <div key={p.productName} style={{ padding: 14, borderRadius: 10, border: '2.5px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div key={p.productName} style={{ padding: 14, borderRadius: 10, border: '3.5px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                         {getChoiceBadge(idx)}
                         <span style={{ color: 'var(--white)', fontWeight: 800 }}>{p.productName}</span>
@@ -1569,7 +1569,7 @@ export default function StorefrontCompareDrawer({
                   const hlH = parseHalfLifeHours(c?.half_life);
                   const dosesPerWeek = hlH > 0 ? Math.max(1, Math.round(168 / (hlH * 2))) : null;
                   return (
-                    <div key={p.productName} style={{ padding: 14, borderRadius: 10, border: '2.5px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div key={p.productName} style={{ padding: 14, borderRadius: 10, border: '3.5px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                         {getChoiceBadge(idx)}
                         <span style={{ color: 'var(--white)', fontWeight: 800 }}>{p.productName}</span>
@@ -1702,7 +1702,7 @@ export default function StorefrontCompareDrawer({
               </div>
 
               {/* Matrix Tab */}
-              <div style={{ display: matrixTab === 'matrix' ? 'block' : 'none', borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto', border: '3px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box' }}>
+              <div style={{ display: matrixTab === 'matrix' ? 'block' : 'none', borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto', border: '4px solid transparent', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px', position: 'relative' }}>
                   <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                     <tr>
@@ -1711,7 +1711,7 @@ export default function StorefrontCompareDrawer({
                         return (
                           <th 
                             key={p.productName} 
-                            style={{ ...cellStyle, textAlign: 'left', width: `${80 / displayedPinned.length}%`, background: '#0F161E', borderLeft: '2.5px solid rgba(142, 152, 167, 0.55)' }} 
+                            style={{ ...cellStyle, textAlign: 'left', width: `${80 / displayedPinned.length}%`, background: '#0F161E', borderLeft: '3.5px solid rgba(142, 152, 167, 0.75)' }} 
                             scope="col"
                           >
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -1863,7 +1863,7 @@ export default function StorefrontCompareDrawer({
                             {displayedPinned.map((p, pIdx) => {
                               const isWinner = bestIndices.includes(pIdx);
                               return (
-                                <td key={p.productName} style={{ ...valueCellStyle, borderLeft: '2.5px solid rgba(142, 152, 167, 0.55)' }}>
+                                <td key={p.productName} style={{ ...valueCellStyle, borderLeft: '3.5px solid rgba(142, 152, 167, 0.75)' }}>
                                   <div style={isWinner ? { borderLeft: `2px solid ${primaryColor}`, paddingLeft: 8, marginLeft: -10 } : {}}>
                                     {row.render(p, maxHalfLife)}
                                   </div>
@@ -1881,10 +1881,10 @@ export default function StorefrontCompareDrawer({
                     })()}
                   </tbody>
                   <tfoot style={{ position: 'sticky', bottom: 0, zIndex: 20 }}>
-                    <tr style={{ background: '#0F161E', borderTop: '2.5px solid rgba(142, 152, 167, 0.75)' }}>
+                    <tr style={{ background: '#0F161E', borderTop: '3.5px solid rgba(142, 152, 167, 0.85)' }}>
                       <td style={{ ...labelCellStyle, background: '#0F161E', borderBottom: 'none' }}>Action</td>
                       {displayedPinned.map((p) => (
-                        <td key={p.productName} style={{ ...cellStyle, borderBottom: 'none', borderLeft: '2.5px solid rgba(142, 152, 167, 0.55)' }}>
+                        <td key={p.productName} style={{ ...cellStyle, borderBottom: 'none', borderLeft: '3.5px solid rgba(142, 152, 167, 0.75)' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                               {p.imageUrl && (
