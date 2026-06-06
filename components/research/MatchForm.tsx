@@ -517,7 +517,7 @@ function MatchFormInner() {
                               {(() => {
                                 const meta = evidenceTier(r.evidenceTier);
                                 return meta.badgeUrl ? (
-                                  <img src={meta.badgeUrl} alt={meta.label} style={{ height: 26, borderRadius: 6, objectFit: 'contain' }} />
+                                  <img src={meta.badgeUrl} alt={meta.label} style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 6, objectFit: 'contain', flexShrink: 0 }} />
                                 ) : (
                                   <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: '999px', color: tierColor(r.evidenceTier), border: `1px solid ${tierColor(r.evidenceTier)}` }}>
                                     {tierLabel(r.evidenceTier)}
@@ -617,7 +617,7 @@ function MatchFormInner() {
                     {(() => {
                       const meta = evidenceTier(results[0].evidenceTier);
                       return meta.badgeUrl ? (
-                        <img src={meta.badgeUrl} alt={meta.label} style={{ height: 26, borderRadius: 6, objectFit: 'contain' }} />
+                        <img src={meta.badgeUrl} alt={meta.label} style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 6, objectFit: 'contain', flexShrink: 0 }} />
                       ) : (
                         <span style={{ color: tierColor(results[0].evidenceTier) }}>{tierLabel(results[0].evidenceTier)}</span>
                       );
@@ -627,7 +627,7 @@ function MatchFormInner() {
                     {(() => {
                       const meta = evidenceTier(results[1].evidenceTier);
                       return meta.badgeUrl ? (
-                        <img src={meta.badgeUrl} alt={meta.label} style={{ height: 26, borderRadius: 6, objectFit: 'contain' }} />
+                        <img src={meta.badgeUrl} alt={meta.label} style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 6, objectFit: 'contain', flexShrink: 0 }} />
                       ) : (
                         <span style={{ color: tierColor(results[1].evidenceTier) }}>{tierLabel(results[1].evidenceTier)}</span>
                       );

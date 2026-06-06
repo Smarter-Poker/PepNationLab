@@ -905,7 +905,7 @@ const ROWS: Row[] = [
     kind: 'data', label: 'GLP-1 Class',
     getValue: c => c.is_glp1 ? 'Yes' : 'No',
     render: c => c.is_glp1
-      ? <img src="/images/badges/badge_glp1.png" alt="GLP-1 Incretin" style={{ height: 26, borderRadius: 6, objectFit: 'contain' }} />
+      ? <img src="/images/badges/badge_glp1.png" alt="GLP-1 Incretin" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 6, objectFit: 'contain', flexShrink: 0 }} />
       : <span style={{ color: 'rgba(168,180,192,0.4)', fontSize: '0.78rem' }}>No</span>
   },
   {
@@ -930,7 +930,7 @@ const ROWS: Row[] = [
     render: c => {
       const t = evidenceTier(c.evidence_tier);
       if (t.badgeUrl) {
-        return <img src={t.badgeUrl} alt={t.label} style={{ height: 26, borderRadius: 6, objectFit: 'contain' }} />;
+        return <img src={t.badgeUrl} alt={t.label} style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 6, objectFit: 'contain', flexShrink: 0 }} />;
       }
       return <span style={{ display: 'inline-block', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: t.color, border: `1px solid ${t.color}`, borderRadius: 999, padding: '2px 10px' }}>{t.label}</span>;
     },
@@ -944,7 +944,7 @@ const ROWS: Row[] = [
       return r ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {r.badgeUrl ? (
-            <img src={r.badgeUrl} alt={r.label} style={{ height: 26, borderRadius: 6, objectFit: 'contain', alignSelf: 'flex-start' }} />
+            <img src={r.badgeUrl} alt={r.label} style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 6, objectFit: 'contain', alignSelf: 'flex-start', flexShrink: 0 }} />
           ) : (
             <span style={{ color: r.color, fontWeight: 700 }}>{r.label}</span>
           )}
@@ -1116,7 +1116,7 @@ function FocusRowModal({ row, selected, maxHalfLife, controlCompound, topPickSlu
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
                   <span style={{ color, fontWeight: 900, fontSize: '0.88rem' }}>{c.display_name}</span>
-                  {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: 22, objectFit: 'contain', marginLeft: 4, verticalAlign: 'middle' }} />}
+                  {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', marginLeft: 4, verticalAlign: 'middle', flexShrink: 0 }} />}
                 </div>
                 <div style={{ fontSize: '0.95rem', color: '#fff', lineHeight: 1.55 }}>{row.render(c, maxHalfLife)}</div>
                 {controlCompound && controlCompound.slug !== c.slug && (
@@ -1996,7 +1996,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 const sc = scores[i]; const color = colors[i % colors.length]; const isTop = c.slug === topPickSlug;
                 return (
                   <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', background: isTop ? 'rgba(0,196,188,0.12)' : `${color}10`, border: `1px solid ${isTop ? 'rgba(0,196,188,0.35)' : color + '28'}`, borderRadius: 20, flexShrink: 0 }}>
-                    {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: 18, objectFit: 'contain', verticalAlign: 'middle', marginLeft: 4 }} />}
+                    {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: '28px', width: 'auto', maxWidth: 'none', objectFit: 'contain', verticalAlign: 'middle', marginLeft: 4, flexShrink: 0 }} />}
                     <span style={{ fontSize: '0.73rem', fontWeight: 800, color }}>{c.display_name.split(' ').slice(0, 2).join(' ')}</span>
                     <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'rgba(255,255,255,0.75)' }}>{sc.letter}</span>
                     <span style={{ fontSize: '0.64rem', color: 'rgba(255,255,255,0.4)' }}>{sc.total}</span>
@@ -2014,7 +2014,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
           {/* Feature 6: Desktop-only tab strip (replaced by bottom tab bar on mobile) */}
           {selected.length >= 2 && !isMobile && (
             <div className="no-print hide-scroll" style={{ overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              <div style={{ display: 'flex', gap: 6, minWidth: 'max-content' }}>
+              <div style={{ display: 'flex', gap: 6, width: 'max-content' }}>
                 {tabs.map(tab => (
                   <button key={tab.id} type="button" className={`ct-tab${activeTab === tab.id ? ' active' : ''}`} onClick={() => setActiveTab(tab.id)}>
                     {tab.label}
@@ -2238,10 +2238,10 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 Which compound is best suited for different research contexts - based on composite scoring across evidence, safety, scientific backing, research coverage, and handling practicality.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 24 }}>
-                <RecommendationCard rec={recommendations.overall} label="Overall Best Pick" icon={<img src="/images/badges/verdict_overall.png" alt="Overall Best" style={{ height: 22, objectFit: 'contain' }} />} color="#00C4BC" />
-                <RecommendationCard rec={recommendations.safest} label="Safest Profile" icon={<img src="/images/badges/verdict_safest.png" alt="Safest Profile" style={{ height: 22, objectFit: 'contain' }} />} color="#68D391" />
-                <RecommendationCard rec={recommendations.mostStudied} label="Most Research-Backed" icon={<img src="/images/badges/verdict_studied.png" alt="Most Studied" style={{ height: 22, objectFit: 'contain' }} />} color="#F6AD55" />
-                <RecommendationCard rec={recommendations.mostPractical} label="Most Practical" icon={<img src="/images/badges/verdict_practical.png" alt="Most Practical" style={{ height: 22, objectFit: 'contain' }} />} color="#9F7AEA" />
+                <RecommendationCard rec={recommendations.overall} label="Overall Best Pick" icon={<img src="/images/badges/verdict_overall.png" alt="Overall Best" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#00C4BC" />
+                <RecommendationCard rec={recommendations.safest} label="Safest Profile" icon={<img src="/images/badges/verdict_safest.png" alt="Safest Profile" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#68D391" />
+                <RecommendationCard rec={recommendations.mostStudied} label="Most Research-Backed" icon={<img src="/images/badges/verdict_studied.png" alt="Most Studied" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#F6AD55" />
+                <RecommendationCard rec={recommendations.mostPractical} label="Most Practical" icon={<img src="/images/badges/verdict_practical.png" alt="Most Practical" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#9F7AEA" />
               </div>
               {/* Recommended contexts per compound */}
               <div>
@@ -2470,7 +2470,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                                   return (
                                     <div key={c.slug} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: 10, background: isControl ? 'rgba(0,196,188,0.05)' : 'rgba(255,255,255,0.02)', borderRadius: 8, position: 'relative', border: isWinner ? '1px solid rgba(0,196,188,0.4)' : '1px solid transparent' }}>
                                       {isWinner && (
-                                        <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ position: 'absolute', top: -14, right: 10, height: 22, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 2px 8px rgba(0,0,0,0.5)', zIndex: 10 }} />
+                                        <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ position: 'absolute', top: -14, right: 10, height: '32px', width: 'auto', maxWidth: 'none', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 2px 8px rgba(0,0,0,0.5)', zIndex: 10, flexShrink: 0 }} />
                                       )}
                                       <div style={{ width: 80, fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', flexShrink: 0, marginTop: 2 }}>{c.display_name}</div>
                                       <div style={{ flex: 1, fontSize: '0.85rem', color: '#fff' }}>
@@ -2524,7 +2524,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                                 return (
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                                     {getChoiceBadge(rankIndex)}
-                                    {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: 22, objectFit: 'contain' }} />}
+                                    {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />}
                                   </div>
                                 );
                               })()}
@@ -2533,16 +2533,16 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                                 <Link href={`/research/${c.slug}`} style={{ color: (color === '#00C4BC' || color === '#FF6B6B') ? '#FFF' : color, fontWeight: 900, textDecoration: 'none', fontSize: '1.05rem' }}>{c.display_name}</Link>
                               </div>
                               <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                                {c.evidence_tier === 'approved_drug' && <img src="/images/badges/badge_approved_drug.png" alt="Approved Drug" style={{ height: 22, objectFit: 'contain' }} />}
-                                {c.evidence_tier === 'investigational' && <img src="/images/badges/badge_investigational_drug.png" alt="Investigational" style={{ height: 22, objectFit: 'contain' }} />}
-                                {c.evidence_tier === 'preclinical' && <img src="/images/badges/badge_preclinical.png" alt="Preclinical" style={{ height: 22, objectFit: 'contain' }} />}
-                                {c.evidence_tier === 'research_chemical' && <img src="/images/badges/badge_research_compound.png" alt="Research Compound" style={{ height: 22, objectFit: 'contain' }} />}
-                                {c.evidence_tier === 'cosmetic' && <img src="/images/badges/badge_cosmetic.png" alt="Cosmetic" style={{ height: 22, objectFit: 'contain' }} />}
+                                {c.evidence_tier === 'approved_drug' && <img src="/images/badges/badge_approved_drug.png" alt="Approved Drug" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.evidence_tier === 'investigational' && <img src="/images/badges/badge_investigational_drug.png" alt="Investigational" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.evidence_tier === 'preclinical' && <img src="/images/badges/badge_preclinical.png" alt="Preclinical" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.evidence_tier === 'research_chemical' && <img src="/images/badges/badge_research_compound.png" alt="Research Compound" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.evidence_tier === 'cosmetic' && <img src="/images/badges/badge_cosmetic.png" alt="Cosmetic" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />}
 
-                                {c.is_stack && <img src="/images/badges/badge_stack.png" alt="Stack" style={{ height: 22, objectFit: 'contain' }} />}
-                                {c.is_temp_sensitive && <img src="/images/badges/badge_cold_chain.png" alt="Cold Chain" style={{ height: 22, objectFit: 'contain' }} />}
-                                {c.is_pro_angiogenic && <img src="/images/badges/badge_angio_alert.png" alt="Angio Alert" style={{ height: 22, objectFit: 'contain' }} />}
-                                {c.is_glp1 && <img src="/images/badges/badge_glp1.png" alt="GLP-1" style={{ height: 22, objectFit: 'contain' }} />}
+                                {c.is_stack && <img src="/images/badges/badge_stack.png" alt="Stack" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.is_temp_sensitive && <img src="/images/badges/badge_cold_chain.png" alt="Cold Chain" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.is_pro_angiogenic && <img src="/images/badges/badge_angio_alert.png" alt="Angio Alert" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.is_glp1 && <img src="/images/badges/badge_glp1.png" alt="GLP-1" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />}
                                 {c.year_discovered && <span style={{ background: 'rgba(168,180,192,0.08)', color: 'rgba(168,180,192,0.5)', padding: '2px 5px', borderRadius: 4, fontSize: '0.62rem', fontWeight: 600 }}>{c.year_discovered}</span>}
                                 <span style={{ background: `${color}15`, color: (color === '#00C4BC' || color === '#FF6B6B') ? '#FFF' : color, padding: '2px 5px', borderRadius: 4, fontSize: '0.62rem', fontWeight: 800 }}>{scores[origIdx].letter}</span>
                               </div>
@@ -2715,9 +2715,6 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
 
                             return (
                               <td key={c.slug} style={{ ...valueCellStyle, position: 'relative', background: rankBg ?? (c.slug === controlSlug ? 'rgba(0,196,188,0.04)' : undefined), ...controlStyleTd }}>
-                                {isWinner && (
-                                  <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ position: 'absolute', top: 4, right: 4, height: 18, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 2px 8px rgba(0,0,0,0.5)', zIndex: 10 }} />
-                                )}
                                 <div style={isWinner ? { borderLeft: '2px solid #00C4BC', paddingLeft: 7, marginLeft: -8 } : {}}>
                                   {isMobile ? (
                                     <TruncatedCell>
@@ -2731,6 +2728,11 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                                     </>
                                   )}
                                 </div>
+                                {isWinner && (
+                                  <div style={{ marginTop: 6, display: 'flex', alignItems: 'center' }}>
+                                    <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: '26px', width: 'auto', maxWidth: 'none', borderRadius: 4, objectFit: 'contain', flexShrink: 0 }} />
+                                  </div>
+                                )}
                               </td>
                             );
                           })}
