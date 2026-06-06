@@ -742,7 +742,7 @@ export default function ProductModalEnhancements({
   primaryColor,
   onOpenProductBySlug,
   onOpenProductByName,
-  onAddVariant,
+  onAddVariantToCart,
 }: Props) {
   // Smart "Similar Products" — ranked by relatedCompounds scorer which now
   // weights best_stacked_with highest (+7 per direction), then compound class
@@ -825,7 +825,12 @@ export default function ProductModalEnhancements({
     return items.slice(0, 5);
   }, [currentCompound, compoundsBySlug, grouped, currentProductName]);
   const supplies = useMemo(() => {
-    return SUPPLY_PATTERNS.map(({ key, pattern, label }) => ({
+    const supplyPatterns = [
+      { key: 'bac_water', pattern: /bac\.?\s*water|bacteriostatic/i, label: 'Bac. Water' },
+      { key: 'acetic_acid', pattern: /acetic\s*acid/i, label: 'Acetic Acid' },
+      { key: 'alcohol_swabs', pattern: /alcohol\s*(swabs?|pads?|prep)/i, label: 'Alcohol Swabs' },
+    ];
+    return supplyPatterns.map(({ key, pattern, label }) => ({
       key,
       label,
       group: pickSupply(grouped, pattern, currentCompoundSlug),

@@ -25,11 +25,6 @@ interface Props {
   hideWhenEmpty?: boolean;
 }
 
-// Bac. water is sold only in fixed 10-packs; surface it as a 10x pack with the
-// 10x price wherever it is shown as a recommendation.
-function isBacWater(item: RecommendationItem): boolean {
-  return item.slug === 'bac-water' || /bac\.?\s*water/i.test(item.name || '');
-}
 
 const cardBase: React.CSSProperties = {
   flex: '0 0 auto',
@@ -111,18 +106,11 @@ export default function RecommendationStrip({
               />
             ))
           : recommendations.map((item) => {
-              const bw = isBacWater(item);
-              const displayName = bw
-                ? 'Bac. Water 10x 10ml'
-                : item.unit_size
+              const displayName = item.unit_size
                 ? `${item.name} ${item.unit_size}${item.unit_measure || ''}`
                 : item.name;
               const displayPrice =
-                typeof item.retail_price === 'number'
-                  ? bw
-                    ? item.retail_price * 10
-                    : item.retail_price
-                  : undefined;
+                typeof item.retail_price === 'number' ? item.retail_price : undefined;
 
               const inner = (
                 <>
@@ -189,11 +177,22 @@ export default function RecommendationStrip({
                     >
                       ${displayPrice.toFixed(2)}
                     </div>
-                  ) : item.category ? (
-                    <div style={{ fontSize: '0.7rem', color: 'var(--grey-500)' }}>
+                  ) : null}
+                  {/* Research area / category pill */}
+                  {item.category && (
+                    <div style={{
+                      fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.02em',
+                      padding: '2px 7px', borderRadius: 99,
+                      background: 'rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      color: 'rgba(255,255,255,0.55)',
+                      whiteSpace: 'nowrap', maxWidth: '100%',
+                      overflow: 'hidden', textOverflow: 'ellipsis',
+                      textTransform: 'capitalize',
+                    }}>
                       {item.category}
                     </div>
-                  ) : null}
+                  )}
                 </>
               );
               if (buildHref) {
