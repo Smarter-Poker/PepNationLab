@@ -194,7 +194,18 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     unitMeasure: string | null;
   } | null>(null);
 
-  // Load Bacteriostatic Water product details on mount
+  const [aceticProduct, setAceticProduct] = useState<{
+    id: string;
+    agentProductId: string;
+    name: string;
+    retailPrice: number;
+    costPrice: number;
+    weightOz: number;
+    unitSize: string | null;
+    unitMeasure: string | null;
+  } | null>(null);
+
+  // Load Bacteriostatic Water and Acetic Acid product details on mount
   useEffect(() => {
     (async () => {
       try {
@@ -220,6 +231,27 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               unitMeasure: p.unit_measure ?? null,
             });
           }
+
+          const { data: pAcetic } = await supabase
+            .from('products')
+            .select('id, name, base_cost, weight_oz, unit_size, unit_measure')
+            .ilike('name', '%acetic acid%')
+            .limit(1)
+            .maybeSingle();
+          if (pAcetic) {
+            const basePrice = Number(pAcetic.base_cost) || 15.00;
+            const sizeLabel = pAcetic.unit_size ? `(${pAcetic.unit_size}${pAcetic.unit_measure || ''})` : '';
+            setAceticProduct({
+              id: pAcetic.id,
+              agentProductId: pAcetic.id,
+              name: `${pAcetic.name} ${sizeLabel}`.trim(),
+              retailPrice: basePrice,
+              costPrice: basePrice,
+              weightOz: Number(pAcetic.weight_oz) || 0.5,
+              unitSize: pAcetic.unit_size ?? null,
+              unitMeasure: pAcetic.unit_measure ?? null,
+            });
+          }
           return;
         }
 
@@ -228,6 +260,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           if (res.ok) {
             const json = await res.json();
             const items = json.data || [];
+            
             const matched = items.find((item: any) => item.products?.compound_slug === 'bac-water');
             if (matched) {
               const retail = matched.retail_price / 10;
@@ -245,8 +278,27 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 unitSize: matched.products?.unit_size ?? null,
                 unitMeasure: matched.products?.unit_measure ?? null,
               });
-              return;
             }
+
+            const matchedAcetic = items.find((item: any) => (item.products?.name || '').toLowerCase().includes('acetic acid'));
+            if (matchedAcetic) {
+              const retail = matchedAcetic.retail_price / 10;
+              const cost = matchedAcetic.agent_cost != null ? matchedAcetic.agent_cost / 10 : retail;
+              const sizeLabel = matchedAcetic.products?.unit_size
+                ? `(${matchedAcetic.products.unit_size}${matchedAcetic.products.unit_measure || ''})`
+                : '';
+              setAceticProduct({
+                id: matchedAcetic.product_id,
+                agentProductId: matchedAcetic.id,
+                name: `${matchedAcetic.products?.name || 'Acetic Acid'} ${sizeLabel}`.trim(),
+                retailPrice: retail,
+                costPrice: cost,
+                weightOz: Number(matchedAcetic.products?.weight_oz) || 0.5,
+                unitSize: matchedAcetic.products?.unit_size ?? null,
+                unitMeasure: matchedAcetic.products?.unit_measure ?? null,
+              });
+            }
+            return;
           }
         }
 
@@ -295,9 +347,47 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               unitMeasure: prod?.unit_measure ?? null,
             });
           }
+
+          const { data: apAcetic } = await supabase
+            .from('agent_products')
+            .select(`
+              id,
+              product_id,
+              retail_price,
+              products!inner (
+                name,
+                unit_size,
+                unit_measure,
+                weight_oz,
+                compound_slug
+              )
+            `)
+            .eq('agent_id', agentProfile.id)
+            .eq('is_visible', true)
+            .ilike('products.name', '%acetic acid%')
+            .limit(1)
+            .maybeSingle();
+
+          if (apAcetic) {
+            const retail = apAcetic.retail_price / 10;
+            const prod = (Array.isArray(apAcetic.products) ? apAcetic.products[0] : apAcetic.products) as any;
+            const sizeLabel = prod?.unit_size
+              ? `(${prod.unit_size}${prod.unit_measure || ''})`
+              : '';
+            setAceticProduct({
+              id: apAcetic.product_id,
+              agentProductId: apAcetic.id,
+              name: `${prod?.name || 'Acetic Acid'} ${sizeLabel}`.trim(),
+              retailPrice: retail,
+              costPrice: retail,
+              weightOz: Number(prod?.weight_oz) || 0.5,
+              unitSize: prod?.unit_size ?? null,
+              unitMeasure: prod?.unit_measure ?? null,
+            });
+          }
         }
       } catch (err) {
-        console.error('Error fetching Bacteriostatic Water:', err);
+        console.error('Error fetching reconstitution products:', err);
       }
     })();
   }, [agentSlug, isAgentSelfBuy]);
@@ -384,6 +474,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
 
 
+  const ACETIC_ACID_SLUGS = /\b(igf[-_\s]?1[-_\s]?(lr3|des|des-1-3)|aod[-_\s]?9604|ghk[-_\s]?cu|ghrp[-_\s]?[26]|fragment[-_\s]?(176|hgh[-_\s]?frag)|melanotan[-_\s]?[i12]|epital[o]?n|epithalon|nad\+?)\b/i;
+
   const isDiluentName = (name: string | null | undefined) => {
     if (!name) return false;
     const lower = name.toLowerCase();
@@ -393,8 +485,21 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
            lower.includes('acetic acid');
   };
 
-  const totalPeptideVials = cart.reduce((sum, item) => {
+  const aceticPeptideVials = cart.reduce((sum, item) => {
     if (isDiluentName(item.name)) return sum;
+    const isAcetic = ACETIC_ACID_SLUGS.test(item.name) || (item.sku && ACETIC_ACID_SLUGS.test(item.sku));
+    if (!isAcetic) return sum;
+    let vialsPerUnit = 1;
+    if (item.name.includes('+')) {
+      vialsPerUnit = item.name.split('+').length;
+    }
+    return sum + (vialsPerUnit * item.quantity);
+  }, 0);
+
+  const bacPeptideVials = cart.reduce((sum, item) => {
+    if (isDiluentName(item.name)) return sum;
+    const isAcetic = ACETIC_ACID_SLUGS.test(item.name) || (item.sku && ACETIC_ACID_SLUGS.test(item.sku));
+    if (isAcetic) return sum;
     let vialsPerUnit = 1;
     if (item.name.includes('+')) {
       vialsPerUnit = item.name.split('+').length;
@@ -410,8 +515,19 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     return sum;
   }, 0);
 
-  const requiredBacWaterVials = totalPeptideVials > 0 ? Math.ceil(totalPeptideVials / 10) * 10 : 0;
+  const currentAceticAcidVials = cart.reduce((sum, item) => {
+    const lower = (item.name || '').toLowerCase();
+    if (lower.includes('acetic acid')) {
+      return sum + item.quantity;
+    }
+    return sum;
+  }, 0);
+
+  const requiredBacWaterVials = bacPeptideVials > 0 ? Math.ceil(bacPeptideVials / 10) * 10 : 0;
   const neededBacWaterVials = Math.max(0, requiredBacWaterVials - currentBacWaterVials);
+
+  const requiredAceticAcidVials = aceticPeptideVials > 0 ? Math.ceil(aceticPeptideVials / 10) * 10 : 0;
+  const neededAceticAcidVials = Math.max(0, requiredAceticAcidVials - currentAceticAcidVials);
 
   const handleAddBacWater = () => {
     if (!bacProduct || neededBacWaterVials <= 0) return;
@@ -447,6 +563,50 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         const rawCart = localStorage.getItem(`cart_${agentSlug}`);
         const cartItemsObj = rawCart ? JSON.parse(rawCart) : {};
         const agentProdId = bacProduct.agentProductId;
+        cartItemsObj[agentProdId] = (cartItemsObj[agentProdId] || 0) + suggestedQty;
+        localStorage.setItem(`cart_${agentSlug}`, JSON.stringify(cartItemsObj));
+      }
+    } catch (e) {
+      console.error('Failed to update cart storage:', e);
+    }
+    
+    setStorefrontCart(updatedCart);
+  };
+
+  const handleAddAceticAcid = () => {
+    if (!aceticProduct || neededAceticAcidVials <= 0) return;
+    
+    const updatedCart = [...storefrontCart];
+    const existingIndex = updatedCart.findIndex(item => item.id === aceticProduct.id);
+    const suggestedQty = neededAceticAcidVials;
+    
+    if (existingIndex > -1) {
+      updatedCart[existingIndex] = {
+        ...updatedCart[existingIndex],
+        quantity: updatedCart[existingIndex].quantity + suggestedQty
+      };
+    } else {
+      updatedCart.push({
+        id: aceticProduct.id,
+        name: aceticProduct.name,
+        sku: aceticProduct.id,
+        quantity: suggestedQty,
+        retailPrice: aceticProduct.retailPrice,
+        costPrice: aceticProduct.costPrice,
+        weightOz: aceticProduct.weightOz
+      });
+    }
+    
+    try {
+      localStorage.setItem(storefrontCartKey, JSON.stringify({
+        items: updatedCart,
+        _savedAt: Date.now()
+      }));
+      
+      if (agentSlug) {
+        const rawCart = localStorage.getItem(`cart_${agentSlug}`);
+        const cartItemsObj = rawCart ? JSON.parse(rawCart) : {};
+        const agentProdId = aceticProduct.agentProductId;
         cartItemsObj[agentProdId] = (cartItemsObj[agentProdId] || 0) + suggestedQty;
         localStorage.setItem(`cart_${agentSlug}`, JSON.stringify(cartItemsObj));
       }
@@ -1533,7 +1693,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   </strong>
                 </div>
                 <p style={{ color: 'var(--silver-light)', fontSize: '0.76rem', margin: '0 0 10px', lineHeight: 1.4 }}>
-                  Your order contains <strong style={{ color: 'var(--white)' }}>{totalPeptideVials}</strong> research vial{totalPeptideVials !== 1 ? 's' : ''}. You need approximately <strong style={{ color: 'var(--white)' }}>{requiredBacWaterVials}</strong> vial{requiredBacWaterVials !== 1 ? 's' : ''} of Bacteriostatic Water.
+                  Your order contains <strong style={{ color: 'var(--white)' }}>{bacPeptideVials}</strong> research vial{bacPeptideVials !== 1 ? 's' : ''} requiring BAC Water. You need approximately <strong style={{ color: 'var(--white)' }}>{requiredBacWaterVials}</strong> vial{requiredBacWaterVials !== 1 ? 's' : ''} of Bacteriostatic Water.
                 </p>
                 <button
                   type="button"
@@ -1558,6 +1718,64 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   <span>Add {neededBacWaterVials} Vials To Order</span>
                   <strong style={{ color: 'var(--white)' }}>
                     (${((isAgentSelfBuy ? bacProduct.costPrice : bacProduct.retailPrice) * neededBacWaterVials).toFixed(2)})
+                  </strong>
+                </button>
+              </div>
+            )}
+
+            {/* Acetic Acid Suggestion Box */}
+            {neededAceticAcidVials > 0 && aceticProduct && (
+              <div style={{
+                background: 'rgba(235, 178, 54, 0.04)',
+                border: '1px solid rgba(235, 178, 54, 0.25)',
+                borderRadius: 'var(--radius-md)',
+                padding: 'var(--space-3)',
+                marginBottom: 'var(--space-4)',
+                boxShadow: '0 0 15px rgba(235, 178, 54, 0.08)',
+                transition: 'all 0.3s ease',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <strong style={{ color: 'var(--white)', fontSize: '0.82rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    Special Reconstitution Supplies
+                  </strong>
+                </div>
+                <p style={{ color: 'var(--silver-light)', fontSize: '0.76rem', margin: '0 0 10px', lineHeight: 1.4 }}>
+                  Your order contains <strong style={{ color: 'var(--white)' }}>{aceticPeptideVials}</strong> research vial{aceticPeptideVials !== 1 ? 's' : ''} requiring Acetic Acid for solubility. You need approximately <strong style={{ color: 'var(--white)' }}>{requiredAceticAcidVials}</strong> vial{requiredAceticAcidVials !== 1 ? 's' : ''} of Acetic Acid 0.6%.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleAddAceticAcid}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    cursor: 'pointer',
+                    borderRadius: 6,
+                    transition: 'all 0.2s ease',
+                    background: 'transparent',
+                    border: '1px solid #EBB236',
+                    color: '#EBB236',
+                    boxShadow: '0 0 12px rgba(235, 178, 54, 0.25)',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = '#EBB236';
+                    e.currentTarget.style.color = '#000000';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = '#EBB236';
+                  }}
+                >
+                  <span>Add {neededAceticAcidVials} Vials To Order</span>
+                  <strong style={{ color: 'inherit' }}>
+                    (${((isAgentSelfBuy ? aceticProduct.costPrice : aceticProduct.retailPrice) * neededAceticAcidVials).toFixed(2)})
                   </strong>
                 </button>
               </div>

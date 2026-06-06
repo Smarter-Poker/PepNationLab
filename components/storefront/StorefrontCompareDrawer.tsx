@@ -1050,8 +1050,6 @@ export default function StorefrontCompareDrawer({
           {!collapsed && (
             <div style={{ padding: 14, display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(180px, 1fr))`, gap: 10 }}>
               {pinned.map((item, i) => {
-                const tier = item.evidenceTierKey ? evidenceTier(item.evidenceTierKey) : null;
-                const c = item.compoundSlug ? compoundsBySlug[item.compoundSlug] : null;
                 return (
                   <div
                     key={item.productName}
@@ -1070,6 +1068,7 @@ export default function StorefrontCompareDrawer({
                       aria-label={`Remove ${item.productName} From Compare`}
                       style={{
                         position: 'absolute', top: 6, right: 6,
+                        zIndex: 10,
                         width: 24, height: 24, minWidth: 24, minHeight: 24,
                         borderRadius: '50%', padding: 0,
                         background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)',
@@ -1079,7 +1078,7 @@ export default function StorefrontCompareDrawer({
                     >
                       <X size={12} aria-hidden="true" />
                     </button>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                       {item.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -1087,34 +1086,44 @@ export default function StorefrontCompareDrawer({
                           alt={item.productName}
                           width={108}
                           height={108}
-                          style={{ width: 108, height: 108, borderRadius: 8, objectFit: 'cover', background: '#0F1923' }}
+                          style={{ width: 108, height: 108, borderRadius: 8, objectFit: 'cover', background: '#0F1923', flexShrink: 0 }}
                         />
                       ) : (
-                        <div style={{ width: 108, height: 108, borderRadius: 8, background: `${primaryColor}25` }} aria-hidden="true" />
+                        <div style={{ width: 108, height: 108, borderRadius: 8, background: `${primaryColor}25`, flexShrink: 0 }} aria-hidden="true" />
                       )}
                       <div style={{
-                        flex: 1, color: 'var(--white)', fontWeight: 800,
-                        fontSize: '0.82rem', lineHeight: 1.2, paddingRight: 22,
-                        overflow: 'hidden', textOverflow: 'ellipsis',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-start',
+                        gap: 6,
+                        height: 108,
+                        flex: 1,
+                        minWidth: 0,
+                        paddingRight: 22,
+                        overflow: 'hidden',
                       }}>
-                        {item.productName}
+                        <div style={{
+                          color: 'var(--white)', fontWeight: 800,
+                          fontSize: '0.82rem', lineHeight: 1.2,
+                          overflow: 'hidden',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical',
+                          textOverflow: 'ellipsis',
+                        }}>
+                          {item.productName}
+                        </div>
+                        {item.pricePerVialDollars != null && (
+                          <div style={{
+                            fontSize: '0.78rem',
+                            fontWeight: 800,
+                            color: '#FFF',
+                            fontFamily: 'var(--font-brand)',
+                          }}>
+                            ${Number(item.pricePerVialDollars).toFixed(2)}/Vial
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      {tier && (
-                        <span style={{
-                          fontSize: '0.64rem', padding: '3px 8px', borderRadius: 9999,
-                          background: `${tier.color}1A`, color: tier.color, fontWeight: 800,
-                          textTransform: 'uppercase', letterSpacing: '0.04em',
-                          border: `1px solid ${tier.color}55`,
-                        }}>{tier.label}</span>
-                      )}
-
-                      {item.pricePerVialDollars != null && (
-                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#FFF', fontFamily: 'var(--font-brand)' }}>
-                          ${Number(item.pricePerVialDollars).toFixed(2)}/Vial
-                        </span>
-                      )}
                     </div>
                     <DynamicAddToCartButton
                       onClick={() => dispatchAddToCart(item.productName)}
