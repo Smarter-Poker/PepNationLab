@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
 import { requireAdmin } from '@/lib/admin-auth';
 import { redirect } from 'next/navigation';
+import { getCompoundsBySlugs } from '@/lib/compounds-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,8 @@ export default async function AdminStorePreviewPage() {
       backorder_days,
       inventory_count,
       in_stock,
-      low_stock_threshold
+      low_stock_threshold,
+      compound_slug
     `)
     .order('name');
 
@@ -95,9 +97,15 @@ export default async function AdminStorePreviewPage() {
         unit_size: p.unit_size,
         unit_measure: p.unit_measure,
         weight_oz: Number(p.weight_oz) || 0.5,
+        compound_slug: p.compound_slug,
       }
     };
   });
+
+  // Fetch full compound profiles for the monograph/calculators/similar products
+  const compoundsBySlug = await getCompoundsBySlugs(
+    productItems.map((p) => p.products?.compound_slug)
+  );
 
   return (
     <div style={{ padding: 'var(--space-6)', minHeight: '100dvh', background: 'var(--black)' }}>
@@ -122,6 +130,7 @@ export default async function AdminStorePreviewPage() {
           agentSlug="admin-preview" 
           inventoryMap={inventoryMap}
           primaryColor="#00C4BC"
+          compoundsBySlug={compoundsBySlug}
         />
       </div>
     </div>
