@@ -1741,10 +1741,8 @@ export default function AgentStorefrontGrid({
           .sf-modal-actions .sf-add-btn { flex: none; padding: 10px 28px; }
         }
         .sf-product-card-nickel {
-          border: 4px solid transparent !important;
-          background-image: linear-gradient(#0F1923, #0F1923), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) !important;
-          background-origin: border-box !important;
-          background-clip: padding-box, border-box !important;
+          border: 4px solid #8E98A7 !important;
+          background: #0F1923 !important;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
           border-radius: var(--radius-xl) !important;
           overflow: hidden !important;
@@ -1753,11 +1751,8 @@ export default function AgentStorefrontGrid({
           height: 100% !important;
         }
         .sf-product-price-nickel {
-          background: linear-gradient(135deg, #a0a8b4 0%, #cbd5e0 25%, #f7fafc 50%, #718096 75%, #a0a8b4 100%) !important;
-          -webkit-background-clip: text !important;
-          -webkit-text-fill-color: transparent !important;
+          color: #A8B4C0 !important;
           text-shadow: none !important;
-          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8)) !important;
         }
       `}} />
 
@@ -2360,32 +2355,6 @@ export default function AgentStorefrontGrid({
                     }
                   }}
                 />
-
-                {group.popularity < 20 && (
-                  <div style={{
-                    position: 'absolute', bottom: 12, right: 12,
-                    fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
-                    padding: '4px 10px', borderRadius: 'var(--radius-full)',
-                    background: 'rgba(192,184,168,0.15)', border: '1px solid rgba(192,184,168,0.4)',
-                    color: 'var(--teal)', backdropFilter: 'blur(4px)'
-                  }}>
-                    <Star size={10} fill="currentColor" aria-hidden="true" style={{ marginRight: 4, verticalAlign: 'middle' }} />Popular
-                  </div>
-                )}
-
-                {group.variants.some(v => (v as any).is_on_sale) && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: stockState.kind !== 'in_stock' ? 40 : 12,
-                    left: 12,
-                    fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
-                    padding: '4px 10px', borderRadius: 'var(--radius-full)',
-                    background: 'rgba(245,101,101,0.15)', border: '1px solid rgba(245,101,101,0.4)',
-                    color: '#F56565', backdropFilter: 'blur(4px)'
-                  }}>
-                    Sale
-                  </div>
-                )}
 
                 {stockState.kind !== 'in_stock' && (
                   <div style={{ position: 'absolute', bottom: 12, left: 12 }}>
