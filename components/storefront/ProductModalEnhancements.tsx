@@ -82,6 +82,7 @@ interface Props {
   onOpenProductBySlug: (compoundSlug: string) => void;
   onOpenProductByName: (name: string) => void;
   onAddVariantToCart: (variantId: string, qty: number) => void;
+  children?: React.ReactNode;
 }
 
 // Hard block: syringes are strictly forbidden on PepNationLab — never surface them
@@ -458,29 +459,44 @@ function IsThisRightForMe({
 
   return (
     <section aria-label="Is This Right For My Research" style={{
-      borderRadius: 12,
-      border: '1px solid rgba(255,255,255,0.10)',
-      background: 'rgba(255,255,255,0.02)',
       overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
     }}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         style={{
-          width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-          padding: '12px 14px',
-          background: 'transparent', border: 'none', cursor: 'pointer',
-          color: 'var(--white)', fontWeight: 800, fontSize: '0.9rem',
-          textAlign: 'left',
+          width: '100%',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
+          display: 'block',
+          outline: 'none',
+          transition: 'transform 0.15s',
         }}
+        onMouseOver={e => e.currentTarget.style.transform = 'scale(1.01)'}
+        onMouseOut={e => e.currentTarget.style.transform = 'none'}
       >
-        <CheckCircle2 size={18} color={primaryColor} aria-hidden="true" />
-        <span style={{ flex: 1 }}>Is This Right For My Research?</span>
-        {open ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
+        <img
+          src="/images/right-for-my-research-btn.png"
+          alt="Is This Right For My Research?"
+          style={{ width: '100%', height: 'auto', display: 'block' }}
+        />
       </button>
       {open && (
-        <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{
+          padding: 14,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 12,
+        }}>
           {studied.length > 0 && (
             <div>
               <div style={{ fontSize: '0.74rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
@@ -762,6 +778,7 @@ export default function ProductModalEnhancements({
   onOpenProductBySlug,
   onOpenProductByName,
   onAddVariantToCart,
+  children,
 }: Props) {
   // Smart "Similar Products" — ranked by relatedCompounds scorer which now
   // weights best_stacked_with highest (+7 per direction), then compound class
@@ -1141,6 +1158,8 @@ export default function ProductModalEnhancements({
           />
         )}
       </div>
+
+      {children}
 
       {similarProducts.length > 0 && (
         <section aria-label="Similar Products">

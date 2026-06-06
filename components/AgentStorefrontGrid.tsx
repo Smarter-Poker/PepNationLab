@@ -3292,10 +3292,8 @@ export default function AgentStorefrontGrid({
                     setCartItems((prev) => ({ ...prev, [variantId]: (prev[variantId] || 0) + qty }));
                     setShowCartFloat(true);
                   }}
-                />
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)', marginTop: 'var(--space-5)' }}>
-                  <div>
+                >
+                  <div style={{ marginTop: 'var(--space-6)', marginBottom: 'var(--space-3)' }}>
                     <DynamicDetailButton
                       type="bulk"
                       onClick={() => setShowBulkPricing(prev => !prev)}
@@ -3307,11 +3305,13 @@ export default function AgentStorefrontGrid({
                     />
                     {showBulkPricing && (
                       <div style={{
-                        position: 'absolute', bottom: 80, left: 24, right: 24,
-                        border: '6px solid #E2E8F0',
-                        borderRadius: 'var(--radius-md)', overflow: 'hidden',
-                        background: 'var(--surface-2)', zIndex: 10,
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
+                        marginTop: 10,
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        background: 'rgba(255,255,255,0.02)',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                        marginBottom: 10,
                       }}>
                         <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           Bulk Volume Discounts
@@ -3368,27 +3368,27 @@ export default function AgentStorefrontGrid({
                       </div>
                     )}
                   </div>
+                </ProductModalEnhancements>
 
-                  <div className="sf-modal-actions" style={{ alignItems: 'center' }}>
-                    <DynamicDetailButton
-                      type="close"
-                      onClick={() => setDetailProduct(null)}
-                    />
-                    <DynamicAddToCartButton
-                      onClick={() => {
-                        const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
-                        setCartItems(prev => ({
-                          ...prev,
-                          [vId]: (prev[vId] || 0) + pendingQty,
-                        }));
-                        setDetailProduct(null);
-                        setShowBulkPricing(false);
-                        setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
-                        setShowCartFloat(true);
-                      }}
-                      pendingQty={pendingQty}
-                    />
-                  </div>
+                <div className="sf-modal-actions" style={{ alignItems: 'center' }}>
+                  <DynamicDetailButton
+                    type="close"
+                    onClick={() => setDetailProduct(null)}
+                  />
+                  <DynamicAddToCartButton
+                    onClick={() => {
+                      const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
+                      setCartItems(prev => ({
+                        ...prev,
+                        [vId]: (prev[vId] || 0) + pendingQty,
+                      }));
+                      setDetailProduct(null);
+                      setShowBulkPricing(false);
+                      setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
+                      setShowCartFloat(true);
+                    }}
+                    pendingQty={pendingQty}
+                  />
                 </div>
               </div>
             </motion.div>
