@@ -90,9 +90,12 @@ const SUPPLY_PATTERNS: Array<{ key: string; pattern: RegExp; label: string }> = 
   { key: 'alcohol_swabs', pattern: /alcohol\s*(swabs?|pads?|prep)/i, label: 'Alcohol Swabs' },
 ];
 
-// Hard, non-negotiable block. PepNationLab never sells syringes - if anything
-// matches this regex it is filtered out, even from the supplies grid.
+// Hard block for items that should NEVER appear anywhere (syringes).
 const FORBIDDEN_SUPPLY_NAME = /syring/i;
+
+// Items that should not appear in the "Similar Products" recommendation strip.
+// Bac. Water, acids, and swabs are supplies/accessories, not comparable peptides.
+const SIMILAR_PRODUCTS_EXCLUDED = /syring|bac\.?\s*water|bacteriostatic|acetic\s*acid|alcohol\s*swab|alcohol\s*pad/i;
 
 function pickSupply(grouped: ModalGroupedProductRef[], pattern: RegExp, currentSlug: string | null) {
   for (const g of grouped) {
@@ -778,7 +781,7 @@ export default function ProductModalEnhancements({
         if (!x.group) return false;
         if (x.group.name === currentProductName) return false;
         if (x.comp && x.comp.evidence_tier === 'supply') return false;
-        if (FORBIDDEN_SUPPLY_NAME.test(x.group.name)) return false;
+        if (SIMILAR_PRODUCTS_EXCLUDED.test(x.group.name)) return false;
         return true;
       });
 
@@ -791,7 +794,7 @@ export default function ProductModalEnhancements({
         if (g.name === currentProductName) return false;
         if (!g.compoundSlug) return false;
         if (existingSlugs.has(g.compoundSlug)) return false;
-        if (FORBIDDEN_SUPPLY_NAME.test(g.name)) return false;
+        if (SIMILAR_PRODUCTS_EXCLUDED.test(g.name)) return false;
 
         const comp = compoundsBySlug[g.compoundSlug];
         if (!comp) return false;
@@ -825,7 +828,7 @@ export default function ProductModalEnhancements({
         if (g.name === currentProductName) return false;
         if (!g.compoundSlug) return false;
         if (existingSlugs.has(g.compoundSlug)) return false;
-        if (FORBIDDEN_SUPPLY_NAME.test(g.name)) return false;
+        if (SIMILAR_PRODUCTS_EXCLUDED.test(g.name)) return false;
 
         const comp = compoundsBySlug[g.compoundSlug];
         if (!comp) return false;

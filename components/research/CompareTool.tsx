@@ -39,8 +39,8 @@ const NL = 'Not Listed';
 // ─── Style constants ─────────────────────────────────────────────────────────
 const cellStyle: React.CSSProperties = {
   padding: 'var(--space-3, 12px)',
-  borderBottom: '3.5px solid rgba(142, 152, 167, 0.75)',
-  borderLeft: '3.5px solid rgba(142, 152, 167, 0.75)',
+  borderBottom: '2px solid rgba(142, 152, 167, 0.75)',
+  borderLeft: '2px solid rgba(142, 152, 167, 0.75)',
   verticalAlign: 'top',
   fontSize: '0.88rem',
   color: 'var(--white, #FFFFFF)',
@@ -54,14 +54,14 @@ const labelCellStyle: React.CSSProperties = {
   left: 0,
   zIndex: 10,
   background: '#162230',
-  boxShadow: 'inset -3.5px 0 0 rgba(142, 152, 167, 0.75)',
+  boxShadow: 'inset -2px 0 0 rgba(142, 152, 167, 0.75)',
   borderLeft: 'none',
 };
 const groupCellStyle: React.CSSProperties = {
   padding: 'var(--space-3, 12px)',
   background: 'linear-gradient(rgba(0,196,188,0.1),rgba(0,196,188,0.1)),#162230',
-  borderTop: '3.5px solid rgba(142, 152, 167, 0.85)',
-  borderBottom: '3.5px solid rgba(142, 152, 167, 0.85)',
+  borderTop: '2px solid rgba(142, 152, 167, 0.85)',
+  borderBottom: '2px solid rgba(142, 152, 167, 0.85)',
   color: '#FFF',
   fontWeight: 800,
   fontSize: '0.72rem',
@@ -1288,8 +1288,8 @@ function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
       <table className="efficacy-table" style={{ fontSize: '0.8rem' }}>
         <thead>
           <tr>
-            <th style={{ textAlign: 'left', padding: '6px 10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, fontSize: '0.7rem', borderBottom: '3.5px solid rgba(142, 152, 167, 0.75)' }}>Domain</th>
-            {selected.map((c, i) => <th key={c.slug} style={{ textAlign: 'center', padding: '6px 10px', color: colors[i % colors.length], fontWeight: 700, fontSize: '0.7rem', borderBottom: '3.5px solid rgba(142, 152, 167, 0.75)' }}>{c.display_name}</th>)}
+            <th style={{ textAlign: 'left', padding: '6px 10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, fontSize: '0.7rem', borderBottom: '2px solid rgba(142, 152, 167, 0.75)' }}>Domain</th>
+            {selected.map((c, i) => <th key={c.slug} style={{ textAlign: 'center', padding: '6px 10px', color: colors[i % colors.length], fontWeight: 700, fontSize: '0.7rem', borderBottom: '2px solid rgba(142, 152, 167, 0.75)' }}>{c.display_name}</th>)}
           </tr>
         </thead>
         <tbody>
@@ -1300,7 +1300,7 @@ function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
                 const v = (c.efficacy_scores ?? {})[key];
                 const color = v != null ? getColor(v) : 'transparent';
                 return (
-                  <td key={c.slug} style={{ textAlign: 'center', padding: '5px 10px', borderLeft: '3.5px solid rgba(142, 152, 167, 0.75)' }}>
+                  <td key={c.slug} style={{ textAlign: 'center', padding: '5px 10px', borderLeft: '2px solid rgba(142, 152, 167, 0.75)' }}>
                     {v != null ? (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                         <span style={{ fontWeight: 800, fontSize: '0.82rem', color: (color === '#00C4BC' || color === '#FC8181') ? '#FFF' : color }}>{v}</span>
@@ -1324,7 +1324,17 @@ function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
 function RecommendationCard({ rec, label, icon, color }: { rec: { compound: Compound; score: CompoundScore; reason: string; secondaryLabel: string }; label: string; icon: React.ReactNode; color: string }) {
   const textColor = (color === '#00C4BC' || color === '#FC8181') ? '#FFF' : color;
   return (
-    <div style={{ padding: '12px 14px', borderRadius: 10, background: `${color}08`, border: `1px solid ${color}25`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div style={{
+      padding: '12px 14px',
+      borderRadius: 10,
+      border: '2px solid transparent',
+      backgroundImage: `linear-gradient(${color}08, ${color}08), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)`,
+      backgroundOrigin: 'border-box',
+      backgroundClip: 'padding-box, border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 6
+    }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <div style={{ color, display: 'flex' }}>{icon}</div>
         <span style={{ fontSize: '0.67rem', fontWeight: 800, color: textColor, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
@@ -2064,10 +2074,10 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
       {/* Search bar */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print { body { background: #fff !important; color: #000 !important; } .no-print { display: none !important; } td, th { color: #000 !important; background: #fff !important; border-bottom: 1px solid #ddd !important; } }
-        .ct-tab { background: rgba(255,255,255,0.03) !important; border: 2px solid #5a626c !important; color: rgba(255,255,255,0.5) !important; border-radius: 8px; padding: 8px 14px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .ct-tab { background: rgba(255,255,255,0.03) !important; border: 4px solid #5a626c !important; color: rgba(255,255,255,0.5) !important; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .ct-tab:hover { background: rgba(255,255,255,0.08) !important; border-color: #aab2bd !important; color: rgba(255,255,255,0.9) !important; }
-        .ct-tab.active { background: rgba(0,196,188,0.1) !important; border: 2px solid transparent !important; background-image: linear-gradient(rgba(0,196,188,0.1), rgba(0,196,188,0.1)), linear-gradient(135deg, #4f5660 0%, #aab2bd 20%, #f5f7fa 40%, #7e8794 60%, #cbd2db 80%, #4f5660 100%) !important; background-origin: border-box !important; background-clip: padding-box, border-box !important; color: #FFF !important; box-shadow: 0 4px 12px rgba(0, 196, 188, 0.15) !important; }
+        .ct-tab.active { background: rgba(0,196,188,0.1) !important; border: 4px solid transparent !important; background-image: linear-gradient(rgba(0,196,188,0.1), rgba(0,196,188,0.1)), linear-gradient(135deg, #4f5660 0%, #aab2bd 20%, #f5f7fa 40%, #7e8794 60%, #cbd2db 80%, #4f5660 100%) !important; background-origin: border-box !important; background-clip: padding-box, border-box !important; color: #FFF !important; box-shadow: 0 4px 12px rgba(0, 196, 188, 0.15) !important; }
         .ct-row-hover:hover td { background: rgba(255,255,255,0.015) !important; }
         .popular-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 4px; }
         .popular-card:hover { background: rgba(0,196,188,0.08); border-color: rgba(0,196,188,0.3); transform: translateY(-1px); }
@@ -2077,11 +2087,27 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         .search-input-nickel:focus { border-color: #aab2bd !important; box-shadow: 0 0 10px rgba(170, 178, 189, 0.2) !important; }
         .brief-paragraph { border-left: 2px solid rgba(0,196,188,0.3) !important; padding-left: 14px; margin: 0; color: rgba(255,255,255,0.78); font-size: 0.88rem; line-height: 1.75; }
         .matrix-table { width: 100%; border-collapse: collapse; }
-        .matrix-table th:not(:first-child), .matrix-table td:not(:first-child) { border-left: 3.5px solid rgba(142, 152, 167, 0.75) !important; }
-        .matrix-table th, .matrix-table td { border-bottom: 3.5px solid rgba(142, 152, 167, 0.75) !important; }
+        .matrix-table th:not(:first-child), .matrix-table td:not(:first-child) { border-left: 2px solid rgba(142, 152, 167, 0.75) !important; }
+        .matrix-table th, .matrix-table td { border-bottom: 2px solid rgba(142, 152, 167, 0.75) !important; }
         .efficacy-table { width: 100%; border-collapse: collapse; }
-        .efficacy-table th:not(:first-child), .efficacy-table td:not(:first-child) { border-left: 3.5px solid rgba(142, 152, 167, 0.75) !important; }
-        .efficacy-table th, .efficacy-table td { border-bottom: 3.5px solid rgba(142, 152, 167, 0.75) !important; }
+        .efficacy-table th:not(:first-child), .efficacy-table td:not(:first-child) { border-left: 2px solid rgba(142, 152, 167, 0.75) !important; }
+        .efficacy-table th, .efficacy-table td { border-bottom: 2px solid rgba(142, 152, 167, 0.75) !important; }
+        .glass-panel {
+          border: 4px solid transparent !important;
+          background-image: linear-gradient(rgba(15, 25, 35, 0.65), rgba(15, 25, 35, 0.65)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) !important;
+          background-origin: border-box !important;
+          background-clip: padding-box, border-box !important;
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+        .inner-card-nickel {
+          border: 2px solid transparent !important;
+          background-image: linear-gradient(#0F161E, #0F161E), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) !important;
+          background-origin: border-box !important;
+          background-clip: padding-box, border-box !important;
+          border-radius: 12px;
+        }
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeInDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.6; transform:scale(1.15); } }
@@ -2263,7 +2289,19 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
           {/* Feature 6: Desktop-only tab strip (replaced by bottom tab bar on mobile) */}
           {selected.length >= 2 && !isMobile && (
             <div className="no-print" style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, width: '100%' }}>
-              <div style={{ position: 'relative', width: '100%', maxWidth: '993px', aspectRatio: '993 / 148', userSelect: 'none' }}>
+              <div style={{
+                position: 'relative',
+                width: '100%',
+                maxWidth: '993px',
+                aspectRatio: '993 / 148',
+                userSelect: 'none',
+                border: '4px solid transparent',
+                backgroundImage: 'linear-gradient(#0F161E, #0F161E), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
+                backgroundOrigin: 'border-box',
+                backgroundClip: 'padding-box, border-box',
+                borderRadius: '9999px',
+                overflow: 'hidden'
+              }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src="/images/compare-pill-bar.png" 
@@ -2309,7 +2347,15 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
             <div className="glass-panel" style={{ borderRadius: 14, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* Top Pick Banner */}
               {topPickSlug && (
-                <div style={{ position: isMobile ? 'sticky' : 'relative', top: isMobile ? 10 : 'auto', zIndex: isMobile ? 40 : 'auto', display: 'flex', alignItems: 'center', gap: 10, background: isMobile ? 'rgba(0,196,188,0.15)' : 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10, padding: '10px 16px', backdropFilter: isMobile ? 'blur(10px)' : 'none', marginBottom: isMobile ? 12 : 0, cursor: 'pointer', boxShadow: isMobile ? '0 8px 24px rgba(0,0,0,0.5)' : 'none' }} onClick={() => setActiveTab('recommend')}>
+                <div style={{
+                  position: isMobile ? 'sticky' : 'relative', top: isMobile ? 10 : 'auto', zIndex: isMobile ? 40 : 'auto',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  border: '2px solid transparent',
+                  backgroundImage: `linear-gradient(${isMobile ? 'rgba(0,196,188,0.15)' : 'rgba(0,196,188,0.08)'}, ${isMobile ? 'rgba(0,196,188,0.15)' : 'rgba(0,196,188,0.08)'}), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)`,
+                  backgroundOrigin: 'border-box',
+                  backgroundClip: 'padding-box, border-box',
+                  borderRadius: 10, padding: '10px 16px', backdropFilter: isMobile ? 'blur(10px)' : 'none', marginBottom: isMobile ? 12 : 0, cursor: 'pointer', boxShadow: isMobile ? '0 8px 24px rgba(0,0,0,0.5)' : 'none'
+                }} onClick={() => setActiveTab('recommend')}>
                   <Trophy size={17} color="#00C4BC" style={{ flexShrink: 0 }} />
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FFF' }}>Top Pick: {bySlug.get(topPickSlug)?.display_name}</span>
@@ -2328,7 +2374,15 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                   const sortedByScore = [...selected].map((x, idx) => ({ c: x, score: scores[idx].total })).sort((a, b) => b.score - a.score);
                   const rankIndex = sortedByScore.findIndex(x => x.c.slug === c.slug);
                   return (
-                    <div key={c.slug} style={{ padding: 14, borderRadius: 12, background: isTop ? 'rgba(0,196,188,0.05)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isTop ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.07)'}` }}>
+                    <div key={c.slug} style={{
+                      padding: 14, borderRadius: 12,
+                      border: '2px solid transparent',
+                      backgroundImage: isTop
+                        ? `linear-gradient(rgba(0,196,188,0.05), rgba(0,196,188,0.05)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)`
+                        : `linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)`,
+                      backgroundOrigin: 'border-box',
+                      backgroundClip: 'padding-box, border-box'
+                    }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                         {getChoiceBadge(rankIndex)}
                         {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: 22, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />}

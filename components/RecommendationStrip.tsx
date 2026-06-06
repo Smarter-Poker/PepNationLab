@@ -9,7 +9,7 @@ export interface RecommendationItem {
   slug: string | null;
   category: string | null;
   image_url: string | null;
-  base_cost: number;
+  base_cost?: number;
   retail_price?: number;
   unit_size?: string | null;
   unit_measure?: string | null;

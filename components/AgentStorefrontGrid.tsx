@@ -691,19 +691,31 @@ export default function AgentStorefrontGrid({
   // Bac. water is sold only in 10-packs (increments of 10), storewide.
   const isBacWaterItem = (name: string | null | undefined, slug: string | null | undefined) => slug === 'bac-water' || /bac\.?\s*water/i.test(name || '');
 
+  // Track the most recently viewed product for recommendations context
+  const lastViewedProductId = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!detailProduct) {
-      setRecommendations([]);
-      return;
+    // When a product detail is open, seed from that product
+    if (detailProduct) {
+      const seedProductId = detailProduct.variants[0]?.product_id ?? null;
+      if (seedProductId) lastViewedProductId.current = seedProductId;
     }
-    const seedProductId = detailProduct.variants[0]?.product_id;
+  }, [detailProduct]);
+
+  useEffect(() => {
+    // Seed recommendations from: (1) last viewed product, (2) first cart item, (3) nothing
+    const seedFromCart = Object.keys(cartItems).find(vId => (cartItems[vId] ?? 0) > 0) ?? null;
+    const cartSeedItem = seedFromCart ? products.find(p => p.id === seedFromCart) ?? null : null;
+    const cartSeedProductId = cartSeedItem?.product_id ?? null;
+
+    const seedProductId = lastViewedProductId.current ?? cartSeedProductId;
     if (!seedProductId) {
       setRecommendations([]);
       return;
     }
     let cancelled = false;
     setRecommendationsLoading(true);
-    const url = `/api/storefront/recommendations?product_id=${encodeURIComponent(seedProductId)}&agent_slug=${encodeURIComponent(agentSlug)}&limit=6`;
+    const url = `/api/storefront/recommendations?product_id=${encodeURIComponent(seedProductId)}&agent_slug=${encodeURIComponent(agentSlug)}&limit=8`;
     fetch(url, { credentials: 'omit' })
       .then(r => r.ok ? r.json() : { recommendations: [] })
       .then((data: { recommendations?: RecommendationItem[] }) => {
@@ -716,7 +728,8 @@ export default function AgentStorefrontGrid({
         if (!cancelled) setRecommendationsLoading(false);
       });
     return () => { cancelled = true; };
-  }, [detailProduct, agentSlug]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailProduct, cartItems, agentSlug]);
 
   const [pendingQty, setPendingQty] = useState(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
 
@@ -2715,6 +2728,39 @@ export default function AgentStorefrontGrid({
                         </div>
                       );
                     })}
+                  </div>
+                )}
+
+                {/* Smart Cart: Researchers Also Order — filtered to only non-cart items */}
+                {(recommendations.length > 0 || recommendationsLoading) && (
+                  <div style={{ marginTop: 8, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <RecommendationStrip
+                      title="Researchers Also Order"
+                      recommendations={recommendations.filter(rec => {
+                        // Hide items already in the cart
+                        const inCart = products.some(
+                          p => p.product_id === rec.id && cartItems[p.id] != null && (cartItems[p.id] ?? 0) > 0
+                        );
+                        return !inCart;
+                      })}
+                      loading={recommendationsLoading}
+                      primaryColor={primaryColor}
+                      onSelect={(productId) => {
+                        // Find the grouped product and open its detail sheet
+                        const product = products.find(p => p.product_id === productId);
+                        if (!product) return;
+                        const name = product.products?.name;
+                        if (!name) return;
+                        const grp = grouped.find(g => g.name === name);
+                        if (grp) {
+                          setShowCartFloat(false);
+                          setTimeout(() => {
+                            setDetailProduct(grp);
+                            setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
+                          }, 200);
+                        }
+                      }}
+                    />
                   </div>
                 )}
               </div>
