@@ -9,10 +9,12 @@ import React, {
   useCallback,
 } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { getProductImage } from '@/lib/categoryImage';
 import DynamicAddToCartButton from '@/components/storefront/DynamicAddToCartButton';
+import DynamicCartButton from '@/components/storefront/DynamicCartButton';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -761,6 +763,7 @@ function SmartRecCard({
 // ─── Cart Drawer ───────────────────────────────────────────────────────────────
 
 function CartDrawer() {
+  const router = useRouter();
   const {
     cart,
     removeFromCart,
@@ -984,11 +987,21 @@ function CartDrawer() {
               </strong>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Link href="/checkout" onClick={() => setIsCartOpen(false)} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.88rem', padding: '12px 0', fontWeight: 800, letterSpacing: '0.04em' }}>
-                Proceed To Checkout →
-              </Link>
-              <button onClick={() => setIsCartOpen(false)} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '9px 0' }}>Keep Shopping</button>
-              <button onClick={clearCart} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.74rem', padding: '7px 0', opacity: 0.5 }}>Clear Cart</button>
+              <DynamicCartButton
+                type="checkout"
+                onClick={() => {
+                  setIsCartOpen(false);
+                  router.push('/checkout');
+                }}
+              />
+              <DynamicCartButton
+                type="shopping"
+                onClick={() => setIsCartOpen(false)}
+              />
+              <DynamicCartButton
+                type="clear"
+                onClick={clearCart}
+              />
             </div>
           </div>
         )}

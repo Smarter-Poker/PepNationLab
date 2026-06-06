@@ -12,6 +12,7 @@ import DiscoveryHero, { type MatchedProduct } from './storefront/StorefrontDisco
 import ProductModalEnhancements, { ClickableCategoryBadge, type ModalGroupedProductRef } from './storefront/ProductModalEnhancements';
 import StorefrontCompareDrawer from './storefront/StorefrontCompareDrawer';
 import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
+import DynamicCartButton from './storefront/DynamicCartButton';
 import { evidenceTier, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
@@ -2777,7 +2778,8 @@ export default function AgentStorefrontGrid({
                     }, 0).toFixed(2)}
                   </span>
                 </div>
-                <button
+                <DynamicCartButton
+                  type="checkout"
                   onClick={() => {
                     const pnlCart = Object.entries(cartItems)
                       .filter(([, qty]) => qty > 0)
@@ -2802,58 +2804,40 @@ export default function AgentStorefrontGrid({
                           agentSelfBuy: isStorefrontOwner,
                         };
                       })
-                        .filter(Boolean);
+                      .filter(Boolean);
 
-                      if (totalCartItems < overallMin) {
-                        toast.error(`Order Minimum Not Met: This storefront requires an overall minimum order of ${overallMin} items. You currently have ${totalCartItems}.`);
-                        return;
-                      }
-                      
-                      try {
-                        localStorage.setItem(`pnl_storefront_cart_${agentSlug}`, JSON.stringify({
-                          items: pnlCart,
-                          _savedAt: Date.now(),
-                        }));
-                        Object.keys(localStorage)
-                          .filter(k => k.startsWith('pnl_storefront_cart_') && k !== `pnl_storefront_cart_${agentSlug}`)
-                          .forEach(k => localStorage.removeItem(k));
-                        localStorage.removeItem('pnl_storefront_cart');
-                      } catch (e) {
-                        console.error('Failed to sync cart:', e);
-                      }
-                      setShowCartFloat(false);
-                      router.push(`/checkout?agent=${encodeURIComponent(agentSlug)}`);
-                    }}
-                    style={{
-                      display: 'block', width: '100%', textAlign: 'center', padding: '16px',
-                      background: primaryColor, color: 'var(--white)', borderRadius: 14,
-                      fontWeight: 800, fontSize: '1.02rem', letterSpacing: '0.02em',
-                      border: '1px solid rgba(255,255,255,0.25)', cursor: 'pointer', minHeight: 56,
-                      boxShadow: `0 8px 22px ${primaryColor}55, inset 0 1px 0 rgba(255,255,255,0.30)`
-                    }}
-                  >
-                    Go To Checkout
-                  </button>
-                  <button
-                    onClick={() => setShowCartFloat(false)}
-                    style={{
-                      display: 'block', width: '100%', textAlign: 'center', padding: '13px',
-                      background: 'rgba(255,255,255,0.07)', color: 'var(--white)', borderRadius: 12,
-                      fontWeight: 700, fontSize: '0.9rem', border: '1.5px solid rgba(255,255,255,0.22)',
-                      cursor: 'pointer', minHeight: 48
-                    }}
-                  >
-                    Keep Shopping
-                  </button>
-                  <button onClick={() => { setCartItems({}); setShowCartFloat(false); }}
-                    style={{
-                      display: 'block', width: '100%', textAlign: 'center', padding: '11px',
-                      background: 'rgba(229,62,62,0.08)', color: '#F08A8A', borderRadius: 12,
-                      fontWeight: 700, fontSize: '0.82rem', border: '1.5px solid rgba(229,62,62,0.32)', cursor: 'pointer'
-                    }}
-                  >
-                    Clear Cart
-                  </button>
+                    if (totalCartItems < overallMin) {
+                      toast.error(`Order Minimum Not Met: This storefront requires an overall minimum order of ${overallMin} items. You currently have ${totalCartItems}.`);
+                      return;
+                    }
+                    
+                    try {
+                      localStorage.setItem(`pnl_storefront_cart_${agentSlug}`, JSON.stringify({
+                        items: pnlCart,
+                        _savedAt: Date.now(),
+                      }));
+                      Object.keys(localStorage)
+                        .filter(k => k.startsWith('pnl_storefront_cart_') && k !== `pnl_storefront_cart_${agentSlug}`)
+                        .forEach(k => localStorage.removeItem(k));
+                      localStorage.removeItem('pnl_storefront_cart');
+                    } catch (e) {
+                      console.error('Failed to sync cart:', e);
+                    }
+                    setShowCartFloat(false);
+                    router.push(`/checkout?agent=${encodeURIComponent(agentSlug)}`);
+                  }}
+                />
+                <DynamicCartButton
+                  type="shopping"
+                  onClick={() => setShowCartFloat(false)}
+                />
+                <DynamicCartButton
+                  type="clear"
+                  onClick={() => {
+                    setCartItems({});
+                    setShowCartFloat(false);
+                  }}
+                />
                 </div>
               </div>
               </motion.div>
