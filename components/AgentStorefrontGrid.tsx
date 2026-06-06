@@ -3882,20 +3882,6 @@ export default function AgentStorefrontGrid({
                 </button>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '4px' }}>
-                  <div style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '12px',
-                    background: `${primaryColor}20`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: `1px solid ${primaryColor}40`,
-                    color: primaryColor,
-                    flexShrink: 0,
-                  }}>
-                    <Brain size={22} strokeWidth={2} />
-                  </div>
                   <div>
                     <h3 style={{
                       fontFamily: 'var(--font-brand)',
