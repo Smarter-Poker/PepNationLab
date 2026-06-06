@@ -825,17 +825,31 @@ export default function ProductModalEnhancements({
     return items.slice(0, 5);
   }, [currentCompound, compoundsBySlug, grouped, currentProductName]);
   const supplies = useMemo(() => {
+    // Peptides that require 0.6% Acetic Acid for initial reconstitution due to
+    // poor solubility at neutral pH. BAC water alone is insufficient for these.
+    // Matched against compound slug OR product/display name.
+    const ACETIC_ACID_SLUGS = /\b(igf[-_\s]?1[-_\s]?(lr3|des|des-1-3)|aod[-_\s]?9604|ghk[-_\s]?cu|ghrp[-_\s]?[26]|fragment[-_\s]?(176|hgh[-_\s]?frag)|melanotan[-_\s]?[i12]|epital[o]?n|epithalon|nad\+?)\b/i;
+
+    const slugToCheck = `${currentCompoundSlug ?? ''} ${currentProductName ?? ''}`.toLowerCase();
+    const showAceticAcid = ACETIC_ACID_SLUGS.test(slugToCheck) ||
+      // Also check display_name from compound data in case slug differs
+      ACETIC_ACID_SLUGS.test(currentCompound?.display_name ?? '');
+
     const supplyPatterns = [
-      { key: 'bac_water', pattern: /bac\.?\s*water|bacteriostatic/i, label: 'Bac. Water' },
-      { key: 'acetic_acid', pattern: /acetic\s*acid/i, label: 'Acetic Acid' },
-      { key: 'alcohol_swabs', pattern: /alcohol\s*(swabs?|pads?|prep)/i, label: 'Alcohol Swabs' },
+      { key: 'bac_water', pattern: /bac\.?\s*water|bacteriostatic/i, label: 'Bac. Water', alwaysShow: true },
+      { key: 'acetic_acid', pattern: /acetic\s*acid/i, label: 'Acetic Acid', alwaysShow: false },
+      { key: 'alcohol_swabs', pattern: /alcohol\s*(swabs?|pads?|prep)/i, label: 'Alcohol Swabs', alwaysShow: true },
     ];
-    return supplyPatterns.map(({ key, pattern, label }) => ({
-      key,
-      label,
-      group: pickSupply(grouped, pattern, currentCompoundSlug),
-    })).filter((s) => s.group !== null);
-  }, [grouped, currentCompoundSlug]);
+
+    return supplyPatterns
+      .filter(({ key, alwaysShow }) => alwaysShow || (key === 'acetic_acid' && showAceticAcid))
+      .map(({ key, pattern, label }) => ({
+        key,
+        label,
+        group: pickSupply(grouped, pattern, currentCompoundSlug),
+      }))
+      .filter((s) => s.group !== null);
+  }, [grouped, currentCompoundSlug, currentProductName, currentCompound]);
 
   const stackComponents = useMemo(() => {
     if (!currentCompound || !currentCompound.is_stack) return [];
