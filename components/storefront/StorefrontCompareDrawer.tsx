@@ -1233,8 +1233,8 @@ export default function StorefrontCompareDrawer({
               {sortedPinnedItems.length >= 2 && (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
-                  border: '4px solid transparent',
-                  backgroundImage: 'linear-gradient(rgba(0,196,188,0.08), rgba(0,196,188,0.08)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
+                  border: '2px solid transparent',
+                  backgroundImage: 'linear-gradient(#0f2628, #0f2628), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
                   backgroundOrigin: 'border-box',
                   backgroundClip: 'padding-box, border-box',
                   borderRadius: 8, padding: '10px 14px'
@@ -1262,7 +1262,7 @@ export default function StorefrontCompareDrawer({
                       <div key={p.productName} style={{
                         display: 'flex', flexDirection: 'column', gap: 8, padding: 10,
                         border: '2px solid transparent',
-                        backgroundImage: 'linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
+                        backgroundImage: 'linear-gradient(#162230, #162230), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
                         backgroundOrigin: 'border-box',
                         backgroundClip: 'padding-box, border-box',
                         borderRadius: 8
@@ -1293,19 +1293,7 @@ export default function StorefrontCompareDrawer({
 
               {/* Tab navigation */}
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, width: '100%' }}>
-                <div style={{
-                  position: 'relative',
-                  width: '100%',
-                  maxWidth: '993px',
-                  aspectRatio: '993 / 148',
-                  userSelect: 'none',
-                  border: '4px solid transparent',
-                  backgroundImage: 'linear-gradient(#0F161E, #0F161E), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
-                  backgroundOrigin: 'border-box',
-                  backgroundClip: 'padding-box, border-box',
-                  borderRadius: '9999px',
-                  overflow: 'hidden'
-                }}>
+                <div style={{ position: 'relative', width: '100%', maxWidth: '993px', aspectRatio: '993 / 148', userSelect: 'none' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="/images/compare-pill-bar.png" 
@@ -1426,7 +1414,7 @@ export default function StorefrontCompareDrawer({
                 {smartSummary && (
                   <div style={{
                     border: '2px solid transparent',
-                    backgroundImage: 'linear-gradient(rgba(0,196,188,0.1), rgba(0,196,188,0.1)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
+                    backgroundImage: 'linear-gradient(#0c292f, #0c292f), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
                     backgroundOrigin: 'border-box',
                     backgroundClip: 'padding-box, border-box',
                     borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: '0.78rem', color: '#FFF', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px'
@@ -1621,7 +1609,7 @@ export default function StorefrontCompareDrawer({
                           <div key={v.label} style={{
                             padding: '12px 14px', borderRadius: 10,
                             border: '4px solid transparent',
-                            backgroundImage: 'linear-gradient(' + v.color + '08, ' + v.color + '08), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
+                            backgroundImage: 'linear-gradient(#0F161E, #0F161E), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
                             backgroundOrigin: 'border-box',
                             backgroundClip: 'padding-box, border-box',
                             display: 'flex', flexDirection: 'column', gap: 10
