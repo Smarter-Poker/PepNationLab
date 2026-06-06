@@ -946,7 +946,21 @@ export default function ProductModalEnhancements({
 
   const showPhase3 = currentCompound !== null;
 
-  if (!hasAnythingPhase2 && !showPhase3) return null;
+  if (!hasAnythingPhase2 && !showPhase3) {
+    if (children) {
+      return (
+        <div style={{
+          marginTop: 24,
+          paddingTop: 20,
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          display: 'flex', flexDirection: 'column', gap: 22,
+        }}>
+          {children}
+        </div>
+      );
+    }
+    return null;
+  }
 
   return (
     <div style={{
@@ -956,193 +970,210 @@ export default function ProductModalEnhancements({
       display: 'flex', flexDirection: 'column', gap: 22,
     }}>
       {currentCompound && (
-        <QualityScoreWidget compound={currentCompound} primaryColor={primaryColor} />
+        <>
+          <QualityScoreWidget compound={currentCompound} primaryColor={primaryColor} />
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+        </>
       )}
       <IsThisRightForMe compound={currentCompound} primaryColor={primaryColor} />
 
       {stackComponents.length > 0 && (
-        <section aria-label="Stack Components">
-          <SectionTitle primaryColor={primaryColor}>
-            What&apos;s Inside This Stack
-          </SectionTitle>
-          <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: -4, marginBottom: 10 }}>
-            Each Component Is Tappable - View Its Research Profile Or Add It Solo.
-          </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(min(140px, 100%), 1fr))',
-            gap: 10,
-          }}>
-            {stackComponents.map((sc) => {
-              const tier = sc.compound ? evidenceTier(sc.compound.evidence_tier) : null;
-              const labelText = sc.displayLabel;
-              return (
-                <button
-                  key={sc.token}
-                  type="button"
-                  onClick={() => {
-                    if (sc.compound) onOpenProductBySlug(sc.compound.slug);
-                    else if (sc.group) onOpenProductByName(sc.group.name);
-                  }}
-                  style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-                    gap: 4,
-                    padding: '10px 12px',
-                    borderRadius: 12,
-                    background: sc.inStock ? `${primaryColor}10` : 'rgba(255,255,255,0.03)',
-                    border: sc.inStock
-                      ? `1px solid ${primaryColor}40`
-                      : '1px dashed rgba(255,255,255,0.16)',
-                    cursor: (sc.compound || sc.group) ? 'pointer' : 'default',
-                    textAlign: 'left',
-                    color: 'var(--white)',
-                    minHeight: 64,
-                  }}
-                >
-                  <span style={{ fontWeight: 800, fontSize: '0.86rem', lineHeight: 1.2 }}>
-                    {labelText}
-                  </span>
-                  {tier && (
-                    tier.badgeUrl ? (
-                      <img src={tier.badgeUrl} alt={tier.label} style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', marginTop: 2, flexShrink: 0 }} />
-                    ) : (
-                      <span style={{ fontSize: '0.64rem', color: tier.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        {tier.label}
-                      </span>
-                    )
-                  )}
-                  {!sc.inStock && (
-                    <span style={{ fontSize: '0.66rem', color: 'var(--grey-400)', fontWeight: 600 }}>
-                      Not Stocked Here
+        <>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+          <section aria-label="Stack Components">
+            <SectionTitle primaryColor={primaryColor}>
+              What&apos;s Inside This Stack
+            </SectionTitle>
+            <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: -4, marginBottom: 10 }}>
+              Each Component Is Tappable - View Its Research Profile Or Add It Solo.
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(140px, 100%), 1fr))',
+              gap: 10,
+            }}>
+              {stackComponents.map((sc) => {
+                const tier = sc.compound ? evidenceTier(sc.compound.evidence_tier) : null;
+                const labelText = sc.displayLabel;
+                return (
+                  <button
+                    key={sc.token}
+                    type="button"
+                    onClick={() => {
+                      if (sc.compound) onOpenProductBySlug(sc.compound.slug);
+                      else if (sc.group) onOpenProductByName(sc.group.name);
+                    }}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                      gap: 4,
+                      padding: '10px 12px',
+                      borderRadius: 12,
+                      background: sc.inStock ? `${primaryColor}10` : 'rgba(255,255,255,0.03)',
+                      border: sc.inStock
+                        ? `1px solid ${primaryColor}40`
+                        : '1px dashed rgba(255,255,255,0.16)',
+                      cursor: (sc.compound || sc.group) ? 'pointer' : 'default',
+                      textAlign: 'left',
+                      color: 'var(--white)',
+                      minHeight: 64,
+                    }}
+                  >
+                    <span style={{ fontWeight: 800, fontSize: '0.86rem', lineHeight: 1.2 }}>
+                      {labelText}
                     </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </section>
+                    {tier && (
+                      tier.badgeUrl ? (
+                        <img src={tier.badgeUrl} alt={tier.label} style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', marginTop: 2, flexShrink: 0 }} />
+                      ) : (
+                        <span style={{ fontSize: '0.64rem', color: tier.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          {tier.label}
+                        </span>
+                      )
+                    )}
+                    {!sc.inStock && (
+                      <span style={{ fontSize: '0.66rem', color: 'var(--grey-400)', fontWeight: 600 }}>
+                        Not Stocked Here
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </>
       )}
 
       {saveVsSeparately !== null && (
-        <section
-          aria-label="Save Vs Buying Separately"
-          style={{
-            padding: 14,
-            borderRadius: 14,
-            background: `linear-gradient(135deg, ${primaryColor}1A 0%, rgba(104,211,145,0.10) 100%)`,
-            border: `1px solid ${primaryColor}40`,
-          }}
-        >
-          <div style={{ fontSize: '0.72rem', color: '#68D391', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
-            Save Vs. Buying Separately
-          </div>
-          <div style={{
-            display: 'flex', alignItems: 'baseline', flexWrap: 'wrap',
-            gap: 10, color: 'var(--white)',
-          }}>
-            <span style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>
-              Save ${formatMoney(saveVsSeparately.savings)}
-            </span>
-            <span style={{ fontSize: '0.86rem', color: 'var(--grey-300)' }}>
-              ({saveVsSeparately.pct.toFixed(0)}% Off Separate Vials)
-            </span>
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 6 }}>
-            Separate Vials Add Up To ${formatMoney(saveVsSeparately.separateTotal)}. The Stack Is ${formatMoney(saveVsSeparately.bundle)}.
-          </div>
-        </section>
+        <>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+          <section
+            aria-label="Save Vs Buying Separately"
+            style={{
+              padding: 14,
+              borderRadius: 14,
+              background: `linear-gradient(135deg, ${primaryColor}1A 0%, rgba(104,211,145,0.10) 100%)`,
+              border: `1px solid ${primaryColor}40`,
+            }}
+          >
+            <div style={{ fontSize: '0.72rem', color: '#68D391', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+              Save Vs. Buying Separately
+            </div>
+            <div style={{
+              display: 'flex', alignItems: 'baseline', flexWrap: 'wrap',
+              gap: 10, color: 'var(--white)',
+            }}>
+              <span style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>
+                Save ${formatMoney(saveVsSeparately.savings)}
+              </span>
+              <span style={{ fontSize: '0.86rem', color: 'var(--grey-300)' }}>
+                ({saveVsSeparately.pct.toFixed(0)}% Off Separate Vials)
+              </span>
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 6 }}>
+              Separate Vials Add Up To ${formatMoney(saveVsSeparately.separateTotal)}. The Stack Is ${formatMoney(saveVsSeparately.bundle)}.
+            </div>
+          </section>
+        </>
       )}
 
       {supplies.length > 0 && (
-        <section aria-label="Supplies You Will Need">
-          <SectionTitle primaryColor={primaryColor}>
-            Supplies You&apos;ll Need
-          </SectionTitle>
-          <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: -4, marginBottom: 10 }}>
-            For Reconstitution And Lab Prep Of {currentProductName}.
-          </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(min(220px, 100%), 1fr))',
-            gap: 10,
-          }}>
-            {supplies.map((s) => (
-              <SupplyMiniCard
-                key={s.key}
-                supply={s.group!}
-                primaryColor={primaryColor}
-                onAdd={() => onAddVariantToCart(s.group!.defaultVariantId, s.key === 'bac_water' ? 10 : 1)}
-                onOpen={() => onOpenProductByName(s.group!.name)}
-              />
-            ))}
-          </div>
-        </section>
+        <>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+          <section aria-label="Supplies You Will Need">
+            <SectionTitle primaryColor={primaryColor}>
+              Supplies You&apos;ll Need
+            </SectionTitle>
+            <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: -4, marginBottom: 10 }}>
+              For Reconstitution And Lab Prep Of {currentProductName}.
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(220px, 100%), 1fr))',
+              gap: 10,
+            }}>
+              {supplies.map((s) => (
+                <SupplyMiniCard
+                  key={s.key}
+                  supply={s.group!}
+                  primaryColor={primaryColor}
+                  onAdd={() => onAddVariantToCart(s.group!.defaultVariantId, s.key === 'bac_water' ? 10 : 1)}
+                  onOpen={() => onOpenProductByName(s.group!.name)}
+                />
+              ))}
+            </div>
+          </section>
+        </>
       )}
 
       {studiedWith.length > 0 && (
-        <section aria-label="Compounds Studied With This One">
-          <SectionTitle primaryColor={primaryColor}>
-            Compounds Studied With This One
-          </SectionTitle>
-          <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: -4, marginBottom: 10 }}>
-            Ranked By Shared Research Areas And Mechanism - All Currently Stocked Here.
-          </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(min(160px, 100%), 1fr))',
-            gap: 10,
-          }}>
-            {studiedWith.map(({ ref, group }) => {
-              if (!group) return null;
-              const tier = evidenceTier(ref.evidence_tier);
-              return (
-                <button
-                  key={ref.slug}
-                  type="button"
-                  onClick={() => onOpenProductBySlug(ref.slug)}
-                  style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-                    gap: 6,
-                    padding: '10px 12px',
-                    borderRadius: 12,
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.10)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    color: 'var(--white)',
-                    minHeight: 76,
-                  }}
-                >
-                  <span style={{ fontWeight: 800, fontSize: '0.86rem', lineHeight: 1.2 }}>
-                    {ref.display_name}
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    {tier.badgeUrl ? (
-                      <img src={tier.badgeUrl} alt={tier.label} style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
-                    ) : (
-                      <span style={{ fontSize: '0.66rem', color: tier.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        {tier.label}
-                      </span>
-                    )}
-                    <span style={{ fontSize: '0.7rem', color: primaryColor, fontWeight: 700 }}>
-                      ${formatMoney((group.lowestPrice || 0) / 10)}/Vial
+        <>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+          <section aria-label="Compounds Studied With This One">
+            <SectionTitle primaryColor={primaryColor}>
+              Compounds Studied With This One
+            </SectionTitle>
+            <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: -4, marginBottom: 10 }}>
+              Ranked By Shared Research Areas And Mechanism - All Currently Stocked Here.
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(160px, 100%), 1fr))',
+              gap: 10,
+            }}>
+              {studiedWith.map(({ ref, group }) => {
+                if (!group) return null;
+                const tier = evidenceTier(ref.evidence_tier);
+                return (
+                  <button
+                    key={ref.slug}
+                    type="button"
+                    onClick={() => onOpenProductBySlug(ref.slug)}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                      gap: 6,
+                      padding: '10px 12px',
+                      borderRadius: 12,
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.10)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      color: 'var(--white)',
+                      minHeight: 76,
+                    }}
+                  >
+                    <span style={{ fontWeight: 800, fontSize: '0.86rem', lineHeight: 1.2 }}>
+                      {ref.display_name}
                     </span>
-                  </div>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 'auto', fontSize: '0.72rem', color: 'var(--grey-300)', fontWeight: 600 }}>
-                    View Details <ArrowRight size={11} aria-hidden="true" />
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      {tier.badgeUrl ? (
+                        <img src={tier.badgeUrl} alt={tier.label} style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
+                      ) : (
+                        <span style={{ fontSize: '0.66rem', color: tier.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          {tier.label}
+                        </span>
+                      )}
+                      <span style={{ fontSize: '0.7rem', color: primaryColor, fontWeight: 700 }}>
+                        ${formatMoney((group.lowestPrice || 0) / 10)}/Vial
+                      </span>
+                    </div>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 'auto', fontSize: '0.72rem', color: 'var(--grey-300)', fontWeight: 600 }}>
+                      View Details <ArrowRight size={11} aria-hidden="true" />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </>
       )}
 
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
       <ReconstitutionCalc
         defaultVialMassMg={currentVialMassMg ?? null}
         primaryColor={primaryColor}
       />
 
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         {currentCompoundSlug && currentProductName && (
           <PinToCompareButton
@@ -1159,15 +1190,22 @@ export default function ProductModalEnhancements({
         )}
       </div>
 
-      {children}
+      {children && (
+        <>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+          {children}
+        </>
+      )}
 
       {similarProducts.length > 0 && (
-        <section aria-label="Similar Products">
-          <SectionTitle primaryColor={primaryColor}>
-            Similar Products
-          </SectionTitle>
-          <div style={{
-            display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6,
+        <>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+          <section aria-label="Similar Products">
+            <SectionTitle primaryColor={primaryColor}>
+              Similar Products
+            </SectionTitle>
+            <div style={{
+              display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6,
             scrollSnapType: 'x mandatory',
           }}>
             {similarProducts.map(({ ref, group }) => {
@@ -1259,6 +1297,7 @@ export default function ProductModalEnhancements({
             })}
           </div>
         </section>
+      </>
       )}
     </div>
   );

@@ -78,6 +78,9 @@ export default function ProductMonograph({ compound, primaryColor = '#00C4BC' }:
         ))}
       </div>
 
+      {/* Break line under the buttons */}
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.10)', margin: 'var(--space-5) 0 0' }} />
+
       {panelSection && typeof document !== 'undefined'
         ? createPortal(
             <ProductResearchPanel

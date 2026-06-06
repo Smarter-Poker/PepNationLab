@@ -1703,6 +1703,7 @@ export default function AgentStorefrontGrid({
           padding: 14px 22px calc(20px + env(safe-area-inset-bottom, 0px));
           position: sticky; bottom: 0; z-index: 5;
           background: linear-gradient(to top, #0a0f14 75%, transparent);
+          border-top: 1px solid rgba(255,255,255,0.06);
         }
         .sf-modal-actions .sf-close-btn {
           padding: 12px 20px;
@@ -3098,6 +3099,9 @@ export default function AgentStorefrontGrid({
 
                   return (
                     <div style={{ marginBottom: 'var(--space-6)' }}>
+                      {!detailProduct.compoundSlug && (
+                        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 0 var(--space-5)' }} />
+                      )}
                       {detailProduct.variants.length > 1 && (
                         <div style={{ marginBottom: 'var(--space-4)' }}>
                           <label style={{ fontSize: '0.8rem', color: 'var(--silver)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>
@@ -3219,10 +3223,12 @@ export default function AgentStorefrontGrid({
                       </div>
 
                       {(volumePricingEnabled) && (
-                        <div style={{
-                          marginTop: 'var(--space-5)', border: '6px solid #E2E8F0',
-                          borderRadius: 'var(--radius-md)', overflow: 'hidden'
-                        }}>
+                        <>
+                          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-5) 0' }} />
+                          <div style={{
+                            border: '6px solid #E2E8F0',
+                            borderRadius: 'var(--radius-md)', overflow: 'hidden'
+                          }}>
                           <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             Volume Pricing
                           </div>
@@ -3247,7 +3253,8 @@ export default function AgentStorefrontGrid({
                             );
                           })}
                         </div>
-                      )}
+                      </>
+                    )}
                     </div>
                   );
                 })()}
