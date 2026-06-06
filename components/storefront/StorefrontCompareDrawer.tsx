@@ -11,7 +11,7 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Scale, ChevronDown, ChevronRight, GripHorizontal, ChevronLeft, ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info, Zap, BookOpen, Clock, Thermometer, Sparkles, Check, Shield } from 'lucide-react';
+import { X, Scale, ChevronDown, ChevronRight, GripHorizontal, ChevronLeft, ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info, Zap, BookOpen, Clock, Thermometer, Check, Shield } from 'lucide-react';
 import { evidenceTier, type Compound, RISK_META, researchAreaLabel, wadaLabel } from '@/lib/compounds';
 import InCellGlossaryTooltip from '../research/InCellGlossaryTooltip';
 import { scoreCompound, type CompoundScore } from '../research/CompareTool';
@@ -981,65 +981,6 @@ export default function StorefrontCompareDrawer({
 
   const colors = [primaryColor, '#8e98a7', '#68D391', '#FC8181'];
 
-  const activeSynergiesModal = useMemo(() => {
-    const matched = KNOWN_SYNERGIES.filter(syn =>
-      syn.pairs.every(slug => sortedPinnedItems.some(p => p.compoundSlug === slug))
-    );
-
-    const pinnedCompounds = sortedPinnedItems.map(p => p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null).filter(Boolean) as Compound[];
-    const glp1s = pinnedCompounds.filter(c => c.is_glp1);
-    const hasGlp1Conflict = glp1s.length >= 2;
-    const proAngio = pinnedCompounds.filter(c => c.is_pro_angiogenic);
-    const hasProAngioCaution = proAngio.length >= 2;
-
-    return matched.filter(syn => {
-      if (hasGlp1Conflict) {
-        const isGlp1Pair = syn.pairs.every(slug => {
-          const comp = compoundsBySlug[slug];
-          return comp?.is_glp1;
-        });
-        if (isGlp1Pair) return false;
-      }
-      if (hasProAngioCaution) {
-        const isProAngioPair = syn.pairs.every(slug => {
-          const comp = compoundsBySlug[slug];
-          return comp?.is_pro_angiogenic;
-        });
-        if (isProAngioPair) return false;
-      }
-      return true;
-    });
-  }, [sortedPinnedItems, compoundsBySlug]);
-
-  // Dynamic GLP-1 / pro-angiogenic warnings
-  const dynamicWarnings = useMemo(() => {
-    const warnings: { type: 'conflict' | 'caution'; category: string; message: string }[] = [];
-    const pinnedCompounds = sortedPinnedItems.map(p => p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null).filter(Boolean) as Compound[];
-    const proAngio = pinnedCompounds.filter(c => c.is_pro_angiogenic);
-    if (proAngio.length >= 2) warnings.push({ type: 'caution', category: 'Safety', message: `Multiple pro-angiogenic compounds pinned (${proAngio.map(c => c.display_name).join(', ')}). Stacking compounds that promote new vessel growth warrants additional research scrutiny.` });
-    const glp1s = pinnedCompounds.filter(c => c.is_glp1);
-    if (glp1s.length >= 2) warnings.push({ type: 'conflict', category: 'Safety', message: `Multiple GLP-1/incretin agents pinned (${glp1s.map(c => c.display_name).join(', ')}). Combining incretin-class agents compounds gastrointestinal adverse effects.` });
-    return warnings;
-  }, [sortedPinnedItems, compoundsBySlug]);
-
-  const maxTrials = useMemo(() => Math.max(...displayedPinned.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return (c?.active_trial_count ?? 0) + (c?.completed_trial_count ?? 0); }), 1), [displayedPinned, compoundsBySlug]);
-
-  const radarData = useMemo(() => {
-    if (sortedPinnedItems.length < 2) return [];
-    return [
-      { label: 'Evidence', scores: sortedPinnedItems.map(p => p.evidenceTierKey === 'approved_drug' ? 100 : p.evidenceTierKey === 'investigational' ? 78 : p.evidenceTierKey === 'preclinical' ? 55 : 30) },
-      { label: 'Safety', scores: sortedPinnedItems.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return c?.risk_level === 'low' ? 100 : c?.risk_level === 'moderate' ? 70 : c?.risk_level === 'high' ? 35 : 10; }) },
-      { label: 'Citations', scores: sortedPinnedItems.map(p => { if (!maxCitations) return 10; const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return Math.min(100, Math.max(5, ((c?.pubmed_citation_count ?? 0) / maxCitations) * 100)); }) },
-      { label: 'Trials', scores: sortedPinnedItems.map(p => { if (!maxTrials) return 5; const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; const t = (c?.active_trial_count ?? 0) + (c?.completed_trial_count ?? 0); return Math.min(100, Math.max(5, (t / maxTrials) * 100)); }) },
-      { label: 'Half-Life', scores: sortedPinnedItems.map(p => { if (!maxHalfLife) return 20; const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return Math.min(100, Math.max(5, (parseHalfLifeHours(c?.half_life) / maxHalfLife) * 100)); }) },
-      { label: 'Coverage', scores: sortedPinnedItems.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return Math.min(100, Math.max(5, ((c?.research_areas ?? []).length / 8) * 100)); }) },
-      { label: 'Handling', scores: sortedPinnedItems.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; const shelf = c?.reconstitution_shelf_days ?? c?.handling?.reconstituted_days ?? 0; return Math.min(100, Math.max(5, (shelf / 60) * 100)); }) },
-    ];
-  }, [sortedPinnedItems, compoundsBySlug, maxCitations, maxHalfLife, maxTrials]);
-
-  const activeSynergies = useMemo(() => {
-    return [...activeSynergiesModal, ...dynamicWarnings];
-  }, [activeSynergiesModal, dynamicWarnings]);
 
   if (!mounted) return null;
   if (pinned.length === 0) return null;
@@ -1286,46 +1227,7 @@ export default function StorefrontCompareDrawer({
             </div>
             
             <div style={{ overflowY: 'auto', padding: '24px', flex: 1 }}>
-              {activeSynergies.length > 0 && (
-                <div style={{
-                  background: 'rgba(20, 25, 30, 0.6)',
-                  border: '4px solid transparent',
-                  backgroundImage: 'linear-gradient(rgba(20, 25, 30, 0.6), rgba(20, 25, 30, 0.6)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
-                  backgroundOrigin: 'border-box',
-                  backgroundClip: 'padding-box, border-box',
-                  borderRadius: 12,
-                  padding: 16,
-                  marginBottom: 16,
-                  backdropFilter: 'blur(8px)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <AlertTriangle size={16} color="#FFF" />
-                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Research Safety & Compatibility Advisories
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {activeSynergies.map((syn, idx) => (
-                      <div key={idx} style={{
-                        background: syn.type === 'conflict' ? 'rgba(229,62,62,0.06)' : 'rgba(104,211,145,0.06)',
-                        borderLeft: `2px solid ${syn.type === 'conflict' ? '#FC8181' : '#68D391'}`,
-                        color: syn.type === 'conflict' ? '#FFF' : '#68D391',
-                        padding: '8px 12px',
-                        borderRadius: '0 8px 8px 0',
-                        fontSize: '0.82rem',
-                        fontWeight: 500,
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 8,
-                        lineHeight: 1.4
-                      }}>
-                        {syn.type === 'conflict' ? <AlertTriangle size={14} style={{ marginTop: 2, flexShrink: 0 }} /> : <Sparkles size={14} style={{ marginTop: 2, flexShrink: 0 }} />}
-                        <span><strong>{syn.type === 'conflict' ? 'Conflict' : 'Synergy'}:</strong> {syn.message}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+
  
               {/* Top Pick Banner */}
               {sortedPinnedItems.length >= 2 && (

@@ -2012,50 +2012,6 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
     ];
   }, [selected]);
 
-  const activeSynergies = useMemo(() => {
-    const matched = KNOWN_SYNERGIES.filter(syn => syn.pairs.every(slug => selectedSlugs.includes(slug)));
-
-    const proAngio = selected.filter(c => c.is_pro_angiogenic);
-    const hasProAngioCaution = proAngio.length >= 2;
-    const glp1 = selected.filter(c => c.is_glp1);
-    const hasGlp1Conflict = glp1.length >= 2;
-
-    return matched.filter(syn => {
-      if (hasGlp1Conflict) {
-        const isGlp1Pair = syn.pairs.every(slug => {
-          const comp = selected.find(c => c.slug === slug);
-          return comp?.is_glp1;
-        });
-        if (isGlp1Pair) return false;
-      }
-      if (hasProAngioCaution) {
-        const isProAngioPair = syn.pairs.every(slug => {
-          const comp = selected.find(c => c.slug === slug);
-          return comp?.is_pro_angiogenic;
-        });
-        if (isProAngioPair) return false;
-      }
-      return true;
-    });
-  }, [selected, selectedSlugs]);
-
-  // Dynamic compound-class based warnings
-  const dynamicAlerts = useMemo(() => {
-    const alerts: { type: 'caution' | 'conflict'; message: string; category: string }[] = [];
-    const proAngio = selected.filter(c => c.is_pro_angiogenic);
-    if (proAngio.length >= 2) {
-      alerts.push({ type: 'caution', category: 'Safety', message: `Multiple pro-angiogenic compounds selected (${proAngio.map(c => c.display_name).join(', ')}). Research literature notes theoretical considerations around stacking compounds that promote new vessel growth.` });
-    }
-    const glp1 = selected.filter(c => c.is_glp1);
-    if (glp1.length >= 2) {
-      alerts.push({ type: 'conflict', category: 'Safety', message: `Multiple GLP-1/incretin agents selected (${glp1.map(c => c.display_name).join(', ')}). Stacking incretin-class compounds compounds gastrointestinal adverse effects with unclear additive benefit.` });
-    }
-    return alerts;
-  }, [selected]);
-
-  const combinedAlerts = useMemo(() => {
-    return [...activeSynergies, ...dynamicAlerts];
-  }, [activeSynergies, dynamicAlerts]);
 
   const tabs = [
     { id: 'matrix' as const, label: 'Matrix', showAlways: false },
@@ -2183,41 +2139,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         {selected.length > 0 && <button type="button" onClick={() => setSelectedSlugs([])} style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', color: '#F08A8A', borderRadius: 7, padding: '7px 14px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>Clear All</button>}
       </div>
 
-      {/* Synergy / Conflict Alerts */}
-      {combinedAlerts.length > 0 && (
-        <div className="glass-panel" style={{
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 16
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <AlertTriangle size={16} color="#FFF" />
-            <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Research Safety & Compatibility Advisories
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {combinedAlerts.map((syn, idx) => (
-              <div key={idx} style={{
-                background: syn.type === 'conflict' ? 'rgba(229,62,62,0.06)' : syn.type === 'caution' ? 'rgba(246,173,85,0.06)' : 'rgba(104,211,145,0.06)',
-                borderLeft: `3px solid ${syn.type === 'conflict' ? '#FC8181' : syn.type === 'caution' ? '#F6AD55' : '#68D391'}`,
-                color: syn.type === 'conflict' ? '#FFF' : syn.type === 'caution' ? '#F6AD55' : '#68D391',
-                padding: '8px 12px',
-                borderRadius: '0 8px 8px 0',
-                fontSize: '0.82rem',
-                fontWeight: 500,
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 8,
-                lineHeight: 1.4
-              }}>
-                {syn.type === 'conflict' ? <AlertTriangle size={14} style={{ marginTop: 2, flexShrink: 0 }} /> : syn.type === 'caution' ? <AlertTriangle size={14} style={{ marginTop: 2, flexShrink: 0 }} /> : <Sparkles size={14} style={{ marginTop: 2, flexShrink: 0 }} />}
-                <span><strong>{syn.type === 'conflict' ? 'Conflict' : syn.type === 'caution' ? 'Caution' : `Synergy - ${'category' in syn ? (syn as any).category : ''}`}:</strong> {syn.message}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* Empty State */}
       {selected.length === 0 ? (
