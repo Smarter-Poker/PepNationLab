@@ -208,8 +208,19 @@ function AnimatedScoreRingDrawer({ score, color }: { score: CompoundScore; color
         <div style={{ position: 'relative', width: 72, height: 72, flexShrink: 0 }}>
           <svg width="72" height="72" viewBox="0 0 72 72">
             <circle cx="36" cy="36" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
-            <circle cx="36" cy="36" r={r} fill="none" stroke={gradeColor} strokeWidth="6" strokeLinecap="round"
-              strokeDasharray={`${pct} ${circ}`} strokeDashoffset={circ / 4} />
+            <circle 
+              cx="36" 
+              cy="36" 
+              r={r} 
+              fill="none" 
+              stroke={gradeColor} 
+              strokeWidth="6" 
+              strokeLinecap="round"
+              strokeDasharray={circ} 
+              strokeDashoffset={circ - pct} 
+              transform="rotate(-90 36 36)"
+              style={{ transition: 'stroke-dashoffset 0.1s linear' }}
+            />
           </svg>
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ fontSize: '0.95rem', fontWeight: 900, color: '#FFF', lineHeight: 1 }}>{displayPct}</span>

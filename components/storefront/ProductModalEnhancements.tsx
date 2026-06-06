@@ -324,8 +324,10 @@ function QualityScoreWidget({
               stroke={gradeColor}
               strokeWidth="6"
               strokeLinecap="round"
-              strokeDasharray={`${pct} ${circ}`}
-              strokeDashoffset={circ / 4}
+              strokeDasharray={circ}
+              strokeDashoffset={circ - pct}
+              transform="rotate(-90 36 36)"
+              style={{ transition: 'stroke-dashoffset 0.1s linear' }}
             />
           </svg>
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
