@@ -398,7 +398,7 @@ export default function BulkImportModal({ onClose }: { onClose: () => void }) {
                               ? 'rgba(168,180,192,0.06)'
                               : 'rgba(192,184,168,0.06)';
                         return (
-                          <tr key={r.row_number} style={{ background: bg, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                          <tr key={r.row_number} style={{ background: bg, }}>
                             <td style={{ padding: 'var(--space-2)' }}>{r.row_number}</td>
                             <td style={{ padding: 'var(--space-2)' }}>{statusBadge(r.status)}</td>
                             <td style={{ padding: 'var(--space-2)' }}>{String(r.parsed.name ?? '')}</td>

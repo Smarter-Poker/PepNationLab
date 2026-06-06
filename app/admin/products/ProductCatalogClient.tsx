@@ -425,7 +425,7 @@ export default function ProductCatalogClient({
             style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}
           >
             <thead>
-              <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
+              <tr style={{ }}>
                 <th style={thStyle}>
                   <input
                     type="checkbox"

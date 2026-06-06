@@ -365,7 +365,6 @@ export default function AdminStatementsPage() {
                           gap: "var(--space-6)",
                           marginTop: "var(--space-4)",
                           paddingTop: "var(--space-4)",
-                          borderTop: "1px solid rgba(255,255,255,0.06)",
                           flexWrap: "wrap",
                         }}
                       >

@@ -203,13 +203,13 @@ export default function AdminSalesPage() {
             {/* Agent Table */}
             <div className="glass-panel hover-lift stagger-fade-in" style={{ overflowX: 'auto', animationDelay: '0.4s' }}>
               <div className="" style={{ padding: 0 }}>
-                <div style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ padding: 'var(--space-4) var(--space-5)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ fontSize: '0.95rem', color: 'var(--silver)' }}>Revenue By Agent</h3>
                 <span style={{ fontSize: '0.76rem', color: 'var(--grey-500)' }}>Click Any Agent To View Their Transaction Ledger</span>
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'var(--surface-2)' }}>
+                  <tr style={{ background: 'var(--surface-2)' }}>
                     {['Agent', 'Tier', 'Orders', 'Pending', 'Revenue', 'Actions'].map(h => (
                       <th key={h} style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left', fontSize: '0.72rem', fontWeight: 700, color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                     ))}

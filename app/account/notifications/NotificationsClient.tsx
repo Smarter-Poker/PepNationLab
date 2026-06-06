@@ -401,7 +401,6 @@ export default function NotificationCenterClient({
                     alignItems: 'center',
                     gap: 14,
                     padding: '10px 0',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
                     cursor: 'pointer',
                   }}
                 >

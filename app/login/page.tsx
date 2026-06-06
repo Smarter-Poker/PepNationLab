@@ -216,7 +216,6 @@ function LoginPageInner() {
           <div style={{
             marginTop: 'var(--space-6)',
             paddingTop: 'var(--space-6)',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
             textAlign: 'center'
           }}>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-600)' }}>

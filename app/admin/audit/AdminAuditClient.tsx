@@ -150,7 +150,7 @@ export default function AdminAuditClient({
             }}
           >
             <thead>
-              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+              <tr style={{ }}>
                 <th
                   style={{
                     textAlign: "left",
@@ -217,7 +217,7 @@ export default function AdminAuditClient({
                   <tr
                     key={r.id}
                     className="table-row-hover"
-                    style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+                    style={{ }}
                   >
                     <td
                       suppressHydrationWarning

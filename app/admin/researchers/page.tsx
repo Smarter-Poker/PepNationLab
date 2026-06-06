@@ -1010,7 +1010,7 @@ function ResearchersAdminPageInner() {
                 </span>
               </label>
 
-              <div style={{ position: 'sticky', bottom: 0, display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', paddingTop: 'var(--space-4)', paddingBottom: 'var(--space-2)', marginTop: 'var(--space-2)', background: 'var(--surface-1, #0F1923)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ position: 'sticky', bottom: 0, display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', paddingTop: 'var(--space-4)', paddingBottom: 'var(--space-2)', marginTop: 'var(--space-2)', background: 'var(--surface-1, #0F1923)', }}>
                 <button type="button" className="btn-silver" onClick={closeModal} disabled={submitting}>Cancel</button>
                 <button
                   type="submit"

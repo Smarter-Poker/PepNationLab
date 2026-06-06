@@ -316,7 +316,6 @@ export default async function AgentStorefrontPage({ params }: Props) {
       <footer style={{
         padding: 'var(--space-6)',
         textAlign: 'center',
-        borderTop: '1px solid rgba(255,255,255,0.04)',
         marginTop: 'var(--space-6)'
       }}>
         <p style={{ fontSize: '0.75rem', color: 'var(--grey-600)' }}>

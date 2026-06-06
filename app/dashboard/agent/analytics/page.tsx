@@ -179,7 +179,7 @@ export default async function AgentAnalyticsPage() {
             <table style={{ width: '100%', fontSize: '0.88rem' }}>
               <tbody>
                 {terms.map((t) => (
-                  <tr key={t.term} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <tr key={t.term} style={{ }}>
                     <td style={{ padding: '6px 0', color: 'var(--white)' }}>{t.term}</td>
                     <td style={{ padding: '6px 0', color: 'var(--silver)', textAlign: 'right' }}>{t.searches}</td>
                   </tr>
@@ -196,7 +196,7 @@ export default async function AgentAnalyticsPage() {
             <table style={{ width: '100%', fontSize: '0.88rem' }}>
               <tbody>
                 {topRanked.map((p) => (
-                  <tr key={p.name} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <tr key={p.name} style={{ }}>
                     <td style={{ padding: '6px 0', color: 'var(--white)' }}>{p.name}</td>
                     <td style={{ padding: '6px 0', color: 'var(--silver)', textAlign: 'right' }}>{p.views} Views</td>
                   </tr>

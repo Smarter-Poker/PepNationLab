@@ -54,7 +54,7 @@ export default async function AdminCompoundQualityPage() {
 
   const items = (rows ?? []) as Array<Record<string, unknown>>;
 
-  const cellStyle: React.CSSProperties = { padding: '8px 14px', borderBottom: '1px solid rgba(168,180,192,0.15)', color: 'var(--silver-light, #D0DAE4)', fontSize: '0.88rem' };
+  const cellStyle: React.CSSProperties = { padding: '8px 14px', color: 'var(--silver-light, #D0DAE4)', fontSize: '0.88rem' };
   const thStyle: React.CSSProperties = { ...cellStyle, color: 'var(--silver, #A8B4C0)', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em', textAlign: 'left' };
 
   return (

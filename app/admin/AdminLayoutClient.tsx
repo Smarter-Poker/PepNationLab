@@ -175,7 +175,6 @@ export function AdminLayoutClient({
         <div style={{
           padding: 'var(--space-4)',
           paddingBottom: 'max(var(--space-4), env(safe-area-inset-bottom, 16px))',
-          borderTop: '1px solid rgba(255,255,255,0.05)',
           background: 'rgba(0,0,0,0.2)',
           marginTop: 'auto',
           display: 'flex',

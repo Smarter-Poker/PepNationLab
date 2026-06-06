@@ -53,7 +53,7 @@ export default async function AdminSearchAnalyticsPage() {
 
   const headerStyle: React.CSSProperties = { fontSize: '1.1rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', margin: 0, marginBottom: 'var(--space-3, 12px)' };
   const tableStyle: React.CSSProperties = { width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' };
-  const cellStyle: React.CSSProperties = { padding: '6px 12px', borderBottom: '1px solid rgba(168,180,192,0.15)', color: 'var(--silver-light, #D0DAE4)' };
+  const cellStyle: React.CSSProperties = { padding: '6px 12px', color: 'var(--silver-light, #D0DAE4)' };
   const thStyle: React.CSSProperties = { ...cellStyle, textAlign: 'left', color: 'var(--silver, #A8B4C0)', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' };
 
   return (

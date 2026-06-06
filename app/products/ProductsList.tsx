@@ -302,8 +302,7 @@ export default function ProductsList({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    borderBottom: '1px solid rgba(255,255,255,0.03)'
-                  }}>
+                    }}>
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5" opacity={0.4}>
                       <path d="M4.5 16.5c-1.5 1.25-2.5 3-2.5 4.5h20c0-1.5-1-3.25-2.5-4.5M12 2v14M8 5l4-3 4 3M6 10h12" />
                     </svg>
@@ -351,7 +350,7 @@ export default function ProductsList({
                       </p>
                     )}
 
-                    <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: 'var(--space-4)' }}>
+                    <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 'var(--space-4)' }}>
                       <div>
                         {/* Price rendering based on current wholesale tier */}
                         <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>

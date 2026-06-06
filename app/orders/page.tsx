@@ -233,8 +233,7 @@ export default async function OrdersPage({
                         gap: 'var(--space-3)',
                         marginBottom: 'var(--space-4)',
                         paddingBottom: 'var(--space-4)',
-                        borderBottom: '1px solid rgba(255,255,255,0.06)',
-                      }}
+                        }}
                     >
                       <div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--grey-500)', fontFamily: 'var(--font-brand)' }}>
@@ -303,8 +302,7 @@ export default async function OrdersPage({
                           color: 'var(--teal)',
                           marginTop: 4,
                           paddingTop: 'var(--space-2)',
-                          borderTop: '1px solid rgba(255,255,255,0.06)',
-                        }}
+                          }}
                       >
                         <span>Total</span>
                         <span style={{ fontFamily: 'var(--font-brand)' }}>${Number(order.total).toFixed(2)}</span>
@@ -333,7 +331,6 @@ export default async function OrdersPage({
                     <div style={{
                       marginTop: 'var(--space-4)',
                       paddingTop: 'var(--space-4)',
-                      borderTop: '1px solid rgba(255,255,255,0.06)',
                       display: 'flex',
                       gap: 'var(--space-2)',
                       justifyContent: 'flex-end',

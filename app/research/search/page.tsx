@@ -107,8 +107,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
           background: 'rgba(5,10,15,0.92)',
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(168,180,192,0.18)',
-        }}
+          }}
       >
         <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 }}>
           <Link href="/research" style={{ color: '#00C4BC', fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>

@@ -89,13 +89,13 @@ export default function SubAgentsPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '720px' }}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Name</th>
-                <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Commission % (Of Sales)</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Payment</th>
-                <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Credit Cap</th>
-                <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Prepaid Balance</th>
-                <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Pending Commission</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Joined</th>
+                <th style={{ textAlign: 'left', padding: '8px', }}>Name</th>
+                <th style={{ textAlign: 'right', padding: '8px', }}>Commission % (Of Sales)</th>
+                <th style={{ textAlign: 'left', padding: '8px', }}>Payment</th>
+                <th style={{ textAlign: 'right', padding: '8px', }}>Credit Cap</th>
+                <th style={{ textAlign: 'right', padding: '8px', }}>Prepaid Balance</th>
+                <th style={{ textAlign: 'right', padding: '8px', }}>Pending Commission</th>
+                <th style={{ textAlign: 'left', padding: '8px', }}>Joined</th>
               </tr>
             </thead>
             <tbody>

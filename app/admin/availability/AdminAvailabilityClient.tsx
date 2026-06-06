@@ -146,7 +146,7 @@ export default function AdminAvailabilityClient() {
               </thead>
               <tbody>
                 {data.spikes.map((s) => (
-                  <tr key={s.ip} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <tr key={s.ip} style={{ }}>
                     <td style={{ padding: '6px 12px', fontFamily: 'monospace', color: 'var(--white)' }}>{s.ip}</td>
                     <td style={{ padding: '6px 12px', color: 'var(--silver)' }}>{s.count}</td>
                     <td style={{ padding: '6px 12px', color: 'var(--silver)' }}>{s.reasons.join(', ')}</td>
@@ -180,7 +180,7 @@ export default function AdminAvailabilityClient() {
               </thead>
               <tbody>
                 {data.recent.map((r) => (
-                  <tr key={r.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <tr key={r.id} style={{ }}>
                     <td style={{ padding: '6px 12px', color: 'var(--grey-400)', whiteSpace: 'nowrap' }}>
                       {new Date(r.occurred_at).toLocaleString()}
                     </td>

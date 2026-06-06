@@ -460,7 +460,7 @@ export default async function OrderDetailPage(
               {order.order_items.map((item) => (
                 <div
                   key={item.id}
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 'var(--space-3)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 'var(--space-3)', }}
                 >
                   <div>
                     <div style={{ fontSize: '0.92rem', color: 'var(--silver)', fontWeight: 600 }}>{item.product_name}</div>
@@ -491,7 +491,7 @@ export default async function OrderDetailPage(
                   <span>Shipping</span>
                   <span>${num(order.shipping_cost).toFixed(2)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', marginTop: 4, paddingTop: 'var(--space-2)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', marginTop: 4, paddingTop: 'var(--space-2)', }}>
                   <span>Total</span>
                   <span style={{ fontFamily: 'var(--font-brand)' }}>${num(order.total).toFixed(2)}</span>
                 </div>

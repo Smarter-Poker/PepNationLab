@@ -159,7 +159,7 @@ export default async function SuperAgentRollupPage() {
       <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 0, overflow: 'hidden', animationDelay: '0.6s' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <tr style={{ }}>
               <th style={{ textAlign: 'left', padding: 'var(--space-3)', color: 'var(--silver)' }}>Agent</th>
               <th style={{ textAlign: 'right', padding: 'var(--space-3)', color: 'var(--silver)' }}>Pageviews</th>
               <th style={{ textAlign: 'right', padding: 'var(--space-3)', color: 'var(--silver)' }}>Orders</th>
@@ -175,7 +175,7 @@ export default async function SuperAgentRollupPage() {
                 </td>
               </tr>
             ) : rows.map((r) => (
-              <tr key={r.agent_id} className="table-row-hover" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <tr key={r.agent_id} className="table-row-hover" style={{ }}>
                 <td style={{ padding: 'var(--space-3)', color: 'var(--white)' }}>
                   {r.display_name}
                   {r.slug && <span style={{ color: 'var(--silver)', fontSize: '0.78rem', marginLeft: 8 }}>/{r.slug}</span>}

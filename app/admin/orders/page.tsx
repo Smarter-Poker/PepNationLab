@@ -1146,8 +1146,7 @@ function AdminOrdersPageInner() {
                             justifyContent: "space-between",
                             fontSize: "0.78rem",
                             padding: "4px 0",
-                            borderBottom: "1px solid rgba(255,255,255,0.03)",
-                          }}
+                            }}
                         >
                           <div style={{ color: "var(--grey-300)" }}>
                             {item.product_name}{" "}
@@ -1173,8 +1172,7 @@ function AdminOrdersPageInner() {
                           gap: 4,
                           marginTop: "var(--space-3)",
                           paddingTop: "var(--space-3)",
-                          borderTop: "1px solid rgba(255,255,255,0.06)",
-                        }}
+                          }}
                       >
                         <div
                           style={{
@@ -1244,7 +1242,6 @@ function AdminOrdersPageInner() {
                 {/* Action Buttons Panel */}
                 <div
                   style={{
-                    borderTop: "1px solid rgba(255,255,255,0.06)",
                     paddingTop: "var(--space-5)",
                   }}
                 >

@@ -497,7 +497,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
              );
           })}
           {/* Axis Labels */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 8, marginTop: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, marginTop: 16 }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--silver)' }}>{new Date(minTime).toLocaleDateString()}</span>
             <span style={{ fontSize: '0.75rem', color: '#FF6464' }}>Today</span>
             <span style={{ fontSize: '0.75rem', color: 'var(--silver)' }}>{new Date(latestDate).toLocaleDateString()}</span>
@@ -749,7 +749,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   return (
     <div style={{ paddingBottom: '100px' }}>
       {/* Top Tabs */}
-      <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255,255,255,0.1)', overflowX: 'auto', paddingBottom: 'var(--space-2)' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', overflowX: 'auto', paddingBottom: 'var(--space-2)' }}>
         {[
           { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
           { id: 'favorites', label: 'Saved Compounds', icon: Heart },
@@ -965,7 +965,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                         )}
                         <h3 style={{ color: 'var(--white)', paddingRight: 80 }}>{n.title || 'Journal Entry'}</h3>
                         <p style={{ color: 'var(--silver)', whiteSpace: 'pre-wrap', marginTop: 'var(--space-3)' }}>{n.note_text}</p>
-                        <div style={{ marginTop: 'var(--space-4)', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 'var(--space-2)' }}>
+                        <div style={{ marginTop: 'var(--space-4)', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', paddingTop: 'var(--space-2)' }}>
                           Last updated: {new Date(n.updated_at).toLocaleDateString()} at {new Date(n.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         </div>
                       </div>
@@ -1142,7 +1142,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
               )}
               {Object.entries(groupedItems).map(([category, items]) => (
                 <div key={category}>
-                  {shouldGroup && <h3 style={{ color: 'var(--white)', fontSize: '1.1rem', marginBottom: 'var(--space-3)', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 'var(--space-2)' }}>{category}</h3>}
+                  {shouldGroup && <h3 style={{ color: 'var(--white)', fontSize: '1.1rem', marginBottom: 'var(--space-3)', paddingBottom: 'var(--space-2)' }}>{category}</h3>}
                   <div style={{
                     display: 'grid',
                     gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(200px, 1fr))' : '1fr',
@@ -1233,7 +1233,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                   This item is saved in your Lab Journal. It is {quickViewItem.in_stock === false ? 'currently out of stock' : 'in stock and ready to ship'}.
                   {quickViewItem.unit_size && <div><br/><strong>Unit Size:</strong> {quickViewItem.unit_size}{quickViewItem.unit_measure}</div>}
                 </div>
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ paddingTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ color: 'var(--teal)', fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>
                     ${(quickViewItem.retail_price ?? quickViewItem.base_cost ?? 0).toFixed(2)}
                   </div>
@@ -1277,7 +1277,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     </div>
                     <div style={{ color: 'var(--teal)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{item.category || 'N/A'}</div>
                     <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: '1.1rem' }}>{item.name}</div>
-                    <div style={{ color: 'var(--silver)', fontSize: '0.9rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 12, marginTop: 'auto' }}>
+                    <div style={{ color: 'var(--silver)', fontSize: '0.9rem', paddingTop: 12, marginTop: 'auto' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}><span>Price:</span> <strong style={{ color: 'var(--teal)' }}>${displayPrice.toFixed(2)}</strong></div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}><span>Size:</span> <strong style={{ color: 'var(--white)' }}>{item.unit_size}{item.unit_measure}</strong></div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Status:</span> <strong style={{ color: item.in_stock === false ? 'var(--red)' : 'var(--teal)' }}>{item.in_stock === false ? 'Out of Stock' : 'In Stock'}</strong></div>

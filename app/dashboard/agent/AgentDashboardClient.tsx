@@ -482,7 +482,7 @@ export default function AgentDashboardClient({
               </div>
             </div>
 
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
+            <div style={{ paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
               <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Payment Handles</h4>
               <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-3)' }}>
                 Shown To Researchers After Checkout. At Least One Is Required.
@@ -509,7 +509,7 @@ export default function AgentDashboardClient({
               </div>
             </div>
 
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
+            <div style={{ paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
               <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Warehouse Address</h4>
               <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-3)' }}>
                 Used As The Ship-From Address When Buying Labels. Required Before Generating Shippo Labels.

@@ -132,7 +132,7 @@ export default function AboutAreasPage() {
         </section>
 
         {/* Footer Disclaimer */}
-        <footer style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 'var(--space-5, 24px)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <footer style={{ paddingTop: 'var(--space-5, 24px)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <img src="/images/research-use-pill.png" alt="Research Use Only" style={{ width: '100%', maxWidth: '600px', height: 'auto', marginBottom: '16px' }} />
           <p style={{ fontSize: 'clamp(7px, 1.2vw, 14px)', color: 'var(--grey-500, #6B7785)', textAlign: 'center', whiteSpace: 'nowrap', margin: 0 }}>
             For Laboratory Research Use Only. This Material Restates Published Science And Is Not Medical Advice, Dosing Guidance, Or An Endorsement Of Human Use.

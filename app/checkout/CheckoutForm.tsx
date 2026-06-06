@@ -1007,12 +1007,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
 
           <div className="glass-panel" style={{ background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-6)', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order Identifier</span>
               <strong style={{ color: 'var(--white)', fontFamily: 'var(--font-brand)', fontSize: '0.95rem', wordBreak: 'break-all' }}>{orderSuccess}</strong>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payment Method</span>
               <strong style={{ color: 'var(--white)', fontSize: '0.95rem', textTransform: 'capitalize' }}>{paymentMethod === 'cashapp' ? 'Cash App' : paymentMethod === 'apple_cash' ? 'Apple Pay' : paymentMethod}</strong>
             </div>
@@ -1237,7 +1237,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             {step === 1 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                 <div>
-                  <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)' }}>
+                  <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', paddingBottom: 'var(--space-2)' }}>
                     Fulfillment Method
                   </h3>
                   <div className="fulfillment-grid">
@@ -1359,7 +1359,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
                 {fulfillmentMethod === 'ship' && (
                   <div>
-                    <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)' }}>
+                    <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', paddingBottom: 'var(--space-2)' }}>
                       Shipping Delivery Address
                     </h3>
 
@@ -1568,7 +1568,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             {step === 2 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                 <div>
-                  <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)' }}>
+                  <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', paddingBottom: 'var(--space-2)' }}>
                     Billing Offline Payment Method
                   </h3>
                   <p style={{ color: 'var(--silver-light)', fontSize: '0.85rem', marginBottom: 'var(--space-4)', lineHeight: 1.5 }}>
@@ -1640,7 +1640,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             {step === 3 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                 <div>
-                  <h3 style={{ color: 'var(--red)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(229, 62, 62, 0.2)', paddingBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>
+                  <h3 style={{ color: 'var(--red)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', paddingBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>
                     Compliance Research Agreement
                   </h3>
                   <p style={{ color: 'var(--silver-light)', fontSize: '0.85rem', marginBottom: 'var(--space-6)', lineHeight: 1.6 }}>
@@ -1711,7 +1711,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           <div className="glass-panel">
             <div className="" style={{ padding: 'var(--space-5)' }}>
-            <h3 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            <h3 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-4)', paddingBottom: 'var(--space-2)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
               Order Inventory
             </h3>
 
@@ -1846,7 +1846,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             )}
 
             {!couponDisabled && (
-            <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+            <div style={{ paddingTop: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               {appliedCoupon ? (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(104,211,145,0.08)', border: '1px solid rgba(104,211,145,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)' }}>
                   <span style={{ fontSize: '0.78rem', color: '#68D391', fontWeight: 600 }}>
@@ -1887,7 +1887,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             </div>
             )}
 
-            <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            <div style={{ paddingTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                 <span style={{ color: 'var(--grey-400)' }}>{isAgentSelfBuy ? 'Agent Direct Subtotal' : 'Items Subtotal'}</span>
                 <strong style={{ color: 'var(--white)' }}>${cartSubtotal.toFixed(2)}</strong>
@@ -1926,7 +1926,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
 
 
-              <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem', marginTop: 'var(--space-1)' }}>
+              <div style={{ paddingTop: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem', marginTop: 'var(--space-1)' }}>
                 <span style={{ color: 'var(--white)', fontWeight: 600 }}>Total Due</span>
                 <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
                   ${grandTotal.toFixed(2)}

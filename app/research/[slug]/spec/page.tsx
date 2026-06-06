@@ -56,8 +56,7 @@ function Row({ label, value, cap = true }: { label: string; value: React.ReactNo
           color: 'var(--silver)',
           fontWeight: 700,
           fontSize: '0.82rem',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-        }}
+          }}
       >
         {label}
       </th>
@@ -66,7 +65,6 @@ function Row({ label, value, cap = true }: { label: string; value: React.ReactNo
           padding: '8px 12px',
           color: 'var(--white)',
           fontSize: '0.9rem',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
           textTransform: cap ? 'capitalize' : undefined,
         }}
       >
@@ -201,7 +199,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           </tbody>
         </table>
 
-        <footer style={{ marginTop: 'var(--space-4)', paddingTop: 'var(--space-3)', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
+        <footer style={{ marginTop: 'var(--space-4)', paddingTop: 'var(--space-3)', }}>
           <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--teal)', margin: 0 }}>
             Research Use Only
           </p>
