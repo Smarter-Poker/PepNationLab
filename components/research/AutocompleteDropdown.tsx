@@ -8,7 +8,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { History, FlaskConical, BookOpen } from 'lucide-react';
-import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import { evidenceTier } from '@/lib/compounds';
 
 export interface Suggestion {
   slug: string;
@@ -181,11 +181,6 @@ export default function AutocompleteDropdown({
                         title={tier.label}
                         aria-label={tier.label}
                       />
-                    )}
-                    {s.wada_status && (s.wada_status === 'prohibited' || s.wada_status === 'prohibited_males') && (
-                      <span style={{ fontSize: 10, color: '#E53E3E', fontWeight: 700 }}>
-                        {wadaLabel(s.wada_status)}
-                      </span>
                     )}
                   </span>
                   {s.blurb && (

@@ -10,7 +10,7 @@
 
 import Link from 'next/link';
 import { Beaker, BookOpen, ShieldAlert, Calendar, FlaskConical, Calculator, ListOrdered, Award } from 'lucide-react';
-import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import { evidenceTier } from '@/lib/compounds';
 
 const RESEARCH_NOTE = 'Research Use Only. Not Intended As Medical Advice Or Human Dosing.';
 
@@ -107,12 +107,6 @@ function CompoundHeader({ c }: { c: CompoundLike }) {
           fontSize: 11, color: t.color, border: `1px solid ${t.color}`,
           borderRadius: 999, padding: '2px 10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
         }}>{t.label}</span>
-      )}
-      {c.wada_status && c.wada_status !== 'not_listed' && (
-        <span style={{
-          fontSize: 11, color: '#E53E3E', border: '1px solid #E53E3E',
-          borderRadius: 999, padding: '2px 10px', fontWeight: 700,
-        }}>{wadaLabel(c.wada_status)}</span>
       )}
       {c.category && (
         <span style={{ fontSize: 12, color: '#A8B4C0' }}>{c.category}</span>
@@ -226,25 +220,7 @@ export default function InstantAnswerCard({ payload }: { payload: InstantAnswerP
         </>
       )}
 
-      {payload.kind === 'wada' && payload.compound && (
-        <>
-          <CompoundHeader c={payload.compound} />
-          <p style={{ color: '#D0DAE4', lineHeight: 1.65, margin: 0, fontSize: 15 }}>
-            {payload.compound.display_name} Is Currently {wadaLabel(payload.compound.wada_status ?? 'not_listed')}.
-          </p>
-          {payload.wada_history && payload.wada_history.length > 0 && (
-            <ul style={{ marginTop: 10, paddingLeft: 18, color: '#A8B4C0', fontSize: 13, lineHeight: 1.7 }}>
-              {payload.wada_history.map((h) => (
-                <li key={`${h.year}-${h.status}`}>
-                  <strong style={{ color: '#FFFFFF' }}>{h.year}: </strong>
-                  {wadaLabel(h.status)}
-                  {h.note ? ` -- ${h.note}` : ''}
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
+
 
       {payload.kind === 'half_life' && payload.compound && (
         <>
@@ -335,12 +311,6 @@ export default function InstantAnswerCard({ payload }: { payload: InstantAnswerP
                     <td key={`tier-${c.slug}`} style={td}>
                       {c.evidence_tier ? evidenceTier(c.evidence_tier).label : '-'}
                     </td>
-                  ))}
-                </tr>
-                <tr>
-                  <td style={tdLabel}>WADA</td>
-                  {payload.compounds.slice(0, 2).map((c) => (
-                    <td key={`wada-${c.slug}`} style={td}>{wadaLabel(c.wada_status ?? 'not_listed')}</td>
                   ))}
                 </tr>
                 <tr>

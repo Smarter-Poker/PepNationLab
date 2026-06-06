@@ -10,7 +10,7 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import { evidenceTier } from '@/lib/compounds';
 import InstantAnswerCard, { type InstantAnswerPayload } from './InstantAnswerCard';
 
 export interface SearchHit {
@@ -183,12 +183,6 @@ export default function SearchResults({
                       padding: '2px 8px', borderRadius: 999, fontWeight: 700,
                       textTransform: 'uppercase', letterSpacing: '0.05em',
                     }}>{t.label}</span>
-                  )}
-                  {hit.wada_status && (hit.wada_status === 'prohibited' || hit.wada_status === 'prohibited_males') && (
-                    <span style={{
-                      fontSize: 10, color: '#E53E3E', border: '1px solid #E53E3E',
-                      padding: '2px 8px', borderRadius: 999, fontWeight: 700,
-                    }}>{wadaLabel(hit.wada_status)}</span>
                   )}
                   {hit.category && <span style={{ fontSize: 12, color: '#A8B4C0' }}>{hit.category}</span>}
                 </div>

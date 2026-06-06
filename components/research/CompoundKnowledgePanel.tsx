@@ -8,7 +8,7 @@
 
 import Link from 'next/link';
 import type { Compound } from '@/lib/compounds';
-import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import { evidenceTier } from '@/lib/compounds';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
 
@@ -56,12 +56,6 @@ export default function CompoundKnowledgePanel({
           padding: '2px 10px', borderRadius: 999, fontWeight: 700,
           textTransform: 'uppercase', letterSpacing: '0.05em',
         }}>{tier.label}</span>
-        {compound.wada_status && compound.wada_status !== 'not_listed' && (
-          <span style={{
-            fontSize: 10, color: '#E53E3E', border: '1px solid #E53E3E',
-            padding: '2px 10px', borderRadius: 999, fontWeight: 700,
-          }}>{wadaLabel(compound.wada_status)}</span>
-        )}
         {compound.category && (
           <span style={{ fontSize: 11, color: '#A8B4C0' }}>{compound.category}</span>
         )}

@@ -611,7 +611,7 @@ function ReconstitutionCalc({
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: 10 }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Vial Mass (Mg)</span>
+              <span style={{ fontSize: '0.68rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em', minHeight: '28px', display: 'flex', alignItems: 'flex-end' }}>Vial Mass (Mg)</span>
               <input
                 type="number"
                 inputMode="decimal"
@@ -627,7 +627,7 @@ function ReconstitutionCalc({
               />
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Target Conc. (Mg/Ml)</span>
+              <span style={{ fontSize: '0.68rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em', minHeight: '28px', display: 'flex', alignItems: 'flex-end' }}>Target Conc. (Mg/Ml)</span>
               <input
                 type="number"
                 inputMode="decimal"
@@ -643,7 +643,7 @@ function ReconstitutionCalc({
               />
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Desired Mass (Mg)</span>
+              <span style={{ fontSize: '0.68rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em', minHeight: '28px', display: 'flex', alignItems: 'flex-end' }}>Desired Mass (Mg)</span>
               <input
                 type="number"
                 inputMode="decimal"
