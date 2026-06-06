@@ -1241,15 +1241,15 @@ export default function StorefrontCompareDrawer({
                           {getChoiceBadge(idx)}
                         </div>
                         <AnimatedScoreRingDrawer score={score} color={color} />
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, paddingTop: 6, borderTop: '2px solid rgba(155, 163, 174, 0.4)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4, paddingTop: 6, borderTop: '2px solid rgba(155, 163, 174, 0.4)' }}>
                           {p.imageUrl && (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={p.imageUrl} alt={p.productName} width={108} height={108} style={{ borderRadius: 6, objectFit: 'cover' }} />
                           )}
                           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                            <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--white)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--white)', wordBreak: 'break-word' }}>{p.productName}</div>
                             {p.pricePerVialDollars != null && (
-                              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#68D391' }}>
+                              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#68D391', marginTop: 2 }}>
                                 ${Number(p.pricePerVialDollars).toFixed(2)} <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>/ vial</span>
                               </div>
                             )}
@@ -1329,7 +1329,7 @@ export default function StorefrontCompareDrawer({
                         {pc?.cons.map((con, i) => <div key={`con-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><ThumbsDown size={11} color="#FC8181" style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{con}</span></div>)}
                       </div>
                       <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: '2px solid rgba(155, 163, 174, 0.4)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
                           {p.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={p.imageUrl} alt={p.productName} width={84} height={84} style={{ borderRadius: 6, objectFit: 'cover' }} />
@@ -1337,9 +1337,9 @@ export default function StorefrontCompareDrawer({
                             <div style={{ width: 84, height: 84, borderRadius: 6, background: `${primaryColor}20` }} />
                           )}
                           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#FFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#FFF', wordBreak: 'break-word' }}>{p.productName}</div>
                             {p.pricePerVialDollars != null && (
-                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#68D391' }}>
+                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#68D391', marginTop: 2 }}>
                                 ${Number(p.pricePerVialDollars).toFixed(2)}
                               </div>
                             )}
@@ -1416,7 +1416,7 @@ export default function StorefrontCompareDrawer({
                         {c?.sources?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div><div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{c.sources.slice(0, 3).map((src, si) => <a key={si} href={src.startsWith('http') ? src : undefined} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.68rem', color: '#FFF', opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>{src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si+1}</span> : src}</a>)}</div></div> : null}
                       </div>
                       <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: '2px solid rgba(155, 163, 174, 0.4)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
                           {p.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={p.imageUrl} alt={p.productName} width={84} height={84} style={{ borderRadius: 6, objectFit: 'cover' }} />
@@ -1424,9 +1424,9 @@ export default function StorefrontCompareDrawer({
                             <div style={{ width: 84, height: 84, borderRadius: 6, background: `${primaryColor}20` }} />
                           )}
                           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#FFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#FFF', wordBreak: 'break-word' }}>{p.productName}</div>
                             {p.pricePerVialDollars != null && (
-                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#68D391' }}>
+                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#68D391', marginTop: 2 }}>
                                 ${Number(p.pricePerVialDollars).toFixed(2)}
                               </div>
                             )}
@@ -1500,7 +1500,7 @@ export default function StorefrontCompareDrawer({
                         {c?.coa_url && <a href={c.coa_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: color === primaryColor ? '#FFF' : color, textDecoration: 'none', fontWeight: 700 }}><BookOpen size={11} /> View COA</a>}
                       </div>
                       <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: '2px solid rgba(155, 163, 174, 0.4)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
                           {p.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={p.imageUrl} alt={p.productName} width={84} height={84} style={{ borderRadius: 6, objectFit: 'cover' }} />
@@ -1508,9 +1508,9 @@ export default function StorefrontCompareDrawer({
                             <div style={{ width: 84, height: 84, borderRadius: 6, background: `${primaryColor}20` }} />
                           )}
                           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#FFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#FFF', wordBreak: 'break-word' }}>{p.productName}</div>
                             {p.pricePerVialDollars != null && (
-                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#68D391' }}>
+                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#68D391', marginTop: 2 }}>
                                 ${Number(p.pricePerVialDollars).toFixed(2)}
                               </div>
                             )}
@@ -1560,7 +1560,7 @@ export default function StorefrontCompareDrawer({
                               <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{v.reason}</div>
                             </div>
                             <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: `2px solid rgba(155, 163, 174, 0.4)` }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
                                 {v.item.p.imageUrl ? (
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img src={v.item.p.imageUrl} alt={v.item.p.productName} width={84} height={84} style={{ borderRadius: 6, objectFit: 'cover' }} />
@@ -1568,9 +1568,9 @@ export default function StorefrontCompareDrawer({
                                   <div style={{ width: 84, height: 84, borderRadius: 6, background: `${v.color}20` }} />
                                 )}
                                 <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#FFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.item.p.productName}</div>
+                                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#FFF', wordBreak: 'break-word' }}>{v.item.p.productName}</div>
                                   {v.item.p.pricePerVialDollars != null && (
-                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#68D391' }}>
+                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#68D391', marginTop: 2 }}>
                                       ${Number(v.item.p.pricePerVialDollars).toFixed(2)}
                                     </div>
                                   )}
@@ -1639,13 +1639,13 @@ export default function StorefrontCompareDrawer({
                                 </div>
                               </div>
 
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
                                 {p.imageUrl && (
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img src={p.imageUrl} alt={p.productName} width={120} height={120} style={{ borderRadius: 8, objectFit: 'cover' }} />
                                 )}
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                  <div style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--white)' }}>{p.productName}</div>
+                                  <div style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--white)', wordBreak: 'break-word' }}>{p.productName}</div>
                                 </div>
                               </div>
                             </div>
@@ -1783,15 +1783,15 @@ export default function StorefrontCompareDrawer({
                       {displayedPinned.map((p) => (
                         <td key={p.productName} style={{ ...cellStyle, borderBottom: 'none', borderLeft: '2px solid rgba(142, 152, 167, 0.75)' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                               {p.imageUrl && (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={p.imageUrl} alt={p.productName} width={96} height={96} style={{ borderRadius: 6, objectFit: 'cover' }} />
                               )}
                               <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--white)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</div>
+                                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--white)', wordBreak: 'break-word' }}>{p.productName}</div>
                                 {p.pricePerVialDollars != null && (
-                                  <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#68D391' }}>
+                                  <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#68D391', marginTop: 2 }}>
                                     ${Number(p.pricePerVialDollars).toFixed(2)}
                                   </div>
                                 )}
