@@ -70,7 +70,7 @@ const groupCellStyle: React.CSSProperties = {
   cursor: 'pointer',
   userSelect: 'none',
 };
-const colors = ['#00C4BC', '#FF6B6B', '#FCA311', '#9F7AEA'];
+const colors = ['#00C4BC', '#FF6B6B', '#8e98a7', '#9F7AEA'];
 
 function txt(v: unknown): string {
   const s = (v ?? '').toString().trim();
@@ -1895,7 +1895,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
     ctx.fillStyle = '#00C4BC'; ctx.font = 'bold 13px system-ui,sans-serif'; ctx.fillText('PEP NATION LAB', 24, 32);
     ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.font = 'bold 20px system-ui,sans-serif'; ctx.fillText('Compound Comparison', 24, 58);
     ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(24, 68); ctx.lineTo(W - 24, 68); ctx.stroke();
-    const cColors = ['#00C4BC', '#FF6B6B', '#FCA311', '#9F7AEA'];
+    const cColors = ['#00C4BC', '#FF6B6B', '#8e98a7', '#9F7AEA'];
     selected.forEach((c, i) => {
       const y = 80 + i * 80; const sc = scores[i]; const col = cColors[i % cColors.length]; const isTop = c.slug === topPickSlug;
       ctx.fillStyle = col + '1A';

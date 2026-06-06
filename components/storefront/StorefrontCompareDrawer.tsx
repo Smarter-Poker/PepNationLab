@@ -979,7 +979,7 @@ export default function StorefrontCompareDrawer({
     return hlText;
   }, [sortedPinnedItems, compoundsBySlug]);
 
-  const colors = [primaryColor, '#F6AD55', '#68D391', '#FC8181'];
+  const colors = [primaryColor, '#8e98a7', '#68D391', '#FC8181'];
 
   const activeSynergiesModal = useMemo(() => {
     const matched = KNOWN_SYNERGIES.filter(syn =>
@@ -1373,52 +1373,58 @@ export default function StorefrontCompareDrawer({
 
               {/* Tab navigation */}
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, width: '100%' }}>
-                <div style={{ display: 'flex', padding: '3px', borderRadius: '9999px', background: 'linear-gradient(180deg, #d8d8d8 0%, #808080 35%, #505050 50%, #707070 65%, #c0c0c0 100%)', boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255,255,255,0.4)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 8px', borderRadius: '9999px', background: '#0a0d10', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.8)', overflowX: 'auto', maxWidth: '100%', scrollbarWidth: 'none' }}>
-                    {([
-                      ['matrix', 'Matrix', <MatrixIcon key="matrix" />],
-                      ['proscons', 'Pros & Cons', <ProsConsIcon key="proscons" />],
-                      ['brief', 'Analyst Brief', <BriefIcon key="brief" />],
-                      ['mechanism', 'Mechanism', <MechanismIcon key="mechanism" />],
-                      ['protocol', 'Protocol', <ProtocolIcon key="protocol" />],
-                      ['verdict', 'Verdict', <VerdictIcon key="verdict" />],
-                    ] as const).map(([id, label, icon]) => (
-                      <button key={id} type="button" onClick={() => setMatrixTab(id)}
+                <div style={{ position: 'relative', width: '100%', maxWidth: '993px', aspectRatio: '993 / 148', userSelect: 'none' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img 
+                    src="/images/compare-pill-bar.png" 
+                    alt="Compare Section Tabs" 
+                    style={{ width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }} 
+                  />
+                  {([
+                    ['matrix', 'Matrix', '2.5%'],
+                    ['proscons', 'Pros & Cons', '18.5%'],
+                    ['brief', 'Analyst Brief', '34.5%'],
+                    ['mechanism', 'Mechanism', '50.5%'],
+                    ['protocol', 'Protocol', '66.5%'],
+                    ['verdict', 'Verdict', '82.5%'],
+                  ] as const).map(([id, label, leftOffset]) => {
+                    const isActive = matrixTab === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setMatrixTab(id)}
+                        title={label}
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '8px 14px',
-                          borderRadius: '9999px',
-                          fontWeight: 700,
-                          fontSize: '0.78rem',
+                          position: 'absolute',
+                          top: '13.5%',
+                          height: '73%',
+                          left: leftOffset,
+                          width: '15.5%',
+                          border: isActive ? '1.5px solid #00C4BC' : '1.5px solid transparent',
+                          borderRadius: '8px',
+                          background: 'transparent',
                           cursor: 'pointer',
-                          whiteSpace: 'nowrap',
-                          border: '1px solid transparent',
+                          outline: 'none',
                           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                          background: matrixTab === id ? 'linear-gradient(180deg, #1f2730 0%, #0d1117 100%)' : 'transparent',
-                          borderColor: matrixTab === id ? '#00C4BC' : 'transparent',
-                          color: matrixTab === id ? '#FFF' : 'rgba(255,255,255,0.6)',
-                          boxShadow: matrixTab === id ? '0 0 10px rgba(0, 196, 188, 0.3), inset 0 1px 0 rgba(255,255,255,0.08)' : 'none',
+                          boxShadow: isActive ? '0 0 12px rgba(0, 196, 188, 0.5), inset 0 0 8px rgba(0, 196, 188, 0.2)' : 'none',
+                          zIndex: 10,
                         }}
                         onMouseOver={(e) => {
-                          if (matrixTab !== id) {
-                            e.currentTarget.style.color = '#FFF';
-                            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                          if (!isActive) {
+                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)';
+                            e.currentTarget.style.boxShadow = '0 0 8px rgba(255, 255, 255, 0.2)';
                           }
                         }}
                         onMouseOut={(e) => {
-                          if (matrixTab !== id) {
-                            e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
-                            e.currentTarget.style.background = 'transparent';
+                          if (!isActive) {
+                            e.currentTarget.style.borderColor = 'transparent';
+                            e.currentTarget.style.boxShadow = 'none';
                           }
                         }}
-                      >
-                        {icon}
-                        <span>{label}</span>
-                      </button>
-                    ))}
-                  </div>
+                      />
+                    );
+                  })}
                 </div>
               </div>
 
