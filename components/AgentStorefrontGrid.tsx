@@ -1471,19 +1471,17 @@ export default function AgentStorefrontGrid({
               reasonStr.startsWith('Did you mean')
             );
             if (isSemanticReason && maxTokenScore >= 40) {
-              // Build a user-friendly label: "[typed keyword] → [field value]"
+              // Build a user-friendly label focusing on the extracted keyword
               if (reasonStr.startsWith('Did you mean')) {
                 // Keep typo message as-is - it's already user-facing
                 primaryReason = reasonStr;
               } else {
-                // Strip the field prefix ("Studied For: ", "Research Area: ", etc.)
-                // and prepend the user's token so it reads like:
-                //   "energy → Mitochondrial Function And Energy Production"
-                const fieldValue = reasonStr.replace(/^(Studied For|Research Area|Also Known As|Compound Class|Target):\s*/i, '');
-                // Truncate field value to first 40 chars to keep the tag compact
-                const short = fieldValue.length > 44 ? fieldValue.slice(0, 42) + '…' : fieldValue;
-                primaryReason = `${rawToken} → ${short}`;
+                // Instead of showing confusing DB field values like "Cardiovascular",
+                // we explicitly show the user that our smart-search isolated their key intent.
+                primaryReason = `Smart Match: "${rawToken}"`;
               }
+            } else if (maxTokenScore >= 40) {
+              primaryReason = tokenReason as string;
             }
           }
         }
