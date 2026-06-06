@@ -1006,9 +1006,12 @@ export default function StorefrontCompareDrawer({
             margin: '0 auto',
             maxWidth: 980,
             pointerEvents: 'auto',
-            background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)',
-            border: `2px solid ${primaryColor}55`,
-            borderBottom: 'none',
+            backgroundImage: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%), linear-gradient(135deg, #5a626a 0%, #aab2b9 25%, #eef3f7 50%, #8c949c 75%, #4a525a 100%)',
+            backgroundOrigin: 'border-box',
+            backgroundClip: 'padding-box, border-box',
+            borderWidth: '4px 4px 0 4px',
+            borderStyle: 'solid',
+            borderColor: 'transparent',
             borderRadius: '16px 16px 0 0',
             boxShadow: '0 -10px 32px rgba(0,0,0,0.55)',
             overflow: 'hidden',
@@ -1017,8 +1020,8 @@ export default function StorefrontCompareDrawer({
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '10px 14px',
-            background: `linear-gradient(90deg, ${primaryColor}25, transparent)`,
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            background: '#000000',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
             flexWrap: 'wrap',
           }}>
             <div style={{
