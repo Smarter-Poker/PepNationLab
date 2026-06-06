@@ -18,7 +18,8 @@ import { evidenceTier, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
 import { toast } from 'sonner';
-import { writeCatalogCache, isCatalogCacheFresh, readCatalogCache, CATALOG_TTL_MS } from '@/lib/storefront-cache';
+import { writeCatalogCache, isCatalogCacheFresh, readCatalogCache, CATALOG_TTL_MS, evictCatalogCache } from '@/lib/storefront-cache';
+import { createClient } from '@/lib/supabase/client';
 
 interface ProductItem {
   id: string;
@@ -274,10 +275,11 @@ const getEditDistance = (a: string, b: string) => {
 /**
  * Background catalog cache refresher — stale-while-revalidate.
  *
- * Fires on mount and then every CATALOG_TTL_MS / 2 while the tab is open.
- * Writes fresh product + compound data to localStorage so that the NEXT
- * visit (or next soft-navigation back to this route) can render instantly
- * from the stored payload without waiting for SSR.
+ * 1. Fires on mount (checks TTL, skips if still fresh).
+ * 2. Refreshes every CATALOG_TTL_MS / 2 to keep the cache warm.
+ * 3. Subscribes to Supabase Realtime on the agent_products table so that
+ *    any admin update (price change, visibility toggle, new product) evicts
+ *    the cache and re-fetches within seconds — not the next TTL expiry.
  *
  * Does NOT update live React state — the SSR-hydrated props are always
  * authoritative for the current render. The cache only benefits future visits.
@@ -318,10 +320,39 @@ function useCatalogRefresh(agentSlug: string) {
       CATALOG_TTL_MS / 2
     );
 
+    // ── Realtime: evict + re-fetch the moment any product is updated ────────
+    // Listens for INSERT/UPDATE/DELETE on agent_products (any agent) — the
+    // server-side catalog API is what's actually scoped per agent_id. This
+    // client-side listener just triggers a forced refresh when anything changes,
+    // which is cheap (the API response is served from Vercel edge cache).
+    let realtimeChannel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null;
+    try {
+      const supabase = createClient();
+      realtimeChannel = supabase
+        .channel(`catalog-invalidate-${agentSlug}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // INSERT, UPDATE, DELETE
+            schema: 'public',
+            table: 'agent_products',
+          },
+          () => {
+            // Evict stale cache and immediately fetch fresh data
+            evictCatalogCache(agentSlug);
+            doRefresh(true);
+          }
+        )
+        .subscribe();
+    } catch {
+      // Realtime unavailable — gracefully degrade to interval-only refresh
+    }
+
     return () => {
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
+      realtimeChannel?.unsubscribe();
     };
-  }, [doRefresh]);
+  }, [doRefresh, agentSlug]);
 }
 
 export default function AgentStorefrontGrid({
@@ -2344,6 +2375,16 @@ export default function AgentStorefrontGrid({
               key={group.name} className="sf-product-card-nickel hover-lift stagger-fade-in" variants={itemVariants}
               style={{
                 cursor: 'pointer'
+              }}
+              onMouseEnter={() => {
+                // Prefetch recommendations for this product on hover so data
+                // is already cached by the time the user clicks to open the detail.
+                const seedId = activeVariant.product_id;
+                if (seedId) {
+                  router.prefetch(
+                    `/api/storefront/recommendations?product_id=${encodeURIComponent(seedId)}&agent_slug=${encodeURIComponent(agentSlug)}&limit=8`
+                  );
+                }
               }}
               onClick={() => {
                 setDetailProduct(group);

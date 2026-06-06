@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-
+import { evictAllCatalogCaches } from '@/lib/storefront-cache';
 
 interface Props {
   agentSlug: string;
@@ -72,12 +72,14 @@ export default function AgentStorefrontLogin({
 
       if (!verifyRes.ok && verifyRes.status !== 200) {
         await supabase.auth.signOut();
+        evictAllCatalogCaches();
         throw new Error('Access verification failed. Please try again.');
       }
 
       const verifyData = await verifyRes.json();
       if (!verifyData.allowed) {
         await supabase.auth.signOut();
+        evictAllCatalogCaches();
         throw new Error(verifyData.reason || 'This Account Does Not Belong To This Store.');
       }
 
