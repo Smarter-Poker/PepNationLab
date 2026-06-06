@@ -39,7 +39,7 @@ const NL = 'Not Listed';
 // ─── Style constants ─────────────────────────────────────────────────────────
 const cellStyle: React.CSSProperties = {
   padding: 'var(--space-3, 12px)',
-  borderBottom: '1px solid rgba(168,180,192,0.18)',
+  borderBottom: '2.5px solid rgba(142, 152, 167, 0.55)',
   verticalAlign: 'top',
   fontSize: '0.88rem',
   color: 'var(--white, #FFFFFF)',
@@ -53,13 +53,13 @@ const labelCellStyle: React.CSSProperties = {
   left: 0,
   zIndex: 10,
   background: '#162230',
-  boxShadow: 'inset -1px 0 0 rgba(168,180,192,0.18)',
+  boxShadow: 'inset -2.5px 0 0 rgba(142, 152, 167, 0.75)',
 };
 const groupCellStyle: React.CSSProperties = {
   padding: 'var(--space-3, 12px)',
   background: 'linear-gradient(rgba(0,196,188,0.1),rgba(0,196,188,0.1)),#162230',
-  borderTop: '1px solid rgba(0,196,188,0.3)',
-  borderBottom: '1px solid rgba(0,196,188,0.3)',
+  borderTop: '2.5px solid rgba(142, 152, 167, 0.75)',
+  borderBottom: '2.5px solid rgba(142, 152, 167, 0.75)',
   color: '#FFF',
   fontWeight: 800,
   fontSize: '0.72rem',
@@ -77,9 +77,9 @@ function txt(v: unknown): string {
 
 function getChoiceBadge(idx: number): React.ReactNode {
   const trophySrcs = [
-    '/images/badges/trophy_1st.png',
-    '/images/badges/trophy_2nd.png',
-    '/images/badges/trophy_3rd.png',
+    '/images/badges/trophy_1st_choice.png',
+    '/images/badges/trophy_2nd_choice.png',
+    '/images/badges/trophy_3rd_choice.png',
     '/images/badges/trophy_4th.png'
   ];
   const src = trophySrcs[idx] || trophySrcs[trophySrcs.length - 1];
@@ -91,11 +91,13 @@ function getChoiceBadge(idx: number): React.ReactNode {
       src={src} 
       alt={alt} 
       style={{ 
-        height: '28px', 
+        height: '42px', 
         width: 'auto', 
+        maxWidth: 'none',
         objectFit: 'contain',
         display: 'inline-block',
-        verticalAlign: 'middle'
+        verticalAlign: 'middle',
+        flexShrink: 0
       }} 
     />
   );
@@ -1258,11 +1260,11 @@ function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
 
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+      <table className="efficacy-table" style={{ fontSize: '0.8rem' }}>
         <thead>
           <tr>
-            <th style={{ textAlign: 'left', padding: '6px 10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, fontSize: '0.7rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Domain</th>
-            {selected.map((c, i) => <th key={c.slug} style={{ textAlign: 'center', padding: '6px 10px', color: colors[i % colors.length], fontWeight: 700, fontSize: '0.7rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>{c.display_name}</th>)}
+            <th style={{ textAlign: 'left', padding: '6px 10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, fontSize: '0.7rem', borderBottom: '2.5px solid rgba(142, 152, 167, 0.55)' }}>Domain</th>
+            {selected.map((c, i) => <th key={c.slug} style={{ textAlign: 'center', padding: '6px 10px', color: colors[i % colors.length], fontWeight: 700, fontSize: '0.7rem', borderBottom: '2.5px solid rgba(142, 152, 167, 0.55)' }}>{c.display_name}</th>)}
           </tr>
         </thead>
         <tbody>
@@ -1297,7 +1299,7 @@ function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
 function RecommendationCard({ rec, label, icon, color }: { rec: { compound: Compound; score: CompoundScore; reason: string; secondaryLabel: string }; label: string; icon: React.ReactNode; color: string }) {
   const textColor = (color === '#00C4BC' || color === '#FC8181') ? '#FFF' : color;
   return (
-    <div style={{ padding: '12px 14px', borderRadius: 10, background: `${color}08`, border: `1px solid ${color}25`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div style={{ padding: '12px 14px', borderRadius: 10, border: '2px solid transparent', background: `linear-gradient(${color}0c, ${color}0c) padding-box, linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) border-box`, display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <div style={{ color, display: 'flex' }}>{icon}</div>
         <span style={{ fontSize: '0.67rem', fontWeight: 800, color: textColor, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
@@ -1326,7 +1328,7 @@ function MechanismTab({ selected }: { selected: Compound[] }) {
         {selected.map((c, i) => {
           const color = colors[i % colors.length];
           return (
-            <div key={c.slug} style={{ padding: 16, borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: `1px solid rgba(255,255,255,0.08)` }}>
+            <div key={c.slug} className="inner-card-nickel" style={{ padding: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
                 <span style={{ fontWeight: 900, fontSize: '0.95rem', color: 'var(--white)' }}>{c.display_name}</span>
@@ -1419,7 +1421,7 @@ function ProtocolTab({ selected }: { selected: Compound[] }) {
           const hlH = parseHalfLifeHours(c.half_life);
           const dosesPerWeek = hlH > 0 ? Math.max(1, Math.round(168 / (hlH * 2))) : null;
           return (
-            <div key={c.slug} style={{ padding: 16, borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: `1px solid rgba(255,255,255,0.08)` }}>
+            <div key={c.slug} className="inner-card-nickel" style={{ padding: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
                 <span style={{ fontWeight: 900, fontSize: '0.95rem', color: 'var(--white)' }}>{c.display_name}</span>
@@ -1445,7 +1447,7 @@ function ProtocolTab({ selected }: { selected: Compound[] }) {
                 </div>
                 {/* Dosing guidance */}
                 {(c.half_life || c.typical_frequency) && (
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="inner-card-nickel" style={{ padding: '10px 12px', borderRadius: 8 }}>
                     <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Administration</div>
                     {c.half_life && <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}><Clock size={10} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Half-life: <strong style={{ color }}>{c.half_life}</strong></div>}
                     {c.typical_frequency && <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}><Zap size={10} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Typical frequency: <strong style={{ color: 'rgba(255,255,255,0.9)' }}>{c.typical_frequency}</strong></div>}
@@ -1813,13 +1815,24 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
       {/* Search bar */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print { body { background: #fff !important; color: #000 !important; } .no-print { display: none !important; } td, th { color: #000 !important; background: #fff !important; border-bottom: 1px solid #ddd !important; } }
-        .ct-tab { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.45); border-radius: 8px; padding: 8px 14px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .ct-tab { background: rgba(255,255,255,0.03) !important; border: 2px solid #5a626c !important; color: rgba(255,255,255,0.5) !important; border-radius: 8px; padding: 8px 14px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .ct-tab:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); }
-        .ct-tab.active { background: rgba(0,196,188,0.15); border-color: rgba(0,196,188,0.5); color: #FFF; }
+        .ct-tab:hover { background: rgba(255,255,255,0.08) !important; border-color: #aab2bd !important; color: rgba(255,255,255,0.9) !important; }
+        .ct-tab.active { background: rgba(0,196,188,0.1) !important; border: 2px solid transparent !important; background-image: linear-gradient(rgba(0,196,188,0.1), rgba(0,196,188,0.1)), linear-gradient(135deg, #4f5660 0%, #aab2bd 20%, #f5f7fa 40%, #7e8794 60%, #cbd2db 80%, #4f5660 100%) !important; background-origin: border-box !important; background-clip: padding-box, border-box !important; color: #FFF !important; box-shadow: 0 4px 12px rgba(0, 196, 188, 0.15) !important; }
         .ct-row-hover:hover td { background: rgba(255,255,255,0.015) !important; }
-        .popular-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 4; }
-        .popular-card:hover { background: rgba(0,196,188,0.08); border-color: rgba(0,196,188,0.3); transform: translateY(-1px); }
+        .popular-card { background: rgba(255,255,255,0.02) !important; border: 2px solid transparent !important; background-image: linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) !important; background-origin: border-box !important; background-clip: padding-box, border-box !important; border-radius: 12px !important; padding: 12px 14px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 4px; }
+        .popular-card:hover { background-image: linear-gradient(rgba(0,196,188,0.08), rgba(0,196,188,0.08)), linear-gradient(135deg, #aab2bd 0%, #f5f7fa 50%, #7e8794 100%) !important; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
+        .glass-panel { background: rgba(15, 25, 35, 0.75) !important; border: 3px solid transparent !important; background-image: linear-gradient(rgba(15, 25, 35, 0.75), rgba(15, 25, 35, 0.75)), linear-gradient(135deg, #4f5660 0%, #aab2bd 20%, #f5f7fa 40%, #7e8794 60%, #cbd2db 80%, #4f5660 100%) !important; background-origin: border-box !important; background-clip: padding-box, border-box !important; box-shadow: 0 16px 40px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08) !important; backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important; }
+        .inner-card-nickel { border: 2px solid transparent !important; background: linear-gradient(rgba(22, 34, 48, 0.35), rgba(22, 34, 48, 0.35)) padding-box, linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) border-box !important; border-radius: 12px !important; box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important; }
+        .action-btn-nickel { background: rgba(255,255,255,0.04) !important; border: 2px solid #7d8690 !important; color: #FFF !important; border-radius: 8px !important; padding: 7px 12px !important; font-size: 0.78rem !important; font-weight: 700 !important; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.2s; }
+        .action-btn-nickel:hover { background: rgba(255,255,255,0.08) !important; border-color: #f0f2f5 !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important; }
+        .search-input-nickel { width: 100%; background: #162230 !important; color: #fff !important; border: 2px solid #5a626c !important; border-radius: 8px !important; padding: 12px 44px 12px 42px !important; font-size: 0.95rem !important; outline: none !important; transition: all 0.2s; }
+        .search-input-nickel:focus { border-color: #aab2bd !important; box-shadow: 0 0 10px rgba(170, 178, 189, 0.2) !important; }
+        .brief-paragraph { border-left: 3.5px solid transparent !important; border-image: linear-gradient(to bottom, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) 1 !important; padding-left: 14px; margin: 0; color: rgba(255,255,255,0.78); font-size: 0.88rem; line-height: 1.75; }
+        .matrix-table { width: 100%; border-collapse: collapse; }
+        .matrix-table th, .matrix-table td { border-bottom: 2px solid rgba(142, 152, 167, 0.55) !important; }
+        .efficacy-table { width: 100%; border-collapse: collapse; }
+        .efficacy-table th, .efficacy-table td { border-bottom: 2px solid rgba(142, 152, 167, 0.55) !important; }
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeInDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.6; transform:scale(1.15); } }
@@ -1834,7 +1847,8 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
             onChange={e => { setSearchQuery(e.target.value); setIsSearchOpen(true); }}
             onFocus={() => setIsSearchOpen(true)}
             disabled={!canAdd}
-            style={{ width: '100%', background: '#162230', color: '#fff', border: '1px solid rgba(168,180,192,0.2)', borderRadius: 8, padding: '12px 44px 12px 42px', fontSize: '0.95rem', outline: 'none', opacity: canAdd ? 1 : 0.5 }}
+            className="search-input-nickel"
+            style={{ opacity: canAdd ? 1 : 0.5 }}
           />
           {/* Feature 12: Voice search mic button */}
           <button
@@ -1885,10 +1899,10 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
               <input type="checkbox" checked={hideIdentical} onChange={e => setHideIdentical(e.target.checked)} style={{ accentColor: '#00C4BC' }} />
               Hide Identical Attributes
             </label>
-            <button type="button" onClick={handleExportCSV} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 7, padding: '7px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}><Download size={13} /> CSV</button>
-            <button type="button" onClick={handleExportJSON} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 7, padding: '7px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}><Download size={13} /> JSON</button>
-            <button type="button" onClick={handleShare} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 7, padding: '7px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>{copied ? <Check size={13} color="#00C4BC" /> : <Share2 size={13} />} {copied ? 'Copied!' : 'Share'}</button>
-            <button type="button" onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 7, padding: '7px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}><Printer size={13} /> Print</button>
+            <button type="button" onClick={handleExportCSV} className="action-btn-nickel"><Download size={13} /> CSV</button>
+            <button type="button" onClick={handleExportJSON} className="action-btn-nickel"><Download size={13} /> JSON</button>
+            <button type="button" onClick={handleShare} className="action-btn-nickel">{copied ? <Check size={13} color="#00C4BC" /> : <Share2 size={13} />} {copied ? 'Copied!' : 'Share'}</button>
+            <button type="button" onClick={() => window.print()} className="action-btn-nickel"><Printer size={13} /> Print</button>
           </div>
         )}
         {selected.length > 0 && <button type="button" onClick={() => setSelectedSlugs([])} style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', color: '#F08A8A', borderRadius: 7, padding: '7px 14px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>Clear All</button>}
@@ -1896,13 +1910,10 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
 
       {/* Synergy / Conflict Alerts */}
       {combinedAlerts.length > 0 && (
-        <div style={{
-          background: 'rgba(20, 25, 30, 0.6)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+        <div className="glass-panel" style={{
           borderRadius: 12,
           padding: 16,
-          marginBottom: 16,
-          backdropFilter: 'blur(8px)'
+          marginBottom: 16
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <AlertTriangle size={16} color="#FFF" />
@@ -1938,7 +1949,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14, marginBottom: 32 }}>
             {[1, 2, 3].map(num => (
-              <div key={num} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, minHeight: 240, border: '2px dashed rgba(168,180,192,0.15)', borderRadius: 14, background: 'rgba(22,34,48,0.4)' }}>
+              <div key={num} className="inner-card-nickel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, minHeight: 240 }}>
                 <PlusCircle size={44} color="rgba(168,180,192,0.2)" />
                 <div style={{ color: 'rgba(168,180,192,0.6)', fontWeight: 700, fontSize: '1rem' }}>Compound {num}</div>
                 <p style={{ color: 'rgba(168,180,192,0.4)', fontSize: '0.82rem', textAlign: 'center', padding: '0 24px', margin: 0 }}>Search above to select a compound for comparison.</p>
@@ -1953,9 +1964,8 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {compareHistory.map((slugs, i) => (
-                  <button key={i} type="button"
-                    onClick={() => { haptic(30); setSelectedSlugs(slugs.filter(s => compounds.some(c => c.slug === s))); }}
-                    style={{ background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.22)', padding: '6px 12px', color: '#FFF', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
+                  <button key={i} type="button" className="action-btn-nickel"
+                    onClick={() => { haptic(30); setSelectedSlugs(slugs.filter(s => compounds.some(c => c.slug === s))); }}>
                     {slugs.map(s => bySlug.get(s)?.display_name ?? s).join(' vs ')}
                   </button>
                 ))}
@@ -1994,7 +2004,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                 );
               })}
               {isMobile && (
-                <button onClick={handleShareCard} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, flexShrink: 0, color: 'rgba(168,180,192,0.7)', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer' }}>
+                <button onClick={handleShareCard} className="action-btn-nickel" style={{ padding: '4px 10px', flexShrink: 0, fontSize: '0.68rem' }}>
                   <Share2 size={10} /> Share Card
                 </button>
               )}
@@ -2038,7 +2048,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                   const sortedByScore = [...selected].map((x, idx) => ({ c: x, score: scores[idx].total })).sort((a, b) => b.score - a.score);
                   const rankIndex = sortedByScore.findIndex(x => x.c.slug === c.slug);
                   return (
-                    <div key={c.slug} style={{ padding: 14, borderRadius: 12, background: isTop ? 'rgba(0,196,188,0.05)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isTop ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.07)'}` }}>
+                    <div key={c.slug} className="inner-card-nickel" style={{ padding: 14 }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                         {getChoiceBadge(rankIndex)}
                         {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: 22, objectFit: 'contain' }} />}
@@ -2061,7 +2071,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
               {/* Radar Chart or Spark Bars */}
               {radarData.length >= 2 && (
                 isMobile ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12, padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="inner-card-nickel" style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12, padding: '12px 16px' }}>
                     <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800, marginBottom: 4 }}>Profile Strength</div>
                     {selected.map((c, i) => (
                       <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -2103,13 +2113,11 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                   const origIdx = selected.findIndex(x => x.slug === c.slug);
                   const pc = prosCons[origIdx];
                   const color = colors[origIdx % colors.length];
-                  const isTop = c.slug === topPickSlug;
                   return (
-                    <div key={c.slug} style={{ padding: 16, borderRadius: 12, background: isTop ? 'rgba(0,196,188,0.04)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isTop ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.07)'}`, minWidth: isMobile ? 280 : 'auto', scrollSnapAlign: 'center' }}>
+                    <div key={c.slug} className="inner-card-nickel" style={{ padding: 16, minWidth: isMobile ? 280 : 'auto', scrollSnapAlign: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                         <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
                         <span style={{ fontWeight: 900, fontSize: '0.9rem', color: '#fff' }}>{c.display_name}</span>
-                        {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: 22, objectFit: 'contain', marginLeft: 4 }} />}
                         <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color, fontWeight: 800 }}>Score: {scores[origIdx].total}/100</span>
                       </div>
                       <ProsConsCard pc={pc} />
@@ -2130,7 +2138,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {analystBrief.map((para, i) => (
-                  <p key={i} style={{ margin: 0, color: 'rgba(255,255,255,0.78)', fontSize: '0.88rem', lineHeight: 1.75, paddingLeft: 14, borderLeft: '2px solid rgba(0,196,188,0.3)' }}>
+                  <p key={i} className="brief-paragraph">
                     {para}
                   </p>
                 ))}
@@ -2213,7 +2221,9 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                   </div>
                 );
               })()}
-              <EfficacyHeatmap selected={displayedSelected} />
+              <div className="inner-card-nickel" style={{ padding: 12, borderRadius: 10 }}>
+                <EfficacyHeatmap selected={displayedSelected} />
+              </div>
             </div>
           )}
 
@@ -2483,7 +2493,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
               ) : (
                 <div className="glass-panel" style={{ borderRadius: 14, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory' }}>
                   <div style={{ transform: tableZoom !== 1 ? `scale(${tableZoom})` : undefined, transformOrigin: 'top left', transition: 'transform 0.2s ease', width: tableZoom !== 1 ? `${100 / tableZoom}%` : '100%' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? (displayedSelected.length * 160 + 120) : 480, position: 'relative' }}>
+                  <table className="matrix-table" style={{ minWidth: isMobile ? (displayedSelected.length * 160 + 120) : 480, position: 'relative' }}>
                 <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                   <tr>
                     <th style={{ ...labelCellStyle, textAlign: 'left', width: isMobile ? 120 : '22%', background: '#162230', zIndex: 30, fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }} scope="col">
