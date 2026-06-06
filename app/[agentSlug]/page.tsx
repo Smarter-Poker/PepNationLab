@@ -25,37 +25,42 @@ async function AgentStorefrontDataLoader({
 }) {
   const supabase = await createClient();
 
-  const { data: products } = await supabase
-    .from('agent_products')
-    .select(`
-      id,
-      product_id,
-      custom_name,
-      custom_description,
-      custom_image_url,
-      retail_price,
-      is_on_sale,
-      sale_price,
-      products (
-        name,
-        description,
-        image_url,
-        category,
-        backorder_days,
-        unit_size,
-        unit_measure,
-        weight_oz,
-        inventory_count,
-        low_stock_threshold,
-        base_cost,
-        compound_slug
-      )
-    `)
-    .eq('agent_id', agent.id)
-    .eq('is_visible', true)
-    .order('sort_order');
+  // ── Fetch products and auth user in parallel ─────────────────────────────────
+  // Products are scoped to agent.id (from outer query) — safe to start immediately.
+  const [productsResult, { data: { user } }] = await Promise.all([
+    supabase
+      .from('agent_products')
+      .select(`
+        id,
+        product_id,
+        custom_name,
+        custom_description,
+        custom_image_url,
+        retail_price,
+        is_on_sale,
+        sale_price,
+        products (
+          name,
+          description,
+          image_url,
+          category,
+          backorder_days,
+          unit_size,
+          unit_measure,
+          weight_oz,
+          inventory_count,
+          low_stock_threshold,
+          base_cost,
+          compound_slug
+        )
+      `)
+      .eq('agent_id', agent.id)
+      .eq('is_visible', true)
+      .order('sort_order'),
 
-  const { data: { user } } = await supabase.auth.getUser();
+    supabase.auth.getUser(),
+  ]);
+  const products = productsResult.data;
 
   if (!user) {
     return (

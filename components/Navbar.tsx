@@ -12,6 +12,7 @@ import WalletCard from '@/components/WalletCard';
 import { getRoleNavLinks } from '@/components/roleNavLinks';
 import MyQRCodeModal from './MyQRCodeModal';
 import { useMessengerStore } from '@/stores/messengerStore';
+import { evictAllCatalogCaches } from '@/lib/storefront-cache';
 
 function resolveTitle(pathname: string, role: string): string {
   if (pathname === '/')               return 'Pep Nation Lab';
@@ -280,6 +281,9 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    // Clear catalog caches — prevents stale product data for the next user
+    // (especially important on shared / public devices)
+    evictAllCatalogCaches();
     window.location.replace('/');
   };
 
