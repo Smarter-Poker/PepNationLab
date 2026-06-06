@@ -1941,11 +1941,53 @@ export default function AgentStorefrontGrid({
             color: '#FFFFFF',
             fontSize: 'max(14px, 2.2vw)',
             fontWeight: 500,
-            padding: '0 5% 0 calc(4.5% + 30px)',
+            padding: '0 12% 0 calc(4.5% + 30px)',
           }}
         />
 
-        {/* Clear Search Button Removed */}
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery('');
+              setActiveCardIndex(1); // Default to Top 10 when cleared
+            }}
+            style={{
+              position: 'absolute',
+              right: '8.2%',
+              top: '32.65%',
+              transform: 'translateY(-50%)',
+              width: 'max(20px, 2.2vw)',
+              height: 'max(20px, 2.2vw)',
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.12)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 10,
+              fontSize: 'max(10px, 1.1vw)',
+              fontWeight: 800,
+              padding: 0,
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.45)';
+              e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)';
+              e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+            }}
+          >
+            ✕
+          </button>
+        )}
 
         {/* Mapped overlay buttons for the 9 cards at the bottom */}
         {CARD_MAPPINGS.map((card) => {
