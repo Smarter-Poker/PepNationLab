@@ -126,8 +126,8 @@ export default function PinToCompareButton({
     sync();
   }, [compoundSlug, compoundName, evidenceTierKey, productName, imageUrl, pricePerVialDollars, category, sync]);
 
-  const teal = '#00C4BC';
   const isSmall = size === 'sm';
+  const buttonWidth = isSmall ? '120px' : '185px';
 
   if (pinned) {
     return (
@@ -136,24 +136,46 @@ export default function PinToCompareButton({
         onClick={toggle}
         title="Remove from compare"
         style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: isSmall ? 4 : 6,
-          padding: isSmall ? '5px 10px' : '8px 14px',
-          borderRadius: isSmall ? 7 : 9,
-          border: `1px solid ${teal}`,
-          background: `${teal}18`,
-          color: '#FFF',
-          fontSize: isSmall ? '0.72rem' : '0.82rem',
-          fontWeight: 700,
+          background: 'none',
+          border: 'none',
+          padding: 0,
           cursor: 'pointer',
-          whiteSpace: 'nowrap',
-          transition: 'all 0.15s',
+          outline: 'none',
+          position: 'relative',
+          display: 'inline-block',
+          width: buttonWidth,
+          transition: 'transform 0.15s',
         }}
+        onMouseOver={e => e.currentTarget.style.transform = 'scale(1.02)'}
+        onMouseOut={e => e.currentTarget.style.transform = 'none'}
       >
-        <Check size={isSmall ? 11 : 13} />
-        {isSmall ? 'Pinned' : 'Pinned to Compare'}
-        <X size={isSmall ? 9 : 11} style={{ opacity: 0.6 }} />
+        <img
+          src="/images/pin-to-compare-btn.png"
+          alt="Pinned to Compare"
+          style={{
+            width: '100%',
+            height: 'auto',
+            display: 'block',
+            filter: 'drop-shadow(0 0 6px #00C4BC) brightness(1.1)',
+          }}
+        />
+        {/* A small absolute check icon in the top right to clearly signal pinned */}
+        <div style={{
+          position: 'absolute',
+          top: -4,
+          right: -4,
+          background: '#00C4BC',
+          borderRadius: '50%',
+          width: 18,
+          height: 18,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
+          border: '1px solid #FFF',
+        }}>
+          <Check size={10} color="#04221F" strokeWidth={3} />
+        </div>
       </button>
     );
   }
@@ -165,23 +187,28 @@ export default function PinToCompareButton({
       disabled={full}
       title={full ? 'Compare tray is full (max 4)' : `Add ${compoundName} to compare`}
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: isSmall ? 4 : 6,
-        padding: isSmall ? '5px 10px' : '8px 14px',
-        borderRadius: isSmall ? 7 : 9,
-        border: '1px solid rgba(255,255,255,0.12)',
-        background: full ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)',
-        color: full ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.6)',
-        fontSize: isSmall ? '0.72rem' : '0.82rem',
-        fontWeight: 700,
+        background: 'none',
+        border: 'none',
+        padding: 0,
         cursor: full ? 'not-allowed' : 'pointer',
-        whiteSpace: 'nowrap',
-        transition: 'all 0.15s',
+        opacity: full ? 0.4 : 1,
+        outline: 'none',
+        display: 'inline-block',
+        width: buttonWidth,
+        transition: 'transform 0.15s',
       }}
+      onMouseOver={e => { if(!full) e.currentTarget.style.transform = 'scale(1.02)'; }}
+      onMouseOut={e => e.currentTarget.style.transform = 'none'}
     >
-      <GitCompare size={isSmall ? 11 : 13} />
-      {full ? 'Compare Full' : isSmall ? 'Compare' : 'Pin to Compare'}
+      <img
+        src="/images/pin-to-compare-btn.png"
+        alt="Pin to Compare"
+        style={{
+          width: '100%',
+          height: 'auto',
+          display: 'block',
+        }}
+      />
     </button>
   );
 }

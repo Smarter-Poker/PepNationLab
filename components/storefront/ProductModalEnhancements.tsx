@@ -576,29 +576,44 @@ function ReconstitutionCalc({
 
   return (
     <section aria-label="Reconstitution Calculator" style={{
-      borderRadius: 12,
-      border: '1px solid rgba(255,255,255,0.10)',
-      background: 'rgba(255,255,255,0.02)',
       overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
     }}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         style={{
-          width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-          padding: '12px 14px',
-          background: 'transparent', border: 'none', cursor: 'pointer',
-          color: 'var(--white)', fontWeight: 800, fontSize: '0.9rem',
-          textAlign: 'left',
+          width: '100%',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
+          display: 'block',
+          outline: 'none',
+          transition: 'transform 0.15s',
         }}
+        onMouseOver={e => e.currentTarget.style.transform = 'scale(1.01)'}
+        onMouseOut={e => e.currentTarget.style.transform = 'none'}
       >
-        <Beaker size={18} color={primaryColor} aria-hidden="true" />
-        <span style={{ flex: 1 }}>Reconstitution Calculator</span>
-        {open ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
+        <img
+          src="/images/reconstitution-calculator-btn.png"
+          alt="Reconstitution Calculator"
+          style={{ width: '100%', height: 'auto', display: 'block' }}
+        />
       </button>
       {open && (
-        <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{
+          padding: 14,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 12,
+        }}>
           <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
             Research-Use Lab Prep Only. Volume Of Diluent To Add Equals Mass Divided By Target Concentration.
           </div>
