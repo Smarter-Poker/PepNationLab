@@ -3,6 +3,7 @@
 import { useState, useMemo, Fragment } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 import BulkImportModal from "./BulkImportModal";
 
 export interface RawProduct {
@@ -15,6 +16,7 @@ export interface RawProduct {
   sku: string | null;
   unit_size: string | null;
   unit_measure: string | null;
+  inventory_count: number;
 }
 
 interface GroupedProduct {
@@ -31,6 +33,7 @@ interface GroupedProduct {
   variantIds: string[];
   /** All raw variant rows (for expansion) */
   variants: RawProduct[];
+  totalInventory: number;
 }
 
 type SortKey = "name-asc" | "category" | "price-asc" | "price-desc";
@@ -51,6 +54,7 @@ function groupByName(products: RawProduct[]): GroupedProductInternal[] {
       existing.variantCount += 1;
       existing.variantIds.push(p.id);
       existing.variants.push(p);
+      existing.totalInventory += p.inventory_count || 0;
       // keep the lowest base cost as the representative price
       if (Number(p.base_cost) < existing.baseCost) {
         existing.baseCost = Number(p.base_cost);
@@ -69,6 +73,7 @@ function groupByName(products: RawProduct[]): GroupedProductInternal[] {
         variantIds: [p.id],
         variants: [p],
         representativeId: p.id,
+        totalInventory: p.inventory_count || 0,
       });
     }
   }
@@ -102,9 +107,13 @@ export default function ProductCatalogClient({
   /** Optional per-product tier overrides keyed by `${product_id}:${tier_name}`. */
   overrides?: Record<string, number>;
 }) {
+  const searchParams = useSearchParams();
+  const filterParam = searchParams.get("filter");
+
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("name-asc");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [showOutOfStockOnly, setShowOutOfStockOnly] = useState(filterParam === "out_of_stock");
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
@@ -141,6 +150,11 @@ export default function ProductCatalogClient({
       list = list.filter((p) => fuzzyMatch(p.name, search.trim()));
     }
 
+    // out of stock filter
+    if (showOutOfStockOnly) {
+      list = list.filter((p) => p.totalInventory === 0);
+    }
+
     // sort (always A→Z by default; category and price options still available)
     list = [...list];
     switch (sort) {
@@ -163,7 +177,7 @@ export default function ProductCatalogClient({
     }
 
     return list;
-  }, [grouped, categoryFilter, search, sort]);
+  }, [grouped, categoryFilter, search, sort, showOutOfStockOnly]);
 
   const tierPrice = (productId: string, cost: number, tier: string) => {
     const overrideKey = `${productId}:${tier}`;
@@ -318,6 +332,17 @@ export default function ProductCatalogClient({
           ))}
         </select>
 
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.85rem', color: 'var(--silver)', userSelect: 'none', marginLeft: 8, marginRight: 8 }}>
+          <input
+            id="out-of-stock-toggle"
+            type="checkbox"
+            checked={showOutOfStockOnly}
+            onChange={(e) => setShowOutOfStockOnly(e.target.checked)}
+            style={{ accentColor: 'var(--teal)', width: 16, height: 16, cursor: 'pointer' }}
+          />
+          <span>Out of Stock Only</span>
+        </label>
+
         <button
           type="button"
           onClick={() => setShowBulkModal(true)}
@@ -422,6 +447,7 @@ export default function ProductCatalogClient({
                   "T1 Price",
                   "T2 Price",
                   "T3 Price",
+                  "Stock",
                   "Status",
                   "",
                 ].map((h) => (
@@ -595,6 +621,24 @@ export default function ProductCatalogClient({
                           {tierPrice(p.representativeId, p.baseCost, "tier_3")}
                         </td>
 
+                        {/* Stock */}
+                        <td
+                          style={{
+                            padding: "var(--space-3)",
+                            fontSize: "0.85rem",
+                            fontFamily: "var(--font-brand)",
+                            color: p.totalInventory === 0 ? "var(--red)" : "var(--teal)",
+                            fontWeight: 700,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {p.totalInventory === 0 ? (
+                            <span style={{ color: 'var(--red)', background: 'rgba(229,62,62,0.12)', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem' }}>Out of Stock</span>
+                          ) : (
+                            `${p.totalInventory} Units`
+                          )}
+                        </td>
+
                         <td style={{ padding: "var(--space-3)" }}>
                           <span
                             className={`badge ${p.isActive ? "badge-teal" : "badge-red"}`}
@@ -736,6 +780,24 @@ export default function ProductCatalogClient({
                               >
                                 {tierPrice(v.id, vCost, "tier_3")}
                               </td>
+
+                              {/* Variant Stock */}
+                              <td
+                                style={{
+                                  padding: "var(--space-2) var(--space-3)",
+                                  fontSize: "0.82rem",
+                                  fontFamily: "var(--font-brand)",
+                                  color: v.inventory_count === 0 ? "var(--red)" : "var(--silver)",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {v.inventory_count === 0 ? (
+                                  <span style={{ color: 'var(--red)', fontSize: '0.75rem' }}>Out of Stock</span>
+                                ) : (
+                                  `${v.inventory_count} Left`
+                                )}
+                              </td>
+
                               <td
                                 style={{
                                   padding: "var(--space-2) var(--space-3)",

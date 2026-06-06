@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import ProductCatalogClient from "./ProductCatalogClient";
 import type { RawProduct } from "./ProductCatalogClient";
 
@@ -30,7 +31,7 @@ export default async function AdminProductsPage() {
   const { data: products } = await supabase
     .from("products")
     .select(
-      "id, name, category, base_cost, is_active, created_at, sku, unit_size, unit_measure",
+      "id, name, category, base_cost, is_active, created_at, sku, unit_size, unit_measure, inventory_count",
     )
     .order("created_at", { ascending: false });
 
@@ -84,11 +85,13 @@ export default async function AdminProductsPage() {
       </div>
 
       {/* Interactive catalog (client component) */}
-      <ProductCatalogClient
-        products={(products ?? []) as RawProduct[]}
-        multipliers={multipliers}
-        overrides={overrides}
-      />
+      <Suspense fallback={<div style={{ padding: "var(--space-12)", textAlign: "center", color: "var(--teal)", fontWeight: 600 }}>Loading Catalog...</div>}>
+        <ProductCatalogClient
+          products={(products ?? []) as RawProduct[]}
+          multipliers={multipliers}
+          overrides={overrides}
+        />
+      </Suspense>
     </div>
   );
 }
