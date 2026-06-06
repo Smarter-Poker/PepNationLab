@@ -694,10 +694,10 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
           <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end', zIndex: 2 }}>
             {inCart && (
-              <img src="/images/badges/badge_in_cart.png" alt="In Cart" style={{ height: 22, objectFit: 'contain' }} />
+              <img src="/images/badges/badge_in_cart.png" alt="In Cart" style={{ height: 22, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />
             )}
             {item.is_on_sale && (
-              <img src="/images/badges/badge_price_drop.png" alt="Price Drop" style={{ height: 22, objectFit: 'contain' }} />
+              <img src="/images/badges/badge_price_drop.png" alt="Price Drop" style={{ height: 22, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />
             )}
             {activeTab === 'pastOrders' && item.purchase_count && item.purchase_count > 1 && sortBy === 'frequent' && (
               <div style={{ background: 'rgba(234,179,8,0.2)', border: '1px solid rgba(234,179,8,0.5)', color: '#EAB308', padding: '2px 8px', borderRadius: 12, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', backdropFilter: 'blur(4px)' }}>
@@ -708,7 +708,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           
           {item.in_stock === false && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'grayscale(100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
-              <img src="/images/badges/badge_out_of_stock.png" alt="Out of Stock" style={{ height: 26, objectFit: 'contain' }} />
+              <img src="/images/badges/badge_out_of_stock.png" alt="Out of Stock" style={{ height: 26, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />
             </div>
           )}
         </div>

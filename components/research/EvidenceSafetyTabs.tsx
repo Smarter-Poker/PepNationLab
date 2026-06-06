@@ -100,7 +100,7 @@ export default function EvidenceSafetyTabs({
                 <div key={g.tier} className="glass-panel" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', borderLeft: `3px solid ${g.color}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-2, 8px)', marginBottom: 'var(--space-2, 8px)' }}>
                     {tierMeta.badgeUrl ? (
-                      <img src={tierMeta.badgeUrl} alt={g.label} style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 6, objectFit: 'contain', flexShrink: 0 }} />
+                      <img src={tierMeta.badgeUrl} alt={g.label} style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
                     ) : (
                       <span style={{ fontSize: '1rem', fontWeight: 800, color: g.color }}>{g.label}</span>
                     )}
@@ -168,7 +168,7 @@ export default function EvidenceSafetyTabs({
                     {c.name}
                   </Link>
                   {c.riskLevel && RISK_META[c.riskLevel as "critical" | "high" | "moderate" | "low"]?.badgeUrl && (
-                    <img src={RISK_META[c.riskLevel as "critical" | "high" | "moderate" | "low"].badgeUrl} alt={c.riskLabel || ''} style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 4, objectFit: 'contain', flexShrink: 0 }} />
+                    <img src={RISK_META[c.riskLevel as "critical" | "high" | "moderate" | "low"].badgeUrl} alt={c.riskLabel || ''} style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
                   )}
                   {c.flags.map((f) => {
                     let badgeSrc = '';
@@ -177,7 +177,7 @@ export default function EvidenceSafetyTabs({
                     else if (f === 'Cold-Chain') badgeSrc = '/images/badges/badge_cold_chain.png';
                     
                     return badgeSrc ? (
-                      <img key={f} src={badgeSrc} alt={f} style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 4, objectFit: 'contain', flexShrink: 0 }} />
+                      <img key={f} src={badgeSrc} alt={f} style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
                     ) : (
                       <span key={f} style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: '999px', padding: '2px 9px' }}>
                         {f}

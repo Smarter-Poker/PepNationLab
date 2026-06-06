@@ -320,20 +320,20 @@ export default function ProductsList({
                           <img 
                             src="/images/badges/badge_low_stock.png" 
                             alt="Low Stock" 
-                            style={{ height: 20, objectFit: 'contain' }} 
+                            style={{ height: 20, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} 
                           />
                         ) : (
                           <img 
                             src="/images/badges/badge_in_stock.png" 
                             alt="In Stock" 
-                            style={{ height: 20, objectFit: 'contain' }} 
+                            style={{ height: 20, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} 
                           />
                         )
                       ) : (
                         <img 
                           src="/images/badges/badge_out_of_stock.png" 
                           alt="Out Of Stock" 
-                          style={{ height: 20, objectFit: 'contain' }} 
+                          style={{ height: 20, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} 
                         />
                       )}
 
