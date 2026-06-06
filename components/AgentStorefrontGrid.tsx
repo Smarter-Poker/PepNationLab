@@ -857,7 +857,44 @@ export default function AgentStorefrontGrid({
     const q = deferredSearch.trim().toLowerCase();
     if (!q) return [];
     
-    const STOP_WORDS = new Set(['for', 'the', 'and', 'in', 'to', 'with', 'a', 'an', 'of', 'is', 'it', 'on', 'peptides', 'peptide', 'best', 'help', 'me', 'my', 'i', 'want', 'need', 'that', 'are', 'good']);
+    // ── Stop words ────────────────────────────────────────────────────────
+    // These are filtered out BEFORE tokenization so they never get matched
+    // against compound fields. Includes: articles, prepositions, common
+    // auxiliary verbs, search-intent noise words, and generic action verbs
+    // that add no signal (give, boost, help, increase, etc.).
+    const STOP_WORDS = new Set([
+      // Articles / prepositions / conjunctions
+      'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+      'of', 'with', 'by', 'from', 'up', 'as', 'into', 'through', 'during',
+      'before', 'after', 'above', 'below', 'between', 'out', 'off', 'over',
+      'under', 'again', 'further', 'then', 'once', 'so', 'if', 'because',
+      'while', 'although', 'since', 'until', 'unless', 'about', 'against',
+      // Pronouns
+      'i', 'me', 'my', 'we', 'our', 'you', 'your', 'he', 'she', 'it', 'its',
+      'they', 'them', 'their', 'who', 'which', 'what', 'this', 'that', 'these',
+      'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+      // Common auxiliary / modal verbs
+      'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+      'should', 'may', 'might', 'must', 'can', 'shall',
+      // Generic search-intent verbs — no field match signal
+      'want', 'need', 'looking', 'look', 'find', 'get', 'give', 'help', 'make',
+      'use', 'using', 'used', 'try', 'trying', 'tried', 'know', 'show', 'work',
+      'feel', 'feeling', 'like', 'take', 'taking', 'takes', 'increase',
+      'increases', 'boost', 'boosts', 'boosting', 'improve', 'improves',
+      'improving', 'support', 'supports', 'enhance', 'enhances', 'promote',
+      'promotes', 'reduce', 'reduces', 'reducing', 'decrease', 'decreases',
+      'increase', 'accelerate', 'optimize', 'maximise', 'maximize', 'target',
+      'affects', 'affect', 'address', 'treat', 'treating', 'acts', 'act',
+      'works', 'something', 'anything', 'everything', 'nothing', 'somewhere',
+      // Adjectives / modifiers with no compound signal
+      'best', 'good', 'great', 'top', 'well', 'really', 'very', 'more',
+      'most', 'many', 'much', 'some', 'any', 'all', 'both', 'each', 'every',
+      'other', 'same', 'only', 'also', 'just', 'even', 'still', 'yet',
+      'already', 'always', 'often', 'usually', 'generally', 'mainly', 'mostly',
+      'highly', 'extremely', 'really', 'quite', 'rather', 'fairly',
+      // Product-category noise (these are handled by concept groups, not raw tokens)
+      'peptide', 'peptides', 'compound', 'compounds', 'supplement', 'supplements',
+    ]);
     const CONCEPT_GROUPS: string[][] = [
       // Weight Loss / Fat
       ['fat', 'weightloss', 'weight', 'loss', 'lipolysis', 'obesity', 'adipose', 'slimming', 'lean', 'cut', 'cutting', 'slim', 'shed', 'trim', 'bodyfat', 'overweight', 'bmi', 'diet', 'calories', 'calorie', 'deficit', 'melt', 'burn', 'fat-loss', 'fatloss', 'visceral'],
@@ -871,8 +908,11 @@ export default function AgentStorefrontGrid({
       ['brain', 'cognitive', 'nootropic', 'memory', 'focus', 'neuro', 'alzheimers', 'dementia', 'learning', 'adhd', 'attention', 'clarity', 'smart', 'mental', 'mindsharpness', 'brain-fog', 'brainfog', 'concentration', 'neurodegeneration', 'neuroprotect', 'neuroplasticity', 'processing', 'recall', 'intelligence', 'cognition', 'stroke', 'tbi', 'concussion', 'productivity'],
       // Skin / Anti-Aging / Cosmetic
       ['skin', 'antiaging', 'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow', 'complexion', 'youth', 'tanning', 'tan', 'melanin', 'sun', 'burn', 'brightening', 'dark-spots', 'spots', 'blemish', 'acne', 'pores', 'texture', 'dermis', 'anti-wrinkle', 'rejuvenate', 'rejuvenation', 'youthful', 'firming', 'hydration', 'hairloss', 'hair-loss', 'hairgrowth', 'balding', 'alopecia', 'scalp', 'pigment'],
-      // Energy / Endurance / Performance
-      ['energy', 'stamina', 'endurance', 'fatigue', 'metabolism', 'mitochondrial', 'cardio', 'athletic', 'performance', 'vitality', 'atp', 'cellular-energy', 'bioenergetics', 'nad', 'nad+', 'ampk', 'exericse', 'exercise', 'sport', 'sports', 'workout', 'gym', 'running', 'marathon', 'cycling', 'vo2'],
+      // Energy / Endurance / Performance (cardio intentionally excluded — it maps to Cardiovascular, not Energy)
+      ['energy', 'stamina', 'endurance', 'metabolism', 'mitochondrial', 'athletic',
+       'performance', 'vitality', 'atp', 'cellular-energy', 'bioenergetics', 'nad',
+       'nad+', 'ampk', 'exercise', 'exericse', 'sport', 'sports', 'workout', 'gym',
+       'running', 'marathon', 'cycling', 'vo2', 'power-output', 'anaerobic', 'aerobic'],
       // Diabetes / Metabolic / Insulin
       ['sugar', 'diabetes', 'insulin', 'glucose', 'glycemic', 'metabolic', 'a1c', 'type2', 'prediabetes', 'blood-sugar', 'bloodsugar', 'pancreas', 'leptin', 'ghrelin', 'satiety', 'incretin', 'glp1'],
       // Heart / Cardiovascular
@@ -1240,11 +1280,23 @@ export default function AgentStorefrontGrid({
         } else if (maxTokenScore > 0 && !isNegative) {
           totalScore += maxTokenScore;
           if (!primaryReason && tokenReason) {
-             // Only display semantic/alias/typo reasons, otherwise it's just repeating the obvious name
-             const reasonStr = tokenReason as string;
-             if (reasonStr.includes('Did you mean') || reasonStr.includes('Also Known As') || reasonStr.includes('Studied For') || reasonStr.includes('Research Area') || reasonStr.includes('Class') || reasonStr.includes('Target')) {
-                primaryReason = tokenReason;
-             }
+            // Only surface a "Matched:" label when the reason is both:
+            //   a) a semantic/alias/typo match (not just name/description)
+            //   b) scored strongly enough (≥40) to be a genuine signal
+            // This prevents tangential expansion chains (energy→cardio→cardiovascular)
+            // from showing irrelevant match reasons.
+            const reasonStr = tokenReason as string;
+            const isSemanticReason = (
+              reasonStr.startsWith('Also Known As') ||
+              reasonStr.startsWith('Studied For') ||
+              reasonStr.startsWith('Research Area') ||
+              reasonStr.startsWith('Compound Class') ||
+              reasonStr.startsWith('Target:') ||
+              reasonStr.startsWith('Did you mean')
+            );
+            if (isSemanticReason && maxTokenScore >= 40) {
+              primaryReason = tokenReason;
+            }
           }
         }
       }
