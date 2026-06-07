@@ -991,49 +991,125 @@ function CartDrawer() {
           {cart.length > 0 ? (
             <>
               {/* Cart Items */}
-              {cart.map(item => {
-                const bulkEligible = !item.agentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold;
-                const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice;
-                return (
-                  <div
-                    key={item.id}
-                    style={{
-                      background: 'rgba(255,255,255,0.03)',
-                      border: '1.5px solid rgba(255,255,255,0.07)',
-                      borderRadius: 10,
-                      padding: '11px 13px',
-                      display: 'flex', gap: 10, position: 'relative',
-                    }}
-                  >
-                    <div style={{ flexGrow: 1, minWidth: 0 }}>
-                      <h4 style={{ fontSize: '0.84rem', margin: '0 0 3px', fontFamily: 'var(--font-brand)', color: 'var(--white)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {item.name}
-                      </h4>
-                      {item.sku && <div style={{ fontSize: '0.67rem', color: 'var(--grey-400)', marginBottom: 6 }}>SKU: {item.sku}</div>}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                        {/* Qty stepper */}
-                        <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.09)' }}>
-                          <button onClick={() => updateQuantity(item.id, item.quantity - 1)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>−</button>
-                          <span style={{ fontSize: '0.82rem', width: 22, textAlign: 'center', color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontWeight: 700 }}>{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, item.quantity + 1)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>+</button>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.88rem', color: 'var(--white)', fontWeight: 700, fontFamily: 'var(--font-brand)' }}>
-                            ${(activePrice * item.quantity).toFixed(2)}
+              {/* Group items by bundleName */}
+              {(() => {
+                const groupedCart: { isBundle: boolean, name: string, items: typeof cart }[] = [];
+                const processedIds = new Set<string>();
+
+                cart.forEach(item => {
+                  const key = item.id + '-' + (item.bundleName || '');
+                  if (processedIds.has(key)) return;
+                  
+                  if (item.bundleName) {
+                    const bundleItems = cart.filter(i => i.bundleName === item.bundleName);
+                    if (!groupedCart.find(g => g.isBundle && g.name === item.bundleName)) {
+                      groupedCart.push({ isBundle: true, name: item.bundleName, items: bundleItems });
+                    }
+                    bundleItems.forEach(i => processedIds.add(i.id + '-' + i.bundleName));
+                  } else {
+                    groupedCart.push({ isBundle: false, name: item.name, items: [item] });
+                    processedIds.add(key);
+                  }
+                });
+
+                return groupedCart.map((group, groupIndex) => {
+                  if (group.isBundle) {
+                    const bundleSubtotal = group.items.reduce((acc, item) => {
+                      const bulkEligible = !item.agentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold;
+                      const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice;
+                      return acc + (activePrice * 0.9) * item.quantity;
+                    }, 0);
+
+                    return (
+                      <div key={`bundle-${group.name}-${groupIndex}`} style={{
+                        background: 'rgba(0, 229, 255, 0.03)',
+                        border: '1.5px solid rgba(0, 229, 255, 0.2)',
+                        borderRadius: 12,
+                        padding: '12px',
+                        display: 'flex', flexDirection: 'column', gap: 8,
+                        marginBottom: 4
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,229,255,0.1)', paddingBottom: 8, marginBottom: 4 }}>
+                          <div>
+                            <h4 style={{ fontSize: '0.9rem', margin: 0, fontFamily: 'var(--font-brand)', color: '#00E5FF', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              📦 {group.name}
+                            </h4>
+                            <div style={{ fontSize: '0.65rem', color: '#68D391', marginTop: 2, fontWeight: 700 }}>Stack Discount (10% Off) Applied</div>
                           </div>
-                          {bulkEligible && <div style={{ fontSize: '0.61rem', color: 'var(--teal)' }}>Bulk rate ✓</div>}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ fontSize: '0.9rem', color: '#00E5FF', fontWeight: 800 }}>${bundleSubtotal.toFixed(2)}</div>
+                            <button onClick={() => group.items.forEach(i => removeFromCart(i.id))} style={{ background: 'none', border: 'none', color: 'rgba(255,90,90,0.7)', cursor: 'pointer', padding: '3px', transition: 'color 0.15s' }} aria-label="Remove Stack">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
+                        {group.items.map(item => {
+                          const bulkEligible = !item.agentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold;
+                          const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice;
+                          return (
+                            <div key={item.id} style={{ display: 'flex', gap: 10, position: 'relative', paddingLeft: 8 }}>
+                              <div style={{ flexGrow: 1, minWidth: 0 }}>
+                                <h4 style={{ fontSize: '0.8rem', margin: '0 0 3px', color: 'var(--silver-light)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  ↳ {item.name}
+                                </h4>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.09)' }}>
+                                    <button onClick={() => updateQuantity(item.id, item.quantity - 1)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 22, height: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>−</button>
+                                    <span style={{ fontSize: '0.75rem', width: 20, textAlign: 'center', color: 'var(--teal)', fontWeight: 700 }}>{item.quantity}</span>
+                                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 22, height: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>+</button>
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
+                                    <span style={{ textDecoration: 'line-through', marginRight: 6 }}>${(activePrice * item.quantity).toFixed(2)}</span>
+                                    <span style={{ color: '#00E5FF' }}>${((activePrice * 0.9) * item.quantity).toFixed(2)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
-                    <button onClick={() => removeFromCart(item.id)} style={{ background: 'none', border: 'none', color: 'rgba(255,90,90,0.55)', cursor: 'pointer', padding: '3px 2px', height: 'fit-content', transition: 'color 0.15s' }} aria-label="Remove Item">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                      </svg>
-                    </button>
-                  </div>
-                );
-              })}
+                    );
+                  }
+
+                  // Standard individual item
+                  return group.items.map(item => {
+                    const bulkEligible = !item.agentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold;
+                    const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice;
+                    return (
+                      <div key={item.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: '11px 13px', display: 'flex', gap: 10, position: 'relative' }}>
+                        <div style={{ flexGrow: 1, minWidth: 0 }}>
+                          <h4 style={{ fontSize: '0.84rem', margin: '0 0 3px', fontFamily: 'var(--font-brand)', color: 'var(--white)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {item.name}
+                          </h4>
+                          {item.sku && <div style={{ fontSize: '0.67rem', color: 'var(--grey-400)', marginBottom: 6 }}>SKU: {item.sku}</div>}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.09)' }}>
+                              <button onClick={() => updateQuantity(item.id, item.quantity - 1)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>−</button>
+                              <span style={{ fontSize: '0.82rem', width: 22, textAlign: 'center', color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontWeight: 700 }}>{item.quantity}</span>
+                              <button onClick={() => updateQuantity(item.id, item.quantity + 1)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>+</button>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.88rem', color: 'var(--white)', fontWeight: 700, fontFamily: 'var(--font-brand)' }}>
+                                ${(activePrice * item.quantity).toFixed(2)}
+                              </div>
+                              {bulkEligible && <div style={{ fontSize: '0.61rem', color: 'var(--teal)' }}>Bulk rate ✓</div>}
+                            </div>
+                          </div>
+                        </div>
+                        <button onClick={() => removeFromCart(item.id)} style={{ background: 'none', border: 'none', color: 'rgba(255,90,90,0.55)', cursor: 'pointer', padding: '3px 2px', height: 'fit-content', transition: 'color 0.15s' }} aria-label="Remove Item">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                          </svg>
+                        </button>
+                      </div>
+                    );
+                  });
+                });
+              })()}
 
               {/* ── BAC Water Calculator ── */}
               <BacWaterCalculator cart={cart} onAddBacWater={handleAddBacWater} />

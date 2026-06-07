@@ -1716,28 +1716,101 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxHeight: 220, overflowY: 'auto', paddingRight: 4, marginBottom: 'var(--space-4)' }}>
-              {cart.map(item => {
-                const retail = (item as any).retailPrice ?? item.costPrice;
-                const showDiscount = isAgentSelfBuy && retail > item.costPrice;
-                return (
-                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', alignItems: 'flex-start' }}>
-                    <div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}>
-                      <span style={{ color: 'var(--white)', fontWeight: 500 }}>{toTitleCase(item.name)}</span>
-                      <div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div>
-                    </div>
-                    <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      {showDiscount && (
-                        <div style={{ color: 'var(--grey-500)', fontSize: '0.70rem', textDecoration: 'line-through' }}>
-                          ${(retail * item.quantity).toFixed(2)}
+              {/* Group items by bundleName */}
+              {(() => {
+                const groupedCart: { isBundle: boolean, name: string, items: typeof cart }[] = [];
+                const processedIds = new Set<string>();
+
+                cart.forEach(item => {
+                  const key = item.id + '-' + (item.bundleName || '');
+                  if (processedIds.has(key)) return;
+                  
+                  if (item.bundleName) {
+                    const bundleItems = cart.filter(i => i.bundleName === item.bundleName);
+                    if (!groupedCart.find(g => g.isBundle && g.name === item.bundleName)) {
+                      groupedCart.push({ isBundle: true, name: item.bundleName, items: bundleItems });
+                    }
+                    bundleItems.forEach(i => processedIds.add(i.id + '-' + i.bundleName));
+                  } else {
+                    groupedCart.push({ isBundle: false, name: item.name, items: [item] });
+                    processedIds.add(key);
+                  }
+                });
+
+                return groupedCart.map((group, groupIndex) => {
+                  if (group.isBundle) {
+                    const bundleSubtotal = group.items.reduce((acc, item) => {
+                      const retail = (item as any).retailPrice ?? item.costPrice;
+                      return acc + (item.costPrice * 0.9) * item.quantity;
+                    }, 0);
+
+                    return (
+                      <div key={`bundle-${group.name}-${groupIndex}`} style={{
+                        background: 'rgba(0, 229, 255, 0.03)',
+                        border: '1px solid rgba(0, 229, 255, 0.2)',
+                        borderRadius: 8,
+                        padding: '10px',
+                        display: 'flex', flexDirection: 'column', gap: 6,
+                        marginBottom: 6
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,229,255,0.1)', paddingBottom: 6, marginBottom: 4 }}>
+                          <div>
+                            <h4 style={{ fontSize: '0.85rem', margin: 0, fontFamily: 'var(--font-brand)', color: '#00E5FF', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              📦 {group.name}
+                            </h4>
+                            <div style={{ fontSize: '0.65rem', color: '#68D391', marginTop: 2, fontWeight: 700 }}>Stack Discount (10% Off) Applied</div>
+                          </div>
+                          <div style={{ fontSize: '0.85rem', color: '#00E5FF', fontWeight: 800 }}>${bundleSubtotal.toFixed(2)}</div>
                         </div>
-                      )}
-                      <strong style={{ color: showDiscount ? 'var(--teal)' : 'var(--silver-light)' }}>
-                        ${(item.costPrice * item.quantity).toFixed(2)}
-                      </strong>
-                    </div>
-                  </div>
-                );
-              })}
+                        {group.items.map(item => {
+                          const retail = (item as any).retailPrice ?? item.costPrice;
+                          const showDiscount = isAgentSelfBuy && retail > item.costPrice;
+                          return (
+                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', alignItems: 'flex-start', paddingLeft: 6 }}>
+                              <div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}>
+                                <span style={{ color: 'var(--silver-light)', fontWeight: 500 }}>↳ {toTitleCase(item.name)}</span>
+                                <div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div>
+                              </div>
+                              <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                <div style={{ color: 'var(--grey-500)', fontSize: '0.70rem', textDecoration: 'line-through' }}>
+                                  ${(item.costPrice * item.quantity).toFixed(2)}
+                                </div>
+                                <strong style={{ color: '#00E5FF' }}>
+                                  ${((item.costPrice * 0.9) * item.quantity).toFixed(2)}
+                                </strong>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  }
+
+                  // Standard individual item
+                  return group.items.map(item => {
+                    const retail = (item as any).retailPrice ?? item.costPrice;
+                    const showDiscount = isAgentSelfBuy && retail > item.costPrice;
+                    return (
+                      <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', alignItems: 'flex-start', marginBottom: 4 }}>
+                        <div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}>
+                          <span style={{ color: 'var(--white)', fontWeight: 500 }}>{toTitleCase(item.name)}</span>
+                          <div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div>
+                        </div>
+                        <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          {showDiscount && (
+                            <div style={{ color: 'var(--grey-500)', fontSize: '0.70rem', textDecoration: 'line-through' }}>
+                              ${(retail * item.quantity).toFixed(2)}
+                            </div>
+                          )}
+                          <strong style={{ color: showDiscount ? 'var(--teal)' : 'var(--silver-light)' }}>
+                            ${(item.costPrice * item.quantity).toFixed(2)}
+                          </strong>
+                        </div>
+                      </div>
+                    );
+                  });
+                });
+              })()}
             </div>
 
             {/* Bacteriostatic Water Suggestion Box */}
