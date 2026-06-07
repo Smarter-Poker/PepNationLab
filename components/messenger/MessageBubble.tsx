@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
+import { vibrateLight } from '@/lib/messenger/haptics';
 import { Reply, Smile, Pencil, Trash2, Check, X, Download, Pin, Bookmark, Tag, MessageSquare, Flag, Bell, MoreHorizontal } from 'lucide-react';
 import type { Message, Reaction, ParticipantRole } from '@/lib/messenger/types';
 import type { MessageLabelValue } from '@/lib/messenger/schemas';
@@ -142,6 +143,17 @@ export default function MessageBubble({
     };
   }, []);
 
+  const handleMediaTap = (e: React.MouseEvent | React.TouchEvent) => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      vibrateLight();
+      onReact(message, '❤️', 'add');
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+    }
+  };
+
   const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
@@ -258,7 +270,12 @@ export default function MessageBubble({
               {message.text}
             </span>
           )}
-          <button type="button" onClick={() => !isOptimistic && setLightbox(true)} aria-label="Open Image"
+          <button type="button" 
+            onClick={(e) => {
+              handleMediaTap(e);
+              if (!isOptimistic && Date.now() - lastTapRef.current >= 300) setLightbox(true);
+            }} 
+            aria-label="Open Image"
             style={{ 
               background: 'transparent', border: 0, padding: isProof ? '0 8px 8px 8px' : 0, 
               cursor: isOptimistic ? 'default' : 'zoom-in', ...opacityStyle,
@@ -271,8 +288,10 @@ export default function MessageBubble({
                padding: isProof ? 6 : 0,
                background: isProof ? 'linear-gradient(145deg, var(--surface-2, #162230), var(--surface-1, #0F1923))' : 'transparent',
                boxShadow: isProof ? '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)' : 'none',
+               overflow: 'hidden',
+               width: '100%',
             }}>
-              <img src={message.media_url} alt="Image" loading="lazy"
+              <img src={message.media_url} alt="Image" loading="lazy" className="media-edge-to-edge"
                 onLoad={() => {
                   if (isLast) {
                     const el = document.querySelector('.msg-list');
@@ -286,7 +305,8 @@ export default function MessageBubble({
                   borderRadius: isProof ? 8 : 10, 
                   display: 'block', 
                   objectFit: isProof ? 'contain' : 'cover',
-                  background: isProof ? '#0a0d14' : 'transparent'
+                  background: isProof ? '#0a0d14' : 'transparent',
+                  width: '100%'
                 }}
               />
             </div>
@@ -298,15 +318,23 @@ export default function MessageBubble({
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {message.text && <span>{message.text}</span>}
-          <img src={message.media_url} alt="Gif" loading="lazy"
-            onLoad={() => {
-              if (isLast) {
-                const el = document.querySelector('.msg-list');
-                if (el) el.scrollTop = el.scrollHeight;
-              }
-            }}
-            style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block', ...opacityStyle }}
-          />
+          <button type="button" 
+            onClick={(e) => {
+              handleMediaTap(e);
+              if (!isOptimistic && Date.now() - lastTapRef.current >= 300) setLightbox(true);
+            }} 
+            style={{ background: 'transparent', border: 0, padding: 0, cursor: isOptimistic ? 'default' : 'zoom-in' }}
+          >
+            <img src={message.media_url} alt="Gif" loading="lazy" className="media-edge-to-edge"
+              onLoad={() => {
+                if (isLast) {
+                  const el = document.querySelector('.msg-list');
+                  if (el) el.scrollTop = el.scrollHeight;
+                }
+              }}
+              style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block', width: '100%', objectFit: 'cover', ...opacityStyle }}
+            />
+          </button>
         </div>
       );
     }

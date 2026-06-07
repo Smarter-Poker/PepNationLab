@@ -15,8 +15,11 @@ import {
 } from '@/lib/compounds';
 import { toast } from 'sonner';
 
+import type { AreaProduct } from '@/lib/area-products-server';
+
 interface StackBuilderProps {
   compounds: Compound[];
+  products?: AreaProduct[];
 }
 
 const LEVEL_STYLE: Record<CartWarning['level'], { color: string; bg: string; border: string }> = {
@@ -68,7 +71,7 @@ interface ProtocolWeek {
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-export default function StackBuilder({ compounds }: StackBuilderProps) {
+export default function StackBuilder({ compounds, products = [] }: StackBuilderProps) {
   const selectable = useMemo(
     () => compounds.filter((c) => !c.is_stack).sort((a, b) => a.display_name.localeCompare(b.display_name)),
     [compounds]
@@ -482,8 +485,12 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
                     cursor: 'pointer',
                     fontWeight: isOn ? 700 : 400,
                     transition: 'all 0.2s',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
                   }}
                 >
+                  <img src={products.find(p => p.compoundSlug === c.slug)?.imageUrl || '/images/bottle_mockup.png'} alt={c.slug} style={{ width: 14, height: 14, objectFit: 'contain', opacity: isOn ? 1 : 0.5 }} />
                   {c.display_name}
                 </button>
               );
@@ -616,6 +623,7 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
                     return (
                       <span key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: '#FFFFFF' }}>
                         <span style={{ width: 8, height: 8, borderRadius: '50%', background: colors[idx % colors.length] }} />
+                        <img src={products.find(p => p.compoundSlug === c.slug)?.imageUrl || '/images/bottle_mockup.png'} alt={c.slug} style={{ width: 12, height: 12, objectFit: 'contain' }} />
                         <span className="calc-no-capitalize">{c.display_name} (T<sub>1/2</sub>: {parseHalfLife(c)}h)</span>
                       </span>
                     );
