@@ -57,5 +57,48 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
-  return NextResponse.json({ data });
+  // Enrich with stack data
+  const enrichedData = await Promise.all((data || []).map(async (item: any) => {
+    let stackData = null;
+    if (item.product_id) {
+      const { data: product } = await supabase
+        .from('products')
+        .select('compound_slug')
+        .eq('id', item.product_id)
+        .maybeSingle();
+
+      if (product?.compound_slug) {
+        const { data: compound } = await supabase
+          .from('compounds')
+          .select('is_stack, stack_components')
+          .eq('slug', product.compound_slug)
+          .maybeSingle();
+        
+        if (compound?.is_stack) {
+          const isPreBlended = ['klow-stack', 'glow-stack', 'wolverine-stack'].some(s => product.compound_slug.includes(s.replace('-stack', '')));
+          
+          let resolvedComponents = [];
+          if (compound.stack_components && Array.isArray(compound.stack_components)) {
+             const { data: relatedCompounds } = await supabase
+               .from('compounds')
+               .select('display_name, slug')
+               .in('slug', compound.stack_components);
+               
+             resolvedComponents = compound.stack_components.map(slug => {
+               const found = relatedCompounds?.find(c => c.slug === slug);
+               return found ? found.display_name : slug;
+             });
+          }
+          
+          stackData = {
+            isPreBlended,
+            components: resolvedComponents
+          };
+        }
+      }
+    }
+    return { ...item, stackData };
+  }));
+
+  return NextResponse.json({ data: enrichedData });
 }

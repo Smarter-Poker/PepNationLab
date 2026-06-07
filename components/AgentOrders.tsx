@@ -35,6 +35,10 @@ interface OrderItem {
   quantity: number;
   unit_retail_price: number;
   unit_cost_price: number | null;
+  stackData?: {
+    isPreBlended: boolean;
+    components: string[];
+  };
 }
 
 interface AgentOrdersProps {
@@ -909,7 +913,20 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                             key={item.id}
                             style={{ borderBottom: idx < detailItems.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}
                           >
-                            <td style={{ padding: '12px 16px', color: 'var(--white)', fontWeight: 500 }}>{item.product_name}</td>
+                            <td style={{ padding: '12px 16px', color: 'var(--white)', fontWeight: 500 }}>
+                              <div>{item.product_name}</div>
+                              {item.stackData && (
+                                <div style={{ fontSize: '0.8rem', color: 'var(--silver)', marginTop: '4px' }}>
+                                  {item.stackData.isPreBlended ? (
+                                    <span style={{ color: 'var(--teal)' }}>(Pre-blended stack - one peptide vial)</span>
+                                  ) : (
+                                    <div>
+                                      <span style={{ color: 'var(--brand-yellow)', fontWeight: 600 }}>Includes Vials:</span> {item.stackData.components.join(', ')}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </td>
                             <td style={{ textAlign: 'center', padding: '12px 16px' }}>{qty}</td>
                             <td style={{ textAlign: 'right', padding: '12px 16px' }}>
                               {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(unit) || 0)}

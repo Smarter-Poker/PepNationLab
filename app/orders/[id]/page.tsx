@@ -109,7 +109,7 @@ export default async function OrderDetailPage(
       id, status, created_at, payment_method, fulfillment_method,
       subtotal, discount_amount, coupon_code, shipping_cost, total,
       tracking_number, label_url, shipping_address, agent_id, buyer_id,
-      order_items (id, agent_product_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price, lot_number, coa_url),
+      order_items (id, agent_product_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price, lot_number, coa_url, products(compound_slug)),
       profiles:buyer_id (full_name, email)
     `)
     .eq('id', id)
@@ -260,6 +260,37 @@ export default async function OrderDetailPage(
   } catch {
     // Recommendations are best-effort; never break the order detail page.
     recommendations = [];
+  }
+
+  // Pre-fetch stack metadata for order items
+  const slugs = order.order_items.map((it: any) => it.products?.compound_slug).filter(Boolean);
+  const stackInfoMap = new Map<string, { isPreBlended: boolean, components: string[] }>();
+  if (slugs.length > 0) {
+    const { data: stackCompounds } = await supabase
+      .from('compounds')
+      .select('slug, is_stack, stack_components')
+      .in('slug', slugs)
+      .eq('is_stack', true);
+
+    if (stackCompounds) {
+      const allComponentSlugs = stackCompounds.flatMap(c => c.stack_components || []);
+      const { data: childCompounds } = await supabase
+        .from('compounds')
+        .select('slug, display_name')
+        .in('slug', allComponentSlugs);
+        
+      for (const c of stackCompounds) {
+        const isPreBlended = ['klow-stack', 'glow-stack', 'wolverine-stack'].some(s => c.slug.includes(s.replace('-stack', '')));
+        const resolvedComponents = (c.stack_components || []).map((s: string) => {
+          const child = childCompounds?.find(ch => ch.slug === s);
+          return child?.display_name || s;
+        });
+        stackInfoMap.set(c.slug, {
+          isPreBlended,
+          components: resolvedComponents
+        });
+      }
+    }
   }
 
   const statusColor = STATUS_COLORS[order.status] ?? 'var(--grey-400)';
@@ -536,13 +567,28 @@ export default async function OrderDetailPage(
                   }
 
                   // Standard individual item
-                  return group.items.map(item => (
+                  return group.items.map(item => {
+                    const slug = (item as any).products?.compound_slug;
+                    const stackInfo = slug ? stackInfoMap.get(slug) : null;
+                    
+                    return (
                     <div
                       key={item.id}
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 'var(--space-3)', }}
                     >
                       <div>
                         <div style={{ fontSize: '0.92rem', color: 'var(--silver)', fontWeight: 600 }}>{item.product_name}</div>
+                        {stackInfo && (
+                          <div style={{ fontSize: '0.8rem', color: 'var(--silver)', marginTop: '4px' }}>
+                            {stackInfo.isPreBlended ? (
+                              <span style={{ color: 'var(--teal)' }}>(Pre-blended stack - one peptide vial)</span>
+                            ) : (
+                              <div>
+                                <span style={{ color: 'var(--brand-yellow)', fontWeight: 600 }}>Includes Vials:</span> {stackInfo.components.join(', ')}
+                              </div>
+                            )}
+                          </div>
+                        )}
                         <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 2 }}>
                           Quantity: <span style={{ color: 'var(--teal)' }}>{item.quantity}</span>
                           {' / '}Unit: ${num(item.unit_retail_price).toFixed(2)}
@@ -552,7 +598,7 @@ export default async function OrderDetailPage(
                         ${(num(item.unit_retail_price) * item.quantity).toFixed(2)}
                       </div>
                     </div>
-                  ));
+                  )});
                 });
               })()}
 

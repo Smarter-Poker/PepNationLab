@@ -9,9 +9,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { GitCompare, Layers, ShieldCheck, GraduationCap, BookOpen, HelpCircle, Sparkles, Calculator, Library, Table2 } from 'lucide-react';
 import { getAllCompounds } from '@/lib/compounds-server';
-import { RESEARCH_AREAS } from '@/lib/compounds';
 import { Suspense } from 'react';
-import AskTheLab from '@/components/research/AskTheLab';
 import ResearchBrowser from '@/components/research/ResearchBrowser';
 import UniversalSearch from '@/components/research/UniversalSearch';
 
