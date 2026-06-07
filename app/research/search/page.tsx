@@ -77,7 +77,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
             Type A Compound, Mechanism, Or Research Question Below.
           </p>
         </header>
-        <GlobalSearchBar autoFocus />
+        <GlobalSearchBar />
         <div style={{ marginTop: 40 }}>
           <BrowseSurfaceNav />
         </div>

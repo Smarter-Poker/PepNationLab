@@ -1123,6 +1123,7 @@ function FocusRowModal({ row, selected, maxHalfLife, controlCompound, topPickSlu
   maxHalfLife: number;
   controlCompound: Compound | undefined;
   topPickSlug: string | null;
+  maxCitations: number;
   onClose: () => void;
 }) {
   if (row.kind !== 'data') return null;
@@ -2193,7 +2194,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
             <button
               key={tag}
               type="button"
-              onClick={() => { setSearchQuery(tag); setSearchFocused(true); }}
+              onClick={() => { setSearchQuery(tag); setIsSearchOpen(true); }}
               style={{
                 background: searchQuery.toLowerCase() === tag.toLowerCase() ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.05)',
                 border: `1px solid ${searchQuery.toLowerCase() === tag.toLowerCase() ? 'rgba(0,196,188,0.5)' : 'rgba(255,255,255,0.1)'}`,
@@ -2235,12 +2236,12 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
                 .filter(Boolean)
                 .map(p => ({
                   product: {
-                    id: p!.agentProductId,
+                    id: p!.agentProductId || p!.compoundSlug,
                     name: p!.productName,
                     sku: p!.productName, // fallback
                     retailPrice: p!.retailPrice,
-                    costPrice: p!.wholesalePrice,
-                    bulkCostPrice: p!.wholesalePrice,
+                    costPrice: p!.retailPrice,
+                    bulkCostPrice: p!.retailPrice,
                     bulkThreshold: 1,
                     weightOz: p!.weightOz
                   },
@@ -3354,6 +3355,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
           row={focusRow}
           selected={selected}
           maxHalfLife={maxHalfLife}
+          maxCitations={maxCitations}
           controlCompound={selected.find(x => x.slug === controlSlug)}
           topPickSlug={topPickSlug}
           onClose={() => { setFocusRow(null); }}

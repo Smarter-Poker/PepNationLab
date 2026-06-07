@@ -13,7 +13,9 @@ export const dynamic = 'force-dynamic';
 export default async function StacksPage() {
   const compounds = await getAllCompounds();
   const stacks = compounds.filter((c) => c.is_stack);
-  const products = await getAreaProducts();
+  const allSlugs = Array.from(new Set(stacks.flatMap((s) => s.stack_components)));
+  const productCtx = await getAreaProducts(allSlugs);
+  const products = productCtx.products;
 
   return <StacksClient compounds={compounds} stacks={stacks} products={products} />;
 }

@@ -10,8 +10,8 @@ import { analyzeStack, getCategoryFromName } from '@/lib/stackEngine';
 import StackBuilder from './StackBuilder';
 import { Search, Info, FlaskConical, Beaker, Map as MapIcon, Grid as GridIcon, CheckCircle2, ChevronRight, X } from 'lucide-react';
 import Image from 'next/image';
-import { AutocompleteDropdown } from '@/components/research/AutocompleteDropdown';
-import { TrendingSearchesDropdown } from '@/components/research/TrendingSearchesDropdown';
+import AutocompleteDropdown from '@/components/research/AutocompleteDropdown';
+import TrendingSearchesDropdown from '@/components/research/TrendingSearchesDropdown';
 import { useSearchHistory } from '@/components/research/useSearchHistory';
 
 interface Props {
@@ -27,6 +27,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
   const [activeStackDrawer, setActiveStackDrawer] = useState<string | null>(null);
   const [suggestOpen, setSuggestOpen] = useState(false);
+  const [showCompareDrawer, setShowCompareDrawer] = useState(false);
 
   const { addMultipleToCart } = useCart();
   const { recent, addHistory } = useSearchHistory();
@@ -92,13 +93,13 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
         const p = compProducts[0];
         itemsToAdd.push({
           product: {
-            id: p.productId,
+            id: p.agentProductId || p.compoundSlug,
             name: p.productName,
-            sku: p.sku || '',
+            sku: p.productName,
             retailPrice: p.retailPrice,
-            costPrice: p.retailPrice, // Base fallback
-            bulkCostPrice: null,
-            bulkThreshold: undefined,
+            costPrice: p.retailPrice,
+            bulkCostPrice: p.retailPrice,
+            bulkThreshold: 1,
             weightOz: p.weightOz,
           },
           quantity: 1
@@ -188,14 +189,14 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                 id="stacks-search-autocomplete"
                 suggestions={suggestions}
                 recent={recent}
-                onSelect={(s) => { addHistory(s.text); setSearchQuery(s.text); setSuggestOpen(false); }}
-                onSelectRecent={(t) => { addHistory(t); setSearchQuery(t); setSuggestOpen(false); }}
+                onSelect={(s: any) => { addHistory(s.text); setSearchQuery(s.text); setSuggestOpen(false); }}
+                onSelectRecent={(t: string) => { addHistory(t); setSearchQuery(t); setSuggestOpen(false); }}
               />
             </div>
           )}
           {suggestOpen && searchQuery.trim().length === 0 && recent.length === 0 && (
              <TrendingSearchesDropdown 
-               onSelect={(term) => {
+               onSelect={(term: string) => {
                  addHistory(term);
                  setSearchQuery(term);
                  setSuggestOpen(false);
@@ -327,7 +328,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
             bySlug={bySlug} 
             products={products}
             onClose={() => setActiveStackDrawer(null)} 
-            onAddToCart={(stack) => handleAddToCart(stack)}
+            onAddToCart={(stack: any) => handleAddToCart(stack)}
             bundlePrice={getBundlePrice(bySlug.get(activeStackDrawer!)!)}
             synergyData={getSynergyScore(bySlug.get(activeStackDrawer!)!)}
           />
