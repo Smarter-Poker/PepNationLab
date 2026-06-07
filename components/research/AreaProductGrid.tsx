@@ -277,9 +277,11 @@ export default function AreaProductGrid({
   }, [showToast]);
 
   useEffect(() => {
-    const handler = (e: CustomEvent<{ name: string }>) => {
-      const name = e.detail?.name;
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ name?: string; handled?: boolean }>).detail;
+      const name = detail?.name;
       if (!name) return;
+      if (detail) detail.handled = true;
       const matched = products.find(
         (p) => p.productName.toLowerCase() === name.toLowerCase() ||
                p.compoundSlug?.toLowerCase() === name.toLowerCase()

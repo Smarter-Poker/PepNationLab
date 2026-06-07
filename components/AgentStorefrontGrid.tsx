@@ -1811,8 +1811,10 @@ export default function AgentStorefrontGrid({
   // deeply-nested children. Inert when no matching product is on this storefront.
   useEffect(() => {
     const handler = (e: Event) => {
-      const name = (e as CustomEvent<{ name?: string }>).detail?.name;
+      const detail = (e as CustomEvent<{ name?: string; handled?: boolean }>).detail;
+      const name = detail?.name;
       if (!name) return;
+      if (detail) detail.handled = true;
       const matches = products.filter(
         (p) => (p.products?.name || '').toLowerCase() === name.toLowerCase()
       );

@@ -141,14 +141,8 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
     <div style={{ maxWidth: 1040, margin: '0 auto', padding: 'var(--space-6) var(--space-4)' }}>
       <header style={{ marginBottom: 'var(--space-6)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
-          <div>
-            <h1 style={{ margin: 0, color: '#FFFFFF', fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
-              Stacks &amp; Combinations
-            </h1>
-            <p style={{ margin: 'var(--space-3) 0 0', color: '#A8B4C0', maxWidth: 720, lineHeight: 1.55 }}>
-              Documented Compound Combinations Studied Together In The Research Literature. For Research
-              Use Only. Educational Reference, Not A Protocol Or Medical Advice.
-            </p>
+          <div style={{ display: 'flex', flex: 1 }}>
+            {/* Redundant header removed; handled by parent page.tsx */}
           </div>
           <div style={{ display: 'flex', gap: 8, background: 'rgba(255,255,255,0.05)', padding: 4, borderRadius: 12 }}>
             <button onClick={() => setViewMode('grid')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: viewMode === 'grid' ? 'rgba(0,229,255,0.1)' : 'transparent', color: viewMode === 'grid' ? '#00E5FF' : '#A8B4C0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>

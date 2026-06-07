@@ -1509,7 +1509,7 @@ export default function DiscoveryHero({
               background: 'transparent',
               border: 'none', outline: 'none', color: '#FFFFFF',
               fontSize: 'max(16px, 1.86vw)',
-              padding: '0 10px 12px 62px',
+              padding: '0 10px 12px 72px',
               textAlign: 'left',
               fontWeight: 500,
               letterSpacing: '0.02em',
