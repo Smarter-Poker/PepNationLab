@@ -944,6 +944,12 @@ function CartDrawer() {
       <motion.div
         initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.2}
+        onDragEnd={(e, info) => {
+          if (info.offset.x > 100) setIsCartOpen(false);
+        }}
         className="glass-panel"
         style={{
           width: '100%', maxWidth: 440, height: '100%',

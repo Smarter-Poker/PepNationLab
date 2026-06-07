@@ -4,6 +4,7 @@ import React, { useState, useMemo, useCallback, useEffect, useDeferredValue, use
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check, ShoppingCart, ArrowRight, Sparkles, Flame, Zap, Brain, Shield, Hourglass, Moon, Activity, Syringe } from 'lucide-react';
 import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
 import ProductMonograph from './research/ProductMonograph';
@@ -107,7 +108,7 @@ function StockBadge({ state }: { state: StockState }) {
         whiteSpace: 'nowrap',
       }}
     >
-      <img src={badgeSrc} alt={label} style={{ height: 22, objectFit: 'contain' }} />
+      <Image src={badgeSrc} alt={label} width={22} height={22} style={{ height: 22, width: 'auto', objectFit: 'contain' }} unoptimized />
       {label}
     </span>
   );
@@ -2725,17 +2726,21 @@ export default function AgentStorefrontGrid({
                 })()}
 
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={group.imageUrl ?? undefined}
+                <Image
+                  src={group.imageUrl || '/images/peptide_clear.png'}
                   alt={group.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '8px', transition: 'transform 0.4s ease' }}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  style={{ objectFit: 'contain', objectPosition: 'center', padding: '8px', transition: 'transform 0.4s ease' }}
                   className="store-image-hover"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     const fallback = getProductImage(null, group.category || 'Other', group.name);
-                    if (target.src !== fallback && target.src !== window.location.origin + fallback) {
+                    if (target.src !== fallback && !target.src.includes(fallback)) {
+                      target.srcset = '';
                       target.src = fallback;
                     } else {
+                      target.srcset = '';
                       target.src = '/images/peptide_clear.png';
                       target.style.opacity = '0.9';
                     }
@@ -2856,7 +2861,7 @@ export default function AgentStorefrontGrid({
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/cart-icon.png" width={160} height={160} alt="Cart" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+          <Image src="/cart-icon.png" width={160} height={160} alt="Cart" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} unoptimized />
           {totalCartItems > 0 && (
             <span style={{
               position: 'absolute', top: '38%', left: '47%', transform: 'translate(-50%, -50%)', width: 24, height: 24,
@@ -2926,9 +2931,8 @@ export default function AgentStorefrontGrid({
                       display: 'flex', alignItems: 'center', gap: 12, padding: 10,
                       background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12,
                     }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={imgUrl ?? undefined}
+                      <Image
+                        src={imgUrl || '/images/peptide_clear.png'}
                         alt={name}
                         width={64}
                         height={64}
@@ -2936,10 +2940,9 @@ export default function AgentStorefrontGrid({
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           const fallback = getProductImage(null, item.products?.category || 'Other', name);
-                          if (target.src !== fallback && target.src !== window.location.origin + fallback) {
+                          if (target.src !== fallback && !target.src.includes(fallback)) {
+                            target.srcset = '';
                             target.src = fallback;
-                          } else {
-                            target.src = '/images/peptide_clear.png';
                           }
                         }}
                       />
@@ -3058,9 +3061,8 @@ export default function AgentStorefrontGrid({
                           display: 'flex', alignItems: 'center', gap: 12, padding: 10,
                           background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12,
                         }}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={imgUrl ?? undefined}
+                          <Image
+                            src={imgUrl || '/images/peptide_clear.png'}
                             alt={name}
                             width={56}
                             height={56}
@@ -3283,16 +3285,20 @@ export default function AgentStorefrontGrid({
                 style={{ marginTop: -54, background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)` }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={detailProduct.imageUrl ?? undefined}
+                <Image
+                  src={detailProduct.imageUrl || '/images/peptide_clear.png'}
                   alt={detailProduct.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '16px', transition: 'transform 0.4s ease' }}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  style={{ objectFit: 'contain', objectPosition: 'center', padding: '16px', transition: 'transform 0.4s ease' }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     const fallback = getProductImage(null, detailProduct.category || 'Other', detailProduct.name);
-                    if (target.src !== fallback && target.src !== window.location.origin + fallback) {
+                    if (target.src !== fallback && !target.src.includes(fallback)) {
+                      target.srcset = '';
                       target.src = fallback;
                     } else {
+                      target.srcset = '';
                       target.src = '/images/peptide_clear.png';
                       target.style.opacity = '0.9';
                     }
@@ -3379,10 +3385,13 @@ export default function AgentStorefrontGrid({
                             e.currentTarget.style.filter = 'brightness(1)';
                           }}
                         >
-                          <img
+                          <Image
                             src="/images/simple-explanation-btn.png"
                             alt="Simple Explanation"
+                            width={200}
+                            height={72}
                             style={{ height: '72px', width: 'auto', display: 'block' }}
+                            unoptimized
                           />
                         </button>
                       </div>

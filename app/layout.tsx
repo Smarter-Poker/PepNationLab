@@ -6,6 +6,8 @@ import { CartProvider } from "@/components/CartContext";
 import { InAppBrowserProvider } from "@/components/InAppBrowser";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
+import PWAEnforcer from "@/components/PWAEnforcer";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import SiteDisclaimerGate from "@/components/SiteDisclaimerGate";
 import StaleBrowserBanner from "@/components/StaleBrowserBanner";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -103,6 +105,8 @@ export default function RootLayout({
           <Toaster theme="dark" position="bottom-right" richColors />
           <ImpersonationBanner />
           <PwaInstallPrompt />
+          <PWAEnforcer />
+          <MobileBottomNav />
           <GlobalCallListener />
           <FirstRunNotificationPrompt />
           <SessionKeepalive />

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { vibrate } from '@/lib/haptics';
 
 interface DynamicAddToCartButtonProps {
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
@@ -29,7 +30,10 @@ export default function DynamicAddToCartButton({
     <button
       type="button"
       onClick={(e) => {
-        if (!disabled) onClick(e);
+        if (!disabled) {
+          vibrate(20);
+          onClick(e);
+        }
       }}
       disabled={disabled}
       onMouseDown={() => setIsPressed(true)}

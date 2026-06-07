@@ -60,6 +60,12 @@ export default function CompoundDrawer({ isOpen, onClose, result }: CompoundDraw
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={(e, info) => {
+              if (info.offset.x > 100) onClose();
+            }}
             style={{
               position: 'fixed',
               top: 0,

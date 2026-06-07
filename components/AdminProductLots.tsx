@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FileText, Plus, Upload, Trash2, Edit3, Power, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { vibrate } from '@/lib/haptics';
 import IframeLink from '@/components/ui/IframeLink';
 
 interface Lot {
@@ -386,7 +387,7 @@ export default function AdminProductLots({ productId }: Props) {
                     <button
                       type="button"
                       className="btn-silver"
-                      onClick={() => triggerUpload(lot.id)}
+                      onClick={() => { vibrate(10); triggerUpload(lot.id); }}
                       disabled={uploading}
                       style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                     >
@@ -396,7 +397,7 @@ export default function AdminProductLots({ productId }: Props) {
                   <button
                     type="button"
                     className="btn-silver"
-                    onClick={() => openEditForm(lot)}
+                    onClick={() => { vibrate(10); openEditForm(lot); }}
                     style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   >
                     <Edit3 size={12} aria-hidden="true" /> Edit
@@ -404,7 +405,7 @@ export default function AdminProductLots({ productId }: Props) {
                   <button
                     type="button"
                     className="btn-silver"
-                    onClick={() => toggleActive(lot)}
+                    onClick={() => { vibrate(20); toggleActive(lot); }}
                     style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   >
                     <Power size={12} aria-hidden="true" /> {lot.is_active ? 'Deactivate' : 'Activate'}
@@ -412,7 +413,7 @@ export default function AdminProductLots({ productId }: Props) {
                   <button
                     type="button"
                     className="btn-silver"
-                    onClick={() => deleteLot(lot)}
+                    onClick={() => { vibrate(30); deleteLot(lot); }}
                     style={{ padding: '6px 10px', fontSize: '0.75rem', color: '#FCA5A5', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   >
                     <Trash2 size={12} aria-hidden="true" /> Delete
