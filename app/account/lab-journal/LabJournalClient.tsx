@@ -1101,7 +1101,19 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     {comparisons.length === 0 ? renderEmptyState() : comparisons.map(c => (
                       <div key={c.id} className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-3)' }}>
-                          <h3 style={{ color: 'var(--white)' }}>Comparison from {new Date(c.created_at).toLocaleDateString()}</h3>
+                          <div>
+                            {c.folder_name && (
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(0,196,188,0.15)', color: 'var(--teal)', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 8, border: '1px solid rgba(0,196,188,0.3)' }}>
+                                <Layers size={12} /> {c.folder_name}
+                              </div>
+                            )}
+                            <h3 style={{ color: 'var(--white)', margin: 0 }}>Comparison from {new Date(c.created_at).toLocaleDateString()}</h3>
+                            {c.notes && (
+                              <p style={{ color: 'var(--silver)', fontSize: '0.85rem', marginTop: 8, fontStyle: 'italic', maxWidth: '600px' }}>
+                                "{c.notes}"
+                              </p>
+                            )}
+                          </div>
                         </div>
                         <div style={{ display: 'flex', gap: 'var(--space-3)', overflowX: 'auto', paddingBottom: 'var(--space-2)' }}>
                           {c.product_ids.map((pid: string) => {

@@ -810,7 +810,7 @@ function SmartRecCard({
       <div style={{ padding: '6px 8px 0', flexGrow: 1 }}>
         <div
           style={{
-            fontSize: '0.7rem', fontWeight: 700, color: 'var(--white)', lineHeight: 1.25,
+            fontSize: '0.9rem', fontWeight: 700, color: 'var(--white)', lineHeight: 1.25,
             display: '-webkit-box', WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
             overflow: 'hidden', marginBottom: 3,
@@ -824,7 +824,7 @@ function SmartRecCard({
           </div>
         )}
         {typeof rec.retail_price === 'number' && rec.retail_price > 0 && (
-          <div style={{ fontSize: '0.8rem', color: 'var(--teal)', fontWeight: 800, fontFamily: 'var(--font-brand)', marginTop: 2 }}>
+          <div style={{ fontSize: '1.1rem', color: 'var(--teal)', fontWeight: 800, fontFamily: 'var(--font-brand)', marginTop: 2 }}>
             ${rec.retail_price.toFixed(2)}
           </div>
         )}

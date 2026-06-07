@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { product_ids } = await req.json();
+    const { product_ids, folder_name, notes } = await req.json();
 
     if (!product_ids || !Array.isArray(product_ids) || product_ids.length === 0) {
       return NextResponse.json({ error: 'Product IDs are required' }, { status: 400 });
@@ -44,7 +44,9 @@ export async function POST(req: NextRequest) {
       .from('researcher_comparisons')
       .insert({
         user_id: session.user.id,
-        product_ids
+        product_ids,
+        folder_name,
+        notes
       })
       .select()
       .single();

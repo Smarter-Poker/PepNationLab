@@ -30,7 +30,7 @@ import {
   Zap, BookOpen, FlaskConical, Shield, Star,
   Clock, Thermometer, ArrowRight, BarChart3, Beaker,
   Scale, Syringe, Wrench, Hourglass, Filter, List, Smartphone, LayoutList, MoveUp, MoveDown,
-  Sparkles, Moon, Heart, Brain, FileText, Mic, ShoppingCart, Crosshair, Target, Image
+  Sparkles, Moon, Heart, Brain, FileText, Mic, ShoppingCart, Crosshair, Target, Image, ShieldAlert
 } from 'lucide-react';
 import { type Compound, evidenceTier, researchAreaLabel, RISK_META, calculateStackSynergy } from '@/lib/compounds';
 import AttributeRadarChart, { type RadarDataPoint } from './AttributeRadarChart';
@@ -1524,6 +1524,42 @@ function ProtocolTab({ selected }: { selected: Compound[] }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(260px, 1fr))`, gap: 14 }}>
+        {/* Protocol Timeline Visualizer */}
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 20, gridColumn: '1 / -1', marginBottom: 8 }}>
+          <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}><Hourglass size={16} /> 8-Week Protocol Timeline</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '120px repeat(8, 1fr)', gap: 4, overflowX: 'auto' }}>
+            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(255,255,255,0.3)', alignSelf: 'end', paddingBottom: 8 }}>COMPOUND</div>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(w => <div key={w} style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textAlign: 'center', paddingBottom: 8 }}>WK {w}</div>)}
+            
+            {selected.map((c, i) => {
+              const hl = parseHalfLifeHours(c.half_life);
+              const isDaily = hl > 0 && hl <= 24;
+              const isTwiceWeekly = hl > 24 && hl <= 72;
+              const isOnceWeekly = hl > 72;
+              const color = colors[i % colors.length];
+              
+              return (
+                <div style={{ display: 'contents' }} key={c.slug}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: color, alignSelf: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={c.display_name}>{c.display_name}</div>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map(w => (
+                    <div key={w} style={{ height: 32, background: 'rgba(255,255,255,0.03)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                      {isDaily && <div style={{ position: 'absolute', inset: '8px 4px', background: `${color}40`, borderRadius: 4, border: `1px solid ${color}80` }} title="Daily Administration" />}
+                      {isTwiceWeekly && (
+                        <div style={{ position: 'absolute', inset: '8px 4px', display: 'flex', justifyContent: 'space-around' }}>
+                          <div style={{ width: '30%', height: '100%', background: `${color}40`, borderRadius: 4, border: `1px solid ${color}80` }} title="2x Weekly Administration" />
+                          <div style={{ width: '30%', height: '100%', background: `${color}40`, borderRadius: 4, border: `1px solid ${color}80` }} title="2x Weekly Administration" />
+                        </div>
+                      )}
+                      {isOnceWeekly && <div style={{ width: '30%', height: 16, background: `${color}40`, borderRadius: 4, border: `1px solid ${color}80` }} title="Weekly Administration" />}
+                      {!isDaily && !isTwiceWeekly && !isOnceWeekly && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)' }}>?</div>}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {selected.map((c, i) => {
           const color = colors[i % colors.length];
           const shelf = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days;
@@ -1847,7 +1883,7 @@ const tabIcons: Record<string, React.ReactNode> = {
 };
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function CompareTool({ compounds, initialSlugs = [], products = [] }: { compounds: Compound[]; initialSlugs?: string[]; products?: AreaProduct[] }) {
+export default function CompareTool({ compounds, initialSlugs = [], products: initialProducts = [] }: { compounds: Compound[]; initialSlugs?: string[]; products?: AreaProduct[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -1870,7 +1906,88 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
   const [hideIdentical, setHideIdentical] = useState(false);
   const [controlSlug, setControlSlug] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'matrix' | 'proscons' | 'brief' | 'mechanism' | 'protocol' | 'recommend' | 'efficacy'>('matrix');
+  const { data: liveProductsData } = useSWR(
+    selectedSlugs.length > 0 ? `/api/research/products?slugs=${selectedSlugs.join(',')}` : null,
+    (url: string) => fetch(url).then(res => res.json()),
+    { refreshInterval: 30000, revalidateOnFocus: true }
+  );
+
+  const products = useMemo(() => {
+    if (!liveProductsData?.products) return initialProducts;
+    const liveMap = new Map(liveProductsData.products.map((p: any) => [p.compoundSlug, p]));
+    return initialProducts.map(p => {
+      const live = liveMap.get(p.compoundSlug);
+      return live ? { ...p, ...live } : p;
+    });
+  }, [initialProducts, liveProductsData]);
+
+  const [activeTab, setActiveTab] = useState<'matrix' | 'proscons' | 'brief' | 'mechanism' | 'protocol' | 'recommend' | 'efficacy' | 'ai'>('matrix');
+
+  // AI Analyst State
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  useEffect(() => {
+    setAiAnalysis(null);
+  }, [selectedSlugs]);
+
+  const triggerAIAnalysis = async () => {
+    if (selectedSlugs.length < 2) return;
+    setIsAnalyzing(true);
+    setAiAnalysis(null);
+    try {
+      const res = await fetch('/api/researcher/ai-stack-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slugs: selectedSlugs })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAiAnalysis(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Lab Journal Save State
+  const [journalModalOpen, setJournalModalOpen] = useState(false);
+  const [journalFolder, setJournalFolder] = useState('');
+  const [journalNotes, setJournalNotes] = useState('');
+  const [isSavingJournal, setIsSavingJournal] = useState(false);
+
+  const saveToLabJournal = async () => {
+    setIsSavingJournal(true);
+    try {
+      // Find the product IDs for the selected slugs
+      const productIds = selectedSlugs.map(slug => products.find(p => p.compoundSlug === slug)?.id).filter(Boolean);
+      
+      const res = await fetch('/api/researcher/comparisons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          product_ids: productIds,
+          folder_name: journalFolder || 'Unsorted Comparisons',
+          notes: journalNotes 
+        })
+      });
+      
+      if (res.ok) {
+        setJournalModalOpen(false);
+        setJournalFolder('');
+        setJournalNotes('');
+        alert('Saved to Lab Journal!');
+      } else {
+        alert('Failed to save. Make sure you are logged in.');
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSavingJournal(false);
+    }
+  };
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
   const [mobileViewMode, setMobileViewMode] = useState<'matrix' | 'accordion'>('matrix');
@@ -2104,6 +2221,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
     { id: 'mechanism' as const, label: 'Mechanism', showAlways: false },
     { id: 'protocol' as const, label: 'Protocol', showAlways: false },
     { id: 'recommend' as const, label: 'Verdict', showAlways: false },
+    { id: 'ai' as const, label: 'AI Analyst', showAlways: false },
   ];
 
   return (
@@ -2275,6 +2393,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
               <button type="button" onClick={handleShareCard} className="action-btn-nickel" title="Share Visual Card"><Image size={14} /> Card</button>
               <button type="button" onClick={handleShare} className="action-btn-nickel" title="Share Link">{copied ? <Check size={14} color="#00C4BC" /> : <Share2 size={14} />} {copied ? 'Copied' : 'Share'}</button>
               <button type="button" onClick={() => window.print()} className="action-btn-nickel" title="Print Dossier"><Printer size={14} /> Print</button>
+              <button type="button" onClick={() => setJournalModalOpen(true)} className="action-btn-nickel" title="Save to Lab Journal" style={{ background: 'rgba(0,196,188,0.1) !important' }}><BookOpen size={14} color="#00C4BC" /> Save to Lab</button>
               
               <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
               
@@ -2385,6 +2504,20 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
                   <Share2 size={10} /> Share Card
                 </button>
               )}
+            </div>
+          )}
+
+          {/* Feature 10: Contraindication Warning Banner (from AI Analysis) */}
+          {aiAnalysis?.warnings?.length > 0 && (
+            <div className="no-print" style={{ background: 'rgba(229,62,62,0.15)', border: '1px solid rgba(229,62,62,0.4)', borderRadius: 12, padding: '16px 20px', marginBottom: 20, animation: 'fadeInDown 0.4s ease-out' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#FC8181', fontWeight: 900, fontSize: '1.05rem', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <ShieldAlert size={22} /> Critical Stack Warning
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 24, color: 'rgba(255,255,255,0.9)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                {aiAnalysis.warnings.map((w: string, i: number) => (
+                  <li key={i} style={{ marginBottom: 6 }}>{w}</li>
+                ))}
+              </ul>
             </div>
           )}
 
@@ -2734,6 +2867,53 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
                   </div>
                 );
               })()}
+            </div>
+          )}
+
+          {/* ── TAB: AI ANALYST ── */}
+          {activeTab === 'ai' && (
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24, minHeight: 400 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Brain size={24} color="#00C4BC" />
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#fff' }}>AI Stack Analyst</h3>
+                </div>
+                {!aiAnalysis && !isAnalyzing && (
+                  <button 
+                    onClick={triggerAIAnalysis}
+                    style={{ background: 'linear-gradient(135deg, #00C4BC 0%, #68D391 100%)', border: 'none', padding: '10px 20px', borderRadius: 8, color: '#0F161E', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 15px rgba(0,196,188,0.3)' }}
+                  >
+                    <Sparkles size={16} /> Analyze Stack
+                  </button>
+                )}
+              </div>
+              
+              {isAnalyzing && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 200, gap: 16 }}>
+                  <div className="spinner" style={{ width: 40, height: 40, border: '4px solid rgba(0,196,188,0.2)', borderTopColor: '#00C4BC', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  <div style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>Analyzing {selected.length} compounds...</div>
+                </div>
+              )}
+
+              {aiAnalysis && (
+                <div style={{ animation: 'fadeInUp 0.5s ease-out' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 20 }}>
+                      <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 8 }}>Synergy Score</div>
+                      <div style={{ fontSize: '3rem', fontWeight: 900, color: aiAnalysis.synergyScore > 80 ? '#00C4BC' : aiAnalysis.synergyScore > 50 ? '#F6AD55' : '#FC8181', lineHeight: 1 }}>{aiAnalysis.synergyScore}<span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>/100</span></div>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 20 }}>
+                      <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 8 }}>Verdict</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>{aiAnalysis.verdict}</div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 24, marginBottom: 24 }}>
+                    <h4 style={{ margin: '0 0 16px 0', fontSize: '1.1rem', color: '#fff' }}>Detailed Analysis</h4>
+                    <div style={{ color: 'rgba(255,255,255,0.8)', lineHeight: 1.7, fontSize: '0.95rem' }} dangerouslySetInnerHTML={{ __html: aiAnalysis.analysis.replace(/\\n/g, '<br/>') }} />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -3409,6 +3589,51 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
           topPickSlug={topPickSlug}
           onClose={() => { setFocusRow(null); }}
         />
+      )}
+
+      {/* Feature 14: Save to Lab Journal Modal */}
+      {journalModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setJournalModalOpen(false)}>
+          <div style={{ background: '#162230', width: '100%', maxWidth: 480, borderRadius: 20, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', animation: 'slideUp 0.3s ease-out' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <BookOpen size={24} color="#00C4BC" />
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>Save to My Lab</h3>
+              </div>
+              <button onClick={() => setJournalModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#A8B4C0', cursor: 'pointer' }}><X size={24} /></button>
+            </div>
+            
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#A8B4C0', marginBottom: 8 }}>Folder Name (Optional)</label>
+              <input 
+                type="text" 
+                value={journalFolder} 
+                onChange={e => setJournalFolder(e.target.value)} 
+                placeholder="e.g. Tendon Repair Stack" 
+                style={{ width: '100%', background: 'rgba(22, 34, 48, 0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '12px 16px', fontSize: '1rem', outline: 'none' }} 
+              />
+            </div>
+            
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#A8B4C0', marginBottom: 8 }}>Research Notes (Optional Markdown)</label>
+              <textarea 
+                value={journalNotes} 
+                onChange={e => setJournalNotes(e.target.value)} 
+                placeholder="Why are you comparing these? Add protocol ideas..." 
+                style={{ width: '100%', background: 'rgba(22, 34, 48, 0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '12px 16px', fontSize: '1rem', outline: 'none', minHeight: 120, resize: 'vertical' }} 
+              />
+            </div>
+
+            <button 
+              onClick={saveToLabJournal}
+              disabled={isSavingJournal}
+              style={{ width: '100%', background: 'linear-gradient(135deg, #00C4BC 0%, #68D391 100%)', border: 'none', padding: 14, borderRadius: 12, color: '#0F161E', fontWeight: 800, fontSize: '1rem', cursor: isSavingJournal ? 'not-allowed' : 'pointer', opacity: isSavingJournal ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              {isSavingJournal ? <div className="spinner" style={{ width: 20, height: 20, border: '3px solid rgba(0,0,0,0.1)', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> : <BookOpen size={20} />}
+              {isSavingJournal ? 'Saving...' : 'Save Comparison'}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Feature 6: Mobile Bottom Tab Bar (fixed, replaces desktop horizontal tab strip on phones) */}
