@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { AlertTriangle, Search, X } from 'lucide-react';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 
 interface AgentInventoryItem {
@@ -258,11 +259,14 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
         {isEditing ? (
           <form onSubmit={(e) => handleSaveStock(e, item.id)} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-              <img
+              <Image
                 src={item.image_url || '/images/peptide_clear.png'}
                 alt={item.name}
+                width={60}
+                height={60}
                 style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
-                onError={(e) => { (e.target as HTMLImageElement).src = '/images/peptide_clear.png'; }}
+                onError={(e) => { const target = e.target as HTMLImageElement; if (!target.src.includes('/images/peptide_clear.png')) { target.srcset = ''; target.src = '/images/peptide_clear.png'; } }}
+                unoptimized
               />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: 4 }}>
@@ -324,11 +328,14 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
           </form>
         ) : (
           <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-            <img
+            <Image
               src={item.image_url || '/images/peptide_clear.png'}
               alt={item.name}
+              width={80}
+              height={80}
               style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
-              onError={(e) => { (e.target as HTMLImageElement).src = '/images/peptide_clear.png'; }}
+              onError={(e) => { const target = e.target as HTMLImageElement; if (!target.src.includes('/images/peptide_clear.png')) { target.srcset = ''; target.src = '/images/peptide_clear.png'; } }}
+              unoptimized
             />
             <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -386,10 +393,13 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
             onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
             onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <img 
+            <Image 
               src="/images/inventory-warning.png" 
               alt="Important Warning: In-Stock Inventory Priority" 
+              width={650}
+              height={300}
               style={{ width: '100%', height: 'auto', display: 'block' }} 
+              unoptimized
             />
           </button>
         </div>

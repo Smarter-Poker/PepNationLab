@@ -10,30 +10,6 @@ export default function PWAEnforcer() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // 1. Check if running in standalone mode (PWA)
-    const isStandalone =
-      window.matchMedia?.('(display-mode: standalone)').matches ||
-      ('standalone' in window.navigator && (window.navigator as any).standalone === true);
-
-    if (isStandalone) {
-      setLoading(false);
-      return;
-    }
-
-    // 2. Check if user already dismissed this prompt
-    if (localStorage.getItem('pwa_enforcer_dismissed') === 'true') {
-      setLoading(false);
-      return;
-    }
-
-    // 3. Skip if on desktop (not a mobile device)
-    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (!isMobile) {
-      setLoading(false);
-      return;
-    }
-
-    // 4. Not standalone, mobile, and not dismissed, let's check user role
     const supabase = createClient();
     
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -44,11 +20,42 @@ export default function PWAEnforcer() {
 
       supabase
         .from('profiles')
-        .select('role')
+        .select('role, pwa_dismissed')
         .eq('id', user.id)
         .single()
         .then(({ data: profile }) => {
           if (profile && ['super_agent', 'agent', 'sub_agent'].includes(profile.role)) {
+            
+            // Check global profile flag or local storage
+            if (profile.pwa_dismissed || localStorage.getItem('pwa_enforcer_dismissed') === 'true') {
+              // Ensure DB is in sync if local storage was true but DB wasn't
+              if (!profile.pwa_dismissed && localStorage.getItem('pwa_enforcer_dismissed') === 'true') {
+                 supabase.from('profiles').update({ pwa_dismissed: true }).eq('id', user.id).then();
+              }
+              setLoading(false);
+              return;
+            }
+
+            // Check if running in standalone mode (PWA)
+            const isStandalone =
+              window.matchMedia?.('(display-mode: standalone)').matches ||
+              ('standalone' in window.navigator && (window.navigator as any).standalone === true);
+
+            if (isStandalone) {
+              // They are using the app! Save to DB globally so they don't get bothered elsewhere
+              supabase.from('profiles').update({ pwa_dismissed: true }).eq('id', user.id).then();
+              localStorage.setItem('pwa_enforcer_dismissed', 'true');
+              setLoading(false);
+              return;
+            }
+
+            // Skip if on desktop (not a mobile device)
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            if (!isMobile) {
+              setLoading(false);
+              return;
+            }
+
             setNeedsInstall(true);
           }
           setLoading(false);
@@ -108,9 +115,13 @@ export default function PWAEnforcer() {
         </div>
 
         <button 
-          onClick={() => {
+          onClick={async () => {
             localStorage.setItem('pwa_enforcer_dismissed', 'true');
             setNeedsInstall(false);
+            const { data: { user } } = await createClient().auth.getUser();
+            if (user) {
+              await createClient().from('profiles').update({ pwa_dismissed: true }).eq('id', user.id);
+            }
           }}
           style={{
             marginTop: 'var(--space-5)',

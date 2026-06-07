@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 
 const SAMPLE_PRODUCTS = [
   { name: 'BPC-157', category: 'Peptide', description: 'Research-grade synthetic peptide for laboratory in vitro analysis.' },
@@ -56,10 +57,13 @@ export default function ProductsPreview() {
                 <div style={{
                   position: 'absolute', top: 12, right: 12,
                 }}>
-                  <img 
+                  <Image 
                     src="/images/badges/badge_research_compound.png" 
                     alt="Research Only" 
-                    style={{ height: 22, objectFit: 'contain' }} 
+                    width={100}
+                    height={22}
+                    style={{ height: 22, width: 'auto', objectFit: 'contain' }} 
+                    unoptimized
                   />
                 </div>
               </div>

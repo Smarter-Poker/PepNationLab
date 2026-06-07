@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Check, Package } from 'lucide-react';
+import Image from 'next/image';
 
 interface ProductOption {
   id: string;
@@ -264,7 +265,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
                         }}>
                           {isSelected && <Check size={12} color="#0b0f16" strokeWidth={3} aria-hidden="true" />}
                         </div>
-                        <img src={p.products.image_url || '/images/peptide_clear.png'} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).src = '/images/peptide_clear.png'; }} />
+                        <Image src={p.products.image_url || '/images/peptide_clear.png'} alt="" width={28} height={28} style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'cover' }} onError={(e) => { const target = e.target as HTMLImageElement; if (!target.src.includes('/images/peptide_clear.png')) { target.srcset = ''; target.src = '/images/peptide_clear.png'; } }} unoptimized />
                         <span style={{ fontSize: '0.82rem', color: 'var(--white)', flex: 1 }}>{displayName}</span>
                         {sizeLabel && <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)' }}>{sizeLabel}</span>}
                         <span style={{ fontSize: '0.82rem', color: '#00E5FF', fontWeight: 600 }}>${Number(p.retail_price).toFixed(2)}</span>
@@ -354,7 +355,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
                         background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: '4px',
                         fontSize: '0.78rem', color: 'var(--silver)',
                       }}>
-                        <img src={p.products.image_url || '/images/peptide_clear.png'} alt="" style={{ width: 20, height: 20, borderRadius: 3 }} onError={(e) => { (e.target as HTMLImageElement).src = '/images/peptide_clear.png'; }} />
+                        <Image src={p.products.image_url || '/images/peptide_clear.png'} alt="" width={20} height={20} style={{ width: 20, height: 20, borderRadius: 3 }} onError={(e) => { const target = e.target as HTMLImageElement; if (!target.src.includes('/images/peptide_clear.png')) { target.srcset = ''; target.src = '/images/peptide_clear.png'; } }} unoptimized />
                         {p.custom_name || p.products.name}
                       </div>
                     ))}

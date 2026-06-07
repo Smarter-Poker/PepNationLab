@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import Image from 'next/image';
 
 interface Coupon {
   id: string;
@@ -1350,10 +1351,13 @@ function QrModal({ coupon, onClose }: { coupon: Coupon; onClose: () => void }) {
           justifyContent: 'center',
           maxWidth: '100%',
         }}>
-          <img
+          <Image
             src={qrUrl}
             alt={`QR Code For ${coupon.code}`}
+            width={280}
+            height={280}
             style={{ width: '100%', maxWidth: 280, height: 'auto', display: 'block' }}
+            unoptimized
           />
         </div>
         <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0, textAlign: 'center', lineHeight: 1.5 }}>

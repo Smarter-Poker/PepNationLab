@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import { Loader2, Plus, GripVertical } from 'lucide-react';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 
 interface ProductInfo {
@@ -383,11 +385,20 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                 >
                   {isEditing ? (
                     <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                      <img
+                      <Image
                         src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'}
                         alt={displayName}
+                        width={80}
+                        height={80}
                         style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
-                        onError={(e) => { (e.target as any).src = '/images/peptide_clear.png'; }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (!target.src.includes('/images/peptide_clear.png')) {
+                            target.srcset = '';
+                            target.src = '/images/peptide_clear.png';
+                          }
+                        }}
+                        unoptimized
                       />
                       <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
