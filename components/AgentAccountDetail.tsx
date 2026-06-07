@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { freshDefaultLadder, isDefaultLadder } from '@/lib/gamification';
 import AgentFreezeToggle from '@/components/AgentFreezeToggle';
 import AdminTierOverrideControl from '@/components/AdminTierOverrideControl';
+import ViewAsButton from '@/components/ViewAsButton';
 
 /**
  * AgentAccountDetail - full management drawer for a single downline FULL agent.
@@ -114,11 +115,13 @@ export default function AgentAccountDetail({
   agentName,
   onClose,
   onChanged,
+  onViewDownline,
 }: {
   agentId: string;
   agentName: string;
   onClose: () => void;
   onChanged: () => void;
+  onViewDownline?: (agent: any) => void;
 }) {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -295,13 +298,50 @@ export default function AgentAccountDetail({
         style={{ width: '100%', maxWidth: 760, margin: 'var(--space-6) 0' }}
       >
         <div className="" style={{ padding: 'var(--space-6)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-4)', marginBottom: 'var(--space-5)', flexWrap: 'wrap' }}>
             <div>
               <h2 className="metal-text" style={{ fontSize: '1.4rem', fontFamily: 'var(--font-brand)', margin: 0 }}>
                 {detail?.agent.full_name || agentName}
               </h2>
             </div>
-            <button type="button" className="btn-silver" onClick={onClose}>Close</button>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              {detail && detail.agent.is_super_agent && onViewDownline && (
+                <button onClick={() => onViewDownline(detail.agent)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                  View Downline
+                </button>
+              )}
+              {detail && (
+                <button 
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/admin/agents/super-upgrade', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ agentId: detail.agent.id, is_super_agent: !detail.agent.is_super_agent })
+                      });
+                      const json = await res.json();
+                      if (!res.ok) throw new Error(json.error);
+                      toast.success(detail.agent.is_super_agent ? 'Super Agent Status Revoked' : 'Promoted To Super Agent');
+                      load();
+                      onChanged();
+                    } catch (err: any) {
+                      toast.error(err.message || 'Failed To Update Super Agent Status');
+                    }
+                  }}
+                  className="btn-silver" style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                  disabled={detail.agent.is_sub_agent}
+                >
+                  {detail.agent.is_super_agent ? 'Revoke Super' : 'Make Super'}
+                </button>
+              )}
+              {detail && (
+                <ViewAsButton
+                  targetUserId={detail.agent.id}
+                  targetLabel={detail.agent.full_name ?? detail.agent.email ?? 'Agent'}
+                />
+              )}
+              <button type="button" className="btn-silver" onClick={onClose} style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Close</button>
+            </div>
           </div>
 
           {loading ? (

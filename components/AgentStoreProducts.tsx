@@ -267,24 +267,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                 Toggle Products On/Off, Reorder Them, Set Custom Prices And Descriptions.
               </p>
             </div>
-            <div className="agentprod-header-controls" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div className="agentprod-view-toggle" style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.5)', borderRadius: '4px', padding: 3, border: '1px solid rgba(255,255,255,0.05)' }}>
-                {( [['flat', 'All'], ['category', 'By Category']] as ['flat' | 'category', string][] ).map(([key, label]) => (
-                  <button
-                    key={key}
-                    onClick={() => setViewMode(key)}
-                    style={{
-                      padding: '5px 12px', border: 'none', borderRadius: '4px', cursor: 'pointer',
-                      fontSize: '0.75rem', fontWeight: 600, transition: 'all 0.2s',
-                      background: viewMode === key ? 'rgba(0,229,255,0.1)' : 'transparent',
-                      color: viewMode === key ? '#00E5FF' : 'rgba(255,255,255,0.4)',
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <div className="agentprod-filter-chips" style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.5)', borderRadius: '4px', padding: 3, border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="agentprod-filter-chips" style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.5)', borderRadius: '4px', padding: 3, border: '1px solid rgba(255,255,255,0.05)' }}>
               {( [['all', `All (${products.length})`], ['active', `Active (${activeCount})`], ['hidden', `Hidden (${hiddenCount})`]] as [FilterMode, string][] ).map(([key, label]) => (
                 <button
                   key={key}
@@ -300,7 +283,6 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                 </button>
               ))}
               </div>
-            </div>
           </div>
         </div>
       </div>
@@ -327,10 +309,13 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
       {/* ── Pricing & Discounts Configuration ── */}
       <PricingConfig agentId={agentId} />
 
-      {/* Bulk Margin */}
+      {/* Master Reset / Bulk Margin */}
       <div className="glass-panel">
         <div className="" style={{ padding: 'var(--space-5)' }}>
-          <h4 style={{ fontSize: '0.9rem', color: '#00E5FF', marginBottom: 'var(--space-3)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bulk Margin Adjustment</h4>
+          <h4 style={{ fontSize: '0.9rem', color: '#00E5FF', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Master Reset (Bulk Margin)</h4>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem', marginBottom: 'var(--space-4)', lineHeight: 1.4 }}>
+            Apply a universal margin percentage to all products. This will override existing custom margins and calculate new retail prices based on your base cost.
+          </p>
           <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)' }}>Apply +</span>
             <input
@@ -347,7 +332,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
               disabled={bulkSaving}
               style={{ marginLeft: 'auto', padding: '6px 16px', fontSize: '0.8rem' }}
             >
-              {bulkSaving ? 'Applying...' : 'Apply Bulk Margin'}
+              {bulkSaving ? 'Applying...' : 'Apply Master Reset'}
             </button>
           </div>
         </div>
@@ -359,7 +344,20 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
         </div>
       )}
 
-      {/* Flat alphabetical list (default) */}
+      {/* Catalog View Controls */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-4)' }}>
+        <div className="agentprod-view-toggle" style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.5)', borderRadius: '4px', padding: 4, border: '1px solid rgba(255,255,255,0.05)' }}>
+          {( [['flat', 'All Products Alphabetical'], ['category', 'Sorted By Category']] as ['flat' | 'category', string][] ).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setViewMode(key)}
+              style={{ background: viewMode === key ? 'rgba(0,196,188,0.2)' : 'transparent', color: viewMode === key ? '#00E5FF' : '#fff', border: '1px solid', borderColor: viewMode === key ? 'rgba(0,196,188,0.4)' : 'transparent', padding: '6px 16px', fontSize: '0.85rem', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: viewMode === key ? 600 : 400 }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       {effectiveViewMode === 'flat' && (
         <div className="glass-panel">
           <div className="" style={{ padding: 0, overflow: 'hidden' }}>
@@ -490,19 +488,19 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                           <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>{p.products.category}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          {p.agent_cost != null && p.agent_cost > 0 && (
-                            <>
-                              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Your Cost:</span>
-                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>
-                                ${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}
-                              </span>
-                              <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
-                            </>
-                          )}
-                          <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Listed:</span>
-                          <span style={{ fontSize: '0.85rem', color: '#00E5FF', fontWeight: 800 }}>
-                            ${(Number(p.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}
-                          </span>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Your Cost:</span>
+                            {p.agent_cost != null && p.agent_cost > 0 ? (
+                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</span>
+                            ) : (
+                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>TBD</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Listed:</span>
+                            <span style={{ fontSize: '0.9rem', color: '#00E5FF', fontWeight: 700 }}>${(Number(p.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</span>
+                          </div>
                           {p.is_on_sale && p.sale_price && (
                             <span style={{ fontSize: '0.7rem', color: '#FC8181', fontWeight: 700, background: 'rgba(229,62,62,0.10)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(229,62,62,0.2)' }}>
                               On Sale ${(Number(p.sale_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}
@@ -683,15 +681,19 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                                 {sizeLabel && <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px' }}>{sizeLabel}</span>}
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                {p.agent_cost != null && p.agent_cost > 0 && (
-                                  <>
-                                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Your Cost:</span>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Your Cost:</span>
+                                  {p.agent_cost != null && p.agent_cost > 0 ? (
                                     <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</span>
-                                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
-                                  </>
-                                )}
-                                <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Listed:</span>
-                                <span style={{ fontSize: '0.85rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</span>
+                                  ) : (
+                                    <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>TBD</span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</div>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Listed:</span>
+                                  <span style={{ fontSize: '0.9rem', color: '#00E5FF', fontWeight: 700 }}>${(Number(p.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</span>
+                                </div>
                                 {p.is_on_sale && p.sale_price && (
                                   <span style={{ fontSize: '0.7rem', color: '#FC8181', fontWeight: 700, background: 'rgba(229,62,62,0.10)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(229,62,62,0.2)' }}>
                                     On Sale ${(Number(p.sale_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}
@@ -788,6 +790,7 @@ function PricingConfig({ agentId }: { agentId: string }) {
   }, [agentId]);
 
   const [showBulkExplain, setShowBulkExplain] = React.useState(false);
+  const [showDynamicPricing, setShowDynamicPricing] = React.useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -842,17 +845,24 @@ function PricingConfig({ agentId }: { agentId: string }) {
 
       {/* Dynamic Pricing Section */}
       <div style={{ marginBottom: 'var(--space-6)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', cursor: 'pointer' }} onClick={() => setShowDynamicPricing(!showDynamicPricing)}>
           <div>
-            <h4 style={{ color: '#fff', fontSize: '1.05rem', marginBottom: 4 }}>Dynamic Pricing</h4>
+            <h4 style={{ color: '#fff', fontSize: '1.05rem', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+              Dynamic Pricing 
+              <span style={{ fontSize: '0.8rem', color: 'var(--grey-500)', background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 4 }}>
+                {showDynamicPricing ? '▼ Collapsed' : '▶ Expand'}
+              </span>
+            </h4>
             <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Small-order surcharges for orders under 10 vials</p>
           </div>
-          <button type="button" onClick={() => setEnableDynamic(!enableDynamic)} style={toggleStyle(enableDynamic)}>
-            <span style={toggleDot(enableDynamic)} />
-          </button>
+          <div onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => setEnableDynamic(!enableDynamic)} style={toggleStyle(enableDynamic)}>
+              <span style={toggleDot(enableDynamic)} />
+            </button>
+          </div>
         </div>
 
-        {enableDynamic && (
+        {showDynamicPricing && enableDynamic && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-2)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -898,17 +908,17 @@ function PricingConfig({ agentId }: { agentId: string }) {
                 {showBulkExplain ? 'Hide Explanation' : 'Explain Bulk Pricing'}
               </button>
             </div>
-            <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Offer discounts for large quantity orders (100+ vials)</p>
+            <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Offer discounts for large quantity orders (100+ vials). Bulk volume discounts are permanently active for all users.</p>
           </div>
-          <button type="button" onClick={() => setEnableBulk(!enableBulk)} style={toggleStyle(enableBulk)}>
-            <span style={toggleDot(enableBulk)} />
-          </button>
+          <div style={{ padding: '4px 12px', background: 'rgba(0,196,188,0.1)', color: 'var(--teal)', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600, border: '1px solid rgba(0,196,188,0.2)' }}>
+            ALWAYS ON
+          </div>
         </div>
 
         {showBulkExplain && (
           <div style={{ background: 'var(--surface-2)', padding: '12px 16px', borderRadius: 8, marginBottom: 'var(--space-4)', border: '1px solid rgba(255,255,255,0.05)' }}>
             <p style={{ fontSize: '0.85rem', color: 'var(--silver)', margin: 0, lineHeight: 1.5 }}>
-              <strong>How it works:</strong> Bulk pricing automatically applies a percentage discount to the entire order subtotal when the customer's cart reaches a specific total vial count. For example, if a customer buys 50 vials of BPC-157 and 50 vials of TB-500, they reach the 100-vial tier and receive the discount off their total. This encourages larger overall purchases across your entire catalog.
+              <strong>How it works:</strong> Bulk pricing automatically applies a percentage discount to the entire order subtotal when the customer's cart reaches a specific total vial count. For example, if a customer buys 50 vials of BPC-157 and 50 vials of TB-500, they reach the 100-vial tier and receive the discount off their total. This encourages larger overall purchases across your entire catalog. This feature is always active to ensure high conversions.
             </p>
           </div>
         )}

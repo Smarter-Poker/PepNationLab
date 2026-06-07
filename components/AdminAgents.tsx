@@ -603,41 +603,9 @@ export default function AdminAgents() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap', flex: '1 1 150px' }}>
-                  {agent.is_super_agent && (
-                    <button onClick={() => setViewingDownlineFor(agent)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
-                      View Downline
-                    </button>
-                  )}
                   <button onClick={() => openEditAccountModal(agent)} className="btn-silver" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
                     Edit Details
                   </button>
-                  <button 
-                    onClick={async () => {
-                      try {
-                        const res = await fetch('/api/admin/agents/super-upgrade', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ agentId: agent.id, is_super_agent: !agent.is_super_agent })
-                        });
-                        const json = await res.json();
-                        if (!res.ok) throw new Error(json.error);
-                        toast.success(agent.is_super_agent ? 'Super Agent Status Revoked' : 'Promoted To Super Agent');
-                        fetchAgents(); // refresh
-                      } catch (err: any) {
-                        toast.error(err.message || 'Failed To Update Super Agent Status');
-                      }
-                    }}
-                    className="btn-silver" style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                    disabled={agent.parent_agent_id !== null}
-                  >
-                    {agent.is_super_agent ? 'Revoke Super' : 'Make Super'}
-                  </button>
-                  <div style={{ display: 'inline-block' }}>
-                    <ViewAsButton
-                      targetUserId={agent.id}
-                      targetLabel={agent.full_name ?? agent.email}
-                    />
-                  </div>
                 </div>
 
               </div>
@@ -767,6 +735,10 @@ export default function AdminAgents() {
           onClose={() => setEditingFullAgent(null)}
           onChanged={() => {
             fetchAgents();
+          }}
+          onViewDownline={(agentData) => {
+            setViewingDownlineFor(agentData);
+            setEditingFullAgent(null);
           }}
         />
       )}
