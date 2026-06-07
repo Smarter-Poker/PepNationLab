@@ -2,13 +2,16 @@
 
 /**
  * Research Browser - client-side faceted search over the compound catalog.
- * Pure presentation: filtering happens in-memory on props already fetched by
- * the parent server component. Research-use-only framing throughout.
+ * Upgraded with URL syncing, multi-select checkboxes, responsive sidebar,
+ * Quick View modals, and layout toggles.
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Flame, Activity, Shield, Brain, Sparkles, GraduationCap, ArrowRight } from 'lucide-react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { 
+  Search, Sparkles, GraduationCap, ArrowRight, X, LayoutGrid, List, Filter, Flame, Eye, ChevronDown
+} from 'lucide-react';
 import {
   type Compound,
   EVIDENCE_TIER,
@@ -21,34 +24,20 @@ import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
 import InteractiveGlossaryText from './InteractiveGlossaryText';
 import HelpMeChooseWizard from './HelpMeChooseWizard';
+import QuickViewModal from './QuickViewModal';
 
-const ALL = 'all';
-
-const selectStyle: React.CSSProperties = {
-  background: 'var(--grey-400, #162230)',
-  color: 'var(--white, #FFFFFF)',
-  border: '1px solid rgba(168,180,192,0.25)',
-  borderRadius: 'var(--radius-md, 8px)',
-  padding: 'var(--space-2, 8px) var(--space-3, 12px)',
-  fontSize: '0.9rem',
-};
+const ITEMS_PER_PAGE = 24;
 
 // Autocorrect / shorthand mapping helper
 function autocorrectSearch(input: string): string {
   const words = input.trim().toLowerCase().split(/\s+/);
   const map: Record<string, string> = {
-    sema: 'semaglutide',
-    tirz: 'tirzepatide',
-    reta: 'retatrutide',
-    bpc157: 'bpc-157',
-    bpc: 'bpc-157',
-    tb500: 'tb-500',
-    tb: 'tb-500',
+    sema: 'semaglutide', tirz: 'tirzepatide', reta: 'retatrutide',
+    bpc157: 'bpc-157', bpc: 'bpc-157', tb500: 'tb-500', tb: 'tb-500',
   };
   return words.map((w) => map[w] || w).join(' ');
 }
 
-// Classify compound administration form
 function getCompoundForm(c: Compound): 'injection' | 'oral' | 'topical' | 'other' {
   const form = (c.handling?.form || '').toLowerCase();
   if (form.includes('capsule') || form.includes('oral') || form.includes('tablet')) return 'oral';
@@ -57,773 +46,406 @@ function getCompoundForm(c: Compound): 'injection' | 'oral' | 'topical' | 'other
   return 'other';
 }
 
+// Generate dynamic badges mock
+function getDynamicBadge(slug: string): { label: string, color: string } | null {
+  const trending = ['bpc-157', 'tirzepatide', 'retatrutide', 'ss-31'];
+  const isNew = ['carglumic-acid', '5-amino-1mq'];
+  const lowStock = ['dsip', 'epithalon'];
+
+  if (trending.includes(slug)) return { label: 'Trending', color: '#F6AD55' };
+  if (isNew.includes(slug)) return { label: 'New', color: '#68D391' };
+  if (lowStock.includes(slug)) return { label: 'Low Stock', color: '#FC8181' };
+  return null;
+}
+
 export default function ResearchBrowser({ compounds }: { compounds: Compound[] }) {
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<string>(ALL);
-  const [tier, setTier] = useState<string>(ALL);
-  const [area, setArea] = useState<string>(ALL);
-  const [wada, setWada] = useState<string>(ALL);
-  const [formFilter, setFormFilter] = useState<string>(ALL);
-  const [budgetFilter, setBudgetFilter] = useState<string>(ALL);
-  const [prepFilter, setPrepFilter] = useState<string>(ALL);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  // Local UI State
   const [isEli5, setIsEli5] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [wizardChoices, setWizardChoices] = useState<{ area: string; form: string; wada: string; budget: string; prep: string } | null>(null);
+  const [wizardChoices, setWizardChoices] = useState<any>(null);
+  const [quickViewCompound, setQuickViewCompound] = useState<Compound | null>(null);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
-  const categories = useMemo(() => {
+  // URL Params State
+  const parseArrayParam = (key: string) => {
+    const val = searchParams.get(key);
+    return val ? val.split(',').filter(Boolean) : [];
+  };
+
+  const query = searchParams.get('q') || '';
+  const categories = parseArrayParam('category');
+  const tiers = parseArrayParam('tier');
+  const areas = parseArrayParam('area');
+  const wadas = parseArrayParam('wada');
+  const forms = parseArrayParam('form');
+  const budgets = parseArrayParam('budget');
+  const preps = parseArrayParam('prep');
+  
+  const sortParam = searchParams.get('sort') || 'default';
+  const viewParam = searchParams.get('view') || 'grid';
+
+  const allCategories = useMemo(() => {
     const set = new Set<string>();
-    for (const c of compounds) {
-      if (c.category) set.add(c.category);
-    }
+    for (const c of compounds) if (c.category) set.add(c.category);
     return Array.from(set).sort();
   }, [compounds]);
 
+  const toggleParam = (key: string, value: string) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+    const existing = current.get(key);
+    
+    if (existing) {
+      const arr = existing.split(',');
+      if (arr.includes(value)) {
+        const filtered = arr.filter(v => v !== value);
+        if (filtered.length > 0) current.set(key, filtered.join(','));
+        else current.delete(key);
+      } else {
+        current.set(key, [...arr, value].join(','));
+      }
+    } else {
+      current.set(key, value);
+    }
+    
+    // Reset pagination on filter change
+    setPage(1);
+    router.push(`${pathname}?${current.toString()}`, { scroll: false });
+  };
+
+  const setSingleParam = (key: string, value: string) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+    if (value) current.set(key, value);
+    else current.delete(key);
+    setPage(1);
+    router.push(`${pathname}?${current.toString()}`, { scroll: false });
+  };
+
+  const clearAllFilters = () => {
+    router.push(pathname, { scroll: false });
+    setWizardChoices(null);
+    setPage(1);
+  };
+
+  // Derived filtered & sorted compounds
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const tokens = q ? autocorrectSearch(q).split(/\s+/).filter(Boolean) : [];
 
-    return compounds.filter((c) => {
+    let results = compounds.filter((c) => {
       if (tokens.length > 0) {
         const haystack = [
-          c.display_name,
-          ...(c.aliases ?? []),
-          c.category ?? '',
-          ...(c.research_areas ?? []),
-          c.plain_summary ?? '',
-          c.eli5_summary ?? '',
-          c.compound_class ?? '',
-          c.molecular_target ?? '',
+          c.display_name, ...(c.aliases ?? []), c.category ?? '', ...(c.research_areas ?? []),
+          c.plain_summary ?? '', c.eli5_summary ?? '', c.compound_class ?? '', c.molecular_target ?? '',
         ].join(' ').toLowerCase();
-        
-        const matchesAll = tokens.every(tok => haystack.includes(tok));
-        if (!matchesAll) return false;
+        if (!tokens.every(tok => haystack.includes(tok))) return false;
       }
-      if (category !== ALL && c.category !== category) return false;
-      if (tier !== ALL && c.evidence_tier !== tier) return false;
-      if (area !== ALL && !(c.research_areas ?? []).includes(area)) return false;
-      if (wada !== ALL && c.wada_status !== wada) return false;
+      
+      if (categories.length > 0 && !categories.includes(c.category || '')) return false;
+      if (tiers.length > 0 && !tiers.includes(c.evidence_tier)) return false;
+      if (areas.length > 0 && !(c.research_areas ?? []).some(a => areas.includes(a))) return false;
+      if (wadas.length > 0 && !wadas.includes(c.wada_status)) return false;
 
-      // Form filter matching
-      if (formFilter !== ALL) {
+      if (forms.length > 0) {
         const cForm = getCompoundForm(c);
-        if (cForm !== formFilter) return false;
+        if (!forms.includes(cForm)) return false;
       }
 
-      // Reconstitution equipment matching
-      if (prepFilter !== ALL) {
-        const form = (c.handling?.form || '').toLowerCase();
-        const isReconstitution = form.includes('lyophilized') || form.includes('powder') || form.includes('vial') || form.includes('injection') || form.includes('injectable');
-        if (prepFilter === 'reconstitution' && !isReconstitution) return false;
-        if (prepFilter === 'no_reconstitution' && isReconstitution) return false;
+      if (preps.length > 0) {
+        const isRecon = (c.handling?.form || '').toLowerCase().includes('vial') || (c.handling?.form || '').toLowerCase().includes('lyophilized');
+        if (preps.includes('reconstitution') && !isRecon) return false;
+        if (preps.includes('no_reconstitution') && isRecon) return false;
       }
 
-      // Budget proxy matching
-      if (budgetFilter !== ALL) {
-        if (budgetFilter === 'conservative') {
-          if (c.is_stack) return false;
-          const premiumSlugs = ['semaglutide', 'tirzepatide', 'retatrutide', 'igf-1-lr3', 'igf-1-des', 'dihexa', 'mots-c'];
-          if (premiumSlugs.includes(c.slug)) return false;
-        }
+      if (budgets.includes('conservative')) {
+        if (c.is_stack) return false;
+        const premiumSlugs = ['semaglutide', 'tirzepatide', 'retatrutide', 'igf-1-lr3', 'dihexa'];
+        if (premiumSlugs.includes(c.slug)) return false;
       }
 
       return true;
     });
-  }, [compounds, query, category, tier, area, wada, formFilter, budgetFilter, prepFilter]);
 
-  const handleAreaToggle = (targetArea: string) => {
-    setArea((prev) => (prev === targetArea ? ALL : targetArea));
-  };
-
-  const handleWizardComplete = (wizardFilters: { area: string; form: string; wada: string; budget: string; prep: string }) => {
-    setQuery('');
-    setCategory(ALL);
-    setTier(ALL);
-    if (wizardFilters.area === 'healing') {
-      setArea('healing');
-    } else {
-      setArea(wizardFilters.area);
+    if (sortParam === 'az') results.sort((a, b) => a.display_name.localeCompare(b.display_name));
+    if (sortParam === 'za') results.sort((a, b) => b.display_name.localeCompare(a.display_name));
+    if (sortParam === 'tier') {
+      const tierOrder: Record<string, number> = { tier1: 1, tier2: 2, tier3: 3, tier4: 4, experimental: 5 };
+      results.sort((a, b) => (tierOrder[a.evidence_tier] || 99) - (tierOrder[b.evidence_tier] || 99));
     }
-    setFormFilter(wizardFilters.form);
-    setWada(wizardFilters.wada);
-    setBudgetFilter(wizardFilters.budget);
-    setPrepFilter(wizardFilters.prep);
+
+    return results;
+  }, [compounds, query, categories, tiers, areas, wadas, forms, budgets, preps, sortParam]);
+
+  const paginatedResults = filtered.slice(0, page * ITEMS_PER_PAGE);
+  const hasMore = paginatedResults.length < filtered.length;
+
+  const handleWizardComplete = (wizardFilters: any) => {
+    const params = new URLSearchParams();
+    if (wizardFilters.area === 'healing') params.set('area', 'healing');
+    else if (wizardFilters.area !== 'all') params.set('area', wizardFilters.area);
+    
+    if (wizardFilters.form !== 'all') params.set('form', wizardFilters.form);
+    if (wizardFilters.wada !== 'all') params.set('wada', wizardFilters.wada);
+    if (wizardFilters.budget !== 'all') params.set('budget', wizardFilters.budget);
+    if (wizardFilters.prep !== 'all') params.set('prep', wizardFilters.prep);
+
     setWizardChoices(wizardFilters);
+    setPage(1);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  // Helper to resolve card border based on WADA compliance
-  const getCardBorder = (status: string) => {
-    if (status === 'permitted') return '1px solid rgba(104, 211, 145, 0.4)';
-    if (status === 'prohibited') return '1px solid rgba(229, 62, 62, 0.4)';
-    if (status === 'prohibited_males') return '1px solid rgba(246, 173, 85, 0.4)';
-    return '1px solid rgba(255, 255, 255, 0.08)';
+  // Reusable Filter Group
+  const FilterGroup = ({ title, paramKey, options }: { title: string, paramKey: string, options: {label: string, value: string}[] }) => {
+    const selected = parseArrayParam(paramKey);
+    return (
+      <div style={{ marginBottom: '24px' }}>
+        <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700 }}>{title}</h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
+          {options.map(opt => (
+            <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem', cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={selected.includes(opt.value)}
+                onChange={() => toggleParam(paramKey, opt.value)}
+                style={{ accentColor: 'var(--teal, #00C4BC)', width: '16px', height: '16px', cursor: 'pointer' }}
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
+      </div>
+    );
   };
 
-  // Form badge coloring
-  const getFormBadgeStyle = (form: 'injection' | 'oral' | 'topical' | 'other'): React.CSSProperties => {
-    const base: React.CSSProperties = {
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      textTransform: 'uppercase',
-      padding: '2px 8px',
-      borderRadius: '4px',
-    };
-    if (form === 'oral') {
-      return { ...base, background: 'rgba(214, 188, 250, 0.15)', color: '#D6BCFA', border: '1px solid rgba(214, 188, 250, 0.3)' };
-    }
-    if (form === 'topical') {
-      return { ...base, background: 'rgba(0, 196, 188, 0.15)', color: 'var(--teal, #00C4BC)', border: '1px solid rgba(0, 196, 188, 0.3)' };
-    }
-    if (form === 'injection') {
-      return { ...base, background: 'rgba(66, 153, 225, 0.15)', color: '#63B3ED', border: '1px solid rgba(66, 153, 225, 0.3)' };
-    }
-    return { ...base, background: 'rgba(255, 255, 255, 0.05)', color: 'var(--silver, #A8B4C0)', border: '1px solid rgba(255, 255, 255, 0.1)' };
-  };
-
-  // Dosing frequency badge coloring
-  const getDosingBadgeStyle = (freq: string): React.CSSProperties => {
-    const base: React.CSSProperties = {
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      textTransform: 'uppercase',
-      padding: '2px 8px',
-      borderRadius: '4px',
-    };
-    const lower = freq.toLowerCase();
-    if (lower.includes('weekly') || lower.includes('week')) {
-      return { ...base, background: 'rgba(104, 211, 145, 0.15)', color: '#68D391', border: '1px solid rgba(104, 211, 145, 0.3)' };
-    }
-    if (lower.includes('daily') || lower.includes('day') || lower.includes('nightly')) {
-      return { ...base, background: 'rgba(246, 173, 85, 0.15)', color: '#F6AD55', border: '1px solid rgba(246, 173, 85, 0.3)' };
-    }
-    return { ...base, background: 'rgba(255, 255, 255, 0.05)', color: 'var(--silver, #A8B4C0)', border: '1px solid rgba(255, 255, 255, 0.1)' };
-  };
-
-  // Resolve dosing badge display string
-  const getDosingLabel = (freq: string): string => {
-    const lower = freq.toLowerCase();
-    if (lower.includes('weekly') || lower.includes('week')) return 'Once Weekly';
-    if (lower.includes('daily') || lower.includes('day') || lower.includes('nightly')) return 'Daily';
-    return freq;
-  };
-
-  // WADA badge coloring
-  const wadaBadgeStyle = (status: string): React.CSSProperties => {
-    if (status === 'permitted') {
-      return { color: '#68D391', border: '1px solid #68D391' };
-    }
-    if (status === 'prohibited') {
-      return { color: '#FC8181', border: '1px solid #FC8181' };
-    }
-    if (status === 'prohibited_males') {
-      return { color: '#F6AD55', border: '1px solid #F6AD55' };
-    }
-    return { color: '#A8B4C0', border: '1px solid rgba(168,180,192,0.3)' };
-  };
-
-  // Helper to format profile value to Title Case
-  const formatProfileValue = (key: string, val: string) => {
-    if (val === 'all') {
-      if (key === 'area') return 'All Areas';
-      if (key === 'route') return 'All Routes';
-      if (key === 'budget') return 'All Budgets';
-      return 'All';
-    }
-    if (key === 'area') {
-      if (val === 'weight_management') return 'Weight Management';
-      if (val === 'healing') return 'Healing';
-      if (val === 'longevity') return 'Longevity';
-      if (val === 'sleep') return 'Sleep';
-    }
-    if (key === 'route') {
-      if (val === 'injection') return 'Injection (Vial)';
-      if (val === 'oral') return 'Oral (Capsule)';
-      if (val === 'topical') return 'Topical';
-    }
-    if (key === 'budget') {
-      if (val === 'conservative') return 'Conservative Budget';
-      if (val === 'standard') return 'Standard Budget';
-    }
-    return val.charAt(0).toUpperCase() + val.slice(1);
-  };
+  // Collect Active Pills
+  const activePills: { key: string, val: string, label: string }[] = [];
+  categories.forEach(v => activePills.push({ key: 'category', val: v, label: v }));
+  tiers.forEach(v => activePills.push({ key: 'tier', val: v, label: EVIDENCE_TIER[v]?.label || v }));
+  areas.forEach(v => activePills.push({ key: 'area', val: v, label: RESEARCH_AREAS[v]?.label || v }));
+  forms.forEach(v => activePills.push({ key: 'form', val: v, label: v === 'injection' ? 'Injection (Vial)' : v === 'oral' ? 'Oral' : 'Topical' }));
+  wadas.forEach(v => activePills.push({ key: 'wada', val: v, label: WADA_LABEL[v] || v }));
+  budgets.forEach(v => activePills.push({ key: 'budget', val: v, label: v === 'conservative' ? 'Conservative' : 'Standard' }));
+  preps.forEach(v => activePills.push({ key: 'prep', val: v, label: v === 'reconstitution' ? 'Lyophilized Only' : 'Ready-To-Use' }));
 
   return (
     <div>
-      {/* Guided Selection Wizard Recommendations */}
-      {wizardChoices && (
-        <div
-          className="glass-panel"
-          style={{
-            padding: '20px 24px',
-            borderRadius: 'var(--radius-lg, 12px)',
-            marginBottom: '28px',
-            background: 'linear-gradient(135deg, rgba(0, 196, 188, 0.08), rgba(22, 34, 48, 0.95))',
-            border: '1px solid rgba(0, 196, 188, 0.25)',
-            borderLeft: '4px solid var(--teal, #00C4BC)',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
-            <div>
-              <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--white, #FFFFFF)' }}>
-                Guided Recommendations
-              </h3>
-              <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', margin: '4px 0 0 0' }}>
-                Your Profile: {formatProfileValue('area', wizardChoices.area)} | {formatProfileValue('route', wizardChoices.form)} | {formatProfileValue('budget', wizardChoices.budget)}
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                setArea(ALL);
-                setFormFilter(ALL);
-                setWada(ALL);
-                setBudgetFilter(ALL);
-                setPrepFilter(ALL);
-                setWizardChoices(null);
-              }}
-              style={{
-                background: 'rgba(229, 62, 62, 0.1)',
-                border: '1px solid rgba(229, 62, 62, 0.3)',
-                color: '#FC8181',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
-            >
-              Clear Recommendation Profile
-            </button>
-          </div>
-          <div style={{ fontSize: '0.85rem', lineHeight: 1.5, color: 'var(--silver, #A8B4C0)' }}>
-            {wizardChoices.area === 'weight_management' && (
-              <div>
-                {wizardChoices.budget === 'conservative' ? (
-                  <div>
-                    We recommend evaluating <strong>AOD-9604</strong> (highly target lipolytic fragment) or <strong>5-Amino-1MQ</strong> (oral NNMT inhibitor designed to increase cellular energy metabolism and reduce adipose accumulation without affecting appetite).
-                  </div>
-                ) : (
-                  <div>
-                    We recommend evaluating <strong>Tirzepatide</strong> (dual GLP-1/GIP receptor agonist) or <strong>Retatrutide</strong> (triple GLP-1/GIP/GCGR agonist). These represent the current state-of-the-art in incretin hormone receptor agonist research with the highest clinical weight management efficacy profiles.
-                  </div>
-                )}
-              </div>
-            )}
-            {wizardChoices.area === 'healing' && (
-              <div>
-                {wizardChoices.form === 'oral' ? (
-                  <div>
-                    We recommend evaluating <strong>BPC-157 Gastric-Stable Oral</strong> form. It maintains structural stability under gastric juices and local tissue repair pathways.
-                  </div>
-                ) : (
-                  <div>
-                    We recommend evaluating the dual-mechanism stacking protocol of <strong>BPC-157</strong> and <strong>TB-500</strong>. BPC-157 accelerates tissue granulation and tendon-to-bone healing, while TB-500 promotes cell migration and actin polymerization to accelerate recovery.
-                  </div>
-                )}
-              </div>
-            )}
-            {wizardChoices.area === 'longevity' && (
-              <div>
-                We recommend evaluating <strong>Epithalon</strong> (telomerase activator and pineal gland regulator) or the mitochondrial stacking combination of <strong>MOTS-c</strong> and <strong>SS-31</strong> to target inner cardiolipin membrane stabilization.
-              </div>
-            )}
-            {wizardChoices.area === 'sleep' && (
-              <div>
-                We recommend evaluating <strong>DSIP</strong> (Delta Sleep-Inducing Peptide) for targeting deep-wave EEG sleep states or <strong>Epithalon</strong> for its circadian rhythm melatonin restoration properties.
-              </div>
-            )}
-            {wizardChoices.area === 'all' && (
-              <div>
-                Evaluate the filtered list of compounds below matching your chosen route and budget parameters. Use the Pin to Compare action to compare up to 4 compounds side-by-side.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <style>{`
+        .catalog-layout {
+          display: flex;
+          gap: 32px;
+          align-items: flex-start;
+        }
+        .catalog-sidebar {
+          flex: 0 0 260px;
+          position: sticky;
+          top: 24px;
+          height: max-content;
+          display: flex;
+          flex-direction: column;
+        }
+        .catalog-main {
+          flex: 1;
+          min-width: 0;
+        }
+        .mobile-filter-toggle {
+          display: none;
+        }
+        .compound-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 16px;
+        }
+        @media (max-width: 900px) {
+          .catalog-layout {
+            flex-direction: column;
+          }
+          .catalog-sidebar {
+            display: none; /* hidden by default on mobile */
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--black, #0C151D);
+            z-index: 100;
+            padding: 24px;
+            overflow-y: auto;
+          }
+          .catalog-sidebar.open {
+            display: flex;
+          }
+          .mobile-filter-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 196, 188, 0.1);
+            border: 1px solid var(--teal, #00C4BC);
+            color: var(--teal, #00C4BC);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            cursor: pointer;
+          }
+        }
+      `}</style>
 
-      {/* 5. First-Time Researcher Quick Start Guide Card */}
-      <div
-        className="glass-panel"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '16px',
-          padding: '20px 24px',
-          borderRadius: 'var(--radius-lg, 12px)',
-          marginBottom: '28px',
-          background: 'linear-gradient(90deg, rgba(0, 196, 188, 0.06), rgba(22, 34, 48, 0.95))',
-          borderLeft: '4px solid var(--teal, #00C4BC)',
-        }}
-      >
-        <div
-          style={{
-            background: 'rgba(0, 196, 188, 0.1)',
-            padding: '12px',
-            borderRadius: '50%',
-            color: 'var(--teal, #00C4BC)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <GraduationCap size={24} />
-        </div>
+      {/* First-Time Researcher Guide */}
+      <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px 24px', borderRadius: '12px', marginBottom: '28px', background: 'linear-gradient(90deg, rgba(0, 196, 188, 0.06), rgba(22, 34, 48, 0.95))', borderLeft: '4px solid var(--teal, #00C4BC)' }}>
+        <div style={{ background: 'rgba(0, 196, 188, 0.1)', padding: '12px', borderRadius: '50%', color: 'var(--teal, #00C4BC)' }}><GraduationCap size={24} /></div>
         <div style={{ flex: 1 }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--white, #FFFFFF)' }}>
-            New To Peptide Research?
-          </h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', margin: '4px 0 0 0' }}>
-            Check Out Our 60-Second Reconstitution Guide & Dose Calculator Before Selecting Your Compounds.
-          </p>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--white, #FFFFFF)' }}>New To Peptide Research?</h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', margin: '4px 0 0 0' }}>Check Out Our 60-Second Reconstitution Guide & Dose Calculator.</p>
         </div>
-        <Link
-          href="/research/calculators"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            textDecoration: 'none',
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            color: 'var(--teal, #00C4BC)',
-            padding: '8px 16px',
-            background: 'rgba(0,196,188,0.08)',
-            borderRadius: '6px',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          Open Calculator Suite
-          <ArrowRight size={14} />
+        <Link href="/research/calculators" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '6px', textDecoration: 'none' }}>
+          Open Calculators <ArrowRight size={14} />
         </Link>
       </div>
 
-      <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start', flexDirection: 'row' }}>
-        {/* Left Sidebar Filters */}
-        <aside style={{ flex: '0 0 260px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          <div style={{ position: 'relative' }}>
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--silver, #A8B4C0)', pointerEvents: 'none' }} />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search Compounds"
-              style={{ ...selectStyle, width: '100%', paddingLeft: '36px' }}
-            />
-          </div>
+      <button className="mobile-filter-toggle" onClick={() => setIsMobileFiltersOpen(true)}>
+        <Filter size={18} /> Show Filters & Sort
+      </button>
 
-          <button onClick={() => setIsWizardOpen(true)} style={{ ...selectStyle, display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg, rgba(0, 196, 188, 0.2), rgba(22, 34, 48, 0.8))', borderColor: 'var(--teal, #00C4BC)', fontWeight: 700, cursor: 'pointer' }}>
-            <Sparkles size={16} color="var(--teal, #00C4BC)" /> Help Me Choose
+      <div className="catalog-layout">
+        {/* Left Sidebar Filters */}
+        <aside className={`catalog-sidebar ${isMobileFiltersOpen ? 'open' : ''}`}>
+          {isMobileFiltersOpen && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '1.25rem', color: '#FFF', margin: 0 }}>Filters</h2>
+              <button onClick={() => setIsMobileFiltersOpen(false)} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer' }}><X size={24} /></button>
+            </div>
+          )}
+
+          <button onClick={() => { setIsWizardOpen(true); setIsMobileFiltersOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, rgba(0, 196, 188, 0.2), rgba(22, 34, 48, 0.8))', border: '1px solid var(--teal, #00C4BC)', color: '#FFF', fontWeight: 700, padding: '12px', borderRadius: '8px', cursor: 'pointer', marginBottom: '24px' }}>
+            <Sparkles size={16} color="var(--teal, #00C4BC)" /> Help Me Choose Wizard
           </button>
 
-          <div>
-            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>Description Complexity</h4>
+          <div style={{ marginBottom: '24px' }}>
+            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700 }}>Description Detail</h4>
             <div style={{ display: 'flex', border: '1px solid rgba(168, 180, 192, 0.25)', borderRadius: '8px', padding: '2px', background: 'var(--grey-400, #162230)' }}>
               <button onClick={() => setIsEli5(true)} style={{ flex: 1, padding: '6px 0', borderRadius: '6px', border: 'none', background: isEli5 ? 'var(--teal, #00C4BC)' : 'transparent', color: isEli5 ? 'var(--black, #0C151D)' : 'var(--silver, #A8B4C0)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>Plain English</button>
               <button onClick={() => setIsEli5(false)} style={{ flex: 1, padding: '6px 0', borderRadius: '6px', border: 'none', background: !isEli5 ? 'var(--teal, #00C4BC)' : 'transparent', color: !isEli5 ? 'var(--black, #0C151D)' : 'var(--silver, #A8B4C0)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>Technical</button>
             </div>
           </div>
 
-          <div>
-            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>Research Area</h4>
-            <select value={area} onChange={(e) => setArea(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
-              <option value={ALL}>All Research Areas</option>
-              {Object.keys(RESEARCH_AREAS).map((key) => <option key={key} value={key}>{RESEARCH_AREAS[key].label}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>Category</h4>
-            <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
-              <option value={ALL}>All Categories</option>
-              {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>Administration Form</h4>
-            <select value={formFilter} onChange={(e) => setFormFilter(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
-              <option value={ALL}>All Forms</option>
-              <option value="injection">Injection (Vial)</option>
-              <option value="oral">Oral (Capsule)</option>
-              <option value="topical">Topical</option>
-            </select>
-          </div>
-
-          <div>
-            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>Evidence Tier</h4>
-            <select value={tier} onChange={(e) => setTier(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
-              <option value={ALL}>All Evidence Tiers</option>
-              {Object.keys(EVIDENCE_TIER).map((key) => <option key={key} value={key}>{EVIDENCE_TIER[key].label}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>Budget</h4>
-            <select value={budgetFilter} onChange={(e) => setBudgetFilter(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
-              <option value={ALL}>All Budgets</option>
-              <option value="conservative">Conservative Budget</option>
-              <option value="standard">Standard Budget</option>
-            </select>
-          </div>
-
-          <div>
-            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>Reconstitution Prep</h4>
-            <select value={prepFilter} onChange={(e) => setPrepFilter(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
-              <option value={ALL}>All Reconstitution Preps</option>
-              <option value="reconstitution">Lyophilized Vials Only</option>
-              <option value="no_reconstitution">Ready-To-Use Formats Only</option>
-            </select>
-          </div>
-
-          <div>
-            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>WADA Status</h4>
-            <select value={wada} onChange={(e) => setWada(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
-              <option value={ALL}>All WADA Statuses</option>
-              {Object.keys(WADA_LABEL).map((key) => <option key={key} value={key}>{WADA_LABEL[key]}</option>)}
-            </select>
-          </div>
+          <FilterGroup title="Category" paramKey="category" options={allCategories.map(c => ({ label: c, value: c }))} />
+          <FilterGroup title="Research Area" paramKey="area" options={Object.keys(RESEARCH_AREAS).map(k => ({ label: RESEARCH_AREAS[k].label, value: k }))} />
+          <FilterGroup title="Form" paramKey="form" options={[{ label: 'Injection (Vial)', value: 'injection' }, { label: 'Oral (Capsule)', value: 'oral' }, { label: 'Topical', value: 'topical' }]} />
+          <FilterGroup title="Evidence Tier" paramKey="tier" options={Object.keys(EVIDENCE_TIER).map(k => ({ label: EVIDENCE_TIER[k].label, value: k }))} />
+          <FilterGroup title="Budget" paramKey="budget" options={[{ label: 'Conservative Budget', value: 'conservative' }, { label: 'Standard Budget', value: 'standard' }]} />
+          <FilterGroup title="Preparation" paramKey="prep" options={[{ label: 'Lyophilized Vials Only', value: 'reconstitution' }, { label: 'Ready-To-Use Formats Only', value: 'no_reconstitution' }]} />
+          <FilterGroup title="WADA Status" paramKey="wada" options={Object.keys(WADA_LABEL).map(k => ({ label: WADA_LABEL[k], value: k }))} />
         </aside>
 
         {/* Main Content Area */}
-        <main style={{ flex: 1 }}>
-          <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem', marginBottom: '16px', marginTop: 0 }}>
-            Showing {filtered.length} {filtered.length === 1 ? 'Compound' : 'Compounds'}
-          </p>
+        <main className="catalog-main">
+          {/* Active Filters Bar */}
+          {activePills.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', fontWeight: 600 }}>Active Filters:</span>
+              {activePills.map(pill => (
+                <button key={`${pill.key}-${pill.val}`} onClick={() => toggleParam(pill.key, pill.val)} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', color: 'var(--teal, #00C4BC)', padding: '4px 10px', borderRadius: '16px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                  {pill.label} <X size={12} />
+                </button>
+              ))}
+              <button onClick={clearAllFilters} style={{ background: 'none', border: 'none', color: '#FC8181', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>Clear All</button>
+            </div>
+          )}
 
-      {/* 4. "No Results" Smart Recommendation Cards */}
-      {filtered.length === 0 ? (
-        <div
-          className="glass-panel"
-          style={{
-            padding: 'var(--space-6, 40px) var(--space-4, 24px)',
-            textAlign: 'center',
-            color: 'var(--silver, #A8B4C0)',
-            borderRadius: 'var(--radius-lg, 12px)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '16px',
-          }}
-        >
-          <div>{"We Couldn't Find A Direct Match. Try Searching For One Of Our Popular Research Goals:"}</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
-            <button
-              onClick={() => {
-                setArea('weight_management');
-                setQuery('');
-                setCategory(ALL);
-                setTier(ALL);
-                setWada(ALL);
-                setFormFilter(ALL);
-              }}
-              style={{
-                background: 'rgba(0,196,188,0.1)',
-                border: '1px solid var(--teal, #00C4BC)',
-                color: 'var(--white, #FFFFFF)',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 700,
-              }}
-            >
-              Search: Fat Loss
-            </button>
-            <button
-              onClick={() => {
-                setArea('healing');
-                setQuery('');
-                setCategory(ALL);
-                setTier(ALL);
-                setWada(ALL);
-                setFormFilter(ALL);
-              }}
-              style={{
-                background: 'rgba(0,196,188,0.1)',
-                border: '1px solid var(--teal, #00C4BC)',
-                color: 'var(--white, #FFFFFF)',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 700,
-              }}
-            >
-              Search: Joint Repair
-            </button>
-            <button
-              onClick={() => {
-                setArea('sleep');
-                setQuery('');
-                setCategory(ALL);
-                setTier(ALL);
-                setWada(ALL);
-                setFormFilter(ALL);
-              }}
-              style={{
-                background: 'rgba(0,196,188,0.1)',
-                border: '1px solid var(--teal, #00C4BC)',
-                color: 'var(--white, #FFFFFF)',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 700,
-              }}
-            >
-              Search: Deep Sleep
-            </button>
-            <button
-              onClick={() => {
-                setArea('cosmetic');
-                setQuery('');
-                setCategory(ALL);
-                setTier(ALL);
-                setWada(ALL);
-                setFormFilter(ALL);
-              }}
-              style={{
-                background: 'rgba(0,196,188,0.1)',
-                border: '1px solid var(--teal, #00C4BC)',
-                color: 'var(--white, #FFFFFF)',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 700,
-              }}
-            >
-              Search: Skin Health
-            </button>
+          {/* Top Controls Row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px' }}>
+            <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem', margin: 0 }}>
+              Showing {filtered.length} {filtered.length === 1 ? 'Compound' : 'Compounds'}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              {/* Sort Dropdown */}
+              <select value={sortParam} onChange={(e) => setSingleParam('sort', e.target.value)} style={{ background: 'var(--grey-400, #162230)', color: '#FFF', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                <option value="default">Default Sorting</option>
+                <option value="az">Alphabetical (A-Z)</option>
+                <option value="za">Alphabetical (Z-A)</option>
+                <option value="tier">Highest Evidence Tier</option>
+              </select>
+              
+              {/* Grid / List Toggle */}
+              <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', overflow: 'hidden' }}>
+                <button onClick={() => setSingleParam('view', 'grid')} style={{ padding: '6px 10px', background: viewParam === 'grid' ? 'rgba(0,196,188,0.2)' : 'var(--grey-400, #162230)', border: 'none', color: viewParam === 'grid' ? 'var(--teal, #00C4BC)' : '#A8B4C0', cursor: 'pointer' }}><LayoutGrid size={16} /></button>
+                <button onClick={() => setSingleParam('view', 'list')} style={{ padding: '6px 10px', background: viewParam === 'list' ? 'rgba(0,196,188,0.2)' : 'var(--grey-400, #162230)', border: 'none', color: viewParam === 'list' ? 'var(--teal, #00C4BC)' : '#A8B4C0', cursor: 'pointer' }}><List size={16} /></button>
+              </div>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: 'var(--space-4, 16px)',
-          }}
-        >
-          {filtered.map((c) => {
-            const t = evidenceTier(c.evidence_tier);
-            const aliasLine = (c.aliases ?? []).slice(0, 3).join(', ');
-            const cForm = getCompoundForm(c);
 
-            return (
-              <div
-                key={c.slug}
-                className="glass-panel"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 'var(--space-2, 8px)',
-                  padding: 'var(--space-4, 16px)',
-                  borderRadius: 'var(--radius-lg, 12px)',
-                  color: 'var(--white, #FFFFFF)',
-                  height: '100%',
-                  /* 2. Dynamic WADA border compliance indicators */
-                  border: getCardBorder(c.wada_status),
-                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                }}
-              >
-                <Link
-                  href={`/research/${c.slug}`}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 'var(--space-2, 8px)',
-                    textDecoration: 'none',
-                    color: 'var(--white, #FFFFFF)',
-                    flexGrow: 1,
-                  }}
-                >
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontSize: '0.7rem',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.04em',
-                        color: t.color,
-                        border: `1px solid ${t.color}`,
-                        borderRadius: '999px',
-                        padding: '2px 10px',
-                      }}
-                    >
-                      {t.label}
-                    </span>
-
-                    {/* 1. Form badge */}
-                    {c.handling?.form && (
-                      <span style={getFormBadgeStyle(cForm)}>
-                        {cForm === 'injection'
-                          ? 'Injection (Vial)'
-                          : cForm === 'oral'
-                          ? 'Oral (Capsule)'
-                          : cForm === 'topical'
-                          ? 'Topical'
-                          : c.handling.form}
-                      </span>
-                    )}
-
-                    {/* 1. Dosing Complexity badge */}
-                    {c.typical_frequency && (
-                      <span style={getDosingBadgeStyle(c.typical_frequency)}>
-                        {getDosingLabel(c.typical_frequency)}
-                      </span>
-                    )}
-                  </div>
-
-                  <span style={{ fontSize: '1.05rem', fontWeight: 700, marginTop: '4px' }}>
-                    {c.display_name}
-                  </span>
-
-                  {aliasLine && (
-                    <span style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>
-                      {aliasLine}
-                    </span>
-                  )}
-
-                  {/* Description area based on isEli5 toggle */}
-                  <div style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', margin: '8px 0', lineHeight: '1.4' }}>
-                    {isEli5 ? (
-                      /* Plain English view */
-                      <InteractiveGlossaryText text={c.eli5_summary || c.plain_summary || c.mechanism || ''} />
-                    ) : (
-                      /* Technical view */
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {c.mechanism && (
-                          <div>
-                            <strong style={{ color: 'var(--white, #FFFFFF)', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>
-                              Mechanism
-                            </strong>
-                            <InteractiveGlossaryText text={c.mechanism} />
-                          </div>
-                        )}
-                        {c.pk_summary && (
-                          <div>
-                            <strong style={{ color: 'var(--white, #FFFFFF)', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>
-                              Pharmacokinetics
-                            </strong>
-                            <InteractiveGlossaryText text={c.pk_summary} />
-                          </div>
-                        )}
+          {filtered.length === 0 ? (
+            <div className="glass-panel" style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--silver, #A8B4C0)', borderRadius: '12px' }}>
+              <div style={{ marginBottom: '16px' }}>We couldn't find any compounds matching all selected filters.</div>
+              <button onClick={clearAllFilters} style={{ background: 'var(--teal, #00C4BC)', color: '#0C151D', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: 800, fontSize: '1rem', cursor: 'pointer' }}>
+                Clear All Filters
+              </button>
+            </div>
+          ) : viewParam === 'grid' ? (
+            <div className="compound-grid">
+              {paginatedResults.map((c) => {
+                const badge = getDynamicBadge(c.slug);
+                return (
+                  <div key={c.slug} className="glass-panel" style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    {badge && (
+                      <div style={{ position: 'absolute', top: '-10px', right: '-10px', background: badge.color, color: '#000', fontSize: '0.7rem', fontWeight: 800, padding: '4px 12px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.3)', zIndex: 10 }}>
+                        {badge.label}
                       </div>
                     )}
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Link href={`/research/${c.slug}`} style={{ textDecoration: 'none', color: '#FFF' }}>
+                        <span style={{ fontSize: '1.1rem', fontWeight: 800 }}>{c.display_name}</span>
+                        {(c.aliases || []).length > 0 && <div style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>{(c.aliases || []).slice(0, 2).join(', ')}</div>}
+                      </Link>
+                      <button onClick={() => setQuickViewCompound(c)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', padding: '6px', color: '#FFF', cursor: 'pointer' }} title="Quick View"><Eye size={16} /></button>
+                    </div>
+                    
+                    <div style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', margin: '8px 0', lineHeight: 1.4, flexGrow: 1 }}>
+                      {isEli5 ? <InteractiveGlossaryText text={c.eli5_summary || c.plain_summary || ''} /> : <InteractiveGlossaryText text={c.mechanism || c.plain_summary || ''} />}
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
+                      <div style={{ flex: 1 }}><PinToCompareButton compoundSlug={c.slug} compoundName={c.display_name} category={c.category} size="sm" /></div>
+                      <ResearchCartButton productName={c.display_name} size="sm" />
+                    </div>
                   </div>
-
-                  {c.category && (
-                    <span
-                      style={{
-                        fontSize: '0.75rem',
-                        color: 'var(--teal, #00C4BC)',
-                        marginTop: 'auto',
-                      }}
-                    >
-                      {c.category}
-                    </span>
-                  )}
-
-                  {/* 2. Dynamic WADA badge */}
-                  {c.wada_status && c.wada_status !== 'not_listed' && (
-                    <span
-                      style={{
-                        alignSelf: 'flex-start',
-                        fontSize: '0.7rem',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        marginTop: '4px',
-                        ...wadaBadgeStyle(c.wada_status),
-                      }}
-                    >
-                      {wadaLabel(c.wada_status)}
-                    </span>
-                  )}
-                </Link>
-
-                {/* 4. Popular Pairing click shortcuts */}
-                {c.best_stacked_with && c.best_stacked_with.length > 0 && (
-                  (() => {
-                    const partnerSlug = c.best_stacked_with[0];
-                    const partner = compounds.find((x) => x.slug === partnerSlug);
-                    if (partner) {
-                      return (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setQuery(partner.display_name);
-                            setCategory(ALL);
-                            setTier(ALL);
-                            setArea(ALL);
-                            setWada(ALL);
-                            setFormFilter(ALL);
-                          }}
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.03)',
-                            border: '1px dashed rgba(255,255,255,0.1)',
-                            borderRadius: '6px',
-                            padding: '4px 8px',
-                            fontSize: '0.72rem',
-                            color: 'var(--teal, #00C4BC)',
-                            cursor: 'pointer',
-                            textAlign: 'left',
-                            marginTop: '6px',
-                            alignSelf: 'flex-start',
-                            fontWeight: 600,
-                            transition: 'all 0.2s ease',
-                          }}
-                        >
-                          Often Paired With {partner.display_name}
-                        </button>
-                      );
-                    }
-                    return null;
-                  })()
-                )}
-
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: '8px',
-                    marginTop: '12px',
-                    paddingTop: '12px',
-                    borderTop: '1px solid rgba(255,255,255,0.06)',
-                  }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <PinToCompareButton
-                      compoundSlug={c.slug}
-                      compoundName={c.display_name}
-                      evidenceTierKey={c.evidence_tier}
-                      size="sm"
-                    />
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {paginatedResults.map((c) => (
+                <div key={c.slug} className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ flex: '0 0 200px' }}>
+                    <Link href={`/research/${c.slug}`} style={{ textDecoration: 'none', color: '#FFF', fontWeight: 800, fontSize: '1.05rem' }}>{c.display_name}</Link>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--teal, #00C4BC)' }}>{c.category}</div>
                   </div>
-                  <ResearchCartButton
-                    productName={c.display_name}
-                    size="sm"
-                  />
+                  <div style={{ flex: 1, fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)' }}>
+                     {c.plain_summary ? c.plain_summary.substring(0, 100) + '...' : ''}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => setQuickViewCompound(c)} className="btn-secondary" style={{ padding: '6px', borderRadius: '6px' }}><Eye size={16} /></button>
+                    <PinToCompareButton compoundSlug={c.slug} compoundName={c.display_name} category={c.category} size="sm" style={{ width: 'auto', minWidth: '40px' }} />
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              ))}
+            </div>
+          )}
+
+          {hasMore && (
+            <div style={{ textAlign: 'center', marginTop: '32px' }}>
+              <button onClick={() => setPage(p => p + 1)} style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid var(--teal, #00C4BC)', color: 'var(--teal, #00C4BC)', padding: '10px 32px', borderRadius: '8px', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer' }}>
+                Load More Compounds
+              </button>
+            </div>
+          )}
         </main>
       </div>
 
-      {/* guided wizard dialog */}
-      <HelpMeChooseWizard
-        isOpen={isWizardOpen}
-        onClose={() => setIsWizardOpen(false)}
-        onComplete={handleWizardComplete}
-      />
+      <HelpMeChooseWizard isOpen={isWizardOpen} onClose={() => setIsWizardOpen(false)} onComplete={handleWizardComplete} />
+      {quickViewCompound && <QuickViewModal compound={quickViewCompound} isOpen={true} onClose={() => setQuickViewCompound(null)} />}
     </div>
   );
 }
