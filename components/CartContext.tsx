@@ -9,6 +9,8 @@ import React, {
   useCallback,
 } from 'react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -797,10 +799,12 @@ function SmartRecCard({
         }}
       >
         {imgSrc ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
+          <Image
             src={imgSrc} alt={rec.name}
+            width={120}
+            height={82}
             style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }}
+            unoptimized
             onError={(e) => {
               const t = e.target as HTMLImageElement;
               const fallback = getProductImage(null, rec.category || 'Other', rec.name);
