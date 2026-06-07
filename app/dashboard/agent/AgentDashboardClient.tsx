@@ -385,8 +385,6 @@ export default function AgentDashboardClient({
       setDisplayName(data.display_name);
       setSlug(data.slug ?? '');
       setLogoUrl(data.logo_url ?? '');
-      setPrimaryColor(data.primary_color ?? '#00C4BC');
-      setVolumePricingEnabled(data.volume_pricing_enabled ?? true);
       setSuccess('Your Storefront White-Label Profile Has Been Successfully Activated!');
     } catch (err: any) {
       setError(err.message ?? 'An Error Occurred During Setup.');
