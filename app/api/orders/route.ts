@@ -459,6 +459,8 @@ export async function POST(request: NextRequest) {
         superAgentCost = isFinite(superAgentCost) ? Math.round(superAgentCost * 100) / 100 : null;
       }
 
+      const finalProductName = cartItem.bundleName ? `${dbProduct.name} [Part of: ${cartItem.bundleName}]` : dbProduct.name;
+
       const split = itemSplits[dbProduct.id];
 
       if (split && split.localQty > 0) {
@@ -466,7 +468,7 @@ export async function POST(request: NextRequest) {
         totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * split.localQty;
         computedItems.push({
           product_id: dbProduct.id,
-          product_name: dbProduct.name,
+          product_name: finalProductName,
           quantity: split.localQty,
           unit_retail_price: retailPrice,
           unit_cost_price: 0,
@@ -480,7 +482,7 @@ export async function POST(request: NextRequest) {
         totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * split.chinaQty;
         computedItems.push({
           product_id: dbProduct.id,
-          product_name: dbProduct.name,
+          product_name: finalProductName,
           quantity: split.chinaQty,
           unit_retail_price: retailPrice,
           unit_cost_price: costPrice,
@@ -494,7 +496,7 @@ export async function POST(request: NextRequest) {
         totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * itemQty;
         computedItems.push({
           product_id: dbProduct.id,
-          product_name: dbProduct.name,
+          product_name: finalProductName,
           quantity: itemQty,
           unit_retail_price: retailPrice,
           unit_cost_price: costPrice,

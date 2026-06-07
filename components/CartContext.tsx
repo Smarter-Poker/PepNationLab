@@ -29,6 +29,7 @@ export interface CartItem {
   bulkThreshold?: number;
   weightOz: number;
   agentSelfBuy?: boolean;
+  bundleName?: string;
 }
 
 export interface SmartRec {
@@ -228,9 +229,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const commitAddition = (product: Omit<CartItem, 'quantity'>, quantity: number) => {
     setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
+      const existing = prev.find(item => item.id === product.id && item.bundleName === product.bundleName);
       const next = existing
-        ? prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item)
+        ? prev.map(item => (item.id === product.id && item.bundleName === product.bundleName) ? { ...item, quantity: item.quantity + quantity } : item)
         : [...prev, { ...product, quantity }];
       refreshCartPricing(next, true).then(updated => {
         if (updated.length !== next.length || updated.some((u, i) => u.id !== next[i]?.id)) setCart(updated);
@@ -239,15 +240,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
     setIsCartOpen(true);
   };
-  const commitMultipleAdditions = (items: { product: Omit<CartItem, 'quantity'>, quantity: number }[]) => {
+  const commitMultipleAdditions = (items: { product: Omit<CartItem, 'quantity'>, quantity: number }[], bundleName?: string) => {
     setCart(prev => {
       let next = [...prev];
       for (const { product, quantity } of items) {
-        const existingIndex = next.findIndex(item => item.id === product.id);
+        const itemBundleName = product.bundleName || bundleName;
+        const existingIndex = next.findIndex(item => item.id === product.id && item.bundleName === itemBundleName);
         if (existingIndex >= 0) {
           next[existingIndex] = { ...next[existingIndex], quantity: next[existingIndex].quantity + quantity };
         } else {
-          next.push({ ...product, quantity });
+          next.push({ ...product, quantity, bundleName: product.bundleName || bundleName });
         }
       }
       refreshCartPricing(next, true).then(updated => {
@@ -277,7 +279,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       } as any);
       return;
     }
-    commitMultipleAdditions(items);
+    commitMultipleAdditions(items, bundleName);
   };
 
   const acceptAddToCart = () => {
@@ -291,7 +293,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (pendingAddition) {
       const isBundle = (pendingAddition as any)._isBundle;
       if (isBundle) {
-        commitMultipleAdditions(isBundle);
+        commitMultipleAdditions(isBundle, pendingAddition.product.bundleName);
       } else {
         commitAddition(pendingAddition.product, pendingAddition.quantity);
       }
