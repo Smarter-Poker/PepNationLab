@@ -101,28 +101,87 @@ export default function ReceiptButton(props: ReceiptProps) {
       </div>
     `;
 
-    const rowsHtml = `
-      <table>
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th class="num">Qty</th>
-            <th class="num">Unit</th>
-            <th class="num">Line Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${props.items.map((it) => `
+    const rowsHtml = (() => {
+      // Group items by bundle
+      const grouped: { isBundle: boolean; name: string; items: typeof props.items }[] = [];
+      const processed = new Set<string>();
+
+      props.items.forEach((it, idx) => {
+        if (processed.has(idx.toString())) return;
+        const match = it.product_name.match(/^(.*?)\s+\[Part of:\s+(.*?)\]$/);
+        if (match) {
+          const bundleName = match[2];
+          const bundleItems = props.items.filter(i => {
+            const m = i.product_name.match(/^(.*?)\s+\[Part of:\s+(.*?)\]$/);
+            return m && m[2] === bundleName;
+          });
+          if (!grouped.find(g => g.isBundle && g.name === bundleName)) {
+            grouped.push({ isBundle: true, name: bundleName, items: bundleItems });
+          }
+          bundleItems.forEach((_, iIdx) => {
+            const originalIdx = props.items.findIndex(i => i === bundleItems[iIdx]);
+            processed.add(originalIdx.toString());
+          });
+        } else {
+          grouped.push({ isBundle: false, name: it.product_name, items: [it] });
+          processed.add(idx.toString());
+        }
+      });
+
+      let html = `
+        <table>
+          <thead>
             <tr>
-              <td>${esc(it.product_name)}</td>
-              <td class="num">${Number(it.quantity) || 0}</td>
-              <td class="num">${fmt(it.unit_retail_price)}</td>
-              <td class="num">${fmt((Number(it.unit_retail_price) || 0) * (Number(it.quantity) || 0))}</td>
+              <th>Item</th>
+              <th class="num">Qty</th>
+              <th class="num">Unit</th>
+              <th class="num">Line Total</th>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
+          </thead>
+          <tbody>
+      `;
+
+      grouped.forEach(g => {
+        if (g.isBundle) {
+          const bundleQty = g.items[0].quantity; // Assuming bundles are bought in sets
+          const bundleTotal = g.items.reduce((acc, it) => acc + (it.unit_retail_price * it.quantity), 0);
+          html += `
+            <tr style="background-color: #f8fafc;">
+              <td colspan="4" style="font-weight: bold; color: #0d9488; padding-top: 12px;">📦 ${esc(g.name)} (Stack)</td>
+            </tr>
+          `;
+          g.items.forEach(it => {
+            const m = it.product_name.match(/^(.*?)\s+\[Part of:\s+(.*?)\]$/);
+            const cleanName = m ? m[1] : it.product_name;
+            html += `
+              <tr style="background-color: #f8fafc;">
+                <td style="padding-left: 20px;">↳ ${esc(cleanName)}</td>
+                <td class="num">${Number(it.quantity) || 0}</td>
+                <td class="num">${fmt(it.unit_retail_price)}</td>
+                <td class="num">${fmt((Number(it.unit_retail_price) || 0) * (Number(it.quantity) || 0))}</td>
+              </tr>
+            `;
+          });
+        } else {
+          g.items.forEach(it => {
+            html += `
+              <tr>
+                <td>${esc(it.product_name)}</td>
+                <td class="num">${Number(it.quantity) || 0}</td>
+                <td class="num">${fmt(it.unit_retail_price)}</td>
+                <td class="num">${fmt((Number(it.unit_retail_price) || 0) * (Number(it.quantity) || 0))}</td>
+              </tr>
+            `;
+          });
+        }
+      });
+
+      html += `
+          </tbody>
+        </table>
+      `;
+      return html;
+    })();
 
     const couponLine = props.discount > 0
       ? `<div style="display:flex; justify-content:space-between;"><span>Coupon Discount${props.couponCode ? ` (${esc(props.couponCode)})` : ''}</span><span>-${fmt(props.discount)}</span></div>`

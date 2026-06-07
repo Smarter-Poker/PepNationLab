@@ -9,6 +9,7 @@ import RecommendationStrip, { type RecommendationItem } from '@/components/Recom
 import ReceiptButton from './ReceiptButton';
 import SubscribeReplenishButton from './SubscribeReplenishButton';
 import ReorderOrderButton from './ReorderOrderButton';
+import ReorderStackButton from './ReorderStackButton';
 import ChangePaymentMethod from '@/components/ChangePaymentMethod';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import HelpHint from '@/components/help/HelpHint';
@@ -457,23 +458,100 @@ export default async function OrderDetailPage(
               Items
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              {order.order_items.map((item) => (
-                <div
-                  key={item.id}
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 'var(--space-3)', }}
-                >
-                  <div>
-                    <div style={{ fontSize: '0.92rem', color: 'var(--silver)', fontWeight: 600 }}>{item.product_name}</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 2 }}>
-                      Quantity: <span style={{ color: 'var(--teal)' }}>{item.quantity}</span>
-                      {' / '}Unit: ${num(item.unit_retail_price).toFixed(2)}
+              {/* Group items by bundleName */}
+              {(() => {
+                const groupedCart: { isBundle: boolean, name: string, items: typeof order.order_items }[] = [];
+                const processedIds = new Set<string>();
+
+                order.order_items.forEach((item, idx) => {
+                  if (processedIds.has(idx.toString())) return;
+                  const match = item.product_name && typeof item.product_name === 'string' ? item.product_name.match(/^(.*?)\s+\[Part of:\s+(.*?)\]$/) : null;
+                  
+                  if (match) {
+                    const bundleName = match[2];
+                    const bundleItems = order.order_items.filter(i => {
+                      const m = i.product_name && typeof i.product_name === 'string' ? i.product_name.match(/^(.*?)\s+\[Part of:\s+(.*?)\]$/) : null;
+                      return m && m[2] === bundleName;
+                    });
+                    if (!groupedCart.find(g => g.isBundle && g.name === bundleName)) {
+                      groupedCart.push({ isBundle: true, name: bundleName, items: bundleItems });
+                    }
+                    bundleItems.forEach((_, iIdx) => {
+                      const originalIdx = order.order_items.findIndex(i => i === bundleItems[iIdx]);
+                      processedIds.add(originalIdx.toString());
+                    });
+                  } else {
+                    groupedCart.push({ isBundle: false, name: item.product_name, items: [item] });
+                    processedIds.add(idx.toString());
+                  }
+                });
+
+                return groupedCart.map((group, groupIndex) => {
+                  if (group.isBundle) {
+                    const bundleSubtotal = group.items.reduce((acc, item) => acc + (num(item.unit_retail_price) * item.quantity), 0);
+                    return (
+                      <div key={`bundle-${group.name}-${groupIndex}`} style={{
+                        background: 'rgba(0, 229, 255, 0.03)',
+                        border: '1px solid rgba(0, 229, 255, 0.2)',
+                        borderRadius: 8,
+                        padding: '12px',
+                        display: 'flex', flexDirection: 'column', gap: 6,
+                        marginBottom: 12
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,229,255,0.1)', paddingBottom: 8, marginBottom: 4 }}>
+                          <div>
+                            <h4 style={{ fontSize: '0.95rem', margin: 0, fontFamily: 'var(--font-brand)', color: '#00E5FF', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              📦 {group.name}
+                            </h4>
+                            <div style={{ fontSize: '0.65rem', color: '#68D391', marginTop: 2, fontWeight: 700 }}>Stack Discount (10% Off) Included</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ fontSize: '0.95rem', color: '#00E5FF', fontWeight: 800 }}>${bundleSubtotal.toFixed(2)}</div>
+                            <ReorderStackButton orderId={order.id} bundleName={group.name} />
+                          </div>
+                        </div>
+                        {group.items.map(item => {
+                          const m = item.product_name.match(/^(.*?)\s+\[Part of:\s+(.*?)\]$/);
+                          const cleanName = m ? m[1] : item.product_name;
+                          return (
+                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 8, paddingTop: 4 }}>
+                              <div>
+                                <div style={{ fontSize: '0.88rem', color: 'var(--silver-light)', fontWeight: 600 }}>↳ {cleanName}</div>
+                                <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 2 }}>
+                                  Quantity: <span style={{ color: 'var(--teal)' }}>{item.quantity}</span>
+                                  {' / '}Unit: ${num(item.unit_retail_price).toFixed(2)}
+                                </div>
+                              </div>
+                              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--silver-light)' }}>
+                                ${(num(item.unit_retail_price) * item.quantity).toFixed(2)}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  }
+
+                  // Standard individual item
+                  return group.items.map(item => (
+                    <div
+                      key={item.id}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 'var(--space-3)', }}
+                    >
+                      <div>
+                        <div style={{ fontSize: '0.92rem', color: 'var(--silver)', fontWeight: 600 }}>{item.product_name}</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 2 }}>
+                          Quantity: <span style={{ color: 'var(--teal)' }}>{item.quantity}</span>
+                          {' / '}Unit: ${num(item.unit_retail_price).toFixed(2)}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>
+                        ${(num(item.unit_retail_price) * item.quantity).toFixed(2)}
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>
-                    ${(num(item.unit_retail_price) * item.quantity).toFixed(2)}
-                  </div>
-                </div>
-              ))}
+                  ));
+                });
+              })()}
 
               {/* Totals */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 'var(--space-3)' }}>

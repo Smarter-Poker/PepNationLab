@@ -288,7 +288,7 @@ function MatchFormInner() {
           border-color: var(--teal) !important;
         }
         .image-card:hover .card-overlay {
-          background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,196,188,0.3) 100%) !important;
+          background: rgba(0,196,188,0.1) !important;
         }
       `}</style>
 
@@ -309,9 +309,9 @@ function MatchFormInner() {
         {step === 1 && (
           <motion.div key="step1" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>What is your primary research goal?</h2>
-            <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Select the main focus of your protocol to calibrate the engine.</p>
+            <p style={{ color: 'var(--silver)', marginBottom: '32px' }}>Select the main focus of your protocol to calibrate the engine.</p>
             
-            <div style={{ marginBottom: '32px', padding: '16px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ marginBottom: '40px', padding: '16px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
               <p style={{ color: 'var(--silver)', fontSize: '0.9rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Sparkles size={16} color="var(--teal)" /> Or use AI to configure parameters:
               </p>
@@ -321,43 +321,40 @@ function MatchFormInner() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
               {goalOptions.map(g => (
                 <div 
                   key={g.value} 
                   onClick={() => setGoal(g.value)} 
                   className={`image-card ${goal === g.value ? 'selected' : ''}`}
                   style={{
-                    position: 'relative',
-                    overflow: 'hidden',
-                    height: '160px',
                     display: 'flex',
                     flexDirection: 'column',
-                    justifyContent: 'flex-end',
-                    backgroundImage: `url('/images/areas/${g.value === 'any' ? 'blank_card' : g.value}.png')`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    border: goal === g.value ? '2px solid var(--teal)' : '1px solid rgba(168,180,192,0.2)'
+                    background: '#0F1923',
+                    border: goal === g.value ? '2px solid var(--teal)' : '1px solid rgba(168,180,192,0.2)',
+                    overflow: 'hidden'
                   }}
                 >
-                  <div 
-                    className="card-overlay"
-                    style={{
-                      position: 'absolute', inset: 0,
-                      background: goal === g.value ? 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,196,188,0.2) 100%)' : 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.2) 100%)',
-                      zIndex: 1,
-                      transition: 'all 0.3s'
-                    }} 
-                  />
-                  <div style={{ position: 'relative', zIndex: 2, padding: '16px' }}>
-                    <h3 style={{ color: 'white', fontSize: '1.2rem', margin: '0 0 6px 0', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>{g.label}</h3>
-                    <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.85rem', margin: 0, textShadow: '0 1px 2px rgba(0,0,0,0.8)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{g.blurb}</p>
+                  <div style={{
+                    width: '100%',
+                    aspectRatio: '1/1',
+                    backgroundImage: `url('/images/areas/${g.value === 'any' ? 'blank_card' : g.value}.png')`,
+                    backgroundSize: 'contain',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'center',
+                    position: 'relative',
+                    backgroundColor: goal === g.value ? 'rgba(0,196,188,0.1)' : 'transparent'
+                  }}>
+                    {goal === g.value && (
+                      <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 3, background: 'var(--teal)', borderRadius: '50%', padding: '4px' }}>
+                        <ShieldCheck size={16} color="#0F1923" />
+                      </div>
+                    )}
                   </div>
-                  {goal === g.value && (
-                    <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 3, background: 'var(--teal)', borderRadius: '50%', padding: '4px' }}>
-                      <ShieldCheck size={16} color="#0F1923" />
-                    </div>
-                  )}
+                  <div style={{ padding: '20px 16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', background: '#0a0f14' }}>
+                    <h3 style={{ color: 'white', fontSize: '1.2rem', margin: '0 0 8px 0' }}>{g.label}</h3>
+                    <p style={{ color: 'var(--silver)', fontSize: '0.9rem', margin: 0 }}>{g.blurb}</p>
+                  </div>
                 </div>
               ))}
             </div>

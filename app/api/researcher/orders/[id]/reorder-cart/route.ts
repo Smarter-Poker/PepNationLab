@@ -47,11 +47,19 @@ export async function POST(
     );
   }
 
+  let bodyBundleName: string | null = null;
+  try {
+    const json = await req.json();
+    bodyBundleName = json?.bundleName ?? null;
+  } catch {
+    /* ignore */
+  }
+
   const service = await createServiceClient();
 
   const { data: source, error: sourceErr } = await service
     .from('orders')
-    .select('id, buyer_id, agent_id, order_items(product_id, quantity)')
+    .select('id, buyer_id, agent_id, order_items(product_id, quantity, product_name)')
     .eq('id', id)
     .maybeSingle();
 
@@ -62,9 +70,19 @@ export async function POST(
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
   }
 
-  const sourceItems = (source.order_items ?? []) as Array<{ product_id: string; quantity: number }>;
+  let sourceItems = (source.order_items ?? []) as Array<{ product_id: string; quantity: number; product_name: string }>;
   if (sourceItems.length === 0) {
     return NextResponse.json({ error: 'Original Order Has No Items.' }, { status: 400 });
+  }
+
+  if (bodyBundleName) {
+    sourceItems = sourceItems.filter(it => {
+      const m = it.product_name && typeof it.product_name === 'string' ? it.product_name.match(/^(.*?)\s+\[Part of:\s+(.*?)\]$/) : null;
+      return m && m[2] === bodyBundleName;
+    });
+    if (sourceItems.length === 0) {
+      return NextResponse.json({ error: 'Stack Not Found In Order.' }, { status: 400 });
+    }
   }
 
   const productIds = Array.from(new Set(sourceItems.map((it) => it.product_id).filter(Boolean)));
@@ -109,7 +127,7 @@ export async function POST(
   // Storefront-cart shape consumed by app/checkout/CheckoutForm.tsx.
   const items: Array<{
     id: string; name: string; sku: string; quantity: number;
-    retailPrice: number; costPrice: number; weightOz: number; agentSelfBuy: boolean;
+    retailPrice: number; costPrice: number; weightOz: number; agentSelfBuy: boolean; bundleName?: string;
   }> = [];
   // agent_product_id -> qty, so the storefront grid (cart_<slug>) hydrates too.
   const cartMap: Record<string, number> = {};
@@ -131,6 +149,8 @@ export async function POST(
     const perVial = apMatch ? apMatch.price / 10 : baseCost / 10;
     const sizeLabel = product.unit_size ? ` (${product.unit_size}${product.unit_measure || ''})` : '';
 
+    const bundleMatch = it.product_name && typeof it.product_name === 'string' ? it.product_name.match(/^(.*?)\s+\[Part of:\s+(.*?)\]$/) : null;
+
     items.push({
       id: it.product_id,
       name: `${product.name}${sizeLabel}`.trim(),
@@ -141,6 +161,7 @@ export async function POST(
       costPrice: Math.round(perVial * 100) / 100,
       weightOz: Number(product.weight_oz) || 0.5,
       agentSelfBuy: false,
+      ...(bundleMatch ? { bundleName: bundleMatch[2] } : {}),
     });
 
     if (apMatch?.agent_product_id) {
