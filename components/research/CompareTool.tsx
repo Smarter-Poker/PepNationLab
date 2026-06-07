@@ -2190,7 +2190,19 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
             </button>
           </div>
         )}
-        {selected.length > 0 && <button type="button" onClick={() => setSelectedSlugs([])} style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', color: '#F08A8A', borderRadius: 7, padding: '7px 14px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>Clear All</button>}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {selected.length > 0 && selected.length < MAX_COLUMNS && (
+            <button type="button" onClick={() => {
+              const allSuggested = selected.flatMap(c => c.best_stacked_with || []);
+              const uniqueSuggested = Array.from(new Set(allSuggested));
+              const available = compounds.filter(c => uniqueSuggested.some(s => s.toLowerCase() === c.slug || s.toLowerCase() === c.display_name.toLowerCase()) && !selectedSlugs.includes(c.slug));
+              if (available.length > 0) addCompound(available[0].slug);
+            }} style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', color: '#00C4BC', borderRadius: 7, padding: '7px 14px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Sparkles size={14} /> Suggest Pairing
+            </button>
+          )}
+          {selected.length > 0 && <button type="button" onClick={() => setSelectedSlugs([])} style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', color: '#F08A8A', borderRadius: 7, padding: '7px 14px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>Clear All</button>}
+        </div>
       </div>
 
 
@@ -2577,6 +2589,37 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
                   })}
                 </div>
               </div>
+              
+              {/* Stack Synergy Analysis */}
+              {(() => {
+                const synergy = calculateStackSynergy(displayedSelected);
+                const scoreColor = synergy.synergyIndex > 80 ? '#00C4BC' : synergy.synergyIndex > 50 ? '#F6AD55' : '#E53E3E';
+                return (
+                  <div style={{ marginTop: 24, padding: 20, borderRadius: 12, background: 'linear-gradient(135deg, rgba(0,0,0,0.2) 0%, rgba(255,255,255,0.02) 100%)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative', width: 100, height: 100, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="100" height="100" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
+                        <circle cx="50" cy="50" r="45" fill="none" stroke={scoreColor} strokeWidth="8" strokeDasharray={`${synergy.synergyIndex * 2.827} 282.7`} style={{ transition: 'stroke-dasharray 1s ease-out' }} />
+                      </svg>
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 900, color: scoreColor }}>{synergy.synergyIndex}</span>
+                        <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Synergy</span>
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 240 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#fff' }}>Stack Synergy & Risk Analysis</h4>
+                        <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', background: synergy.riskLevel === 'high' || synergy.riskLevel === 'critical' ? 'rgba(229,62,62,0.2)' : synergy.riskLevel === 'moderate' ? 'rgba(246,173,85,0.2)' : 'rgba(104,211,145,0.2)', color: synergy.riskLevel === 'high' || synergy.riskLevel === 'critical' ? '#FC8181' : synergy.riskLevel === 'moderate' ? '#FBD38D' : '#9AE6B4' }}>
+                          {synergy.riskLevel} Risk
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
+                        {synergy.synergyExplanation}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 

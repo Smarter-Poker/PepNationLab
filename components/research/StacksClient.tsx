@@ -41,7 +41,10 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
   const filteredStacks = useMemo(() => {
     return stacks.filter(stack => {
       const matchSearch = stack.display_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        stack.stack_components.some(c => c.toLowerCase().includes(searchQuery.toLowerCase()));
+        stack.stack_components.some(c => {
+          const compName = bySlug.get(c)?.display_name || c;
+          return compName.toLowerCase().includes(searchQuery.toLowerCase()) || c.toLowerCase().includes(searchQuery.toLowerCase());
+        });
       
       const matchCat = activeCategory === 'All' || 
         stack.research_areas?.some(a => RESEARCH_AREAS[a]?.label === activeCategory);
@@ -164,7 +167,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
       </div>
 
       {viewMode === 'map' ? (
-        <NodeMapVisualizer stacks={filteredStacks} compounds={compounds} bySlug={bySlug} />
+        <NodeMapVisualizer stacks={filteredStacks} compounds={compounds} bySlug={bySlug} onStackClick={setActiveStackDrawer} />
       ) : filteredStacks.length === 0 ? (
         <div className="card" style={{ padding: 'var(--space-6)', color: '#A8B4C0', textAlign: 'center' }}>
           No Documented Combinations Match Your Filters.
@@ -407,7 +410,7 @@ function StacksCompareDrawer({ stack1, stack2, bySlug, onClose, synergy1, synerg
               <div style={{ marginBottom: 12, fontSize: '0.8rem', color: '#A8B4C0', textTransform: 'uppercase', fontWeight: 700 }}>Included Compounds</div>
               {stack1.stack_components.map((slug: string) => (
                 <div key={slug} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 8, marginBottom: 8, fontSize: '0.85rem', color: '#fff' }}>
-                  {bySlug.get(slug)?.display_name}
+                  {bySlug.get(slug)?.display_name || slug}
                 </div>
               ))}
             </div>
@@ -415,7 +418,7 @@ function StacksCompareDrawer({ stack1, stack2, bySlug, onClose, synergy1, synerg
               <div style={{ marginBottom: 12, fontSize: '0.8rem', color: '#A8B4C0', textTransform: 'uppercase', fontWeight: 700 }}>Included Compounds</div>
               {stack2.stack_components.map((slug: string) => (
                 <div key={slug} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 8, marginBottom: 8, fontSize: '0.85rem', color: '#fff' }}>
-                  {bySlug.get(slug)?.display_name}
+                  {bySlug.get(slug)?.display_name || slug}
                 </div>
               ))}
             </div>
@@ -429,7 +432,7 @@ function StacksCompareDrawer({ stack1, stack2, bySlug, onClose, synergy1, synerg
 // ─────────────────────────────────────────────────────────────────────────────
 // Node Map Visualizer Component
 // ─────────────────────────────────────────────────────────────────────────────
-function NodeMapVisualizer({ stacks, compounds, bySlug }: { stacks: Compound[], compounds: Compound[], bySlug: Map<string, Compound> }) {
+function NodeMapVisualizer({ stacks, compounds, bySlug, onStackClick }: { stacks: Compound[], compounds: Compound[], bySlug: Map<string, Compound>, onStackClick?: (slug: string) => void }) {
   const [centerSlug, setCenterSlug] = useState<string>('bpc-157');
 
   const { centerName, orbitStacks } = useMemo(() => {
@@ -448,7 +451,7 @@ function NodeMapVisualizer({ stacks, compounds, bySlug }: { stacks: Compound[], 
   }, [stacks, bySlug]);
 
   return (
-    <div style={{ height: 600, width: '100%', background: '#0a0f14', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ height: 600, width: '100%', background: '#0a0f14', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflowX: 'auto', overflowY: 'hidden' }}>
       <div style={{ position: 'absolute', top: 20, left: 20, color: '#A8B4C0', fontSize: '0.85rem' }}>
         Interactive Network Graph (Showing stacks for <strong>{centerName}</strong>)
       </div>
@@ -472,10 +475,11 @@ function NodeMapVisualizer({ stacks, compounds, bySlug }: { stacks: Compound[], 
           return (
             <motion.div 
               key={orbitStack.slug}
+              onClick={() => onStackClick?.(orbitStack.slug)}
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
-              style={{ position: 'absolute', left: x, top: y, width: 80, height: 80, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}
+              style={{ position: 'absolute', left: x, top: y, width: 80, height: 80, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 5, cursor: 'pointer' }}
             >
               <svg style={{ position: 'absolute', top: '50%', left: '50%', width: 200, height: 200, overflow: 'visible', pointerEvents: 'none', zIndex: -1 }}>
                 <line x1={0} y1={0} x2={200 - x - 40} y2={200 - y - 40} stroke="rgba(0,229,255,0.2)" strokeWidth="2" strokeDasharray="4 4" />
