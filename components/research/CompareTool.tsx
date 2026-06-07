@@ -2099,43 +2099,64 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
           span { color: inherit !important; }
           img { max-width: 100% !important; filter: grayscale(100%); }
         }
-        .ct-tab { background: rgba(255,255,255,0.03) !important; border: 4px solid #5a626c !important; color: rgba(255,255,255,0.5) !important; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .ct-tab { background: rgba(255,255,255,0.03) !important; border: 4px solid rgba(255,255,255,0.05) !important; color: rgba(255,255,255,0.5) !important; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .ct-tab:hover { background: rgba(255,255,255,0.08) !important; border-color: #aab2bd !important; color: rgba(255,255,255,0.9) !important; }
-        .ct-tab.active { background: #0e3035 !important; border: 4px solid transparent !important; background-image: linear-gradient(#0e3035, #0e3035), linear-gradient(135deg, #4f5660 0%, #aab2bd 20%, #f5f7fa 40%, #7e8794 60%, #cbd2db 80%, #4f5660 100%) !important; background-origin: border-box !important; background-clip: padding-box, border-box !important; color: #FFF !important; box-shadow: 0 4px 12px rgba(0, 196, 188, 0.15) !important; }
-        .ct-row-hover:hover td { background: rgba(255,255,255,0.015) !important; }
-        .popular-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 4px; }
-        .popular-card:hover { background: rgba(0,196,188,0.08); border-color: rgba(0,196,188,0.3); transform: translateY(-1px); }
-        .action-btn-nickel { background: rgba(255,255,255,0.04) !important; border: 2px solid #7d8690 !important; color: #FFF !important; border-radius: 8px !important; padding: 7px 12px !important; font-size: 0.78rem !important; font-weight: 700 !important; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.2s; }
-        .action-btn-nickel:hover { background: rgba(255,255,255,0.08) !important; border-color: #f0f2f5 !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important; }
-        .search-input-nickel { width: 100%; background: #162230 !important; color: #fff !important; border: 2px solid #5a626c !important; border-radius: 8px !important; padding: 12px 44px 12px 42px !important; font-size: 0.95rem !important; outline: none !important; transition: all 0.2s; }
-        .search-input-nickel:focus { border-color: #aab2bd !important; box-shadow: 0 0 10px rgba(170, 178, 189, 0.2) !important; }
-        .brief-paragraph { border-left: 2px solid rgba(0,196,188,0.3) !important; padding-left: 14px; margin: 0; color: rgba(255,255,255,0.78); font-size: 0.88rem; line-height: 1.75; }
-        .matrix-table { width: 100%; border-collapse: collapse; }
-        .matrix-table th:not(:first-child), .matrix-table td:not(:first-child) { border-left: 2px solid rgba(142, 152, 167, 0.75) !important; }
-        .matrix-table th, .matrix-table td { border-bottom: 2px solid rgba(142, 152, 167, 0.75) !important; }
-        .efficacy-table { width: 100%; border-collapse: collapse; }
-        .efficacy-table th:not(:first-child), .efficacy-table td:not(:first-child) { border-left: 2px solid rgba(142, 152, 167, 0.75) !important; }
-        .efficacy-table th, .efficacy-table td { border-bottom: 2px solid rgba(142, 152, 167, 0.75) !important; }
+        .ct-tab:hover { background: rgba(255,255,255,0.08) !important; border-color: rgba(0,196,188,0.3) !important; color: rgba(255,255,255,0.9) !important; box-shadow: 0 0 15px rgba(0,196,188,0.2) !important; }
+        .ct-tab.active { background: rgba(0,196,188,0.1) !important; border: 4px solid rgba(0,196,188,0.4) !important; color: #FFF !important; box-shadow: 0 4px 20px rgba(0, 196, 188, 0.25) !important; }
+        
+        .ct-row-hover { transition: all 0.3s ease; }
+        .ct-row-hover td { transition: all 0.3s ease; }
+        .ct-row-hover:hover td { background: rgba(0,196,188,0.04) !important; box-shadow: inset 0 0 20px rgba(0,196,188,0.05); }
+        
+        .popular-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; gap: 6px; position: relative; overflow: hidden; backdrop-filter: blur(10px); }
+        .popular-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,196,188,0.1), rgba(0,0,0,0)); opacity: 0; transition: opacity 0.3s ease; }
+        .popular-card:hover { border-color: rgba(0,196,188,0.4); transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 24px rgba(0,196,188,0.15); }
+        .popular-card:hover::before { opacity: 1; }
+        
+        .action-btn-nickel { background: rgba(255,255,255,0.03) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: #FFF !important; border-radius: 12px !important; padding: 8px 16px !important; font-size: 0.85rem !important; font-weight: 800 !important; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); letter-spacing: 0.02em; }
+        .action-btn-nickel:hover { background: rgba(0,196,188,0.1) !important; border-color: rgba(0,196,188,0.4) !important; box-shadow: 0 4px 15px rgba(0,196,188,0.2) !important; transform: translateY(-1px); }
+        
+        .search-input-nickel { width: 100%; background: rgba(22, 34, 48, 0.6) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.15) !important; border-radius: 12px !important; padding: 14px 44px 14px 44px !important; font-size: 1rem !important; outline: none !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-weight: 600; }
+        .search-input-nickel:focus { border-color: rgba(0,196,188,0.6) !important; box-shadow: 0 0 0 4px rgba(0,196,188,0.15), 0 8px 24px rgba(0,0,0,0.4) !important; background: rgba(22, 34, 48, 0.8) !important; }
+        .search-input-nickel::placeholder { color: rgba(255,255,255,0.3) !important; font-weight: 500; }
+        
+        .brief-paragraph { border-left: 3px solid rgba(0,196,188,0.4) !important; padding-left: 16px; margin: 0; color: rgba(255,255,255,0.85); font-size: 0.95rem; line-height: 1.8; letter-spacing: 0.01em; }
+        
+        .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .matrix-table th, .matrix-table td { border-bottom: 1px solid rgba(255,255,255,0.06) !important; }
+        .matrix-table th:not(:first-child), .matrix-table td:not(:first-child) { border-left: 1px solid rgba(255,255,255,0.06) !important; }
+        
+        .efficacy-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .efficacy-table th, .efficacy-table td { border-bottom: 1px solid rgba(255,255,255,0.06) !important; }
+        .efficacy-table th:not(:first-child), .efficacy-table td:not(:first-child) { border-left: 1px solid rgba(255,255,255,0.06) !important; }
+        
         .glass-panel {
-          border: 4px solid transparent !important;
-          background-image: linear-gradient(#0F161E, #0F161E), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) !important;
-          background-origin: border-box !important;
-          background-clip: padding-box, border-box !important;
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          background: rgba(15, 22, 30, 0.6) !important;
+          border: 1px solid rgba(255,255,255,0.08) !important;
+          border-radius: 16px !important;
+          backdrop-filter: blur(32px) saturate(180%);
+          -webkit-backdrop-filter: blur(32px) saturate(180%);
+          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+          position: relative;
+          overflow: hidden;
         }
+        .glass-panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); z-index: 1; pointer-events: none; }
+        
         .inner-card-nickel {
-          border: 2px solid transparent !important;
-          background-image: linear-gradient(#0F161E, #0F161E), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%) !important;
-          background-origin: border-box !important;
-          background-clip: padding-box, border-box !important;
+          background: rgba(255,255,255,0.02) !important;
+          border: 1px solid rgba(255,255,255,0.06) !important;
           border-radius: 12px;
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          transition: all 0.3s ease;
         }
-        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes fadeInDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.6; transform:scale(1.15); } }
+        .inner-card-nickel:hover { background: rgba(255,255,255,0.04) !important; border-color: rgba(255,255,255,0.1) !important; }
+        
+        .pulse-glow { animation: pulseGlow 2s infinite ease-in-out; }
+        
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeInDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes pulseGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(0,196,188,0.4); transform:scale(1); } 50% { box-shadow: 0 0 15px 4px rgba(0,196,188,0.2); transform:scale(1.02); } }
       `}} />
       <div className="no-print" style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', marginBottom: 24, position: 'relative', zIndex: 50 }} ref={searchRef}>
         <div style={{ position: 'relative', flex: 1, minWidth: 240, maxWidth: 520 }}>

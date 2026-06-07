@@ -6,6 +6,7 @@ import { toTitleCase } from '@/lib/categoryImage';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FlaskConical, Dna, ArrowRight, X } from 'lucide-react';
+import { prewarmProxy, isSocialPlatformUrl } from '@/lib/ArticleProxyUtils';
 import DynamicAddToCartButton from '../storefront/DynamicAddToCartButton';
 import IframeModal from '../ui/IframeModal';
 
@@ -813,7 +814,17 @@ export default function AreaProductGrid({
                   compound?.coaUrl && compound.coaUrl !== '#' ? (
                     <a
                       href={compound.coaUrl}
-                      onClick={(e) => { e.preventDefault(); setModalUrl(compound.coaUrl!); }}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => { 
+                        e.preventDefault(); 
+                        if (isSocialPlatformUrl(compound.coaUrl)) {
+                          window.open(compound.coaUrl!, '_blank');
+                        } else {
+                          setModalUrl(compound.coaUrl!); 
+                        }
+                      }}
+                      onMouseEnter={() => prewarmProxy(compound.coaUrl)}
                       style={{
                         position: 'absolute',
                         bottom: 12,

@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { 
   Layers, AlertTriangle, Info, ShieldAlert, CheckCircle2, 
-  Download, Calendar, Plus, Trash2, Edit, Save, RefreshCw 
+  Download, Calendar, Trash2, Edit, Save, RefreshCw 
 } from 'lucide-react';
 import { 
   analyzeCartWarnings, 
@@ -265,7 +265,7 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
           if (d.compounds.some(c => c.slug === slug)) return d; // already exists
           return {
             ...d,
-            compounds: [...d.compounds, { slug, dose: defaultDose, unit: defaultUnit as any }]
+            compounds: [...d.compounds, { slug, dose: defaultDose, unit: defaultUnit as 'mcg' | 'mg' | 'iu' | 'mL' }]
           };
         })
       };

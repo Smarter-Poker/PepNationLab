@@ -1,15 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Compound, EVIDENCE_TIER, RESEARCH_AREAS } from '@/lib/compounds';
+import { Compound, RESEARCH_AREAS } from '@/lib/compounds';
 import { AreaProduct } from '@/lib/area-products-server';
 import { useCart } from '@/components/CartContext';
 import { analyzeStack, getCategoryFromName } from '@/lib/stackEngine';
 import StackBuilder from './StackBuilder';
-import { Search, Info, FlaskConical, Beaker, Map as MapIcon, Grid as GridIcon, CheckCircle2, ChevronRight, X } from 'lucide-react';
-import Image from 'next/image';
+import { Search, FlaskConical, Beaker, Map as MapIcon, Grid as GridIcon, CheckCircle2, X } from 'lucide-react';
 import AutocompleteDropdown from '@/components/research/AutocompleteDropdown';
 import TrendingSearchesDropdown from '@/components/research/TrendingSearchesDropdown';
 import { useSearchHistory } from '@/components/research/useSearchHistory';
@@ -73,7 +71,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 
       return matchSearch && matchCat;
     });
-  }, [stacks, searchQuery, activeCategory]);
+  }, [stacks, searchQuery, activeCategory, bySlug]);
 
   const toggleCompare = (slug: string) => {
     setSelectedForCompare(prev => {
@@ -189,7 +187,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                 id="stacks-search-autocomplete"
                 suggestions={suggestions}
                 recent={recent}
-                onSelect={(s: any) => { addHistory(s.text); setSearchQuery(s.text); setSuggestOpen(false); }}
+                onSelect={(s: { text: string }) => { addHistory(s.text); setSearchQuery(s.text); setSuggestOpen(false); }}
                 onSelectRecent={(t: string) => { addHistory(t); setSearchQuery(t); setSuggestOpen(false); }}
               />
             </div>
@@ -328,7 +326,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
             bySlug={bySlug} 
             products={products}
             onClose={() => setActiveStackDrawer(null)} 
-            onAddToCart={(stack: any) => handleAddToCart(stack)}
+            onAddToCart={(stack: Compound) => handleAddToCart(stack)}
             bundlePrice={getBundlePrice(bySlug.get(activeStackDrawer!)!)}
             synergyData={getSynergyScore(bySlug.get(activeStackDrawer!)!)}
           />
@@ -483,9 +481,7 @@ function StacksCompareDrawer({ stack1, stack2, bySlug, onClose, synergy1, synerg
 // ─────────────────────────────────────────────────────────────────────────────
 // Node Map Visualizer Component
 // ─────────────────────────────────────────────────────────────────────────────
-function NodeMapVisualizer({ stacks, compounds, bySlug, onStackClick }: { stacks: Compound[], compounds: Compound[], bySlug: Map<string, Compound>, onStackClick?: (slug: string) => void }) {
-  const [centerSlug, setCenterSlug] = useState<string>('bpc-157');
-
+function NodeMapVisualizer({ stacks, bySlug, onStackClick }: { stacks: Compound[], bySlug: Map<string, Compound>, onStackClick?: (slug: string) => void }) {
   const { centerName, orbitStacks } = useMemo(() => {
     let topSlug = 'bpc-157';
     if (stacks.length > 0) {
@@ -507,7 +503,7 @@ function NodeMapVisualizer({ stacks, compounds, bySlug, onStackClick }: { stacks
         Interactive Network Graph (Showing stacks for <strong>{centerName}</strong>)
       </div>
       
-      <div style={{ position: 'relative', width: 400, height: 400 }}>
+      <div style={{ position: 'relative', width: 400, height: 400, borderRadius: '50%', border: '1px dashed rgba(255,255,255,0.1)' }}>
         {/* Center Node */}
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 80, height: 80, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,229,255,0.2) 0%, rgba(0,0,0,0.8) 100%)', border: '2px solid #00E5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, zIndex: 10, textAlign: 'center', fontSize: '0.8rem' }}>
           {centerName}
