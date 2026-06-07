@@ -183,6 +183,49 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [cart, loaded]);
 
+  // Global listener for pnl:add-to-cart-by-name
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ name?: string; handled?: boolean }>).detail;
+      if (!detail || !detail.name) return;
+
+      // Allow local storefront grids to handle it first (they run in the same event tick)
+      setTimeout(async () => {
+        if (detail.handled) return;
+        detail.handled = true; // Mark handled just in case
+
+        try {
+          const res = await fetch('/api/cart/resolve-name', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: detail.name }),
+          });
+
+          if (!res.ok) {
+            toast.error(`${detail.name} Is Not Available On This Storefront.`);
+            return;
+          }
+
+          const data = await res.json();
+          if (data.item) {
+            // Add via the multiple additions method to support bypassing the acknowledgment safely
+            addMultipleToCart([{ product: data.item, quantity: data.quantity || 1 }], detail.name);
+            toast.success(`${data.item.name} Added To Cart.`);
+          } else {
+            toast.error(`${detail.name} Is Not Available.`);
+          }
+        } catch (err) {
+          toast.error('Failed to add item to cart.');
+        }
+      }, 50);
+    };
+
+    window.addEventListener('pnl:add-to-cart-by-name', handler as EventListener);
+    return () => window.removeEventListener('pnl:add-to-cart-by-name', handler as EventListener);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
   const commitAddition = (product: Omit<CartItem, 'quantity'>, quantity: number) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
