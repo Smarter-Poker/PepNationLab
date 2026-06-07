@@ -79,7 +79,7 @@ export default function PwaInstallPrompt() {
         bottom: 'calc(max(16px, env(safe-area-inset-bottom)) + 8px)',
         right: 'max(16px, env(safe-area-inset-right))',
         left: 'auto',
-        zIndex: 1000,
+        zIndex: 9999,
         maxWidth: 'min(320px, calc(100vw - 32px))',
         background: '#0F1923',
         border: '1px solid rgba(0,196,188,0.35)',

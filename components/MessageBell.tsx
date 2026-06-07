@@ -270,7 +270,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 16,
           boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(192,184,168,0.05)',
-          zIndex: 1000, overflow: 'hidden',
+          zIndex: 9999, overflow: 'hidden',
           animation: 'dropdownSlide 0.2s ease-out',
         }}>
           {/* Header */}

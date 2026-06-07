@@ -89,7 +89,7 @@ export default function FlashSaleBanner() {
       style={{
         position: 'sticky',
         top: 0,
-        zIndex: 90,
+        zIndex: 9999,
         background: 'linear-gradient(90deg, #00C4BC 0%, #00A6A0 100%)',
         color: '#000',
         padding: '8px 16px',

@@ -322,7 +322,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                           const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                           const comp = bySlug.get(compSlug);
                           const label = comp?.display_name ?? compSlug;
-                          const priceText = p ? `$${p.price.toFixed(2)}` : '';
+                          const priceText = p ? `$${p.retailPrice.toFixed(2)}` : '';
                           return (
                             <div
                               key={compSlug}

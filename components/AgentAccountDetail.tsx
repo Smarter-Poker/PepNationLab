@@ -105,7 +105,7 @@ const labelStyle: React.CSSProperties = {
 };
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '10px 12px',
-  background: 'var(--bg-metal-dark)',
+  background: 'var(--bg-metal-dark)', fontSize: 16,
   border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: 6,
 };
 
@@ -285,7 +285,7 @@ export default function AgentAccountDetail({
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)',
-        zIndex: 1200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+        zIndex: 9999, display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
         padding: 'var(--space-4)', overflowY: 'auto',
       }}
     >
