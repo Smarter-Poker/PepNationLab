@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import AvatarUpload from '@/components/AvatarUpload';
 import ProfileCompletenessRing from './ProfileCompletenessRing';
@@ -47,31 +48,43 @@ const REQUIRED_FIELDS: Array<keyof AccountProfile> = [
   'avatar_url',
 ];
 
-function completenessPercent(p: AccountProfile | null, ap?: any): number {
-  if (!p) return 0;
+function getCompletenessData(p: AccountProfile | null, ap?: any) {
+  if (!p) return { percent: 0, missingTasks: [] };
   
+  const missingTasks: Array<{ id: string; label: string; actionText: string; target: string }> = [];
+
+  const check = (condition: boolean, id: string, label: string, actionText: string, target: string) => {
+    if (!condition) missingTasks.push({ id, label, actionText, target });
+    return condition ? 1 : 0;
+  };
+
   let requiredCount = REQUIRED_FIELDS.length;
-  let filled = REQUIRED_FIELDS.reduce((n, key) => {
-    const v = p[key];
-    if (typeof v === 'string' && v.trim().length > 0) return n + 1;
-    if (v) return n + 1;
-    return n;
-  }, 0);
+  let filled = 0;
+
+  filled += check(!!p.first_name?.trim(), 'first-name', 'First Name', 'Add Now', 'focus:first-name');
+  filled += check(!!p.last_name?.trim(), 'last-name', 'Last Name', 'Add Now', 'focus:last-name');
+  filled += check(!!p.email?.trim() && !p.email.includes('@internal.auth') && !p.email.includes('@pepnationlab.com'), 'email', 'Real Email Address', 'Add Now', 'focus:email');
+  filled += check(!!p.phone?.trim(), 'phone', 'Phone Number', 'Add Now', 'focus:phone');
+  filled += check(!!p.timezone?.trim(), 'timezone', 'Timezone', 'Select Now', 'focus:timezone');
+  filled += check(!!p.avatar_url, 'avatar', 'Profile Picture', 'Upload Now', 'focus:avatar');
 
   if (ap) {
     requiredCount += 4; // slug, warehouse, payment, active
-    const slugMissing = !ap.slug || /^agent(?:-|$)/i.test(ap.slug);
-    if (!slugMissing) filled += 1;
+    filled += check(!!ap.slug && !/^agent(?:-|$)/i.test(ap.slug), 'username', 'Custom Username', 'Edit Now', 'modal:username');
+    
     const warehouse = ap.warehouse_address;
-    const warehouseEmpty = !warehouse || !warehouse.street1 || !warehouse.city || !warehouse.state || !warehouse.zip;
-    if (!warehouseEmpty) filled += 1;
+    filled += check(!!(warehouse && warehouse.street1 && warehouse.city && warehouse.state && warehouse.zip), 'warehouse', 'Warehouse Address', 'Go to Agent Settings', 'nav:/dashboard/agent');
+    
     const handles = ap.payment_handles;
-    const handlesEmpty = !handles || Object.keys(handles).every((k) => !handles[k]);
-    if (!handlesEmpty) filled += 1;
-    if (ap.is_active) filled += 1;
+    filled += check(!!(handles && Object.keys(handles).some((k: string) => handles[k])), 'payment', 'Payment Methods', 'Go to Agent Settings', 'nav:/dashboard/agent');
+    
+    filled += check(!!ap.is_active, 'active', 'Agent Status', 'Go to Agent Settings', 'nav:/dashboard/agent');
   }
 
-  return Math.round((filled / requiredCount) * 100);
+  return {
+    percent: Math.round((filled / requiredCount) * 100),
+    missingTasks
+  };
 }
 
 export default function AccountOverview({ userEmail, profile, agentProfile, onProfileChange }: Props) {
@@ -84,8 +97,10 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
   });
   const [saving, setSaving] = useState(false);
   const [usernameModalOpen, setUsernameModalOpen] = useState(false);
+  const [missingTasksModalOpen, setMissingTasksModalOpen] = useState(false);
+  const router = useRouter();
 
-  const completeness = useMemo(() => completenessPercent(profile, agentProfile), [profile, agentProfile]);
+  const { percent: completeness, missingTasks } = useMemo(() => getCompletenessData(profile, agentProfile), [profile, agentProfile]);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -180,7 +195,12 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
           <div style={{ color: 'var(--white)', fontSize: '0.9rem', marginTop: 2 }}>{userEmail || '-'}</div>
         </div>
 
-        <ProfileCompletenessRing percent={completeness} />
+        {completeness < 100 && (
+          <ProfileCompletenessRing 
+            percent={completeness} 
+            onClick={() => setMissingTasksModalOpen(true)} 
+          />
+        )}
       </div>
 
       <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
@@ -280,6 +300,74 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
           if (profile) onProfileChange({ ...profile, ...next });
         }}
       />
+
+      {missingTasksModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setMissingTasksModalOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.8)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 'var(--space-4)',
+          }}
+        >
+          <div
+            className="glass-panel"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 500, width: '100%', padding: 'var(--space-6)', maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+              <h3 style={{ margin: 0, color: 'var(--white)' }}>Complete Your Profile</h3>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMissingTasksModalOpen(false)}>Close</button>
+            </div>
+            
+            <p style={{ fontSize: '0.9rem', color: 'var(--silver)', marginBottom: 'var(--space-5)', lineHeight: 1.5 }}>
+              You're currently at {completeness}% profile completion. Please complete the following remaining tasks to get to 100%.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              {missingTasks.map((t) => (
+                <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)' }}>
+                  <span style={{ fontSize: '0.95rem', color: 'var(--white)', fontWeight: 600 }}>{t.label}</span>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => {
+                      setMissingTasksModalOpen(false);
+                      if (t.target.startsWith('focus:')) {
+                        const id = t.target.split(':')[1];
+                        if (id === 'avatar') {
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        } else {
+                          const el = document.getElementById(id);
+                          if (el) {
+                            el.focus();
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }
+                        }
+                      } else if (t.target.startsWith('modal:')) {
+                        const id = t.target.split(':')[1];
+                        if (id === 'username') setUsernameModalOpen(true);
+                      } else if (t.target.startsWith('nav:')) {
+                        const path = t.target.split(':')[1];
+                        router.push(path);
+                      }
+                    }}
+                  >
+                    {t.actionText}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

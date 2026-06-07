@@ -85,18 +85,12 @@ export default async function AccountHubPage() {
   // (no timing gap) regardless of which role-gated rows are present.
   const rows: Array<{ href: string; label: string; description: string; Icon: NavRowProps['Icon'] }> = [
     { href: '/account/profile', label: 'Profile', description: 'Your Name, Avatar, Username, And Contact Details.', Icon: User },
-    { href: '/account/lab-journal', label: 'Lab Journal', description: 'Your Saved Compounds, Browsing History, And Past Orders.', Icon: Heart },
-    { href: '/account/refills', label: 'Order History And Reorders', description: 'Browse Past Orders And Reorder In One Tap.', Icon: RotateCcw },
-    { href: '/research', label: 'Research Library', description: 'Mechanism, Evidence, Storage, And Safety For Every Compound.', Icon: FlaskConical },
-    { href: '/account/shelf-life', label: 'Reconstitution & Shelf Life', description: 'Log Reconstitution Dates And Track Remaining Shelf Life.', Icon: Clock },
     ...(isResearcher
       ? [{ href: '/account/referrals', label: 'Referrals', description: 'Share Your Code And Earn Store Credit.', Icon: Gift }]
       : []),
     ...(!isResearcher
       ? [
           { href: '/dashboard/agent?tab=Storefront+Config', label: 'Storefront Setup & Editing', description: 'Configure Your Public-Facing White-Label Storefront.', Icon: Store },
-          { href: '/dashboard/agent?tab=Storefront+Config', label: 'Preferred Payment Methods', description: 'Manage Zelle, Cash App, Venmo, And Apple Pay Handles.', Icon: CreditCard },
-          { href: '/dashboard/agent?tab=Storefront+Config', label: 'Warehouse Address', description: 'Ship-From Address Used For Generating Labels.', Icon: Building },
         ]
       : []),
     { href: '/account/notifications', label: 'Notifications', description: 'Choose Which Alerts You Receive. The Bell In The Header Shows Your Live Feed.', Icon: Bell },
