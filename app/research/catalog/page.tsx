@@ -58,168 +58,37 @@ export default async function ResearchLibraryPage({
         <UniversalSearch initialQuery={q ?? ''} autoFocus={Boolean(q)} />
       </section>
 
-      <section style={{ marginBottom: 'var(--space-7, 48px)' }}>
-        <h2
-          style={{
-            fontSize: '1.35rem',
-            fontWeight: 800,
-            color: 'var(--white, #FFFFFF)',
-            marginBottom: 'var(--space-4, 16px)',
-          }}
-        >
-          Browse By Research Area
-        </h2>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-            gap: 'var(--space-4, 16px)',
-          }}
-        >
-          {Object.keys(RESEARCH_AREAS).map((key) => {
-            const meta = RESEARCH_AREAS[key];
-            return (
-              <Link
-                key={key}
-                href={`/research/area/${key}`}
-                className="glass-panel"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 'var(--space-2, 8px)',
-                  padding: 'var(--space-4, 16px)',
-                  borderRadius: 'var(--radius-lg, 12px)',
-                  textDecoration: 'none',
-                  color: 'var(--white, #FFFFFF)',
-                }}
-              >
-                <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--teal, #00C4BC)' }}>
-                  {meta.label}
-                </span>
-                <span style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)' }}>{meta.blurb}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      <section
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 'var(--space-3, 12px)',
-          marginBottom: 'var(--space-7, 48px)',
-        }}
-      >
-        <Link
-          href="/research/match"
-          className="btn-primary"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 'var(--space-2, 8px)',
-            textDecoration: 'none',
-          }}
-        >
-          <Sparkles size={18} aria-hidden="true" />
-          Match Me To A Peptide
+      <section style={{ marginBottom: 'var(--space-6, 32px)', display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <Link href="/research/match" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '20px', textDecoration: 'none', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <Sparkles size={16} color="var(--teal, #00C4BC)" /> Match Me
         </Link>
-        <Link
-          href="/research/compare"
-          className="btn-secondary"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 'var(--space-2, 8px)',
-            textDecoration: 'none',
-          }}
-        >
-          <GitCompare size={18} aria-hidden="true" />
-          Compare Compounds
+        <Link href="/research/compare" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '20px', textDecoration: 'none', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <GitCompare size={16} color="var(--silver, #A8B4C0)" /> Compare
         </Link>
-        <Link
-          href="/research/data"
-          className="btn-secondary"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 'var(--space-2, 8px)',
-            textDecoration: 'none',
-          }}
-        >
-          <Table2 size={18} aria-hidden="true" />
-          Full Data Table
+        <Link href="/research/calculators" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '20px', textDecoration: 'none', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <Calculator size={16} color="var(--silver, #A8B4C0)" /> Calculators
         </Link>
-        <Link
-          href="/research/stacks"
-          className="btn-secondary"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 'var(--space-2, 8px)',
-            textDecoration: 'none',
-          }}
-        >
-          <Layers size={18} aria-hidden="true" />
-          Stacks And Combinations
+        <Link href="/research/data" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '20px', textDecoration: 'none', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <Table2 size={16} color="var(--silver, #A8B4C0)" /> Data Table
         </Link>
-        <Link
-          href="/research/evidence"
-          className="btn-secondary"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 'var(--space-2, 8px)',
-            textDecoration: 'none',
-          }}
-        >
-          <ShieldCheck size={18} aria-hidden="true" />
-          Evidence And Safety
+        <Link href="/research/stacks" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '20px', textDecoration: 'none', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <Layers size={16} color="var(--silver, #A8B4C0)" /> Stacks
         </Link>
-        <Link
-          href="/research/learn"
-          className="btn-secondary"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2, 8px)', textDecoration: 'none' }}
-        >
-          <GraduationCap size={18} aria-hidden="true" />
-          Learn
+        <Link href="/research/evidence" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '20px', textDecoration: 'none', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <ShieldCheck size={16} color="var(--silver, #A8B4C0)" /> Safety
         </Link>
-        <Link
-          href="/research/glossary"
-          className="btn-secondary"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2, 8px)', textDecoration: 'none' }}
-        >
-          <BookOpen size={18} aria-hidden="true" />
-          Glossary
+        <Link href="/research/learn" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '20px', textDecoration: 'none', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <GraduationCap size={16} color="var(--silver, #A8B4C0)" /> Learn
         </Link>
-        <Link
-          href="/research/faq"
-          className="btn-secondary"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2, 8px)', textDecoration: 'none' }}
-        >
-          <HelpCircle size={18} aria-hidden="true" />
-          FAQ
+        <Link href="/research/glossary" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '20px', textDecoration: 'none', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <BookOpen size={16} color="var(--silver, #A8B4C0)" /> Glossary
         </Link>
-        <Link
-          href="/research/calculators"
-          className="btn-secondary"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2, 8px)', textDecoration: 'none' }}
-        >
-          <Calculator size={18} aria-hidden="true" />
-          Laboratory Calculators
+        <Link href="/research/faq" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '20px', textDecoration: 'none', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <HelpCircle size={16} color="var(--silver, #A8B4C0)" /> FAQ
         </Link>
-        <Link
-          href="/research/references"
-          className="btn-secondary"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2, 8px)', textDecoration: 'none' }}
-        >
-          <Library size={18} aria-hidden="true" />
-          References
+        <Link href="/research/references" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '20px', textDecoration: 'none', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <Library size={16} color="var(--silver, #A8B4C0)" /> References
         </Link>
-      </section>
-
-      <section style={{ marginBottom: 'var(--space-7, 48px)' }}>
-        <AskTheLab />
       </section>
 
       <ResearchBrowser compounds={compounds} />

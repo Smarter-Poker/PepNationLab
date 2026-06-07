@@ -395,324 +395,99 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
         </Link>
       </div>
 
-      {/* 1. Visual Intent Navigation (Body Goal Picker) */}
-      <section style={{ marginBottom: '28px' }}>
-        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--silver, #A8B4C0)', marginBottom: '12px' }}>
-          Select A Research Goal
-        </h3>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '12px',
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => handleAreaToggle('weight_management')}
-            style={{
-              padding: '16px',
-              borderRadius: 'var(--radius-md, 8px)',
-              background: area === 'weight_management' ? 'rgba(0, 196, 188, 0.15)' : 'rgba(22, 34, 48, 0.5)',
-              border: `1px solid ${area === 'weight_management' ? 'var(--teal, #00C4BC)' : 'rgba(255,255,255,0.06)'}`,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              textAlign: 'left',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <Flame size={20} color={area === 'weight_management' ? 'var(--teal, #00C4BC)' : 'var(--silver, #A8B4C0)'} />
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--white, #FFFFFF)' }}>Weight Loss & Belly Fat</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>Filters To Weight Management</div>
+      <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start', flexDirection: 'row' }}>
+        {/* Left Sidebar Filters */}
+        <aside style={{ flex: '0 0 260px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          <div style={{ position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--silver, #A8B4C0)', pointerEvents: 'none' }} />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search Compounds"
+              style={{ ...selectStyle, width: '100%', paddingLeft: '36px' }}
+            />
+          </div>
+
+          <button onClick={() => setIsWizardOpen(true)} style={{ ...selectStyle, display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg, rgba(0, 196, 188, 0.2), rgba(22, 34, 48, 0.8))', borderColor: 'var(--teal, #00C4BC)', fontWeight: 700, cursor: 'pointer' }}>
+            <Sparkles size={16} color="var(--teal, #00C4BC)" /> Help Me Choose
+          </button>
+
+          <div>
+            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>Description Complexity</h4>
+            <div style={{ display: 'flex', border: '1px solid rgba(168, 180, 192, 0.25)', borderRadius: '8px', padding: '2px', background: 'var(--grey-400, #162230)' }}>
+              <button onClick={() => setIsEli5(true)} style={{ flex: 1, padding: '6px 0', borderRadius: '6px', border: 'none', background: isEli5 ? 'var(--teal, #00C4BC)' : 'transparent', color: isEli5 ? 'var(--black, #0C151D)' : 'var(--silver, #A8B4C0)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>Plain English</button>
+              <button onClick={() => setIsEli5(false)} style={{ flex: 1, padding: '6px 0', borderRadius: '6px', border: 'none', background: !isEli5 ? 'var(--teal, #00C4BC)' : 'transparent', color: !isEli5 ? 'var(--black, #0C151D)' : 'var(--silver, #A8B4C0)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>Technical</button>
             </div>
-          </button>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => handleAreaToggle('performance')}
-            style={{
-              padding: '16px',
-              borderRadius: 'var(--radius-md, 8px)',
-              background: area === 'performance' ? 'rgba(0, 196, 188, 0.15)' : 'rgba(22, 34, 48, 0.5)',
-              border: `1px solid ${area === 'performance' ? 'var(--teal, #00C4BC)' : 'rgba(255,255,255,0.06)'}`,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              textAlign: 'left',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <Activity size={20} color={area === 'performance' ? 'var(--teal, #00C4BC)' : 'var(--silver, #A8B4C0)'} />
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--white, #FFFFFF)' }}>Muscle & Recovery</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>Filters To Performance</div>
-            </div>
-          </button>
+          <div>
+            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>Research Area</h4>
+            <select value={area} onChange={(e) => setArea(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
+              <option value={ALL}>All Research Areas</option>
+              {Object.keys(RESEARCH_AREAS).map((key) => <option key={key} value={key}>{RESEARCH_AREAS[key].label}</option>)}
+            </select>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => handleAreaToggle('healing')}
-            style={{
-              padding: '16px',
-              borderRadius: 'var(--radius-md, 8px)',
-              background: area === 'healing' ? 'rgba(0, 196, 188, 0.15)' : 'rgba(22, 34, 48, 0.5)',
-              border: `1px solid ${area === 'healing' ? 'var(--teal, #00C4BC)' : 'rgba(255,255,255,0.06)'}`,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              textAlign: 'left',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <Shield size={20} color={area === 'healing' ? 'var(--teal, #00C4BC)' : 'var(--silver, #A8B4C0)'} />
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--white, #FFFFFF)' }}>Joint & Wound Healing</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>Filters To Tissue Repair</div>
-            </div>
-          </button>
+          <div>
+            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>Category</h4>
+            <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
+              <option value={ALL}>All Categories</option>
+              {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+            </select>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => handleAreaToggle('sleep')}
-            style={{
-              padding: '16px',
-              borderRadius: 'var(--radius-md, 8px)',
-              background: area === 'sleep' ? 'rgba(0, 196, 188, 0.15)' : 'rgba(22, 34, 48, 0.5)',
-              border: `1px solid ${area === 'sleep' ? 'var(--teal, #00C4BC)' : 'rgba(255,255,255,0.06)'}`,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              textAlign: 'left',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <Brain size={20} color={area === 'sleep' ? 'var(--teal, #00C4BC)' : 'var(--silver, #A8B4C0)'} />
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--white, #FFFFFF)' }}>Sleep & Mental Focus</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>Filters To Sleep / Cognitive</div>
-            </div>
-          </button>
-        </div>
-      </section>
+          <div>
+            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>Administration Form</h4>
+            <select value={formFilter} onChange={(e) => setFormFilter(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
+              <option value={ALL}>All Forms</option>
+              <option value="injection">Injection (Vial)</option>
+              <option value="oral">Oral (Capsule)</option>
+              <option value="topical">Topical</option>
+            </select>
+          </div>
 
-      {/* Filter and Switch controls */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 'var(--space-3, 12px)',
-          alignItems: 'center',
-          marginBottom: 'var(--space-5, 24px)',
-        }}
-      >
-        <div
-          style={{
-            position: 'relative',
-            flex: '1 1 220px',
-            minWidth: '200px',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <Search
-            size={16}
-            style={{
-              position: 'absolute',
-              left: 'var(--space-3, 12px)',
-              color: 'var(--silver, #A8B4C0)',
-              pointerEvents: 'none',
-            }}
-            aria-hidden="true"
-          />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search Compounds Or Aliases"
-            aria-label="Search Compounds Or Aliases"
-            style={{
-              ...selectStyle,
-              width: '100%',
-              paddingLeft: 'calc(var(--space-3, 12px) + 24px)',
-            }}
-          />
-        </div>
+          <div>
+            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>Evidence Tier</h4>
+            <select value={tier} onChange={(e) => setTier(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
+              <option value={ALL}>All Evidence Tiers</option>
+              {Object.keys(EVIDENCE_TIER).map((key) => <option key={key} value={key}>{EVIDENCE_TIER[key].label}</option>)}
+            </select>
+          </div>
 
-        {/* 6. Three-Question "Help Me Choose" Wizard Trigger */}
-        <button
-          type="button"
-          onClick={() => setIsWizardOpen(true)}
-          style={{
-            ...selectStyle,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'linear-gradient(135deg, rgba(0, 196, 188, 0.2), rgba(22, 34, 48, 0.8))',
-            borderColor: 'var(--teal, #00C4BC)',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          <Sparkles size={16} color="var(--teal, #00C4BC)" />
-          Help Me Choose
-        </button>
+          <div>
+            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>Budget</h4>
+            <select value={budgetFilter} onChange={(e) => setBudgetFilter(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
+              <option value={ALL}>All Budgets</option>
+              <option value="conservative">Conservative Budget</option>
+              <option value="standard">Standard Budget</option>
+            </select>
+          </div>
 
-        <select
-          aria-label="Filter By Category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          style={selectStyle}
-        >
-          <option value={ALL}>All Categories</option>
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
+          <div>
+            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>Reconstitution Prep</h4>
+            <select value={prepFilter} onChange={(e) => setPrepFilter(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
+              <option value={ALL}>All Reconstitution Preps</option>
+              <option value="reconstitution">Lyophilized Vials Only</option>
+              <option value="no_reconstitution">Ready-To-Use Formats Only</option>
+            </select>
+          </div>
 
-        <select
-          aria-label="Filter By Evidence Tier"
-          value={tier}
-          onChange={(e) => setTier(e.target.value)}
-          style={selectStyle}
-        >
-          <option value={ALL}>All Evidence Tiers</option>
-          {Object.keys(EVIDENCE_TIER).map((key) => (
-            <option key={key} value={key}>
-              {EVIDENCE_TIER[key].label}
-            </option>
-          ))}
-        </select>
+          <div>
+            <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700, margin: '0 0 12px 0' }}>WADA Status</h4>
+            <select value={wada} onChange={(e) => setWada(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
+              <option value={ALL}>All WADA Statuses</option>
+              {Object.keys(WADA_LABEL).map((key) => <option key={key} value={key}>{WADA_LABEL[key]}</option>)}
+            </select>
+          </div>
+        </aside>
 
-        <select
-          aria-label="Filter By Research Area"
-          value={area}
-          onChange={(e) => setArea(e.target.value)}
-          style={selectStyle}
-        >
-          <option value={ALL}>All Research Areas</option>
-          {Object.keys(RESEARCH_AREAS).map((key) => (
-            <option key={key} value={key}>
-              {RESEARCH_AREAS[key].label}
-            </option>
-          ))}
-        </select>
-
-        {/* Visual Form Filter select option */}
-        <select
-          aria-label="Filter By Form"
-          value={formFilter}
-          onChange={(e) => setFormFilter(e.target.value)}
-          style={selectStyle}
-        >
-          <option value={ALL}>All Forms</option>
-          <option value="injection">Injection (Vial)</option>
-          <option value="oral">Oral (Capsule)</option>
-          <option value="topical">Topical</option>
-        </select>
-
-        {/* Budget Filter select option */}
-        <select
-          aria-label="Filter By Budget"
-          value={budgetFilter}
-          onChange={(e) => setBudgetFilter(e.target.value)}
-          style={selectStyle}
-        >
-          <option value={ALL}>All Budgets</option>
-          <option value="conservative">Conservative Budget</option>
-          <option value="standard">Standard Budget</option>
-        </select>
-
-        {/* Reconstitution Prep Filter select option */}
-        <select
-          aria-label="Filter By Prep"
-          value={prepFilter}
-          onChange={(e) => setPrepFilter(e.target.value)}
-          style={selectStyle}
-        >
-          <option value={ALL}>All Reconstitution Preps</option>
-          <option value="reconstitution">Lyophilized Vials Only</option>
-          <option value="no_reconstitution">Ready-To-Use Formats Only</option>
-        </select>
-
-        <select
-          aria-label="Filter By WADA Status"
-          value={wada}
-          onChange={(e) => setWada(e.target.value)}
-          style={selectStyle}
-        >
-          <option value={ALL}>All WADA Statuses</option>
-          {Object.keys(WADA_LABEL).map((key) => (
-            <option key={key} value={key}>
-              {WADA_LABEL[key]}
-            </option>
-          ))}
-        </select>
-
-        {/* 2. Global "ELI5" (Plain English) Search Toggle */}
-        <div
-          style={{
-            display: 'flex',
-            border: '1px solid rgba(168, 180, 192, 0.25)',
-            borderRadius: 'var(--radius-md, 8px)',
-            padding: '2px',
-            background: 'var(--grey-400, #162230)',
-            marginLeft: 'auto',
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setIsEli5(true)}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '6px',
-              border: 'none',
-              background: isEli5 ? 'var(--teal, #00C4BC)' : 'transparent',
-              color: isEli5 ? 'var(--black, #0C151D)' : 'var(--silver, #A8B4C0)',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            Plain English / ELI5
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsEli5(false)}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '6px',
-              border: 'none',
-              background: !isEli5 ? 'var(--teal, #00C4BC)' : 'transparent',
-              color: !isEli5 ? 'var(--black, #0C151D)' : 'var(--silver, #A8B4C0)',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            Technical / Scientific
-          </button>
-        </div>
-      </div>
-
-      <p
-        style={{
-          color: 'var(--silver, #A8B4C0)',
-          fontSize: '0.9rem',
-          marginBottom: 'var(--space-4, 16px)',
-        }}
-      >
-        Showing {filtered.length} {filtered.length === 1 ? 'Compound' : 'Compounds'}
-      </p>
+        {/* Main Content Area */}
+        <main style={{ flex: 1 }}>
+          <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem', marginBottom: '16px', marginTop: 0 }}>
+            Showing {filtered.length} {filtered.length === 1 ? 'Compound' : 'Compounds'}
+          </p>
 
       {/* 4. "No Results" Smart Recommendation Cards */}
       {filtered.length === 0 ? (
@@ -1038,8 +813,9 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
               </div>
             );
           })}
-        </div>
       )}
+        </main>
+      </div>
 
       {/* guided wizard dialog */}
       <HelpMeChooseWizard
