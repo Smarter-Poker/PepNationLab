@@ -88,6 +88,30 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 
   const handleAddToCart = (stack: Compound) => {
     const itemsToAdd = [];
+    
+    // Check if there is a premixed blend product for this stack
+    const premadeProducts = products.filter(p => p.compoundSlug === stack.slug);
+    if (premadeProducts.length > 0) {
+      premadeProducts.sort((a, b) => a.retailPrice - b.retailPrice);
+      const p = premadeProducts[0];
+      itemsToAdd.push({
+        product: {
+          id: p.agentProductId || p.compoundSlug,
+          name: p.productName,
+          sku: p.productName,
+          retailPrice: p.retailPrice,
+          costPrice: p.retailPrice,
+          bulkCostPrice: p.retailPrice,
+          bulkThreshold: 1,
+          weightOz: p.weightOz,
+        },
+        quantity: 1
+      });
+      addMultipleToCart(itemsToAdd, stack.display_name);
+      return;
+    }
+
+    // Otherwise, add individual components
     for (const compSlug of stack.stack_components) {
       // Find the lowest price product for this compound
       const compProducts = products.filter(p => p.compoundSlug === compSlug);
@@ -131,6 +155,13 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
   };
 
   const getBundlePrice = (stack: Compound) => {
+    // Check if there is a premixed blend product for this stack
+    const premadeProducts = products.filter(p => p.compoundSlug === stack.slug);
+    if (premadeProducts.length > 0) {
+      premadeProducts.sort((a, b) => a.retailPrice - b.retailPrice);
+      return premadeProducts[0].retailPrice;
+    }
+
     let total = 0;
     for (const compSlug of stack.stack_components) {
       const compProducts = products.filter(p => p.compoundSlug === compSlug);
@@ -239,6 +270,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
             const citationCount = getCitationCount(stack);
             const bundlePrice = getBundlePrice(stack);
             const isComparing = selectedForCompare.includes(stack.slug);
+            const isPremade = products.some(p => p.compoundSlug === stack.slug);
 
             return (
               <motion.article
@@ -326,6 +358,16 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   
                   {stack.stack_components.length > 0 && (
                     <div style={{ marginTop: 'var(--space-4)' }}>
+                      {!isPremade && (
+                        <p style={{ margin: '0 0 var(--space-4)', color: '#FFB86C', fontSize: '0.75rem', fontWeight: 700, lineHeight: 1.4, background: 'rgba(255, 184, 108, 0.1)', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(255, 184, 108, 0.2)' }}>
+                          ⚠️ This Peptide Stack is not all inside one vial, it's individually packaged. You will receive {stack.stack_components.length} separate vials.
+                        </p>
+                      )}
+                      {isPremade && (
+                        <p style={{ margin: '0 0 var(--space-4)', color: '#50FA7B', fontSize: '0.75rem', fontWeight: 800, lineHeight: 1.4, background: 'rgba(80, 250, 123, 0.1)', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(80, 250, 123, 0.2)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <CheckCircle2 size={16} /> Premixed Blend (All in 1 Vial)
+                        </p>
+                      )}
                       <p style={{ margin: '0 0 var(--space-2)', color: '#A8B4C0', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         Components
                       </p>

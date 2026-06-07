@@ -13,7 +13,10 @@ export const dynamic = 'force-dynamic';
 export default async function StacksPage() {
   const compounds = await getAllCompounds();
   const stacks = compounds.filter((c) => c.is_stack);
-  const allSlugs = Array.from(new Set(stacks.flatMap((s) => s.stack_components)));
+  const allSlugs = Array.from(new Set([
+    ...stacks.map((s) => s.slug),
+    ...stacks.flatMap((s) => s.stack_components)
+  ]));
   const productCtx = await getAreaProducts(allSlugs);
   const products = productCtx.products;
 
