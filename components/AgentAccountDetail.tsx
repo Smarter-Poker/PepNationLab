@@ -433,7 +433,7 @@ export default function AgentAccountDetail({
                         <>
                           <div>
                             <label style={labelStyle}>Storefront Name</label>
-                            <input style={inputStyle} value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Store Display Name" />
+                            <input style={inputStyle} value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="User Name" />
                           </div>
                           <div>
                             <label style={labelStyle}>URL Slug</label>

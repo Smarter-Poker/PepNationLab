@@ -986,7 +986,7 @@ function ResearchersAdminPageInner() {
 
               <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Storefront Setup</h4>
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label">Display Name</label>
+                <label className="form-label">User Name</label>
                 <input type="text" className="form-input" placeholder="E.g. Pep Nation Orlando" value={newDisplayName}
                   onChange={e => setNewDisplayName(e.target.value)} required />
               </div>
@@ -1095,7 +1095,7 @@ function ResearchersAdminPageInner() {
                   <div style={{ marginBottom: 'var(--space-6)' }}></div>
                   <h4 style={{ fontSize: '0.9rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Agent Storefront Configuration</h4>
                   <div className="form-group">
-                    <label className="form-label">Storefront Display Name</label>
+                    <label className="form-label">User Name</label>
                     <input type="text" className="form-input" placeholder="E.g. Pep Nation Orlando"
                       value={formDisplayName} onChange={e => setFormDisplayName(e.target.value)} required />
                   </div>

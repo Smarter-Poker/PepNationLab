@@ -66,7 +66,6 @@ export default function AgentSetupChecklist({ agentProfile, onOpenConfig }: Agen
             <StepRow done={!warehouseEmpty} label="Add Warehouse Address" />
             <StepRow done={!handlesEmpty} label="Add Payment Handles" />
             <StepRow done={!shippoMissing} label="Add Shippo Key (Optional)" />
-            <StepRow done={!inactive} label="Activate Storefront" />
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>

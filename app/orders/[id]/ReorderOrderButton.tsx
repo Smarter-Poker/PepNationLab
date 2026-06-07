@@ -27,6 +27,7 @@ interface ReorderItem {
   costPrice: number;
   weightOz: number;
   agentSelfBuy: boolean;
+  bundleName?: string;
 }
 
 interface ReorderResponse {

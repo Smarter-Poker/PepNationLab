@@ -102,8 +102,8 @@ export default function StorefrontRenameBanner({
       <p style={{ color: 'var(--silver, #C0B8A8)', fontSize: '0.86rem', margin: 0, lineHeight: 1.5 }}>
         Your Storefront Name Is Currently Your Username
         {currentName ? <> (&quot;<strong style={{ color: 'var(--teal, #00C4BC)' }}>{currentName}</strong>&quot;)</> : null}.
-        Keep It As Is, Or Change It To Something Custom - You Can Update Your Display Name,
-        URL Name, Colors, And Logo Any Time From Storefront Settings.
+        Keep It As Is, Or Change It To Something Custom - You Can Update Your User Name,
+        Colors, And Payment Methods Below. This Banner Will Hide Once You Save The Page.
       </p>
       {err ? (
         <p

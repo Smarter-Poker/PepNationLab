@@ -106,6 +106,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [storefrontCart, setStorefrontCart] = useState<Array<{
     id: string; name: string; sku: string; quantity: number;
     retailPrice: number; costPrice: number; weightOz: number;
+    bundleName?: string; bulkCostPrice?: number | null; bulkThreshold?: number;
   }>>([]);
   const [storefrontLoaded, setStorefrontLoaded] = useState(false);
   // Cart staleness: populated from the _savedAt timestamp written by AgentStorefrontGrid.

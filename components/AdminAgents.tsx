@@ -951,13 +951,13 @@ export default function AdminAgents() {
 
               {/* Display Name */}
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Display Name</label>
+                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>User Name</label>
                 <input
                   type="text"
                   className="form-input"
                   value={createForm.display_name}
                   onChange={e => handleCreateFormChange('display_name', e.target.value)}
-                  placeholder="Storefront display name"
+                  placeholder="User Name"
                   required
                   style={{ width: '100%' }}
                 />

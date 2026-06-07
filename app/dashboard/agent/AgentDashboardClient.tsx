@@ -46,6 +46,7 @@ interface AgentProfile {
   id: string;
   slug: string;
   display_name: string;
+  display_name_changed_at?: string | null;
   logo_url: string | null;
   primary_color: string | null;
   secondary_color: string | null;
@@ -318,7 +319,7 @@ export default function AgentDashboardClient({
       return;
     }
     if (!setupDisplayName.trim()) {
-      setError('Storefront Display Name Is Required.');
+      setError('User Name Is Required.');
       return;
     }
 
@@ -447,7 +448,7 @@ export default function AgentDashboardClient({
           <form onSubmit={handleCreateProfile} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
             <div className="grid-2">
               <div className="form-group">
-                <label className="form-label">Storefront Display Name</label>
+                <label className="form-label">User Name</label>
                 <input
                   type="text"
                   className="form-input"

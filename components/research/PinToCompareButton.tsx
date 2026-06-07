@@ -14,6 +14,7 @@
  *   pricePerVialDollars - optional price
  */
 
+import Image from 'next/image';
 import { useState, useEffect, useCallback } from 'react';
 import { GitCompare, Check, X } from 'lucide-react';
 import { toast } from 'sonner';

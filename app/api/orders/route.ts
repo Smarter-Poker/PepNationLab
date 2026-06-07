@@ -14,7 +14,8 @@ import { notifyOrderPlaced, notify, notifyCouponRedeemed } from '@/lib/notify';
 const CheckoutSchema = z.object({
   items: z.array(z.object({
     id: z.string().uuid(),
-    quantity: z.number().int().min(1)
+    quantity: z.number().int().min(1),
+    bundleName: z.string().optional()
   })).min(1, 'Cart cannot be empty.'),
   fulfillmentMethod: z.enum(['ship', 'agent_pickup']),
   shippingOption: z.enum(['fedex', 'usps', 'agent_pickup']).optional(),
