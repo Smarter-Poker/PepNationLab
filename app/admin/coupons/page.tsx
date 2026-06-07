@@ -387,7 +387,7 @@ export default function AdminCouponsPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 100,
+            zIndex: 9999,
             padding: 'var(--space-4)',
           }}
         >

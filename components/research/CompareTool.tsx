@@ -2423,8 +2423,8 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                 if (itemsToAdd.length > 0) {
                   cartContext.addMultipleToCart(itemsToAdd, 'Research Stack');
                 }
-              }} className="action-btn-nickel pulse-glow" style={{ background: 'linear-gradient(135deg, rgba(0,196,188,0.2) 0%, rgba(104,211,145,0.2) 100%)', color: '#FFF', border: '1px solid rgba(0,196,188,0.5)', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-                <ShoppingCart size={14} /> Add Stack to Cart
+              }} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 4px 15px rgba(0,229,255,0.3))' }}>
+                <img src="/images/add_stack_to_cart_btn.png" alt="Add Stack to Cart" style={{ height: 48, objectFit: 'contain' }} />
               </button>
             </div>
           )}

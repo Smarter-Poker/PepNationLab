@@ -118,7 +118,6 @@ export default function ChangePasswordPage() {
                 onChange={e => setNewPassword(e.target.value)}
                 placeholder="At Least 6 Characters"
                 required
-                autoFocus
                 style={{
                   width: '100%', boxSizing: 'border-box',
                   background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',

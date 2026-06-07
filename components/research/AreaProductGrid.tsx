@@ -1212,21 +1212,18 @@ export default function AreaProductGrid({
               setStackItems(new Set());
             }}
             style={{
-              width: '100%',
-              padding: '12px',
-              background: '#00C4BC',
-              color: '#000',
+              background: 'none',
               border: 'none',
-              borderRadius: 8,
-              fontWeight: 800,
+              padding: 0,
               cursor: 'pointer',
-              fontSize: '0.9rem',
-              transition: 'opacity 0.2s'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              filter: 'drop-shadow(0 4px 15px rgba(0,229,255,0.3))'
             }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
-            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
           >
-            Add Stack To Cart
+            <img src="/images/add_stack_to_cart_btn.png" alt="Add Stack to Cart" style={{ height: 48, objectFit: 'contain' }} />
           </button>
         </div>
       )}

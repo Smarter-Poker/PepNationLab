@@ -173,7 +173,8 @@ export default function PromoteSubAgentPage() {
               readOnly
               value={shareLink}
               onFocus={(e) => e.currentTarget.select()}
-              style={{ flex: 1, padding: '8px 10px', fontSize: '13px', fontFamily: 'monospace' }}
+              className="form-input"
+              style={{ flex: 1, padding: '8px 10px', fontSize: '16px', fontFamily: 'monospace' }}
             />
             <button type="button" onClick={copyShareLink} className="btn-secondary" style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
               {copied ? 'Copied' : 'Copy Link'}
@@ -222,7 +223,8 @@ export default function PromoteSubAgentPage() {
             value={researcherId}
             onChange={(e) => setResearcherId(e.target.value)}
             placeholder="Paste Or Click A Researcher Above"
-            style={{ width: '100%', padding: '8px 10px', fontSize: '14px' }}
+            className="form-input"
+            style={{ width: '100%', padding: '8px 10px', fontSize: '16px' }}
             required
           />
         </div>
@@ -248,7 +250,8 @@ export default function PromoteSubAgentPage() {
               step={0.5}
               value={commissionPct}
               onChange={(e) => setCommissionPct(clampCommission(Number(e.target.value)))}
-              style={{ width: '80px', padding: '4px 8px' }}
+              className="form-input"
+              style={{ width: '80px', padding: '4px 8px', fontSize: '16px' }}
             />
           </div>
           <div style={{ fontSize: '12px', opacity: 0.75, marginTop: '4px' }}>
@@ -296,7 +299,8 @@ export default function PromoteSubAgentPage() {
               step={50}
               value={creditLimit}
               onChange={(e) => setCreditLimit(Number(e.target.value))}
-              style={{ width: '200px', padding: '8px 10px', fontSize: '14px' }}
+              className="form-input"
+              style={{ width: '200px', padding: '8px 10px', fontSize: '16px' }}
             />
             <div style={{ fontSize: '12px', opacity: 0.75, marginTop: '4px' }}>
               How Much Of Their Sales Can Sit Unpaid To You Before They&apos;re Blocked At Checkout.

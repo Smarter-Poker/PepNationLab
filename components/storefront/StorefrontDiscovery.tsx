@@ -482,13 +482,9 @@ function MatchResultsDrawer({
                     <button
                       type="button"
                       onClick={handleAddStack}
-                      style={{
-                        background: '#F6AD55', color: '#0A1018', border: 'none',
-                        padding: '6px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.75rem',
-                        cursor: 'pointer', boxShadow: '0 4px 12px rgba(246,173,85,0.3)'
-                      }}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 4px 15px rgba(246,173,85,0.3))' }}
                     >
-                      Add Stack To Cart
+                      <img src="/images/add_stack_to_cart_btn.png" alt="Add Stack to Cart" style={{ height: 42, objectFit: 'contain' }} />
                     </button>
                   </div>
                   <div style={{ color: '#E2E8F0', fontSize: '0.8rem', lineHeight: 1.4 }}>

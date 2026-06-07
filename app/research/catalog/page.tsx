@@ -56,7 +56,7 @@ export default async function ResearchLibraryPage({
       </header>
 
       <section style={{ marginBottom: 'var(--space-7, 48px)' }}>
-        <UniversalSearch initialQuery={q ?? ''} autoFocus={Boolean(q)} />
+        <UniversalSearch initialQuery={q ?? ''} />
       </section>
 
       <section style={{ marginBottom: 'var(--space-6, 32px)', display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>

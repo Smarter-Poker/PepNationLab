@@ -798,7 +798,7 @@ function ResearchersAdminPageInner() {
 
       {/* CREATE NEW AGENT MODAL */}
       {modalMode === 'create_agent' && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 'var(--space-4)' }}>
           <div className="hover-lift stagger-fade-in" style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', width: '100%', maxWidth: 580, maxHeight: '92vh', overflowY: 'auto' }}>
             <div className="" style={{ padding: 'var(--space-2)' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>
@@ -1034,7 +1034,7 @@ function ResearchersAdminPageInner() {
 
       {/* UPGRADE / CONFIGURE MODAL */}
       {(modalMode === 'upgrade' || modalMode === 'edit') && selectedProfile && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 'var(--space-4)' }}>
           <div className="hover-lift stagger-fade-in" style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="" style={{ padding: 'var(--space-2)' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>
@@ -1122,7 +1122,7 @@ function ResearchersAdminPageInner() {
 
       {/* BALANCE ADJUSTMENT MODAL */}
       {modalMode === 'balance' && selectedProfile && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 'var(--space-4)' }}>
           <div style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', width: '100%', maxWidth: 400 }}>
             <div className="" style={{ padding: 'var(--space-2)' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Adjust Prepaid Balance</h2>
@@ -1189,7 +1189,7 @@ function ResearchersAdminPageInner() {
 
       {/* QR CODE MODAL */}
       {modalMode === 'qr' && selectedProfile && resolvedAgentProfile && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 'var(--space-4)' }}>
           <div style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', width: '100%', maxWidth: 420 }}>
             <div className="" style={{ padding: 'var(--space-2)', textAlign: 'center' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Storefront QR Code</h2>

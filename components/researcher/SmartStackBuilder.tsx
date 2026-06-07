@@ -220,7 +220,6 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
               <div style={{ color: 'var(--white)', fontSize: '1.25rem', fontWeight: 600 }}>${totalPrice.toFixed(2)}</div>
             </div>
             <button 
-              className="btn-primary" 
               disabled={selectedItems.length < 2 || (aiAnalysis && aiAnalysis.synergyScore < 50)}
               onClick={() => {
                 if (selectedItems.length >= 2) {
@@ -230,9 +229,9 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
                   setAiAnalysis(null);
                 }
               }}
-              style={{ padding: '10px 24px', opacity: (selectedItems.length < 2 || (aiAnalysis && aiAnalysis.synergyScore < 50)) ? 0.5 : 1 }}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: (selectedItems.length < 2 || (aiAnalysis && aiAnalysis.synergyScore < 50)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', filter: (selectedItems.length < 2 || (aiAnalysis && aiAnalysis.synergyScore < 50)) ? 'grayscale(100%) opacity(0.5)' : 'drop-shadow(0 4px 15px rgba(0,229,255,0.3))' }}
             >
-              Add Stack To Cart
+              <img src="/images/add_stack_to_cart_btn.png" alt="Add Stack to Cart" style={{ height: 48, objectFit: 'contain' }} />
             </button>
           </div>
         </div>
