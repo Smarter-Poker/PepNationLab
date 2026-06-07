@@ -264,25 +264,37 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 
                 <div style={{ padding: 'var(--space-5)' }}>
                   {/* Image Cluster - AT VERY TOP */}
-                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 20, width: '100%' }}>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'nowrap', justifyContent: 'center', marginBottom: 20, width: '100%' }}>
                     {stack.stack_components.map((compSlug, i) => {
                       const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
                       compProducts.sort((a, b) => b.retailPrice - a.retailPrice);
                       const p = compProducts.length > 0 ? compProducts[0] : undefined;
                       const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
+                      const comp = bySlug.get(compSlug);
+                      const label = comp?.display_name ?? compSlug;
+                      
                       return (
                         <div key={compSlug} style={{ 
-                          width: 140, height: 140, 
-                          flexShrink: 0,
+                          flex: 1, minWidth: 0, maxWidth: 140, aspectRatio: '1 / 1',
+                          position: 'relative',
                           borderRadius: 16, 
                           background: 'radial-gradient(circle at center, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.3) 100%)',
                           border: '1px solid rgba(255,255,255,0.1)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          zIndex: stack.stack_components.length - i,
+                          display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+                          overflow: 'hidden', padding: 8,
                           boxShadow: '0 8px 16px rgba(0,0,0,0.6)',
                           backdropFilter: 'blur(8px)'
                         }}>
-                          <img src={imageUrl} alt={compSlug} style={{ width: '85%', height: '85%', objectFit: 'contain' }} />
+                          <img src={imageUrl} alt={label} style={{ width: '85%', height: 'calc(100% - 20px)', objectFit: 'contain' }} />
+                          <div style={{
+                            position: 'absolute', bottom: 0, left: 0, right: 0,
+                            padding: '16px 4px 6px',
+                            background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.9) 100%)',
+                            color: '#A8B4C0', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
+                            textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                          }}>
+                            {label}
+                          </div>
                         </div>
                       );
                     })}
