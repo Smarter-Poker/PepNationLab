@@ -3946,7 +3946,7 @@ export default function AgentStorefrontGrid({
 
                   <div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '2px', letterSpacing: '0.02em' }}>
-                      Typical Frequency
+                      Research Schedule (How Often)
                     </span>
                     <span style={{ fontSize: '0.88rem', color: 'var(--white)', fontWeight: 600 }}>
                       {sanitize(c.typical_frequency || 'N/A')}
@@ -3955,24 +3955,12 @@ export default function AgentStorefrontGrid({
 
                   <div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '2px', letterSpacing: '0.02em' }}>
-                      Research Half-Life
+                      How Long It Stays Active
                     </span>
                     <span style={{ fontSize: '0.88rem', color: 'var(--white)', fontWeight: 600 }}>
                       {sanitize(c.half_life || 'N/A')}
                     </span>
                   </div>
-
-                  {c.compound_class && (
-                    <div style={{ gridColumn: 'span 2' }}>
-                      <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)', margin: '6px 0' }} />
-                      <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '2px', letterSpacing: '0.02em' }}>
-                        Compound Class
-                      </span>
-                      <span style={{ fontSize: '0.88rem', color: 'var(--white)', fontWeight: 600 }}>
-                        {sanitize(c.compound_class)}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Studied Focus / Targets Section */}
@@ -4010,7 +3998,7 @@ export default function AgentStorefrontGrid({
                   </div>
                 )}
 
-                {/* Mechanism of Action Section */}
+                {/* What It Actually Does Section */}
                 {c.mechanism && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <h4 style={{
@@ -4021,7 +4009,7 @@ export default function AgentStorefrontGrid({
                       fontWeight: 700,
                       margin: 0,
                     }}>
-                      Mechanism of Action
+                      What It Actually Does (How It Works)
                     </h4>
                     <p style={{
                       fontSize: '0.85rem',
