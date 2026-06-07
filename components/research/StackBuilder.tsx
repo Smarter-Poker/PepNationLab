@@ -182,6 +182,21 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
     toast.success('Generated 12-Week Interactive Protocol Grid');
   };
 
+  const handleGenerateEmptyProtocol = () => {
+    const emptyProtocol: ProtocolWeek[] = [];
+    for (let w = 1; w <= 12; w++) {
+      const schedule: ProtocolDay[] = DAYS_OF_WEEK.map(day => ({ day, compounds: [] }));
+      emptyProtocol.push({
+        weekNumber: w,
+        schedule,
+        notes: `Week ${w} custom research metrics evaluation.`,
+      });
+    }
+    setProtocol(emptyProtocol);
+    setActiveWeek(1);
+    toast.success('Generated Empty 12-Week Protocol Grid');
+  };
+
   // Refine protocol via Gemini AI API
   const handleRefineWithGemini = async () => {
     if (selectedCompounds.length === 0) return;
@@ -660,15 +675,20 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
                   </button>
                   <button 
                     type="button" 
-                    onClick={() => {
-                      setGoal('');
-                      setIsGenerating(false);
-                      setAiResponse('');
-                    }}
+                    onClick={handleGenerateEmptyProtocol}
                     style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', padding: '14px 24px', borderRadius: 12, fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s ease-in-out' }}
                   >
                     <Edit size={18} />
                     Custom Protocol (Empty Grid)
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={handleRefineWithGemini}
+                    disabled={generatingProtocol}
+                    style={{ background: 'transparent', color: '#00E5FF', border: '1px solid rgba(0,229,255,0.4)', padding: '14px 24px', borderRadius: 12, fontSize: '0.9rem', fontWeight: 700, cursor: generatingProtocol ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8, opacity: generatingProtocol ? 0.6 : 1, transition: 'all 0.2s ease-in-out', boxShadow: 'inset 0 0 16px rgba(0,229,255,0.1)' }}
+                  >
+                    <RefreshCw size={18} className={generatingProtocol ? 'animate-spin' : ''} />
+                    {generatingProtocol ? 'Analyzing via AI...' : 'Refine with Gemini AI'}
                   </button>
                 </div>
               ) : (
@@ -843,12 +863,13 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
 
               {/* Gemini AI raw schedule text box */}
               {aiProtocolText && (
-                <div style={{ marginTop: 20, padding: 16, background: 'rgba(0,229,255,0.02)', border: '1px solid rgba(0,229,255,0.12)', borderRadius: 12 }}>
-                  <h4 style={{ margin: '0 0 10px', color: '#00E5FF', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Info size={14} />
-                    Gemini AI Clinical Evaluation Synergy Review
+                <div className="glass-panel" style={{ marginTop: 24, padding: 24, border: '1px solid rgba(0,229,255,0.3)', background: 'linear-gradient(135deg, rgba(0,229,255,0.05) 0%, rgba(0,0,0,0.4) 100%)', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg, #00E5FF, #68D391)' }} />
+                  <h4 style={{ margin: '0 0 16px', color: '#00E5FF', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 800 }}>
+                    <Info size={18} />
+                    Gemini AI Clinical Evaluation & Protocol Synergy Review
                   </h4>
-                  <div style={{ fontSize: 13, color: '#C8D2DC', lineHeight: 1.6, whiteSpace: 'pre-line', fontFamily: 'monospace' }}>
+                  <div style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '0.85rem', color: '#D0DAE4', background: 'rgba(0,0,0,0.4)', padding: 16, borderRadius: 8, border: '1px inset rgba(255,255,255,0.05)' }}>
                     {aiProtocolText}
                   </div>
                 </div>
