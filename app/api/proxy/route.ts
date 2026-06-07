@@ -41,7 +41,7 @@ function isPrivateOrReservedHost(hostname: string): boolean {
   // Parse IPv4
   const ipv4Match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (ipv4Match) {
-    const [, a, b, c, d] = ipv4Match.map(Number);
+    const [, a, b] = ipv4Match.map(Number);
     if (a === 127) return true; // Loopback
     if (a === 10) return true; // Private 10.x.x.x
     if (a === 172 && b >= 16 && b <= 31) return true; // Private 172.16-31.x.x
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
     if (isPrivateOrReservedHost(targetUrl.hostname)) {
       return new NextResponse('Forbidden Host', { status: 403 });
     }
-  } catch (e) {
+  } catch {
     return new NextResponse('Invalid URL', { status: 400 });
   }
 
@@ -155,14 +155,6 @@ export async function GET(request: NextRequest) {
     return new NextResponse('Rate Limit Exceeded', { status: 429 });
   }
 
-  // Referer Check
-  const referer = request.headers.get('referer');
-  const origin = request.headers.get('origin');
-  const host = request.headers.get('host');
-  // In dev it's localhost, in prod it's pepnationlab.com
-  const isAllowedHost = (h: string) => h.includes('localhost') || h.includes('pepnationlab.com');
-  
-  // Commenting out strict referer check for ease of testing locally in iframe without origin
   // if (!isAllowedHost(origin || '') && !isAllowedHost(referer || '') && !isAllowedHost(host || '')) {
   //   return new NextResponse('Unauthorized referer', { status: 403 });
   // }
@@ -223,8 +215,8 @@ export async function GET(request: NextRequest) {
             if (data?.PubTator3?.[0]) {
               const pubData = data.PubTator3[0];
               const passages = pubData.passages || [];
-              const titlePassage = passages.find((p: any) => p.infons?.type === 'title') || passages[0];
-              const abstractPassage = passages.find((p: any) => p.infons?.type === 'abstract') || passages[1];
+              const titlePassage = passages.find((p: { infons?: { type?: string, authors?: string, journal?: string }, text?: string }) => p.infons?.type === 'title') || passages[0];
+              const abstractPassage = passages.find((p: { infons?: { type?: string, authors?: string, journal?: string }, text?: string }) => p.infons?.type === 'abstract') || passages[1];
               
               const title = titlePassage?.text || 'PubMed Article';
               const abstract = abstractPassage?.text || '';
@@ -256,7 +248,7 @@ export async function GET(request: NextRequest) {
               `;
               const resHeaders = new Headers();
               resHeaders.set('content-type', 'text/html; charset=utf-8');
-              resHeaders.set('Cache-Control', \`s-maxage=\${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=\${CONFIG.CACHE_SWR}\`);
+              resHeaders.set('Cache-Control', `s-maxage=${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=${CONFIG.CACHE_SWR}`);
               resHeaders.set('X-Frame-Options', 'SAMEORIGIN');
               resHeaders.set('Content-Security-Policy', "frame-ancestors 'self'");
               return new NextResponse(fallbackHtml, { status: 200, headers: resHeaders });
@@ -282,14 +274,14 @@ export async function GET(request: NextRequest) {
       `;
       const resHeaders = new Headers();
       resHeaders.set('content-type', 'text/html; charset=utf-8');
-      resHeaders.set('Cache-Control', \`s-maxage=\${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=\${CONFIG.CACHE_SWR}\`);
+      resHeaders.set('Cache-Control', `s-maxage=${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=${CONFIG.CACHE_SWR}`);
       resHeaders.set('X-Frame-Options', 'SAMEORIGIN');
       resHeaders.set('Content-Security-Policy', "frame-ancestors 'self'");
       
       // We return 200 OK so Next.js doesn't strip our headers!
       return new NextResponse(fallbackHtml, { status: 200, headers: resHeaders });
     } else {
-      return new NextResponse(\`Publisher error \${finalResponse.status}\`, { status: 500 });
+      return new NextResponse(`Publisher error ${finalResponse.status}`, { status: 500 });
     }
   }
 

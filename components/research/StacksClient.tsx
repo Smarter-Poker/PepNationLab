@@ -660,21 +660,26 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                       </div>
                       <div style={{ width: 80, height: 160, position: 'relative' }}>
                         {/* SVG Syringe Visualizer */}
-                        <svg viewBox="0 0 40 120" style={{ width: '100%', height: '100%' }}>
+                        <svg viewBox="0 0 40 130" style={{ width: '100%', height: '100%' }}>
+                          {/* Tip (pointing UP) */}
+                          <path d="M 17 20 L 19 5 L 21 5 L 23 20 Z" fill="rgba(255,255,255,0.1)" />
                           {/* Barrel */}
-                          <rect x="10" y="20" width="20" height="90" rx="3" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-                          {/* Plunger */}
-                          <rect x="16" y={10 + (s.diluent / 5) * 80} width="8" height={100 - (s.diluent / 5) * 80} fill="#334155" />
-                          {/* Plunger top */}
-                          <rect x="12" y={10 + (s.diluent / 5) * 80} width="16" height="4" fill="#64748b" />
-                          {/* Liquid (cyan) */}
-                          <rect x="11" y={21 + (s.diluent / 5) * 80} width="18" height={88 - (s.diluent / 5) * 80} fill="rgba(0,229,255,0.5)" />
-                          {/* Tip */}
-                          <path d="M 17 20 L 19 10 L 21 10 L 23 20 Z" fill="rgba(255,255,255,0.1)" />
+                          <rect x="10" y="20" width="20" height="90" rx="2" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+                          
+                          {/* Liquid */}
+                          <rect x="11" y="21" width="18" height={Math.max(0, (20 + (s.diluent / 5) * 85) - 21)} fill="rgba(0,229,255,0.4)" />
+                          
+                          {/* Plunger Top (Rubber stopper) */}
+                          <rect x="11" y={20 + (s.diluent / 5) * 85} width="18" height="5" fill="#1e293b" />
+                          
+                          {/* Plunger Rod */}
+                          <rect x="16" y={(20 + (s.diluent / 5) * 85) + 5} width="8" height={130 - ((20 + (s.diluent / 5) * 85) + 5)} fill="#334155" />
+                          
                           {/* Tick marks */}
-                          {[...Array(10)].map((_, i) => (
-                            <line key={i} x1="10" y1={30 + i * 8} x2="15" y2={30 + i * 8} stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-                          ))}
+                          {[1, 2, 3, 4, 5].map(mL => {
+                            const tickY = 20 + (mL / 5) * 85;
+                            return <line key={mL} x1="10" y1={tickY} x2="16" y2={tickY} stroke="rgba(255,255,255,0.3)" strokeWidth="1" />;
+                          })}
                         </svg>
                       </div>
                     </div>

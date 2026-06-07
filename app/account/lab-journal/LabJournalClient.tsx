@@ -174,7 +174,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     
     // Add Comparisons
     comparisons.forEach(c => {
-      csv += `Comparison,${new Date(c.created_at).toLocaleDateString()},"Items: ${c.product_ids.join(', ')}",""\\n`;
+      csv += `Comparison,${new Date(c.created_at).toLocaleDateString()},"Folder: ${(c.folder_name || 'Unsorted').replace(/"/g, '""')} | Items: ${c.product_ids.join(', ')}","${(c.notes || '').replace(/"/g, '""')}"\\n`;
     });
     
     const blob = new Blob([csv], { type: 'text/csv' });

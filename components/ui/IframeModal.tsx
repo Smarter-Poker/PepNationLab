@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ExternalLink, AlertTriangle } from 'lucide-react';
+import { ExternalLink, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface IframeModalProps {
@@ -175,7 +175,10 @@ export default function IframeModal({ url, onClose }: IframeModalProps) {
 
   // Need to ensure we only run createPortal on the client
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
   
   if (!mounted) return null;
   return createPortal(modalContent, document.body);
