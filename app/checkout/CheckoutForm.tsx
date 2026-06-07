@@ -844,7 +844,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          items: cart.map(item => ({ id: item.id, quantity: item.quantity })),
+          items: cart.map(item => ({ id: item.id, quantity: item.quantity, bundleName: item.bundleName })),
           shippingAddress: fulfillmentMethod === 'ship' ? {
             fullName,
             street,

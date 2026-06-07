@@ -84,12 +84,13 @@ export default function ReorderStackButton({ orderId, bundleName }: { orderId: s
               : [];
         }
         const byId = new Map<string, ReorderItem>(
-          existing.map((i) => [i.id, { ...i }]),
+          existing.map((i) => [`${i.id}-${i.bundleName || ''}`, { ...i }]),
         );
         for (const it of items) {
-          const ex = byId.get(it.id);
+          const key = `${it.id}-${it.bundleName || ''}`;
+          const ex = byId.get(key);
           if (ex) ex.quantity = (Number(ex.quantity) || 0) + it.quantity;
-          else byId.set(it.id, it);
+          else byId.set(key, it);
         }
         localStorage.setItem(
           cartKey,

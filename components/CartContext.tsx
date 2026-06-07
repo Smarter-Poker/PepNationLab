@@ -58,8 +58,8 @@ interface CartContextType {
   cart: CartItem[];
   addToCart: (product: Omit<CartItem, 'quantity'>, quantity?: number) => void;
   addMultipleToCart: (items: { product: Omit<CartItem, 'quantity'>, quantity: number }[], bundleName?: string) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeFromCart: (productId: string, bundleName?: string) => void;
+  updateQuantity: (productId: string, quantity: number, bundleName?: string) => void;
   clearCart: () => void;
   cartCount: number;
   cartSubtotal: number;
@@ -302,11 +302,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const cancelAddToCart = () => setPendingAddition(null);
-  const removeFromCart = (productId: string) => setCart(prev => prev.filter(item => item.id !== productId));
+  const removeFromCart = (productId: string, bundleName?: string) => {
+    setCart(prev => prev.filter(item => !(item.id === productId && item.bundleName === bundleName)));
+  };
 
-  const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) { removeFromCart(productId); return; }
-    setCart(prev => prev.map(item => item.id === productId ? { ...item, quantity } : item));
+  const updateQuantity = (productId: string, quantity: number, bundleName?: string) => {
+    if (quantity <= 0) { removeFromCart(productId, bundleName); return; }
+    setCart(prev => prev.map(item => (item.id === productId && item.bundleName === bundleName) ? { ...item, quantity } : item));
   };
 
   const clearCart = () => setCart([]);
@@ -1038,7 +1040,7 @@ function CartDrawer() {
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             <div style={{ fontSize: '0.9rem', color: '#00E5FF', fontWeight: 800 }}>${bundleSubtotal.toFixed(2)}</div>
-                            <button onClick={() => group.items.forEach(i => removeFromCart(i.id))} style={{ background: 'none', border: 'none', color: 'rgba(255,90,90,0.7)', cursor: 'pointer', padding: '3px', transition: 'color 0.15s' }} aria-label="Remove Stack">
+                            <button onClick={() => group.items.forEach(i => removeFromCart(i.id, i.bundleName))} style={{ background: 'none', border: 'none', color: 'rgba(255,90,90,0.7)', cursor: 'pointer', padding: '3px', transition: 'color 0.15s' }} aria-label="Remove Stack">
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <polyline points="3 6 5 6 21 6" />
                                 <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
@@ -1057,9 +1059,9 @@ function CartDrawer() {
                                 </h4>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.09)' }}>
-                                    <button onClick={() => updateQuantity(item.id, item.quantity - 1)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 22, height: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>−</button>
+                                    <button onClick={() => updateQuantity(item.id, item.quantity - 1, item.bundleName)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 22, height: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>−</button>
                                     <span style={{ fontSize: '0.75rem', width: 20, textAlign: 'center', color: 'var(--teal)', fontWeight: 700 }}>{item.quantity}</span>
-                                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 22, height: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>+</button>
+                                    <button onClick={() => updateQuantity(item.id, item.quantity + 1, item.bundleName)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 22, height: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>+</button>
                                   </div>
                                   <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
                                     <span style={{ textDecoration: 'line-through', marginRight: 6 }}>${(activePrice * item.quantity).toFixed(2)}</span>
@@ -1087,9 +1089,9 @@ function CartDrawer() {
                           {item.sku && <div style={{ fontSize: '0.67rem', color: 'var(--grey-400)', marginBottom: 6 }}>SKU: {item.sku}</div>}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                             <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.09)' }}>
-                              <button onClick={() => updateQuantity(item.id, item.quantity - 1)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>−</button>
+                              <button onClick={() => updateQuantity(item.id, item.quantity - 1, item.bundleName)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>−</button>
                               <span style={{ fontSize: '0.82rem', width: 22, textAlign: 'center', color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontWeight: 700 }}>{item.quantity}</span>
-                              <button onClick={() => updateQuantity(item.id, item.quantity + 1)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>+</button>
+                              <button onClick={() => updateQuantity(item.id, item.quantity + 1, item.bundleName)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>+</button>
                             </div>
                             <div>
                               <div style={{ fontSize: '0.88rem', color: 'var(--white)', fontWeight: 700, fontFamily: 'var(--font-brand)' }}>
@@ -1099,7 +1101,7 @@ function CartDrawer() {
                             </div>
                           </div>
                         </div>
-                        <button onClick={() => removeFromCart(item.id)} style={{ background: 'none', border: 'none', color: 'rgba(255,90,90,0.55)', cursor: 'pointer', padding: '3px 2px', height: 'fit-content', transition: 'color 0.15s' }} aria-label="Remove Item">
+                        <button onClick={() => removeFromCart(item.id, item.bundleName)} style={{ background: 'none', border: 'none', color: 'rgba(255,90,90,0.55)', cursor: 'pointer', padding: '3px 2px', height: 'fit-content', transition: 'color 0.15s' }} aria-label="Remove Item">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <polyline points="3 6 5 6 21 6" />
                             <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
