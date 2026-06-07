@@ -1824,6 +1824,7 @@ export default function StorefrontCompareDrawer({
           </div>
         </div>
       )}
+      <IframeModal url={modalUrl} onClose={() => setModalUrl(null)} />
     </>,
     document.body,
   );
