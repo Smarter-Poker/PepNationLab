@@ -586,24 +586,14 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
               </div>
 
               {documentedMatch ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 'var(--space-3)',
-                    padding: 'var(--space-4)',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'rgba(104,211,145,0.12)',
-                    border: '1px solid rgba(104,211,145,0.4)',
-                    marginBottom: 'var(--space-4)',
-                  }}
-                >
+                <div className="glass-panel" style={{ display: 'flex', gap: 'var(--space-3)', padding: 'var(--space-4)', marginBottom: 'var(--space-4)', border: '1px solid rgba(104,211,145,0.4)', background: 'linear-gradient(135deg, rgba(104,211,145,0.15) 0%, rgba(104,211,145,0.05) 100%)' }}>
                   <div style={{ color: '#68D391', flexShrink: 0, marginTop: '0.1rem' }}>
                     <CheckCircle2 size={18} aria-hidden="true" />
                   </div>
                   <div>
                     <p style={{ margin: 0, color: '#68D391', fontWeight: 700 }}>
                       Documented Combination:{' '}
-                      <Link href={`/research/${documentedMatch.slug}`} style={{ color: '#68D391' }}>
+                      <Link href={`/research/${documentedMatch.slug}`} style={{ color: '#68D391', textDecoration: 'underline' }}>
                         {documentedMatch.display_name}
                       </Link>
                     </p>
@@ -615,21 +605,13 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
                   </div>
                 </div>
               ) : (
-                <div
-                  style={{
-                    padding: 'var(--space-4)',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'rgba(0,196,188,0.10)',
-                    border: '1px solid rgba(0,196,188,0.4)',
-                    marginBottom: 'var(--space-4)',
-                    color: '#D0DAE4',
-                    fontSize: '0.9rem',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <strong style={{ color: '#00C4BC' }}>Not A Studied Combination.</strong> This Exact
-                  Set Does Not Match A Documented Stack In The Library. Review Each Compound
-                  Individually Before Considering Any Combination.
+                <div className="glass-panel" style={{ display: 'flex', gap: 'var(--space-3)', padding: 'var(--space-4)', marginBottom: 'var(--space-4)', border: '1px solid rgba(0,196,188,0.4)', background: 'linear-gradient(135deg, rgba(0,196,188,0.15) 0%, rgba(0,196,188,0.05) 100%)' }}>
+                  <div style={{ color: '#00C4BC', flexShrink: 0, marginTop: '0.1rem' }}>
+                    <Info size={18} aria-hidden="true" />
+                  </div>
+                  <div style={{ color: '#D0DAE4', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                    <strong style={{ color: '#00C4BC' }}>Not A Studied Combination.</strong> This Exact Set Does Not Match A Documented Stack In The Library. Review Each Compound Individually Before Considering Any Combination.
+                  </div>
                 </div>
               )}
 
@@ -667,23 +649,26 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
 
               {/* Protocol Creation CTA */}
               {protocol.length === 0 ? (
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 24 }}>
                   <button 
                     type="button" 
                     onClick={handleGenerateDefaultProtocol}
-                    style={{ background: '#00C4BC', color: '#000', border: 'none', padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                    style={{ background: 'linear-gradient(135deg, #00E5FF 0%, #00C4BC 100%)', color: '#000', border: 'none', padding: '14px 24px', borderRadius: 12, fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 24px rgba(0,229,255,0.4)', transition: 'all 0.2s ease-in-out' }}
                   >
-                    <Calendar size={16} />
+                    <Calendar size={18} />
                     Generate 12-Week Interactive Protocol Grid
                   </button>
                   <button 
                     type="button" 
-                    onClick={handleRefineWithGemini}
-                    disabled={generatingProtocol}
-                    style={{ background: 'transparent', color: '#00E5FF', border: '1px solid #00E5FF', padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                    onClick={() => {
+                      setGoal('');
+                      setIsGenerating(false);
+                      setAiResponse('');
+                    }}
+                    style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', padding: '14px 24px', borderRadius: 12, fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s ease-in-out' }}
                   >
-                    <RefreshCw size={16} className={generatingProtocol ? 'animate-spin' : ''} />
-                    {generatingProtocol ? 'Refining...' : 'Refine with Gemini AI'}
+                    <Edit size={18} />
+                    Custom Protocol (Empty Grid)
                   </button>
                 </div>
               ) : (
