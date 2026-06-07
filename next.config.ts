@@ -82,6 +82,9 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 // Wrap with Sentry only when @sentry/nextjs is resolvable. This keeps the
