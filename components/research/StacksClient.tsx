@@ -262,7 +262,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                 </div>
 
                 <div style={{ padding: 'var(--space-5)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 16 }}>
                     {/* Badges */}
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flexDirection: 'column', alignItems: 'flex-start' }}>
                       {citationCount > 0 && (
@@ -285,6 +285,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                         return (
                           <div key={compSlug} style={{ 
                             width: 64, height: 64, 
+                            flexShrink: 0,
                             borderRadius: 12, 
                             background: 'radial-gradient(circle at center, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.3) 100%)',
                             border: '1px solid rgba(255,255,255,0.1)',
