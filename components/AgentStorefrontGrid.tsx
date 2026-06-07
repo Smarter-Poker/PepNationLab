@@ -1956,11 +1956,10 @@ export default function AgentStorefrontGrid({
         .sf-modal-body { padding: 20px 22px 8px; flex: 1; }
         .sf-modal-h2 { font-size: 1.2rem !important; }
         .sf-modal-actions {
-          display: flex; gap: 10px;
-          padding: 14px 22px calc(20px + env(safe-area-inset-bottom, 0px));
+          display: flex; justify-content: center; gap: 16px;
+          padding: 16px 22px calc(16px + env(safe-area-inset-bottom, 0px));
           position: sticky; bottom: 0; z-index: 5;
-          background: linear-gradient(to top, #0a0f14 75%, transparent);
-          border-top: 1px solid rgba(255,255,255,0.06);
+          background: linear-gradient(to top, #0a0f14 85%, transparent);
         }
         .sf-modal-actions .sf-close-btn {
           padding: 12px 20px;
@@ -1993,7 +1992,8 @@ export default function AgentStorefrontGrid({
           .sf-modal-body { padding: 24px 32px 12px; }
           .sf-modal-h2 { font-size: 1.75rem !important; }
           .sf-modal-actions {
-            position: static; background: none; padding: 16px 32px 28px;
+            position: static; background: none; padding: 16px 32px 24px;
+            justify-content: center; gap: 20px;
           }
           .sf-modal-actions .sf-add-btn { flex: none; padding: 10px 28px; }
         }
@@ -3720,14 +3720,14 @@ export default function AgentStorefrontGrid({
                   {showBulkPricing && (
                       <div style={{
                         marginTop: 10,
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        borderRadius: 12,
+                        border: '3px solid #8E98A7',
+                        borderRadius: 14,
                         overflow: 'hidden',
-                        background: 'rgba(255,255,255,0.02)',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                        background: 'linear-gradient(180deg, rgba(30,36,44,0.95) 0%, rgba(15,20,26,0.95) 100%)',
+                        boxShadow: '0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)',
                         marginBottom: 10,
                       }}>
-                        <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ padding: '12px 16px', background: 'rgba(0,0,0,0.2)', borderBottom: '2px solid rgba(142,152,167,0.2)', fontSize: '0.8rem', fontWeight: 700, color: 'var(--white)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           Bulk Volume Discounts
                           <button
                             type="button"
@@ -3755,7 +3755,7 @@ export default function AgentStorefrontGrid({
                           return [{ min: 100, pct: 5 }, { min: 300, pct: 10 }, { min: 500, pct: 15 }].map((tier, i) => {
                             const dp = parseFloat((bp * (1 - tier.pct / 100)).toFixed(2));
                             return (
-                              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: i === 0 ? 'none' : '2px solid rgba(142,152,167,0.2)' }}>
                                 <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
                                   {tier.min}+ Vials <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.75rem' }}>{tier.pct}% Off</span>
                                 </span>
@@ -3776,17 +3776,18 @@ export default function AgentStorefrontGrid({
                             );
                           });
                         })()}
-                        <div style={{ padding: '8px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', fontSize: '0.72rem', color: 'var(--grey-500)' }}>
+                        <div style={{ padding: '12px 16px', background: 'rgba(0,0,0,0.1)', borderTop: '2px solid rgba(142,152,167,0.2)', fontSize: '0.75rem', color: 'var(--silver)' }}>
                           Contact Your Agent To Place A Bulk Order Of 500+ Vials.
                         </div>
                       </div>
                     )}
                 </ProductModalEnhancements>
 
-                <div className="sf-modal-actions" style={{ alignItems: 'center' }}>
+                <div className="sf-modal-actions">
                   <DynamicDetailButton
                     type="close"
                     onClick={() => setDetailProduct(null)}
+                    style={{ width: 172, height: 48 }}
                   />
                   <DynamicAddToCartButton
                     onClick={() => {
@@ -3801,6 +3802,7 @@ export default function AgentStorefrontGrid({
                       setShowCartFloat(true);
                     }}
                     pendingQty={pendingQty}
+                    style={{ width: 172, height: 48 }}
                   />
                 </div>
               </div>
