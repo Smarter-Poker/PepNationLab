@@ -20,6 +20,7 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
   const [loaded, setLoaded] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [level, setLevel] = useState(3);
+  const [currentLevel, setCurrentLevel] = useState<number | null>(null);
   const [customMarkup, setCustomMarkup] = useState<string>('');
   const [ladderActive, setLadderActive] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -34,6 +35,7 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
         if (cancelled) return;
         setEnabled(!!json.enabled);
         if (json.level) setLevel(Number(json.level));
+        if (json.currentLevel) setCurrentLevel(Number(json.currentLevel));
         if (json.customMarkup !== null && json.customMarkup !== undefined) {
           setCustomMarkup(String(json.customMarkup));
         } else {
@@ -78,7 +80,7 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
 
   let selectValue = 'auto';
   if (customMarkup !== '' && customMarkup !== null) {
-    selectValue = `custom_${customMarkup}`;
+    selectValue = 'custom';
   } else if (enabled) {
     selectValue = `tier_${level}`;
   }
@@ -87,28 +89,25 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
     const val = e.target.value;
     if (val === 'auto') {
       save(false, level, '');
+      setCustomMarkup('');
     } else if (val.startsWith('tier_')) {
       const newLevel = Number(val.split('_')[1]);
       setLevel(newLevel);
       save(true, newLevel, '');
-    } else if (val.startsWith('custom_')) {
-      const newCustom = val.split('_')[1];
-      setCustomMarkup(newCustom);
-      save(false, level, newCustom); // false for fixed_scale_override because custom overrides take precedence natively
+      setCustomMarkup('');
+    } else if (val === 'custom') {
+      // Don't save immediately, let the user type in the input box
+      setCustomMarkup('0');
     }
   };
 
-  // Build custom options, ensuring the currently selected custom markup is present
-  const baseCustomOptions = [10, 20, 30, 40];
-  const currentCustomNumber = customMarkup !== '' ? Number(customMarkup) : null;
-  const customOptions = [...baseCustomOptions];
-  if (currentCustomNumber !== null && !customOptions.includes(currentCustomNumber)) {
-    customOptions.push(currentCustomNumber);
-    customOptions.sort((a, b) => a - b);
-  }
+  const currentTierName = currentLevel ? LEVELS.find(l => l.level === currentLevel)?.name : null;
+  const autoLabel = currentTierName 
+    ? `Auto (Currently Tier ${currentLevel}: ${currentTierName})` 
+    : 'Auto (Volume Based)';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         <select
           value={selectValue}
@@ -122,11 +121,12 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
             padding: '6px 12px', 
             fontSize: '0.85rem', 
             cursor: saving ? 'not-allowed' : 'pointer',
-            width: '100%',
+            flex: 1,
+            minWidth: 200,
             maxWidth: '300px'
           }}
         >
-          <option value="auto">Auto (Volume Based)</option>
+          <option value="auto">{autoLabel}</option>
           
           <optgroup label="Gamification Tiers">
             {LEVELS.map((l) => (
@@ -136,14 +136,53 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
             ))}
           </optgroup>
 
-          <optgroup label="Custom Pricing Override">
-            {customOptions.map(pct => (
-              <option key={`custom_${pct}`} value={`custom_${pct}`}>
-                Custom: {pct}% Markup
-              </option>
-            ))}
-          </optgroup>
+          <option value="custom">Custom Pricing Override...</option>
         </select>
+        
+        {selectValue === 'custom' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ position: 'relative', width: 90 }}>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={customMarkup}
+                onChange={(e) => setCustomMarkup(e.target.value)}
+                onBlur={() => {
+                  if (customMarkup !== '') {
+                    save(false, level, customMarkup);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && customMarkup !== '') {
+                    save(false, level, customMarkup);
+                  }
+                }}
+                disabled={saving}
+                style={{
+                  width: '100%',
+                  background: 'var(--surface-3)',
+                  border: '1px solid var(--teal)',
+                  color: 'var(--white)',
+                  borderRadius: 6,
+                  padding: '6px 24px 6px 12px',
+                  fontSize: '0.85rem',
+                  outline: 'none'
+                }}
+              />
+              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--silver)', fontSize: '0.85rem', pointerEvents: 'none' }}>%</span>
+            </div>
+            <button 
+              type="button" 
+              className="btn btn-primary btn-sm" 
+              disabled={saving || customMarkup === ''} 
+              onClick={() => save(false, level, customMarkup)}
+              style={{ height: 32 }}
+            >
+              Apply
+            </button>
+          </div>
+        )}
       </div>
       {!ladderActive && (
         <span style={{ fontSize: '0.65rem', color: 'var(--grey-500)', marginTop: 4 }}>Volume Based Pricing Takes Effect When Tier Ladder Is Enabled</span>
