@@ -29,7 +29,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
   const [fridgeMode, setFridgeMode] = useState(false);
   const [fridgeInventory, setFridgeInventory] = useState<string[]>([]);
 
-  const { addMultipleToCart } = useCart();
+  const { addToCart, addMultipleToCart } = useCart();
   const { recent, addHistory } = useSearchHistory();
 
   const bySlug = useMemo(() => new Map(compounds.map((c) => [c.slug, c])), [compounds]);
@@ -94,20 +94,16 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
     if (premadeProducts.length > 0) {
       premadeProducts.sort((a, b) => a.retailPrice - b.retailPrice);
       const p = premadeProducts[0];
-      itemsToAdd.push({
-        product: {
-          id: p.agentProductId || p.compoundSlug,
-          name: p.productName,
-          sku: p.productName,
-          retailPrice: p.retailPrice,
-          costPrice: p.retailPrice,
-          bulkCostPrice: p.retailPrice,
-          bulkThreshold: 1,
-          weightOz: p.weightOz,
-        },
-        quantity: 1
+      addToCart({
+        id: p.agentProductId || p.compoundSlug,
+        name: p.productName,
+        sku: p.productName,
+        retailPrice: p.retailPrice,
+        costPrice: p.retailPrice,
+        bulkCostPrice: p.retailPrice,
+        bulkThreshold: 1,
+        weightOz: p.weightOz,
       });
-      addMultipleToCart(itemsToAdd, stack.display_name);
       return;
     }
 
