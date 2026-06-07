@@ -8,68 +8,102 @@
  * are in-app pepnationlab.com routes. Research-use-only.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
-import { searchDocs, SEARCH_TYPE_LABEL, type SearchDoc, type SearchType } from '@/lib/research-search';
-
-const TYPE_COLOR: Record<SearchType, string> = {
-  compound: '#00C4BC',
-  stack: '#8B5CF6',
-  area: '#00E5FF',
-  guide: '#68D391',
-  term: '#A8B4C0',
-  faq: '#F6AD55',
-  tool: '#E8C07D',
-};
-
-const EXAMPLES = ['Fat Loss', 'BPC-157', 'Half-Life', 'Sleep', 'GLP-1', 'Reconstitution', 'WADA', 'Joint Repair'];
+import AutocompleteDropdown, { type Suggestion } from './AutocompleteDropdown';
+import TrendingSearchesDropdown from './TrendingSearchesDropdown';
 
 export default function UniversalSearch({
-  docs,
   initialQuery = '',
   autoFocus = false,
 }: {
-  docs: SearchDoc[];
   initialQuery?: string;
   autoFocus?: boolean;
 }) {
   const router = useRouter();
   const [q, setQ] = useState(initialQuery);
-  const [active, setActive] = useState(0);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const results = useMemo(() => searchDocs(q, docs, 40), [q, docs]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setActive(0);
-  }, [q]);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (autoFocus && inputRef.current) inputRef.current.focus();
   }, [autoFocus]);
 
+  useEffect(() => {
+    function onPointer(e: MouseEvent) {
+      if (!wrapperRef.current) return;
+      if (!wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    window.addEventListener('mousedown', onPointer);
+    return () => window.removeEventListener('mousedown', onPointer);
+  }, []);
+
+  useEffect(() => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    const trimmed = q.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    debounceRef.current = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/research/suggest?q=${encodeURIComponent(trimmed)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data.suggestions)) {
+          setSuggestions(data.suggestions);
+        }
+      } catch {
+        /* swallow */
+      }
+    }, 200);
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    };
+  }, [q]);
+
+  const submit = useCallback(
+    (override?: string) => {
+      const target = (override ?? q).trim();
+      if (!target) return;
+      setOpen(false);
+      router.push(`/research/search?q=${encodeURIComponent(target)}`);
+    },
+    [q, router],
+  );
+
+  function onSuggestionSelect(s: Suggestion) {
+    if (s.kind === 'compound') {
+      router.push(`/research/${s.slug}`);
+      setOpen(false);
+      return;
+    }
+    if (s.kind === 'area') {
+      router.push(`/research/area/${s.slug}`);
+      setOpen(false);
+      return;
+    }
+    submit(s.display_name);
+  }
+
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (results.length === 0) return;
-    if (e.key === 'ArrowDown') {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      setActive((i) => Math.min(i + 1, results.length - 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setActive((i) => Math.max(i - 1, 0));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      const hit = results[active];
-      if (hit) router.push(hit.doc.url);
+      submit();
     } else if (e.key === 'Escape') {
       setQ('');
+      setOpen(false);
     }
   }
 
   return (
-    <div>
+    <div ref={wrapperRef} style={{ position: 'relative' }}>
       {/* Search input */}
       <div style={{ position: 'relative' }}>
         <Search
@@ -81,7 +115,16 @@ export default function UniversalSearch({
           ref={inputRef}
           type="search"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-controls="universal-search-autocomplete"
+          onChange={(e) => {
+            setQ(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
           placeholder="Search Any Compound, Goal, Mechanism, Term, Or Question"
           aria-label="Search The Research Library"
@@ -99,94 +142,20 @@ export default function UniversalSearch({
         />
       </div>
 
-      {/* Example chips when empty */}
-      {!q.trim() && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: 'var(--space-3, 12px)' }}>
-          {EXAMPLES.map((ex) => (
-            <button
-              key={ex}
-              type="button"
-              onClick={() => setQ(ex)}
-              style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.14)',
-                borderRadius: 9999,
-                color: 'var(--silver, #D0DAE4)',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                padding: '7px 14px',
-                cursor: 'pointer',
-              }}
-            >
-              {ex}
-            </button>
-          ))}
-        </div>
+      {open && q.trim().length > 0 && (
+        <AutocompleteDropdown
+          id="universal-search-autocomplete"
+          suggestions={suggestions}
+          recent={[]}
+          onSelect={onSuggestionSelect}
+          onSelectRecent={(text) => submit(text)}
+        />
       )}
 
-      {/* Results */}
-      {q.trim().length >= 2 && (
-        <div style={{ marginTop: 'var(--space-4, 16px)' }}>
-          <p style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)', margin: '0 0 var(--space-3, 12px)' }}>
-            {results.length === 0
-              ? 'No Matches - Try A Different Term Or Goal.'
-              : `${results.length} Result${results.length === 1 ? '' : 's'} Across Compounds, Areas, Guides, Glossary, And FAQ`}
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {results.map((hit, i) => {
-              const color = TYPE_COLOR[hit.doc.type];
-              const isActive = i === active;
-              return (
-                <Link
-                  key={hit.doc.id}
-                  href={hit.doc.url}
-                  onMouseEnter={() => setActive(i)}
-                  className="glass-panel"
-                  style={{
-                    display: 'block',
-                    padding: 'var(--space-3, 12px) var(--space-4, 16px)',
-                    borderRadius: 'var(--radius-lg, 12px)',
-                    textDecoration: 'none',
-                    border: isActive ? `1px solid ${color}` : '1px solid rgba(255,255,255,0.08)',
-                    background: isActive ? 'rgba(0,196,188,0.06)' : undefined,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.98rem' }}>{hit.doc.title}</span>
-                    <span
-                      style={{
-                        fontSize: '0.62rem',
-                        fontWeight: 800,
-                        letterSpacing: '0.04em',
-                        textTransform: 'uppercase',
-                        padding: '2px 8px',
-                        borderRadius: 9999,
-                        background: `${color}1A`,
-                        border: `1px solid ${color}55`,
-                        color,
-                      }}
-                    >
-                      {SEARCH_TYPE_LABEL[hit.doc.type]}
-                    </span>
-                    {hit.doc.subtitle && (
-                      <span style={{ fontSize: '0.74rem', color: 'var(--silver, #A8B4C0)' }}>{hit.doc.subtitle}</span>
-                    )}
-                    {hit.doc.badge && (
-                      <span style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)', marginLeft: 'auto' }}>
-                        {hit.doc.badge}
-                      </span>
-                    )}
-                  </div>
-                  {hit.snippet && (
-                    <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--silver, #A8B4C0)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                      {hit.snippet}
-                    </p>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+      {open && q.trim().length === 0 && (
+        <TrendingSearchesDropdown
+          onSelect={(text) => submit(text)}
+        />
       )}
     </div>
   );

@@ -253,7 +253,7 @@ export function InAppBrowserProvider({ children }: { children: React.ReactNode }
           <div style={{ position: 'relative', flex: 1, minHeight: 0, background: '#0A1018' }}>
             <iframe
               key={target.url}
-              src={target.url}
+              src={`/api/proxy?url=${encodeURIComponent(target.url)}`}
               title={target.title || hostOf(target.url)}
               onLoad={() => {
                 setLoaded(true);
@@ -271,45 +271,6 @@ export function InAppBrowserProvider({ children }: { children: React.ReactNode }
                 background: '#FFFFFF',
               }}
             />
-            {!loaded && showFallback && (
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '14px',
-                  padding: '24px',
-                  textAlign: 'center',
-                  background: '#0A1018',
-                }}
-              >
-                <div style={{ color: '#FFFFFF', fontWeight: 800, fontSize: '1.05rem' }}>
-                  This Source Blocks Embedding
-                </div>
-                <p style={{ color: '#A8B4C0', fontSize: '0.9rem', maxWidth: '440px', lineHeight: 1.6, margin: 0 }}>
-                  Some Sites (Such As Government And Journal Databases) Do Not Allow Their Pages To Be Shown Inside
-                  Another Site. Copy The Link Below To Open It In Your Own Browser Tab When You Choose.
-                </p>
-                <code
-                  style={{
-                    display: 'block',
-                    maxWidth: '100%',
-                    overflowWrap: 'anywhere',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.14)',
-                    borderRadius: '10px',
-                    padding: '10px 14px',
-                    color: '#D0DAE4',
-                    fontSize: '0.82rem',
-                  }}
-                >
-                  {target.url}
-                </code>
-              </div>
-            )}
           </div>
         </div>
       )}

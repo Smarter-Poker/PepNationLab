@@ -75,7 +75,7 @@ export default function ResearchLandingPage() {
             height: '4.5%',
           }}
           inputStyle={{
-            paddingLeft: '36px',
+            paddingLeft: '46px',
           }}
           buttonStyle={{
             top: '19.5%',

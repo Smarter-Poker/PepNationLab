@@ -13,7 +13,6 @@ import { RESEARCH_AREAS } from '@/lib/compounds';
 import AskTheLab from '@/components/research/AskTheLab';
 import ResearchBrowser from '@/components/research/ResearchBrowser';
 import UniversalSearch from '@/components/research/UniversalSearch';
-import { buildResearchSearchDocs } from '@/lib/research-search-docs';
 
 export const metadata: Metadata = {
   title: 'Research Library | Pep Nation Lab',
@@ -27,7 +26,6 @@ export default async function ResearchLibraryPage({
 }) {
   const { q } = await searchParams;
   const compounds = await getAllCompounds();
-  const searchIndex = buildResearchSearchDocs(compounds);
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
@@ -56,9 +54,8 @@ export default async function ResearchLibraryPage({
         </p>
       </header>
 
-      {/* Universal instant search across compounds, areas, guides, glossary, FAQ */}
       <section style={{ marginBottom: 'var(--space-7, 48px)' }}>
-        <UniversalSearch docs={searchIndex} initialQuery={q ?? ''} autoFocus={Boolean(q)} />
+        <UniversalSearch initialQuery={q ?? ''} autoFocus={Boolean(q)} />
       </section>
 
       <section style={{ marginBottom: 'var(--space-7, 48px)' }}>

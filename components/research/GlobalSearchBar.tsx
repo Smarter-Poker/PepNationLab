@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Sparkles, Mic, X } from 'lucide-react';
 import AutocompleteDropdown, { type Suggestion } from './AutocompleteDropdown';
+import TrendingSearchesDropdown from './TrendingSearchesDropdown';
 
 const HISTORY_KEY = 'pep_research_history';
 const HISTORY_LIMIT = 8;
@@ -324,6 +325,12 @@ export default function GlobalSearchBar({
           recent={recent}
           onSelect={onSuggestionSelect}
           onSelectRecent={(text) => submit(text)}
+        />
+      )}
+
+      {open && q.trim().length === 0 && recent.length === 0 && (
+        <TrendingSearchesDropdown
+          onSelect={(text) => submit(text)}
         />
       )}
 

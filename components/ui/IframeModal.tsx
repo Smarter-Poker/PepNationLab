@@ -45,10 +45,6 @@ export default function IframeModal({ url, onClose }: IframeModalProps) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <AlertTriangle size={14} style={{ color: 'var(--amber-400, #FBBF24)' }} />
-            <span>If the page refuses to connect (blank screen), the publisher has blocked embedding.</span>
-          </div>
           <a
             href={url}
             target="_blank"
@@ -103,7 +99,7 @@ export default function IframeModal({ url, onClose }: IframeModalProps) {
       {/* Iframe Container */}
       <div style={{ flex: 1, backgroundColor: '#FFFFFF', position: 'relative' }}>
         <iframe
-          src={url}
+          src={`/api/proxy?url=${encodeURIComponent(url)}`}
           style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
           title="External Link Viewer"
           sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
