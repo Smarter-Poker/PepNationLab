@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Plus, GripVertical } from 'lucide-react';
+import { Loader2, Plus, GripVertical, Edit2 } from 'lucide-react';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 
@@ -192,8 +192,8 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
     }
   }
 
-  async function handleBulkAdjust() {
-    const margin = parseFloat(bulkMargin);
+  async function handleBulkAdjust(marginOverride?: number) {
+    const margin = marginOverride !== undefined ? marginOverride : parseFloat(bulkMargin);
     if (isNaN(margin) || margin < 0) {
       alert('Please Enter A Valid Margin Percentage');
       return;
@@ -328,14 +328,25 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
               onChange={e => setBulkMargin(e.target.value)}
             />
             <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)' }}>% Margin To All Products</span>
-            <button
-              className="btn-neon-cyan"
-              onClick={handleBulkAdjust}
-              disabled={bulkSaving}
-              style={{ marginLeft: 'auto', padding: '6px 16px', fontSize: '0.8rem' }}
-            >
-              {bulkSaving ? 'Applying...' : 'Apply Master Reset'}
-            </button>
+            
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+              <button
+                className="btn-silver"
+                onClick={() => { setBulkMargin('50'); handleBulkAdjust(50); }}
+                disabled={bulkSaving}
+                style={{ padding: '6px 16px', fontSize: '0.8rem', height: 32 }}
+              >
+                Reset to Standard Pricing (50%)
+              </button>
+              <button
+                className="btn-neon-cyan"
+                onClick={() => handleBulkAdjust()}
+                disabled={bulkSaving}
+                style={{ padding: '6px 16px', fontSize: '0.8rem', height: 32 }}
+              >
+                {bulkSaving ? 'Applying...' : 'Apply Master Reset'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -487,18 +498,22 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             )}
                           </div>
                           <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer' }} onClick={() => handleEdit(p)} title="Click to edit price">
-                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Listed:</span>
-                            <span style={{ fontSize: '0.9rem', color: '#00E5FF', fontWeight: 700, borderBottom: '1px dashed rgba(0,229,255,0.5)', paddingBottom: 1 }}>${(Number(p.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }} onClick={() => handleEdit(p)} title="Click to edit price" onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
+                              Listed Price <Edit2 size={10} color="#00E5FF" />
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>/ {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</span></span>
+                              {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
+                                <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)', color: '#00E5FF', border: '1px solid rgba(0,229,255,0.2)' }}>
+                                  {p.retail_price >= p.agent_cost ? '+' : ''}{Math.round((p.retail_price / p.agent_cost - 1) * 100)}%
+                                </span>
+                              )}
+                            </div>
                           </div>
                           {p.is_on_sale && p.sale_price && (
                             <span style={{ fontSize: '0.7rem', color: '#FC8181', fontWeight: 700, background: 'rgba(229,62,62,0.10)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(229,62,62,0.2)' }}>
                               On Sale ${(Number(p.sale_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}
-                            </span>
-                          )}
-                          {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
-                            <span onClick={() => handleEdit(p)} style={{ cursor: 'pointer', fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)', color: (p.retail_price / p.agent_cost - 1) >= 0.15 ? '#00E5FF' : '#00E5FF', border: '1px solid rgba(0,229,255,0.2)' }} title="Click to edit margin">
-                              +{Math.round((p.retail_price / p.agent_cost - 1) * 100)}%
                             </span>
                           )}
                         </div>
@@ -804,140 +819,154 @@ function PricingConfig({ agentId }: { agentId: string }) {
     background: 'var(--black)', transition: 'left 0.2s',
   });
 
+  const [showConfig, setShowConfig] = React.useState(false);
+
   return (
-    <div className="glass-panel" style={{ marginBottom: 'var(--space-4)' }}>
-      <div className="" style={{ padding: 'var(--space-8)' }}>
-      <h3 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Pricing & Discounts</h3>
-      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', marginBottom: 'var(--space-2)' }}>
-        Configure quantity-based pricing and bulk volume discounts for your storefront.
-      </p>
-      
-      <div style={{ background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)', padding: '12px 16px', borderRadius: 8, marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="16" x2="12" y2="12"></line>
-          <line x1="12" y1="8" x2="12.01" y2="8"></line>
-        </svg>
-        <div>
-          <h5 style={{ color: 'var(--teal)', fontSize: '0.9rem', margin: '0 0 4px 0' }}>Agent Direct Pricing Note</h5>
-          <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>
-            When you are logged in and ordering products for yourself, you will automatically receive your direct wholesale base cost at checkout, regardless of these storefront pricing configurations.
+    <div className="glass-panel" style={{ marginBottom: 'var(--space-4)', padding: 0, overflow: 'hidden' }}>
+      <div 
+        onClick={() => setShowConfig(!showConfig)} 
+        style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent', cursor: 'pointer' }}
+      >
+        <h3 className="metal-text" style={{ fontSize: '1.1rem', margin: 0, fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ color: '#00E5FF', fontSize: '0.8rem', transform: showConfig ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>▶</span>
+          Bulk Discounts & Dynamic Pricing
+        </h3>
+        <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>{showConfig ? 'Click to collapse' : 'Click to expand and configure'}</span>
+      </div>
+
+      {showConfig && (
+        <div style={{ padding: 'var(--space-5) var(--space-8) var(--space-8)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', marginBottom: 'var(--space-2)' }}>
+            Configure quantity-based pricing and bulk volume discounts for your storefront.
           </p>
-        </div>
-      </div>
-
-      {/* Dynamic Pricing Section */}
-      <div style={{ marginBottom: 'var(--space-6)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', cursor: 'pointer' }} onClick={() => setShowDynamicPricing(!showDynamicPricing)}>
-          <div>
-            <h4 style={{ color: '#fff', fontSize: '1.05rem', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-              Dynamic Pricing 
-              <span style={{ fontSize: '0.8rem', color: 'var(--grey-500)', background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 4 }}>
-                {showDynamicPricing ? '▼ Collapsed' : '▶ Expand'}
-              </span>
-            </h4>
-            <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Small-order surcharges for orders under 10 vials</p>
+          
+          <div style={{ background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)', padding: '12px 16px', borderRadius: 8, marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <div>
+              <h5 style={{ color: 'var(--teal)', fontSize: '0.9rem', margin: '0 0 4px 0' }}>Agent Direct Pricing Note</h5>
+              <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>
+                When you are logged in and ordering products for yourself, you will automatically receive your direct wholesale base cost at checkout, regardless of these storefront pricing configurations.
+              </p>
+            </div>
           </div>
-          <div onClick={(e) => e.stopPropagation()}>
-            <button type="button" onClick={() => setEnableDynamic(!enableDynamic)} style={toggleStyle(enableDynamic)}>
-              <span style={toggleDot(enableDynamic)} />
+
+          {/* Dynamic Pricing Section */}
+          <div style={{ marginBottom: 'var(--space-6)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', cursor: 'pointer' }} onClick={() => setShowDynamicPricing(!showDynamicPricing)}>
+              <div>
+                <h4 style={{ color: '#fff', fontSize: '1.05rem', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  Dynamic Pricing 
+                  <span style={{ fontSize: '0.8rem', color: 'var(--grey-500)', background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 4 }}>
+                    {showDynamicPricing ? '▼ Collapsed' : '▶ Expand'}
+                  </span>
+                </h4>
+                <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Small-order surcharges for orders under 10 vials</p>
+              </div>
+              <div onClick={(e) => e.stopPropagation()}>
+                <button type="button" onClick={() => setEnableDynamic(!enableDynamic)} style={toggleStyle(enableDynamic)}>
+                  <span style={toggleDot(enableDynamic)} />
+                </button>
+              </div>
+            </div>
+
+            {showDynamicPricing && enableDynamic && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-2)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>Per-Peptide Minimum Qty:</span>
+                    <input type="number" min={1} className="form-input" style={{ width: 70, padding: '4px 8px', height: 32 }}
+                      value={minOrderQty} onChange={e => setMinOrderQty(Number(e.target.value) || 1)} />
+                  </div>
+                  <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>Overall Order Minimum Qty:</span>
+                    <input type="number" min={1} className="form-input" style={{ width: 70, padding: '4px 8px', height: 32 }}
+                      value={minOverallQty} onChange={e => setMinOverallQty(Number(e.target.value) || 1)} />
+                  </div>
+                </div>
+                {dynamicTiers.map((tier, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--grey-400)', minWidth: 60 }}>{tier.min_qty}-{tier.max_qty === 999999 ? '∞' : tier.max_qty} vials</span>
+                    <span style={{ color: 'var(--grey-400)' }}>+</span>
+                    <input type="number" min={0} max={100} className="form-input" style={{ width: 60, padding: '4px 8px', height: 32 }}
+                      value={tier.surcharge_percent} onChange={e => {
+                        const next = [...dynamicTiers]; next[i] = { ...next[i], surcharge_percent: Number(e.target.value) || 0 }; setDynamicTiers(next);
+                      }} />
+                    <span style={{ color: 'var(--grey-400)' }}>% surcharge</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)', margin: 'var(--space-4) 0' }} />
+
+          {/* Bulk Discounts Section */}
+          <div style={{ marginBottom: 'var(--space-6)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 4 }}>
+                  <h4 style={{ color: '#fff', fontSize: '1.05rem', margin: 0 }}>Bulk Volume Discounts</h4>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowBulkExplain(!showBulkExplain)}
+                    style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: '0.7rem', padding: '2px 8px', borderRadius: 12, cursor: 'pointer', transition: 'background 0.2s' }}
+                  >
+                    {showBulkExplain ? 'Hide Explanation' : 'Explain Bulk Pricing'}
+                  </button>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Offer discounts for large quantity orders (100+ vials). Bulk volume discounts are permanently active for all users.</p>
+              </div>
+              <div style={{ padding: '4px 12px', background: 'rgba(0,196,188,0.1)', color: 'var(--teal)', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600, border: '1px solid rgba(0,196,188,0.2)' }}>
+                ALWAYS ON
+              </div>
+            </div>
+
+            {showBulkExplain && (
+              <div style={{ background: 'var(--surface-2)', padding: '12px 16px', borderRadius: 8, marginBottom: 'var(--space-4)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--silver)', margin: 0, lineHeight: 1.5 }}>
+                  <strong>How it works:</strong> Bulk pricing automatically applies a percentage discount to the entire order subtotal when the customer's cart reaches a specific total vial count. For example, if a customer buys 50 vials of BPC-157 and 50 vials of TB-500, they reach the 100-vial tier and receive the discount off their total. This encourages larger overall purchases across your entire catalog. This feature is always active to ensure high conversions.
+                </p>
+              </div>
+            )}
+
+            {enableBulk && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                {bulkTiers.map((tier, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: '0.85rem' }}>
+                    <input type="number" min={1} className="form-input" style={{ width: 80, padding: '4px 8px', height: 32 }}
+                      value={tier.min_qty} onChange={e => {
+                        const next = [...bulkTiers]; next[i] = { ...next[i], min_qty: Number(e.target.value) || 1 }; setBulkTiers(next);
+                      }} />
+                    <span style={{ color: 'var(--grey-400)' }}>+ vials =</span>
+                    <input type="number" min={0} max={100} className="form-input" style={{ width: 60, padding: '4px 8px', height: 32 }}
+                      value={tier.discount_percent} onChange={e => {
+                        const next = [...bulkTiers]; next[i] = { ...next[i], discount_percent: Number(e.target.value) || 0 }; setBulkTiers(next);
+                      }} />
+                    <span style={{ color: 'var(--grey-400)' }}>% off</span>
+                    <button type="button" onClick={() => setBulkTiers(prev => prev.filter((_, j) => j !== i))}
+                      style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '0.8rem' }}>Remove</button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setBulkTiers(prev => [...prev, { min_qty: 100, discount_percent: 5 }])}
+                  className="btn btn-secondary btn-sm" style={{ alignSelf: 'flex-start', fontSize: '0.78rem' }}>
+                  + Add Tier
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button type="button" onClick={handleSave} className="btn-neon-cyan" disabled={saving} style={{ padding: '8px 24px' }}>
+              {saving ? 'Saving...' : 'Save Pricing Config'}
             </button>
           </div>
         </div>
-
-        {showDynamicPricing && enableDynamic && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-2)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <span style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>Per-Peptide Minimum Qty:</span>
-                <input type="number" min={1} className="form-input" style={{ width: 70, padding: '4px 8px', height: 32 }}
-                  value={minOrderQty} onChange={e => setMinOrderQty(Number(e.target.value) || 1)} />
-              </div>
-              <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <span style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>Overall Order Minimum Qty:</span>
-                <input type="number" min={1} className="form-input" style={{ width: 70, padding: '4px 8px', height: 32 }}
-                  value={minOverallQty} onChange={e => setMinOverallQty(Number(e.target.value) || 1)} />
-              </div>
-            </div>
-            {dynamicTiers.map((tier, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: '0.85rem' }}>
-                <span style={{ color: 'var(--grey-400)', minWidth: 60 }}>{tier.min_qty}-{tier.max_qty === 999999 ? '∞' : tier.max_qty} vials</span>
-                <span style={{ color: 'var(--grey-400)' }}>+</span>
-                <input type="number" min={0} max={100} className="form-input" style={{ width: 60, padding: '4px 8px', height: 32 }}
-                  value={tier.surcharge_percent} onChange={e => {
-                    const next = [...dynamicTiers]; next[i] = { ...next[i], surcharge_percent: Number(e.target.value) || 0 }; setDynamicTiers(next);
-                  }} />
-                <span style={{ color: 'var(--grey-400)' }}>% surcharge</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)', margin: 'var(--space-4) 0' }} />
-
-      {/* Bulk Discounts Section */}
-      <div style={{ marginBottom: 'var(--space-6)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 4 }}>
-              <h4 style={{ color: '#fff', fontSize: '1.05rem', margin: 0 }}>Bulk Volume Discounts</h4>
-              <button 
-                type="button" 
-                onClick={() => setShowBulkExplain(!showBulkExplain)}
-                style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: '0.7rem', padding: '2px 8px', borderRadius: 12, cursor: 'pointer', transition: 'background 0.2s' }}
-              >
-                {showBulkExplain ? 'Hide Explanation' : 'Explain Bulk Pricing'}
-              </button>
-            </div>
-            <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Offer discounts for large quantity orders (100+ vials). Bulk volume discounts are permanently active for all users.</p>
-          </div>
-          <div style={{ padding: '4px 12px', background: 'rgba(0,196,188,0.1)', color: 'var(--teal)', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600, border: '1px solid rgba(0,196,188,0.2)' }}>
-            ALWAYS ON
-          </div>
-        </div>
-
-        {showBulkExplain && (
-          <div style={{ background: 'var(--surface-2)', padding: '12px 16px', borderRadius: 8, marginBottom: 'var(--space-4)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', margin: 0, lineHeight: 1.5 }}>
-              <strong>How it works:</strong> Bulk pricing automatically applies a percentage discount to the entire order subtotal when the customer's cart reaches a specific total vial count. For example, if a customer buys 50 vials of BPC-157 and 50 vials of TB-500, they reach the 100-vial tier and receive the discount off their total. This encourages larger overall purchases across your entire catalog. This feature is always active to ensure high conversions.
-            </p>
-          </div>
-        )}
-
-        {enableBulk && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            {bulkTiers.map((tier, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: '0.85rem' }}>
-                <input type="number" min={1} className="form-input" style={{ width: 80, padding: '4px 8px', height: 32 }}
-                  value={tier.min_qty} onChange={e => {
-                    const next = [...bulkTiers]; next[i] = { ...next[i], min_qty: Number(e.target.value) || 1 }; setBulkTiers(next);
-                  }} />
-                <span style={{ color: 'var(--grey-400)' }}>+ vials =</span>
-                <input type="number" min={0} max={100} className="form-input" style={{ width: 60, padding: '4px 8px', height: 32 }}
-                  value={tier.discount_percent} onChange={e => {
-                    const next = [...bulkTiers]; next[i] = { ...next[i], discount_percent: Number(e.target.value) || 0 }; setBulkTiers(next);
-                  }} />
-                <span style={{ color: 'var(--grey-400)' }}>% off</span>
-                <button type="button" onClick={() => setBulkTiers(prev => prev.filter((_, j) => j !== i))}
-                  style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '0.8rem' }}>Remove</button>
-              </div>
-            ))}
-            <button type="button" onClick={() => setBulkTiers(prev => [...prev, { min_qty: 100, discount_percent: 5 }])}
-              className="btn btn-secondary btn-sm" style={{ alignSelf: 'flex-start', fontSize: '0.78rem' }}>
-              + Add Tier
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <button type="button" onClick={handleSave} className="btn-neon-cyan" disabled={saving} style={{ padding: '8px 24px' }}>
-          {saving ? 'Saving...' : 'Save Pricing Config'}
-        </button>
-      </div>
-      </div>
+      )}
     </div>
   );
 }
