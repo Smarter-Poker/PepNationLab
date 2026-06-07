@@ -142,7 +142,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const agentPricingDiscount = isAgentSelfBuy && storefrontCart.length > 0
     ? storefrontCart.reduce((sum, item) => {
         const retail = item.retailPrice ?? item.costPrice;
-        return sum + Math.max(0, retail - item.costPrice) * item.quantity;
+        const discountMultiplier = item.bundleName ? 0.9 : 1;
+        return sum + Math.max(0, (retail * discountMultiplier) - (item.costPrice * discountMultiplier)) * item.quantity;
       }, 0)
     : 0;
 
@@ -1739,8 +1740,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 return groupedCart.map((group, groupIndex) => {
                   if (group.isBundle) {
                     const bundleSubtotal = group.items.reduce((acc, item) => {
-                      const retail = (item as any).retailPrice ?? item.costPrice;
-                      return acc + (item.costPrice * 0.9) * item.quantity;
+                      const bulkEligible = !isAgentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold;
+                      const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice;
+                      return acc + (activePrice * 0.9) * item.quantity;
                     }, 0);
 
                     return (
@@ -1758,12 +1760,17 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                               📦 {group.name}
                             </h4>
                             <div style={{ fontSize: '0.65rem', color: '#68D391', marginTop: 2, fontWeight: 700 }}>Stack Discount (10% Off) Applied</div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', marginTop: 4, fontStyle: 'italic', maxWidth: '90%' }}>
+                              Note: This peptide stack is not all inside one vial, it is individually packaged as the vials listed below.
+                            </div>
                           </div>
                           <div style={{ fontSize: '0.85rem', color: '#00E5FF', fontWeight: 800 }}>${bundleSubtotal.toFixed(2)}</div>
                         </div>
                         {group.items.map(item => {
                           const retail = (item as any).retailPrice ?? item.costPrice;
-                          const showDiscount = isAgentSelfBuy && retail > item.costPrice;
+                          const bulkEligible = !isAgentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold;
+                          const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice;
+                          
                           return (
                             <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', alignItems: 'flex-start', paddingLeft: 6 }}>
                               <div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}>
@@ -1772,10 +1779,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                               </div>
                               <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                                 <div style={{ color: 'var(--grey-500)', fontSize: '0.70rem', textDecoration: 'line-through' }}>
-                                  ${(item.costPrice * item.quantity).toFixed(2)}
+                                  ${(activePrice * item.quantity).toFixed(2)}
                                 </div>
                                 <strong style={{ color: '#00E5FF' }}>
-                                  ${((item.costPrice * 0.9) * item.quantity).toFixed(2)}
+                                  ${((activePrice * 0.9) * item.quantity).toFixed(2)}
                                 </strong>
                               </div>
                             </div>
@@ -1789,6 +1796,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   return group.items.map(item => {
                     const retail = (item as any).retailPrice ?? item.costPrice;
                     const showDiscount = isAgentSelfBuy && retail > item.costPrice;
+                    const bulkEligible = !isAgentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold;
+                    const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice;
+                    
                     return (
                       <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', alignItems: 'flex-start', marginBottom: 4 }}>
                         <div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}>
@@ -1802,7 +1812,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                             </div>
                           )}
                           <strong style={{ color: showDiscount ? 'var(--teal)' : 'var(--silver-light)' }}>
-                            ${(item.costPrice * item.quantity).toFixed(2)}
+                            ${(activePrice * item.quantity).toFixed(2)}
                           </strong>
                         </div>
                       </div>

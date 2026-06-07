@@ -504,6 +504,9 @@ export default async function OrderDetailPage(
                               📦 {group.name}
                             </h4>
                             <div style={{ fontSize: '0.65rem', color: '#68D391', marginTop: 2, fontWeight: 700 }}>Stack Discount (10% Off) Included</div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', marginTop: 4, fontStyle: 'italic', maxWidth: '90%' }}>
+                              Note: This peptide stack is not all inside one vial, it is individually packaged as the vials listed below.
+                            </div>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             <div style={{ fontSize: '0.95rem', color: '#00E5FF', fontWeight: 800 }}>${bundleSubtotal.toFixed(2)}</div>

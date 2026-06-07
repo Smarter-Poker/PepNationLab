@@ -20,7 +20,20 @@ export default function PWAEnforcer() {
       return;
     }
 
-    // 2. Not standalone, let's check user role
+    // 2. Check if user already dismissed this prompt
+    if (localStorage.getItem('pwa_enforcer_dismissed') === 'true') {
+      setLoading(false);
+      return;
+    }
+
+    // 3. Skip if on desktop (not a mobile device)
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!isMobile) {
+      setLoading(false);
+      return;
+    }
+
+    // 4. Not standalone, mobile, and not dismissed, let's check user role
     const supabase = createClient();
     
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -93,6 +106,27 @@ export default function PWAEnforcer() {
             <li>Tap <strong>Add to Home screen</strong> or <strong>Install app</strong>.</li>
           </ol>
         </div>
+
+        <button 
+          onClick={() => {
+            localStorage.setItem('pwa_enforcer_dismissed', 'true');
+            setNeedsInstall(false);
+          }}
+          style={{
+            marginTop: 'var(--space-5)',
+            background: 'none',
+            border: 'none',
+            color: 'var(--grey-500)',
+            textDecoration: 'underline',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            transition: 'color 0.2s',
+          }}
+          onMouseOver={(e) => e.currentTarget.style.color = 'var(--silver)'}
+          onMouseOut={(e) => e.currentTarget.style.color = 'var(--grey-500)'}
+        >
+          Dismiss / I've Already Installed It
+        </button>
       </div>
     </div>
   );
