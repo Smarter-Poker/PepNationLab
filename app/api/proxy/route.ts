@@ -211,6 +211,63 @@ export async function GET(request: NextRequest) {
   
   // Framework Error Override: Handle non-200 safely
   if (!finalResponse.ok) {
+    const isPubMed = url.includes('pubmed.ncbi.nlm.nih.gov');
+    if (isPubMed && finalResponse.status === 403) {
+      const pmidMatch = url.match(/pubmed\.ncbi\.nlm\.nih\.gov\/(\d+)/);
+      if (pmidMatch && pmidMatch[1]) {
+        try {
+          const pubRes = await fetch(`https://www.ncbi.nlm.nih.gov/research/pubtator-api/publications/export/biocjson?pmids=${pmidMatch[1]}`);
+          if (pubRes.ok) {
+            const text = await pubRes.text();
+            const data = JSON.parse(text.trim().split('\\n')[0]);
+            if (data?.PubTator3?.[0]) {
+              const pubData = data.PubTator3[0];
+              const passages = pubData.passages || [];
+              const titlePassage = passages.find((p: any) => p.infons?.type === 'title') || passages[0];
+              const abstractPassage = passages.find((p: any) => p.infons?.type === 'abstract') || passages[1];
+              
+              const title = titlePassage?.text || 'PubMed Article';
+              const abstract = abstractPassage?.text || '';
+              const authors = titlePassage?.infons?.authors || '';
+              const journal = titlePassage?.infons?.journal || '';
+
+              const fallbackHtml = `
+                <!DOCTYPE html><html><head><title>${title}</title>
+                <style>
+                  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #333; line-height: 1.6; padding: 20px; margin: 0; }
+                  .container { max-width: 800px; margin: 0 auto; }
+                  h1 { font-size: 24px; color: #111; margin-bottom: 10px; }
+                  .meta { font-size: 14px; color: #666; margin-bottom: 20px; font-style: italic; }
+                  .abstract { font-size: 16px; color: #222; white-space: pre-wrap; }
+                  .badge { display: inline-block; background: #00C4BC; color: #000; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 20px; }
+                </style>
+                </head>
+                <body>
+                  <div class="container">
+                    <div class="badge">PubMed Reader Proxy</div>
+                    <h1>${title}</h1>
+                    <div class="meta">${authors}<br>${journal}</div>
+                    <div class="abstract">${abstract}</div>
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
+                      <a href="${url}" target="_blank" style="color: #00C4BC; text-decoration: none; font-weight: bold;">View Original on PubMed</a>
+                    </div>
+                  </div>
+                </body></html>
+              `;
+              const resHeaders = new Headers();
+              resHeaders.set('content-type', 'text/html; charset=utf-8');
+              resHeaders.set('Cache-Control', \`s-maxage=\${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=\${CONFIG.CACHE_SWR}\`);
+              resHeaders.set('X-Frame-Options', 'SAMEORIGIN');
+              resHeaders.set('Content-Security-Policy', "frame-ancestors 'self'");
+              return new NextResponse(fallbackHtml, { status: 200, headers: resHeaders });
+            }
+          }
+        } catch (e) {
+          console.error("PubMed fallback failed:", e);
+        }
+      }
+    }
+
     if (contentType.includes('text/html')) {
       const fallbackHtml = `
         <!DOCTYPE html><html><head><title>Content Unavailable</title></head>
@@ -225,14 +282,14 @@ export async function GET(request: NextRequest) {
       `;
       const resHeaders = new Headers();
       resHeaders.set('content-type', 'text/html; charset=utf-8');
-      resHeaders.set('Cache-Control', `s-maxage=${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=${CONFIG.CACHE_SWR}`);
+      resHeaders.set('Cache-Control', \`s-maxage=\${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=\${CONFIG.CACHE_SWR}\`);
       resHeaders.set('X-Frame-Options', 'SAMEORIGIN');
       resHeaders.set('Content-Security-Policy', "frame-ancestors 'self'");
       
       // We return 200 OK so Next.js doesn't strip our headers!
       return new NextResponse(fallbackHtml, { status: 200, headers: resHeaders });
     } else {
-      return new NextResponse(`Publisher error ${finalResponse.status}`, { status: 500 });
+      return new NextResponse(\`Publisher error \${finalResponse.status}\`, { status: 500 });
     }
   }
 
