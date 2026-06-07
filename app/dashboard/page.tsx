@@ -57,26 +57,28 @@ export default async function DashboardPage({
       {/* 60px spacer for fixed navbar */}
       <div style={{ height: 60 }} />
 
-      <div className="container" style={{ paddingTop: 'var(--space-6)', paddingBottom: 'var(--space-8)' }}>
+      <div>
         {/* Welcome banner */}
         {isWelcome && (
-          <div style={{
-            background: 'rgba(0,196,188,0.06)',
-            border: '1px solid rgba(0,196,188,0.2)',
-            borderRadius: 'var(--radius-md)',
-            padding: 'var(--space-4) var(--space-6)',
-            marginBottom: 'var(--space-6)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--space-3)',
-          }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-            <div>
-              <strong style={{ color: 'var(--teal)' }}>Welcome To Pep Nation Lab!</strong>
-              <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Your Researcher Account Is Active. Browse Our Catalog And Place Your First Order.</p>
+          <div className="container" style={{ paddingTop: 'var(--space-6)' }}>
+            <div style={{
+              background: 'rgba(0,196,188,0.06)',
+              border: '1px solid rgba(0,196,188,0.2)',
+              borderRadius: 'var(--radius-md)',
+              padding: 'var(--space-4) var(--space-6)',
+              marginBottom: 'var(--space-6)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-3)',
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              <div>
+                <strong style={{ color: 'var(--teal)' }}>Welcome To Pep Nation Lab!</strong>
+                <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Your Researcher Account Is Active. Browse Our Catalog And Place Your First Order.</p>
+              </div>
             </div>
           </div>
         )}

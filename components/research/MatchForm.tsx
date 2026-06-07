@@ -277,6 +277,19 @@ function MatchFormInner() {
           border-color: var(--teal);
           background: rgba(0,196,188,0.1);
         }
+        .image-card {
+          border-radius: 12px;
+          cursor: pointer;
+          transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+        }
+        .image-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+          border-color: var(--teal) !important;
+        }
+        .image-card:hover .card-overlay {
+          background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,196,188,0.3) 100%) !important;
+        }
       `}</style>
 
       <div className="print-only">
@@ -297,24 +310,71 @@ function MatchFormInner() {
           <motion.div key="step1" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>What is your primary research goal?</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Select the main focus of your protocol to calibrate the engine.</p>
+            
+            <div style={{ marginBottom: '32px', padding: '16px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <p style={{ color: 'var(--silver)', fontSize: '0.9rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={16} color="var(--teal)" /> Or use AI to configure parameters:
+              </p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input type="text" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="Describe your scenario..." style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #1D2D3E', background: '#0F1923', color: 'white', fontSize: '1rem' }} onKeyDown={e => e.key === 'Enter' && onAiSubmit()} />
+                <button onClick={onAiSubmit} disabled={aiLoading} className="btn-secondary" style={{ padding: '0 1.5rem', fontWeight: 600 }}>{aiLoading ? 'Thinking...' : 'AI Configure'}</button>
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {goalOptions.map(g => (
-                <div key={g.value} onClick={() => setGoal(g.value)} className={`step-card ${goal === g.value ? 'selected' : ''}`}>
-                  <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 4px 0' }}>{g.label}</h3>
-                  <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0 }}>{g.blurb}</p>
+                <div 
+                  key={g.value} 
+                  onClick={() => setGoal(g.value)} 
+                  className={`image-card ${goal === g.value ? 'selected' : ''}`}
+                  style={{
+                    position: 'relative',
+                    overflow: 'hidden',
+                    height: '160px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'flex-end',
+                    backgroundImage: `url('/images/areas/${g.value === 'any' ? 'blank_card' : g.value}.png')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    border: goal === g.value ? '2px solid var(--teal)' : '1px solid rgba(168,180,192,0.2)'
+                  }}
+                >
+                  <div 
+                    className="card-overlay"
+                    style={{
+                      position: 'absolute', inset: 0,
+                      background: goal === g.value ? 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,196,188,0.2) 100%)' : 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.2) 100%)',
+                      zIndex: 1,
+                      transition: 'all 0.3s'
+                    }} 
+                  />
+                  <div style={{ position: 'relative', zIndex: 2, padding: '16px' }}>
+                    <h3 style={{ color: 'white', fontSize: '1.2rem', margin: '0 0 6px 0', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>{g.label}</h3>
+                    <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.85rem', margin: 0, textShadow: '0 1px 2px rgba(0,0,0,0.8)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{g.blurb}</p>
+                  </div>
+                  {goal === g.value && (
+                    <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 3, background: 'var(--teal)', borderRadius: '50%', padding: '4px' }}>
+                      <ShieldCheck size={16} color="#0F1923" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
             
-            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ width: '40%' }}>
-                <p style={{ color: 'var(--silver)', fontSize: '0.85rem', marginBottom: '8px' }}>Or use AI to configure parameters:</p>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input type="text" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="Describe your scenario..." style={{ flex: 1, padding: '0.6rem', borderRadius: '8px', border: '1px solid #1D2D3E', background: '#0F1923', color: 'white' }} onKeyDown={e => e.key === 'Enter' && onAiSubmit()} />
-                  <button onClick={onAiSubmit} disabled={aiLoading} className="btn-secondary" style={{ padding: '0 1rem' }}>{aiLoading ? 'Thinking...' : 'AI Configure'}</button>
-                </div>
-              </div>
-              <button onClick={() => setStep(2)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Next Step <ArrowRight size={18} /></button>
+            <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'center' }}>
+              <button 
+                onClick={() => setStep(2)} 
+                className="btn-primary" 
+                style={{ 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', 
+                  width: '100%', maxWidth: '400px', padding: '16px', fontSize: '1.2rem', 
+                  fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px',
+                  boxShadow: '0 0 20px rgba(0,196,188,0.4)'
+                }}
+              >
+                Next Step <ArrowRight size={24} />
+              </button>
             </div>
           </motion.div>
         )}
