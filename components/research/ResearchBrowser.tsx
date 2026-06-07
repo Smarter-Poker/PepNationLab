@@ -173,7 +173,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
     if (sortParam === 'az') results.sort((a, b) => a.display_name.localeCompare(b.display_name));
     if (sortParam === 'za') results.sort((a, b) => b.display_name.localeCompare(a.display_name));
     if (sortParam === 'tier') {
-      const tierOrder: Record<string, number> = { tier1: 1, tier2: 2, tier3: 3, tier4: 4, experimental: 5 };
+      const tierOrder: Record<string, number> = { approved_drug: 1, investigational: 2, preclinical: 3, research_chemical: 4, cosmetic: 5, supply: 6 };
       results.sort((a, b) => (tierOrder[a.evidence_tier] || 99) - (tierOrder[b.evidence_tier] || 99));
     }
 

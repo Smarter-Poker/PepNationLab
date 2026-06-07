@@ -1292,21 +1292,21 @@ export default function ProductModalEnhancements({
                     <div style={{ width: 256, height: 256, borderRadius: 10, background: `${primaryColor}20` }} aria-hidden="true" />
                   )}
                   <span style={{
-                    fontSize: '1.44rem', fontWeight: 800, lineHeight: 1.15,
+                    fontSize: '2.5rem', fontWeight: 800, lineHeight: 1.15,
                     textAlign: 'center', maxWidth: 260,
                     overflow: 'hidden', display: '-webkit-box',
-                    WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                    marginBottom: '8px',
+                    WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
+                    marginBottom: '16px',
                   }}>
                     {group.name}
                   </span>
                   {/* Research area pills */}
                   {areaLabels.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: '16px' }}>
                       {areaLabels.map((label) => (
                         <span key={label} style={{
-                          fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.02em',
-                          padding: '4px 8px', borderRadius: 99,
+                          fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.02em',
+                          padding: '6px 12px', borderRadius: 99,
                           background: 'rgba(255,255,255,0.07)',
                           border: '1px solid rgba(255,255,255,0.12)',
                           color: 'var(--grey-300)',
@@ -1319,8 +1319,8 @@ export default function ProductModalEnhancements({
                     </div>
                   )}
                   {pricePerVial != null && (
-                    <span style={{ fontSize: '1.6rem', color: '#B0C4DE', fontWeight: 800, marginTop: '4px' }}>
-                      ${formatMoney(pricePerVial)}/Vial
+                    <span style={{ fontSize: '3.2rem', color: '#B0C4DE', fontWeight: 900, marginTop: '8px' }}>
+                      ${formatMoney(pricePerVial)}<span style={{ fontSize: '1.4rem' }}>/Vial</span>
                     </span>
                   )}
                 </button>

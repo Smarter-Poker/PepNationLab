@@ -2703,6 +2703,9 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
                             {(() => {
                               const product = products.find(p => p.compoundSlug === c.slug);
                               if (!product) return null;
+                              const mgMatch = product.productName.match(/(\d+(?:\.\d+)?)\s*mg/i);
+                              const mg = mgMatch ? parseFloat(mgMatch[1]) : 0;
+                              const costPerMg = mg > 0 ? product.retailPrice / mg : null;
                               return (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: '12px 16px', marginBottom: 16 }}>
                                   {product.imageUrl && (
@@ -2711,9 +2714,14 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
                                     </div>
                                   )}
                                   <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', marginBottom: 4 }}>{product.productName}</div>
+                                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', marginBottom: 4 }}>
+                                      {product.productName}
+                                      {product.inventoryCount <= 0 && <span style={{ marginLeft: 6, background: 'rgba(229,62,62,0.2)', color: '#FC8181', fontSize: '0.65rem', padding: '2px 6px', borderRadius: 4 }}>Sold Out</span>}
+                                      {product.inventoryCount > 0 && product.inventoryCount < 10 && <span style={{ marginLeft: 6, background: 'rgba(246,173,85,0.2)', color: '#FBD38D', fontSize: '0.65rem', padding: '2px 6px', borderRadius: 4 }}>Only {product.inventoryCount} left</span>}
+                                    </div>
                                     <div style={{ fontSize: '0.9rem', color: '#68D391', fontWeight: 700 }}>
                                       ${product.retailPrice.toFixed(2)} <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>/ vial</span>
+                                      {costPerMg && <span style={{ marginLeft: 8, fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>(${(costPerMg).toFixed(2)}/mg)</span>}
                                     </div>
                                   </div>
                                   <div style={{ flexShrink: 0 }}>
@@ -2911,18 +2919,30 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
                               {(() => {
                                 const product = products.find(p => p.compoundSlug === c.slug);
                                 if (!product) return null;
+                                const mgMatch = product.productName.match(/(\d+(?:\.\d+)?)\s*mg/i);
+                                const mg = mgMatch ? parseFloat(mgMatch[1]) : 0;
+                                const costPerMg = mg > 0 ? product.retailPrice / mg : null;
                                 return (
-                                  <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                  <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                      {product.inventoryCount <= 0 && <span style={{ background: 'rgba(229,62,62,0.2)', color: '#FC8181', fontSize: '0.6rem', padding: '2px 4px', borderRadius: 4, fontWeight: 700 }}>Sold Out</span>}
+                                      {product.inventoryCount > 0 && product.inventoryCount < 10 && <span style={{ background: 'rgba(246,173,85,0.2)', color: '#FBD38D', fontSize: '0.6rem', padding: '2px 4px', borderRadius: 4, fontWeight: 700 }}>Only {product.inventoryCount} left</span>}
+                                    </div>
                                     {product.imageUrl && (
                                       <div style={{ width: '100%', aspectRatio: '1', maxWidth: 100, borderRadius: 8, background: '#fff', overflow: 'hidden', padding: 6, alignSelf: 'flex-start' }}>
                                         <img src={product.imageUrl} alt={product.productName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                       </div>
                                     )}
                                     <div>
-                                      <div style={{ fontSize: '0.85rem', color: '#68D391', fontWeight: 700, marginBottom: 6 }}>
+                                      <div style={{ fontSize: '0.85rem', color: '#68D391', fontWeight: 700, marginBottom: 2 }}>
                                         ${product.retailPrice.toFixed(2)} <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>/ vial</span>
                                       </div>
-                                      <ResearchCartButton productName={product.productName} compoundName={c.display_name} size="sm" />
+                                      {costPerMg && <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontWeight: 600, marginBottom: 6 }}>
+                                        (${(costPerMg).toFixed(2)}/mg)
+                                      </div>}
+                                      <div style={{ marginTop: costPerMg ? 0 : 6 }}>
+                                        <ResearchCartButton productName={product.productName} compoundName={c.display_name} size="sm" />
+                                      </div>
                                     </div>
                                   </div>
                                 );

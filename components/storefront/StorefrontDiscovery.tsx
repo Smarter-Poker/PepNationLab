@@ -1509,7 +1509,7 @@ export default function DiscoveryHero({
               background: 'transparent',
               border: 'none', outline: 'none', color: '#FFFFFF',
               fontSize: 'max(16px, 1.86vw)',
-              padding: '0 10px 12px 52px',
+              padding: '0 10px 12px 62px',
               textAlign: 'left',
               fontWeight: 500,
               letterSpacing: '0.02em',
@@ -1677,7 +1677,7 @@ export default function DiscoveryHero({
         @media (min-width: 769px) {
           #discovery-search-input {
             font-size: calc(max(16px, 1.86vw) * 1.5) !important;
-            padding: 14px 10px 0 86px !important;
+            padding: 14px 10px 0 96px !important;
           }
         }
       ` }} />
