@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 
 const CATEGORIES = [
@@ -219,8 +220,7 @@ export default function NewProductPage() {
               />
               {form.image_url && (
                 <div style={{ marginTop: 'var(--space-3)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: 'var(--border-subtle)', width: 120, height: 120, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={form.image_url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  <Image src={form.image_url} alt="Preview" width={120} height={120} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
               )}

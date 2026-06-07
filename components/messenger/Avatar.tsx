@@ -1,4 +1,4 @@
-'use client';
+import Image from 'next/image';
 
 interface AvatarProps {
   name: string | null;
@@ -16,11 +16,12 @@ export default function Avatar({ name, size = 40, avatarUrl }: AvatarProps) {
 
   if (avatarUrl) {
     return (
-      <img
+      <Image
         src={avatarUrl}
         alt={name ?? 'Avatar'}
         width={size}
         height={size}
+        unoptimized
         style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover' }}
       />
     );

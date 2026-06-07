@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useState, useMemo, useRef } from 'react';
+import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import { X, Scale, ChevronDown, ChevronRight, GripHorizontal, ChevronLeft, ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info, Zap, BookOpen, Clock, Thermometer, Check, Shield } from 'lucide-react';
 import { evidenceTier, type Compound, RISK_META, researchAreaLabel, wadaLabel } from '@/lib/compounds';
@@ -316,10 +317,7 @@ function getChoiceBadge(idx: number): React.ReactNode {
   const alt = labels[idx] || `${idx + 1}th Choice`;
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img 
-      src={src} 
-      alt={alt} 
-      style={{ 
+    <Image src={src} alt={alt} width={200} height={200} unoptimized style={{ 
         height: '42px', 
         width: 'auto', 
         maxWidth: 'none',
@@ -327,8 +325,7 @@ function getChoiceBadge(idx: number): React.ReactNode {
         display: 'inline-block',
         verticalAlign: 'middle',
         flexShrink: 0
-      }} 
-    />
+      }} />
   );
 }
 
@@ -793,7 +790,7 @@ export default function StorefrontCompareDrawer({
         render: (p: PinnedItem) => {
           const tier = p.evidenceTierKey ? evidenceTier(p.evidenceTierKey) : null;
           if (tier?.badgeUrl) {
-            return <img src={tier.badgeUrl} alt={tier.label} style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />;
+            return <Image src={tier.badgeUrl} alt={tier.label} width={200} height={200} unoptimized style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />;
           }
           return tier ? (
             <span style={{ color: tier.color, fontWeight: 700, border: `1px solid ${tier.color}`, padding: '2px 8px', borderRadius: 999, fontSize: '0.7rem' }}>{tier.label}</span>
@@ -812,7 +809,7 @@ export default function StorefrontCompareDrawer({
           const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
           const r = c?.risk_level ? RISK_META[c.risk_level] : null;
           if (r?.badgeUrl) {
-            return <img src={r.badgeUrl} alt={r.label} style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />;
+            return <Image src={r.badgeUrl} alt={r.label} width={200} height={200} unoptimized style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />;
           }
           return r ? <span style={{ color: r.color, fontWeight: 700 }}>{r.label}</span> : NL;
         }
@@ -1221,7 +1218,7 @@ export default function StorefrontCompareDrawer({
                   backgroundClip: 'padding-box, border-box',
                   borderRadius: 8, padding: '10px 14px'
                 }}>
-                  <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: '36px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
+                  <Image src="/images/badges/badge_top_pick.png" alt="Top Pick" width={200} height={200} unoptimized style={{ height: '36px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
                   <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#FFF' }}>Top Pick: {sortedPinnedItems[0].productName}</span>
                   <span style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}>· Leading with a composite score of {pinnedScores[0].total}/100</span>
                 </div>
@@ -1256,7 +1253,7 @@ export default function StorefrontCompareDrawer({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4, paddingTop: 6, borderTop: '2px solid rgba(155, 163, 174, 0.4)' }}>
                           {p.imageUrl && (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={p.imageUrl} alt={p.productName} width={108} height={108} style={{ borderRadius: 6, objectFit: 'cover' }} />
+                            <Image src={p.imageUrl} alt={p.productName} width={108} height={108} unoptimized style={{ borderRadius: 6, objectFit: 'cover' }} />
                           )}
                           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                             <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--white)', wordBreak: 'break-word' }}>{p.productName}</div>
@@ -1277,11 +1274,7 @@ export default function StorefrontCompareDrawer({
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, width: '100%' }}>
                 <div style={{ position: 'relative', width: '100%', maxWidth: '993px', aspectRatio: '993 / 148', userSelect: 'none' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img 
-                    src="/images/compare-pill-bar.png" 
-                    alt="Compare Section Tabs" 
-                    style={{ width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }} 
-                  />
+                  <Image src="/images/compare-pill-bar.png" alt="Compare Section Tabs" width={200} height={200} unoptimized style={{ width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }} />
                   {([
                     ['matrix', 'Matrix', '2.5%'],
                     ['proscons', 'Pros & Cons', '18.5%'],
@@ -1344,7 +1337,7 @@ export default function StorefrontCompareDrawer({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
                           {p.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={p.imageUrl} alt={p.productName} width={84} height={84} style={{ borderRadius: 6, objectFit: 'cover' }} />
+                            <Image src={p.imageUrl} alt={p.productName} width={84} height={84} unoptimized style={{ borderRadius: 6, objectFit: 'cover' }} />
                           ) : (
                             <div style={{ width: 84, height: 84, borderRadius: 6, background: `${primaryColor}20` }} />
                           )}
@@ -1423,15 +1416,15 @@ export default function StorefrontCompareDrawer({
                         {c?.mechanism && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Mechanism of Action</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.mechanism}</div></div>}
                         {c?.pk_summary && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Pharmacokinetics</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.pk_summary}</div></div>}
                         {c?.risk_reasons?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Risk Considerations</div><div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>{c.risk_reasons.map((r, ri) => <div key={ri} style={{ display: 'flex', gap: 5, alignItems: 'flex-start' }}><AlertTriangle size={10} color={RISK_META[c.risk_level]?.color ?? '#F6AD55'} style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.72rem', color: '#FFF', lineHeight: 1.4 }}>{r}</span></div>)}</div></div> : null}
-                        {c?.is_pro_angiogenic && <img src="/images/badges/badge_angio_alert.png" alt="Angio Alert" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', alignSelf: 'flex-start', flexShrink: 0 }} />}
-                        {c?.is_glp1 && <img src="/images/badges/badge_glp1.png" alt="GLP-1 Incretin" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', alignSelf: 'flex-start', flexShrink: 0 }} />}
+                        {c?.is_pro_angiogenic && <Image src="/images/badges/badge_angio_alert.png" alt="Angio Alert" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', alignSelf: 'flex-start', flexShrink: 0 }} />}
+                        {c?.is_glp1 && <Image src="/images/badges/badge_glp1.png" alt="GLP-1 Incretin" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', alignSelf: 'flex-start', flexShrink: 0 }} />}
                         {c?.sources?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div><div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{c.sources.slice(0, 3).map((src, si) => <a key={si} href={src.startsWith('http') ? src : undefined} onClick={src.startsWith('http') ? (e) => { e.preventDefault(); if (isSocialPlatformUrl(src)) { window.open(src, '_blank'); } else { setModalUrl(src); } } : undefined} onMouseEnter={src.startsWith('http') ? () => prewarmProxy(src) : undefined} style={{ cursor: src.startsWith('http') ? 'pointer' : 'default', fontSize: '0.68rem', color: '#FFF', opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>{src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si+1}</span> : src}</a>)}</div></div> : null}
                       </div>
                       <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: '2px solid rgba(155, 163, 174, 0.4)' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
                           {p.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={p.imageUrl} alt={p.productName} width={84} height={84} style={{ borderRadius: 6, objectFit: 'cover' }} />
+                            <Image src={p.imageUrl} alt={p.productName} width={84} height={84} unoptimized style={{ borderRadius: 6, objectFit: 'cover' }} />
                           ) : (
                             <div style={{ width: 84, height: 84, borderRadius: 6, background: `${primaryColor}20` }} />
                           )}
@@ -1515,7 +1508,7 @@ export default function StorefrontCompareDrawer({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
                           {p.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={p.imageUrl} alt={p.productName} width={84} height={84} style={{ borderRadius: 6, objectFit: 'cover' }} />
+                            <Image src={p.imageUrl} alt={p.productName} width={84} height={84} unoptimized style={{ borderRadius: 6, objectFit: 'cover' }} />
                           ) : (
                             <div style={{ width: 84, height: 84, borderRadius: 6, background: `${primaryColor}20` }} />
                           )}
@@ -1548,10 +1541,10 @@ export default function StorefrontCompareDrawer({
                   const mostStudied = [...ranked].sort((a, b) => b.s.breakdown.science - a.s.breakdown.science)[0];
                   const mostPractical = [...ranked].sort((a, b) => b.s.breakdown.handling - a.s.breakdown.handling)[0];
                   const verdicts = [
-                    { label: 'Overall Best Pick', icon: <img src="/images/badges/verdict_overall.png" alt="Overall Best" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />, item: leader, color: primaryColor, reason: `Highest composite research score (${leader.s.total}/100)` },
-                    { label: 'Safest Profile', icon: <img src="/images/badges/verdict_safest.png" alt="Safest Profile" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />, item: safest, color: '#68D391', reason: `Best safety-to-evidence ratio in this comparison` },
-                    { label: 'Most Research-Backed', icon: <img src="/images/badges/verdict_studied.png" alt="Most Studied" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />, item: mostStudied, color: '#F6AD55', reason: `Deepest scientific literature footprint` },
-                    { label: 'Most Practical', icon: <img src="/images/badges/verdict_practical.png" alt="Most Practical" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />, item: mostPractical, color: '#9F7AEA', reason: `Best handling & protocol practicality score` },
+                    { label: 'Overall Best Pick', icon: <Image src="/images/badges/verdict_overall.png" alt="Overall Best" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />, item: leader, color: primaryColor, reason: `Highest composite research score (${leader.s.total}/100)` },
+                    { label: 'Safest Profile', icon: <Image src="/images/badges/verdict_safest.png" alt="Safest Profile" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />, item: safest, color: '#68D391', reason: `Best safety-to-evidence ratio in this comparison` },
+                    { label: 'Most Research-Backed', icon: <Image src="/images/badges/verdict_studied.png" alt="Most Studied" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />, item: mostStudied, color: '#F6AD55', reason: `Deepest scientific literature footprint` },
+                    { label: 'Most Practical', icon: <Image src="/images/badges/verdict_practical.png" alt="Most Practical" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />, item: mostPractical, color: '#9F7AEA', reason: `Best handling & protocol practicality score` },
                   ];
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
@@ -1575,7 +1568,7 @@ export default function StorefrontCompareDrawer({
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
                                 {v.item.p.imageUrl ? (
                                   // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={v.item.p.imageUrl} alt={v.item.p.productName} width={84} height={84} style={{ borderRadius: 6, objectFit: 'cover' }} />
+                                  <Image src={v.item.p.imageUrl} alt={v.item.p.productName} width={84} height={84} unoptimized style={{ borderRadius: 6, objectFit: 'cover' }} />
                                 ) : (
                                   <div style={{ width: 84, height: 84, borderRadius: 6, background: `${v.color}20` }} />
                                 )}
@@ -1654,7 +1647,7 @@ export default function StorefrontCompareDrawer({
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
                                 {p.imageUrl && (
                                   // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={p.imageUrl} alt={p.productName} width={120} height={120} style={{ borderRadius: 8, objectFit: 'cover' }} />
+                                  <Image src={p.imageUrl} alt={p.productName} width={120} height={120} unoptimized style={{ borderRadius: 8, objectFit: 'cover' }} />
                                 )}
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                                   <div style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--white)', wordBreak: 'break-word' }}>{p.productName}</div>
@@ -1778,7 +1771,7 @@ export default function StorefrontCompareDrawer({
                                   </div>
                                   {isWinner && (
                                     <div style={{ marginTop: 6, display: 'flex', alignItems: 'center' }}>
-                                      <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: '26px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
+                                      <Image src="/images/badges/badge_top_pick.png" alt="Top Pick" width={200} height={200} unoptimized style={{ height: '26px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
                                     </div>
                                   )}
                                 </td>
@@ -1798,7 +1791,7 @@ export default function StorefrontCompareDrawer({
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                               {p.imageUrl && (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img src={p.imageUrl} alt={p.productName} width={96} height={96} style={{ borderRadius: 6, objectFit: 'cover' }} />
+                                <Image src={p.imageUrl} alt={p.productName} width={96} height={96} unoptimized style={{ borderRadius: 6, objectFit: 'cover' }} />
                               )}
                               <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                                 <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--white)', wordBreak: 'break-word' }}>{p.productName}</div>

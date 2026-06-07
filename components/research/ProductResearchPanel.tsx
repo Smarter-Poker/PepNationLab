@@ -15,6 +15,7 @@
  * stripped of em/en dashes.
  */
 import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import {
@@ -223,7 +224,7 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
             style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--white)', fontWeight: 700, fontSize: '0.9rem' }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/back-arrow.png" width={38} height={38} alt="Back" style={{ objectFit: 'contain' }} />
+            <Image src="/back-arrow.png" alt="Back" width={38} height={38} unoptimized style={{ objectFit: 'contain' }} />
             Back
           </button>
           <span style={{ marginLeft: 'auto', fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--silver)' }}>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { 
@@ -490,7 +491,7 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
                     gap: 6,
                   }}
                 >
-                  <img src={products.find(p => p.compoundSlug === c.slug)?.imageUrl || '/images/placeholder_vial.png'} alt={c.slug} style={{ width: 14, height: 14, objectFit: 'contain', opacity: isOn ? 1 : 0.5 }} />
+                  <Image src={products.find(p => p.compoundSlug === c.slug)?.imageUrl || '/images/placeholder_vial.png'} alt={c.slug} width={14} height={14} unoptimized style={{ width: 14, height: 14, objectFit: 'contain', opacity: isOn ? 1 : 0.5 }} />
                   {c.display_name}
                 </button>
               );
@@ -623,7 +624,7 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
                     return (
                       <span key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: '#FFFFFF' }}>
                         <span style={{ width: 8, height: 8, borderRadius: '50%', background: colors[idx % colors.length] }} />
-                        <img src={products.find(p => p.compoundSlug === c.slug)?.imageUrl || '/images/placeholder_vial.png'} alt={c.slug} style={{ width: 12, height: 12, objectFit: 'contain' }} />
+                        <Image src={products.find(p => p.compoundSlug === c.slug)?.imageUrl || '/images/placeholder_vial.png'} alt={c.slug} width={12} height={12} unoptimized style={{ width: 12, height: 12, objectFit: 'contain' }} />
                         <span className="calc-no-capitalize">{c.display_name} (T<sub>1/2</sub>: {parseHalfLife(c)}h)</span>
                       </span>
                     );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface WalletSnapshot {
   role: string;
@@ -57,7 +58,7 @@ export default function NavbarWalletBadge() {
         padding: 4
       }}
     >
-      <img src="/nav-icons/wallet-icon.png" alt="Wallet" width={84} height={84} style={{ display: 'block' }} />
+      <Image src="/nav-icons/wallet-icon.png" alt="Wallet" width={84} height={84} unoptimized style={{ display: 'block' }} />
     </Link>
   );
 }

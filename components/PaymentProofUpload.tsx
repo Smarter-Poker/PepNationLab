@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import IframeLink from '@/components/ui/IframeLink';
+import Image from 'next/image';
 
 interface PaymentProof {
   id: string;
@@ -127,10 +128,12 @@ export default function PaymentProofUpload({ orderId, uploadDisabled = false }: 
                     }}
                   >
                     {isImage && p.signed_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={p.signed_url}
                         alt="Payment Proof Thumbnail"
+                        width={64}
+                        height={64}
+                        unoptimized
                         style={{
                           width: 64,
                           height: 64,

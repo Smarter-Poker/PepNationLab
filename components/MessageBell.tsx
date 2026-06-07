@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import {
   subscribeMyParticipants,
@@ -238,7 +239,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
         }}
         className={`message-bell-btn ${open ? 'open' : ''}`}
       >
-        <img src="/images/messenger-icon.png" alt="Messages" width={42} height={42} style={{ transition: 'opacity 0.2s', display: 'block' }} />
+        <Image src="/images/messenger-icon.png" alt="Messages" width={42} height={42} unoptimized style={{ transition: 'opacity 0.2s', display: 'block' }} />
         {unreadCount > 0 && !isMessengerActive && (
           <span style={{
             position: 'absolute', top: 2, right: 2,

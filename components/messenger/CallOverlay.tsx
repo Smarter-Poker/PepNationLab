@@ -13,6 +13,7 @@ import {
 import '@livekit/components-styles';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { useMessengerStore } from '@/stores/messengerStore';
+import Image from 'next/image';
 import { createRingTone } from '@/lib/messenger/ringTone';
 import { captureCallError, captureCallEvent } from '@/lib/messenger/sentryCall';
 import { createE2EESetup, asRoomOptions, type E2EESetup } from '@/lib/messenger/livekitE2EE';
@@ -1028,7 +1029,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
             </div>
             <div className="pnl-pulse-avatar-ring" style={{ display: 'inline-block', borderRadius: '50%' }}>
               {counterpartyAvatar ? (
-                <img src={counterpartyAvatar} alt={counterpartyName} className="pnl-avatar-img" />
+                <Image src={counterpartyAvatar} alt={counterpartyName} width={120} height={120} unoptimized className="pnl-avatar-img" />
               ) : (
                 <div className="pnl-avatar-placeholder">{initials}</div>
               )}

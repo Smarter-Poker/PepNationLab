@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { useMessengerStore } from '@/stores/messengerStore';
 import { createClient } from '@/lib/supabase/client';
+import Image from 'next/image';
 
 interface Props {
   conversationId: string;
@@ -135,7 +136,7 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
         className="hover-lift"
         style={iconBtn}
       >
-        <img src="/messenger-icons/phone-icon.png" alt="Voice Call" style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.6)' }} />
+        <Image src="/messenger-icons/phone-icon.png" alt="Voice Call" width={48} height={48} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.6)' }} />
       </button>
       <button
         type="button"
@@ -146,7 +147,7 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
         className="hover-lift"
         style={iconBtn}
       >
-        <img src="/messenger-icons/video-icon.png" alt="Video Call" style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.6)' }} />
+        <Image src="/messenger-icons/video-icon.png" alt="Video Call" width={48} height={48} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.6)' }} />
       </button>
     </div>
   );

@@ -13,6 +13,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { isWebPushSupported, notificationPermission, enablePush } from '@/lib/push-client';
 
@@ -114,9 +115,12 @@ export default function FirstRunNotificationPrompt() {
       >
         {!enabled ? (
           <div style={{ position: 'relative', width: '100%', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.6))' }}>
-            <img 
+            <Image 
               src="/images/enable-notifications-dynamic.png" 
               alt="Turn On Notifications" 
+              width={840}
+              height={600}
+              unoptimized
               style={{ width: '100%', height: 'auto', display: 'block' }} 
             />
             {/* Hitbox for Enable Notifications */}
@@ -157,9 +161,12 @@ export default function FirstRunNotificationPrompt() {
           </div>
         ) : (
           <div style={{ position: 'relative', width: '100%', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.6))' }}>
-            <img 
+            <Image 
               src="/images/notifications-done-dynamic.png" 
               alt="You're All Set" 
+              width={840}
+              height={600}
+              unoptimized
               style={{ width: '100%', height: 'auto', display: 'block' }} 
             />
             {/* Hitbox for Finish Setting Up My Account */}

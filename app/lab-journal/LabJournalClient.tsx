@@ -5,6 +5,7 @@ import SmartStackBuilder from '@/components/researcher/SmartStackBuilder';
 import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, XCircle, Layers, FlaskConical, Zap } from 'lucide-react';
 import { Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ComposedChart, Bar, ReferenceLine } from 'recharts';
 import Link from 'next/link';
+import Image from 'next/image';
 import { toast } from 'sonner';
 import { getProductImage } from '@/lib/categoryImage';
 import DynamicAddToCartButton from '@/components/storefront/DynamicAddToCartButton';
@@ -694,10 +695,12 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
             position: 'relative', flexShrink: 0, overflow: 'hidden'
           }}
         >
-          <img
+          <Image
             src={item.image_url || getProductImage(null, item.category || 'Other', item.name)}
             alt={item.name}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }}
+            fill
+            unoptimized
+            style={{ objectFit: 'cover', transition: 'transform 0.4s' }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               const fallback = getProductImage(null, item.category || 'Other', item.name);
@@ -714,10 +717,10 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
           <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end', zIndex: 2 }}>
             {inCart && (
-              <img src="/images/badges/badge_in_cart.png" alt="In Cart" style={{ height: 22, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />
+              <Image src="/images/badges/badge_in_cart.png" alt="In Cart" width={22} height={22} unoptimized style={{ borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />
             )}
             {item.is_on_sale && (
-              <img src="/images/badges/badge_price_drop.png" alt="Price Drop" style={{ height: 22, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />
+              <Image src="/images/badges/badge_price_drop.png" alt="Price Drop" width={22} height={22} unoptimized style={{ borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />
             )}
             {activeTab === 'pastOrders' && item.purchase_count && item.purchase_count > 1 && sortBy === 'frequent' && (
               <div style={{ background: 'rgba(234,179,8,0.2)', border: '1px solid rgba(234,179,8,0.5)', color: '#EAB308', padding: '2px 8px', borderRadius: 12, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', backdropFilter: 'blur(4px)' }}>
@@ -728,7 +731,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           
           {item.in_stock === false && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'grayscale(100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
-              <img src="/images/badges/badge_out_of_stock.png" alt="Out of Stock" style={{ height: 26, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />
+              <Image src="/images/badges/badge_out_of_stock.png" alt="Out of Stock" width={80} height={26} unoptimized style={{ borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />
             </div>
           )}
         </div>
@@ -1142,15 +1145,15 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                             const item = [...favorites, ...pastOrders, ...recentlyViewed, ...catalog].find(i => i.product_id === pid);
                             if (!item) return <div key={pid} style={{ color: 'var(--silver)' }}>Unknown Item</div>;
                             return (
-                              <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', background: 'rgba(255,255,255,0.05)', padding: 'var(--space-2) var(--space-3)', borderRadius: 20, whiteSpace: 'nowrap' }}>
-                                <img src={item.image_url || getProductImage(null, item.category || 'Other', item.name)} style={{ width: 24, height: 24, objectFit: 'contain', borderRadius: 4 }} alt={item.name} />
-                                <span style={{ color: 'var(--white)', fontSize: '0.85rem' }}>{item.name}</span>
+                              <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'rgba(255,255,255,0.05)', padding: 'var(--space-2) var(--space-3)', borderRadius: 20, whiteSpace: 'nowrap' }}>
+                                <Image src={item.image_url || getProductImage(null, item.category || 'Other', item.name)} width={24} height={24} unoptimized style={{ objectFit: 'contain', borderRadius: 4 }} alt={item.name} />
+                                <div style={{ color: 'var(--white)', fontSize: '0.9rem', fontWeight: 600 }}>{item.name}</div>
                               </div>
                             );
                           })}
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
-                          <button onClick={() => { setSelectedItems(new Set(c.product_ids)); setIsComparing(true); }} className="btn btn-secondary btn-sm" style={{ padding: '6px 16px', borderRadius: 20 }}>View Comparison Again</button>
+                        <button onClick={() => { setSelectedItems(new Set(c.product_ids)); setIsComparing(true); }} className="btn btn-secondary btn-sm" style={{ padding: '6px 16px', borderRadius: 20 }}>View Comparison Again</button>
                         </div>
                       </div>
                     ))}
@@ -1199,14 +1202,13 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           <h2 style={{ color: 'var(--white)', fontSize: '1.05rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-2)' }}>Trending Now</h2>
           <p style={{ color: 'var(--silver)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>The Top Eight Products Researchers Have Ordered In The Last Sixty Days.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 'var(--space-3)' }}>
-            {trending.map((t) => {
+            {trending.map((t, idx) => {
               const inner = (
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', display: 'flex', flexDirection: 'column', height: '100%', transition: 'transform 0.2s, background 0.2s' }} className="hover-lift">
-                  <div style={{ width: '100%', aspectRatio: '1 / 1', background: 'var(--black-2)', borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                    <img src={t.image_url || getProductImage(null, t.category || 'Other', t.name)} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }} />
-                  </div>
-                  <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.82rem', lineHeight: 1.25, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{t.name}</div>
-                  {t.category && <div style={{ color: 'var(--grey-500)', fontSize: '0.7rem' }}>{t.category}</div>}
+                <div key={idx} style={{ flex: '1 1 200px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', position: 'relative' }}>
+                    <div style={{ height: 100, background: 'radial-gradient(circle at 50% 50%, rgba(192,184,168,0.10) 0%, var(--black) 100%)', borderRadius: 8, marginBottom: 12, position: 'relative' }}>
+                    <Image src={t.image_url || getProductImage(null, t.category || 'Other', t.name)} alt={t.name} fill unoptimized style={{ objectFit: 'contain', padding: 8 }} />
+                    </div>
+                    <div style={{ color: 'var(--white)', fontWeight: 600, fontSize: '0.95rem' }}>{t.name}</div>  
                 </div>
               );
               return storefrontSlug ? (
@@ -1256,11 +1258,11 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }} onClick={() => setQuickViewItem(null)}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: 800, padding: 0, borderRadius: 'var(--radius-xl)', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }} onClick={e => e.stopPropagation()}>
             <button onClick={() => setQuickViewItem(null)} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(0,0,0,0.5)', border: 'none', color: 'var(--white)', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}><X size={16} /></button>
-            <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 300px', background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, var(--black) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
-                <img src={quickViewItem.image_url || getProductImage(null, quickViewItem.category || 'Other', quickViewItem.name)} style={{ width: '100%', maxWidth: 300, objectFit: 'contain' }} alt={quickViewItem.name} />
+            <div style={{ display: 'flex', flexDirection: 'column', md: { flexDirection: 'row' }, gap: 'var(--space-6)' }}>
+              <div style={{ flex: '0 0 300px', background: 'radial-gradient(circle at 50% 50%, rgba(192,184,168,0.10) 0%, var(--black) 100%)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)', position: 'relative' }}>
+                <Image src={quickViewItem.image_url || getProductImage(null, quickViewItem.category || 'Other', quickViewItem.name)} fill unoptimized style={{ objectFit: 'contain' }} alt={quickViewItem.name} />
               </div>
-              <div style={{ flex: '1 1 300px', padding: 'var(--space-6)', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ flex: 1, padding: 'var(--space-6)', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ color: 'var(--teal)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: 8 }}>{quickViewItem.category || 'Compound'}</div>
                 <h2 style={{ color: 'var(--white)', fontSize: '1.8rem', lineHeight: 1.2, marginBottom: 16 }}>{quickViewItem.name}</h2>
                 <div style={{ color: 'var(--silver)', fontSize: '0.95rem', marginBottom: 24, flex: 1 }}>
@@ -1306,8 +1308,8 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                 const displayPrice = item.retail_price ?? item.base_cost ?? 0;
                 return (
                   <div key={id} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', background: 'rgba(255,255,255,0.03)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
-                    <div style={{ width: '100%', height: 120, background: 'var(--black-2)', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img src={item.image_url || getProductImage(null, item.category || 'Other', item.name)} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }} alt={item.name} />
+                    <div style={{ width: '100%', height: 120, background: 'var(--black-2)', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                      <Image src={item.image_url || getProductImage(null, item.category || 'Other', item.name)} fill unoptimized style={{ objectFit: 'contain', padding: 8 }} alt={item.name} />
                     </div>
                     <div style={{ color: 'var(--teal)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{item.category || 'N/A'}</div>
                     <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: '1.1rem' }}>{item.name}</div>

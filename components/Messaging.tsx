@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import Image from 'next/image';
 import IframeLink from '@/components/ui/IframeLink';
 import { ThumbsUp, Heart, Smile, Flame, Eye, Check, Paperclip, Edit2, Trash2, CornerUpLeft, Star, CreditCard, DollarSign, Megaphone, AlertTriangle, Bell, Sparkles } from 'lucide-react';
 
@@ -545,7 +546,7 @@ export default function Messaging({
                           {m.attachment_url && (
                             isImage(m.attachment_url) ? (
                               <IframeLink href={m.attachment_url} style={{ display: 'inline-block' }}>
-                                <img src={m.attachment_url} alt="attachment" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, marginTop: 6, cursor: 'pointer' }} />
+                                <Image src={m.attachment_url} alt="attachment" width={400} height={400} unoptimized style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, marginTop: 6, cursor: 'pointer', objectFit: 'contain' }} />
                               </IframeLink>
                             ) : (
                               <IframeLink href={m.attachment_url} style={{ color: mine ? 'rgba(255,255,255,0.8)' : 'var(--teal)', fontSize: '0.73rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, background: mine ? 'rgba(255,255,255,0.12)' : 'rgba(192,184,168,0.06)', padding: '3px 8px', borderRadius: 6, marginTop: 4 }}>
@@ -687,7 +688,7 @@ export default function Messaging({
       {attachmentUrl && (
         <div style={{ padding: '6px 16px', borderTop: '1px solid rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', gap: 8 }}>
           {isImage(attachmentUrl) ? (
-            <img src={attachmentUrl} alt="preview" style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover' }} />
+            <Image src={attachmentUrl} alt="preview" width={40} height={40} unoptimized style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover' }} />
           ) : (
             <Paperclip size={13} style={{ color: 'var(--teal)' }} />
           )}

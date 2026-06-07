@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import { useMessengerStore } from '@/stores/messengerStore';
 import { enablePush } from '@/lib/push-client';
 import type { ConversationListItem, Message, Reaction, ParticipantRole } from '@/lib/messenger/types';
@@ -1080,7 +1081,7 @@ export default function MessagePane({ userId }: Props) {
             className="hover-lift"
             style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           >
-            <img src="/messenger-icons/reminders-icon.jpg" alt="Reminders" style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'lighten', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
+            <Image src="/messenger-icons/reminders-icon.jpg" alt="Reminders" width={200} height={200} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'lighten', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
           </button>
           <button
             type="button"
@@ -1090,7 +1091,7 @@ export default function MessagePane({ userId }: Props) {
             className="hover-lift"
             style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           >
-            <img src="/messenger-icons/info-icon.jpg" alt="Info" style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'lighten', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
+            <Image src="/messenger-icons/info-icon.jpg" alt="Info" width={200} height={200} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'lighten', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
           </button>
         </div>
       </header>

@@ -60,7 +60,7 @@ export default function DynamicCalculatorHero({ onSelect }: { onSelect?: (id: st
         fill 
         style={{ objectFit: 'contain' }}
         priority
-      />
+      unoptimized />
 
       {/* Back Button */}
       <Link 

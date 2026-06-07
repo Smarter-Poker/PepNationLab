@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import { Send, Smile, Paperclip, Image as ImageIcon, FileText, Calendar, Clock, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMessengerStore } from '@/stores/messengerStore';
@@ -563,7 +564,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
               aria-label="Add Media"
               title="Add Media"
             >
-              <img src="/messenger-icons/add-media-icon.png" alt="Add Media" style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.6)' }} />
+              <Image src="/messenger-icons/add-media-icon.png" alt="Add Media" width={200} height={200} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.6)' }} />
             </button>
           </div>
 

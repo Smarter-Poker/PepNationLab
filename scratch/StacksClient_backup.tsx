@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Compound, RESEARCH_AREAS } from '@/lib/compounds';
 import { AreaProduct } from '@/lib/area-products-server';
@@ -293,7 +292,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 
                 <div style={{ padding: 'var(--space-5)' }}>
                   {/* Image Cluster - AT VERY TOP */}
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', justifyContent: 'center', marginBottom: 20, width: '100%', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'nowrap', justifyContent: 'center', marginBottom: 20, width: '100%' }}>
                     {stack.stack_components.map((compSlug, i) => {
                       const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
                       compProducts.sort((a, b) => b.retailPrice - a.retailPrice);
@@ -301,36 +300,28 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                       const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                       const comp = bySlug.get(compSlug);
                       const label = comp?.display_name ?? compSlug;
-                      const price = p ? p.retailPrice : 0;
                       
                       return (
                         <div key={compSlug} style={{ 
-                          flex: '1 1 0', minWidth: 0, maxWidth: 160,
+                          flex: 1, minWidth: 0, maxWidth: 140, aspectRatio: '1 / 1',
                           position: 'relative',
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+                          borderRadius: 16, 
+                          background: 'radial-gradient(circle at center, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.3) 100%)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+                          overflow: 'hidden', padding: 8,
+                          boxShadow: '0 8px 16px rgba(0,0,0,0.6)',
+                          backdropFilter: 'blur(8px)'
                         }}>
+                          <img src={imageUrl} alt={label} style={{ width: '85%', height: 'calc(100% - 20px)', objectFit: 'contain' }} />
                           <div style={{
-                            width: '100%', aspectRatio: '1 / 1.2',
-                            borderRadius: 16, 
-                            background: 'radial-gradient(circle at center, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.2) 100%)',
-                            border: '1px solid rgba(255,255,255,0.05)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            overflow: 'hidden', padding: 8,
-                            position: 'relative'
+                            position: 'absolute', bottom: 0, left: 0, right: 0,
+                            padding: '16px 4px 6px',
+                            background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.9) 100%)',
+                            color: '#A8B4C0', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
+                            textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                           }}>
-                            <Image src={imageUrl} alt={label} width={200} height={200} unoptimized style={{ width: '90%', height: '90%', objectFit: 'contain' }} />
-                            <div style={{
-                              position: 'absolute', bottom: 0, left: 0, right: 0,
-                              padding: '16px 4px 6px',
-                              background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.9) 100%)',
-                              color: '#C0C8D0', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
-                              textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                            }}>
-                              {label}
-                            </div>
-                          </div>
-                          <div style={{ marginTop: 6, fontSize: '0.85rem', fontWeight: 700, color: '#C0C8D0' }}>
-                            ${price.toFixed(2)}
+                            {label}
                           </div>
                         </div>
                       );
@@ -340,8 +331,8 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   {/* Badges - BELOW IMAGES */}
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
                     {citationCount > 0 && (
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg, rgba(192, 200, 208, 0.15) 0%, rgba(192, 200, 208, 0.05) 100%)', color: '#C0C8D0', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(192, 200, 208, 0.2)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        <FlaskConical size={12} /> {citationCount} Research Studies
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg, rgba(104, 211, 145, 0.15) 0%, rgba(104, 211, 145, 0.05) 100%)', color: '#68D391', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(104,211,145,0.2)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        <FlaskConical size={12} /> {citationCount} Papers
                       </div>
                     )}
                     {synergy.status === 'excellent' && (
@@ -351,23 +342,9 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-                    <h2 style={{ margin: 0, color: '#A8B4C0', fontWeight: 800, fontSize: '1.4rem', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
-                      {stack.display_name}
-                    </h2>
-                    {isPremade ? (
-                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0', whiteSpace: 'nowrap' }}>
-                        ${bundlePrice.toFixed(2)}
-                      </div>
-                    ) : (
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0', whiteSpace: 'nowrap' }}>
-                          ${(bundlePrice * 0.9).toFixed(2)}
-                        </div>
-                        <div style={{ fontSize: '0.65rem', color: '#68D391', fontWeight: 700, marginTop: 2 }}>Stack Discount Applied</div>
-                      </div>
-                    )}
-                  </div>
+                  <h2 style={{ margin: 0, color: '#A8B4C0', fontWeight: 800, fontSize: '1.4rem', letterSpacing: '-0.01em' }}>
+                    {stack.display_name}
+                  </h2>
                   
                   {stack.stack_rationale && (
                     <p style={{ margin: 'var(--space-2) 0 0', color: '#D0DAE4', lineHeight: 1.55, fontSize: '0.9rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -416,7 +393,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                                 gap: '8px'
                               }}
                             >
-                              <Image src={imageUrl} alt={label} width={200} height={200} unoptimized style={{ width: 16, height: 16, objectFit: 'contain' }} />
+                              <img src={imageUrl} alt={label} style={{ width: 16, height: 16, objectFit: 'contain' }} />
                               <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 <span>{label}</span>
                                 {priceText && <span style={{ color: '#A8B4C0', fontSize: '0.65rem' }}>{priceText}</span>}
@@ -428,13 +405,18 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                     </div>
                   )}
 
-                    {/* Removed redundant Est Price display since it's now in the header */}
+                  <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#A8B4C0', textTransform: 'uppercase', fontWeight: 700 }}>Est. Price</span>
+                      <span style={{ fontSize: '1.4rem', color: '#fff', fontWeight: 800 }}>${bundlePrice.toFixed(2)}</span>
+                    </div>
                     <button 
                       onClick={(e) => { e.stopPropagation(); handleAddToCart(stack); }}
-                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', marginTop: 24 }}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                     >
-                      <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack To Cart" width={200} height={200} unoptimized style={{ height: 64, objectFit: 'contain' }} />
+                      <img src="/images/add_stack_to_cart_btn.png" alt="Add Stack To Cart" style={{ height: 64, objectFit: 'contain' }} />
                     </button>
+                  </div>
                 </div>
               </motion.article>
             );
@@ -598,7 +580,7 @@ function StacksCompareDrawer({ stack1, stack2, bySlug, products, onClose, synerg
                 const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                 return (
                   <div key={slug} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 8, marginBottom: 8, fontSize: '0.85rem', color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <Image src={imageUrl} alt={slug} width={200} height={200} unoptimized style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                    <img src={imageUrl} alt={slug} style={{ width: 20, height: 20, objectFit: 'contain' }} />
                     {bySlug.get(slug)?.display_name || slug}
                   </div>
                 );
@@ -611,7 +593,7 @@ function StacksCompareDrawer({ stack1, stack2, bySlug, products, onClose, synerg
                 const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                 return (
                   <div key={slug} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 8, marginBottom: 8, fontSize: '0.85rem', color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <Image src={imageUrl} alt={slug} width={200} height={200} unoptimized style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                    <img src={imageUrl} alt={slug} style={{ width: 20, height: 20, objectFit: 'contain' }} />
                     {bySlug.get(slug)?.display_name || slug}
                   </div>
                 );
@@ -734,26 +716,20 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
       <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
       <motion.div 
-        initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', background: 'rgba(10, 15, 20, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}
+        initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', background: 'rgba(10, 15, 20, 0.85)', backdropFilter: 'blur(40px)', borderTopLeftRadius: 32, borderTopRightRadius: 32, border: '1px solid rgba(255,255,255,0.1)', borderBottom: 'none', boxShadow: '0 -20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}
       >
-        <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'sticky', top: 0, background: 'linear-gradient(to bottom, rgba(10,15,20,0.98) 0%, rgba(10,15,20,0.9) 100%)', zIndex: 10 }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 900, color: '#C0C8D0' }}>{stack.display_name}</h2>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0', marginTop: 4 }}>
-              ${(bundlePrice * 0.9).toFixed(2)}
-              <span style={{ fontSize: '0.7rem', color: '#68D391', marginLeft: 8, verticalAlign: 'middle' }}>10% Stack Discount</span>
-            </div>
-          </div>
+        <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'linear-gradient(to bottom, rgba(10,15,20,0.95) 0%, rgba(10,15,20,0.8) 100%)', backdropFilter: 'blur(20px)', zIndex: 10 }}>
+          <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 900, background: 'linear-gradient(135deg, #FFF 0%, #00C4BC 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{stack.display_name}</h2>
           <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}><X size={20} /></button>
         </div>
 
         <div style={{ padding: '0 32px', display: 'flex', gap: 24, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <button onClick={() => setActiveTab('overview')} style={{ padding: '16px 0', background: 'none', border: 'none', borderBottom: activeTab === 'overview' ? '2px solid #C0C8D0' : '2px solid transparent', color: activeTab === 'overview' ? '#C0C8D0' : '#A8B4C0', fontWeight: 600, cursor: 'pointer' }}>Overview</button>
-          <button onClick={() => setActiveTab('calculator')} style={{ padding: '16px 0', background: 'none', border: 'none', borderBottom: activeTab === 'calculator' ? '2px solid #C0C8D0' : '2px solid transparent', color: activeTab === 'calculator' ? '#C0C8D0' : '#A8B4C0', fontWeight: 600, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center' }}><Beaker size={16} /> Reconstitution Math</button>
+          <button onClick={() => setActiveTab('overview')} style={{ padding: '16px 0', background: 'none', border: 'none', borderBottom: activeTab === 'overview' ? '2px solid #00E5FF' : '2px solid transparent', color: activeTab === 'overview' ? '#00E5FF' : '#A8B4C0', fontWeight: 600, cursor: 'pointer' }}>Overview</button>
+          <button onClick={() => setActiveTab('calculator')} style={{ padding: '16px 0', background: 'none', border: 'none', borderBottom: activeTab === 'calculator' ? '2px solid #00E5FF' : '2px solid transparent', color: activeTab === 'calculator' ? '#00E5FF' : '#A8B4C0', fontWeight: 600, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center' }}><Beaker size={16} /> Reconstitution Math</button>
         </div>
 
         <div style={{ padding: 32, flex: 1 }}>
@@ -766,32 +742,6 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                   <strong>Note:</strong> {missingComponents.length} component(s) ({missingComponents.map((s: string) => bySlug.get(s)?.display_name).join(', ')}) are currently out of stock and will be skipped when adding to cart.
                 </div>
               )}
-
-              <div style={{ marginTop: 24 }}>
-                <h4 style={{ margin: '0 0 16px', color: '#fff', fontSize: '1.1rem' }}>Component Breakdown</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16 }}>
-                  {stack.stack_components.map((slug: string) => {
-                    const compProducts = products.filter((prod) => prod.compoundSlug === slug);
-                    compProducts.sort((a, b) => b.retailPrice - a.retailPrice);
-                    const p = compProducts.length > 0 ? compProducts[0] : undefined;
-                    const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
-                    const comp = bySlug.get(slug);
-                    const label = comp?.display_name ?? slug;
-                    const price = p ? p.retailPrice : 0;
-                    
-                    return (
-                      <div key={slug} style={{
-                        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
-                        borderRadius: 16, padding: 12, display: 'flex', flexDirection: 'column', alignItems: 'center'
-                      }}>
-                        <Image src={imageUrl} alt={label} width={200} height={200} unoptimized style={{ width: 80, height: 80, objectFit: 'contain', marginBottom: 12 }} />
-                        <div style={{ color: '#C0C8D0', fontSize: '0.85rem', fontWeight: 800, textAlign: 'center' }}>{label}</div>
-                        <div style={{ color: '#00E5FF', fontSize: '1rem', fontWeight: 700, marginTop: 4 }}>${price.toFixed(2)}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
 
               <div style={{ marginTop: 24, background: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 20 }}>
                 <h4 style={{ margin: '0 0 16px', color: '#fff' }}>Synergy Profile</h4>
@@ -820,7 +770,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                 return (
                   <div key={slug} style={{ marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
                     <h4 style={{ margin: '0 0 12px', color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Image src={imageUrl} alt={slug} width={200} height={200} unoptimized style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                      <img src={imageUrl} alt={slug} style={{ width: 20, height: 20, objectFit: 'contain' }} />
                       {bySlug.get(slug)?.display_name}
                     </h4>
                     <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
@@ -881,7 +831,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
             onClick={() => { onAddToCart(stack); onClose(); }} 
             style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 4px 15px rgba(0,229,255,0.3))' }}
           >
-            <Image src="/images/add_stack_to_cart_btn.png" alt="Add Bundle To Cart" width={200} height={200} unoptimized style={{ height: 56, objectFit: 'contain' }} />
+            <img src="/images/add_stack_to_cart_btn.png" alt="Add Bundle To Cart" style={{ height: 56, objectFit: 'contain' }} />
           </button>
         </div>
       </motion.div>

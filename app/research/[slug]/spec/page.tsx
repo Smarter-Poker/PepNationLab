@@ -14,6 +14,7 @@ import { ArrowLeft } from 'lucide-react';
 import { getCompound } from '@/lib/compounds-server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
 import { generateQrDataUrl } from '@/lib/qr';
+import Image from 'next/image';
 import PrintButton from '@/components/research/PrintButton';
 import IframeLink from '@/components/ui/IframeLink';
 
@@ -134,12 +135,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           </div>
           {qr && (
             <div style={{ textAlign: 'center', flexShrink: 0 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={qr}
                 alt={`QR Code Linking To The ${compound.display_name} Research Profile`}
                 width={92}
                 height={92}
+                unoptimized
                 style={{ borderRadius: 8, display: 'block' }}
               />
               <p style={{ fontSize: '0.66rem', color: 'var(--silver)', margin: '4px 0 0', maxWidth: 92 }}>

@@ -415,7 +415,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
             transition: 'background 0.15s',
           }}
         >
-          <img src="/images/hamburger-icon.png" alt="Menu" width={36} height={36} style={{ display: 'block' }} />
+          <Image src="/images/hamburger-icon.png" alt="Menu" width={36} height={36} unoptimized style={{ display: 'block' }} />
         </button>
 
         {showBack && (
@@ -475,7 +475,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
             <>
               <GlobalCompletenessWidget />
               <Link href={dashLink} aria-label={dashLabel} className="hover-scale-105" style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'none', flexShrink: 0, marginRight: 4, position: 'relative', left: -8 }}>
-                <img
+                <Image
                   src={
                     role === 'admin' ? '/nav-icons/admin-dashboard.png' :
                     role.includes('agent') ? '/nav-icons/agent-dashboard.png' :
@@ -484,6 +484,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                   alt={dashLabel}
                   width={158}
                   height={74}
+                  unoptimized
                   className="dashboard-icon"
                   style={{ width: 158, height: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block' }}
                 />
@@ -495,11 +496,12 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                   className="hover-scale-105"
                   style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'none', flexShrink: 0, marginRight: 4, position: 'relative', left: -8 }}
                 >
-                  <img
+                  <Image
                     src="/nav-icons/cart.png"
                     alt="Cart"
                     width={158}
                     height={76}
+                    unoptimized
                     className="dashboard-icon"
                     style={{ width: 158, height: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block' }}
                   />
@@ -564,7 +566,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
           minHeight: 64,
         }}>
           <Link href={dashLink} onClick={closeDrawer} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', textDecoration: 'none' }}>
-            <Image src="/logo-mark.svg" alt="Pep Nation Lab" width={32} height={32} priority />
+            <Image src="/logo-mark.svg" alt="Pep Nation Lab" width={32} height={32} priority unoptimized />
             <span style={{ fontFamily: 'var(--font-brand)', fontSize: '0.95rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.08em' }}>
               PEP NATION LAB
             </span>

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCart } from '@/components/CartContext';
 import DynamicAddToCartButton from '@/components/storefront/DynamicAddToCartButton';
 
@@ -118,8 +119,7 @@ export default function ProductsList({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-6)' }}>
           <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-mark.svg" alt="Pep Nation Lab" style={{ height: 30, width: 30, display: 'block' }} />
+            <Image src="/logo-mark.svg" alt="Pep Nation Lab" width={30} height={30} unoptimized style={{ display: 'block' }} />
             PEP NATION LAB
           </Link>
           <div style={{ display: 'flex', gap: 'var(--space-4)' }} className="desktop-links">
@@ -153,7 +153,7 @@ export default function ProductsList({
               color: 'var(--white)'
             }}
           >
-            <img src="/nav-icons/cart.png" width={158} height={76} className="dashboard-icon" alt="Cart" style={{ width: 158, height: 'auto', objectFit: 'contain', display: 'block' }} />
+            <Image src="/nav-icons/cart.png" width={158} height={76} className="dashboard-icon" alt="Cart" unoptimized style={{ objectFit: 'contain', display: 'block' }} />
             {cartCount > 0 && (
               <span style={{
                 background: 'var(--teal)',
@@ -317,23 +317,29 @@ export default function ProductsList({
                     <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', flexWrap: 'wrap', alignItems: 'center' }}>
                       {product.in_stock ? (
                         isLowStock ? (
-                          <img 
+                          <Image 
                             src="/images/badges/badge_low_stock.png" 
                             alt="Low Stock" 
-                            style={{ height: 20, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} 
+                            width={80} height={20}
+                            unoptimized
+                            style={{ borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} 
                           />
                         ) : (
-                          <img 
+                          <Image 
                             src="/images/badges/badge_in_stock.png" 
                             alt="In Stock" 
-                            style={{ height: 20, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} 
+                            width={80} height={20}
+                            unoptimized
+                            style={{ borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} 
                           />
                         )
                       ) : (
-                        <img 
+                        <Image 
                           src="/images/badges/badge_out_of_stock.png" 
                           alt="Out Of Stock" 
-                          style={{ height: 20, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} 
+                          width={80} height={20}
+                          unoptimized
+                          style={{ borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} 
                         />
                       )}
 

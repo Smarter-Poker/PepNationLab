@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { toast } from 'sonner';
 import Pagination from '@/components/Pagination';
 import ViewAsButton from '@/components/ViewAsButton';
@@ -1198,7 +1199,7 @@ function ResearchersAdminPageInner() {
             </p>
             {resolvedAgentProfile.qr_code_url ? (
               <div style={{ background: '#0a1018', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', border: 'var(--border-silver)', display: 'inline-block', marginBottom: 'var(--space-6)', width: 250, height: 250 }}>
-                <img src={resolvedAgentProfile.qr_code_url} alt={`${resolvedAgentProfile.display_name} QR`} style={{ width: '100%', height: '100%', borderRadius: 'var(--radius-md)' }} />
+                <Image src={resolvedAgentProfile.qr_code_url} alt={`${resolvedAgentProfile.display_name} QR`} width={240} height={240} unoptimized style={{ width: '100%', height: '100%', borderRadius: 'var(--radius-md)' }} />
               </div>
             ) : (
               <p style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 'var(--space-6)' }}>No QR Code Generated Yet</p>

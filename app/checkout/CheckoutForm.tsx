@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useCart } from '@/components/CartContext';
 import CartWarnings from '@/components/research/CartWarnings';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { US_STATES } from '@/lib/us-states';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
@@ -17,14 +18,14 @@ const baseStyle = { height: 28, width: 'auto', objectFit: 'contain' as const };
 const scaleStyle = (scale: number) => ({ ...baseStyle, transform: `scale(${scale})` });
 
 const ALL_PAYMENT_METHODS: { id: PaymentMethodId; name: string; desc: string; icon: React.ReactNode }[] = [
-  { id: 'zelle',         name: 'Zelle',           desc: 'Instant Direct Transfer. Fastest Processing.', icon: <img src="/payment-logos/zelle.svg" alt="Zelle" style={baseStyle} /> },
-  { id: 'cashapp',       name: 'Cash App',        desc: 'Secure Mobile Check. Handled Manually.', icon: <img src="/payment-logos/cashapp.svg" alt="Cash App" style={baseStyle} /> },
-  { id: 'venmo',         name: 'Venmo',           desc: 'Social Transfer. Manual Clearance.', icon: <img src="/payment-logos/venmo.svg" alt="Venmo" style={scaleStyle(1.4)} /> },
-  { id: 'paypal',        name: 'PayPal',          desc: 'Email Or @Username.', icon: <img src="/payment-logos/paypal.svg" alt="PayPal" style={baseStyle} /> },
-  { id: 'apple_cash',    name: 'Apple Cash',      desc: 'Secure Contactless Flow. Fast Settlement.', icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={scaleStyle(1.4)} /> },
-  { id: 'google_wallet', name: 'Google Wallet',   desc: 'Gmail Address.', icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={scaleStyle(1.4)} /> },
-  { id: 'wise',          name: 'Wise',            desc: 'Email Or Wise Username.', icon: <img src="/payment-logos/wise.svg" alt="Wise" style={baseStyle} /> },
-  { id: 'chime',         name: 'Chime',           desc: 'Chime Username Or Link.', icon: <img src="/payment-logos/chime.png" alt="Chime" style={baseStyle} /> },
+  { id: 'zelle',         name: 'Zelle',           desc: 'Instant Direct Transfer. Fastest Processing.', icon: <Image src="/payment-logos/zelle.svg" width={40} height={28} alt="Zelle" unoptimized style={baseStyle} /> },
+  { id: 'cashapp',       name: 'Cash App',        desc: 'Secure Mobile Check. Handled Manually.', icon: <Image src="/payment-logos/cashapp.svg" width={40} height={28} alt="Cash App" unoptimized style={baseStyle} /> },
+  { id: 'venmo',         name: 'Venmo',           desc: 'Social Transfer. Manual Clearance.', icon: <Image src="/payment-logos/venmo.svg" width={40} height={28} alt="Venmo" unoptimized style={scaleStyle(1.4)} /> },
+  { id: 'paypal',        name: 'PayPal',          desc: 'Email Or @Username.', icon: <Image src="/payment-logos/paypal.svg" width={40} height={28} alt="PayPal" unoptimized style={baseStyle} /> },
+  { id: 'apple_cash',    name: 'Apple Cash',      desc: 'Secure Contactless Flow. Fast Settlement.', icon: <Image src="/payment-logos/apple_cash.svg" width={40} height={28} alt="Apple Cash" unoptimized style={scaleStyle(1.4)} /> },
+  { id: 'google_wallet', name: 'Google Wallet',   desc: 'Gmail Address.', icon: <Image src="/payment-logos/google_wallet.svg" width={40} height={28} alt="Google Wallet" unoptimized style={scaleStyle(1.4)} /> },
+  { id: 'wise',          name: 'Wise',            desc: 'Email Or Wise Username.', icon: <Image src="/payment-logos/wise.svg" width={40} height={28} alt="Wise" unoptimized style={baseStyle} /> },
+  { id: 'chime',         name: 'Chime',           desc: 'Chime Username Or Link.', icon: <Image src="/payment-logos/chime.png" width={40} height={28} alt="Chime" unoptimized style={baseStyle} /> },
 ];
 
 interface Profile {

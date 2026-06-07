@@ -22,6 +22,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
 import { toast } from 'sonner';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 
 interface MfaFactor {
@@ -448,10 +449,12 @@ export default function AccountSecurityClient({
           ) : (
             <div>
               {qrDataUrl ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
+                <Image
                   src={qrDataUrl}
                   alt="MFA QR Code"
+                  width={240}
+                  height={240}
+                  unoptimized
                   style={{
                     width: 240,
                     height: 240,

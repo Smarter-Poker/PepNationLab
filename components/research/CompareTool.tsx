@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import IframeModal from '@/components/ui/IframeModal';
+import Image from 'next/image';
 import {
   Search, X, PlusCircle, Check, Printer, Share2, Download,
   ChevronDown, ChevronRight, ChevronLeft, GripHorizontal,
@@ -30,7 +31,7 @@ import {
   Zap, BookOpen, FlaskConical, Shield, Star,
   Clock, Thermometer, ArrowRight, BarChart3, Beaker,
   Scale, Syringe, Wrench, Hourglass, Filter, List, Smartphone, LayoutList, MoveUp, MoveDown,
-  Sparkles, Moon, Heart, Brain, FileText, Mic, ShoppingCart, Crosshair, Target, Image, ShieldAlert
+  Sparkles, Moon, Heart, Brain, FileText, Mic, ShoppingCart, Crosshair, Target, ImageIcon, ShieldAlert
 } from 'lucide-react';
 import { type Compound, evidenceTier, researchAreaLabel, RISK_META, calculateStackSynergy } from '@/lib/compounds';
 import AttributeRadarChart, { type RadarDataPoint } from './AttributeRadarChart';
@@ -96,10 +97,7 @@ function getChoiceBadge(idx: number): React.ReactNode {
   const alt = labels[idx] || `${idx + 1}th Choice`;
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img 
-      src={src} 
-      alt={alt} 
-      style={{ 
+    <Image src={src} alt={alt} width={200} height={200} unoptimized style={{ 
         height: '42px', 
         width: 'auto', 
         maxWidth: 'none',
@@ -107,8 +105,7 @@ function getChoiceBadge(idx: number): React.ReactNode {
         display: 'inline-block',
         verticalAlign: 'middle',
         flexShrink: 0
-      }} 
-    />
+      }} />
   );
 }
 function parseHalfLifeHours(hl: string | null | undefined): number {
@@ -936,7 +933,7 @@ const ROWS: Row[] = [
     kind: 'data', label: 'GLP-1 Class',
     getValue: c => c.is_glp1 ? 'Yes' : 'No',
     render: c => c.is_glp1
-      ? <img src="/images/badges/badge_glp1.png" alt="GLP-1 Incretin" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
+      ? <Image src="/images/badges/badge_glp1.png" alt="GLP-1 Incretin" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
       : <span style={{ color: 'rgba(168,180,192,0.4)', fontSize: '0.78rem' }}>No</span>
   },
   {
@@ -961,7 +958,7 @@ const ROWS: Row[] = [
     render: c => {
       const t = evidenceTier(c.evidence_tier);
       if (t.badgeUrl) {
-        return <img src={t.badgeUrl} alt={t.label} style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />;
+        return <Image src={t.badgeUrl} alt={t.label} width={200} height={200} unoptimized style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />;
       }
       return <span style={{ display: 'inline-block', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: t.color, border: `1px solid ${t.color}`, borderRadius: 999, padding: '2px 10px' }}>{t.label}</span>;
     },
@@ -975,7 +972,7 @@ const ROWS: Row[] = [
       return r ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {r.badgeUrl ? (
-            <img src={r.badgeUrl} alt={r.label} style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', alignSelf: 'flex-start', flexShrink: 0 }} />
+            <Image src={r.badgeUrl} alt={r.label} width={200} height={200} unoptimized style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', alignSelf: 'flex-start', flexShrink: 0 }} />
           ) : (
             <span style={{ color: r.color, fontWeight: 700 }}>{r.label}</span>
           )}
@@ -1154,7 +1151,7 @@ function FocusRowModal({ row, selected, maxHalfLife, controlCompound, topPickSlu
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
                   <span style={{ color, fontWeight: 900, fontSize: '0.88rem' }}>{c.display_name}</span>
-                  {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', marginLeft: 4, verticalAlign: 'middle', flexShrink: 0 }} />}
+                  {isTop && <Image src="/images/badges/badge_top_pick.png" alt="Top Pick" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', marginLeft: 4, verticalAlign: 'middle', flexShrink: 0 }} />}
                 </div>
                 <div style={{ fontSize: '0.95rem', color: '#fff', lineHeight: 1.55 }}>{row.render(c, maxHalfLife, maxCitations)}</div>
                 {controlCompound && controlCompound.slug !== c.slug && (
@@ -2395,7 +2392,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
               
               <button type="button" onClick={handleExportCSV} className="action-btn-nickel" title="Export CSV"><Download size={14} /> CSV</button>
               <button type="button" onClick={handleExportJSON} className="action-btn-nickel" title="Export JSON"><Download size={14} /> JSON</button>
-              <button type="button" onClick={handleShareCard} className="action-btn-nickel" title="Share Visual Card"><Image size={14} /> Card</button>
+              <button type="button" onClick={handleShareCard} className="action-btn-nickel" title="Share Visual Card"><ImageIcon size={14} /> Card</button>
               <button type="button" onClick={handleShare} className="action-btn-nickel" title="Share Link">{copied ? <Check size={14} color="#00C4BC" /> : <Share2 size={14} />} {copied ? 'Copied' : 'Share'}</button>
               <button type="button" onClick={() => window.print()} className="action-btn-nickel" title="Print Dossier"><Printer size={14} /> Print</button>
               <button type="button" onClick={() => setJournalModalOpen(true)} className="action-btn-nickel" title="Save to Lab Journal" style={{ background: 'rgba(0,196,188,0.1)' }}><BookOpen size={14} color="#00C4BC" /> Save to Lab</button>
@@ -2424,7 +2421,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                   cartContext.addMultipleToCart(itemsToAdd, 'Research Stack');
                 }
               }} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 4px 15px rgba(0,229,255,0.3))' }}>
-                <img src="/images/add_stack_to_cart_btn.png" alt="Add Stack to Cart" style={{ height: 48, objectFit: 'contain' }} />
+                <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack to Cart" width={200} height={200} unoptimized style={{ height: 48, objectFit: 'contain' }} />
               </button>
             </div>
           )}
@@ -2497,7 +2494,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                 const sc = scores[i]; const color = colors[i % colors.length]; const isTop = c.slug === topPickSlug;
                 return (
                   <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', background: isTop ? 'rgba(0,196,188,0.12)' : `${color}10`, border: `1px solid ${isTop ? 'rgba(0,196,188,0.35)' : color + '28'}`, borderRadius: 20, flexShrink: 0 }}>
-                    {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: '28px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', verticalAlign: 'middle', marginLeft: 4, flexShrink: 0 }} />}
+                    {isTop && <Image src="/images/badges/badge_top_pick.png" alt="Top Pick" width={200} height={200} unoptimized style={{ height: '28px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', verticalAlign: 'middle', marginLeft: 4, flexShrink: 0 }} />}
                     <span style={{ fontSize: '0.73rem', fontWeight: 800, color }}>{c.display_name.split(' ').slice(0, 2).join(' ')}</span>
                     <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'rgba(255,255,255,0.75)' }}>{sc.letter}</span>
                     <span style={{ fontSize: '0.64rem', color: 'rgba(255,255,255,0.4)' }}>{sc.total}</span>
@@ -2537,11 +2534,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                 userSelect: 'none'
               }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src="/images/compare-pill-bar.png" 
-                  alt="Compare Section Tabs" 
-                  style={{ width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }} 
-                />
+                <Image src="/images/compare-pill-bar.png" alt="Compare Section Tabs" width={200} height={200} unoptimized style={{ width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }} />
                 {([
                   ['matrix', 'Matrix', '2.5%'],
                   ['proscons', 'Pros & Cons', '18.5%'],
@@ -2619,7 +2612,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                         {getChoiceBadge(rankIndex)}
-                        {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: 22, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />}
+                        {isTop && <Image src="/images/badges/badge_top_pick.png" alt="Top Pick" width={200} height={200} unoptimized style={{ height: 22, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
@@ -2806,10 +2799,10 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                 Which compound is best suited for different research contexts - based on composite scoring across evidence, safety, scientific backing, research coverage, and handling practicality.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 24 }}>
-                <RecommendationCard rec={recommendations.overall} label="Overall Best Pick" icon={<img src="/images/badges/verdict_overall.png" alt="Overall Best" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#00C4BC" />
-                <RecommendationCard rec={recommendations.safest} label="Safest Profile" icon={<img src="/images/badges/verdict_safest.png" alt="Safest Profile" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#68D391" />
-                <RecommendationCard rec={recommendations.mostStudied} label="Most Research-Backed" icon={<img src="/images/badges/verdict_studied.png" alt="Most Studied" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#F6AD55" />
-                <RecommendationCard rec={recommendations.mostPractical} label="Most Practical" icon={<img src="/images/badges/verdict_practical.png" alt="Most Practical" style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#9F7AEA" />
+                <RecommendationCard rec={recommendations.overall} label="Overall Best Pick" icon={<Image src="/images/badges/verdict_overall.png" alt="Overall Best" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#00C4BC" />
+                <RecommendationCard rec={recommendations.safest} label="Safest Profile" icon={<Image src="/images/badges/verdict_safest.png" alt="Safest Profile" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#68D391" />
+                <RecommendationCard rec={recommendations.mostStudied} label="Most Research-Backed" icon={<Image src="/images/badges/verdict_studied.png" alt="Most Studied" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#F6AD55" />
+                <RecommendationCard rec={recommendations.mostPractical} label="Most Practical" icon={<Image src="/images/badges/verdict_practical.png" alt="Most Practical" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#9F7AEA" />
               </div>
               {/* Recommended contexts per compound */}
               <div>
@@ -2994,7 +2987,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', background: isTop ? 'rgba(0,196,188,0.08)' : `${color}0E`, border: `1px solid ${isTop ? 'rgba(0,196,188,0.3)' : color + '30'}`, borderRadius: 14, marginBottom: 16 }}>
                               <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
                               <Link href={`/research/${c.slug}`} style={{ color, fontWeight: 900, fontSize: '1.05rem', textDecoration: 'none', flex: 1 }}>{c.display_name}</Link>
-                              {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: 22, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />}
+                              {isTop && <Image src="/images/badges/badge_top_pick.png" alt="Top Pick" width={200} height={200} unoptimized style={{ height: 22, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />}
                               <div style={{ background: `${color}22`, color, fontSize: '0.8rem', fontWeight: 900, padding: '4px 10px', borderRadius: 8 }}>{sc.letter} · {sc.total}</div>
                             </div>
                             
@@ -3009,7 +3002,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: '12px 16px', marginBottom: 16 }}>
                                   {product.imageUrl && (
                                     <div style={{ width: 60, height: 60, borderRadius: 8, background: '#fff', overflow: 'hidden', flexShrink: 0, padding: 4 }}>
-                                      <img src={product.imageUrl} alt={product.productName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                      <Image src={product.imageUrl} alt={product.productName} width={200} height={200} unoptimized style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                     </div>
                                   )}
                                   <div style={{ flex: 1 }}>
@@ -3151,7 +3144,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                                   return (
                                     <div key={c.slug} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: 10, background: isControl ? 'rgba(0,196,188,0.05)' : 'rgba(255,255,255,0.02)', borderRadius: 8, position: 'relative', border: isWinner ? '1px solid rgba(0,196,188,0.4)' : '1px solid transparent' }}>
                                       {isWinner && (
-                                        <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ position: 'absolute', top: -14, right: 10, height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 2px 8px rgba(0,0,0,0.5)', zIndex: 10, flexShrink: 0 }} />
+                                        <Image src="/images/badges/badge_top_pick.png" alt="Top Pick" width={200} height={200} unoptimized style={{ position: 'absolute', top: -14, right: 10, height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 2px 8px rgba(0,0,0,0.5)', zIndex: 10, flexShrink: 0 }} />
                                       )}
                                       <div style={{ width: 80, fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', flexShrink: 0, marginTop: 2 }}>{c.display_name}</div>
                                       <div style={{ flex: 1, fontSize: '0.85rem', color: '#fff' }}>
@@ -3205,7 +3198,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                                 return (
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                                     {getChoiceBadge(rankIndex)}
-                                    {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
+                                    {isTop && <Image src="/images/badges/badge_top_pick.png" alt="Top Pick" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
                                   </div>
                                 );
                               })()}
@@ -3229,7 +3222,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                                     </div>
                                     {product.imageUrl && (
                                       <div style={{ width: '100%', aspectRatio: '1', maxWidth: 100, borderRadius: 8, background: '#fff', overflow: 'hidden', padding: 6, alignSelf: 'flex-start' }}>
-                                        <img src={product.imageUrl} alt={product.productName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                        <Image src={product.imageUrl} alt={product.productName} width={200} height={200} unoptimized style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                       </div>
                                     )}
                                     <div>
@@ -3247,16 +3240,16 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                                 );
                               })()}
                               <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                                {c.evidence_tier === 'approved_drug' && <img src="/images/badges/badge_approved_drug.png" alt="Approved Drug" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
-                                {c.evidence_tier === 'investigational' && <img src="/images/badges/badge_investigational_drug.png" alt="Investigational" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
-                                {c.evidence_tier === 'preclinical' && <img src="/images/badges/badge_preclinical.png" alt="Preclinical" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
-                                {c.evidence_tier === 'research_chemical' && <img src="/images/badges/badge_research_compound.png" alt="Research Compound" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
-                                {c.evidence_tier === 'cosmetic' && <img src="/images/badges/badge_cosmetic.png" alt="Cosmetic" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.evidence_tier === 'approved_drug' && <Image src="/images/badges/badge_approved_drug.png" alt="Approved Drug" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.evidence_tier === 'investigational' && <Image src="/images/badges/badge_investigational_drug.png" alt="Investigational" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.evidence_tier === 'preclinical' && <Image src="/images/badges/badge_preclinical.png" alt="Preclinical" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.evidence_tier === 'research_chemical' && <Image src="/images/badges/badge_research_compound.png" alt="Research Compound" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.evidence_tier === 'cosmetic' && <Image src="/images/badges/badge_cosmetic.png" alt="Cosmetic" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
 
-                                {c.is_stack && <img src="/images/badges/badge_stack.png" alt="Stack" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
-                                {c.is_temp_sensitive && <img src="/images/badges/badge_cold_chain.png" alt="Cold Chain" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
-                                {c.is_pro_angiogenic && <img src="/images/badges/badge_angio_alert.png" alt="Angio Alert" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
-                                {c.is_glp1 && <img src="/images/badges/badge_glp1.png" alt="GLP-1" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.is_stack && <Image src="/images/badges/badge_stack.png" alt="Stack" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.is_temp_sensitive && <Image src="/images/badges/badge_cold_chain.png" alt="Cold Chain" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.is_pro_angiogenic && <Image src="/images/badges/badge_angio_alert.png" alt="Angio Alert" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
+                                {c.is_glp1 && <Image src="/images/badges/badge_glp1.png" alt="GLP-1" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
                                 {c.year_discovered && <span style={{ background: 'rgba(168,180,192,0.08)', color: 'rgba(168,180,192,0.5)', padding: '2px 5px', borderRadius: 4, fontSize: '0.62rem', fontWeight: 600 }}>{c.year_discovered}</span>}
                                 <span style={{ background: `${color}15`, color: (color === '#00C4BC' || color === '#FF6B6B') ? '#FFF' : color, padding: '2px 5px', borderRadius: 4, fontSize: '0.62rem', fontWeight: 800 }}>{scores[origIdx].letter}</span>
                               </div>
@@ -3447,7 +3440,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                                 </div>
                                 {isWinner && (
                                   <div style={{ marginTop: 6, display: 'flex', alignItems: 'center' }}>
-                                    <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: '26px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
+                                    <Image src="/images/badges/badge_top_pick.png" alt="Top Pick" width={200} height={200} unoptimized style={{ height: '26px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
                                   </div>
                                 )}
                               </td>

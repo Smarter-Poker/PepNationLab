@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { vibrateLight, initHaptics } from '@/lib/messenger/haptics';
 import LandingSearchOverlay from '@/components/research/LandingSearchOverlay';
 
@@ -57,10 +58,12 @@ export default function ResearchLandingPage() {
         maxWidth: '800px',
       }}>
         {/* The Base Image */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src="/images/research/research-landing-bg-v2.png"
           alt="Research Library"
+          width={800}
+          height={600}
+          unoptimized
           style={{ width: '100%', height: 'auto', display: 'block' }}
         />
 

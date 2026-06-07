@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Activity, BookOpen, Layers } from 'lucide-react';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 
@@ -133,7 +134,7 @@ export default function AboutAreasPage() {
 
         {/* Footer Disclaimer */}
         <footer style={{ paddingTop: 'var(--space-5, 24px)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <img src="/images/research-use-pill.png" alt="Research Use Only" style={{ width: '100%', maxWidth: '600px', height: 'auto', marginBottom: '16px' }} />
+          <Image src="/images/research-use-pill.png" alt="Research Use Only" width={600} height={300} unoptimized style={{ width: '100%', maxWidth: '600px', height: 'auto', marginBottom: '16px' }} />
           <p style={{ fontSize: 'clamp(7px, 1.2vw, 14px)', color: 'var(--grey-500, #6B7785)', textAlign: 'center', whiteSpace: 'nowrap', margin: 0 }}>
             For Laboratory Research Use Only. This Material Restates Published Science And Is Not Medical Advice, Dosing Guidance, Or An Endorsement Of Human Use.
           </p>

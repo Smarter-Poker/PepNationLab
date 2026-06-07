@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { Package, CheckCircle, Truck, Gift, XCircle, DollarSign, User, MessageSquare, FileText, Clock, ShoppingCart, Link2, Bell, X, ArrowRight } from 'lucide-react';
@@ -294,10 +295,12 @@ export default function NavbarNotificationBell() {
         onMouseEnter={e => { if (!open) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
         onMouseLeave={e => { if (!open) e.currentTarget.style.background = 'none'; }}
       >
-        <img
-          src="/images/notification-bell.png"
+        <Image
+          src="/images/bell-icon.png"
           alt="Notifications"
-          width={34} height={34}
+          width={40}
+          height={40}
+          unoptimized
           style={{ transition: 'opacity 0.2s', display: 'block' }}
         />
 

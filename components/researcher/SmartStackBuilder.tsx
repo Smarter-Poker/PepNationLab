@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { Search, Plus, X, Layers, AlertTriangle, CheckCircle, Zap, ShieldAlert, FlaskConical } from 'lucide-react';
 import { analyzeStack, getCategoryFromName, StackComponent, StackAnalysis } from '@/lib/stackEngine';
 import { getProductImage } from '@/lib/categoryImage';
@@ -110,7 +111,7 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
                   className="hover-lift"
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                    <img src={item.image_url || getProductImage(null, item.category || '', item.name)} alt={item.name} style={{ width: 32, height: 32, borderRadius: 4, objectFit: 'cover' }} />
+                    <Image src={item.image_url || getProductImage(null, item.category || '', item.name)} alt={item.name} width={200} height={200} unoptimized style={{ width: 32, height: 32, borderRadius: 4, objectFit: 'cover' }} />
                     <div>
                       <div style={{ color: 'var(--white)', fontSize: '0.9rem', fontWeight: 600 }}>{item.name}</div>
                       <div style={{ color: 'var(--silver)', fontSize: '0.75rem' }}>{item.category || 'Compound'}</div>
@@ -231,7 +232,7 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
               }}
               style={{ background: 'none', border: 'none', padding: 0, cursor: (selectedItems.length < 2 || (aiAnalysis && aiAnalysis.synergyScore < 50)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', filter: (selectedItems.length < 2 || (aiAnalysis && aiAnalysis.synergyScore < 50)) ? 'grayscale(100%) opacity(0.5)' : 'drop-shadow(0 4px 15px rgba(0,229,255,0.3))' }}
             >
-              <img src="/images/add_stack_to_cart_btn.png" alt="Add Stack to Cart" style={{ height: 48, objectFit: 'contain' }} />
+              <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack to Cart" width={200} height={200} unoptimized style={{ height: 48, objectFit: 'contain' }} />
             </button>
           </div>
         </div>

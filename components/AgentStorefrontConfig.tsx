@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import UniqueField from '@/components/UniqueField';
@@ -221,7 +222,7 @@ export default function AgentStorefrontConfig({
                 overflow: 'hidden', position: 'relative'
               }}>
                 {logoUrl ? (
-                  <img src={logoUrl} alt="Store Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', background: 'var(--white)' }} />
+                  <Image src={logoUrl} alt="Store Logo" width={200} height={200} unoptimized style={{ width: '100%', height: '100%', objectFit: 'contain', background: 'var(--white)' }} />
                 ) : (
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--grey-500)" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 )}

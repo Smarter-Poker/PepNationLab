@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
+import Image from 'next/image';
 
 interface GifResult { id: string; title: string; gifUrl: string | null; thumbUrl: string | null }
 interface Props { onPick: (gifUrl: string) => void; onClose: () => void; onUnavailable?: () => void }
@@ -85,10 +86,14 @@ export default function GifPicker({ onPick, onClose, onUnavailable }: Props) {
             aria-label={`Send Gif ${r.title}`} title={r.title}
             style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer' }}
           >
-            <img src={r.thumbUrl ?? r.gifUrl} alt={r.title}
-              style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 6 }}
-              loading="lazy"
-            />
+            <div style={{ position: 'relative', width: '100%', height: 100 }}>
+              <Image src={r.thumbUrl ?? r.gifUrl} alt={r.title}
+                fill
+                unoptimized
+                style={{ objectFit: 'cover', borderRadius: 6 }}
+                loading="lazy"
+              />
+            </div>
           </button>
         ))}
       </div>

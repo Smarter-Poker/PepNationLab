@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function StorefrontBackButton({ dashLink }: { dashLink?: string }) {
   const router = useRouter();
@@ -32,7 +33,7 @@ export default function StorefrontBackButton({ dashLink }: { dashLink?: string }
       }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/back-arrow.png" width={42} height={42} alt="Back" style={{ objectFit: 'contain' }} />
+      <Image src="/back-arrow.png" alt="Back" width={42} height={42} unoptimized style={{ objectFit: 'contain' }} />
     </button>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import Messaging from '@/components/Messaging';
 import { useCart } from '@/components/CartContext';
 import { toast } from 'sonner';
@@ -900,7 +901,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                     <div key={f.product_id} className="glass-panel" style={{ padding: 'var(--space-4)' }}>
                       <div style={{ position: 'relative', height: 120, borderRadius: 8, overflow: 'hidden', marginBottom: 10, background: 'rgba(255,255,255,0.03)' }}>
                         {f.products.image_url ? (
-                          <img src={f.products.image_url} alt={f.products.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <Image src={f.products.image_url} alt={f.products.name} width={400} height={400} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)' }}>No Image</div>
                         )}

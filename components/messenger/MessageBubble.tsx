@@ -11,6 +11,7 @@ import LinkPreview from './LinkPreview';
 import LabelsMenu from './LabelsMenu';
 import Avatar from './Avatar';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 interface Props {
   message: Message;
@@ -291,7 +292,8 @@ export default function MessageBubble({
                overflow: 'hidden',
                width: '100%',
             }}>
-              <img src={message.media_url} alt="Image" loading="lazy" className="media-edge-to-edge"
+              <Image src={message.media_url} alt="Image" loading="lazy" width={320} height={240} className="media-edge-to-edge"
+                unoptimized
                 onLoad={() => {
                   if (isLast) {
                     const el = document.querySelector('.msg-list');
@@ -301,7 +303,7 @@ export default function MessageBubble({
                 style={{ 
                   maxWidth: 320, 
                   maxHeight: isProof ? 450 : 240, 
-                  height: isProof ? 'auto' : undefined,
+                  height: 'auto',
                   borderRadius: isProof ? 8 : 10, 
                   display: 'block', 
                   objectFit: isProof ? 'contain' : 'cover',
@@ -325,14 +327,15 @@ export default function MessageBubble({
             }} 
             style={{ background: 'transparent', border: 0, padding: 0, cursor: isOptimistic ? 'default' : 'zoom-in' }}
           >
-            <img src={message.media_url} alt="Gif" loading="lazy" className="media-edge-to-edge"
+            <Image src={message.media_url} alt="Gif" loading="lazy" width={320} height={240} className="media-edge-to-edge"
+              unoptimized
               onLoad={() => {
                 if (isLast) {
                   const el = document.querySelector('.msg-list');
                   if (el) el.scrollTop = el.scrollHeight;
                 }
               }}
-              style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block', width: '100%', objectFit: 'cover', ...opacityStyle }}
+              style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block', width: '100%', height: 'auto', objectFit: 'cover', ...opacityStyle }}
             />
           </button>
         </div>

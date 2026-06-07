@@ -9,6 +9,7 @@ import { FlaskConical, Dna, ArrowRight, X } from 'lucide-react';
 import { prewarmProxy, isSocialPlatformUrl } from '@/lib/ArticleProxyUtils';
 import DynamicAddToCartButton from '../storefront/DynamicAddToCartButton';
 import IframeModal from '../ui/IframeModal';
+import Image from 'next/image';
 
 /* ─── Interfaces ─── */
 
@@ -756,11 +757,12 @@ export default function AreaProductGrid({
                 overflow: 'hidden',
               }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={p.imageUrl}
                   alt={p.productName}
                   width={140}
                   height={140}
+                  unoptimized
                   loading="lazy"
                   style={{
                     objectFit: 'contain',
@@ -1223,7 +1225,7 @@ export default function AreaProductGrid({
               filter: 'drop-shadow(0 4px 15px rgba(0,229,255,0.3))'
             }}
           >
-            <img src="/images/add_stack_to_cart_btn.png" alt="Add Stack to Cart" style={{ height: 48, objectFit: 'contain' }} />
+            <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack to Cart" width={200} height={48} unoptimized style={{ height: 48, objectFit: 'contain' }} />
           </button>
         </div>
       )}

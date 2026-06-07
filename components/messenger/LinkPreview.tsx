@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import IframeLink from '@/components/ui/IframeLink';
+import Image from 'next/image';
 
 interface PreviewData {
   url_hash: string;
@@ -52,10 +53,12 @@ export default function LinkPreview({ url }: Props) {
       }}
     >
       {data.image_url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={data.image_url}
           alt=""
+          width={48}
+          height={48}
+          unoptimized
           style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4, flexShrink: 0, background: '#0F1923' }}
         />
       )}

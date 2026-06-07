@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 
 interface QRCodeGeneratorProps {
   url: string;
@@ -84,8 +85,7 @@ export default function QRCodeGenerator({
           display: 'inline-block',
           boxShadow: '0 0 20px rgba(192,184,168,0.15)',
         }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qrCodeData as string} alt="Storefront QR Code" width={size} height={size} style={{ display: 'block', width: size, height: size }} />
+          <Image src={qrCodeData as string} alt="Storefront QR Code" width={size} height={size} unoptimized style={{ display: 'block', width: size, height: size }} />
         </div>
         <a
           href={qrCodeData as string}

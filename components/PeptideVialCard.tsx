@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 
 const CATEGORY_COLORS: Record<string, { primary: string; dark: string; vialImg: string; subtitle: string }> = {
   'Weight Loss & Metabolism':    { primary: '#E84040', dark: '#9B1515', vialImg: '/images/vial_weight_loss.png',    subtitle: 'Weight Loss &\nMetabolism' },
@@ -65,10 +66,12 @@ export default function PeptideVialCard({ name, category, className = '', style 
 
   return (
     <div className={className} style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', ...style }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={colors.vialImg}
         alt={name}
+        width={300}
+        height={400}
+        unoptimized
         style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '4px', transition: 'transform 0.4s ease' }}
         className="store-image-hover"
         onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0'; }}

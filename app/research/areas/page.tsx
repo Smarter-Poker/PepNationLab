@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 import LandingSearchOverlay from '@/components/research/LandingSearchOverlay';
@@ -17,9 +18,12 @@ export default function TherapeuticAreasPage() {
     }}>
       {/* Dynamic Image Header */}
       <header style={{ marginTop: '-110px', marginBottom: '-110px', position: 'relative', width: '100%', borderRadius: '12px', zIndex: 10 }}>
-        <img 
+        <Image 
           src="/images/areas_header.png" 
-          alt="Therapeutic Areas" 
+          alt="Therapeutic Areas"
+          width={1200}
+          height={400}
+          unoptimized
           style={{ width: '100%', display: 'block' }} 
         />
 
@@ -121,7 +125,7 @@ export default function TherapeuticAreasPage() {
                 href={`/research/area/${key}`}
                 className="full-image-link"
               >
-                <img src={`/images/areas/${key}.png`} alt={meta.label} className="full-card-image" />
+                <Image src={`/images/areas/${key}.png`} alt={meta.label} width={400} height={300} unoptimized className="full-card-image" />
                 <p style={{ 
                   marginTop: '16px', 
                   color: 'var(--silver, #A8B4C0)', 
@@ -140,10 +144,13 @@ export default function TherapeuticAreasPage() {
       </section>
 
       <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '32px' }}>
-        <img 
+        <Image 
           src="/images/badges/research_use_pill_transparent.png" 
           alt="Research Use Only - Not For Human Use - Laboratory Research Only" 
-          style={{ maxWidth: '95%', height: 'auto', maxHeight: '150px' }} 
+          width={800}
+          height={150}
+          unoptimized
+          style={{ maxWidth: '95%', height: 'auto', maxHeight: '150px', objectFit: 'contain' }} 
         />
       </div>
     </div>

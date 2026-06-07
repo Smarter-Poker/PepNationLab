@@ -25,6 +25,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 import { ProtocolScheduler } from '../research/ProtocolScheduler';
@@ -484,7 +485,7 @@ function MatchResultsDrawer({
                       onClick={handleAddStack}
                       style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 4px 15px rgba(246,173,85,0.3))' }}
                     >
-                      <img src="/images/add_stack_to_cart_btn.png" alt="Add Stack to Cart" style={{ height: 42, objectFit: 'contain' }} />
+                      <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack to Cart" width={200} height={200} unoptimized style={{ height: 42, objectFit: 'contain' }} />
                     </button>
                   </div>
                   <div style={{ color: '#E2E8F0', fontSize: '0.8rem', lineHeight: 1.4 }}>
@@ -1615,11 +1616,7 @@ export default function DiscoveryHero({
                   }}
                 >
                   <div style={{ width: '100%', aspectRatio: '1 / 1', position: 'relative' }}>
-                    <img 
-                      src={`/images/areas/${area}.png`} 
-                      alt={labelForArea(area).replace('\n', ' ')} 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    />
+                    <Image src={`/images/areas/${area}.png`} alt={labelForArea(area).replace('\n', ' ')} width={200} height={200} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                   </div>
                   
                   {/* Dynamic description underneath the image */}

@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 type Tab = 'csv' | 'images';
 
@@ -464,10 +465,12 @@ export default function BulkImportModal({ onClose }: { onClose: () => void }) {
                           textAlign: 'center',
                         }}
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <Image
                           src={url}
                           alt={f.name}
+                          width={96}
+                          height={64}
+                          unoptimized
                           style={{ width: '100%', height: 64, objectFit: 'cover', borderRadius: 'var(--radius-sm)' }}
                           onLoad={() => URL.revokeObjectURL(url)}
                         />

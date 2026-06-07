@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Key } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -68,8 +69,7 @@ export default function ForgotPasswordPage() {
       <div style={{ width: '100%', maxWidth: 440, position: 'relative' }}>
         <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
           <Link href="/" style={{ display: 'inline-block' }} aria-label="Pep Nation Lab Home">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="Pep Nation Lab" style={{ height: 108, width: 'auto', display: 'inline-block' }} />
+            <Image src="/logo.svg" alt="Pep Nation Lab" width={108} height={108} unoptimized style={{ height: 108, width: 'auto', display: 'inline-block' }} />
           </Link>
           <p style={{ marginTop: 'var(--space-2)', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
             Reset Your Password

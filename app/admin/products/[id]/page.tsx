@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import AdminProductLots from '@/components/AdminProductLots';
 
@@ -278,8 +279,7 @@ export default function EditProductPage() {
               />
               {form.image_url && (
                 <div style={{ marginTop: 'var(--space-3)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: 'var(--border-subtle)', width: 120, height: 120, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={form.image_url} alt="Product Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  <Image src={form.image_url} alt="Product Preview" width={120} height={120} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
               )}

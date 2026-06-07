@@ -12,9 +12,12 @@ export default function FooterSection() {
       paddingBottom: 'var(--space-8)'
     }}>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-10)', padding: '0 var(--space-4)' }}>
-        <img 
+        <Image 
           src="/images/badges/research_use_pill_transparent.png" 
           alt="Research Use Only - Not For Human Use - Laboratory Research Only" 
+          width={800}
+          height={150}
+          unoptimized
           style={{ maxWidth: '95%', height: 'auto', maxHeight: '150px' }} 
         />
       </div>
@@ -29,7 +32,7 @@ export default function FooterSection() {
           {/* Brand column */}
           <div style={{ gridColumn: 'span 1' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-              <Image src="/logo-mark.svg" alt="Pep Nation Lab" width={40} height={40} style={{ display: 'block' }} />
+              <Image src="/logo-mark.svg" alt="Pep Nation Lab" width={40} height={40} style={{ display: 'block' }} unoptimized />
               <div style={{
                 fontFamily: 'var(--font-brand)',
                 fontSize: '1rem',

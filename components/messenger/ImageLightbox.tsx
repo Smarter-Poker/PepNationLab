@@ -1,6 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
+import Image from 'next/image';
 
 interface Props { src: string; onClose: () => void }
 
@@ -44,11 +45,15 @@ export default function ImageLightbox({ src, onClose }: Props) {
         <X size={20} />
       </button>
       {/* R26: dvh accounts for iOS Safari address bar; safe-area reserved on each side. */}
-      <img src={src} alt="Preview" style={{
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
         maxWidth: 'calc(100vw - max(16px, env(safe-area-inset-left, 0px)) - max(16px, env(safe-area-inset-right, 0px)))',
         maxHeight: 'calc(100dvh - max(16px, env(safe-area-inset-top, 0px)) - max(16px, env(safe-area-inset-bottom, 0px)))',
-        objectFit: 'contain',
-      }} />
+      }}>
+        <Image src={src} alt="Preview" fill unoptimized style={{ objectFit: 'contain' }} />
+      </div>
     </div>
   );
 }

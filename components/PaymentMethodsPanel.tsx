@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 /* ─────────────────────────────────────────────────────────
    All supported payment methods with labels and placeholders
@@ -15,56 +16,56 @@ export const PAYMENT_METHODS = [
     key: 'zelle',
     label: 'Zelle',
     placeholder: 'Phone Number Or Email',
-    icon: <img src="/payment-logos/zelle.svg" alt="Zelle" style={baseStyle} />,
+    icon: <Image src="/payment-logos/zelle.svg" alt="Zelle" width={60} height={20} unoptimized style={baseStyle} />,
     color: '#6B35C4',
   },
   {
     key: 'cashapp',
     label: 'Cash App',
     placeholder: '$Cashtag (E.g. $YourName)',
-    icon: <img src="/payment-logos/cashapp.svg" alt="Cash App" style={baseStyle} />,
+    icon: <Image src="/payment-logos/cashapp.svg" alt="Cash App" width={60} height={20} unoptimized style={baseStyle} />,
     color: '#00D632',
   },
   {
     key: 'venmo',
     label: 'Venmo',
     placeholder: '@Username (E.g. @YourName)',
-    icon: <img src="/payment-logos/venmo.svg" alt="Venmo" style={scaleStyle(1.4)} />,
+    icon: <Image src="/payment-logos/venmo.svg" alt="Venmo" width={60} height={20} unoptimized style={scaleStyle(1.4)} />,
     color: '#3D95CE',
   },
   {
     key: 'paypal',
     label: 'PayPal',
     placeholder: 'Email Or @Username',
-    icon: <img src="/payment-logos/paypal.svg" alt="PayPal" style={baseStyle} />,
+    icon: <Image src="/payment-logos/paypal.svg" alt="PayPal" width={60} height={20} unoptimized style={baseStyle} />,
     color: '#003087',
   },
   {
     key: 'apple_cash',
     label: 'Apple Cash',
     placeholder: 'Phone Number Or Apple ID Email',
-    icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={scaleStyle(1.4)} />,
+    icon: <Image src="/payment-logos/apple_cash.svg" alt="Apple Cash" width={60} height={20} unoptimized style={scaleStyle(1.4)} />,
     color: '#E0E0E0',
   },
   {
     key: 'google_wallet',
     label: 'Google Wallet',
     placeholder: 'Gmail Address',
-    icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={scaleStyle(1.4)} />,
+    icon: <Image src="/payment-logos/google_wallet.svg" alt="Google Wallet" width={60} height={20} unoptimized style={scaleStyle(1.4)} />,
     color: '#4285F4',
   },
   {
     key: 'wise',
     label: 'Wise',
     placeholder: 'Email Or Wise Username',
-    icon: <img src="/payment-logos/wise.svg" alt="Wise" style={baseStyle} />,
+    icon: <Image src="/payment-logos/wise.svg" alt="Wise" width={60} height={20} unoptimized style={baseStyle} />,
     color: '#9FE870',
   },
   {
     key: 'chime',
     label: 'Chime',
     placeholder: 'Chime Username Or Link',
-    icon: <img src="/payment-logos/chime.png" alt="Chime" style={baseStyle} />,
+    icon: <Image src="/payment-logos/chime.png" alt="Chime" width={60} height={20} unoptimized style={baseStyle} />,
     color: '#3ABA78',
   },
 ] as const;

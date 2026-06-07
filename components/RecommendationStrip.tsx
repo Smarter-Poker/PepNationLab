@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { getProductImage } from '@/lib/categoryImage';
 
 export interface RecommendationItem {
@@ -127,10 +128,12 @@ export default function RecommendationStrip({
                     }}
                   >
                     {getProductImage(item.image_url, item.category || 'Other', item.name) ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
+                      <Image
                         src={getProductImage(item.image_url, item.category || 'Other', item.name)}
                         alt={item.name}
+                        width={200}
+                        height={200}
+                        unoptimized
                         style={{
                           width: '100%',
                           height: '100%',

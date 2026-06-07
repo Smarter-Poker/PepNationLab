@@ -22,6 +22,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Edit2, Plus, Trash2, Check, Star } from 'lucide-react';
+import Image from 'next/image';
 
 type MethodId =
   | 'zelle'
@@ -56,14 +57,14 @@ const baseStyle = { height: 28, width: 'auto', objectFit: 'contain' as const };
 const scaleStyle = (scale: number) => ({ ...baseStyle, transform: `scale(${scale})` });
 
 const PAYMENT_ICONS: Record<MethodId, React.ReactNode> = {
-  zelle: <img src="/payment-logos/zelle.svg" alt="Zelle" style={baseStyle} />,
-  venmo: <img src="/payment-logos/venmo.svg" alt="Venmo" style={scaleStyle(1.4)} />,
-  cashapp: <img src="/payment-logos/cashapp.svg" alt="Cash App" style={baseStyle} />,
-  apple_cash: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={scaleStyle(1.4)} />,
-  paypal: <img src="/payment-logos/paypal.svg" alt="PayPal" style={baseStyle} />,
-  google_wallet: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={scaleStyle(1.4)} />,
-  wise: <img src="/payment-logos/wise.svg" alt="Wise" style={baseStyle} />,
-  chime: <img src="/payment-logos/chime.png" alt="Chime" style={baseStyle} />,
+  zelle: <Image src="/payment-logos/zelle.svg" width={40} height={28} alt="Zelle" unoptimized style={baseStyle} />,
+  venmo: <Image src="/payment-logos/venmo.svg" width={40} height={28} alt="Venmo" unoptimized style={scaleStyle(1.4)} />,
+  cashapp: <Image src="/payment-logos/cashapp.svg" width={40} height={28} alt="Cash App" unoptimized style={baseStyle} />,
+  apple_cash: <Image src="/payment-logos/apple_cash.svg" width={40} height={28} alt="Apple Cash" unoptimized style={scaleStyle(1.4)} />,
+  paypal: <Image src="/payment-logos/paypal.svg" width={40} height={28} alt="PayPal" unoptimized style={baseStyle} />,
+  google_wallet: <Image src="/payment-logos/google_wallet.svg" width={40} height={28} alt="Google Wallet" unoptimized style={scaleStyle(1.4)} />,
+  wise: <Image src="/payment-logos/wise.svg" width={40} height={28} alt="Wise" unoptimized style={baseStyle} />,
+  chime: <Image src="/payment-logos/chime.png" width={40} height={28} alt="Chime" unoptimized style={baseStyle} />,
 };
 
 interface Props {

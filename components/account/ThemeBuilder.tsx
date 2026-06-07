@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import IframeLink from '@/components/ui/IframeLink';
+import Image from 'next/image';
 
 export default function ThemeBuilder() {
   const [theme, setTheme] = useState<any>(null);
@@ -132,8 +133,10 @@ export default function ThemeBuilder() {
             <span style={{ padding: '8px 12px', borderRadius: 6, background: accent, color: '#000', fontWeight: 700, fontSize: '0.82rem' }}>Accent</span>
           </div>
           {hero && (
-            <img src={hero} alt="Hero preview" style={{ width: '100%', marginTop: 14, borderRadius: 8, maxHeight: 200, objectFit: 'cover' }}
-              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            <div style={{ position: 'relative', width: '100%', height: 200, marginTop: 14 }}>
+              <Image src={hero} alt="Hero preview" fill unoptimized style={{ borderRadius: 8, objectFit: 'cover' }}
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            </div>
           )}
         </div>
         {theme?.slug && (
