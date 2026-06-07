@@ -3240,7 +3240,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                                         (${(costPerMg).toFixed(2)}/mg)
                                       </div>}
                                       <div style={{ marginTop: costPerMg ? 0 : 6 }}>
-                                        <ResearchCartButton productName={product.productName} compoundName={c.display_name} size="sm" />
+                                        <ResearchCartButton productName={product.productName} compoundName={c.display_name} size="sm" disabled={product.inventoryCount <= 0} />
                                       </div>
                                     </div>
                                   </div>
