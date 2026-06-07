@@ -134,9 +134,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const totalCartQty = cart.reduce((sum, item) => sum + item.quantity, 0);
   const meetsOverallMin = totalCartQty >= minOverallQty;
 
-  // Always use costPrice for subtotal - for agent self-buy this IS their tier price.
   const cartSubtotal = storefrontCart.length > 0
-    ? storefrontCart.reduce((sum, item) => sum + item.costPrice * item.quantity, 0)
+    ? storefrontCart.reduce((sum, item) => sum + (item.bundleName ? item.costPrice * 0.9 : item.costPrice) * item.quantity, 0)
     : contextSubtotal;
 
   // Agent Direct Pricing Discount = difference between public retail and their tier cost
