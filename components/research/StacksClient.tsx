@@ -267,12 +267,12 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
         </div>
       )}
 
-      {/* Stack Drawer Modal */}
       <AnimatePresence>
         {activeStackDrawer && (
           <StackDrawer 
             stackSlug={activeStackDrawer} 
             bySlug={bySlug} 
+            products={products}
             onClose={() => setActiveStackDrawer(null)} 
             onAddToCart={(stack) => handleAddToCart(stack)}
             bundlePrice={getBundlePrice(bySlug.get(activeStackDrawer!)!)}
@@ -430,30 +430,48 @@ function StacksCompareDrawer({ stack1, stack2, bySlug, onClose, synergy1, synerg
 // Node Map Visualizer Component
 // ─────────────────────────────────────────────────────────────────────────────
 function NodeMapVisualizer({ stacks, compounds, bySlug }: { stacks: Compound[], compounds: Compound[], bySlug: Map<string, Compound> }) {
-  // Simple CSS-based constellation map representation
+  const [centerSlug, setCenterSlug] = useState<string>('bpc-157');
+
+  const { centerName, orbitStacks } = useMemo(() => {
+    let topSlug = 'bpc-157';
+    if (stacks.length > 0) {
+      const compoundFreq = new Map<string, number>();
+      stacks.forEach(s => s.stack_components.forEach(c => compoundFreq.set(c, (compoundFreq.get(c) || 0) + 1)));
+      let maxFreq = 0;
+      for (const [slug, freq] of compoundFreq.entries()) {
+        if (freq > maxFreq) { maxFreq = freq; topSlug = slug; }
+      }
+    }
+    const centerName = bySlug.get(topSlug)?.display_name || topSlug;
+    const orbitStacks = stacks.filter(s => s.stack_components.includes(topSlug)).slice(0, 5);
+    return { centerName, orbitStacks };
+  }, [stacks, bySlug]);
+
   return (
     <div style={{ height: 600, width: '100%', background: '#0a0f14', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: 20, left: 20, color: '#A8B4C0', fontSize: '0.85rem' }}>
-        Interactive Network Graph (CSS Visualizer)
+        Interactive Network Graph (Showing stacks for <strong>{centerName}</strong>)
       </div>
       
       <div style={{ position: 'relative', width: 400, height: 400 }}>
         {/* Center Node */}
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 80, height: 80, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,229,255,0.2) 0%, rgba(0,0,0,0.8) 100%)', border: '2px solid #00E5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, zIndex: 10 }}>
-          BPC-157
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 80, height: 80, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,229,255,0.2) 0%, rgba(0,0,0,0.8) 100%)', border: '2px solid #00E5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, zIndex: 10, textAlign: 'center', fontSize: '0.8rem' }}>
+          {centerName}
         </div>
 
         {/* Orbit Nodes */}
-        {[0, 72, 144, 216, 288].map((angle, i) => {
+        {orbitStacks.length === 0 ? (
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', marginTop: 80, color: '#A8B4C0', fontSize: '0.85rem' }}>No stacks available for this compound.</div>
+        ) : orbitStacks.map((orbitStack, i) => {
+          const angle = (360 / orbitStacks.length) * i;
           const r = 140;
           const rad = angle * (Math.PI / 180);
           const x = 200 + r * Math.cos(rad) - 40;
           const y = 200 + r * Math.sin(rad) - 40;
-          const labels = ['Wolverine', 'Recovery', 'Healing Pro', 'Gut Health', 'Joint Stack'];
           
           return (
             <motion.div 
-              key={angle}
+              key={orbitStack.slug}
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
@@ -463,7 +481,7 @@ function NodeMapVisualizer({ stacks, compounds, bySlug }: { stacks: Compound[], 
                 <line x1={0} y1={0} x2={200 - x - 40} y2={200 - y - 40} stroke="rgba(0,229,255,0.2)" strokeWidth="2" strokeDasharray="4 4" />
               </svg>
               <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#68D391', marginBottom: 8 }} />
-              <span style={{ color: '#A8B4C0', fontSize: '0.7rem', textAlign: 'center', whiteSpace: 'nowrap' }}>{labels[i]}</span>
+              <span style={{ color: '#A8B4C0', fontSize: '0.7rem', textAlign: 'center', whiteSpace: 'nowrap' }}>{orbitStack.display_name}</span>
             </motion.div>
           );
         })}
@@ -475,11 +493,30 @@ function NodeMapVisualizer({ stacks, compounds, bySlug }: { stacks: Compound[], 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stack Drawer / Modal (with Reconstitution Math)
 // ─────────────────────────────────────────────────────────────────────────────
-function StackDrawer({ stackSlug, bySlug, onClose, onAddToCart, bundlePrice, synergyData }: any) {
+function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundlePrice, synergyData }: any) {
   const stack = bySlug.get(stackSlug);
   const [activeTab, setActiveTab] = useState<'overview' | 'calculator'>('overview');
+  const [calcState, setCalcState] = useState<Record<string, { mass: number, diluent: number }>>({});
 
   if (!stack) return null;
+
+  const missingComponents = stack.stack_components.filter((slug: string) => !products.some((p: AreaProduct) => p.compoundSlug === slug));
+
+  const handleCalcChange = (slug: string, field: 'mass' | 'diluent', value: number) => {
+    setCalcState(prev => ({
+      ...prev,
+      [slug]: {
+        ...(prev[slug] || { mass: 5, diluent: 2 }),
+        [field]: value
+      }
+    }));
+  };
+
+  const getConcentration = (slug: string) => {
+    const s = calcState[slug] || { mass: 5, diluent: 2 };
+    if (!s.diluent || !s.mass) return 0;
+    return s.mass / s.diluent; // mg/mL
+  };
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
@@ -503,10 +540,16 @@ function StackDrawer({ stackSlug, bySlug, onClose, onAddToCart, bundlePrice, syn
             <>
               <p style={{ color: '#D0DAE4', lineHeight: 1.6, fontSize: '0.95rem' }}>{stack.stack_rationale}</p>
               
+              {missingComponents.length > 0 && (
+                <div style={{ marginTop: 16, padding: 12, background: 'rgba(255, 107, 107, 0.1)', border: '1px solid rgba(255, 107, 107, 0.3)', borderRadius: 12, color: '#FF6B6B', fontSize: '0.85rem' }}>
+                  <strong>Note:</strong> {missingComponents.length} component(s) ({missingComponents.map((s: string) => bySlug.get(s)?.display_name).join(', ')}) are currently out of stock and will be skipped when adding to cart.
+                </div>
+              )}
+
               <div style={{ marginTop: 24, background: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 20 }}>
                 <h4 style={{ margin: '0 0 16px', color: '#fff' }}>Synergy Profile</h4>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-                  <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'conic-gradient(#00E5FF 0%, #00E5FF 80%, rgba(255,255,255,0.1) 80%, rgba(255,255,255,0.1) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: 60, height: 60, borderRadius: '50%', background: `conic-gradient(#00E5FF 0%, #00E5FF ${synergyData.synergyScore}%, rgba(255,255,255,0.1) ${synergyData.synergyScore}%, rgba(255,255,255,0.1) 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ width: 50, height: 50, borderRadius: '50%', background: '#0F1923', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800 }}>{synergyData.synergyScore}</div>
                   </div>
                   <div style={{ flex: 1 }}>
@@ -520,24 +563,30 @@ function StackDrawer({ stackSlug, bySlug, onClose, onAddToCart, bundlePrice, syn
           ) : (
             <div>
               <p style={{ color: '#A8B4C0', fontSize: '0.9rem', marginBottom: 24 }}>Calculate exactly how much Bacteriostatic Water to add to each component in this stack based on your target concentration.</p>
-              {stack.stack_components.map((slug: string) => (
-                <div key={slug} style={{ marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <h4 style={{ margin: '0 0 12px', color: '#fff' }}>{bySlug.get(slug)?.display_name}</h4>
-                  <div style={{ display: 'flex', gap: 16 }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.75rem', color: '#A8B4C0', marginBottom: 6 }}>Vial Mass (mg)</label>
-                      <input type="number" defaultValue={5} style={{ width: '100%', padding: 8, borderRadius: 6, background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
+              {stack.stack_components.map((slug: string) => {
+                const s = calcState[slug] || { mass: 5, diluent: 2 };
+                const mgPerMl = getConcentration(slug);
+                const mcgPerMl = mgPerMl * 1000;
+
+                return (
+                  <div key={slug} style={{ marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <h4 style={{ margin: '0 0 12px', color: '#fff' }}>{bySlug.get(slug)?.display_name}</h4>
+                    <div style={{ display: 'flex', gap: 16 }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.75rem', color: '#A8B4C0', marginBottom: 6 }}>Vial Mass (mg)</label>
+                        <input type="number" value={s.mass || ''} onChange={e => handleCalcChange(slug, 'mass', parseFloat(e.target.value) || 0)} style={{ width: '100%', padding: 8, borderRadius: 6, background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.75rem', color: '#A8B4C0', marginBottom: 6 }}>Diluent added (mL)</label>
+                        <input type="number" step="0.5" value={s.diluent || ''} onChange={e => handleCalcChange(slug, 'diluent', parseFloat(e.target.value) || 0)} style={{ width: '100%', padding: 8, borderRadius: 6, background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
+                      </div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.75rem', color: '#A8B4C0', marginBottom: 6 }}>Diluent added (mL)</label>
-                      <input type="number" defaultValue={2} style={{ width: '100%', padding: 8, borderRadius: 6, background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
+                    <div style={{ marginTop: 16, padding: 12, background: 'rgba(0,229,255,0.05)', borderRadius: 8, color: '#00E5FF', fontSize: '0.85rem', fontWeight: 600 }}>
+                      Concentration: {mgPerMl.toFixed(2)} mg / mL ({mcgPerMl.toFixed(0)} mcg / mL)
                     </div>
                   </div>
-                  <div style={{ marginTop: 16, padding: 12, background: 'rgba(0,229,255,0.05)', borderRadius: 8, color: '#00E5FF', fontSize: '0.85rem', fontWeight: 600 }}>
-                    Concentration: 2.5 mg / mL (2500 mcg / mL)
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

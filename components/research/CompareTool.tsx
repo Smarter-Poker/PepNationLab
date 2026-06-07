@@ -27,13 +27,14 @@ import {
   Zap, BookOpen, FlaskConical, Shield, Star,
   Clock, Thermometer, ArrowRight, BarChart3, Beaker,
   Scale, Syringe, Wrench, Hourglass, Filter, List, Smartphone, LayoutList, MoveUp, MoveDown,
-  Sparkles, Moon, Heart, Brain, FileText, Mic
+  Sparkles, Moon, Heart, Brain, FileText, Mic, ShoppingCart, Crosshair, Target
 } from 'lucide-react';
-import { type Compound, evidenceTier, researchAreaLabel, RISK_META } from '@/lib/compounds';
+import { type Compound, evidenceTier, researchAreaLabel, RISK_META, calculateStackSynergy } from '@/lib/compounds';
 import AttributeRadarChart, { type RadarDataPoint } from './AttributeRadarChart';
 import InCellGlossaryTooltip from './InCellGlossaryTooltip';
 import type { AreaProduct } from '@/lib/area-products-server';
 import ResearchCartButton from './ResearchCartButton';
+import { useCart } from '@/components/CartContext';
 
 const MAX_COLUMNS = 4;
 const NL = 'Not Listed';
@@ -1774,6 +1775,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const cartContext = useCart();
 
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>(() => {
     let slugs = initialSlugs;
@@ -2121,6 +2123,32 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
             </div>
           )}
         </div>
+
+        {/* Quick Filters */}
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', width: '100%', marginTop: 8 }}>
+          {['Weight Loss', 'Tissue Repair', 'Cognitive', 'Muscle Growth', 'Anti-Aging', 'GLP-1'].map(tag => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => { setSearchQuery(tag); setSearchFocused(true); }}
+              style={{
+                background: searchQuery.toLowerCase() === tag.toLowerCase() ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${searchQuery.toLowerCase() === tag.toLowerCase() ? 'rgba(0,196,188,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                color: searchQuery.toLowerCase() === tag.toLowerCase() ? '#00C4BC' : '#A8B4C0',
+                padding: '4px 10px',
+                borderRadius: 999,
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                flexShrink: 0
+              }}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
         <span style={{ color: 'rgba(168,180,192,0.7)', fontSize: '0.82rem', fontWeight: 700 }}>{selected.length}/{MAX_COLUMNS}</span>
         {selected.length >= 2 && (
           <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -2136,6 +2164,30 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
             <button type="button" onClick={handleExportJSON} className="action-btn-nickel"><Download size={13} /> JSON</button>
             <button type="button" onClick={handleShare} className="action-btn-nickel">{copied ? <Check size={13} color="#00C4BC" /> : <Share2 size={13} />} {copied ? 'Copied!' : 'Share'}</button>
             <button type="button" onClick={() => window.print()} className="action-btn-nickel"><Printer size={13} /> Print</button>
+            <button type="button" onClick={() => {
+              if (!cartContext) return;
+              const itemsToAdd = selected
+                .map(c => products.find(p => p.compoundSlug === c.slug))
+                .filter(Boolean)
+                .map(p => ({
+                  product: {
+                    id: p!.agentProductId,
+                    name: p!.productName,
+                    sku: p!.productName, // fallback
+                    retailPrice: p!.retailPrice,
+                    costPrice: p!.wholesalePrice,
+                    bulkCostPrice: p!.wholesalePrice,
+                    bulkThreshold: 1,
+                    weightOz: p!.weightOz
+                  },
+                  quantity: 1
+                }));
+              if (itemsToAdd.length > 0) {
+                cartContext.addMultipleToCart(itemsToAdd, 'Research Stack');
+              }
+            }} className="action-btn-nickel" style={{ background: 'rgba(0,196,188,0.15)', color: '#00C4BC', border: '1px solid rgba(0,196,188,0.4)' }}>
+              <ShoppingCart size={13} /> Add Stack to Cart
+            </button>
           </div>
         )}
         {selected.length > 0 && <button type="button" onClick={() => setSelectedSlugs([])} style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', color: '#F08A8A', borderRadius: 7, padding: '7px 14px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>Clear All</button>}
@@ -3129,8 +3181,6 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
           </div>
         </div>
       )}
-
-      {/* Jump to Group Menu Modal */}
       {jumpMenuOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setJumpMenuOpen(false)}>
           <div style={{ background: '#162230', width: '100%', maxWidth: 400, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, boxShadow: '0 -10px 40px rgba(0,0,0,0.5)', animation: 'slideUp 0.3s ease-out' }} onClick={e => e.stopPropagation()}>

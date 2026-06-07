@@ -14,7 +14,9 @@
  *   - chembl_id / uniprot_id / unii external links
  */
 
+import { useState } from 'react';
 import Link from 'next/link';
+import IframeModal from '@/components/ui/IframeModal';
 import { type Compound, evidenceTier, wadaLabel, RISK_META } from '@/lib/compounds';
 
 interface Props {
@@ -79,6 +81,7 @@ function StatCard({ label, value, sub, color = '#00C4BC', icon }: StatCardProps)
 }
 
 export default function TrialsMetricsPanel({ compound }: Props) {
+  const [modalUrl, setModalUrl] = useState<string | null>(null);
   const c = compound as Compound & Record<string, unknown>; // for chembl_id etc.
   const tier = evidenceTier(compound.evidence_tier);
   const risk = RISK_META[compound.risk_level];
@@ -184,8 +187,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
           </div>
           <a
             href={pubmedUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+            onClick={(e) => { e.preventDefault(); setModalUrl(pubmedUrl); }}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: teal, textDecoration: 'none', fontWeight: 700, marginTop: 4 }}
           >
             Search {citations.toLocaleString()} publications on PubMed →
@@ -255,8 +257,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
 
           <a
             href={trialsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+            onClick={(e) => { e.preventDefault(); setModalUrl(trialsUrl); }}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: '#68D391', textDecoration: 'none', fontWeight: 700 }}
           >
             Browse trials on ClinicalTrials.gov →
@@ -371,8 +372,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
             <p style={{ margin: 0, fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.55 }}>{wadaDesc}</p>
             <a
               href="https://www.wada-ama.org/en/prohibited-list"
-              target="_blank"
-              rel="noopener noreferrer"
+              onClick={(e) => { e.preventDefault(); setModalUrl("https://www.wada-ama.org/en/prohibited-list"); }}
               style={{ fontSize: '0.72rem', color: wadaColor, textDecoration: 'none', fontWeight: 700 }}
             >
               View current WADA Prohibited List →
@@ -418,8 +418,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
             {chemblId && (
               <a
                 href={`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblId}/`}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={(e) => { e.preventDefault(); setModalUrl(`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblId}/`); }}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -440,8 +439,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
             {uniprotId && (
               <a
                 href={`https://www.uniprot.org/uniprotkb/${uniprotId}/entry`}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={(e) => { e.preventDefault(); setModalUrl(`https://www.uniprot.org/uniprotkb/${uniprotId}/entry`); }}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -462,8 +460,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
             {unii && (
               <a
                 href={`https://precision.fda.gov/uniisearch/srs/unii/${unii}`}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={(e) => { e.preventDefault(); setModalUrl(`https://precision.fda.gov/uniisearch/srs/unii/${unii}`); }}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -485,8 +482,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
             <a
               href={pubmedUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              onClick={(e) => { e.preventDefault(); setModalUrl(pubmedUrl); }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -505,8 +501,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
             </a>
             <a
               href={trialsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              onClick={(e) => { e.preventDefault(); setModalUrl(trialsUrl); }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -526,7 +521,9 @@ export default function TrialsMetricsPanel({ compound }: Props) {
           </div>
         </div>
       )}
-
+      {modalUrl && (
+        <IframeModal url={modalUrl} onClose={() => setModalUrl(null)} />
+      )}
     </div>
   );
 }

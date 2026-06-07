@@ -242,7 +242,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
         .catalog-sidebar {
           flex: 0 0 260px;
           position: sticky;
-          top: 24px;
+          top: 120px;
           height: max-content;
           display: flex;
           flex-direction: column;

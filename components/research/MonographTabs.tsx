@@ -35,6 +35,7 @@ import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
 import EfficacyScoreChart from '@/components/research/EfficacyScoreChart';
 import TrialsMetricsPanel from '@/components/research/TrialsMetricsPanel';
+import IframeModal from '@/components/ui/IframeModal';
 
 interface Props {
   compound: Compound;
@@ -178,6 +179,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
   }
 
   const [active, setActive] = useState('overview');
+  const [modalUrl, setModalUrl] = useState<string | null>(null);
 
   return (
     <main style={{ maxWidth: 820, margin: '0 auto', padding: 'var(--space-4) var(--space-4) var(--space-8)' }}>
@@ -368,7 +370,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                     }} />
                   </div>
                   {compound.coa_url && (
-                    <a href={compound.coa_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', color: teal, textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                    <a href={compound.coa_url} onClick={(e) => { e.preventDefault(); setModalUrl(compound.coa_url!); }} style={{ fontSize: '0.72rem', color: teal, textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                       <ExternalLink size={11} /> COA
                     </a>
                   )}
@@ -559,13 +561,13 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                   <SectionDivider title="Database References" />
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {chemblId && (
-                      <a href={`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblId}/`} target="_blank" rel="noopener noreferrer"
+                      <a href={`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblId}/`} onClick={(e) => { e.preventDefault(); setModalUrl(`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblId}/`); }}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color: teal, textDecoration: 'none', fontWeight: 700, padding: '5px 10px', borderRadius: 6, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)' }}>
                         <ExternalLink size={12} /> ChEMBL: {chemblId}
                       </a>
                     )}
                     {uniprotId && (
-                      <a href={`https://www.uniprot.org/uniprotkb/${uniprotId}/entry`} target="_blank" rel="noopener noreferrer"
+                      <a href={`https://www.uniprot.org/uniprotkb/${uniprotId}/entry`} onClick={(e) => { e.preventDefault(); setModalUrl(`https://www.uniprot.org/uniprotkb/${uniprotId}/entry`); }}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color: '#9F7AEA', textDecoration: 'none', fontWeight: 700, padding: '5px 10px', borderRadius: 6, background: 'rgba(159,122,234,0.08)', border: '1px solid rgba(159,122,234,0.2)' }}>
                         <ExternalLink size={12} /> UniProt: {uniprotId}
                       </a>
@@ -768,7 +770,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                     <span style={{ fontSize: '0.8rem', fontWeight: 800, color: wadaColor }}>{wadaLabel(compound.wada_status)}</span>
                   </div>
                   <p style={{ margin: 0, fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{wadaDesc}</p>
-                  <a href="https://www.wada-ama.org/en/prohibited-list" target="_blank" rel="noopener noreferrer"
+                  <a href="https://www.wada-ama.org/en/prohibited-list" onClick={(e) => { e.preventDefault(); setModalUrl("https://www.wada-ama.org/en/prohibited-list"); }}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: wadaColor, textDecoration: 'none', fontWeight: 700, marginTop: 8 }}>
                     <ExternalLink size={11} /> View WADA Prohibited List
                   </a>
@@ -804,8 +806,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                   <li key={i} style={{ wordBreak: 'break-all', fontSize: '0.82rem' }}>
                     <a
                       href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      onClick={(e) => { e.preventDefault(); setModalUrl(href); }}
                       style={{ color: teal, textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 5 }}
                     >
                       <BookOpen size={12} />
@@ -897,6 +898,10 @@ export default function MonographTabs({ compound, related = [] }: Props) {
       <p style={{ fontSize: '0.74rem', color: 'var(--grey-400)', lineHeight: 1.5, margin: 'var(--space-4) 0 0', textAlign: 'center' }}>
         Research Use Only. Not For Human Or Veterinary Use. Information Provided For Laboratory Research Purposes Only.
       </p>
+
+      {modalUrl && (
+        <IframeModal url={modalUrl} onClose={() => setModalUrl(null)} />
+      )}
     </main>
   );
 }
