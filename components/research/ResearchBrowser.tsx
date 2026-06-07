@@ -243,7 +243,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
           flex: 0 0 260px;
           position: sticky;
           top: 120px;
-          max-height: calc(100vh - 140px);
+          max-height: calc(100dvh - 140px);
           overflow-y: auto;
           display: flex;
           flex-direction: column;

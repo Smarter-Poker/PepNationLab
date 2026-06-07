@@ -35,7 +35,7 @@ export default function ResearchLandingPage() {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'flex-start',
-      minHeight: '100vh',
+      minHeight: '100dvh',
     }}>
       <style>{`
         .hotspot {

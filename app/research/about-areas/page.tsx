@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function AboutAreasPage() {
   return (
     <div style={{ textTransform: 'capitalize' }}>
-      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)', minHeight: '100vh' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)', minHeight: '100dvh' }}>
         
         {/* Navigation Breadcrumbs */}
         <nav style={{ marginBottom: 'var(--space-5, 24px)', display: 'flex', gap: '12px', alignItems: 'center' }}>

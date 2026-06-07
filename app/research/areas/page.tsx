@@ -12,7 +12,7 @@ export default function TherapeuticAreasPage() {
       maxWidth: '1100px', 
       margin: '0 auto', 
       padding: 'var(--space-6, 32px) var(--space-4, 16px)',
-      minHeight: '100vh',
+      minHeight: '100dvh',
       backgroundColor: '#05070a'
     }}>
       {/* Dynamic Image Header */}

@@ -18,7 +18,7 @@ export default async function StacksPage() {
   const products = productCtx.products;
 
   return (
-    <div style={{ position: 'relative', overflowX: 'hidden', minHeight: '100vh', background: 'var(--black, #050A0F)' }}>
+    <div style={{ position: 'relative', overflowX: 'hidden', minHeight: '100dvh', background: 'var(--black, #050A0F)' }}>
       {/* Ambient Background Orbs */}
       <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(0, 196, 188, 0.15) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none', zIndex: 0 }} />
       <div style={{ position: 'absolute', top: '20%', right: '-15%', width: '60vw', height: '60vw', background: 'radial-gradient(circle, rgba(0, 229, 255, 0.1) 0%, transparent 70%)', filter: 'blur(100px)', pointerEvents: 'none', zIndex: 0 }} />

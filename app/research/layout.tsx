@@ -39,7 +39,7 @@ export default function ResearchLayout({ children }: { children: React.ReactNode
   return (
     <>
       <Navbar />
-      <div style={{ paddingTop: '60px', minHeight: '100vh', backgroundColor: '#05070a' }}>
+      <div style={{ paddingTop: '60px', minHeight: '100dvh', backgroundColor: '#05070a' }}>
         {children}
       </div>
       <StorefrontCompareDrawer primaryColor="#00C4BC" />

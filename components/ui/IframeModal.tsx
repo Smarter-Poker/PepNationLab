@@ -44,7 +44,7 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
           top: 0,
           left: 0,
           width: '100vw',
-          height: '100vh',
+          height: '100dvh',
           zIndex: 999999, // Max z-index to stay above everything
           backgroundColor: 'rgba(0, 0, 0, 0.95)',
           display: 'flex',

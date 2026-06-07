@@ -2471,3 +2471,14 @@ select option {
   background-color: #0b0e14 !important;
   color: #f3f4f6 !important;
 }
+
+/* Media Edge-to-Edge on Mobile */
+@media (max-width: 768px) {
+  .media-edge-to-edge {
+    border-radius: 0 !important;
+    width: calc(100% + 24px) !important;
+    max-width: calc(100% + 24px) !important;
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+  }
+}

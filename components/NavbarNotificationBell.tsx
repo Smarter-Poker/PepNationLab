@@ -336,7 +336,7 @@ export default function NavbarNotificationBell() {
             position: 'fixed',
             inset: 0,
             width: '100vw',
-            height: '100vh',
+            height: '100dvh',
             background: 'rgba(10,14,20,0.98)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',

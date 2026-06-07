@@ -31,7 +31,7 @@ export default async function CompareCompoundsPage({
   const { products } = await getAreaProducts(compounds.map((c) => c.slug));
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100dvh', position: 'relative', overflow: 'hidden' }}>
       {/* Dynamic Animated Background Mesh/Glow */}
       <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '60%', height: '80%', background: 'radial-gradient(ellipse at center, rgba(0, 196, 188, 0.08) 0%, rgba(0,0,0,0) 70%)', filter: 'blur(80px)', zIndex: 0, pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: '60%', height: '80%', background: 'radial-gradient(ellipse at center, rgba(104, 211, 145, 0.06) 0%, rgba(0,0,0,0) 70%)', filter: 'blur(80px)', zIndex: 0, pointerEvents: 'none' }} />
