@@ -330,9 +330,9 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                     </div>
                     <button 
                       onClick={(e) => { e.stopPropagation(); handleAddToCart(stack); }}
-                      style={{ padding: '8px 16px', borderRadius: 8, background: '#00E5FF', color: '#000', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                     >
-                      Add Stack To Cart
+                      <img src="/images/add_stack_to_cart_btn.png" alt="Add Stack To Cart" style={{ height: 42, objectFit: 'contain' }} />
                     </button>
                   </div>
                 </div>
@@ -745,8 +745,11 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
               <span style={{ fontSize: '1.4rem', color: '#00E5FF', fontWeight: 800 }}>${(bundlePrice * 0.9).toFixed(2)}</span>
             </div>
           </div>
-          <button onClick={() => { onAddToCart(stack); onClose(); }} style={{ padding: '12px 24px', borderRadius: 8, background: 'linear-gradient(135deg, #00E5FF 0%, #0088ff 100%)', color: '#000', border: 'none', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,229,255,0.3)' }}>
-            Add Bundle To Cart
+          <button 
+            onClick={() => { onAddToCart(stack); onClose(); }} 
+            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 4px 15px rgba(0,229,255,0.3))' }}
+          >
+            <img src="/images/add_stack_to_cart_btn.png" alt="Add Bundle To Cart" style={{ height: 48, objectFit: 'contain' }} />
           </button>
         </div>
       </motion.div>
