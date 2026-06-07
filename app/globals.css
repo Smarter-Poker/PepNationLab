@@ -1301,8 +1301,6 @@ html {
 }
 
 body {
-  overflow-x: hidden;
-  min-height: 100dvh;
   min-height: 100dvh;
 }
 
