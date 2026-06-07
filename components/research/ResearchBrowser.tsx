@@ -813,6 +813,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
               </div>
             );
           })}
+        </div>
       )}
         </main>
       </div>

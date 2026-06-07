@@ -195,6 +195,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
     setIsCartOpen(true);
   };
+  const commitMultipleAdditions = (items: { product: Omit<CartItem, 'quantity'>, quantity: number }[]) => {
+    setCart(prev => {
+      let next = [...prev];
+      for (const { product, quantity } of items) {
+        const existingIndex = next.findIndex(item => item.id === product.id);
+        if (existingIndex >= 0) {
+          next[existingIndex] = { ...next[existingIndex], quantity: next[existingIndex].quantity + quantity };
+        } else {
+          next.push({ ...product, quantity });
+        }
+      }
+      refreshCartPricing(next, true).then(updated => {
+        if (updated.length !== next.length || updated.some((u, i) => u.id !== next[i]?.id)) setCart(updated);
+      }).catch(() => { /* ignore */ });
+      return next;
+    });
+    setIsCartOpen(true);
+  };
 
   const addToCart = (product: Omit<CartItem, 'quantity'>, quantity = 1) => {
     if (!addToCartAcknowledged) {
@@ -202,6 +220,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     commitAddition(product, quantity);
+  };
+
+  const addMultipleToCart = (items: { product: Omit<CartItem, 'quantity'>, quantity: number }[], bundleName?: string) => {
+    if (items.length === 0) return;
+    if (!addToCartAcknowledged) {
+      // Show acknowledgment using the bundle name or the first product's name
+      setPendingAddition({
+        product: { ...items[0].product, name: bundleName || `${items.length} items` },
+        quantity: 1, // Doesn't matter, we will intercept this below
+        _isBundle: items,
+      } as any);
+      return;
+    }
+    commitMultipleAdditions(items);
   };
 
   const acceptAddToCart = () => {
@@ -213,7 +245,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ layer: 'add_to_cart' }),
     }).catch(() => { /* non-blocking */ });
     if (pendingAddition) {
-      commitAddition(pendingAddition.product, pendingAddition.quantity);
+      const isBundle = (pendingAddition as any)._isBundle;
+      if (isBundle) {
+        commitMultipleAdditions(isBundle);
+      } else {
+        commitAddition(pendingAddition.product, pendingAddition.quantity);
+      }
       setPendingAddition(null);
     }
   };
@@ -236,7 +273,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartSubtotal, isCartOpen, setIsCartOpen }}
+      value={{ cart, addToCart, addMultipleToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartSubtotal, isCartOpen, setIsCartOpen }}
     >
       {children}
       <AnimatePresence>

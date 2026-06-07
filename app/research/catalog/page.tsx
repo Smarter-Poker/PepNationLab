@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { GitCompare, Layers, ShieldCheck, GraduationCap, BookOpen, HelpCircle, Sparkles, Calculator, Library, Table2 } from 'lucide-react';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { RESEARCH_AREAS } from '@/lib/compounds';
+import { Suspense } from 'react';
 import AskTheLab from '@/components/research/AskTheLab';
 import ResearchBrowser from '@/components/research/ResearchBrowser';
 import UniversalSearch from '@/components/research/UniversalSearch';
@@ -91,7 +92,9 @@ export default async function ResearchLibraryPage({
         </Link>
       </section>
 
-      <ResearchBrowser compounds={compounds} />
+      <Suspense fallback={<div style={{ textAlign: 'center', padding: '40px', color: 'var(--silver, #A8B4C0)' }}>Loading Catalog...</div>}>
+        <ResearchBrowser compounds={compounds} />
+      </Suspense>
     </div>
   );
 }
