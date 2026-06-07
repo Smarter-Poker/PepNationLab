@@ -7,6 +7,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllCompounds } from '@/lib/compounds-server';
+import { getAreaProducts, type AreaProduct } from '@/lib/area-products-server';
 import CompareTool from '@/components/research/CompareTool';
 
 export const metadata: Metadata = {
@@ -26,6 +27,8 @@ export default async function CompareCompoundsPage({
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
+
+  const { products } = await getAreaProducts(compounds.map((c) => c.slug));
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
@@ -52,7 +55,7 @@ export default async function CompareCompoundsPage({
         </p>
       </header>
 
-      <CompareTool compounds={compounds} initialSlugs={initialSlugs} />
+      <CompareTool compounds={compounds} initialSlugs={initialSlugs} products={products} />
     </div>
   );
 }

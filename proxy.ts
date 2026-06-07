@@ -44,6 +44,8 @@ const PUBLIC_ROUTES = [
   '/research/api-docs',
   // /lab-tools redirects to /research/calculators (which is already public via /research prefix)
   '/lab-tools',
+  // Allow proxy route for full-screen iframes
+  '/api/proxy',
   // SEO surfaces
   '/sitemap.xml',
   '/feed.xml',

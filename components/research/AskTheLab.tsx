@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Sparkles, Search } from 'lucide-react';
 import { evidenceTier } from '@/lib/compounds';
+import AutocompleteDropdown, { type Suggestion } from './AutocompleteDropdown';
+import TrendingSearchesDropdown from './TrendingSearchesDropdown';
+import { useSearchHistory } from './useSearchHistory';
 
 interface AskMatch {
   slug: string;
@@ -30,10 +33,41 @@ export default function AskTheLab() {
   const [result, setResult] = useState<AskResponse | null>(null);
   const [searched, setSearched] = useState('');
 
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const { recent, addHistory } = useSearchHistory();
+  const debounceRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    const trimmed = q.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    debounceRef.current = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/research/suggest?q=${encodeURIComponent(trimmed)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data.suggestions)) {
+          setSuggestions(data.suggestions);
+        }
+      } catch {
+        // swallow
+      }
+    }, 200);
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    };
+  }, [q]);
+
   async function ask(queryArg?: string) {
     const query = (queryArg ?? q).trim();
     if (!query) return;
     if (queryArg) setQ(queryArg);
+    addHistory(query);
+    setSuggestOpen(false);
     setLoading(true);
     setResult(null);
     setSearched(query);
@@ -71,30 +105,68 @@ export default function AskTheLab() {
             Search By Goal, Symptom, Or Compound Name And We Will Match The Peptides We Carry. Research Use Only.
           </p>
 
-          <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-            <input
-              type="text"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={onKeyDown}
-              placeholder="Try A Goal Like Fat Loss, Joint Pain, Or A Compound Name"
-              aria-label="Search The Peptide Library"
-              style={{
-                flex: '1 1 240px',
-                padding: '0.75rem 1rem',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid #1D2D3E',
-                background: '#0F1923',
-                color: '#FFFFFF',
-                fontSize: '1rem',
-              }}
-            />
+          <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', position: 'relative' }}>
+            <div style={{ flex: '1 1 240px', position: 'relative' }}>
+              <input
+                type="text"
+                value={q}
+                onChange={(e) => {
+                  setQ(e.target.value);
+                  setSuggestOpen(true);
+                }}
+                onFocus={() => setSuggestOpen(true)}
+                onBlur={() => setTimeout(() => setSuggestOpen(false), 200)}
+                onKeyDown={onKeyDown}
+                placeholder="Try A Goal Like Fat Loss, Joint Pain, Or A Compound Name"
+                aria-label="Search The Peptide Library"
+                autoComplete="off"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid #1D2D3E',
+                  background: '#0F1923',
+                  color: '#FFFFFF',
+                  fontSize: '1rem',
+                }}
+              />
+              {suggestOpen && (q.trim().length > 0 || recent.length > 0) && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: '4px' }}>
+                  <AutocompleteDropdown
+                    id="ask-lab-search-autocomplete"
+                    suggestions={suggestions}
+                    recent={recent}
+                    onSelect={(s) => {
+                      addHistory(s.display_name);
+                      setQ(s.display_name);
+                      ask(s.display_name);
+                    }}
+                    onSelectRecent={(t) => {
+                      addHistory(t);
+                      setQ(t);
+                      ask(t);
+                    }}
+                  />
+                </div>
+              )}
+              {suggestOpen && q.trim().length === 0 && recent.length === 0 && (
+                 <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: '4px' }}>
+                   <TrendingSearchesDropdown 
+                     onSelect={(term) => {
+                       addHistory(term);
+                       setQ(term);
+                       ask(term);
+                     }}
+                   />
+                 </div>
+              )}
+            </div>
             <button
               type="button"
               className="btn-primary"
               onClick={() => ask()}
               disabled={loading || !q.trim()}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', height: 'fit-content' }}
             >
               <Search size={18} aria-hidden="true" />
               {loading ? 'Searching' : 'Search'}

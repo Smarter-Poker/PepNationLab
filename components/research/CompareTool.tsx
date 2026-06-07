@@ -32,6 +32,8 @@ import {
 import { type Compound, evidenceTier, researchAreaLabel, RISK_META } from '@/lib/compounds';
 import AttributeRadarChart, { type RadarDataPoint } from './AttributeRadarChart';
 import InCellGlossaryTooltip from './InCellGlossaryTooltip';
+import type { AreaProduct } from '@/lib/area-products-server';
+import ResearchCartButton from './ResearchCartButton';
 
 const MAX_COLUMNS = 4;
 const NL = 'Not Listed';
@@ -1768,7 +1770,7 @@ const tabIcons: Record<string, React.ReactNode> = {
 };
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function CompareTool({ compounds, initialSlugs = [] }: { compounds: Compound[]; initialSlugs?: string[] }) {
+export default function CompareTool({ compounds, initialSlugs = [], products = [] }: { compounds: Compound[]; initialSlugs?: string[]; products?: AreaProduct[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -2601,6 +2603,30 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                               {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: 22, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />}
                               <div style={{ background: `${color}22`, color, fontSize: '0.8rem', fontWeight: 900, padding: '4px 10px', borderRadius: 8 }}>{sc.letter} · {sc.total}</div>
                             </div>
+                            
+                            {/* Product Info & Add to Cart (Swipe Mode) */}
+                            {(() => {
+                              const product = products.find(p => p.compoundSlug === c.slug);
+                              if (!product) return null;
+                              return (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: '12px 16px', marginBottom: 16 }}>
+                                  {product.imageUrl && (
+                                    <div style={{ width: 60, height: 60, borderRadius: 8, background: '#fff', overflow: 'hidden', flexShrink: 0, padding: 4 }}>
+                                      <img src={product.imageUrl} alt={product.productName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                    </div>
+                                  )}
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', marginBottom: 4 }}>{product.productName}</div>
+                                    <div style={{ fontSize: '0.9rem', color: '#68D391', fontWeight: 700 }}>
+                                      ${product.retailPrice.toFixed(2)} <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>/ vial</span>
+                                    </div>
+                                  </div>
+                                  <div style={{ flexShrink: 0 }}>
+                                    <ResearchCartButton productName={product.productName} compoundName={c.display_name} />
+                                  </div>
+                                </div>
+                              );
+                            })()}
                             {/* Attribute list - all rows for this single compound */}
                             {(() => {
                               let lastGroup = '';
@@ -2744,7 +2770,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                   )}
                 </div>
               ) : (
-                <div className="glass-panel" style={{ borderRadius: 14, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory' }}>
+                <div className="glass-panel" style={{ borderRadius: 14, overflowX: 'auto', overflowY: 'auto', maxHeight: '85vh', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory' }}>
                   <div style={{ transform: tableZoom !== 1 ? `scale(${tableZoom})` : undefined, transformOrigin: 'top left', transition: 'transform 0.2s ease', width: tableZoom !== 1 ? `${100 / tableZoom}%` : '100%' }}>
                   <table className="matrix-table" style={{ minWidth: isMobile ? (displayedSelected.length * 160 + 120) : 480, position: 'relative' }}>
                 <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
@@ -2783,8 +2809,29 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                               })()}
                               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                                 {!isMobile && <GripHorizontal size={13} color="rgba(255,255,255,0.15)" style={{ cursor: 'grab', flexShrink: 0 }} />}
-                                <Link href={`/research/${c.slug}`} style={{ color: (color === '#00C4BC' || color === '#FF6B6B') ? '#FFF' : color, fontWeight: 900, textDecoration: 'none', fontSize: '1.05rem' }}>{c.display_name}</Link>
+                                <Link href={`/research/${c.slug}`} style={{ color: (color === '#00C4BC' || color === '#FF6B6B') ? '#FFF' : color, fontWeight: 900, textDecoration: 'none', fontSize: '1.05rem', lineHeight: 1.2 }}>{c.display_name}</Link>
                               </div>
+                              
+                              {/* Product Info & Add to Cart (Matrix Mode) */}
+                              {(() => {
+                                const product = products.find(p => p.compoundSlug === c.slug);
+                                if (!product) return null;
+                                return (
+                                  <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {product.imageUrl && (
+                                      <div style={{ width: '100%', aspectRatio: '1', maxWidth: 100, borderRadius: 8, background: '#fff', overflow: 'hidden', padding: 6, alignSelf: 'flex-start' }}>
+                                        <img src={product.imageUrl} alt={product.productName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                      </div>
+                                    )}
+                                    <div>
+                                      <div style={{ fontSize: '0.85rem', color: '#68D391', fontWeight: 700, marginBottom: 6 }}>
+                                        ${product.retailPrice.toFixed(2)} <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>/ vial</span>
+                                      </div>
+                                      <ResearchCartButton productName={product.productName} compoundName={c.display_name} size="sm" />
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                               <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                                 {c.evidence_tier === 'approved_drug' && <img src="/images/badges/badge_approved_drug.png" alt="Approved Drug" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}
                                 {c.evidence_tier === 'investigational' && <img src="/images/badges/badge_investigational_drug.png" alt="Investigational" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />}

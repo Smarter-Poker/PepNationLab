@@ -36,7 +36,7 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)",
+        source: "/((?!api/proxy).*)",
         headers: [
           {
             key: "Strict-Transport-Security",

@@ -31,10 +31,9 @@ import { ProtocolScheduler } from '../research/ProtocolScheduler';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RESEARCH_AREAS } from '../../lib/compounds';
 import { ShoppingCart, X, Sparkles, ArrowRight, Compass, Check } from 'lucide-react';
-import GuidedDiscoveryWizard, { labelForArea } from './GuidedDiscoveryWizard';
-import MatchResultsDrawer from './MatchResultsDrawer';
 import AutocompleteDropdown, { type Suggestion } from '../research/AutocompleteDropdown';
 import TrendingSearchesDropdown from '../research/TrendingSearchesDropdown';
+import { useSearchHistory } from '../research/useSearchHistory';
 import DynamicAddToCartButton from './DynamicAddToCartButton';
 import type { Compound } from '@/lib/compounds';
 
@@ -1198,6 +1197,7 @@ export default function DiscoveryHero({
   const debounceRef = useRef<number | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
+  const { recent, addHistory } = useSearchHistory();
   const availableAreas = useMemo(() => deriveAvailableAreas(compoundsBySlug), [compoundsBySlug]);
 
   useEffect(() => {
@@ -1240,10 +1240,12 @@ export default function DiscoveryHero({
     if (s.kind === 'compound') {
       const matched = resolveProducts([s.slug]);
       if (matched && matched[0] && matched[0].product_id) {
+        addHistory(s.display_name);
         onOpenProduct(matched[0].product_id);
         setSuggestOpen(false);
         return;
       }
+      addHistory(s.display_name);
       router.push(`/research/${s.slug}`);
       setSuggestOpen(false);
       return;
@@ -1261,15 +1263,18 @@ export default function DiscoveryHero({
     // For 'glossary', we can filter the storefront grid directly
     if (s.kind === 'glossary') {
       if (onSearchStarted) {
+        addHistory(s.display_name);
         onSearchStarted(s.display_name);
         setSuggestOpen(false);
         return;
       }
+      addHistory(s.display_name);
       router.push(`/research/search?q=${encodeURIComponent(s.display_name)}`);
       setSuggestOpen(false);
       return;
     }
     // default fallback
+    addHistory(s.display_name);
     setQuery(s.display_name);
     if (onSearchStarted) onSearchStarted(s.display_name);
   }
@@ -1493,6 +1498,7 @@ export default function DiscoveryHero({
             onKeyDown={(e) => { 
               if (e.key === 'Enter' && query.trim()) {
                 e.preventDefault();
+                addHistory(query.trim());
                 onSelectArea(''); // Clear filter
                 if (onSearchStarted) onSearchStarted(query.trim());
               }
@@ -1503,26 +1509,31 @@ export default function DiscoveryHero({
               background: 'transparent',
               border: 'none', outline: 'none', color: '#FFFFFF',
               fontSize: 'max(16px, 1.86vw)',
-              padding: '0 10px 12px 42px',
+              padding: '0 10px 12px 52px',
               textAlign: 'left',
               fontWeight: 500,
               letterSpacing: '0.02em',
             }}
           />
-          {suggestOpen && query.trim().length >= 2 && suggestions.length > 0 && (
+          {suggestOpen && (query.trim().length > 0 || recent.length > 0) && (
             <div style={{ position: 'absolute', top: '100%', left: 0, right: '4%', zIndex: 50, marginTop: '4px' }}>
               <AutocompleteDropdown
                 id="storefront-search-autocomplete"
                 suggestions={suggestions}
-                recent={[]} // Storefront doesn't need recent searches history necessarily, but we provide empty array
+                recent={recent}
                 onSelect={onSuggestionSelect}
-                onSelectRecent={(t) => { setQuery(t); if (onSearchStarted) onSearchStarted(t); }}
+                onSelectRecent={(t) => { 
+                  addHistory(t);
+                  setQuery(t); 
+                  if (onSearchStarted) onSearchStarted(t); 
+                }}
               />
             </div>
           )}
-          {suggestOpen && query.trim().length === 0 && (
+          {suggestOpen && query.trim().length === 0 && recent.length === 0 && (
              <TrendingSearchesDropdown 
                onSelect={(term) => {
+                 addHistory(term);
                  setQuery(term);
                  setSuggestOpen(false);
                  if (onSearchStarted) onSearchStarted(term);
@@ -1666,7 +1677,7 @@ export default function DiscoveryHero({
         @media (min-width: 769px) {
           #discovery-search-input {
             font-size: calc(max(16px, 1.86vw) * 1.5) !important;
-            padding: 14px 10px 0 76px !important;
+            padding: 14px 10px 0 86px !important;
           }
         }
       ` }} />

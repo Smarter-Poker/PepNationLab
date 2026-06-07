@@ -3,26 +3,17 @@
 /**
  * LandingSearchOverlay - the live, in-place search for the image-hotspot research
  * landing page. Renders the search input + button at the baked-in search-bar
- * coordinates, and shows an instant results dropdown as the user types (lazy-
- * loading the universal index from /research/search-index on first focus).
+ * coordinates, and shows an instant results dropdown as the user types.
  * Enter or a result click navigates in-app; the button opens the full results
  * page. Research-use-only.
  */
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
-import { searchDocs, SEARCH_TYPE_LABEL, type SearchDoc, type SearchType } from '@/lib/research-search';
-
-const TYPE_COLOR: Record<SearchType, string> = {
-  compound: '#00C4BC',
-  stack: '#8B5CF6',
-  area: '#00E5FF',
-  guide: '#68D391',
-  term: '#A8B4C0',
-  faq: '#F6AD55',
-  tool: '#E8C07D',
-};
+import AutocompleteDropdown, { type Suggestion } from './AutocompleteDropdown';
+import TrendingSearchesDropdown from './TrendingSearchesDropdown';
+import { useSearchHistory } from './useSearchHistory';
 
 export default function LandingSearchOverlay({
   formStyle,
@@ -43,33 +34,62 @@ export default function LandingSearchOverlay({
 } = {}) {
   const router = useRouter();
   const [q, setQ] = useState('');
-  const [docs, setDocs] = useState<SearchDoc[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
-  const fetched = useRef(false);
+  const debounceRef = useRef<number | null>(null);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { recent, addHistory } = useSearchHistory();
 
-  async function ensureIndex() {
-    if (fetched.current) return;
-    fetched.current = true;
-    try {
-      const res = await fetch('/research/search-index');
-      const json = await res.json();
-      if (Array.isArray(json?.docs)) setDocs(json.docs as SearchDoc[]);
-    } catch {
-      fetched.current = false; // allow retry on next focus
+  useEffect(() => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    const trimmed = q.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      return;
     }
+    debounceRef.current = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/research/suggest?q=${encodeURIComponent(trimmed)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data.suggestions)) {
+          setSuggestions(data.suggestions);
+        }
+      } catch {
+        /* swallow */
+      }
+    }, 200);
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    };
+  }, [q]);
+
+  function goFull(override?: string) {
+    const target = (override ?? q).trim();
+    if (target) {
+      addHistory(target);
+      router.push(`/research/catalog?q=${encodeURIComponent(target)}`);
+    } else {
+      router.push(`/research/catalog`);
+    }
+    setOpen(false);
   }
 
-  const results = q.trim().length >= 2 ? searchDocs(q, docs, 8) : [];
-
-  function goFull() {
-    if (q.trim()) router.push(`/research/catalog?q=${encodeURIComponent(q.trim())}`);
+  function onSuggestionSelect(s: Suggestion) {
+    if (s.kind === 'compound') {
+      addHistory(s.display_name);
+      router.push(`/research/${s.slug}`);
+    } else if (s.kind === 'area') {
+      router.push(`/research/area/${s.slug}`);
+    } else {
+      goFull(s.display_name);
+    }
+    setOpen(false);
   }
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (results.length > 0) router.push(results[0].doc.url);
-    else goFull();
+    if (q.trim()) goFull();
   }
 
   return (
@@ -98,8 +118,8 @@ export default function LandingSearchOverlay({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onFocus={() => {
+            if (blurTimer.current) clearTimeout(blurTimer.current);
             setOpen(true);
-            ensureIndex();
           }}
           onBlur={() => {
             blurTimer.current = setTimeout(() => setOpen(false), 160);
@@ -123,7 +143,7 @@ export default function LandingSearchOverlay({
 
       {/* Search button */}
       <div
-        onClick={goFull}
+        onClick={() => goFull()}
         style={{
           position: 'absolute',
           top: '26.8%',
@@ -139,7 +159,7 @@ export default function LandingSearchOverlay({
       </div>
 
       {/* Live results dropdown */}
-      {open && q.trim().length >= 2 && (
+      {open && (q.trim().length > 0 || recent.length > 0) && (
         <div
           onMouseDown={(e) => e.preventDefault()}
           style={{
@@ -147,65 +167,39 @@ export default function LandingSearchOverlay({
             top: '31.6%',
             left: '7.5%',
             width: '85%',
-            maxHeight: '46%',
-            overflowY: 'auto',
             zIndex: 30,
-            background: '#0b1219',
-            border: '1px solid rgba(0,196,188,0.35)',
-            borderRadius: '14px',
-            boxShadow: '0 18px 50px rgba(0,0,0,0.6)',
-            WebkitOverflowScrolling: 'touch',
             ...resultsStyle,
           }}
         >
-          {results.length === 0 ? (
-            <div style={{ padding: '14px 16px', color: '#A8B4C0', fontSize: '0.85rem' }}>
-              No Matches - Press Enter To Browse The Catalog.
-            </div>
-          ) : (
-            results.map((hit) => {
-              const color = TYPE_COLOR[hit.doc.type];
-              return (
-                <button
-                  key={hit.doc.id}
-                  type="button"
-                  onClick={() => router.push(hit.doc.url)}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    background: 'transparent',
-                    border: 'none',
-                    borderBottom: '1px solid rgba(255,255,255,0.06)',
-                    padding: '11px 16px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.92rem' }}>{hit.doc.title}</span>
-                    <span
-                      style={{
-                        fontSize: '0.58rem',
-                        fontWeight: 800,
-                        letterSpacing: '0.04em',
-                        textTransform: 'uppercase',
-                        padding: '2px 7px',
-                        borderRadius: 9999,
-                        background: `${color}1A`,
-                        border: `1px solid ${color}55`,
-                        color,
-                      }}
-                    >
-                      {SEARCH_TYPE_LABEL[hit.doc.type]}
-                    </span>
-                    {hit.doc.subtitle && (
-                      <span style={{ fontSize: '0.7rem', color: '#A8B4C0' }}>{hit.doc.subtitle}</span>
-                    )}
-                  </div>
-                </button>
-              );
-            })
-          )}
+          <div style={{ position: 'relative' }}>
+            <AutocompleteDropdown
+              id="landing-search-autocomplete"
+              suggestions={suggestions}
+              recent={recent}
+              onSelect={onSuggestionSelect}
+              onSelectRecent={(text) => goFull(text)}
+            />
+          </div>
+        </div>
+      )}
+
+      {open && q.trim().length === 0 && recent.length === 0 && (
+        <div
+          onMouseDown={(e) => e.preventDefault()}
+          style={{
+            position: 'absolute',
+            top: '31.6%',
+            left: '7.5%',
+            width: '85%',
+            zIndex: 30,
+            ...resultsStyle,
+          }}
+        >
+          <div style={{ position: 'relative' }}>
+            <TrendingSearchesDropdown
+              onSelect={(text) => goFull(text)}
+            />
+          </div>
         </div>
       )}
     </>

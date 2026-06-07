@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import AutocompleteDropdown, { type Suggestion } from './AutocompleteDropdown';
 import TrendingSearchesDropdown from './TrendingSearchesDropdown';
+import { useSearchHistory } from './useSearchHistory';
 
 export default function UniversalSearch({
   initialQuery = '',
@@ -28,6 +29,7 @@ export default function UniversalSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<number | null>(null);
+  const { recent, addHistory } = useSearchHistory();
 
   useEffect(() => {
     if (autoFocus && inputRef.current) inputRef.current.focus();
@@ -72,14 +74,16 @@ export default function UniversalSearch({
     (override?: string) => {
       const target = (override ?? q).trim();
       if (!target) return;
+      addHistory(target);
       setOpen(false);
       router.push(`/research/search?q=${encodeURIComponent(target)}`);
     },
-    [q, router],
+    [q, router, addHistory],
   );
 
   function onSuggestionSelect(s: Suggestion) {
     if (s.kind === 'compound') {
+      addHistory(s.display_name);
       router.push(`/research/${s.slug}`);
       setOpen(false);
       return;
@@ -142,17 +146,17 @@ export default function UniversalSearch({
         />
       </div>
 
-      {open && q.trim().length > 0 && (
+      {open && (q.trim().length > 0 || recent.length > 0) && (
         <AutocompleteDropdown
           id="universal-search-autocomplete"
           suggestions={suggestions}
-          recent={[]}
+          recent={recent}
           onSelect={onSuggestionSelect}
           onSelectRecent={(text) => submit(text)}
         />
       )}
 
-      {open && q.trim().length === 0 && (
+      {open && q.trim().length === 0 && recent.length === 0 && (
         <TrendingSearchesDropdown
           onSelect={(text) => submit(text)}
         />

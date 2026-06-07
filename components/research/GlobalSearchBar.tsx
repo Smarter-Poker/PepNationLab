@@ -14,34 +14,7 @@ import { useRouter } from 'next/navigation';
 import { Search, Sparkles, Mic, X } from 'lucide-react';
 import AutocompleteDropdown, { type Suggestion } from './AutocompleteDropdown';
 import TrendingSearchesDropdown from './TrendingSearchesDropdown';
-
-const HISTORY_KEY = 'pep_research_history';
-const HISTORY_LIMIT = 8;
-
-function loadHistory(): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = window.localStorage.getItem(HISTORY_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.slice(0, HISTORY_LIMIT) : [];
-  } catch {
-    return [];
-  }
-}
-
-function pushHistory(query: string) {
-  if (typeof window === 'undefined') return;
-  const q = query.trim();
-  if (!q) return;
-  try {
-    const cur = loadHistory().filter((x) => x.toLowerCase() !== q.toLowerCase());
-    const next = [q, ...cur].slice(0, HISTORY_LIMIT);
-    window.localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-  } catch {
-    /* swallow */
-  }
-}
+import { useSearchHistory } from './useSearchHistory';
 
 interface SpeechRecognitionWindow {
   SpeechRecognition?: new () => unknown;
@@ -51,29 +24,28 @@ interface SpeechRecognitionWindow {
 export default function GlobalSearchBar({
   compact = false,
   initialQuery = '',
-  autoFocus = false,
+  placeholder = 'Search The Research Catalog...',
 }: {
   compact?: boolean;
   initialQuery?: string;
-  autoFocus?: boolean;
+  placeholder?: string;
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [q, setQ] = useState(initialQuery);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [recent, setRecent] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [voiceActive, setVoiceActive] = useState(false);
   const debounceRef = useRef<number | null>(null);
+  const { recent, addHistory } = useSearchHistory();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const w = window as unknown as SpeechRecognitionWindow;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setVoiceSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition));
-    setRecent(loadHistory());
   }, []);
 
   useEffect(() => {
@@ -135,27 +107,20 @@ export default function GlobalSearchBar({
     };
   }, [q]);
 
-  useEffect(() => {
-    if (autoFocus) {
-      inputRef.current?.focus();
-    }
-  }, [autoFocus]);
-
   const submit = useCallback(
     (override?: string) => {
       const target = (override ?? q).trim();
       if (!target) return;
-      pushHistory(target);
-      setRecent(loadHistory());
+      addHistory(target);
       setOpen(false);
       router.push(`/research/search?q=${encodeURIComponent(target)}`);
     },
-    [q, router],
+    [q, router, addHistory],
   );
 
   function onSuggestionSelect(s: Suggestion) {
     if (s.kind === 'compound') {
-      pushHistory(s.display_name);
+      addHistory(s.display_name);
       router.push(`/research/${s.slug}`);
       setOpen(false);
       return;
