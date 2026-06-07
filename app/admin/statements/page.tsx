@@ -565,7 +565,6 @@ export default function AdminStatementsPage() {
 
       {/* Mark paid modal */}
       {payingStatement && (
-        <div
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 'var(--space-4)' }}>
           <div className="glass-panel" style={{ width: "100%", maxWidth: 420 }}>
             <div

@@ -162,7 +162,7 @@ export default function AdminPaymentsPage() {
                 <label style={{ display: 'block', marginBottom: 10 }}>
                   <span style={{ color: 'var(--grey-400)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Payment Amount</span>
                   <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}
-                    placeholder="0.00"
+                    placeholder="0.00" className="form-input"
                     style={{ width: '100%', padding: 12, marginTop: 4, borderRadius: 8, fontSize: 16,
                       background: 'rgba(255,255,255,0.04)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.1)' }} />
                 </label>

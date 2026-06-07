@@ -278,19 +278,18 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                     </div>
 
                     {/* Image Cluster */}
-                    <div style={{ display: 'flex' }}>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'flex-end', flex: 1 }}>
                       {stack.stack_components.map((compSlug, i) => {
                         const p = products.find((prod) => prod.compoundSlug === compSlug);
                         const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                         return (
                           <div key={compSlug} style={{ 
-                            width: 64, height: 64, 
+                            width: 140, height: 140, 
                             flexShrink: 0,
-                            borderRadius: 12, 
+                            borderRadius: 16, 
                             background: 'radial-gradient(circle at center, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.3) 100%)',
                             border: '1px solid rgba(255,255,255,0.1)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            marginLeft: i > 0 ? -20 : 0,
                             zIndex: stack.stack_components.length - i,
                             boxShadow: '0 8px 16px rgba(0,0,0,0.6)',
                             backdropFilter: 'blur(8px)'
@@ -323,6 +322,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                           const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                           const comp = bySlug.get(compSlug);
                           const label = comp?.display_name ?? compSlug;
+                          const priceText = p ? `$${p.price.toFixed(2)}` : '';
                           return (
                             <div
                               key={compSlug}
@@ -341,7 +341,10 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                               }}
                             >
                               <img src={imageUrl} alt={label} style={{ width: 16, height: 16, objectFit: 'contain' }} />
-                              {label}
+                              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span>{label}</span>
+                                {priceText && <span style={{ color: '#00E5FF', fontSize: '0.65rem' }}>{priceText}</span>}
+                              </div>
                             </div>
                           );
                         })}

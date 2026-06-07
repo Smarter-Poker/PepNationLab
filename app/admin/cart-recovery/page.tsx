@@ -122,6 +122,7 @@ export default function AdminCartRecoveryPage() {
             <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: 'var(--space-3)' }}>Create Variant</h3>
             <form onSubmit={createVariant} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Variant Name (e.g. discount_10pct)" required
+                className="form-input"
                 style={{ padding: '8px 12px', borderRadius: 8, background: 'var(--surface-1)', border: '1px solid var(--surface-3)', color: 'var(--white)', fontSize: '0.88rem', outline: 'none' }} />
               <textarea value={newSteps} onChange={(e) => setNewSteps(e.target.value)} rows={8}
                 style={{ padding: '10px 12px', borderRadius: 8, background: 'var(--surface-1)', border: '1px solid var(--surface-3)', color: 'var(--white)', fontSize: '0.82rem', outline: 'none', resize: 'vertical', fontFamily: 'monospace' }} />

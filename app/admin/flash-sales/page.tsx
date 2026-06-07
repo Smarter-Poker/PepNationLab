@@ -111,7 +111,7 @@ export default function AdminFlashSalesPage() {
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Discount %</span>
-                <input type="number" min="0" max="90" step="1" value={discount} onChange={(e) => setDiscount(e.target.value)} required
+                <input type="number" min="0" max="90" step="1" value={discount} onChange={(e) => setDiscount(e.target.value)} required className="form-input"
                   style={{ padding: '8px 12px', borderRadius: 8, background: 'var(--surface-1)', border: '1px solid var(--surface-3)', color: 'var(--white)', fontSize: '0.88rem', outline: 'none' }} />
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 4, gridColumn: '1 / -1' }}>
