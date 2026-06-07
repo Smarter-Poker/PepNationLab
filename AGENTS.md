@@ -15,3 +15,13 @@ After EVERY code change or fix — no exceptions:
 
 Never give a report without first deploying. This is a hard law.
 <!-- END:deployment-rules -->
+
+<!-- BEGIN:iframe-omega-protocol -->
+# MANDATORY: The Omega Protocol for External Links
+
+**This is a hard platform rule with zero exceptions.**
+PepNationLab strictly forbids navigating users away from the `pepnationlab.com` domain. Any external link MUST be rendered inside the app using the `IframeModal` component.
+- Always use `<IframeModal url={externalUrl} title={optionalTitle} onClose={handler} />`.
+- `IframeModal` natively routes the URL through `/api/proxy?url=...` to bypass `X-Frame-Options`. Never attempt to put an external URL directly into an `<iframe>` src.
+- The `IframeModal` must be true full-screen, utilizing `height: 100dvh` and `z-index: 999999`. Do not alter these properties.
+<!-- END:iframe-omega-protocol -->

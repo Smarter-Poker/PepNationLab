@@ -80,6 +80,20 @@ CSS `text-transform: capitalize` is applied globally in `globals.css` as a CSS-l
 
 ---
 
+## MANDATORY: The Omega Protocol for External Links
+
+**This is a hard platform rule with zero exceptions.**
+
+PepNationLab strictly forbids navigating users away from the `pepnationlab.com` domain. Any external link (e.g., PubMed research articles, FDA documents, DrugBank profiles, COAs) MUST be rendered inside the app using the `IframeModal` component.
+
+### Implementation:
+- **Component**: Always use `<IframeModal url={externalUrl} title={optionalTitle} onClose={handler} />`.
+- **Legacy Components**: DO NOT use `<InAppBrowserProvider>` internals to render iframes manually. `<InAppBrowserProvider>` is now just a context wrapper that delegates to `IframeModal`.
+- **Proxy Requirement**: `IframeModal` natively routes the URL through `/api/proxy?url=...` to bypass `X-Frame-Options` blocks using a server-side extraction fallback. Never attempt to put an external URL directly into an `<iframe>` src.
+- **Styling constraints**: The `IframeModal` must be true full-screen. It uses `height: 100dvh` and `z-index: 999999` to ensure mobile Safari bottom-bars do not clip the content. Do not alter these properties.
+
+---
+
 ## Zero Cross-Contamination With Smarter.Poker
 
 PepNationLab is a 100% isolated platform. Never:

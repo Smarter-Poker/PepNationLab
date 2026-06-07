@@ -102,7 +102,7 @@ export default function ProductsList({
   });
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--black)', maxWidth: '100vw', overflowX: 'hidden' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
       {/* Top Navbar - reserves iOS safe-area-inset-top so the bar
           and its content are not clipped by the Dynamic Island / notch. */}
       <nav className="glass-header" style={{

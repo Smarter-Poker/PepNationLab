@@ -22,7 +22,7 @@ export default async function ShippingLayout({ children }: { children: React.Rea
   }
 
   return (
-    <div className="admin-layout" style={{ display: 'flex', minHeight: 'calc(100dvh - 72px)', background: 'var(--black)', maxWidth: '100vw', overflowX: 'hidden' }}>
+    <div className="admin-layout" style={{ display: 'flex', minHeight: 'calc(100dvh - 72px)', background: 'var(--black)' }}>
       {/* Sidebar */}
       <aside className="glass-panel stagger-fade-in" style={{ 
         width: 260, 

@@ -31,11 +31,13 @@ export default async function CompareCompoundsPage({
   const { products } = await getAreaProducts(compounds.map((c) => c.slug));
 
   return (
-    <div style={{ minHeight: '100dvh', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100dvh', position: 'relative' }}>
       {/* Dynamic Animated Background Mesh/Glow */}
-      <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '60%', height: '80%', background: 'radial-gradient(ellipse at center, rgba(0, 196, 188, 0.08) 0%, rgba(0,0,0,0) 70%)', filter: 'blur(80px)', zIndex: 0, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: '60%', height: '80%', background: 'radial-gradient(ellipse at center, rgba(104, 211, 145, 0.06) 0%, rgba(0,0,0,0) 70%)', filter: 'blur(80px)', zIndex: 0, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', top: '10%', right: '20%', width: '40%', height: '40%', background: 'radial-gradient(circle at center, rgba(59, 130, 246, 0.04) 0%, rgba(0,0,0,0) 60%)', filter: 'blur(100px)', zIndex: 0, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+        <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '60%', height: '80%', background: 'radial-gradient(ellipse at center, rgba(0, 196, 188, 0.08) 0%, rgba(0,0,0,0) 70%)', filter: 'blur(80px)' }} />
+        <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: '60%', height: '80%', background: 'radial-gradient(ellipse at center, rgba(104, 211, 145, 0.06) 0%, rgba(0,0,0,0) 70%)', filter: 'blur(80px)' }} />
+        <div style={{ position: 'absolute', top: '10%', right: '20%', width: '40%', height: '40%', background: 'radial-gradient(circle at center, rgba(59, 130, 246, 0.04) 0%, rgba(0,0,0,0) 60%)', filter: 'blur(100px)' }} />
+      </div>
 
       {/* Main Content Container */}
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: 'var(--space-6, 40px) var(--space-4, 20px)', position: 'relative', zIndex: 1 }}>
