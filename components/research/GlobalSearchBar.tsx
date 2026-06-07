@@ -35,6 +35,10 @@ export default function GlobalSearchBar({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [q, setQ] = useState(initialQuery);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+
+  useEffect(() => {
+    setQ(initialQuery);
+  }, [initialQuery]);
   const [open, setOpen] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [voiceActive, setVoiceActive] = useState(false);
@@ -114,6 +118,7 @@ export default function GlobalSearchBar({
       addHistory(target);
       setOpen(false);
       router.push(`/research/search?q=${encodeURIComponent(target)}`);
+      setTimeout(() => setQ(''), 150);
     },
     [q, router, addHistory],
   );
@@ -123,11 +128,13 @@ export default function GlobalSearchBar({
       addHistory(s.display_name);
       router.push(`/research/${s.slug}`);
       setOpen(false);
+      setTimeout(() => setQ(''), 150);
       return;
     }
     if (s.kind === 'area') {
       router.push(`/research/area/${s.slug}`);
       setOpen(false);
+      setTimeout(() => setQ(''), 150);
       return;
     }
     submit(s.display_name);
