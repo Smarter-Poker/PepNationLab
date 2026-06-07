@@ -68,7 +68,12 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed To Save Override');
       setEnabled(nextEnabled);
-      toast.success(nextEnabled ? `Locked To ${LEVELS.find((l) => l.level === nextLevel)?.name ?? `Level ${nextLevel}`}` : 'Override Released');
+      
+      if (resolvedMarkup !== '' && resolvedMarkup !== null) {
+        toast.success(`Custom Pricing Successfully Changed To ${resolvedMarkup}%`);
+      } else {
+        toast.success(nextEnabled ? `Locked To ${LEVELS.find((l) => l.level === nextLevel)?.name ?? `Level ${nextLevel}`}` : 'Override Released');
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed To Save Override');
     } finally {
