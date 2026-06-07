@@ -243,7 +243,8 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
           flex: 0 0 260px;
           position: sticky;
           top: 120px;
-          height: max-content;
+          max-height: calc(100vh - 140px);
+          overflow-y: auto;
           display: flex;
           flex-direction: column;
         }
@@ -407,7 +408,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
                     </div>
                     
                     <div style={{ display: 'flex', gap: '8px', marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
-                      <div style={{ flex: 1 }}><PinToCompareButton compoundSlug={c.slug} compoundName={c.display_name} category={c.category} size="sm" /></div>
+                      <div style={{ flex: 1 }}><PinToCompareButton compoundSlug={c.slug} compoundName={c.display_name} category={c.category} evidenceTierKey={c.evidence_tier} size="sm" /></div>
                       <ResearchCartButton productName={c.display_name} size="sm" />
                     </div>
                   </div>
@@ -427,7 +428,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={() => setQuickViewCompound(c)} className="btn-secondary" style={{ padding: '6px', borderRadius: '6px' }}><Eye size={16} /></button>
-                    <PinToCompareButton compoundSlug={c.slug} compoundName={c.display_name} category={c.category} size="sm" style={{ width: 'auto', minWidth: '40px' }} />
+                    <PinToCompareButton compoundSlug={c.slug} compoundName={c.display_name} category={c.category} evidenceTierKey={c.evidence_tier} size="sm" style={{ width: 'auto', minWidth: '40px' }} />
                   </div>
                 </div>
               ))}

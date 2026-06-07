@@ -20,6 +20,7 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import IframeModal from '@/components/ui/IframeModal';
 import {
   Search, X, PlusCircle, Check, Printer, Share2, Download,
   ChevronDown, ChevronRight, ChevronLeft, GripHorizontal,
@@ -843,7 +844,7 @@ type Row =
       bestLogic?: 'max' | 'min';
       getRawScore?: (c: Compound) => number;
       getValue: (c: Compound) => unknown;
-      render: (c: Compound, maxHl?: number) => React.ReactNode;
+      render: (c: Compound, maxHl?: number, maxCites?: number) => React.ReactNode;
     };
 
 const ROWS: Row[] = [
@@ -984,11 +985,17 @@ const ROWS: Row[] = [
     kind: 'data', label: 'PubMed Citations',
     bestLogic: 'max', getRawScore: c => c.pubmed_citation_count || 0,
     getValue: c => c.pubmed_citation_count,
-    render: c => {
+    render: (c, maxHl, maxCites) => {
       const n = c.pubmed_citation_count;
       if (!n) return NL;
       const tier = n >= 1000 ? { color: '#68D391', label: 'Extensive' } : n >= 200 ? { color: '#FFF', label: 'Good' } : n >= 50 ? { color: '#F6AD55', label: 'Moderate' } : { color: '#FFF', label: 'Sparse' };
-      return <span>{n.toLocaleString()} <span style={{ fontSize: '0.68rem', color: tier.color, fontWeight: 700, marginLeft: 4 }}>{tier.label}</span></span>;
+      const pct = maxCites && maxCites > 0 ? (n / maxCites) * 100 : 0;
+      return (
+        <div>
+          <span>{n.toLocaleString()} <span style={{ fontSize: '0.68rem', color: tier.color, fontWeight: 700, marginLeft: 4 }}>{tier.label}</span></span>
+          {pct > 0 && <div style={{ marginTop: 4, height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', width: '100%', maxWidth: 140 }}><div style={{ height: '100%', width: `${pct}%`, background: '#F6AD55', transition: 'width 0.5s ease' }} /></div>}
+        </div>
+      );
     }
   },
   {
@@ -1145,7 +1152,7 @@ function FocusRowModal({ row, selected, maxHalfLife, controlCompound, topPickSlu
                   <span style={{ color, fontWeight: 900, fontSize: '0.88rem' }}>{c.display_name}</span>
                   {isTop && <img src="/images/badges/badge_top_pick.png" alt="Top Pick" style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', marginLeft: 4, verticalAlign: 'middle', flexShrink: 0 }} />}
                 </div>
-                <div style={{ fontSize: '0.95rem', color: '#fff', lineHeight: 1.55 }}>{row.render(c, maxHalfLife)}</div>
+                <div style={{ fontSize: '0.95rem', color: '#fff', lineHeight: 1.55 }}>{row.render(c, maxHalfLife, maxCitations)}</div>
                 {controlCompound && controlCompound.slug !== c.slug && (
                   <div style={{ marginTop: 6 }}>{renderRelativeDelta(row.label, c, controlCompound)}</div>
                 )}
@@ -1360,6 +1367,7 @@ function RecommendationCard({ rec, label, icon, color }: { rec: { compound: Comp
 
 // ─── Mechanism Tab ────────────────────────────────────────────────────────────
 function MechanismTab({ selected }: { selected: Compound[] }) {
+  const [modalUrl, setModalUrl] = useState<string | null>(null);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(260px, 1fr))`, gap: 14 }}>
@@ -1414,8 +1422,8 @@ function MechanismTab({ selected }: { selected: Compound[] }) {
                     <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       {c.sources.slice(0, 4).map((src, si) => (
-                        <a key={si} href={src.startsWith('http') ? src : undefined} target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: '0.72rem', color: '#FFF', opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>
+                        <a key={si} href={src.startsWith('http') ? src : undefined} onClick={src.startsWith('http') ? (e) => { e.preventDefault(); setModalUrl(src); } : undefined}
+                          style={{ fontSize: '0.72rem', color: '#FFF', opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none', cursor: src.startsWith('http') ? 'pointer' : 'default' }}>
                           {src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si + 1}</span> : src}
                         </a>
                       ))}
@@ -1444,12 +1452,16 @@ function MechanismTab({ selected }: { selected: Compound[] }) {
           <EfficacyHeatmap selected={selected} />
         </div>
       )}
+      {modalUrl && (
+        <IframeModal url={modalUrl} onClose={() => setModalUrl(null)} />
+      )}
     </div>
   );
 }
 
 // ─── Protocol Tab ─────────────────────────────────────────────────────────────
 function ProtocolTab({ selected }: { selected: Compound[] }) {
+  const [modalUrl, setModalUrl] = useState<string | null>(null);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(260px, 1fr))`, gap: 14 }}>
@@ -1507,7 +1519,7 @@ function ProtocolTab({ selected }: { selected: Compound[] }) {
                 )}
                 {/* COA Link */}
                 {c.coa_url && (
-                  <a href={c.coa_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color, textDecoration: 'none', fontWeight: 700 }}>
+                  <a href={c.coa_url} onClick={(e) => { e.preventDefault(); setModalUrl(c.coa_url as string); }} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color, textDecoration: 'none', fontWeight: 700, cursor: 'pointer' }}>
                     <BookOpen size={12} /> View Certificate of Analysis
                   </a>
                 )}
@@ -1516,6 +1528,9 @@ function ProtocolTab({ selected }: { selected: Compound[] }) {
           );
         })}
       </div>
+      {modalUrl && (
+        <IframeModal url={modalUrl} onClose={() => setModalUrl(null)} />
+      )}
     </div>
   );
 }
@@ -1934,6 +1949,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
 
   const displayedSelected = selected;
   const maxHalfLife = useMemo(() => Math.max(...displayedSelected.map(c => parseHalfLifeHours(c.half_life)), 0), [displayedSelected]);
+  const maxCitations = useMemo(() => Math.max(...displayedSelected.map(c => c.pubmed_citation_count || 0), 0), [displayedSelected]);
   const scores = useMemo(() => selected.map(c => scoreCompound(c, selected)), [selected]);
   const prosCons = useMemo(() => selected.map(c => generateProsCons(c)), [selected]);
   const analystBrief = useMemo(() => generateAnalystBrief(selected, scores), [selected, scores]);
@@ -2765,7 +2781,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
                                       {row.label}
                                     </div>
                                     <div style={{ flex: 1, textAlign: 'right', fontSize: '0.84rem', color: '#fff' }}>
-                                      <TruncatedCell>{row.render(c, maxHalfLife)}{controlCompound && renderRelativeDelta(row.label, c, controlCompound)}</TruncatedCell>
+                                      <TruncatedCell>{row.render(c, maxHalfLife, maxCitations)}{controlCompound && renderRelativeDelta(row.label, c, controlCompound)}</TruncatedCell>
                                     </div>
                                   </div>
                                 );
@@ -2857,7 +2873,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
                                       <div style={{ width: 80, fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', flexShrink: 0, marginTop: 2 }}>{c.display_name}</div>
                                       <div style={{ flex: 1, fontSize: '0.85rem', color: '#fff' }}>
                                         <TruncatedCell>
-                                          {row.render(c, maxHalfLife)}
+                                          {row.render(c, maxHalfLife, maxCitations)}
                                           {controlCompound && renderRelativeDelta(row.label, c, controlCompound)}
                                         </TruncatedCell>
                                       </div>
@@ -3136,12 +3152,12 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
                                 <div style={isWinner ? { borderLeft: '2px solid #00C4BC', paddingLeft: 7, marginLeft: -8 } : {}}>
                                   {isMobile ? (
                                     <TruncatedCell>
-                                      {row.render(c, maxHalfLife)}
+                                      {row.render(c, maxHalfLife, maxCitations)}
                                       {controlCompound && renderRelativeDelta(row.label, c, controlCompound)}
                                     </TruncatedCell>
                                   ) : (
                                     <>
-                                      {row.render(c, maxHalfLife)}
+                                      {row.render(c, maxHalfLife, maxCitations)}
                                       {controlCompound && renderRelativeDelta(row.label, c, controlCompound)}
                                     </>
                                   )}

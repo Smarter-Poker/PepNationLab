@@ -10,6 +10,9 @@ import { analyzeStack, getCategoryFromName } from '@/lib/stackEngine';
 import StackBuilder from './StackBuilder';
 import { Search, Info, FlaskConical, Beaker, Map as MapIcon, Grid as GridIcon, CheckCircle2, ChevronRight, X } from 'lucide-react';
 import Image from 'next/image';
+import { AutocompleteDropdown } from '@/components/research/AutocompleteDropdown';
+import { TrendingSearchesDropdown } from '@/components/research/TrendingSearchesDropdown';
+import { useSearchHistory } from '@/components/research/useSearchHistory';
 
 interface Props {
   compounds: Compound[];
@@ -23,10 +26,28 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
   const [activeStackDrawer, setActiveStackDrawer] = useState<string | null>(null);
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   const { addMultipleToCart } = useCart();
+  const { recent, addHistory } = useSearchHistory();
 
   const bySlug = useMemo(() => new Map(compounds.map((c) => [c.slug, c])), [compounds]);
+
+  const suggestions = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const lower = searchQuery.toLowerCase();
+    const matches = new Set<string>();
+    
+    compounds.forEach(c => {
+      if (c.display_name.toLowerCase().includes(lower)) matches.add(c.display_name);
+    });
+    
+    stacks.forEach(s => {
+      if (s.display_name.toLowerCase().includes(lower)) matches.add(s.display_name);
+    });
+    
+    return Array.from(matches).slice(0, 5).map(text => ({ text, type: 'compound' as const }));
+  }, [searchQuery, compounds, stacks]);
 
   const categories = useMemo(() => {
     const cats = new Set<string>();
@@ -143,15 +164,44 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 
       {/* Toolbar */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 32, alignItems: 'center' }}>
-        <div style={{ position: 'relative', flexGrow: 1, maxWidth: 400 }}>
+        <div style={{ position: 'relative', flexGrow: 1, maxWidth: 400, zIndex: 40 }}>
           <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#A8B4C0' }} />
           <input 
             type="text" 
             placeholder="Search stacks or compounds..." 
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={e => { setSearchQuery(e.target.value); setSuggestOpen(true); }}
+            onFocus={() => setSuggestOpen(true)}
+            onBlur={() => setTimeout(() => setSuggestOpen(false), 200)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && searchQuery.trim()) {
+                e.preventDefault();
+                addHistory(searchQuery.trim());
+                setSuggestOpen(false);
+              }
+            }}
             style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: '#fff', outline: 'none' }}
           />
+          {suggestOpen && (searchQuery.trim().length > 0 || recent.length > 0) && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px' }}>
+              <AutocompleteDropdown
+                id="stacks-search-autocomplete"
+                suggestions={suggestions}
+                recent={recent}
+                onSelect={(s) => { addHistory(s.text); setSearchQuery(s.text); setSuggestOpen(false); }}
+                onSelectRecent={(t) => { addHistory(t); setSearchQuery(t); setSuggestOpen(false); }}
+              />
+            </div>
+          )}
+          {suggestOpen && searchQuery.trim().length === 0 && recent.length === 0 && (
+             <TrendingSearchesDropdown 
+               onSelect={(term) => {
+                 addHistory(term);
+                 setSearchQuery(term);
+                 setSuggestOpen(false);
+               }}
+             />
+          )}
         </div>
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
           {categories.map(cat => (
