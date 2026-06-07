@@ -112,8 +112,6 @@ export default function AgentDashboardClient({
   const [displayName, setDisplayName] = useState(agentProfile?.display_name ?? '');
   const [slug, setSlug] = useState(agentProfile?.slug ?? '');
   const [logoUrl, setLogoUrl] = useState(agentProfile?.logo_url ?? '');
-  const [primaryColor, setPrimaryColor] = useState(agentProfile?.primary_color ?? '#00C4BC');
-  const [volumePricingEnabled, setVolumePricingEnabled] = useState<boolean>(agentProfile?.volume_pricing_enabled ?? true);
 
   const handlesEmpty = !!agentProfile && (!agentProfile.payment_handles || Object.keys(agentProfile.payment_handles || {}).every((k) => !(agentProfile.payment_handles as any)[k]));
   
@@ -1168,11 +1166,8 @@ export default function AgentDashboardClient({
               displayName={displayName} setDisplayName={setDisplayName}
               slug={slug} setSlug={setSlug}
               logoUrl={logoUrl} setLogoUrl={setLogoUrl}
-              primaryColor={primaryColor} setPrimaryColor={setPrimaryColor}
               warehouseAddress={agentProfile?.warehouse_address}
-              isActive={agentProfile?.is_active}
-              volumePricingEnabled={volumePricingEnabled}
-              setVolumePricingEnabled={setVolumePricingEnabled}
+              displayNameChangedAt={agentProfile?.display_name_changed_at}
               agentId={userProfile.id}
               onSaveSuccess={(updatedData) => {
                 if (agentProfile) {

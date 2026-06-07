@@ -45,7 +45,8 @@ export async function GET(_req: NextRequest) {
         id, full_name, username, email, phone,
         is_sub_agent, commission_pct, commission_active_since,
         account_type, credit_limit, prepaid_balance,
-        created_at, is_active, last_sign_in_at, first_sign_in_at
+        created_at, is_active, last_sign_in_at, first_sign_in_at,
+        agent_profiles ( slug, display_name, previous_display_name, previous_display_name_dismissed )
       `)
       .eq('parent_agent_id', callerId)
       .eq('is_sub_agent', true)

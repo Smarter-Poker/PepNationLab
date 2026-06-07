@@ -214,6 +214,33 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
     }
   };
 
+  const handleDismissPreviousName = async (subAgentId: string) => {
+    try {
+      const res = await fetch('/api/agent/sub-agents/dismiss-name', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sub_agent_id: subAgentId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to dismiss previous name');
+      
+      setSubAgents(prev => prev.map(a => {
+        if (a.id === subAgentId && a.agent_profiles) {
+          // Mutate the loaded sub-agent in place or recreate it
+          const apArray = Array.isArray(a.agent_profiles) ? a.agent_profiles : [a.agent_profiles];
+          return {
+            ...a,
+            agent_profiles: apArray.map((ap: any) => ({ ...ap, previous_display_name_dismissed: true }))
+          };
+        }
+        return a;
+      }));
+      toast.success('Previous name dismissed');
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
   const handleSavePricing = async (productId: string, baselineCost: string, bulkCostStr: string, bulkThreshStr: string) => {
     try {
       setPricingError(null);
@@ -411,7 +438,30 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                 >
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 200px' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Agent Name</span>
-                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>{agent.full_name || 'Anonymous'}</span>
+                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>
+                      {(() => {
+                        const ap = pickOne<{ display_name?: string }>(agent.agent_profiles);
+                        return ap?.display_name || agent.full_name || 'Anonymous';
+                      })()}
+                    </span>
+                    {(() => {
+                      const ap = pickOne<any>(agent.agent_profiles);
+                      if (ap?.previous_display_name && ap?.previous_display_name_dismissed === false) {
+                        return (
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,165,0,0.1)', border: '1px solid rgba(255,165,0,0.3)', padding: '2px 8px', borderRadius: '12px', width: 'fit-content', marginTop: '2px' }}>
+                            <span style={{ fontSize: '0.7rem', color: '#FFA500' }}>Previously: {ap.previous_display_name}</span>
+                            <button
+                              onClick={() => handleDismissPreviousName(agent.id)}
+                              style={{ background: 'none', border: 'none', color: '#FFA500', cursor: 'pointer', padding: 0, fontSize: '0.9rem', lineHeight: 1 }}
+                              title="Dismiss"
+                            >
+                              &times;
+                            </button>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Credentials</span>

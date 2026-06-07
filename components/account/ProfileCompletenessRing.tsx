@@ -20,7 +20,7 @@ export default function ProfileCompletenessRing({
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (clamped / 100) * circumference;
 
-  const stroke = '#68D391';
+  const stroke = '#22C55E';
 
   const labelId = 'profile-completeness-label';
 
@@ -82,9 +82,11 @@ export default function ProfileCompletenessRing({
           {clamped}%
         </text>
       </svg>
-      <span id={labelId} style={{ fontSize: '0.75rem', color: 'var(--silver)' }}>
-        {caption}
-      </span>
+      {caption && (
+        <span id={labelId} style={{ fontSize: '0.75rem', color: 'var(--silver)' }}>
+          {caption}
+        </span>
+      )}
     </div>
   );
 }

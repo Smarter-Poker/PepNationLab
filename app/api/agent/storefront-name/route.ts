@@ -1,0 +1,102 @@
+import { NextResponse, type NextRequest } from 'next/server';
+import { createServiceClient, createClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
+
+export const dynamic = 'force-dynamic';
+
+export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
+  const body = await req.json().catch(() => null);
+  if (!body || !body.user_name) {
+    return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
+  }
+
+  const newName = String(body.user_name).trim();
+  if (newName.length < 2) {
+    return NextResponse.json({ error: 'Name must be at least 2 characters.' }, { status: 400 });
+  }
+
+  const adminClient = await createServiceClient();
+
+  // 1. Fetch current profile
+  const { data: currentProfile, error: fetchErr } = await adminClient
+    .from('agent_profiles')
+    .select('display_name, display_name_changed_at')
+    .eq('id', user.id)
+    .single();
+
+  if (fetchErr || !currentProfile) {
+    return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
+  }
+
+  // If the name hasn't changed, we don't do anything here (success)
+  if (currentProfile.display_name === newName) {
+    return NextResponse.json({ success: true, changed: false });
+  }
+
+  // 2. Cooldown check
+  if (currentProfile.display_name_changed_at) {
+    const lastChange = new Date(currentProfile.display_name_changed_at).getTime();
+    const COOLDOWN_MS = 180 * 24 * 60 * 60 * 1000; // 180 days
+    if (Date.now() - lastChange < COOLDOWN_MS) {
+      return NextResponse.json({ error: 'You can only change your User Name once every 6 months.' }, { status: 403 });
+    }
+  }
+
+  // 3. Check for duplicates
+  const { data: existing } = await adminClient
+    .from('agent_profiles')
+    .select('id')
+    .eq('display_name', newName)
+    .single();
+
+  if (existing) {
+    return NextResponse.json({ error: 'User Name Is Already Taken - Try Another.' }, { status: 409 });
+  }
+
+  // 4. Update the profile
+  const { error: updateErr } = await adminClient
+    .from('agent_profiles')
+    .update({
+      display_name: newName,
+      previous_display_name: currentProfile.display_name,
+      display_name_changed_at: new Date().toISOString(),
+      previous_display_name_dismissed: false,
+    })
+    .eq('id', user.id);
+
+  if (updateErr) {
+    return NextResponse.json({ error: 'Failed to update User Name.' }, { status: 500 });
+  }
+
+  // 5. Notify the Upline
+  const { data: userProfile } = await adminClient
+    .from('profiles')
+    .select('parent_agent_id')
+    .eq('id', user.id)
+    .single();
+
+  if (userProfile?.parent_agent_id) {
+    await adminClient.from('notifications').insert({
+      user_id: userProfile.parent_agent_id,
+      type: 'system',
+      title: 'Sub-Agent Name Change',
+      body: `Your sub-agent "${currentProfile.display_name}" is now known as "${newName}".`,
+      url: '/dashboard/agent/sub-agents',
+    });
+  }
+
+  return NextResponse.json({ 
+    success: true, 
+    changed: true, 
+    display_name_changed_at: new Date().toISOString() 
+  });
+}

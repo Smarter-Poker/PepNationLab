@@ -13,6 +13,7 @@ import { getRoleNavLinks } from '@/components/roleNavLinks';
 import MyQRCodeModal from './MyQRCodeModal';
 import { useMessengerStore } from '@/stores/messengerStore';
 import { evictAllCatalogCaches } from '@/lib/storefront-cache';
+import GlobalCompletenessWidget from '@/components/GlobalCompletenessWidget';
 
 function resolveTitle(pathname: string, role: string): string {
   if (pathname === '/')               return 'Pep Nation Lab';
@@ -472,6 +473,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface-2)' }} className="skeleton" />
           ) : user ? (
             <>
+              <GlobalCompletenessWidget />
               <Link href={dashLink} aria-label={dashLabel} className="hover-scale-105" style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'none', flexShrink: 0, marginRight: 4, position: 'relative', left: -8 }}>
                 <img
                   src={
