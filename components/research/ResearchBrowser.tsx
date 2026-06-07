@@ -417,12 +417,19 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {paginatedResults.map((c) => (
-                <div key={c.slug} className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ flex: '0 0 200px' }}>
-                    <Link href={`/research/${c.slug}`} style={{ textDecoration: 'none', color: '#FFF', fontWeight: 800, fontSize: '1.05rem' }}>{c.display_name}</Link>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--teal, #00C4BC)' }}>{c.category}</div>
-                  </div>
+              {paginatedResults.map((c) => {
+                const badge = getDynamicBadge(c.slug);
+                return (
+                  <div key={c.slug} className="glass-panel" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '16px', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    {badge && (
+                      <div style={{ position: 'absolute', top: '-10px', left: '-10px', background: badge.color, color: '#000', fontSize: '0.65rem', fontWeight: 800, padding: '2px 8px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.3)', zIndex: 10 }}>
+                        {badge.label}
+                      </div>
+                    )}
+                    <div style={{ flex: '0 0 200px' }}>
+                      <Link href={`/research/${c.slug}`} style={{ textDecoration: 'none', color: '#FFF', fontWeight: 800, fontSize: '1.05rem' }}>{c.display_name}</Link>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--teal, #00C4BC)' }}>{c.category}</div>
+                    </div>
                   <div style={{ flex: 1, fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)' }}>
                      {c.plain_summary ? c.plain_summary.substring(0, 100) + '...' : ''}
                   </div>
@@ -432,7 +439,8 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
                     <ResearchCartButton productName={c.display_name} size="sm" />
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

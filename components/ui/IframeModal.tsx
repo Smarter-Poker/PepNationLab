@@ -160,7 +160,7 @@ export default function IframeModal({ url, onClose }: IframeModalProps) {
           )}
 
           <iframe
-            src={`/api/proxy?url=${encodeURIComponent(url)}`}
+            src={'/api/proxy?url=' + encodeURIComponent(url)}
             style={{ width: '100%', height: '100%', border: 'none', display: 'block', opacity: loading ? 0 : 1, transition: 'opacity 0.3s ease' }}
             referrerPolicy="origin-when-cross-origin"
             onLoad={() => setLoading(false)}

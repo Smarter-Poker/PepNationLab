@@ -350,7 +350,7 @@ function AddToCartAcknowledgment({
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(5, 10, 15, 0.85)', backdropFilter: 'blur(8px)', padding: 'var(--space-4)' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(5, 10, 15, 0.85)', backdropFilter: 'blur(8px)', padding: 'var(--space-4)' }}
       role="dialog" aria-modal="true" aria-labelledby="add-to-cart-ack-title"
     >
       <motion.div
@@ -924,7 +924,7 @@ function CartDrawer() {
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, zIndex: 100,
+        position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, zIndex: 9999,
         display: 'flex', justifyContent: 'flex-end',
         background: 'rgba(5, 10, 15, 0.75)', backdropFilter: 'blur(6px)',
       }}
@@ -1059,7 +1059,7 @@ function CartDrawer() {
 
         {/* ── Footer ── */}
         {cart.length > 0 && (
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '14px 20px 18px', flexShrink: 0 }}>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '14px 20px', paddingBottom: 'calc(18px + var(--safe-bottom, 0px))', flexShrink: 0 }}>
             {/* Subtotal */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '10px 14px', background: 'rgba(0,229,255,0.04)', borderRadius: 8, border: '1px solid rgba(0,229,255,0.1)' }}>
               <span style={{ fontSize: '0.86rem', color: 'var(--grey-400)', fontWeight: 600 }}>Subtotal</span>
