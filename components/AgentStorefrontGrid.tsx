@@ -3729,7 +3729,7 @@ export default function AgentStorefrontGrid({
                         boxShadow: '0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)',
                         marginBottom: 10,
                       }}>
-                        <div style={{ padding: '12px 16px', background: 'rgba(0,0,0,0.2)', borderBottom: '2px solid rgba(142,152,167,0.2)', fontSize: '0.8rem', fontWeight: 700, color: 'var(--white)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ padding: '12px 16px', background: 'rgba(0,0,0,0.2)', borderBottom: '2px solid rgba(142,152,167,0.2)', fontSize: '0.9rem', fontWeight: 700, color: 'var(--white)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           Bulk Volume Discounts
                           <button
                             type="button"
@@ -3758,11 +3758,11 @@ export default function AgentStorefrontGrid({
                             const dp = parseFloat((bp * (1 - tier.pct / 100)).toFixed(2));
                             return (
                               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: i === 0 ? 'none' : '2px solid rgba(142,152,167,0.2)' }}>
-                                <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-                                  {tier.min}+ Vials <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.75rem' }}>{tier.pct}% Off</span>
+                                <span style={{ fontSize: '0.9rem', color: 'var(--grey-400)', fontWeight: 600 }}>
+                                  {tier.min}+ Vials <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.9rem', fontWeight: 700 }}>{tier.pct}% Off</span>
                                 </span>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                  <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: 'var(--grey-300)' }}>${dp.toFixed(2)}/ea</span>
+                                  <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: 'var(--grey-300)' }}>${dp.toFixed(2)} / Vial</span>
                                   <button
                                     type="button"
                                     aria-label={`Add ${tier.min} Vials To Cart`}
@@ -3778,7 +3778,7 @@ export default function AgentStorefrontGrid({
                             );
                           });
                         })()}
-                        <div style={{ padding: '12px 16px', background: 'rgba(0,0,0,0.1)', borderTop: '2px solid rgba(142,152,167,0.2)', fontSize: '0.75rem', color: 'var(--silver)' }}>
+                        <div style={{ padding: '12px 16px', background: 'rgba(0,0,0,0.1)', borderTop: '2px solid rgba(142,152,167,0.2)', fontSize: '0.9rem', fontWeight: 600, color: 'var(--silver)' }}>
                           Contact Your Agent To Place A Bulk Order Of 500+ Vials.
                         </div>
                       </div>
