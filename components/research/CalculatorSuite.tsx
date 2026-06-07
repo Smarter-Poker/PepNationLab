@@ -83,6 +83,7 @@ function StyledInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input 
       {...props}
+      className={`calc-no-capitalize ${props.className || ''}`.trim()}
       onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
       onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
       onMouseEnter={() => setHovered(true)}
@@ -107,6 +108,7 @@ function StyledSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select 
       {...props}
+      className={`calc-no-capitalize ${props.className || ''}`.trim()}
       onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
       onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
       onMouseEnter={() => setHovered(true)}

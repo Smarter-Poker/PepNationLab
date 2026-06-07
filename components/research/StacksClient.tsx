@@ -295,6 +295,10 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                         {stack.stack_components.map((compSlug) => {
                           const comp = bySlug.get(compSlug);
                           const label = comp?.display_name ?? compSlug;
+                          const p = products.find((p) => p.compoundSlug === compSlug);
+                          const imageUrl = p?.imageUrl || '/images/bottle_mockup.png';
+                          const comp = bySlug.get(compSlug);
+                          const label = comp?.display_name ?? compSlug;
                           return (
                             <div
                               key={compSlug}
@@ -306,9 +310,13 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                                 color: '#D0DAE4',
                                 fontSize: '0.75rem',
                                 fontWeight: 600,
-                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)'
+                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
                               }}
                             >
+                              <img src={imageUrl} alt={label} style={{ width: 16, height: 16, objectFit: 'contain' }} />
                               {label}
                             </div>
                           );
@@ -408,6 +416,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
             stack1={bySlug.get(selectedForCompare[0])!}
             stack2={bySlug.get(selectedForCompare[1])!}
             bySlug={bySlug}
+            products={products}
             onClose={() => setShowCompareDrawer(false)}
             synergy1={getSynergyScore(bySlug.get(selectedForCompare[0])!)}
             synergy2={getSynergyScore(bySlug.get(selectedForCompare[1])!)}
@@ -433,6 +442,7 @@ interface StacksCompareDrawerProps {
   stack1: Compound;
   stack2: Compound;
   bySlug: Map<string, Compound>;
+  products: AreaProduct[];
   onClose: () => void;
   synergy1: StackAnalysis;
   synergy2: StackAnalysis;
@@ -440,7 +450,7 @@ interface StacksCompareDrawerProps {
   bundlePrice2: number;
 }
 
-function StacksCompareDrawer({ stack1, stack2, bySlug, onClose, synergy1, synergy2, bundlePrice1, bundlePrice2 }: StacksCompareDrawerProps) {
+function StacksCompareDrawer({ stack1, stack2, bySlug, products, onClose, synergy1, synergy2, bundlePrice1, bundlePrice2 }: StacksCompareDrawerProps) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }}>
       <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
@@ -485,19 +495,29 @@ function StacksCompareDrawer({ stack1, stack2, bySlug, onClose, synergy1, synerg
             {/* Components list */}
             <div>
               <div style={{ marginBottom: 12, fontSize: '0.8rem', color: '#A8B4C0', textTransform: 'uppercase', fontWeight: 700 }}>Included Compounds</div>
-              {stack1.stack_components.map((slug: string) => (
-                <div key={slug} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 8, marginBottom: 8, fontSize: '0.85rem', color: '#fff' }}>
-                  {bySlug.get(slug)?.display_name || slug}
-                </div>
-              ))}
+              {stack1.stack_components.map((slug: string) => {
+                const p = products.find((pr) => pr.compoundSlug === slug);
+                const imageUrl = p?.imageUrl || '/images/bottle_mockup.png';
+                return (
+                  <div key={slug} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 8, marginBottom: 8, fontSize: '0.85rem', color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <img src={imageUrl} alt={slug} style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                    {bySlug.get(slug)?.display_name || slug}
+                  </div>
+                );
+              })}
             </div>
             <div>
               <div style={{ marginBottom: 12, fontSize: '0.8rem', color: '#A8B4C0', textTransform: 'uppercase', fontWeight: 700 }}>Included Compounds</div>
-              {stack2.stack_components.map((slug: string) => (
-                <div key={slug} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 8, marginBottom: 8, fontSize: '0.85rem', color: '#fff' }}>
-                  {bySlug.get(slug)?.display_name || slug}
-                </div>
-              ))}
+              {stack2.stack_components.map((slug: string) => {
+                const p = products.find((pr) => pr.compoundSlug === slug);
+                const imageUrl = p?.imageUrl || '/images/bottle_mockup.png';
+                return (
+                  <div key={slug} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 8, marginBottom: 8, fontSize: '0.85rem', color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <img src={imageUrl} alt={slug} style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                    {bySlug.get(slug)?.display_name || slug}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -664,10 +684,15 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                 const s = calcState[slug] || { mass: 5, diluent: 2 };
                 const mgPerMl = getConcentration(slug);
                 const mcgPerMl = mgPerMl * 1000;
+                const p = products.find((pr: AreaProduct) => pr.compoundSlug === slug);
+                const imageUrl = p?.imageUrl || '/images/bottle_mockup.png';
 
                 return (
                   <div key={slug} style={{ marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <h4 style={{ margin: '0 0 12px', color: '#fff' }}>{bySlug.get(slug)?.display_name}</h4>
+                    <h4 style={{ margin: '0 0 12px', color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <img src={imageUrl} alt={slug} style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                      {bySlug.get(slug)?.display_name}
+                    </h4>
                     <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <div>
