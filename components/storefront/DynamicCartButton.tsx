@@ -78,7 +78,7 @@ export default function DynamicCartButton({
         ...style,
       }}
     >
-      <img
+      <Image
         src={imageSrc}
         alt={altText}
         style={{
@@ -87,7 +87,7 @@ export default function DynamicCartButton({
           objectFit: 'contain',
           display: 'block',
         }}
-      />
+       width={200} height={200} unoptimized />
     </button>
   );
 }

@@ -1081,13 +1081,13 @@ export default function StorefrontCompareDrawer({
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                       {item.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={item.imageUrl}
                           alt={item.productName}
                           width={108}
                           height={108}
                           style={{ width: 108, height: 108, borderRadius: 8, objectFit: 'cover', background: '#0F1923', flexShrink: 0 }}
-                        />
+                         unoptimized />
                       ) : (
                         <div style={{ width: 108, height: 108, borderRadius: 8, background: `${primaryColor}25`, flexShrink: 0 }} aria-hidden="true" />
                       )}

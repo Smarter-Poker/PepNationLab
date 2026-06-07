@@ -178,13 +178,13 @@ function SupplyMiniCard({
     >
       {supply.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={supply.imageUrl}
           alt={supply.name}
           width={48}
           height={48}
           style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923' }}
-        />
+         unoptimized />
       ) : (
         <div
           style={{ width: 48, height: 48, borderRadius: 10, background: `${primaryColor}20`, flexShrink: 0 }}
@@ -484,11 +484,11 @@ function IsThisRightForMe({
         onMouseOver={e => e.currentTarget.style.transform = 'scale(1.01)'}
         onMouseOut={e => e.currentTarget.style.transform = 'none'}
       >
-        <img
+        <Image
           src="/images/right-for-my-research-btn.png"
           alt="Is This Right For My Research?"
           style={{ width: '100%', height: 'auto', display: 'block' }}
-        />
+         width={200} height={200} unoptimized />
       </button>
       {open && (
         <div style={{
@@ -628,11 +628,11 @@ function ReconstitutionCalc({
         onMouseOver={e => e.currentTarget.style.transform = 'scale(1.01)'}
         onMouseOut={e => e.currentTarget.style.transform = 'none'}
       >
-        <img
+        <Image
           src="/images/reconstitution-calculator-btn.png"
           alt="Reconstitution Calculator"
           style={{ width: '100%', height: 'auto', display: 'block' }}
-        />
+         width={200} height={200} unoptimized />
       </button>
       {open && (
         <div style={{
@@ -1088,11 +1088,11 @@ export default function ProductModalEnhancements({
                   >
                     {imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={imageUrl}
                         alt={groupName}
                         style={{ width: 80, height: 80, borderRadius: 10, objectFit: 'cover', background: '#0F1923', marginBottom: 4 }}
-                      />
+                       width={200} height={200} unoptimized />
                     ) : (
                       <div style={{ width: 80, height: 80, borderRadius: 10, background: `${primaryColor}20`, marginBottom: 4 }} aria-hidden="true" />
                     )}
@@ -1281,13 +1281,13 @@ export default function ProductModalEnhancements({
                   )}
                   {group.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={group.imageUrl}
                       alt={group.name}
                       width={256}
                       height={256}
                       style={{ width: 256, height: 256, borderRadius: 10, objectFit: 'cover', background: '#0F1923' }}
-                    />
+                     unoptimized />
                   ) : (
                     <div style={{ width: 256, height: 256, borderRadius: 10, background: `${primaryColor}20` }} aria-hidden="true" />
                   )}

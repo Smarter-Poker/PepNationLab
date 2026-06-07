@@ -60,7 +60,7 @@ export default function DynamicAddToCartButton({
         ...style,
       }}
     >
-      <img
+      <Image
         src="/images/add-to-cart-dynamic.png"
         alt="Add To Cart"
         style={{
@@ -70,7 +70,7 @@ export default function DynamicAddToCartButton({
           display: 'block',
           filter: justAdded ? 'hue-rotate(90deg) brightness(1.2) drop-shadow(0 0 4px #68D391)' : 'none',
         }}
-      />
+       width={200} height={200} unoptimized />
       {justAdded ? (
         <span
           style={{

@@ -74,7 +74,7 @@ export default function DynamicCompareButton({
         ...style,
       }}
     >
-      <img
+      <Image
         src={buttonConfig.src}
         alt={buttonConfig.alt}
         style={{
@@ -83,7 +83,7 @@ export default function DynamicCompareButton({
           objectFit: 'contain',
           display: 'block',
         }}
-      />
+       width={200} height={200} unoptimized />
     </button>
   );
 }

@@ -154,7 +154,7 @@ export default function PinToCompareButton({
         onMouseOver={e => e.currentTarget.style.transform = 'scale(1.02)'}
         onMouseOut={e => e.currentTarget.style.transform = 'none'}
       >
-        <img
+        <Image
           src="/images/pin-to-compare-btn.png"
           alt="Pinned to Compare"
           style={{
@@ -164,7 +164,7 @@ export default function PinToCompareButton({
             display: 'block',
             filter: 'drop-shadow(0 0 6px #00C4BC) brightness(1.1)',
           }}
-        />
+         width={200} height={200} unoptimized />
         {/* A small absolute check icon in the top right to clearly signal pinned */}
         <div style={{
           position: 'absolute',
@@ -210,7 +210,7 @@ export default function PinToCompareButton({
       onMouseOver={e => { if(!full) e.currentTarget.style.transform = 'scale(1.02)'; }}
       onMouseOut={e => e.currentTarget.style.transform = 'none'}
     >
-      <img
+      <Image
         src="/images/pin-to-compare-btn.png"
         alt="Pin to Compare"
         style={{
@@ -219,7 +219,7 @@ export default function PinToCompareButton({
           objectFit: 'contain',
           display: 'block',
         }}
-      />
+       width={200} height={200} unoptimized />
     </button>
   );
 }

@@ -525,11 +525,12 @@ function MatchResultsDrawer({
 
                       {r.image_url ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
+                        <Image
                           src={r.image_url}
                           alt=""
                           onClick={() => onOpenProduct(r.product_id)}
                           style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover', cursor: 'pointer', flexShrink: 0 }}
+                          width={200} height={200} unoptimized
                         />
                       ) : (
                         <div style={{ width: 72, height: 72, borderRadius: 10, background: 'rgba(255,255,255,0.05)', flexShrink: 0 }} />

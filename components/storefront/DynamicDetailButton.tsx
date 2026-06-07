@@ -81,7 +81,7 @@ export default function DynamicDetailButton({
         ...style,
       }}
     >
-      <img
+      <Image
         src={config.src}
         alt={config.alt}
         style={{
@@ -90,7 +90,7 @@ export default function DynamicDetailButton({
           objectFit: 'contain',
           display: 'block',
         }}
-      />
+       width={200} height={200} unoptimized />
     </button>
   );
 }
