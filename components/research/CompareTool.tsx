@@ -1914,12 +1914,17 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
 
   const products = useMemo(() => {
     if (!liveProductsData?.products) return initialProducts;
-    const liveMap = new Map(liveProductsData.products.map((p: any) => [p.compoundSlug, p]));
-    return initialProducts.map(p => {
-      const live = liveMap.get(p.compoundSlug);
-      return live ? { ...p, ...live } : p;
-    });
-  }, [initialProducts, liveProductsData]);
+    
+    const liveMap = new Map<string, any>(liveProductsData.products.map((p: any) => [p.compoundSlug, p]));
+    const initialMap = new Map<string, any>(initialProducts.map((p: any) => [p.compoundSlug, p]));
+    
+    return selectedSlugs.map(slug => {
+      const live = liveMap.get(slug);
+      const init = initialMap.get(slug);
+      if (live && init) return { ...init, ...live };
+      return live || init;
+    }).filter(Boolean);
+  }, [initialProducts, liveProductsData, selectedSlugs]);
 
   const [activeTab, setActiveTab] = useState<'matrix' | 'proscons' | 'brief' | 'mechanism' | 'protocol' | 'recommend' | 'efficacy' | 'ai'>('matrix');
 
@@ -2393,7 +2398,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
               <button type="button" onClick={handleShareCard} className="action-btn-nickel" title="Share Visual Card"><Image size={14} /> Card</button>
               <button type="button" onClick={handleShare} className="action-btn-nickel" title="Share Link">{copied ? <Check size={14} color="#00C4BC" /> : <Share2 size={14} />} {copied ? 'Copied' : 'Share'}</button>
               <button type="button" onClick={() => window.print()} className="action-btn-nickel" title="Print Dossier"><Printer size={14} /> Print</button>
-              <button type="button" onClick={() => setJournalModalOpen(true)} className="action-btn-nickel" title="Save to Lab Journal" style={{ background: 'rgba(0,196,188,0.1) !important' }}><BookOpen size={14} color="#00C4BC" /> Save to Lab</button>
+              <button type="button" onClick={() => setJournalModalOpen(true)} className="action-btn-nickel" title="Save to Lab Journal" style={{ background: 'rgba(0,196,188,0.1)' }}><BookOpen size={14} color="#00C4BC" /> Save to Lab</button>
               
               <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
               
