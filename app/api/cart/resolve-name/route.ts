@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
         is_visible,
         product_id,
         products!inner (
-          id, name, is_banned, is_active, admin_bulk_price, admin_bulk_threshold, sku, compound_slug, unit_size
+          id, name, is_banned, is_active, admin_bulk_price, admin_bulk_threshold, sku, compound_slug, unit_size, inventory_count
         )
       `)
       .eq('agent_id', agentId)
@@ -118,6 +118,10 @@ export async function POST(req: NextRequest) {
     })[0];
 
     const product = Array.isArray(pick.products) ? pick.products[0] : pick.products;
+
+    if (product.inventory_count <= 0) {
+      return NextResponse.json({ error: 'Product is currently out of stock' }, { status: 400 });
+    }
 
     const item = {
       id: pick.id,

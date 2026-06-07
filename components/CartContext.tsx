@@ -201,12 +201,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             body: JSON.stringify({ name: detail.name }),
           });
 
+          const data = await res.json();
           if (!res.ok) {
-            toast.error(`${detail.name} Is Not Available On This Storefront.`);
+            toast.error(data.error || `${detail.name} Is Not Available On This Storefront.`);
             return;
           }
 
-          const data = await res.json();
           if (data.item) {
             // Add via the multiple additions method to support bypassing the acknowledgment safely
             addMultipleToCart([{ product: data.item, quantity: data.quantity || 1 }], detail.name);

@@ -105,10 +105,6 @@ export function useAvailability(opts: UseAvailabilityOpts): AvailabilityResult {
 
   useEffect(() => {
     if (disabled) {
-      setStatus('idle');
-      setAvailable(null);
-      setReason(null);
-      resetExtras();
       return;
     }
     const trimmed = String(value ?? '').trim();
@@ -179,6 +175,19 @@ export function useAvailability(opts: UseAvailabilityOpts): AvailabilityResult {
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [field, value, excludeId, debounceMs, minLength, disabled, refreshTick]);
+
+  if (disabled) {
+    return {
+      status: 'idle',
+      available: null,
+      normalized: '',
+      reason: null,
+      reservationToken: null,
+      similarTo: null,
+      suggestions: [],
+      refresh: () => {},
+    };
+  }
 
   return {
     status,

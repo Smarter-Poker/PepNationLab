@@ -310,6 +310,25 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     }
   };
 
+  const deleteComparison = async (id: string) => {
+    if (!confirm('Delete this saved comparison?')) return;
+    try {
+      const res = await fetch('/api/researcher/comparisons', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        setComparisons(c => c.filter(x => x.id !== id));
+        toast.success('Comparison deleted');
+      } else {
+        toast.error('Failed to delete comparison');
+      }
+    } catch {
+      toast.error('Error deleting comparison');
+    }
+  };
+
   const saveDose = async () => {
     if (!doseCompound || !doseAmount) return;
     setDoseSaving(true);
@@ -1114,6 +1133,9 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                               </p>
                             )}
                           </div>
+                          <button onClick={() => deleteComparison(c.id)} className="btn btn-ghost btn-sm" style={{ padding: 6, color: 'var(--red)', background: 'rgba(229,62,62,0.1)' }}>
+                            <Trash2 size={16} />
+                          </button>
                         </div>
                         <div style={{ display: 'flex', gap: 'var(--space-3)', overflowX: 'auto', paddingBottom: 'var(--space-2)' }}>
                           {c.product_ids.map((pid: string) => {

@@ -7,10 +7,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface IframeModalProps {
   url: string;
+  title?: string;
   onClose: () => void;
 }
 
-export default function IframeModal({ url, onClose }: IframeModalProps) {
+export default function IframeModal({ url, title, onClose }: IframeModalProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -97,9 +98,16 @@ export default function IframeModal({ url, onClose }: IframeModalProps) {
             </button>
           </div>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ color: '#A8B4C0', fontSize: '0.9rem', fontWeight: 600, maxWidth: '400px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {domain}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: 0 }}>
+              {title && (
+                <div style={{ color: '#FFFFFF', fontSize: '0.95rem', fontWeight: 600, maxWidth: '400px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {title}
+                </div>
+              )}
+              <div style={{ color: '#A8B4C0', fontSize: title ? '0.75rem' : '0.9rem', fontWeight: 600, maxWidth: '400px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {domain}
+              </div>
             </div>
             
             <a
