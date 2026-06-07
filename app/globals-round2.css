@@ -1083,16 +1083,25 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   [style*="gridTemplateColumns: '2fr 1fr 1fr'"],
   [style*="gridTemplateColumns: \"2fr 1fr 1fr\""],
   [style*="grid-template-columns: 2fr 1fr 1fr"],
   [style*="gridTemplateColumns: '1fr 1fr'"],
   [style*="gridTemplateColumns: \"1fr 1fr\""],
   [style*="grid-template-columns: 1fr 1fr"],
+  [style*="gridTemplateColumns: 'repeat(2, 1fr)'"],
+  [style*="gridTemplateColumns: \"repeat(2, 1fr)\""],
+  [style*="grid-template-columns: repeat(2, 1fr)"],
   [style*="gridTemplateColumns: '1fr 1fr 1fr'"],
   [style*="gridTemplateColumns: \"1fr 1fr 1fr\""],
-  [style*="grid-template-columns: 1fr 1fr 1fr"] {
+  [style*="grid-template-columns: 1fr 1fr 1fr"],
+  [style*="gridTemplateColumns: 'repeat(3, 1fr)'"],
+  [style*="gridTemplateColumns: \"repeat(3, 1fr)\""],
+  [style*="grid-template-columns: repeat(3, 1fr)"],
+  [style*="gridTemplateColumns: '1fr 340px'"],
+  [style*="gridTemplateColumns: \"1fr 340px\""],
+  [style*="grid-template-columns: 1fr 340px"] {
     grid-template-columns: 1fr !important;
   }
 }

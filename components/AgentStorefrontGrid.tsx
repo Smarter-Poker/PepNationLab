@@ -1925,36 +1925,30 @@ export default function AgentStorefrontGrid({
         .sf-wishlist-btn:hover { transform: scale(1.12); }
         .sf-modal-overlay {
           position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
-          z-index: 1000; display: flex; align-items: flex-end; justify-content: center;
+          background: rgba(10,15,20,1);
+          z-index: 1000; display: flex; align-items: flex-start; justify-content: center;
           overflow: hidden;
         }
         .sf-modal-sheet {
-          width: 100%; max-height: 95dvh; overflow-y: auto;
+          width: 100%; height: 100dvh; max-height: 100dvh; overflow-y: auto;
           -webkit-overflow-scrolling: touch;
-          background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%) padding-box,
-                      linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box;
-          border-radius: 22px 22px 0 0;
-          border: 5px solid transparent;
-          box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.15),
-            0 -10px 50px rgba(0,0,0,0.8),
-            0 4px 24px rgba(138,144,153,0.12);
+          background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%) padding-box;
+          border-radius: 0;
+          border: none;
+          box-shadow: none;
           display: flex; flex-direction: column;
           position: relative;
         }
         .sf-modal-drag-bar {
-          width: 40px; height: 4px; border-radius: 2px;
-          background: rgba(255,255,255,0.18); margin: 12px auto 0;
-          flex-shrink: 0;
+          display: none;
         }
         .sf-modal-img {
-          height: 160px; flex-shrink: 0; position: relative; overflow: hidden;
-          border-radius: 20px 20px 0 0;
+          height: 280px; flex-shrink: 0; position: relative; overflow: hidden;
+          border-radius: 0;
           margin: 0;
         }
-        .sf-modal-body { padding: 20px 22px 8px; flex: 1; }
-        .sf-modal-h2 { font-size: 1.2rem !important; }
+        .sf-modal-body { padding: 24px 22px 8px; flex: 1; }
+        .sf-modal-h2 { font-size: 1.4rem !important; }
         .sf-modal-actions {
           display: flex; justify-content: center; gap: 16px;
           padding: 16px 0 calc(24px + env(safe-area-inset-bottom, 0px));
@@ -1980,18 +1974,21 @@ export default function AgentStorefrontGrid({
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 6px 16px rgba(192,197,206,0.40);
         }
         @media (min-width: 600px) {
-          .sf-modal-overlay { align-items: center; padding: 20px; overflow-y: auto; }
+          .sf-modal-overlay { align-items: center; padding: 20px; overflow-y: auto; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); }
           .sf-modal-sheet {
-            border-radius: 20px; max-width: 560px; max-height: 90vh;
+            border-radius: 20px; max-width: 800px; max-height: 90vh; height: auto;
+            border: 5px solid transparent;
+            background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%) padding-box,
+                        linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box;
             box-shadow:
               inset 0 1px 0 rgba(255,255,255,0.15),
               0 24px 80px rgba(0,0,0,0.85),
               0 4px 24px rgba(138,144,153,0.12);
           }
           .sf-modal-drag-bar { display: none; }
-          .sf-modal-img { height: 240px; border-radius: 18px 18px 0 0; }
-          .sf-modal-body { padding: 24px 32px 12px; }
-          .sf-modal-h2 { font-size: 1.75rem !important; }
+          .sf-modal-img { height: 320px; border-radius: 18px 18px 0 0; }
+          .sf-modal-body { padding: 32px 40px 16px; }
+          .sf-modal-h2 { font-size: 1.8rem !important; }
           .sf-modal-actions {
             position: static; background: none; padding: 16px 0 24px;
             margin-bottom: -12px;

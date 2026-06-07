@@ -452,6 +452,12 @@ export async function POST(request: NextRequest) {
         retailPrice = retailPrice * flashMultiplier;
       }
 
+      // Stack discount: 10% off for items purchased as part of an individually packaged stack
+      if (cartItem.bundleName) {
+        retailPrice = retailPrice * 0.9;
+        costPrice = costPrice * 0.9;
+      }
+
       // Round unit prices to exact cents
       retailPrice = isFinite(retailPrice) ? Math.round(retailPrice * 100) / 100 : 0;
       costPrice = isFinite(costPrice) ? Math.round(costPrice * 100) / 100 : 0;

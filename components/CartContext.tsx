@@ -314,7 +314,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
   const cartSubtotal = cart.reduce((acc, item) => {
     const bulkEligible = !item.agentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold;
-    return acc + (bulkEligible ? (item.bulkCostPrice as number) : item.costPrice) * item.quantity;
+    let basePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice;
+    if (item.bundleName) {
+      basePrice = basePrice * 0.9;
+    }
+    return acc + basePrice * item.quantity;
   }, 0);
 
   return (
