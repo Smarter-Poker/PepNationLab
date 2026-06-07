@@ -292,7 +292,7 @@ export default function BulkImportModal({ onClose }: { onClose: () => void }) {
         position: 'fixed',
         inset: 0,
         background: 'rgba(0,0,0,0.75)',
-        zIndex: 1000,
+        zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

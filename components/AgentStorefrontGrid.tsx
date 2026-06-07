@@ -1957,9 +1957,10 @@ export default function AgentStorefrontGrid({
         .sf-modal-h2 { font-size: 1.2rem !important; }
         .sf-modal-actions {
           display: flex; justify-content: center; gap: 16px;
-          padding: 16px 22px calc(16px + env(safe-area-inset-bottom, 0px));
-          position: sticky; bottom: 0; z-index: 5;
-          background: linear-gradient(to top, #0a0f14 85%, transparent);
+          padding: 16px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+          margin-bottom: -8px;
+          position: static;
+          background: none;
         }
         .sf-modal-actions .sf-close-btn {
           padding: 12px 20px;
@@ -1992,7 +1993,8 @@ export default function AgentStorefrontGrid({
           .sf-modal-body { padding: 24px 32px 12px; }
           .sf-modal-h2 { font-size: 1.75rem !important; }
           .sf-modal-actions {
-            position: static; background: none; padding: 16px 32px 24px;
+            position: static; background: none; padding: 16px 0 12px;
+            margin-bottom: -12px;
             justify-content: center; gap: 20px;
           }
           .sf-modal-actions .sf-add-btn { flex: none; padding: 10px 28px; }
@@ -3801,7 +3803,6 @@ export default function AgentStorefrontGrid({
                       setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
                       setShowCartFloat(true);
                     }}
-                    pendingQty={pendingQty}
                     style={{ width: 172, height: 48 }}
                   />
                 </div>

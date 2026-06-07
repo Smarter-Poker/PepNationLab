@@ -95,7 +95,7 @@ export default function SubscribeReplenishButton({
           role="dialog"
           aria-modal="true"
           style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000,
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999,
             display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)',
           }}
           onClick={(e) => {

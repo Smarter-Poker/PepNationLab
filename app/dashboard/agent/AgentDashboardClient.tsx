@@ -679,7 +679,7 @@ export default function AgentDashboardClient({
                 style={{
                   position: 'fixed', inset: 0,
                   display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-                  zIndex: 1000,
+                  zIndex: 9999,
                   padding: '16px 16px 32px',
                   paddingTop: 'max(16px, env(safe-area-inset-top, 16px))',
                   background: 'rgba(0,0,0,0.6)',
@@ -790,7 +790,7 @@ export default function AgentDashboardClient({
                 style={{
                   position: 'fixed', inset: 0,
                   display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-                  zIndex: 1000,
+                  zIndex: 9999,
                   padding: '16px 16px 32px',
                   paddingTop: 'max(16px, env(safe-area-inset-top, 16px))',
                   background: 'rgba(0,0,0,0.6)',
@@ -1204,7 +1204,7 @@ export default function AgentDashboardClient({
       {resetPwUser && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.8)', zIndex: 1000,
+          background: 'rgba(0,0,0,0.8)', zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
           <div className="glass-panel stagger-fade-in" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)', position: 'relative' }}>
