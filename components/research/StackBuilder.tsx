@@ -265,7 +265,7 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
           if (d.compounds.some(c => c.slug === slug)) return d; // already exists
           return {
             ...d,
-            compounds: [...d.compounds, { slug, dose: defaultDose, unit: defaultUnit as 'mcg' | 'mg' | 'iu' | 'mL' }]
+            compounds: [...d.compounds, { slug, dose: defaultDose, unit: defaultUnit as 'mcg' | 'mg' }]
           };
         })
       };
@@ -524,11 +524,9 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
 
               {/* Half-Life Decay Curves Overlay Graph */}
               <div 
+                className="glass-panel"
                 style={{ 
-                  background: 'rgba(0,0,0,0.3)', 
-                  border: '1px solid rgba(255,255,255,0.05)', 
-                  borderRadius: 12, 
-                  padding: 16, 
+                  padding: 20, 
                   marginBottom: 16 
                 }}
               >
@@ -537,20 +535,35 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
                 </div>
                 <div style={{ height: 100, position: 'relative' }}>
                   <svg width="100%" height="100%" viewBox="0 0 400 100" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+                    <defs>
+                      <linearGradient id="decayGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="rgba(0,229,255,0.4)" />
+                        <stop offset="100%" stopColor="rgba(0,229,255,0)" />
+                      </linearGradient>
+                    </defs>
                     {/* grid lines */}
                     <line x1="0" y1="50" x2="400" y2="50" stroke="rgba(255,255,255,0.06)" strokeWidth="1" strokeDasharray="3,3" />
                     <line x1="0" y1="95" x2="400" y2="95" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
                     
-                    {timelinePoints.map((tp, idx) => (
-                      <path
-                        key={tp.slug}
-                        d={tp.coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${(c.x / 72) * 400} ${95 - (c.y / 100) * 85}`).join(' ')}
-                        fill="none"
-                        stroke={tp.color}
-                        strokeWidth="2"
-                        style={{ opacity: 0.85 }}
-                      />
-                    ))}
+                    {timelinePoints.map((tp, idx) => {
+                      const pathData = tp.coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${(c.x / 72) * 400} ${95 - (c.y / 100) * 85}`).join(' ');
+                      return (
+                        <g key={tp.slug}>
+                          <path
+                            d={`${pathData} L ${((tp.coords[tp.coords.length-1]?.x || 72) / 72) * 400} 95 L 0 95 Z`}
+                            fill="url(#decayGrad)"
+                            style={{ opacity: 0.3 }}
+                          />
+                          <path
+                            d={pathData}
+                            fill="none"
+                            stroke={tp.color}
+                            strokeWidth="3"
+                            style={{ filter: `drop-shadow(0 4px 6px ${tp.color}4D)` }}
+                          />
+                        </g>
+                      );
+                    })}
                   </svg>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#A8B4C0', marginTop: 6, fontFamily: 'monospace' }}>

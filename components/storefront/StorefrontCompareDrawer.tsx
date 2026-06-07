@@ -18,7 +18,7 @@ import { scoreCompound, type CompoundScore } from '../research/CompareTool';
 import DynamicAddToCartButton from './DynamicAddToCartButton';
 import DynamicCompareButton from './DynamicCompareButton';
 import IframeModal from '../ui/IframeModal';
-import { prewarmProxy } from '@/lib/ArticleProxyUtils';
+import { prewarmProxy, isSocialPlatformUrl } from '@/lib/ArticleProxyUtils';
 
 interface PinnedItem {
   productName: string;

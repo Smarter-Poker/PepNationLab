@@ -37,13 +37,14 @@ export function prewarmProxy(url: string | null | undefined) {
     // Maintain LRU size
     if (_prewarmedUrls.size >= MAX_CACHE_ENTRIES) {
       const first = _prewarmedUrls.values().next().value;
-      _prewarmedUrls.delete(first);
+      if (first) _prewarmedUrls.delete(first);
     }
 
     _prewarmedUrls.add(url);
 
     // Silent background fetch
-    fetch(`/api/proxy?url=${encodeURIComponent(url)}`, {
+    const fetchUrl = url as string;
+    fetch(`/api/proxy?url=${encodeURIComponent(fetchUrl)}`, {
       method: 'GET',
       priority: 'low',
       credentials: 'omit',

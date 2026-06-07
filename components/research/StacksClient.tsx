@@ -202,12 +202,20 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
              />
           )}
         </div>
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+        <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
           {categories.map(cat => (
             <button 
               key={cat} 
               onClick={() => setActiveCategory(cat)}
-              style={{ whiteSpace: 'nowrap', padding: '8px 16px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.1)', background: activeCategory === cat ? '#00E5FF' : 'transparent', color: activeCategory === cat ? '#000' : '#A8B4C0', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
+              style={{ 
+                whiteSpace: 'nowrap', padding: '8px 20px', borderRadius: 24, 
+                border: activeCategory === cat ? '1px solid rgba(0, 229, 255, 0.5)' : '1px solid rgba(255,255,255,0.08)', 
+                background: activeCategory === cat ? 'rgba(0, 229, 255, 0.15)' : 'rgba(255,255,255,0.03)', 
+                color: activeCategory === cat ? '#00E5FF' : '#A8B4C0', 
+                cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem',
+                boxShadow: activeCategory === cat ? '0 0 20px rgba(0,229,255,0.2)' : 'none',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
             >
               {cat}
             </button>
@@ -216,7 +224,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
       </div>
 
       {viewMode === 'map' ? (
-        <NodeMapVisualizer stacks={filteredStacks} compounds={compounds} bySlug={bySlug} onStackClick={setActiveStackDrawer} />
+        <NodeMapVisualizer stacks={filteredStacks} bySlug={bySlug} onStackClick={setActiveStackDrawer} />
       ) : filteredStacks.length === 0 ? (
         <div className="card" style={{ padding: 'var(--space-6)', color: '#A8B4C0', textAlign: 'center' }}>
           No Documented Combinations Match Your Filters.
@@ -249,12 +257,12 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   {/* Badges */}
                   <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                     {citationCount > 0 && (
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(104, 211, 145, 0.1)', color: '#68D391', padding: '4px 8px', borderRadius: 6, fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg, rgba(104, 211, 145, 0.15) 0%, rgba(104, 211, 145, 0.05) 100%)', color: '#68D391', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(104,211,145,0.2)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         <FlaskConical size={12} /> {citationCount} Papers
                       </div>
                     )}
                     {synergy.status === 'excellent' && (
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(0, 229, 255, 0.1)', color: '#00E5FF', padding: '4px 8px', borderRadius: 6, fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.2) 0%, rgba(0, 229, 255, 0.05) 100%)', color: '#00E5FF', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(0,229,255,0.3)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 0 12px rgba(0,229,255,0.1)' }}>
                         Synergy: {synergy.synergyScore}
                       </div>
                     )}
@@ -283,13 +291,14 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                             <div
                               key={compSlug}
                               style={{
-                                padding: '0.3rem 0.6rem',
-                                borderRadius: '6px',
-                                border: '1px solid rgba(255,255,255,0.05)',
-                                background: 'rgba(0,0,0,0.4)',
+                                padding: '0.4rem 0.8rem',
+                                borderRadius: '8px',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                background: 'rgba(255,255,255,0.02)',
                                 color: '#D0DAE4',
                                 fontSize: '0.75rem',
-                                fontWeight: 500
+                                fontWeight: 600,
+                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)'
                               }}
                             >
                               {label}
@@ -503,11 +512,19 @@ function NodeMapVisualizer({ stacks, bySlug, onStackClick }: { stacks: Compound[
         Interactive Network Graph (Showing stacks for <strong>{centerName}</strong>)
       </div>
       
-      <div style={{ position: 'relative', width: 400, height: 400, borderRadius: '50%', border: '1px dashed rgba(255,255,255,0.1)' }}>
+      <div style={{ position: 'relative', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,229,255,0.02) 0%, transparent 70%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* Animated Radar Ring */}
+        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 20, ease: 'linear' }} style={{ position: 'absolute', inset: 20, borderRadius: '50%', border: '1px dashed rgba(0, 229, 255, 0.2)', pointerEvents: 'none' }} />
+        <motion.div animate={{ rotate: -360 }} transition={{ repeat: Infinity, duration: 30, ease: 'linear' }} style={{ position: 'absolute', inset: 60, borderRadius: '50%', border: '1px dotted rgba(104, 211, 145, 0.2)', pointerEvents: 'none' }} />
+        
         {/* Center Node */}
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 80, height: 80, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,229,255,0.2) 0%, rgba(0,0,0,0.8) 100%)', border: '2px solid #00E5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, zIndex: 10, textAlign: 'center', fontSize: '0.8rem' }}>
+        <motion.div 
+          animate={{ boxShadow: ['0 0 20px rgba(0,229,255,0.2)', '0 0 40px rgba(0,229,255,0.5)', '0 0 20px rgba(0,229,255,0.2)'] }}
+          transition={{ repeat: Infinity, duration: 3 }}
+          style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 90, height: 90, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,229,255,0.15) 0%, rgba(0,0,0,0.9) 100%)', border: '2px solid #00E5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, zIndex: 10, textAlign: 'center', fontSize: '0.8rem', boxShadow: 'inset 0 0 20px rgba(0,229,255,0.2)' }}
+        >
           {centerName}
-        </div>
+        </motion.div>
 
         {/* Orbit Nodes */}
         {orbitStacks.length === 0 ? (
@@ -570,15 +587,15 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
       <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
       <motion.div 
-        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        style={{ width: '100%', maxWidth: 600, maxHeight: '90vh', background: '#0F1923', borderTopLeftRadius: 24, borderTopRightRadius: 24, border: '1px solid rgba(255,255,255,0.1)', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}
+        initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', background: 'rgba(10, 15, 20, 0.85)', backdropFilter: 'blur(40px)', borderTopLeftRadius: 32, borderTopRightRadius: 32, border: '1px solid rgba(255,255,255,0.1)', borderBottom: 'none', boxShadow: '0 -20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}
       >
-        <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'rgba(15, 25, 35, 0.95)', backdropFilter: 'blur(10px)', zIndex: 10 }}>
-          <h2 style={{ margin: 0, color: '#fff', fontSize: '1.5rem' }}>{stack.display_name}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#A8B4C0', cursor: 'pointer' }}><X /></button>
+        <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'linear-gradient(to bottom, rgba(10,15,20,0.95) 0%, rgba(10,15,20,0.8) 100%)', backdropFilter: 'blur(20px)', zIndex: 10 }}>
+          <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 900, background: 'linear-gradient(135deg, #FFF 0%, #00C4BC 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{stack.display_name}</h2>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}><X size={20} /></button>
         </div>
 
         <div style={{ padding: '0 32px', display: 'flex', gap: 24, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
