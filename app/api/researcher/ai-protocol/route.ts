@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { compounds, goal } = await req.json();
+    const { compounds, goal, experienceLevel, subjectMetrics } = await req.json();
 
     if (!compounds || !Array.isArray(compounds) || compounds.length === 0) {
       return NextResponse.json({ error: 'At least one compound is required' }, { status: 400 });
@@ -30,15 +30,26 @@ export async function POST(req: NextRequest) {
     
     const prompt = `
 You are an advanced expert in peptide and research compound protocols. 
-The researcher wants a 12-week protocol for the following goal: "${goal}"
+The researcher wants a protocol for the following goal: "${goal}"
 Using the following compounds: ${compounds.join(', ')}
 
-Please generate a detailed 12-week schedule formatted as a clean Markdown document. 
-Include:
-- A brief synergy overview of why these compounds work together for this goal.
-- Week-by-week dosing frequency and volume guidelines (use safe, standard investigational doses).
+Subject Details (for dosage calibration and safety considerations):
+- Experience Level: ${experienceLevel || 'Not specified'}
+- Subject Metrics: ${subjectMetrics || 'Not specified'}
+
+Please generate a detailed protocol formatted as a clean Markdown document. 
+Structure the response STRICTLY into two phases:
+
+# Phase 1: 12-Week Active Protocol
+- A brief synergy overview of why these compounds work together for this goal, factoring in the subject's experience.
+- Week-by-week dosing frequency and volume guidelines (use safe, standard investigational doses based on experience level).
 - Important warnings or contraindications.
 - A "Check-in" milestones section (e.g., what to measure at Week 4, 8, 12).
+
+# Phase 2: Washout & Receptor Reset
+- Calculate the necessary washout period based on the terminal half-lives of the compounds provided.
+- Provide a clear timeline (e.g., 4 weeks) of complete abstinence to clear the system and prevent receptor downregulation.
+- Suggest any non-suppressive support protocols (like diet/training shifts) during this period.
 
 Keep it highly professional, structured, and easy to read. Do not use generic AI disclaimers, act as a strict scientific assistant.
 `;

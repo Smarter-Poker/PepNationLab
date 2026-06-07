@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ExternalLink, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -30,7 +31,7 @@ export default function IframeModal({ url, onClose }: IframeModalProps) {
     }
   }, [url]);
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
@@ -43,7 +44,7 @@ export default function IframeModal({ url, onClose }: IframeModalProps) {
           left: 0,
           width: '100vw',
           height: '100vh',
-          zIndex: 99999, // Super high z-index
+          zIndex: 999999, // Max z-index to stay above everything
           backgroundColor: 'rgba(0, 0, 0, 0.95)',
           display: 'flex',
           flexDirection: 'column',
@@ -68,7 +69,7 @@ export default function IframeModal({ url, onClose }: IframeModalProps) {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '12px 24px',
-            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            backgroundColor: '#020617', // Solid dark color for header
             borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           }}
         >
@@ -97,7 +98,7 @@ export default function IframeModal({ url, onClose }: IframeModalProps) {
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem', fontWeight: 600, maxWidth: '400px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ color: '#A8B4C0', fontSize: '0.9rem', fontWeight: 600, maxWidth: '400px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {domain}
             </div>
             
@@ -110,8 +111,8 @@ export default function IframeModal({ url, onClose }: IframeModalProps) {
                 alignItems: 'center',
                 gap: '6px',
                 padding: '6px 12px',
-                backgroundColor: 'var(--teal, #00C4BC)',
-                color: 'var(--slate-950, #020617)',
+                backgroundColor: '#00C4BC',
+                color: '#020617',
                 borderRadius: '999px',
                 fontSize: '0.85rem',
                 fontWeight: 600,
@@ -131,7 +132,7 @@ export default function IframeModal({ url, onClose }: IframeModalProps) {
           <div style={{ height: '3px', width: '100%', background: 'transparent' }}>
             <div style={{
               height: '100%',
-              background: 'var(--teal, #00C4BC)',
+              background: '#00C4BC',
               animation: 'pn-progress 10s cubic-bezier(0.1, 0.8, 0.3, 1) forwards'
             }} />
           </div>
@@ -154,7 +155,7 @@ export default function IframeModal({ url, onClose }: IframeModalProps) {
                <AlertTriangle size={48} color="#FF6B6B" style={{ marginBottom: 16 }} />
                <h3 style={{ margin: '0 0 8px 0' }}>Failed to load document</h3>
                <p style={{ margin: 0, color: '#666' }}>The publisher may be blocking embedded viewers.</p>
-               <a href={url} target="_blank" rel="noopener noreferrer" style={{ marginTop: 16, display: 'inline-block', background: 'var(--teal, #00C4BC)', color: '#000', padding: '8px 16px', borderRadius: 4, textDecoration: 'none', fontWeight: 'bold' }}>Open in New Tab</a>
+               <a href={url} target="_blank" rel="noopener noreferrer" style={{ marginTop: 16, display: 'inline-block', background: '#00C4BC', color: '#000', padding: '8px 16px', borderRadius: 4, textDecoration: 'none', fontWeight: 'bold' }}>Open in New Tab</a>
              </div>
           )}
 
@@ -171,4 +172,11 @@ export default function IframeModal({ url, onClose }: IframeModalProps) {
       </motion.div>
     </AnimatePresence>
   );
+
+  // Need to ensure we only run createPortal on the client
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  
+  if (!mounted) return null;
+  return createPortal(modalContent, document.body);
 }

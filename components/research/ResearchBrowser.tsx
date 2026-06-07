@@ -429,6 +429,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={() => setQuickViewCompound(c)} className="btn-secondary" style={{ padding: '6px', borderRadius: '6px' }}><Eye size={16} /></button>
                     <PinToCompareButton compoundSlug={c.slug} compoundName={c.display_name} category={c.category} evidenceTierKey={c.evidence_tier} size="sm" style={{ width: 'auto', minWidth: '40px' }} />
+                    <ResearchCartButton productName={c.display_name} size="sm" />
                   </div>
                 </div>
               ))}

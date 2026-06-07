@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { 
   Layers, AlertTriangle, Info, ShieldAlert, CheckCircle2, 
-  Download, Calendar, Trash2, Edit, Save, RefreshCw 
+  Download, Calendar, Trash2, Edit, Save, RefreshCw, Share2, Printer
 } from 'lucide-react';
 import { 
   analyzeCartWarnings, 
@@ -83,6 +84,26 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
   const [editingNotes, setEditingNotes] = useState(false);
   const [tempNotes, setTempNotes] = useState('');
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
+
+  // AI Personalization State
+  const [aiExperience, setAiExperience] = useState('Intermediate');
+  const [aiGoal, setAiGoal] = useState('');
+  const [aiMetrics, setAiMetrics] = useState('');
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    const compParam = searchParams.get('compounds');
+    if (compParam) {
+      const slugs = compParam.split(',').filter(Boolean);
+      // Verify they are real
+      const validSlugs = slugs.filter(s => bySlug.has(s));
+      if (validSlugs.length > 0 && selected.length === 0) {
+        setSelected(validSlugs);
+      }
+    }
+  }, [searchParams, bySlug, selected.length]);
 
   const selectedCompounds = useMemo(
     () => selected.map((s) => bySlug.get(s)).filter((c): c is Compound => Boolean(c)),
@@ -208,7 +229,9 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           compounds: selectedCompounds.map(c => c.display_name),
-          goal: documentedMatch?.display_name || `Optimization stack of ${selectedCompounds.map(c => c.display_name).join(' and ')}`
+          goal: aiGoal || documentedMatch?.display_name || `Optimization stack of ${selectedCompounds.map(c => c.display_name).join(' and ')}`,
+          experienceLevel: aiExperience,
+          subjectMetrics: aiMetrics
         })
       });
 
@@ -664,41 +687,82 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
 
               {/* Protocol Creation CTA */}
               {protocol.length === 0 ? (
-                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 24 }}>
-                  <button 
-                    type="button" 
-                    onClick={handleGenerateDefaultProtocol}
-                    style={{ background: 'linear-gradient(135deg, #00E5FF 0%, #00C4BC 100%)', color: '#000', border: 'none', padding: '14px 24px', borderRadius: 12, fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 24px rgba(0,229,255,0.4)', transition: 'all 0.2s ease-in-out' }}
-                  >
-                    <Calendar size={18} />
-                    Generate 12-Week Interactive Protocol Grid
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={handleGenerateEmptyProtocol}
-                    style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', padding: '14px 24px', borderRadius: 12, fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s ease-in-out' }}
-                  >
-                    <Edit size={18} />
-                    Custom Protocol (Empty Grid)
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={handleRefineWithGemini}
-                    disabled={generatingProtocol}
-                    style={{ background: 'transparent', color: '#00E5FF', border: '1px solid rgba(0,229,255,0.4)', padding: '14px 24px', borderRadius: 12, fontSize: '0.9rem', fontWeight: 700, cursor: generatingProtocol ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8, opacity: generatingProtocol ? 0.6 : 1, transition: 'all 0.2s ease-in-out', boxShadow: 'inset 0 0 16px rgba(0,229,255,0.1)' }}
-                  >
-                    <RefreshCw size={18} className={generatingProtocol ? 'animate-spin' : ''} />
-                    {generatingProtocol ? 'Analyzing via AI...' : 'Refine with Gemini AI'}
-                  </button>
+                <div style={{ marginTop: 32, padding: 24, background: 'rgba(0,0,0,0.3)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <h3 style={{ margin: '0 0 16px', color: '#fff', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <RefreshCw size={20} color="#00E5FF" /> Generate Custom Protocol
+                  </h3>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#A8B4C0', marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Subject Experience</label>
+                      <select value={aiExperience} onChange={e => setAiExperience(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: 'rgba(15,25,35,0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }}>
+                        <option value="Beginner">Beginner (Low Dose)</option>
+                        <option value="Intermediate">Intermediate (Standard)</option>
+                        <option value="Advanced">Advanced (Aggressive)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#A8B4C0', marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Primary Goal</label>
+                      <input type="text" placeholder="e.g. Extreme Fat Loss, Joint Repair" value={aiGoal} onChange={e => setAiGoal(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: 'rgba(15,25,35,0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#A8B4C0', marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Subject Metrics</label>
+                      <input type="text" placeholder="e.g. 210lbs, 35M" value={aiMetrics} onChange={e => setAiMetrics(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: 'rgba(15,25,35,0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                    <button 
+                      type="button" 
+                      onClick={handleRefineWithGemini}
+                      disabled={generatingProtocol}
+                      style={{ background: 'linear-gradient(135deg, #00E5FF 0%, #0088ff 100%)', color: '#000', border: 'none', padding: '14px 24px', borderRadius: 12, fontSize: '0.9rem', fontWeight: 800, cursor: generatingProtocol ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 24px rgba(0,229,255,0.4)', transition: 'all 0.2s ease-in-out' }}
+                    >
+                      <RefreshCw size={18} className={generatingProtocol ? 'animate-spin' : ''} />
+                      {generatingProtocol ? 'Analyzing via AI...' : 'Generate Protocol with Gemini AI'}
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={handleGenerateDefaultProtocol}
+                      style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', padding: '14px 24px', borderRadius: 12, fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s ease-in-out' }}
+                    >
+                      <Calendar size={18} /> Default Grid
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={handleGenerateEmptyProtocol}
+                      style={{ background: 'transparent', color: '#A8B4C0', border: '1px solid transparent', padding: '14px 24px', borderRadius: 12, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s ease-in-out' }}
+                    >
+                      Empty Grid
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div style={{ marginTop: 24, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 20 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
                     <h3 style={{ margin: 0, color: '#FFFFFF', fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Calendar size={18} color="#00C4BC" />
-                      12-Week Interactive Protocol Planner
+                      <Calendar size={18} color="#00E5FF" />
+                      Interactive Protocol Planner
                     </h3>
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const url = `${window.location.origin}${window.location.pathname}?compounds=${selected.join(',')}`;
+                          navigator.clipboard.writeText(url);
+                          toast.success('Shareable Link Copied to Clipboard!');
+                        }}
+                        style={{ padding: '6px 12px', background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.3)', color: '#00E5FF', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                      >
+                        <Share2 size={14} /> Share Link
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => window.print()}
+                        style={{ padding: '6px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: '#FFFFFF', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                      >
+                        <Printer size={14} /> Print PDF
+                      </button>
                       <button 
                         type="button" 
                         onClick={handleExportCSV}
@@ -711,7 +775,7 @@ export default function StackBuilder({ compounds }: StackBuilderProps) {
                         onClick={handleExportICal}
                         style={{ padding: '6px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: '#FFFFFF', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                       >
-                        <Download size={14} /> iCal Calendar
+                        <Calendar size={14} /> iCal
                       </button>
                     </div>
                   </div>

@@ -384,14 +384,16 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
           position: 'fixed',
           top: 0, left: 0, right: 0,
           zIndex: 200,
-          height: 60,
+          height: 'calc(60px + var(--safe-top, 0px))',
+          paddingTop: 'var(--safe-top, 0px)',
           background: 'var(--nav-bg)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           borderBottom: '1px solid var(--nav-border)',
           display: 'flex',
           alignItems: 'center',
-          padding: '0 var(--space-3)',
+          paddingLeft: 'var(--space-3)',
+          paddingRight: 'var(--space-3)',
           gap: 'var(--space-2)',
         }}
       >

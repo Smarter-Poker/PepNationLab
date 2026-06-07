@@ -94,7 +94,9 @@ export default function RootLayout({
           <SiteDisclaimerGate>
             <CartProvider>
               <InAppBrowserProvider>
-                {children}
+                <div className="page-container">
+                  {children}
+                </div>
               </InAppBrowserProvider>
             </CartProvider>
           </SiteDisclaimerGate>

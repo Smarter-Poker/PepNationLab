@@ -3615,6 +3615,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                 value={journalFolder} 
                 onChange={e => setJournalFolder(e.target.value)} 
                 placeholder="e.g. Tendon Repair Stack" 
+                maxLength={50}
                 style={{ width: '100%', background: 'rgba(22, 34, 48, 0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '12px 16px', fontSize: '1rem', outline: 'none' }} 
               />
             </div>
@@ -3625,6 +3626,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                 value={journalNotes} 
                 onChange={e => setJournalNotes(e.target.value)} 
                 placeholder="Why are you comparing these? Add protocol ideas..." 
+                maxLength={1500}
                 style={{ width: '100%', background: 'rgba(22, 34, 48, 0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '12px 16px', fontSize: '1rem', outline: 'none', minHeight: 120, resize: 'vertical' }} 
               />
             </div>

@@ -134,6 +134,7 @@ export default function MessageBubble({
   const [hovered, setHovered] = useState(false);
   const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
   const openedViaTouchRef = useRef<number>(0);
+  const lastTapRef = useRef<number>(0);
 
   useEffect(() => {
     return () => {
@@ -141,7 +142,18 @@ export default function MessageBubble({
     };
   }, []);
 
-  const handleTouchStart = () => {
+  const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      // Double tap detected
+      if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
+      onReact(message, '❤️', 'add');
+      if (navigator.vibrate) navigator.vibrate(50);
+      lastTapRef.current = 0;
+      return;
+    }
+    lastTapRef.current = now;
+
     if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
     touchTimerRef.current = setTimeout(() => {
       if (editing || confirmDelete) return;

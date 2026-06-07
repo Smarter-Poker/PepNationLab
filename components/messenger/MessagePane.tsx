@@ -485,12 +485,12 @@ export default function MessagePane({ userId }: Props) {
         });
         void loadPinsLabels(activeId, list.map((m) => m.id));
         
-        setTimeout(() => {
+        requestAnimationFrame(() => {
            if (container) {
              const newScrollHeight = container.scrollHeight;
              container.scrollTop = newScrollHeight - oldScrollHeight;
            }
-        }, 0);
+        });
       }
     } catch (err) {
       console.warn('Failed to load more messages:', err);

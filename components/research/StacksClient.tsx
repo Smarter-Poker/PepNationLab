@@ -26,6 +26,8 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
   const [activeStackDrawer, setActiveStackDrawer] = useState<string | null>(null);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [showCompareDrawer, setShowCompareDrawer] = useState(false);
+  const [fridgeMode, setFridgeMode] = useState(false);
+  const [fridgeInventory, setFridgeInventory] = useState<string[]>([]);
 
   const { addMultipleToCart } = useCart();
   const { recent, addHistory } = useSearchHistory();
@@ -69,9 +71,12 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
       const matchCat = activeCategory === 'All' || 
         stack.research_areas?.some(a => RESEARCH_AREAS[a]?.label === activeCategory);
 
-      return matchSearch && matchCat;
+      const matchFridge = !fridgeMode || fridgeInventory.length === 0 || 
+        stack.stack_components.some(c => fridgeInventory.includes(c));
+
+      return matchSearch && matchCat && matchFridge;
     });
-  }, [stacks, searchQuery, activeCategory, bySlug]);
+  }, [stacks, searchQuery, activeCategory, bySlug, fridgeMode, fridgeInventory]);
 
   const toggleCompare = (slug: string) => {
     setSelectedForCompare(prev => {
@@ -145,6 +150,9 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
             {/* Redundant header removed; handled by parent page.tsx */}
           </div>
           <div style={{ display: 'flex', gap: 8, background: 'rgba(255,255,255,0.05)', padding: 4, borderRadius: 12 }}>
+            <button onClick={() => setFridgeMode(!fridgeMode)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: fridgeMode ? 'rgba(104, 211, 145, 0.15)' : 'transparent', color: fridgeMode ? '#68D391' : '#A8B4C0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.1)', borderRight: '1px solid rgba(255,255,255,0.1)' }}>
+              <Beaker size={18} /> My Fridge
+            </button>
             <button onClick={() => setViewMode('grid')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: viewMode === 'grid' ? 'rgba(0,229,255,0.1)' : 'transparent', color: viewMode === 'grid' ? '#00E5FF' : '#A8B4C0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
               <GridIcon size={18} /> Grid
             </button>
@@ -239,6 +247,12 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                 style={{ padding: 0, overflow: 'hidden', position: 'relative', cursor: 'pointer', border: isComparing ? '1px solid #00E5FF' : undefined }}
                 onClick={() => setActiveStackDrawer(stack.slug)}
               >
+                {/* Out of Stock Warning Badge */}
+                {stack.stack_components.some(slug => !products.some(p => p.compoundSlug === slug && p.inventoryCount > 0)) && (
+                  <div style={{ position: 'absolute', top: 16, left: 16, background: 'rgba(255, 60, 60, 0.9)', color: '#fff', padding: '4px 10px', borderRadius: 6, fontSize: '0.7rem', fontWeight: 800, zIndex: 10, backdropFilter: 'blur(10px)', boxShadow: '0 4px 12px rgba(255, 60, 60, 0.4)' }}>
+                    LOW STOCK
+                  </div>
+                )}
                 {/* Compare Checkbox */}
                 <div 
                   onClick={(e) => { e.stopPropagation(); toggleCompare(stack.slug); }}
@@ -633,14 +647,35 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                 return (
                   <div key={slug} style={{ marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
                     <h4 style={{ margin: '0 0 12px', color: '#fff' }}>{bySlug.get(slug)?.display_name}</h4>
-                    <div style={{ display: 'flex', gap: 16 }}>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', fontSize: '0.75rem', color: '#A8B4C0', marginBottom: 6 }}>Vial Mass (mg)</label>
-                        <input type="number" value={s.mass || ''} onChange={e => handleCalcChange(slug, 'mass', parseFloat(e.target.value) || 0)} style={{ width: '100%', padding: 8, borderRadius: 6, background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
+                    <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', color: '#A8B4C0', marginBottom: 6 }}>Vial Mass: {s.mass}mg</label>
+                          <input type="range" min="1" max="30" step="1" value={s.mass} onChange={e => handleCalcChange(slug, 'mass', parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#00E5FF' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', color: '#A8B4C0', marginBottom: 6 }}>BAC Water Added: {s.diluent}mL</label>
+                          <input type="range" min="0.5" max="5" step="0.1" value={s.diluent} onChange={e => handleCalcChange(slug, 'diluent', parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#00E5FF' }} />
+                        </div>
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', fontSize: '0.75rem', color: '#A8B4C0', marginBottom: 6 }}>Diluent added (mL)</label>
-                        <input type="number" step="0.5" value={s.diluent || ''} onChange={e => handleCalcChange(slug, 'diluent', parseFloat(e.target.value) || 0)} style={{ width: '100%', padding: 8, borderRadius: 6, background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
+                      <div style={{ width: 80, height: 160, position: 'relative' }}>
+                        {/* SVG Syringe Visualizer */}
+                        <svg viewBox="0 0 40 120" style={{ width: '100%', height: '100%' }}>
+                          {/* Barrel */}
+                          <rect x="10" y="20" width="20" height="90" rx="3" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+                          {/* Plunger */}
+                          <rect x="16" y={10 + (s.diluent / 5) * 80} width="8" height={100 - (s.diluent / 5) * 80} fill="#334155" />
+                          {/* Plunger top */}
+                          <rect x="12" y={10 + (s.diluent / 5) * 80} width="16" height="4" fill="#64748b" />
+                          {/* Liquid (cyan) */}
+                          <rect x="11" y={21 + (s.diluent / 5) * 80} width="18" height={88 - (s.diluent / 5) * 80} fill="rgba(0,229,255,0.5)" />
+                          {/* Tip */}
+                          <path d="M 17 20 L 19 10 L 21 10 L 23 20 Z" fill="rgba(255,255,255,0.1)" />
+                          {/* Tick marks */}
+                          {[...Array(10)].map((_, i) => (
+                            <line key={i} x1="10" y1={30 + i * 8} x2="15" y2={30 + i * 8} stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+                          ))}
+                        </svg>
                       </div>
                     </div>
                     <div style={{ marginTop: 16, padding: 12, background: 'rgba(0,229,255,0.05)', borderRadius: 8, color: '#00E5FF', fontSize: '0.85rem', fontWeight: 600 }}>
@@ -655,10 +690,13 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
 
         <div style={{ padding: '20px 32px', background: 'rgba(0,0,0,0.4)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: '0.75rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Stack Price</div>
-            <div style={{ fontSize: '1.2rem', color: '#fff', fontWeight: 800 }}>${bundlePrice.toFixed(2)}</div>
+            <div style={{ fontSize: '0.75rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Bundle Price (-10%)</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: '1rem', color: '#64748b', textDecoration: 'line-through' }}>${bundlePrice.toFixed(2)}</span>
+              <span style={{ fontSize: '1.4rem', color: '#00E5FF', fontWeight: 800 }}>${(bundlePrice * 0.9).toFixed(2)}</span>
+            </div>
           </div>
-          <button onClick={() => { onAddToCart(stack); onClose(); }} style={{ padding: '12px 24px', borderRadius: 8, background: '#00E5FF', color: '#000', border: 'none', fontWeight: 800, cursor: 'pointer' }}>
+          <button onClick={() => { onAddToCart(stack); onClose(); }} style={{ padding: '12px 24px', borderRadius: 8, background: 'linear-gradient(135deg, #00E5FF 0%, #0088ff 100%)', color: '#000', border: 'none', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,229,255,0.3)' }}>
             Add Bundle To Cart
           </button>
         </div>

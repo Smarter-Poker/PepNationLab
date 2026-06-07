@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Compound, evidenceTier, wadaLabel } from '@/lib/compounds';
 import InteractiveGlossaryText from '@/components/research/InteractiveGlossaryText';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
+import ResearchCartButton from '@/components/research/ResearchCartButton';
 
 interface QuickViewModalProps {
   compound: Compound;
@@ -192,6 +193,10 @@ export default function QuickViewModal({ compound, isOpen, onClose }: QuickViewM
             category={compound.category}
             size="md"
             style={{ height: '100%' }}
+          />
+          <ResearchCartButton 
+            productName={compound.display_name} 
+            size="md" 
           />
         </div>
       </div>

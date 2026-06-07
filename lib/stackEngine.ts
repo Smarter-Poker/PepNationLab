@@ -61,25 +61,34 @@ export function analyzeStack(components: StackComponent[]): StackAnalysis {
   const ghrpCount = categories.filter(c => c === 'GHRP').length;
   const healingCount = categories.filter(c => c === 'Healing').length;
 
-  // 1. Safety Checks
+  // 1. Safety & Contraindication Checks
   if (glp1Count > 1) {
-    warnings.push('Stacking multiple GLP-1/GIP agonists is highly discouraged due to redundant mechanisms and increased risk of severe side effects (hypoglycemia, GI distress).');
+    warnings.push('RED ALERT: Stacking multiple GLP-1/GIP agonists is highly discouraged. This creates severe redundant receptor activation, leading to gastrointestinal paralysis, profound hypoglycemia, and rapid muscle catabolism.');
     isCompatible = false;
-    synergyScore -= 40;
+    synergyScore -= 50;
   }
   
+  if (ghrhCount > 1 || ghrpCount > 1) {
+    warnings.push('RED ALERT: Competing Secretagogues. Stacking multiple peptides of the exact same class (e.g., two GHRHs or two GHRPs) aggressively competes for the same receptors, causing rapid receptor downregulation without added benefit.');
+    synergyScore -= 20;
+    isCompatible = false;
+  }
+
+  if (categories.includes('Metabolism') && glp1Count > 0) {
+    // Some are okay (AOD), but aggressive stimulant based ones might clash.
+    warnings.push('CAUTION: Stacking aggressive metabolic/lipolytic compounds with GLP-1s can rapidly deplete energy stores. Ensure adequate caloric intake and hydration.');
+    synergyScore -= 5;
+  }
+
   if (components.length > 4) {
-    warnings.push('Stacking more than 4 compounds simultaneously increases the risk of unpredictable interactions and receptor fatigue.');
+    warnings.push('CAUTION: Stacking more than 4 compounds simultaneously increases the risk of unpredictable systemic interactions and immune fatigue.');
     synergyScore -= 10;
   }
 
   // 2. Synergy Checks
-  if (ghrhCount > 0 && ghrpCount > 0) {
-    tips.push('Excellent synergy! Combining a GHRH and a GHRP amplifies natural growth hormone pulses significantly more than either alone.');
+  if (ghrhCount === 1 && ghrpCount === 1) {
+    tips.push('Excellent synergy! Combining a single GHRH and a single GHRP amplifies natural growth hormone pulses exponentially more than either alone.');
     synergyScore += 30;
-  } else if (ghrhCount > 1 || ghrpCount > 1) {
-    warnings.push('Stacking multiple peptides of the same class (e.g., two GHRPs) usually competes for the same receptors without added benefit.');
-    synergyScore -= 10;
   }
 
   if (healingCount >= 2) {
