@@ -296,12 +296,12 @@ export default function NavbarNotificationBell() {
         onMouseLeave={e => { if (!open) e.currentTarget.style.background = 'none'; }}
       >
         <Image
-          src="/images/bell-icon.png"
+          src="/images/notification-bell-trimmed.png"
           alt="Notifications"
           width={40}
           height={40}
           unoptimized
-          style={{ transition: 'opacity 0.2s', display: 'block' }}
+          style={{ transition: 'opacity 0.2s', display: 'block', objectFit: 'contain' }}
         />
 
         {/* Unread badge */}
