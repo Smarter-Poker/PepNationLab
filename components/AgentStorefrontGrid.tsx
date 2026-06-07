@@ -1957,7 +1957,7 @@ export default function AgentStorefrontGrid({
         .sf-modal-h2 { font-size: 1.2rem !important; }
         .sf-modal-actions {
           display: flex; justify-content: center; gap: 16px;
-          padding: 16px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+          padding: 16px 0 calc(24px + env(safe-area-inset-bottom, 0px));
           margin-bottom: -8px;
           position: static;
           background: none;
@@ -1993,7 +1993,7 @@ export default function AgentStorefrontGrid({
           .sf-modal-body { padding: 24px 32px 12px; }
           .sf-modal-h2 { font-size: 1.75rem !important; }
           .sf-modal-actions {
-            position: static; background: none; padding: 16px 0 12px;
+            position: static; background: none; padding: 16px 0 24px;
             margin-bottom: -12px;
             justify-content: center; gap: 20px;
           }
