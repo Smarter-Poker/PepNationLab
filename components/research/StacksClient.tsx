@@ -262,18 +262,43 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                 </div>
 
                 <div style={{ padding: 'var(--space-5)' }}>
-                  {/* Badges */}
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-                    {citationCount > 0 && (
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg, rgba(104, 211, 145, 0.15) 0%, rgba(104, 211, 145, 0.05) 100%)', color: '#68D391', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(104,211,145,0.2)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        <FlaskConical size={12} /> {citationCount} Papers
-                      </div>
-                    )}
-                    {synergy.status === 'excellent' && (
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.2) 0%, rgba(0, 229, 255, 0.05) 100%)', color: '#00E5FF', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(0,229,255,0.3)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 0 12px rgba(0,229,255,0.1)' }}>
-                        Synergy: {synergy.synergyScore}
-                      </div>
-                    )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                    {/* Badges */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flexDirection: 'column', alignItems: 'flex-start' }}>
+                      {citationCount > 0 && (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg, rgba(104, 211, 145, 0.15) 0%, rgba(104, 211, 145, 0.05) 100%)', color: '#68D391', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(104,211,145,0.2)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          <FlaskConical size={12} /> {citationCount} Papers
+                        </div>
+                      )}
+                      {synergy.status === 'excellent' && (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.2) 0%, rgba(0, 229, 255, 0.05) 100%)', color: '#00E5FF', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(0,229,255,0.3)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 0 12px rgba(0,229,255,0.1)' }}>
+                          Synergy: {synergy.synergyScore}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Image Cluster */}
+                    <div style={{ display: 'flex' }}>
+                      {stack.stack_components.map((compSlug, i) => {
+                        const p = products.find((prod) => prod.compoundSlug === compSlug);
+                        const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
+                        return (
+                          <div key={compSlug} style={{ 
+                            width: 64, height: 64, 
+                            borderRadius: 12, 
+                            background: 'radial-gradient(circle at center, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.3) 100%)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            marginLeft: i > 0 ? -20 : 0,
+                            zIndex: stack.stack_components.length - i,
+                            boxShadow: '0 8px 16px rgba(0,0,0,0.6)',
+                            backdropFilter: 'blur(8px)'
+                          }}>
+                            <img src={imageUrl} alt={compSlug} style={{ width: '85%', height: '85%', objectFit: 'contain' }} />
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <h2 style={{ margin: 0, color: '#00C4BC', fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.01em' }}>
@@ -332,7 +357,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                       onClick={(e) => { e.stopPropagation(); handleAddToCart(stack); }}
                       style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                     >
-                      <img src="/images/add_stack_to_cart_btn.png" alt="Add Stack To Cart" style={{ height: 42, objectFit: 'contain' }} />
+                      <img src="/images/add_stack_to_cart_btn.png" alt="Add Stack To Cart" style={{ height: 48, objectFit: 'contain' }} />
                     </button>
                   </div>
                 </div>
@@ -749,7 +774,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
             onClick={() => { onAddToCart(stack); onClose(); }} 
             style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 4px 15px rgba(0,229,255,0.3))' }}
           >
-            <img src="/images/add_stack_to_cart_btn.png" alt="Add Bundle To Cart" style={{ height: 48, objectFit: 'contain' }} />
+            <img src="/images/add_stack_to_cart_btn.png" alt="Add Bundle To Cart" style={{ height: 56, objectFit: 'contain' }} />
           </button>
         </div>
       </motion.div>
