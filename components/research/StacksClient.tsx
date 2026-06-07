@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Compound, RESEARCH_AREAS } from '@/lib/compounds';
 import { AreaProduct } from '@/lib/area-products-server';
 import { useCart } from '@/components/CartContext';
-import { analyzeStack, getCategoryFromName } from '@/lib/stackEngine';
+import { analyzeStack, getCategoryFromName, type StackAnalysis } from '@/lib/stackEngine';
 import StackBuilder from './StackBuilder';
 import { Search, FlaskConical, Beaker, Map as MapIcon, Grid as GridIcon, CheckCircle2, X } from 'lucide-react';
 import AutocompleteDropdown from '@/components/research/AutocompleteDropdown';
@@ -429,7 +429,18 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Stacks Compare Drawer
 // ─────────────────────────────────────────────────────────────────────────────
-function StacksCompareDrawer({ stack1, stack2, bySlug, onClose, synergy1, synergy2, bundlePrice1, bundlePrice2 }: any) {
+interface StacksCompareDrawerProps {
+  stack1: Compound;
+  stack2: Compound;
+  bySlug: Map<string, Compound>;
+  onClose: () => void;
+  synergy1: StackAnalysis;
+  synergy2: StackAnalysis;
+  bundlePrice1: number;
+  bundlePrice2: number;
+}
+
+function StacksCompareDrawer({ stack1, stack2, bySlug, onClose, synergy1, synergy2, bundlePrice1, bundlePrice2 }: StacksCompareDrawerProps) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }}>
       <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
@@ -569,7 +580,17 @@ function NodeMapVisualizer({ stacks, bySlug, onStackClick }: { stacks: Compound[
 // ─────────────────────────────────────────────────────────────────────────────
 // Stack Drawer / Modal (with Reconstitution Math)
 // ─────────────────────────────────────────────────────────────────────────────
-function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundlePrice, synergyData }: any) {
+interface StackDrawerProps {
+  stackSlug: string;
+  bySlug: Map<string, Compound>;
+  products: AreaProduct[];
+  onClose: () => void;
+  onAddToCart: (stack: Compound) => void;
+  bundlePrice: number;
+  synergyData: StackAnalysis;
+}
+
+function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundlePrice, synergyData }: StackDrawerProps) {
   const stack = bySlug.get(stackSlug);
   const [activeTab, setActiveTab] = useState<'overview' | 'calculator'>('overview');
   const [calcState, setCalcState] = useState<Record<string, { mass: number, diluent: number }>>({});
