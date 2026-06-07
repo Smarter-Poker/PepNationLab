@@ -1117,7 +1117,7 @@ const ROW_EXPLANATIONS: Record<string, string> = {
 };
 
 // ─── Focus Row Modal (Features 3 + 9: Focus Mode + Explain This) ──────────────
-function FocusRowModal({ row, selected, maxHalfLife, controlCompound, topPickSlug, onClose }: {
+function FocusRowModal({ row, selected, maxHalfLife, controlCompound, topPickSlug, maxCitations, onClose }: {
   row: Row;
   selected: Compound[];
   maxHalfLife: number;

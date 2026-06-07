@@ -47,7 +47,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
       if (s.display_name.toLowerCase().includes(lower)) matches.add(s.display_name);
     });
     
-    return Array.from(matches).slice(0, 5).map(text => ({ text, type: 'compound' as const }));
+    return Array.from(matches).slice(0, 5).map(text => ({ text, slug: text, display_name: text, kind: 'compound' as const }));
   }, [searchQuery, compounds, stacks]);
 
   const categories = useMemo(() => {

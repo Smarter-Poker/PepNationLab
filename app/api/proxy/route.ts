@@ -21,6 +21,8 @@ export async function GET(request: NextRequest) {
     headers.delete('x-frame-options');
     headers.delete('content-security-policy');
     headers.delete('content-security-policy-report-only');
+    headers.delete('content-encoding');
+    headers.delete('content-length');
     headers.set('access-control-allow-origin', '*');
     
     // If it's an HTML page, we fetch the text and inject a base tag

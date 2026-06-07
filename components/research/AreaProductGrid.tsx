@@ -7,6 +7,7 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 import { motion, AnimatePresence } from 'framer-motion';
 import { FlaskConical, Dna, ArrowRight, X } from 'lucide-react';
 import DynamicAddToCartButton from '../storefront/DynamicAddToCartButton';
+import IframeModal from '../ui/IframeModal';
 
 /* ─── Interfaces ─── */
 
@@ -128,6 +129,7 @@ export default function AreaProductGrid({
   }, []);
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
   const [toast, setToast] = useState<string | null>(null);
+  const [modalUrl, setModalUrl] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstCartSave = useRef(true);
 
@@ -503,6 +505,10 @@ export default function AreaProductGrid({
 
   return (
     <div style={{ position: 'relative' }}>
+      {modalUrl && (
+        <IframeModal url={modalUrl} onClose={() => setModalUrl(null)} />
+      )}
+
       {/* ─── Toast ─── */}
       {toast && (
         <div style={{
@@ -807,8 +813,7 @@ export default function AreaProductGrid({
                   compound?.coaUrl && compound.coaUrl !== '#' ? (
                     <a
                       href={compound.coaUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      onClick={(e) => { e.preventDefault(); setModalUrl(compound.coaUrl!); }}
                       style={{
                         position: 'absolute',
                         bottom: 12,
@@ -824,6 +829,7 @@ export default function AreaProductGrid({
                         border: '1px solid rgba(56, 161, 105, 0.3)',
                         backdropFilter: 'blur(6px)',
                         textDecoration: 'none',
+                        cursor: 'pointer'
                       }}
                       title="View Certificate of Analysis"
                     >
