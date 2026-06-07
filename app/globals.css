@@ -1359,7 +1359,8 @@ img, video, svg, iframe {
 
   /* Form inputs — taller for thumb */
   .form-input, .form-select, select, input[type="text"],
-  input[type="password"], input[type="email"], textarea {
+  input[type="password"], input[type="email"], input[type="number"],
+  input[type="tel"], input[type="search"], input[type="url"], textarea {
     min-height: 44px;
     font-size: 16px !important; /* Prevent iOS zoom */
     padding: var(--space-3);

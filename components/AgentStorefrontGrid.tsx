@@ -2146,7 +2146,7 @@ export default function AgentStorefrontGrid({
             border: 'none',
             outline: 'none',
             color: '#FFFFFF',
-            fontSize: 'max(14px, 2.2vw)',
+            fontSize: 'max(16px, 2.2vw)',
             fontWeight: 500,
             padding: '0 12% 0 calc(4.5% + 30px)',
           }}
@@ -3003,7 +3003,7 @@ export default function AgentStorefrontGrid({
                             }
                           }}
                           style={{ 
-                            color: 'var(--white)', fontWeight: 700, fontSize: '0.8rem', 
+                            color: 'var(--white)', fontWeight: 700, fontSize: '16px', 
                             width: 60, textAlign: 'center', background: 'transparent',
                             border: '1px solid rgba(255,255,255,0.2)', borderRadius: 4, padding: '2px',
                             appearance: 'textfield', outline: 'none'

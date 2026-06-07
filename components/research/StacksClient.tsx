@@ -135,7 +135,8 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
     for (const compSlug of stack.stack_components) {
       const compProducts = products.filter(p => p.compoundSlug === compSlug);
       if (compProducts.length > 0) {
-        compProducts.sort((a, b) => a.retailPrice - b.retailPrice);
+        // Sort descending to get the largest/most expensive standard vials for the stack
+        compProducts.sort((a, b) => b.retailPrice - a.retailPrice);
         total += compProducts[0].retailPrice;
       }
     }
@@ -280,7 +281,9 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                     {/* Image Cluster */}
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'flex-end', flex: 1 }}>
                       {stack.stack_components.map((compSlug, i) => {
-                        const p = products.find((prod) => prod.compoundSlug === compSlug);
+                        const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
+                        compProducts.sort((a, b) => b.retailPrice - a.retailPrice);
+                        const p = compProducts.length > 0 ? compProducts[0] : undefined;
                         const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                         return (
                           <div key={compSlug} style={{ 
@@ -318,7 +321,9 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                       </p>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                         {stack.stack_components.map((compSlug) => {
-                          const p = products.find((p) => p.compoundSlug === compSlug);
+                          const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
+                          compProducts.sort((a, b) => b.retailPrice - a.retailPrice);
+                          const p = compProducts.length > 0 ? compProducts[0] : undefined;
                           const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                           const comp = bySlug.get(compSlug);
                           const label = comp?.display_name ?? compSlug;
