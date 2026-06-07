@@ -17,5 +17,43 @@ export default async function StacksPage() {
   const productCtx = await getAreaProducts(allSlugs);
   const products = productCtx.products;
 
-  return <StacksClient compounds={compounds} stacks={stacks} products={products} />;
+  return (
+    <div style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', background: 'var(--black, #050A0F)' }}>
+      {/* Ambient Background Orbs */}
+      <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(0, 196, 188, 0.15) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none', zIndex: 0 }} />
+      <div style={{ position: 'absolute', top: '20%', right: '-15%', width: '60vw', height: '60vw', background: 'radial-gradient(circle, rgba(0, 229, 255, 0.1) 0%, transparent 70%)', filter: 'blur(100px)', pointerEvents: 'none', zIndex: 0 }} />
+      
+      <div style={{ position: 'relative', zIndex: 1, maxWidth: '1200px', margin: '0 auto', padding: 'var(--space-8, 64px) var(--space-4, 16px)' }}>
+        <header style={{ marginBottom: 'var(--space-8, 64px)', textAlign: 'center' }}>
+          <h1
+            style={{
+              fontSize: 'clamp(2.5rem, 5vw, 4rem)',
+              fontWeight: 900,
+              letterSpacing: '-0.02em',
+              background: 'linear-gradient(135deg, #FFFFFF 0%, #00E5FF 50%, #00C4BC 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              margin: '0 0 var(--space-3, 16px) 0',
+              lineHeight: 1.1,
+            }}
+          >
+            Stacks & Protocols
+          </h1>
+          <p
+            style={{
+              color: 'var(--silver, #A8B4C0)',
+              fontSize: '1.15rem',
+              maxWidth: '680px',
+              margin: '0 auto',
+              lineHeight: 1.6,
+            }}
+          >
+            Design, compare, and optimize research combinations. Evaluate compound synergy, calculate cumulative risk factors, and auto-generate 12-week dosing protocols.
+          </p>
+        </header>
+        
+        <StacksClient compounds={compounds} stacks={stacks} products={products} />
+      </div>
+    </div>
+  );
 }

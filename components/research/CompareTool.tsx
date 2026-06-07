@@ -1296,35 +1296,45 @@ function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
   };
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table className="efficacy-table" style={{ fontSize: '0.8rem' }}>
+    <div style={{ overflowX: 'auto', background: 'rgba(15, 22, 30, 0.4)', borderRadius: 14, border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', padding: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+      <table className="efficacy-table" style={{ fontSize: '0.8rem', width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
-            <th style={{ textAlign: 'left', padding: '6px 10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, fontSize: '0.7rem', borderBottom: '2px solid rgba(142, 152, 167, 0.75)' }}>Domain</th>
-            {selected.map((c, i) => <th key={c.slug} style={{ textAlign: 'center', padding: '6px 10px', color: colors[i % colors.length], fontWeight: 700, fontSize: '0.7rem', borderBottom: '2px solid rgba(142, 152, 167, 0.75)' }}>{c.display_name}</th>)}
+            <th style={{ textAlign: 'left', padding: '10px 14px', color: 'rgba(255,255,255,0.4)', fontWeight: 800, fontSize: '0.7rem', borderBottom: '1px solid rgba(255,255,255,0.1)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Domain</th>
+            {selected.map((c, i) => <th key={c.slug} style={{ textAlign: 'center', padding: '10px 14px', color: colors[i % colors.length], fontWeight: 800, fontSize: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.1)', letterSpacing: '0.03em' }}>{c.display_name}</th>)}
           </tr>
         </thead>
         <tbody>
           {allKeys.map(key => (
-            <tr key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-              <td style={{ padding: '5px 10px', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'capitalize' }}>{key.replace(/_/g, ' ')}</td>
+            <motion.tr 
+              key={key} 
+              initial={{ background: 'transparent' }}
+              whileHover={{ background: 'rgba(255,255,255,0.03)' }}
+              style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+            >
+              <td style={{ padding: '10px 14px', color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'capitalize' }}>{key.replace(/_/g, ' ')}</td>
               {selected.map((c) => {
                 const v = (c.efficacy_scores ?? {})[key];
                 const color = v != null ? getColor(v) : 'transparent';
                 return (
-                  <td key={c.slug} style={{ textAlign: 'center', padding: '5px 10px', borderLeft: '2px solid rgba(142, 152, 167, 0.75)' }}>
+                  <td key={c.slug} style={{ textAlign: 'center', padding: '10px 14px', borderLeft: '1px solid rgba(255,255,255,0.03)' }}>
                     {v != null ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                        <span style={{ fontWeight: 800, fontSize: '0.82rem', color: (color === '#00C4BC' || color === '#FC8181') ? '#FFF' : color }}>{v}</span>
-                        <div style={{ width: 28, height: 3, background: 'rgba(255,255,255,0.07)', borderRadius: 999, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${v}%`, background: color, borderRadius: 999 }} />
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                        <span style={{ fontWeight: 900, fontSize: '0.9rem', color: (color === '#00C4BC' || color === '#FC8181') ? '#FFF' : color, textShadow: `0 2px 6px ${color}40` }}>{v}</span>
+                        <div style={{ width: 36, height: 4, background: 'rgba(0,0,0,0.3)', borderRadius: 999, overflow: 'hidden', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.5)' }}>
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${v}%` }}
+                            transition={{ duration: 1, ease: 'easeOut' }}
+                            style={{ height: '100%', background: color, borderRadius: 999, boxShadow: `0 0 8px ${color}` }} 
+                          />
                         </div>
                       </div>
-                    ) : <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem' }}>-</span>}
+                    ) : <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', fontWeight: 600 }}>-</span>}
                   </td>
                 );
               })}
-            </tr>
+            </motion.tr>
           ))}
         </tbody>
       </table>
@@ -1336,34 +1346,41 @@ function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
 function RecommendationCard({ rec, label, icon, color }: { rec: { compound: Compound; score: CompoundScore; reason: string; secondaryLabel: string }; label: string; icon: React.ReactNode; color: string }) {
   const textColor = (color === '#00C4BC' || color === '#FC8181') ? '#FFF' : color;
   return (
-    <div style={{
-      padding: '12px 14px',
-      borderRadius: 10,
-      border: '2px solid transparent',
-      backgroundImage: `linear-gradient(#0F161E, #0F161E), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)`,
-      backgroundOrigin: 'border-box',
-      backgroundClip: 'padding-box, border-box',
+    <motion.div 
+      whileHover={{ y: -4, scale: 1.02 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      style={{
+      padding: '16px',
+      borderRadius: 16,
+      border: '1px solid rgba(255,255,255,0.08)',
+      background: 'rgba(15, 22, 30, 0.6)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
       display: 'flex',
       flexDirection: 'column',
-      gap: 6
+      gap: 10,
+      position: 'relative',
+      overflow: 'hidden',
+      boxShadow: `0 8px 32px ${color}15, inset 0 1px 1px rgba(255,255,255,0.05)`
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <div style={{ color, display: 'flex' }}>{icon}</div>
-        <span style={{ fontSize: '0.67rem', fontWeight: 800, color: textColor, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
-        <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: `${color}20`, color: textColor, padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>{rec.secondaryLabel}</span>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${color}, transparent)`, opacity: 0.5 }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ color, display: 'flex', filter: `drop-shadow(0 0 8px ${color}40)` }}>{icon}</div>
+        <span style={{ fontSize: '0.75rem', fontWeight: 900, color: textColor, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
+        <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: `${color}15`, border: `1px solid ${color}30`, color: textColor, padding: '2px 8px', borderRadius: 99, fontWeight: 800 }}>{rec.secondaryLabel}</span>
       </div>
-      <div style={{ fontWeight: 900, fontSize: '1rem', color: 'var(--white)', lineHeight: 1.2 }}>
+      <div style={{ fontWeight: 900, fontSize: '1.15rem', color: 'var(--white)', lineHeight: 1.2 }}>
         <Link href={`/research/${rec.compound.slug}`} style={{ color: textColor, textDecoration: 'none' }}>{rec.compound.display_name}</Link>
       </div>
-      <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>{rec.reason}</div>
+      <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{rec.reason}</div>
       {rec.score.recommendedContexts.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 2 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
           {rec.score.recommendedContexts.slice(0, 2).map((ctx, i) => (
-            <span key={i} style={{ fontSize: '0.62rem', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.45)', padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>{ctx}</span>
+            <span key={i} style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', padding: '3px 8px', borderRadius: 6, fontWeight: 700 }}>{ctx}</span>
           ))}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -1470,29 +1487,32 @@ function CompoundReconstitutionCalc({ c, color }: { c: Compound, color: string }
   const unitsToPull = doseMcg / mcgPerUnit;
 
   return (
-    <div style={{ background: 'rgba(255,255,255,0.02)', padding: 12, borderRadius: 8, marginTop: 12 }}>
-      <div style={{ fontSize: '0.7rem', color, fontWeight: 800, textTransform: 'uppercase', marginBottom: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
-        <Beaker size={12} /> Interactive Calculator
+    <motion.div 
+      initial={{ opacity: 0.8 }}
+      whileHover={{ opacity: 1, scale: 1.01 }}
+      style={{ background: 'rgba(15,22,30,0.5)', padding: 16, borderRadius: 14, marginTop: 12, border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+      <div style={{ fontSize: '0.75rem', color, fontWeight: 900, textTransform: 'uppercase', marginBottom: 12, display: 'flex', gap: 6, alignItems: 'center', letterSpacing: '0.05em' }}>
+        <Beaker size={14} style={{ filter: `drop-shadow(0 0 6px ${color}40)` }} /> Interactive Calculator
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
         <div>
-          <label style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 4 }}>Vial Size (mg)</label>
-          <input type="number" value={vialMg} onChange={e => setVialMg(Number(e.target.value))} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '4px 8px', borderRadius: 4, fontSize: '0.8rem' }} />
+          <label style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: 6, fontWeight: 700 }}>Vial Size (mg)</label>
+          <input type="number" value={vialMg} onChange={e => setVialMg(Number(e.target.value))} style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', borderRadius: 8, fontSize: '0.85rem', outline: 'none', transition: 'border-color 0.2s', fontWeight: 600 }} onFocus={e => e.currentTarget.style.borderColor = color} onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
         </div>
         <div>
-          <label style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 4 }}>BAC Water (mL)</label>
-          <input type="number" value={waterMl} onChange={e => setWaterMl(Number(e.target.value))} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '4px 8px', borderRadius: 4, fontSize: '0.8rem' }} />
+          <label style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: 6, fontWeight: 700 }}>BAC Water (mL)</label>
+          <input type="number" value={waterMl} onChange={e => setWaterMl(Number(e.target.value))} style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', borderRadius: 8, fontSize: '0.85rem', outline: 'none', transition: 'border-color 0.2s', fontWeight: 600 }} onFocus={e => e.currentTarget.style.borderColor = color} onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
         </div>
         <div style={{ gridColumn: 'span 2' }}>
-          <label style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 4 }}>Target Dose (mcg)</label>
-          <input type="number" value={doseMcg} onChange={e => setDoseMcg(Number(e.target.value))} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '4px 8px', borderRadius: 4, fontSize: '0.8rem' }} />
+          <label style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: 6, fontWeight: 700 }}>Target Dose (mcg)</label>
+          <input type="number" value={doseMcg} onChange={e => setDoseMcg(Number(e.target.value))} style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', borderRadius: 8, fontSize: '0.85rem', outline: 'none', transition: 'border-color 0.2s', fontWeight: 600 }} onFocus={e => e.currentTarget.style.borderColor = color} onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
         </div>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,196,188,0.1)', padding: '8px 12px', borderRadius: 6, border: '1px solid rgba(0,196,188,0.3)' }}>
-        <span style={{ fontSize: '0.75rem', color: '#fff', fontWeight: 600 }}>Syringe Draw:</span>
-        <span style={{ fontSize: '1rem', color: '#00C4BC', fontWeight: 900 }}>{unitsToPull > 0 && isFinite(unitsToPull) ? unitsToPull.toFixed(1) : 0} units</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: `linear-gradient(135deg, ${color}20 0%, transparent 100%)`, padding: '12px 16px', borderRadius: 10, border: `1px solid ${color}40`, boxShadow: `inset 0 1px 1px rgba(255,255,255,0.05)` }}>
+        <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 700 }}>Syringe Draw:</span>
+        <span style={{ fontSize: '1.25rem', color, fontWeight: 900, textShadow: `0 2px 8px ${color}30` }}>{unitsToPull > 0 && isFinite(unitsToPull) ? unitsToPull.toFixed(1) : 0} units</span>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -2236,60 +2256,65 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
           ))}
         </div>
         <span style={{ color: 'rgba(168,180,192,0.7)', fontSize: '0.82rem', fontWeight: 700 }}>{selected.length}/{MAX_COLUMNS}</span>
-        {selected.length >= 2 && (
-          <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', flexWrap: 'wrap', alignItems: 'center' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', color: 'rgba(168,180,192,0.8)', fontSize: '0.8rem', fontWeight: 700, userSelect: 'none' }}>
-              <input type="checkbox" checked={diffMode} onChange={e => setDiffMode(e.target.checked)} style={{ accentColor: '#00C4BC' }} />
-              Diff Mode
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', color: 'rgba(168,180,192,0.8)', fontSize: '0.8rem', fontWeight: 700, userSelect: 'none', marginLeft: 8 }}>
-              <input type="checkbox" checked={hideIdentical} onChange={e => setHideIdentical(e.target.checked)} style={{ accentColor: '#00C4BC' }} />
-              Hide Identical Attributes
-            </label>
-            <button type="button" onClick={handleExportCSV} className="action-btn-nickel"><Download size={13} /> CSV</button>
-            <button type="button" onClick={handleExportJSON} className="action-btn-nickel"><Download size={13} /> JSON</button>
-            <button type="button" onClick={handleShareCard} className="action-btn-nickel"><Image size={13} /> Share Card</button>
-            <button type="button" onClick={handleShare} className="action-btn-nickel">{copied ? <Check size={13} color="#00C4BC" /> : <Share2 size={13} />} {copied ? 'Copied!' : 'Share Link'}</button>
-            <button type="button" onClick={() => window.print()} className="action-btn-nickel"><Printer size={13} /> Print</button>
-            <button type="button" onClick={() => {
-              if (!cartContext) return;
-              const itemsToAdd = selected
-                .map(c => products.find(p => p.compoundSlug === c.slug))
-                .filter(Boolean)
-                .map(p => ({
-                  product: {
-                    id: p!.agentProductId || p!.compoundSlug,
-                    name: p!.productName,
-                    sku: p!.productName, // fallback
-                    retailPrice: p!.retailPrice,
-                    costPrice: p!.retailPrice,
-                    bulkCostPrice: p!.retailPrice,
-                    bulkThreshold: 1,
-                    weightOz: p!.weightOz
-                  },
-                  quantity: 1
-                }));
-              if (itemsToAdd.length > 0) {
-                cartContext.addMultipleToCart(itemsToAdd, 'Research Stack');
-              }
-            }} className="action-btn-nickel" style={{ background: 'rgba(0,196,188,0.15)', color: '#00C4BC', border: '1px solid rgba(0,196,188,0.4)' }}>
-              <ShoppingCart size={13} /> Add Stack to Cart
-            </button>
-          </div>
-        )}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {selected.length > 0 && selected.length < MAX_COLUMNS && (
-            <button type="button" onClick={() => {
-              const allSuggested = selected.flatMap(c => c.best_stacked_with || []);
-              const uniqueSuggested = Array.from(new Set(allSuggested));
-              const available = compounds.filter(c => uniqueSuggested.some(s => s.toLowerCase() === c.slug || s.toLowerCase() === c.display_name.toLowerCase()) && !selectedSlugs.includes(c.slug));
-              if (available.length > 0) addCompound(available[0].slug);
-            }} style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', color: '#00C4BC', borderRadius: 7, padding: '7px 14px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Sparkles size={14} /> Suggest Pairing
-            </button>
+        {/* Floating Action Dock */}
+        {selected.length > 0 && (
+            <div style={{ display: 'flex', gap: 10, marginLeft: 'auto', flexWrap: 'wrap', alignItems: 'center', background: 'rgba(15, 22, 30, 0.4)', padding: '6px 12px', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: 700, userSelect: 'none', padding: '4px 8px' }}>
+                <input type="checkbox" checked={diffMode} onChange={e => setDiffMode(e.target.checked)} style={{ accentColor: '#00C4BC', width: 16, height: 16 }} />
+                Diff Mode
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: 700, userSelect: 'none', padding: '4px 8px', borderRight: '1px solid rgba(255,255,255,0.1)', paddingRight: 16, marginRight: 6 }}>
+                <input type="checkbox" checked={hideIdentical} onChange={e => setHideIdentical(e.target.checked)} style={{ accentColor: '#00C4BC', width: 16, height: 16 }} />
+                Hide Identical
+              </label>
+              
+              <button type="button" onClick={handleExportCSV} className="action-btn-nickel" title="Export CSV"><Download size={14} /> CSV</button>
+              <button type="button" onClick={handleExportJSON} className="action-btn-nickel" title="Export JSON"><Download size={14} /> JSON</button>
+              <button type="button" onClick={handleShareCard} className="action-btn-nickel" title="Share Visual Card"><Image size={14} /> Card</button>
+              <button type="button" onClick={handleShare} className="action-btn-nickel" title="Share Link">{copied ? <Check size={14} color="#00C4BC" /> : <Share2 size={14} />} {copied ? 'Copied' : 'Share'}</button>
+              <button type="button" onClick={() => window.print()} className="action-btn-nickel" title="Print Dossier"><Printer size={14} /> Print</button>
+              
+              <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
+              
+              <button type="button" onClick={() => {
+                if (!cartContext) return;
+                const itemsToAdd = selected
+                  .map(c => products.find(p => p.compoundSlug === c.slug))
+                  .filter(Boolean)
+                  .map(p => ({
+                    product: {
+                      id: p!.agentProductId || p!.compoundSlug,
+                      name: p!.productName,
+                      sku: p!.productName,
+                      retailPrice: p!.retailPrice,
+                      costPrice: p!.retailPrice,
+                      bulkCostPrice: p!.retailPrice,
+                      bulkThreshold: 1,
+                      weightOz: p!.weightOz
+                    },
+                    quantity: 1
+                  }));
+                if (itemsToAdd.length > 0) {
+                  cartContext.addMultipleToCart(itemsToAdd, 'Research Stack');
+                }
+              }} className="action-btn-nickel pulse-glow" style={{ background: 'linear-gradient(135deg, rgba(0,196,188,0.2) 0%, rgba(104,211,145,0.2) 100%)', color: '#FFF', border: '1px solid rgba(0,196,188,0.5)', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+                <ShoppingCart size={14} /> Add Stack to Cart
+              </button>
+            </div>
           )}
-          {selected.length > 0 && <button type="button" onClick={() => setSelectedSlugs([])} style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', color: '#F08A8A', borderRadius: 7, padding: '7px 14px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>Clear All</button>}
-        </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {selected.length > 0 && selected.length < MAX_COLUMNS && (
+              <button type="button" onClick={() => {
+                const allSuggested = selected.flatMap(c => c.best_stacked_with || []);
+                const uniqueSuggested = Array.from(new Set(allSuggested));
+                const available = compounds.filter(c => uniqueSuggested.some(s => s.toLowerCase() === c.slug || s.toLowerCase() === c.display_name.toLowerCase()) && !selectedSlugs.includes(c.slug));
+                if (available.length > 0) addCompound(available[0].slug);
+              }} className="pulse-glow" style={{ background: 'rgba(0,196,188,0.15)', border: '1px solid rgba(0,196,188,0.5)', color: '#00C4BC', borderRadius: 10, padding: '8px 16px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, backdropFilter: 'blur(10px)', transition: 'all 0.3s ease' }}>
+                <Sparkles size={16} /> Suggest Pairing
+              </button>
+            )}
+            {selected.length > 0 && <button type="button" onClick={() => setSelectedSlugs([])} style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', color: '#FC8181', borderRadius: 10, padding: '8px 16px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.3s ease' }} onMouseOver={e => e.currentTarget.style.background='rgba(229,62,62,0.2)'} onMouseOut={e => e.currentTarget.style.background='rgba(229,62,62,0.1)'}>Clear All</button>}
+          </div>
       </div>
 
 

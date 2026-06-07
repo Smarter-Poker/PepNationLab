@@ -225,14 +225,14 @@ export async function GET(request: NextRequest) {
       `;
       const resHeaders = new Headers();
       resHeaders.set('content-type', 'text/html; charset=utf-8');
-      resHeaders.set('Cache-Control', \`s-maxage=\${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=\${CONFIG.CACHE_SWR}\`);
+      resHeaders.set('Cache-Control', `s-maxage=${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=${CONFIG.CACHE_SWR}`);
       resHeaders.set('X-Frame-Options', 'SAMEORIGIN');
       resHeaders.set('Content-Security-Policy', "frame-ancestors 'self'");
       
       // We return 200 OK so Next.js doesn't strip our headers!
       return new NextResponse(fallbackHtml, { status: 200, headers: resHeaders });
     } else {
-      return new NextResponse(\`Publisher error \${finalResponse.status}\`, { status: 500 });
+      return new NextResponse(`Publisher error ${finalResponse.status}`, { status: 500 });
     }
   }
 
@@ -246,7 +246,7 @@ export async function GET(request: NextRequest) {
   // Set Omega Security Headers
   headers.set('X-Frame-Options', 'SAMEORIGIN');
   headers.set('Content-Security-Policy', "frame-ancestors 'self'");
-  headers.set('Cache-Control', \`s-maxage=\${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=\${CONFIG.CACHE_SWR}\`);
+  headers.set('Cache-Control', `s-maxage=${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=${CONFIG.CACHE_SWR}`);
 
   if (contentType.includes('text/html')) {
     let html = await finalResponse.text();

@@ -187,7 +187,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                 id="stacks-search-autocomplete"
                 suggestions={suggestions}
                 recent={recent}
-                onSelect={(s: { text: string }) => { addHistory(s.text); setSearchQuery(s.text); setSuggestOpen(false); }}
+                onSelect={(s: { display_name: string }) => { addHistory(s.display_name); setSearchQuery(s.display_name); setSuggestOpen(false); }}
                 onSelectRecent={(t: string) => { addHistory(t); setSearchQuery(t); setSuggestOpen(false); }}
               />
             </div>
