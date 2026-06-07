@@ -1962,7 +1962,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
     setIsSavingJournal(true);
     try {
       // Find the product IDs for the selected slugs
-      const productIds = selectedSlugs.map(slug => products.find(p => p.compoundSlug === slug)?.id).filter(Boolean);
+      const productIds = selectedSlugs.map(slug => products.find(p => p.compoundSlug === slug)?.productId).filter(Boolean);
       
       const res = await fetch('/api/researcher/comparisons', {
         method: 'POST',
