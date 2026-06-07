@@ -16,6 +16,7 @@ interface Props {
   productName: string;
   compoundName?: string;
   size?: 'sm' | 'md';
+  disabled?: boolean;
 }
 
 function dispatchAddToCart(productName: string) {
@@ -27,14 +28,15 @@ function dispatchAddToCart(productName: string) {
   } catch { /* ignore */ }
 }
 
-export default function ResearchCartButton({ productName, compoundName, size = 'md' }: Props) {
+export default function ResearchCartButton({ productName, compoundName, size = 'md', disabled = false }: Props) {
   const [justAdded, setJustAdded] = useState(false);
 
   const handleClick = useCallback(() => {
+    if (disabled) return;
     dispatchAddToCart(productName);
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 2000);
-  }, [productName]);
+  }, [productName, disabled]);
 
   const isSmall = size === 'sm';
 
@@ -43,6 +45,7 @@ export default function ResearchCartButton({ productName, compoundName, size = '
       onClick={handleClick}
       isSmall={isSmall}
       justAdded={justAdded}
+      disabled={disabled}
     />
   );
 }

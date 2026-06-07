@@ -3024,7 +3024,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                                     </div>
                                   </div>
                                   <div style={{ flexShrink: 0 }}>
-                                    <ResearchCartButton productName={product.productName} compoundName={c.display_name} />
+                                    <ResearchCartButton productName={product.productName} compoundName={c.display_name} disabled={product.inventoryCount <= 0} />
                                   </div>
                                 </div>
                               );
