@@ -37,6 +37,7 @@ import InCellGlossaryTooltip from './InCellGlossaryTooltip';
 import type { AreaProduct } from '@/lib/area-products-server';
 import ResearchCartButton from './ResearchCartButton';
 import { useCart } from '@/components/CartContext';
+import { isSocialPlatformUrl } from '@/lib/ArticleProxyUtils';
 
 const MAX_COLUMNS = 4;
 const NL = 'Not Listed';
@@ -1441,7 +1442,7 @@ function MechanismTab({ selected }: { selected: Compound[] }) {
                     <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       {c.sources.slice(0, 4).map((src, si) => (
-                        <a key={si} href={src.startsWith('http') ? src : undefined} onClick={src.startsWith('http') ? (e) => { e.preventDefault(); setModalUrl(src); } : undefined}
+                        <a key={si} href={src.startsWith('http') ? src : undefined} onClick={src.startsWith('http') ? (e) => { e.preventDefault(); (isSocialPlatformUrl(src) ? window.open(src, '_blank') : setModalUrl(src)); } : undefined}
                           style={{ fontSize: '0.72rem', color: '#FFF', opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none', cursor: src.startsWith('http') ? 'pointer' : 'default' }}>
                           {src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si + 1}</span> : src}
                         </a>
@@ -1578,7 +1579,7 @@ function ProtocolTab({ selected }: { selected: Compound[] }) {
                 )}
                 {/* COA Link */}
                 {c.coa_url && (
-                  <a href={c.coa_url} onClick={(e) => { e.preventDefault(); setModalUrl(c.coa_url as string); }} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color, textDecoration: 'none', fontWeight: 700, cursor: 'pointer' }}>
+                  <a href={c.coa_url} onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(c.coa_url as string) ? window.open(c.coa_url as string, '_blank') : setModalUrl(c.coa_url as string)); }} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color, textDecoration: 'none', fontWeight: 700, cursor: 'pointer' }}>
                     <BookOpen size={12} /> View Certificate of Analysis
                   </a>
                 )}

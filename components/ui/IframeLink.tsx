@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import IframeModal from '@/components/ui/IframeModal';
+import { isSocialPlatformUrl } from '@/lib/ArticleProxyUtils';
 
 interface IframeLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   href: string;
@@ -23,7 +24,7 @@ export default function IframeLink({
         type="button"
         onClick={(e) => {
           if (onClick) onClick(e as any);
-          setModalUrl(href);
+          (isSocialPlatformUrl(href) ? window.open(href, '_blank') : setModalUrl(href));
         }} 
         className={className}
         style={{ 

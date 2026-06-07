@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import IframeModal from '@/components/ui/IframeModal';
 import CitationExportButton from '@/components/research/CitationExportButton';
+import { isSocialPlatformUrl } from '@/lib/ArticleProxyUtils';
 
 interface ReferenceRow {
   id: string;
@@ -63,7 +64,7 @@ export default function CompoundReferencesClient({ references, slug }: CompoundR
                   <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: '0.82rem' }}>
                     {r.doi && (
                       <button 
-                        onClick={() => setModalUrl(`https://doi.org/${encodeURIComponent(r.doi!)}`)}
+                        onClick={() => (isSocialPlatformUrl(`https://doi.org/${encodeURIComponent(r.doi!)}`) ? window.open(`https://doi.org/${encodeURIComponent(r.doi!)}`, '_blank') : setModalUrl(`https://doi.org/${encodeURIComponent(r.doi!)}`))}
                         style={{ 
                           color: 'var(--teal, #00C4BC)', 
                           textDecoration: 'none',
@@ -80,7 +81,7 @@ export default function CompoundReferencesClient({ references, slug }: CompoundR
                     )}
                     {r.pmid && (
                       <button 
-                        onClick={() => setModalUrl(`https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(r.pmid!)}/`)}
+                        onClick={() => (isSocialPlatformUrl(`https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(r.pmid!)}/`) ? window.open(`https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(r.pmid!)}/`, '_blank') : setModalUrl(`https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(r.pmid!)}/`))}
                         style={{ 
                           color: 'var(--teal, #00C4BC)', 
                           textDecoration: 'none',
@@ -97,7 +98,7 @@ export default function CompoundReferencesClient({ references, slug }: CompoundR
                     )}
                     {r.url && !r.doi && (
                       <button 
-                        onClick={() => setModalUrl(r.url!)}
+                        onClick={() => (isSocialPlatformUrl(r.url!) ? window.open(r.url!, '_blank') : setModalUrl(r.url!))}
                         style={{ 
                           color: 'var(--teal, #00C4BC)', 
                           textDecoration: 'none',

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import IframeModal from '@/components/ui/IframeModal';
 import { ExternalLink, BookOpen } from 'lucide-react';
+import { isSocialPlatformUrl } from '@/lib/ArticleProxyUtils';
 
 interface Reference {
   citation: string;
@@ -62,7 +63,7 @@ export default function AreaReferencesClient({ references }: { references: Refer
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    setModalUrl(r.url!);
+                    (isSocialPlatformUrl(r.url!) ? window.open(r.url!, '_blank') : setModalUrl(r.url!));
                   }}
                   style={{
                     marginTop: '8px',
