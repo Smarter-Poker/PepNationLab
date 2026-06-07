@@ -28,7 +28,7 @@ import {
   Zap, BookOpen, FlaskConical, Shield, Star,
   Clock, Thermometer, ArrowRight, BarChart3, Beaker,
   Scale, Syringe, Wrench, Hourglass, Filter, List, Smartphone, LayoutList, MoveUp, MoveDown,
-  Sparkles, Moon, Heart, Brain, FileText, Mic, ShoppingCart, Crosshair, Target
+  Sparkles, Moon, Heart, Brain, FileText, Mic, ShoppingCart, Crosshair, Target, Image
 } from 'lucide-react';
 import { type Compound, evidenceTier, researchAreaLabel, RISK_META, calculateStackSynergy } from '@/lib/compounds';
 import AttributeRadarChart, { type RadarDataPoint } from './AttributeRadarChart';
@@ -1459,6 +1459,41 @@ function MechanismTab({ selected }: { selected: Compound[] }) {
   );
 }
 
+function CompoundReconstitutionCalc({ c, color }: { c: Compound, color: string }) {
+  const [vialMg, setVialMg] = useState<number>(5);
+  const [waterMl, setWaterMl] = useState<number>(2);
+  const [doseMcg, setDoseMcg] = useState<number>(250);
+
+  const mcgPerUnit = (vialMg * 1000) / (waterMl * 100);
+  const unitsToPull = doseMcg / mcgPerUnit;
+
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.02)', padding: 12, borderRadius: 8, marginTop: 12 }}>
+      <div style={{ fontSize: '0.7rem', color, fontWeight: 800, textTransform: 'uppercase', marginBottom: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
+        <Beaker size={12} /> Interactive Calculator
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+        <div>
+          <label style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 4 }}>Vial Size (mg)</label>
+          <input type="number" value={vialMg} onChange={e => setVialMg(Number(e.target.value))} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '4px 8px', borderRadius: 4, fontSize: '0.8rem' }} />
+        </div>
+        <div>
+          <label style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 4 }}>BAC Water (mL)</label>
+          <input type="number" value={waterMl} onChange={e => setWaterMl(Number(e.target.value))} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '4px 8px', borderRadius: 4, fontSize: '0.8rem' }} />
+        </div>
+        <div style={{ gridColumn: 'span 2' }}>
+          <label style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 4 }}>Target Dose (mcg)</label>
+          <input type="number" value={doseMcg} onChange={e => setDoseMcg(Number(e.target.value))} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '4px 8px', borderRadius: 4, fontSize: '0.8rem' }} />
+        </div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,196,188,0.1)', padding: '8px 12px', borderRadius: 6, border: '1px solid rgba(0,196,188,0.3)' }}>
+        <span style={{ fontSize: '0.75rem', color: '#fff', fontWeight: 600 }}>Syringe Draw:</span>
+        <span style={{ fontSize: '1rem', color: '#00C4BC', fontWeight: 900 }}>{unitsToPull > 0 && isFinite(unitsToPull) ? unitsToPull.toFixed(1) : 0} units</span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Protocol Tab ─────────────────────────────────────────────────────────────
 function ProtocolTab({ selected }: { selected: Compound[] }) {
   const [modalUrl, setModalUrl] = useState<string | null>(null);
@@ -1504,6 +1539,8 @@ function ProtocolTab({ selected }: { selected: Compound[] }) {
                     {dosesPerWeek && <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', marginTop: 4, fontStyle: 'italic' }}>Estimated ~{dosesPerWeek}× per week based on half-life</div>}
                   </div>
                 )}
+                {/* Feature 8: Interactive Reconstitution Calculator */}
+                <CompoundReconstitutionCalc c={c} color={color} />
                 {/* Freeze-thaw */}
                 {c.handling?.freeze_thaw && (
                   <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
@@ -2049,7 +2086,17 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
     <div>
       {/* Search bar */}
       <style dangerouslySetInnerHTML={{ __html: `
-        @media print { body { background: #fff !important; color: #000 !important; } .no-print { display: none !important; } td, th { color: #000 !important; background: #fff !important; border-bottom: 1px solid #ddd !important; } }
+        @media print {
+          body { background: #fff !important; color: #000 !important; font-size: 12px !important; }
+          .no-print { display: none !important; }
+          .glass-panel { background: #fff !important; border: 1px solid #ddd !important; box-shadow: none !important; color: #000 !important; margin-bottom: 20px !important; page-break-inside: avoid !important; }
+          .matrix-table { border: 1px solid #ccc !important; }
+          td, th { color: #000 !important; background: #fff !important; border-bottom: 1px solid #ccc !important; border-right: 1px solid #ccc !important; padding: 8px !important; }
+          th { border-bottom: 2px solid #000 !important; }
+          h3, h4 { color: #000 !important; }
+          span { color: inherit !important; }
+          img { max-width: 100% !important; filter: grayscale(100%); }
+        }
         .ct-tab { background: rgba(255,255,255,0.03) !important; border: 4px solid #5a626c !important; color: rgba(255,255,255,0.5) !important; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .ct-tab:hover { background: rgba(255,255,255,0.08) !important; border-color: #aab2bd !important; color: rgba(255,255,255,0.9) !important; }
@@ -2178,7 +2225,8 @@ export default function CompareTool({ compounds, initialSlugs = [], products = [
             </label>
             <button type="button" onClick={handleExportCSV} className="action-btn-nickel"><Download size={13} /> CSV</button>
             <button type="button" onClick={handleExportJSON} className="action-btn-nickel"><Download size={13} /> JSON</button>
-            <button type="button" onClick={handleShare} className="action-btn-nickel">{copied ? <Check size={13} color="#00C4BC" /> : <Share2 size={13} />} {copied ? 'Copied!' : 'Share'}</button>
+            <button type="button" onClick={handleShareCard} className="action-btn-nickel"><Image size={13} /> Share Card</button>
+            <button type="button" onClick={handleShare} className="action-btn-nickel">{copied ? <Check size={13} color="#00C4BC" /> : <Share2 size={13} />} {copied ? 'Copied!' : 'Share Link'}</button>
             <button type="button" onClick={() => window.print()} className="action-btn-nickel"><Printer size={13} /> Print</button>
             <button type="button" onClick={() => {
               if (!cartContext) return;

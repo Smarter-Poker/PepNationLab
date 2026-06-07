@@ -36,6 +36,10 @@ export default function UniversalSearch({
   }, [autoFocus]);
 
   useEffect(() => {
+    setQ(initialQuery);
+  }, [initialQuery]);
+
+  useEffect(() => {
     function onPointer(e: MouseEvent) {
       if (!wrapperRef.current) return;
       if (!wrapperRef.current.contains(e.target as Node)) {
@@ -77,6 +81,7 @@ export default function UniversalSearch({
       addHistory(target);
       setOpen(false);
       router.push(`/research/search?q=${encodeURIComponent(target)}`);
+      setTimeout(() => setQ(''), 150);
     },
     [q, router, addHistory],
   );
@@ -86,11 +91,13 @@ export default function UniversalSearch({
       addHistory(s.display_name);
       router.push(`/research/${s.slug}`);
       setOpen(false);
+      setTimeout(() => setQ(''), 150);
       return;
     }
     if (s.kind === 'area') {
       router.push(`/research/area/${s.slug}`);
       setOpen(false);
+      setTimeout(() => setQ(''), 150);
       return;
     }
     submit(s.display_name);
