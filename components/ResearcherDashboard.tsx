@@ -593,7 +593,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                   { key: 'store',       top: '3.0%',  height: '11.0%', action: () => navigateWithLoader(agentSlug ? `/${agentSlug}` : '/products') },
                   { key: 'library',     top: '14.0%', height: '11.0%', action: () => navigateWithLoader('/research') },
                   { key: 'messenger',   top: '25.0%', height: '11.0%', action: () => navigateWithLoader('/messenger') },
-                  { key: 'lab-journal', top: '36.0%', height: '11.0%', action: () => navigateWithLoader('/account/lab-journal') },
+                  { key: 'lab-journal', top: '36.0%', height: '11.0%', action: () => navigateWithLoader('/lab-journal') },
                   { key: 'orders',      top: '47.0%', height: '11.0%', action: () => setTab('orders') },
                   { key: 'wallet',      top: '58.0%', height: '11.0%', action: () => setTab('wallet') },
                   { key: 'tools',       top: '69.0%', height: '10.5%', action: () => navigateWithLoader('/research/calculators') },

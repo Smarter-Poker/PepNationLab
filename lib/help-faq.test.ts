@@ -32,8 +32,8 @@ const ALLOWED_INTERNAL_ROUTES = new Set([
   '/account/addresses',
   '/account/payment-method',
   // Lab Journal handles both of these now
-  '/account/lab-journal',
-  '/account/lab-journal',
+  '/lab-journal',
+  '/lab-journal',
   '/account/referrals',
   '/account/help',
   '/orders',

@@ -97,8 +97,8 @@ const ADMIN_LINKS: RoleNavLink[] = [
   { href: '/admin/coupons', label: 'Coupons', icon: <svg {...ip}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
   { href: '/admin/catalog-risk', label: 'Catalog Risk', icon: <svg {...ip}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg> },
   { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
-  { href: '/account/shelf-life', label: 'Reconstitution & Shelf Life', icon: ICON.clock },
-  { href: '/account/lab-journal', label: 'Lab Journal', icon: ICON.heart },
+  { href: '/shelf-life', label: 'Reconstitution & Shelf Life', icon: ICON.clock },
+  { href: '/lab-journal', label: 'Lab Journal', icon: ICON.heart },
   { href: '/admin/settings/shipping', label: 'Global Shipping Settings', icon: <svg {...ip}><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
   { href: '/admin/flash-sales', label: 'Flash Sale', icon: <svg {...ip}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg> },
   { href: '/admin/cart-recovery', label: 'Cart Recovery', icon: <svg {...ip}><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg> },
@@ -128,7 +128,7 @@ function agentLinks(isSuper: boolean, storefrontHref: string, pathname?: string)
   links.push(
     { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
     { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
-    { href: '/account/lab-journal', label: 'Lab Journal', icon: ICON.heart },
+    { href: '/lab-journal', label: 'Lab Journal', icon: ICON.heart },
     { href: agentTab('Orders'), label: 'Orders & Fulfillment', icon: ICON.orders },
     { href: agentTab('Storefront Config'), label: 'Storefront Configure', icon: <svg {...ip}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg> },
     { href: agentTab('Store Products'), label: 'Product Manager', icon: <svg {...ip}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg> },
@@ -141,7 +141,7 @@ function agentLinks(isSuper: boolean, storefrontHref: string, pathname?: string)
     { href: agentTab('Coupons'), label: 'Coupons', icon: <svg {...ip}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
     { href: '/account', label: 'Account Settings', icon: ICON.gear },
     { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
-    { href: '/account/shelf-life', label: 'Reconstitution & Shelf Life', icon: ICON.clock },
+    { href: '/shelf-life', label: 'Reconstitution & Shelf Life', icon: ICON.clock },
     { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr }
   );
   return links;
@@ -156,10 +156,10 @@ const SUBAGENT_LINKS: RoleNavLink[] = [
   { href: '#SHOW_QR', label: 'My Invite QR', icon: ICON.qr },
   { href: subTab('Orders'), label: 'Orders', icon: ICON.orders },
   { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
-  { href: '/account/lab-journal', label: 'Lab Journal', icon: ICON.heart },
+  { href: '/lab-journal', label: 'Lab Journal', icon: ICON.heart },
   { href: '/account', label: 'Account Settings', icon: ICON.gear },
   { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
-  { href: '/account/shelf-life', label: 'Reconstitution & Shelf Life', icon: ICON.clock },
+  { href: '/shelf-life', label: 'Reconstitution & Shelf Life', icon: ICON.clock },
 ];
 
 // Researcher (customer) menu. Their account lives entirely in the role-agnostic
@@ -179,11 +179,11 @@ function researcherLinks(storefrontHref?: string, storefrontName?: string, pathn
     { href: '/research', label: 'Research Library', icon: ICON.book },
     { href: '/find-a-peptide', label: 'Find A Peptide', icon: ICON.search },
     { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
-    { href: '/account/lab-journal', label: 'Lab Journal', icon: ICON.heart },
+    { href: '/lab-journal', label: 'Lab Journal', icon: ICON.heart },
     { href: '/orders', label: 'Orders & Tracking', icon: ICON.orders },
     { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
     { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
-    { href: '/account/shelf-life', label: 'Reconstitution & Shelf Life', icon: ICON.clock },
+    { href: '/shelf-life', label: 'Reconstitution & Shelf Life', icon: ICON.clock },
     { href: '/account', label: 'Account Settings', icon: ICON.gear },
   );
   return links;

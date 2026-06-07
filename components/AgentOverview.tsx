@@ -56,7 +56,7 @@ export default function AgentOverview({
     
     // Right Column
     { id: 'wallet', left: '51.5%', width: '44.5%', top: '3%', height: '14.5%', action: () => handleNav('/wallet') },
-    { id: 'lab_journal', left: '51.5%', width: '44.5%', top: '19%', height: '14.5%', action: () => handleNav('/account/lab-journal') },
+    { id: 'lab_journal', left: '51.5%', width: '44.5%', top: '19%', height: '14.5%', action: () => handleNav('/lab-journal') },
     { id: 'research_library', left: '51.5%', width: '44.5%', top: '35%', height: '14.5%', action: () => handleNav('/research') },
     { id: 'account_settings', left: '51.5%', width: '44.5%', top: '51%', height: '14.5%', action: () => handleNav('/account') },
     { id: 'lab_tools', left: '51.5%', width: '44.5%', top: '67%', height: '14.5%', action: () => handleNav('/lab-tools') },
@@ -75,7 +75,7 @@ export default function AgentOverview({
 
     // RIGHT COLUMN
     { id: 'wallet', left: '51.5%', width: '44.5%', top: '3%', height: '10.5%', action: () => handleNav('/wallet') },
-    { id: 'lab_journal', left: '51.5%', width: '44.5%', top: '15%', height: '10.5%', action: () => handleNav('/account/lab-journal') },
+    { id: 'lab_journal', left: '51.5%', width: '44.5%', top: '15%', height: '10.5%', action: () => handleNav('/lab-journal') },
     { id: 'storefront_config', left: '51.5%', width: '44.5%', top: '27%', height: '10.5%', action: () => onNavigate?.('Storefront Config') },
     { id: 'my_agents', left: '51.5%', width: '44.5%', top: '39%', height: '10.5%', action: () => onNavigate?.(agentProfile?.is_super_agent ? 'My Agent Accounts' : 'My Sub-Agents') },
     { id: 'inventory', left: '51.5%', width: '44.5%', top: '51%', height: '10.5%', action: () => onNavigate?.('Inventory') },
