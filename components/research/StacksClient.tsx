@@ -293,10 +293,8 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                       </p>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                         {stack.stack_components.map((compSlug) => {
-                          const comp = bySlug.get(compSlug);
-                          const label = comp?.display_name ?? compSlug;
                           const p = products.find((p) => p.compoundSlug === compSlug);
-                          const imageUrl = p?.imageUrl || '/images/bottle_mockup.png';
+                          const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                           const comp = bySlug.get(compSlug);
                           const label = comp?.display_name ?? compSlug;
                           return (
@@ -429,7 +427,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
       <div style={{ padding: '40px', background: 'linear-gradient(135deg, rgba(0, 229, 255, 0.05) 0%, rgba(0,0,0,0) 100%)', borderRadius: 24, border: '1px solid rgba(0, 229, 255, 0.1)', marginTop: 40 }}>
         <h3 style={{ textAlign: 'center', margin: '0 0 8px', fontSize: '1.8rem', color: '#fff' }}>Build Your Own Stack</h3>
         <p style={{ textAlign: 'center', color: '#A8B4C0', marginBottom: 32 }}>Analyze synergies and conflicts between any compounds in our library.</p>
-        <StackBuilder compounds={compounds} />
+        <StackBuilder compounds={compounds} products={products} />
       </div>
     </div>
   );
@@ -497,7 +495,7 @@ function StacksCompareDrawer({ stack1, stack2, bySlug, products, onClose, synerg
               <div style={{ marginBottom: 12, fontSize: '0.8rem', color: '#A8B4C0', textTransform: 'uppercase', fontWeight: 700 }}>Included Compounds</div>
               {stack1.stack_components.map((slug: string) => {
                 const p = products.find((pr) => pr.compoundSlug === slug);
-                const imageUrl = p?.imageUrl || '/images/bottle_mockup.png';
+                const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                 return (
                   <div key={slug} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 8, marginBottom: 8, fontSize: '0.85rem', color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
                     <img src={imageUrl} alt={slug} style={{ width: 20, height: 20, objectFit: 'contain' }} />
@@ -510,7 +508,7 @@ function StacksCompareDrawer({ stack1, stack2, bySlug, products, onClose, synerg
               <div style={{ marginBottom: 12, fontSize: '0.8rem', color: '#A8B4C0', textTransform: 'uppercase', fontWeight: 700 }}>Included Compounds</div>
               {stack2.stack_components.map((slug: string) => {
                 const p = products.find((pr) => pr.compoundSlug === slug);
-                const imageUrl = p?.imageUrl || '/images/bottle_mockup.png';
+                const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                 return (
                   <div key={slug} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 8, marginBottom: 8, fontSize: '0.85rem', color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
                     <img src={imageUrl} alt={slug} style={{ width: 20, height: 20, objectFit: 'contain' }} />
@@ -685,7 +683,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                 const mgPerMl = getConcentration(slug);
                 const mcgPerMl = mgPerMl * 1000;
                 const p = products.find((pr: AreaProduct) => pr.compoundSlug === slug);
-                const imageUrl = p?.imageUrl || '/images/bottle_mockup.png';
+                const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
 
                 return (
                   <div key={slug} style={{ marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
