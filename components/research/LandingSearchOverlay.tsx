@@ -135,7 +135,7 @@ export default function LandingSearchOverlay({
             outline: 'none',
             color: '#ffffff',
             fontSize: 'clamp(12px, 1.4vw, 16px)',
-            padding: '0 12px 0 22px', /* Shifted right by 10px to avoid overlapping icon */
+            padding: '0 12px 0 32px', /* Shifted right by 10px to avoid overlapping icon */
             ...inputStyle,
           }}
         />
