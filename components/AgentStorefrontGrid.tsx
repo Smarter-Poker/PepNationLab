@@ -3330,59 +3330,36 @@ export default function AgentStorefrontGrid({
 
                   {(() => {
                     const c = detailProduct.compoundSlug ? compoundsBySlug[detailProduct.compoundSlug] : undefined;
-                    if (!c || !c.aliases || c.aliases.length === 0) return null;
+                    const aliases = c?.aliases || [];
+                    const shortAliases = aliases.slice(0, 4);
+                    
+                    if (shortAliases.length === 0) return null;
                     return (
                       <p style={{ fontSize: '0.82rem', color: 'var(--silver)', margin: '8px 0 0' }}>
-                        Also Known As: {c.aliases.join(', ')}
+                        Also Known As: <span style={{ color: 'var(--white)' }}>{shortAliases.join(', ')}</span>
                       </p>
                     );
                   })()}
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginTop: 'var(--space-3)' }}>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.7, marginTop: '20px', marginBottom: 0 }}>
                     {(() => {
+                      const desc = detailProduct.desc || 'Research Compound Available For Academic And Laboratory Use.';
                       const c = detailProduct.compoundSlug ? compoundsBySlug[detailProduct.compoundSlug] : undefined;
-                      if (!c) return null;
-                      const t = evidenceTier(c.evidence_tier);
-                      return (
-                        <span title={t.blurb} style={{
-                          fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
-                          background: `${t.color}1A`, color: t.color, fontWeight: 700,
-                          textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap',
-                          border: `1px solid ${t.color}55`
-                        }}>
-                          {t.label}
-                        </span>
-                      );
+                      const aliases = c?.aliases || [];
+                      const descriptiveAliases = aliases.slice(4);
+                      
+                      if (descriptiveAliases.length > 0) {
+                        return `- ${desc} & ${descriptiveAliases.join(', ')}.`;
+                      }
+                      return `- ${desc}`;
                     })()}
-                    <span style={{
-                      fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
-                      background: `${primaryColor}1A`, color: primaryColor, fontWeight: 700,
-                      textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap',
-                      border: `1px solid ${primaryColor}55`
-                    }}>
-                      {detailProduct.category}
-                    </span>
-                    {detailProduct.variants.some(v => (v as any).is_on_sale) && (
-                      <span style={{
-                        fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
-                        background: 'rgba(245,101,101,0.15)', color: '#F56565', fontWeight: 700,
-                        textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap',
-                        border: '1px solid rgba(245,101,101,0.4)'
-                      }}>
-                        Sale
-                      </span>
-                    )}
-                  </div>
-
-                  <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.7, marginTop: 'var(--space-3)', marginBottom: 0 }}>
-                    {detailProduct.desc || 'Research Compound Available For Academic And Laboratory Use.'}
                   </p>
 
                   {(() => {
                     const c = detailProduct.compoundSlug ? compoundsBySlug[detailProduct.compoundSlug] : undefined;
                     if (!c) return null;
                     return (
-                      <div style={{ marginTop: 'var(--space-4)', display: 'flex', justifyContent: 'center' }}>
+                      <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center' }}>
                         <button
                           type="button"
                           onClick={() => setShowEli5(true)}
@@ -3405,7 +3382,7 @@ export default function AgentStorefrontGrid({
                           <img
                             src="/images/simple-explanation-btn.png"
                             alt="Simple Explanation"
-                            style={{ height: '36px', width: 'auto', display: 'block' }}
+                            style={{ height: '72px', width: 'auto', display: 'block' }}
                           />
                         </button>
                       </div>
