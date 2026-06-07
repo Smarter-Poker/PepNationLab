@@ -1060,8 +1060,9 @@ export default function ProductModalEnhancements({
               gap: 10,
             }}>
               {stackComponents.map((sc) => {
-                const tier = sc.compound ? evidenceTier(sc.compound.evidence_tier) : null;
-                const labelText = sc.displayLabel;
+                const groupName = sc.group?.name || sc.displayLabel;
+                const imageUrl = sc.group?.imageUrl;
+                const pricePerVial = sc.group?.lowestPrice ? sc.group.lowestPrice / 10 : null;
                 return (
                   <button
                     key={sc.token}
@@ -1071,34 +1072,40 @@ export default function ProductModalEnhancements({
                       else if (sc.group) onOpenProductByName(sc.group.name);
                     }}
                     style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-                      gap: 4,
-                      padding: '10px 12px',
-                      borderRadius: 12,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      gap: 6,
+                      padding: '12px 8px',
+                      borderRadius: 16,
                       background: sc.inStock ? `${primaryColor}10` : 'rgba(255,255,255,0.03)',
                       border: sc.inStock
                         ? `1px solid ${primaryColor}40`
                         : '1px dashed rgba(255,255,255,0.16)',
                       cursor: (sc.compound || sc.group) ? 'pointer' : 'default',
-                      textAlign: 'left',
+                      textAlign: 'center',
                       color: 'var(--white)',
-                      minHeight: 64,
+                      minHeight: 120,
                     }}
                   >
+                    {imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={imageUrl}
+                        alt={groupName}
+                        style={{ width: 80, height: 80, borderRadius: 10, objectFit: 'cover', background: '#0F1923', marginBottom: 4 }}
+                      />
+                    ) : (
+                      <div style={{ width: 80, height: 80, borderRadius: 10, background: `${primaryColor}20`, marginBottom: 4 }} aria-hidden="true" />
+                    )}
                     <span style={{ fontWeight: 800, fontSize: '0.86rem', lineHeight: 1.2 }}>
-                      {labelText}
+                      {groupName}
                     </span>
-                    {tier && (
-                      tier.badgeUrl ? (
-                        <img src={tier.badgeUrl} alt={tier.label} style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', marginTop: 2, flexShrink: 0 }} />
-                      ) : (
-                        <span style={{ fontSize: '0.64rem', color: tier.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          {tier.label}
-                        </span>
-                      )
+                    {pricePerVial != null && (
+                      <span style={{ fontSize: '0.8rem', color: '#B0C4DE', fontWeight: 800, marginTop: 'auto' }}>
+                        ${pricePerVial.toFixed(2)}/Vial
+                      </span>
                     )}
                     {!sc.inStock && (
-                      <span style={{ fontSize: '0.66rem', color: 'var(--grey-400)', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.66rem', color: 'var(--grey-400)', fontWeight: 600, marginTop: 'auto' }}>
                         Not Stocked Here
                       </span>
                     )}
@@ -1285,20 +1292,21 @@ export default function ProductModalEnhancements({
                     <div style={{ width: 256, height: 256, borderRadius: 10, background: `${primaryColor}20` }} aria-hidden="true" />
                   )}
                   <span style={{
-                    fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.15,
-                    textAlign: 'center', maxWidth: 156,
+                    fontSize: '1.44rem', fontWeight: 800, lineHeight: 1.15,
+                    textAlign: 'center', maxWidth: 260,
                     overflow: 'hidden', display: '-webkit-box',
                     WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                    marginBottom: '8px',
                   }}>
                     {group.name}
                   </span>
                   {/* Research area pills */}
                   {areaLabels.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginBottom: '8px' }}>
                       {areaLabels.map((label) => (
                         <span key={label} style={{
-                          fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.02em',
-                          padding: '2px 6px', borderRadius: 99,
+                          fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.02em',
+                          padding: '4px 8px', borderRadius: 99,
                           background: 'rgba(255,255,255,0.07)',
                           border: '1px solid rgba(255,255,255,0.12)',
                           color: 'var(--grey-300)',
@@ -1311,7 +1319,7 @@ export default function ProductModalEnhancements({
                     </div>
                   )}
                   {pricePerVial != null && (
-                    <span style={{ fontSize: '0.8rem', color: '#B0C4DE', fontWeight: 800 }}>
+                    <span style={{ fontSize: '1.6rem', color: '#B0C4DE', fontWeight: 800, marginTop: '4px' }}>
                       ${formatMoney(pricePerVial)}/Vial
                     </span>
                   )}
