@@ -58,6 +58,28 @@ function getDynamicBadge(slug: string): { label: string, color: string } | null 
   return null;
 }
 
+// Reusable Filter Group
+const FilterGroup = ({ title, options, selected, onToggle }: { title: string, options: {label: string, value: string}[], selected: string[], onToggle: (value: string) => void }) => {
+  return (
+    <div style={{ marginBottom: '24px' }}>
+      <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700 }}>{title}</h4>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
+        {options.map(opt => (
+          <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem', cursor: 'pointer' }}>
+            <input 
+              type="checkbox" 
+              checked={selected.includes(opt.value)}
+              onChange={() => onToggle(opt.value)}
+              style={{ accentColor: 'var(--teal, #00C4BC)', width: '16px', height: '16px', cursor: 'pointer' }}
+            />
+            {opt.label}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default function ResearchBrowser({ compounds }: { compounds: Compound[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -198,28 +220,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  // Reusable Filter Group
-  const FilterGroup = ({ title, paramKey, options }: { title: string, paramKey: string, options: {label: string, value: string}[] }) => {
-    const selected = parseArrayParam(paramKey);
-    return (
-      <div style={{ marginBottom: '24px' }}>
-        <h4 style={{ fontSize: '0.9rem', color: 'var(--white, #FFFFFF)', marginBottom: '12px', fontWeight: 700 }}>{title}</h4>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
-          {options.map(opt => (
-            <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem', cursor: 'pointer' }}>
-              <input 
-                type="checkbox" 
-                checked={selected.includes(opt.value)}
-                onChange={() => toggleParam(paramKey, opt.value)}
-                style={{ accentColor: 'var(--teal, #00C4BC)', width: '16px', height: '16px', cursor: 'pointer' }}
-              />
-              {opt.label}
-            </label>
-          ))}
-        </div>
-      </div>
-    );
-  };
+
 
   // Collect Active Pills
   const activePills: { key: string, val: string, label: string }[] = [];
@@ -330,13 +331,13 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
             </div>
           </div>
 
-          <FilterGroup title="Category" paramKey="category" options={allCategories.map(c => ({ label: c, value: c }))} />
-          <FilterGroup title="Research Area" paramKey="area" options={Object.keys(RESEARCH_AREAS).map(k => ({ label: RESEARCH_AREAS[k].label, value: k }))} />
-          <FilterGroup title="Form" paramKey="form" options={[{ label: 'Injection (Vial)', value: 'injection' }, { label: 'Oral (Capsule)', value: 'oral' }, { label: 'Topical', value: 'topical' }]} />
-          <FilterGroup title="Evidence Tier" paramKey="tier" options={Object.keys(EVIDENCE_TIER).map(k => ({ label: EVIDENCE_TIER[k].label, value: k }))} />
-          <FilterGroup title="Budget" paramKey="budget" options={[{ label: 'Conservative Budget', value: 'conservative' }, { label: 'Standard Budget', value: 'standard' }]} />
-          <FilterGroup title="Preparation" paramKey="prep" options={[{ label: 'Lyophilized Vials Only', value: 'reconstitution' }, { label: 'Ready-To-Use Formats Only', value: 'no_reconstitution' }]} />
-          <FilterGroup title="WADA Status" paramKey="wada" options={Object.keys(WADA_LABEL).map(k => ({ label: WADA_LABEL[k], value: k }))} />
+          <FilterGroup title="Category" selected={categories} onToggle={(v) => toggleParam('category', v)} options={allCategories.map(c => ({ label: c, value: c }))} />
+          <FilterGroup title="Research Area" selected={areas} onToggle={(v) => toggleParam('area', v)} options={Object.keys(RESEARCH_AREAS).map(k => ({ label: RESEARCH_AREAS[k].label, value: k }))} />
+          <FilterGroup title="Form" selected={forms} onToggle={(v) => toggleParam('form', v)} options={[{ label: 'Injection (Vial)', value: 'injection' }, { label: 'Oral (Capsule)', value: 'oral' }, { label: 'Topical', value: 'topical' }]} />
+          <FilterGroup title="Evidence Tier" selected={tiers} onToggle={(v) => toggleParam('tier', v)} options={Object.keys(EVIDENCE_TIER).map(k => ({ label: EVIDENCE_TIER[k].label, value: k }))} />
+          <FilterGroup title="Budget" selected={budgets} onToggle={(v) => toggleParam('budget', v)} options={[{ label: 'Conservative Budget', value: 'conservative' }, { label: 'Standard Budget', value: 'standard' }]} />
+          <FilterGroup title="Preparation" selected={preps} onToggle={(v) => toggleParam('prep', v)} options={[{ label: 'Lyophilized Vials Only', value: 'reconstitution' }, { label: 'Ready-To-Use Formats Only', value: 'no_reconstitution' }]} />
+          <FilterGroup title="WADA Status" selected={wadas} onToggle={(v) => toggleParam('wada', v)} options={Object.keys(WADA_LABEL).map(k => ({ label: WADA_LABEL[k], value: k }))} />
         </aside>
 
         {/* Main Content Area */}

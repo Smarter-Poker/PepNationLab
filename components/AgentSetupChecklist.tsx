@@ -22,9 +22,23 @@ interface AgentSetupChecklistProps {
     payment_handles?: Record<string, unknown> | null;
     shippo_api_key_present?: boolean;
     is_active?: boolean | null;
-  } | null;
+}
+  | null;
   onOpenConfig: () => void;
 }
+
+const StepRow = ({ done, label }: { done: boolean; label: string }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.84rem', color: done ? '#68D391' : 'var(--silver)' }}>
+    <span style={{ width: 14, height: 14, borderRadius: '50%', background: done ? 'rgba(104,211,145,0.2)' : 'var(--surface-2)', border: `1px solid ${done ? '#68D391' : 'var(--grey-500)'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>
+      {done ? (
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : null}
+    </span>
+    <span>{label}</span>
+  </div>
+);
 
 export default function AgentSetupChecklist({ agentProfile, onOpenConfig }: AgentSetupChecklistProps) {
   if (!agentProfile) return null;
@@ -38,18 +52,7 @@ export default function AgentSetupChecklist({ agentProfile, onOpenConfig }: Agen
   if (!inactive) return null;
   if (!slugMissing && !warehouseEmpty && !handlesEmpty) return null;
 
-  const StepRow = ({ done, label }: { done: boolean; label: string }) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.84rem', color: done ? '#68D391' : 'var(--silver)' }}>
-      <span style={{ width: 14, height: 14, borderRadius: '50%', background: done ? 'rgba(104,211,145,0.2)' : 'var(--surface-2)', border: `1px solid ${done ? '#68D391' : 'var(--grey-500)'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>
-        {done ? (
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        ) : null}
-      </span>
-      <span>{label}</span>
-    </div>
-  );
+
 
   return (
     <div style={{ borderLeft: '3px solid var(--teal)', background: 'rgba(192,184,168,0.06)', padding: 'var(--space-5)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)' }}>

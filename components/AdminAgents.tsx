@@ -8,6 +8,30 @@ import AdminTierOverrideControl from '@/components/AdminTierOverrideControl';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
 import { freshDefaultLadder, GAMIFICATION_MAX_PCT } from '@/lib/gamification';
 
+// Availability indicator component
+const AvailabilityIndicator = ({ status }: { status: 'idle' | 'checking' | 'available' | 'taken' }) => {
+  if (status === 'idle') return null;
+  if (status === 'checking') {
+    return (
+      <span style={{ fontSize: '0.8rem', color: 'var(--silver)', marginTop: 4, display: 'block' }}>
+        Checking availability…
+      </span>
+    );
+  }
+  if (status === 'available') {
+    return (
+      <span style={{ fontSize: '0.8rem', color: 'var(--green)', marginTop: 4, display: 'block', fontWeight: 600 }}>
+        That Name Is Available
+      </span>
+    );
+  }
+  return (
+    <span style={{ fontSize: '0.8rem', color: 'var(--red)', marginTop: 4, display: 'block', fontWeight: 600 }}>
+      That Name Is Not Available
+    </span>
+  );
+};
+
 export default function AdminAgents() {
   const [agents, setAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -315,29 +339,7 @@ export default function AdminAgents() {
     }
   };
 
-  // Availability indicator component
-  const AvailabilityIndicator = ({ status }: { status: 'idle' | 'checking' | 'available' | 'taken' }) => {
-    if (status === 'idle') return null;
-    if (status === 'checking') {
-      return (
-        <span style={{ fontSize: '0.8rem', color: 'var(--silver)', marginTop: 4, display: 'block' }}>
-          Checking availability…
-        </span>
-      );
-    }
-    if (status === 'available') {
-      return (
-        <span style={{ fontSize: '0.8rem', color: 'var(--green)', marginTop: 4, display: 'block', fontWeight: 600 }}>
-          That Name Is Available
-        </span>
-      );
-    }
-    return (
-      <span style={{ fontSize: '0.8rem', color: 'var(--red)', marginTop: 4, display: 'block', fontWeight: 600 }}>
-        That Name Is Not Available
-      </span>
-    );
-  };
+
 
   if (loading) return <div style={{ color: 'var(--silver)' }}>Loading agents...</div>;
   if (error) return <div style={{ color: 'var(--red)' }}>Error: {error}</div>;
@@ -627,7 +629,7 @@ export default function AdminAgents() {
                 Edit Contact Info
               </h3>
               <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-4)' }}>
-                Updating the email will change the Agent's login credentials.
+                Updating the email will change the Agent&apos;s login credentials.
               </p>
               <form onSubmit={handleSaveContact}>
                 <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>

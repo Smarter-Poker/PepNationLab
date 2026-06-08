@@ -178,7 +178,6 @@ export default function GlobalCallListener() {
     const handleStartCall = (e: Event) => {
       const call = (e as CustomEvent<CallSignalRow>).detail;
       if (call) {
-        console.log('[GLOBAL CALL] Starting call overlay for initiator call ID:', call.id);
         setActiveCall(call);
       }
     };
@@ -206,7 +205,6 @@ export default function GlobalCallListener() {
           (c) => c.initiator_id === user.id && c.status === 'ringing',
         );
         if (myRinging && !activeCallRef.current) {
-          console.log('[GLOBAL CALL] Resuming my outgoing ring after reload:', myRinging.id);
           setActiveCall(myRinging);
         }
 
@@ -235,14 +233,11 @@ export default function GlobalCallListener() {
   useEffect(() => {
     if (!user?.id) return;
 
-    console.log('[GLOBAL CALL] Subscribing user to call signals:', user.id);
     const ch = subscribeCallSignals(user.id, {
       onInsert: (c) => {
-        console.log('[GLOBAL CALL] received incoming_call:', c);
         if (c.initiator_id === user.id) return;
 
         if (activeCallRef.current) {
-          console.log('[GLOBAL CALL] Ignored signal - already active in a call');
           return;
         }
 
@@ -280,7 +275,6 @@ export default function GlobalCallListener() {
           if (c.status === 'active' && c.initiator_id !== user.id) {
             const answeredHere = sessionStorage.getItem(`answered_call_${c.id}`);
             if (!answeredHere) {
-               console.log('[GLOBAL CALL] Another tab answered this call, hiding overlay in this tab.');
                return null;
             }
           }
