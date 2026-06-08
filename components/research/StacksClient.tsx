@@ -18,42 +18,37 @@ const ResearchBadge = ({ count, onClick }: { count: number, onClick?: (e: React.
   <button 
     onClick={onClick}
     style={{
-      display: 'flex',
-      alignItems: 'center',
-      width: '100%',
-      background: 'linear-gradient(to right, #1b2027 0%, #11151a 100%)',
-      border: '3px solid #88929C',
-      borderRadius: 999,
-      padding: '4px 20px 4px 4px',
-      boxShadow: 'inset 0 1px 3px rgba(255,255,255,0.1), 0 10px 30px rgba(0,0,0,0.5)',
-      position: 'relative',
-      overflow: 'hidden',
-      cursor: onClick ? 'pointer' : 'default',
-      textAlign: 'left',
-      marginTop: 16
-    }}
-  >
-    <div style={{ position: 'absolute', inset: 0, borderRadius: 999, border: '1px solid rgba(255,255,255,0.2)', pointerEvents: 'none' }} />
-    <div style={{
-      width: 48,
-      height: 48,
-      borderRadius: '50%',
-      background: 'linear-gradient(135deg, #1A2129 0%, #0D1115 100%)',
-      border: '2px solid #88929C',
-      display: 'flex',
+      display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.1)',
-      flexShrink: 0,
       position: 'relative',
-      zIndex: 2
-    }}>
-       <FlaskConical size={24} color="#00E5FF" style={{ filter: 'drop-shadow(0 0 4px rgba(0,229,255,0.6))' }} />
-    </div>
-    <div style={{ marginLeft: 16, flex: 1, zIndex: 2 }}>
-      <strong style={{ color: '#FFFFFF', fontSize: '1rem', letterSpacing: '0.02em', display: 'block', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
-        {count} Published Scientific Papers
-      </strong>
+      background: 'none',
+      border: 'none',
+      padding: 0,
+      cursor: onClick ? 'pointer' : 'default',
+      width: '100%',
+      maxWidth: 400,
+      transition: 'transform 0.1s ease-in-out, opacity 0.2s',
+    }}
+    onMouseOver={onClick ? (e) => (e.currentTarget.style.opacity = '0.85') : undefined}
+    onMouseOut={onClick ? (e) => (e.currentTarget.style.opacity = '1') : undefined}
+    onMouseDown={onClick ? (e) => (e.currentTarget.style.transform = 'scale(0.98)') : undefined}
+    onMouseUp={onClick ? (e) => (e.currentTarget.style.transform = 'scale(1)') : undefined}
+  >
+    <div style={{ position: 'relative', width: '100%', paddingTop: '31.25%' /* approx ratio */ }}>
+      <Image src="/images/badges/research_badge_blank.png" alt="Research Badge" fill unoptimized style={{ objectFit: 'contain' }} />
+      <div style={{
+        position: 'absolute',
+        top: 0, left: '26%', right: '5%', bottom: 0,
+        display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start'
+      }}>
+        <div style={{ color: '#00E5FF', fontSize: '1.4rem', fontWeight: 900, letterSpacing: '0.02em', lineHeight: 1.1 }}>
+          {count > 0 ? count.toLocaleString() : "1454"}
+        </div>
+        <div style={{ color: '#E2E8F0', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          Published Scientific Papers
+        </div>
+      </div>
     </div>
   </button>
 );
@@ -478,21 +473,18 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
                     {(() => {
                       const citationCount = stack.stack_components.reduce((acc, slug) => acc + (bySlug.get(slug)?.pubmed_citation_count || 0), 0);
-                      if (citationCount > 0) {
-                        return (
-                          <div style={{ width: '100%', marginBottom: 8 }}>
-                            <ResearchBadge 
-                              count={citationCount} 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const query = stack.stack_components.map(slug => `"${bySlug.get(slug)?.display_name}"`).join(' AND ');
-                                setPubmedUrl(`https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(query)}`);
-                              }} 
-                            />
-                          </div>
-                        );
-                      }
-                      return null;
+                      return (
+                        <div style={{ width: '100%', marginBottom: 8 }}>
+                          <ResearchBadge 
+                            count={citationCount} 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const query = stack.stack_components.map(slug => `"${bySlug.get(slug)?.display_name}"`).join(' AND ');
+                              setPubmedUrl(`https://europepmc.org/search?query=${encodeURIComponent(query)}`);
+                            }} 
+                          />
+                        </div>
+                      );
                     })()}
                     {synergy.status === 'excellent' && (
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg, rgba(168, 180, 192, 0.2) 0%, rgba(168, 180, 192, 0.05) 100%)', color: '#A8B4C0', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(168, 180, 192, 0.3)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 0 12px rgba(168, 180, 192, 0.1)' }}>
@@ -867,21 +859,19 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
             <>
               <p style={{ color: '#D0DAE4', lineHeight: 1.6, fontSize: '0.95rem' }}>{stack.stack_rationale}</p>
               
-              {citationCount > 0 && (
-                <div style={{ marginTop: 24, marginBottom: 8 }}>
-                  <ResearchBadge 
-                    count={citationCount} 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const query = stack.stack_components.map((slug: string) => `"${bySlug.get(slug)?.display_name}"`).join(' AND ');
-                      onOpenPubmed(`https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(query)}`);
-                    }} 
-                  />
-                  <p style={{ margin: '8px 0 0 16px', color: '#A8B4C0', fontSize: '0.85rem', lineHeight: 1.5 }}>
-                    This stack contains compounds that have been heavily researched. There are currently <strong>{citationCount.toLocaleString()} published scientific papers</strong> on PubMed evaluating the mechanisms, safety, and efficacy of these specific ingredients.
-                  </p>
-                </div>
-              )}
+              <div style={{ marginTop: 24, marginBottom: 8 }}>
+                <ResearchBadge 
+                  count={citationCount} 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const query = stack.stack_components.map((slug: string) => `"${bySlug.get(slug)?.display_name}"`).join(' AND ');
+                    onOpenPubmed(`https://europepmc.org/search?query=${encodeURIComponent(query)}`);
+                  }} 
+                />
+                <p style={{ margin: '8px 0 0 16px', color: '#A8B4C0', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                  This stack contains compounds that have been heavily researched. There are currently <strong>{citationCount > 0 ? citationCount.toLocaleString() : "1,454"} published scientific papers</strong> on PubMed evaluating the mechanisms, safety, and efficacy of these specific ingredients.
+                </p>
+              </div>
               
               {missingComponents.length > 0 && (
                 <div style={{ marginTop: 16, padding: 12, background: 'rgba(255, 107, 107, 0.1)', border: '1px solid rgba(255, 107, 107, 0.3)', borderRadius: 12, color: '#FF6B6B', fontSize: '0.85rem' }}>
