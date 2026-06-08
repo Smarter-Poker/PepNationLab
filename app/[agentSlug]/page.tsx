@@ -306,6 +306,21 @@ export default async function AgentStorefrontPage({ params }: Props) {
       {/* Products */}
       <section style={{ paddingTop: 8, paddingBottom: 24, position: 'relative', minHeight: '60vh' }}>
         <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 8px' }}>
+          {/* Persistent Research-Use-Only trust banner - compliance + buyer trust while browsing */}
+          <div role="note" style={{
+            display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center',
+            margin: '0 0 12px', padding: '8px 12px',
+            border: '1px solid rgba(229,62,62,0.35)', borderRadius: 10,
+            background: 'rgba(229,62,62,0.06)', textAlign: 'center',
+          }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <path d="M9 3h6M10 3v6.5L4.5 19a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L14 9.5V3" />
+            </svg>
+            <span style={{ fontSize: '0.74rem', lineHeight: 1.3, color: 'var(--silver)' }}>
+              <strong style={{ color: 'var(--red)' }}>Research Use Only.</strong>{' '}
+              For In Vitro Laboratory Research. Not For Human Or Animal Use.
+            </span>
+          </div>
           <Suspense fallback={<StorefrontSkeleton />}>
             <AgentStorefrontDataLoader agentSlug={agentSlug} agent={agent} />
           </Suspense>
