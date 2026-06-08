@@ -83,7 +83,7 @@ const ADMIN_LINKS: RoleNavLink[] = [
   { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
   { href: '/admin/search', label: 'Global Search', icon: <svg {...ip}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg> },
   { href: '/messenger?compose=1', label: 'Find User', icon: <svg {...ip}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg> },
-  { href: '/admin/orders', label: 'Orders & Fufillment', icon: ICON.orders },
+  { href: '/admin/orders', label: 'Orders & Fulfillment', icon: ICON.orders },
   { href: '/dashboard/agent?tab=Storefront+Config', label: 'Storefront Configure', icon: ICON.gear },
   { href: '/admin/agents', label: 'My Agents', icon: <svg {...ip}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> },
   { href: '/admin/researchers', label: 'My Researchers', icon: <svg {...ip}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
