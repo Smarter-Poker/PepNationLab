@@ -417,7 +417,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                             width: '100%', aspectRatio: '1 / 1.2',
                             borderRadius: 16, 
                             background: '#0F1318',
-                            border: '1px solid rgba(255,255,255,0.15)',
+                            border: '2px solid rgba(255,255,255,0.2)',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             overflow: 'hidden', padding: 0,
@@ -456,10 +456,12 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   )}
 
                   {/* Synergy Score (Moved under description) */}
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 16, marginBottom: 16 }}>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', marginTop: 16, marginBottom: 16 }}>
                     {synergy.synergyScore > 0 && (
-                      <div style={{ width: '100%', marginBottom: 8 }}>
-                        <SynergyBadge score={synergy.synergyScore} status={synergy.status} />
+                      <div style={{ width: '100%', marginBottom: 8, display: 'flex', justifyContent: 'center' }}>
+                        <div style={{ maxWidth: 500, width: '100%' }}>
+                          <SynergyBadge score={synergy.synergyScore} status={synergy.status} />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -477,7 +479,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                               width: 140, aspectRatio: '1 / 1.2',
                               borderRadius: 12, 
                               background: '#0F1318',
-                              border: '1px solid rgba(255,255,255,0.15)',
+                              border: '2px solid rgba(255,255,255,0.2)',
                               boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               overflow: 'hidden', padding: 0,
@@ -512,7 +514,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                                 width: 140, aspectRatio: '1 / 1.2',
                                 borderRadius: 12, 
                                 background: '#0F1318',
-                                border: '1px solid rgba(255,255,255,0.15)',
+                                border: '2px solid rgba(255,255,255,0.2)',
                                 boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 overflow: 'hidden', padding: 0,
@@ -536,6 +538,16 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                     </div>
                   </div>
                   
+                  {/* Add To Cart Button Centered */}
+                  <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleAddToCart(stack); }}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', outline: 'none' }}
+                    >
+                      <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack To Cart" width={200} height={200} unoptimized style={{ height: 60, objectFit: 'contain' }} />
+                    </button>
+                  </div>
+
                   {/* Badges moved to the very bottom */}
                   {stack.stack_components.length > 0 && (
                     <div style={{ marginTop: 'var(--space-4)', display: 'flex', justifyContent: 'center' }}>
@@ -551,16 +563,6 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                       )}
                     </div>
                   )}
-
-                  {/* Add To Cart Button Centered At Very Bottom */}
-                  <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleAddToCart(stack); }}
-                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', outline: 'none' }}
-                    >
-                      <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack To Cart" width={200} height={200} unoptimized style={{ height: 60, objectFit: 'contain' }} />
-                    </button>
-                  </div>
                 </div>
               </motion.article>
             );

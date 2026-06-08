@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import {
   Lock, BellRing, UserRound, Warehouse, Store, Tag, Percent, Users,
   CheckCircle2, XCircle, ArrowRight, ArrowLeft, Loader2, ShieldCheck, Smartphone, RotateCw, ListChecks,
+  CreditCard, Package, Wallet, ExternalLink,
 } from 'lucide-react';
 import { isWebPushSupported, enablePush, notificationPermission } from '@/lib/push-client';
 
@@ -36,7 +37,7 @@ interface OnboardingState {
   notifications_enabled: boolean;
   pricing_v2_active: boolean;
   profile: { first_name: string; last_name: string; email: string; phone: string; username: string; must_change_password: boolean };
-  storefront: { slug: string | null; display_name: string | null; warehouse_address: Record<string, string> | null } | null;
+  storefront: { slug: string | null; display_name: string | null; warehouse_address: Record<string, string> | null; payment_ready?: boolean } | null;
   markup: { stored_pct: number | null; default_pct: number };
   downstream: { default_sub_commission_pct: number | null; default_agent_markup_pct: number | null; default_agent_pricing_mode: 'flat' | 'gamified' };
   parent: { name: string | null; slug: string | null; commission_pct: number | null } | null;
@@ -223,7 +224,7 @@ export default function OnboardingWizard() {
       {currentKey === 'products' && <ProductsTutorialStep state={state} onDone={completeStepAndAdvance} />}
       {currentKey === 'downstream' && <DownstreamStep state={state} onDone={completeStepAndAdvance} />}
       {currentKey === 'commission_info' && <CommissionInfoStep state={state} onDone={completeStepAndAdvance} />}
-      {currentKey === FINISH_KEY && <FinishStep state={state} onEnter={() => router.push(state.role === 'sub_agent' ? '/dashboard/sub-agent' : '/dashboard/agent')} />}
+      {currentKey === FINISH_KEY && <FinishStep state={state} onNavigate={(href) => router.push(href)} />}
 
       {idx > 0 && currentKey !== FINISH_KEY && (
         <button type="button" className="btn btn-ghost" style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.84rem' }} onClick={goBack}>
@@ -1055,21 +1056,69 @@ function InfoRow({ icon: Icon, title, body }: { icon: React.ComponentType<{ size
   );
 }
 
-function FinishStep({ state, onEnter }: { state: OnboardingState; onEnter: () => void }) {
+/** One "click here" quick-action that finishes onboarding then deep-links. */
+function QuickAction({ label, icon: Icon, highlight, busy, onClick }: { label: string; icon: React.ComponentType<{ size?: number }>; highlight?: boolean; busy?: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className={highlight ? 'btn btn-primary' : 'btn btn-secondary'}
+      disabled={busy}
+      onClick={onClick}
+      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', fontSize: '0.86rem', padding: '10px 12px', opacity: busy ? 0.7 : 1 }}
+    >
+      <Icon size={16} />
+      {label}
+    </button>
+  );
+}
+
+function FinishStep({ state, onNavigate }: { state: OnboardingState; onNavigate: (href: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const finish = async () => {
+  const isStoreOwner = state.role === 'super_agent' || state.role === 'agent';
+  const dashHref = state.role === 'sub_agent' ? '/dashboard/sub-agent' : '/dashboard/agent';
+  const slug = state.storefront?.slug ?? null;
+  const parentSlug = state.parent?.slug ?? null;
+  // payment_ready is only meaningful for store-owning roles; treat missing as ready
+  // for sub-agents (they have no payment gate).
+  const paymentReady = !isStoreOwner || state.storefront?.payment_ready === true;
+
+  // A dashboard tab deep-link. Tab names must match the dashboard whitelist.
+  const tab = (name: string) => `/dashboard/agent?tab=${encodeURIComponent(name)}`;
+
+  // Complete onboarding (idempotent) THEN navigate. Every button routes through
+  // this so a deep-link target never bounces back to /onboarding because
+  // onboarding_completed_at was still null.
+  const go = async (href: string) => {
+    if (busy) return;
     setBusy(true); setErr(null);
     try {
       await postOnboarding({ action: 'complete' });
-      onEnter();
+      onNavigate(href);
     } catch (e) {
-      const m = e instanceof Error ? e.message : 'Could Not Finish Setup';
-      setErr(m);
+      setErr(e instanceof Error ? e.message : 'Could Not Finish Setup');
       setBusy(false);
     }
   };
+
+  type Action = { label: string; icon: React.ComponentType<{ size?: number }>; href: string };
+  const actions: Action[] = state.role === 'sub_agent'
+    ? [
+        { label: 'Wallet And Earnings', icon: Wallet, href: '/wallet' },
+        ...(parentSlug ? [{ label: 'Visit The Storefront', icon: Store, href: `/${parentSlug}` }] : []),
+      ]
+    : [
+        { label: paymentReady ? 'Payment Methods' : 'Add Payment Methods', icon: CreditCard, href: tab('Storefront Config') },
+        { label: 'Add Products', icon: Package, href: tab('Store Products') },
+        { label: state.role === 'super_agent' ? 'Manage Agents' : 'Manage Sub-Agents', icon: Users, href: tab(state.role === 'super_agent' ? 'My Agent Accounts' : 'My Sub-Agents') },
+        ...(slug ? [{ label: 'View My Storefront', icon: ExternalLink, href: `/${slug}` }] : []),
+      ];
+
+  // Honest finish copy: a store owner without a payment handle is NOT ready --
+  // the dashboard will hard-block them on Storefront Config -- so make adding a
+  // payment method the primary action instead of pretending setup is complete.
+  const needsPayment = isStoreOwner && !paymentReady;
 
   return (
     <div style={{ textAlign: 'center' }}>
@@ -1079,9 +1128,12 @@ function FinishStep({ state, onEnter }: { state: OnboardingState; onEnter: () =>
       <h2 style={{ fontSize: '1.5rem', color: 'var(--white)', margin: '0 0 8px' }}>
         Congratulations, You Are Now A Pep Nation {ROLE_LABEL[state.role]}
       </h2>
-      <p style={{ fontSize: '0.92rem', color: 'var(--grey-300)', lineHeight: 1.55, margin: '0 auto 20px', maxWidth: 440 }}>
-        Your Account Is Fully Set Up And Ready To Go. You Can Update Any Of These Settings Anytime From Your Dashboard.
+      <p style={{ fontSize: '0.92rem', color: 'var(--grey-300)', lineHeight: 1.55, margin: '0 auto 20px', maxWidth: 460 }}>
+        {needsPayment
+          ? 'One Last Required Step: Add At Least One Payment Method (Zelle, Venmo, Cash App, Or Apple Pay) So Your Researchers Know How To Pay You. You Can Update Everything Else Anytime From Your Dashboard.'
+          : 'Your Account Is Fully Set Up And Ready To Go. Jump Straight To What You Need Below, Or Open Your Full Dashboard.'}
       </p>
+
       <div style={{ textAlign: 'left' }}>
         <GuidePanel heading="What's Next" icon={ArrowRight} steps={
           state.role === 'sub_agent'
@@ -1091,7 +1143,9 @@ function FinishStep({ state, onEnter }: { state: OnboardingState; onEnter: () =>
                 'Check Back Anytime To See Pending And Settled Earnings.',
               ]
             : [
-                'Open Your Dashboard To See Your Storefront, Orders, And Earnings.',
+                needsPayment
+                  ? 'Add A Payment Method So Researchers Can Pay You.'
+                  : 'Open Your Dashboard To See Your Storefront, Orders, And Earnings.',
                 'Add Or Adjust The Products You Want To Sell.',
                 'Share Your Storefront Link With Your Researchers.',
                 state.role === 'super_agent'
@@ -1100,8 +1154,18 @@ function FinishStep({ state, onEnter }: { state: OnboardingState; onEnter: () =>
               ]
         } />
       </div>
+
+      <p style={{ fontSize: '0.74rem', letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--grey-500, #6B7785)', margin: '4px 0 8px', textAlign: 'left' }}>
+        Jump Right To It
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: actions.length > 1 ? '1fr 1fr' : '1fr', gap: 10 }}>
+        {actions.map((a) => (
+          <QuickAction key={a.href} label={a.label} icon={a.icon} highlight={needsPayment && a.label === 'Add Payment Methods'} busy={busy} onClick={() => go(a.href)} />
+        ))}
+      </div>
+
       <ErrorLine msg={err} />
-      <PrimaryButton onClick={finish} busy={busy}>Enter My Dashboard</PrimaryButton>
+      <PrimaryButton onClick={() => go(dashHref)} busy={busy}>Enter My Dashboard</PrimaryButton>
     </div>
   );
 }
