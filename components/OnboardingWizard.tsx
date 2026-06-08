@@ -38,7 +38,7 @@ interface OnboardingState {
   profile: { first_name: string; last_name: string; email: string; phone: string; username: string; must_change_password: boolean };
   storefront: { slug: string | null; display_name: string | null; warehouse_address: Record<string, string> | null } | null;
   markup: { stored_pct: number | null; default_pct: number };
-  downstream: { default_sub_commission_pct: number | null; default_agent_markup_pct: number | null };
+  downstream: { default_sub_commission_pct: number | null; default_agent_markup_pct: number | null; default_agent_pricing_mode: 'flat' | 'gamified' };
   parent: { name: string | null; slug: string | null; commission_pct: number | null } | null;
   progress: Record<string, unknown>;
 }
@@ -673,8 +673,9 @@ function ProductsTutorialStep({ state, onDone }: { state: OnboardingState; onDon
 
 /**
  * Downstream step now captures a real default that is applied to FUTURE
- * downstream accounts: a super agent sets a default markup for new agents, a
- * regular agent sets a default commission for new sub-agents.
+ * downstream accounts: a super agent sets a default markup METHOD for new
+ * agents (flat percent or the platform gamification scale), a regular agent
+ * sets a default commission for new sub-agents.
  */
 function DownstreamStep({ state, onDone }: { state: OnboardingState; onDone: () => void }) {
   const isSuper = state.role === 'super_agent';
@@ -685,34 +686,66 @@ function DownstreamStep({ state, onDone }: { state: OnboardingState; onDone: () 
     ? (state.downstream.default_agent_markup_pct != null ? String(state.downstream.default_agent_markup_pct) : '30')
     : (state.downstream.default_sub_commission_pct != null ? String(state.downstream.default_sub_commission_pct) : '10');
   const [pct, setPct] = useState(initial);
+  const [mode, setMode] = useState<'flat' | 'gamified'>(state.downstream.default_agent_pricing_mode ?? 'flat');
 
   const submit = async () => {
     setErr(null);
     const n = Number(pct);
     if (isSuper) {
-      if (!Number.isFinite(n) || n < 0 || n > 500) { setErr('Enter A Markup Between 0 And 500 Percent.'); return; }
+      if (mode === 'flat' && (!Number.isFinite(n) || n < 0 || n > 500)) { setErr('Enter A Markup Between 0 And 500 Percent.'); return; }
     } else {
       if (!Number.isFinite(n) || n < 0 || n > 40) { setErr('Enter A Commission Between 0 And 40 Percent.'); return; }
     }
     setBusy(true);
     try {
-      await postOnboarding(isSuper ? { action: 'downstream_markup', pct: n } : { action: 'downstream_commission', pct: n });
+      await postOnboarding(
+        isSuper
+          ? (mode === 'flat' ? { action: 'downstream_markup', mode: 'flat', pct: n } : { action: 'downstream_markup', mode: 'gamified' })
+          : { action: 'downstream_commission', pct: n },
+      );
       onDone();
     } catch (e) { setErr(e instanceof Error ? e.message : 'Save Failed'); setBusy(false); }
   };
 
   if (isSuper) {
+    const tabStyle = (active: boolean): React.CSSProperties => ({
+      flex: 1, padding: '10px 12px', borderRadius: 10, cursor: 'pointer', textAlign: 'center', fontSize: '0.84rem', fontWeight: 700,
+      border: active ? '1px solid rgba(0,196,188,0.6)' : '1px solid rgba(255,255,255,0.12)',
+      background: active ? 'rgba(0,196,188,0.12)' : 'transparent',
+      color: active ? 'var(--teal)' : 'var(--grey-300)',
+    });
     return (
       <div>
         <StepIntro icon={Percent} title="Set Your Agent Markup"
-          blurb="As A Super Agent, You Decide The Markup Your Agents Pay On Top Of Wholesale Cost. Set A Default Now -- It Is Applied Automatically To Every New Agent You Create, And You Can Still Customize Any Individual Agent Later." />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 'var(--space-4, 16px)' }}>
-          <InfoRow icon={Tag} title="Markup, Not Commission" body="Agents Earn The Spread Between The Price They Pay You And The Price They Charge Their Researchers. You Set The Markup They Pay." />
-          <InfoRow icon={Users} title="Per-Agent Override" body="From Your Agents Page You Can Still Set A Custom Markup For Any Individual Agent At Any Time." />
+          blurb="Decide How Your Agents Are Priced On Top Of Wholesale Cost. Choose A Flat Markup Or The Gamification Scale. This Is Just The Default For New Agents -- You Can Change The Markup For Any Agent At Any Time From Your Agents Page." />
+
+        <div style={{ display: 'flex', gap: 'var(--space-2, 8px)', marginBottom: 'var(--space-4, 16px)' }}>
+          <button type="button" style={tabStyle(mode === 'flat')} onClick={() => setMode('flat')}>Flat Markup</button>
+          <button type="button" style={tabStyle(mode === 'gamified')} onClick={() => setMode('gamified')}>Gamification Scale</button>
         </div>
-        <Field label="Default Agent Markup %">
-          <input type="number" style={inputStyle} value={pct} onChange={(e) => setPct(e.target.value)} min="0" max="500" step="1" />
-        </Field>
+
+        {mode === 'flat' ? (
+          <>
+            <div style={{ padding: 'var(--space-4, 16px)', borderRadius: 10, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.22)', marginBottom: 'var(--space-4, 16px)' }}>
+              <div style={{ fontSize: '0.82rem', color: 'var(--grey-200, #D0DAE4)', lineHeight: 1.6 }}>
+                <strong style={{ color: 'var(--white)' }}>Flat Markup:</strong> One Percentage Across The Board. A Product That Costs $10 Wholesale, With A {pct || '0'}% Markup, Is Priced At{' '}
+                <strong style={{ color: 'var(--teal)' }}>${(10 * (1 + (Number(pct) || 0) / 100)).toFixed(2)}</strong> For Your Agents.
+              </div>
+            </div>
+            <Field label="Default Agent Markup %">
+              <input type="number" style={inputStyle} value={pct} onChange={(e) => setPct(e.target.value)} min="0" max="500" step="1" />
+            </Field>
+          </>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 'var(--space-4, 16px)' }}>
+            <InfoRow icon={Tag} title="Volume-Based Pricing" body="Your Agents Ride The Platform Volume Ladder: Their Cost Markup Automatically Improves As Their Monthly Volume Grows, So Strong Sellers Earn Better Pricing." />
+            <InfoRow icon={Users} title="No Flat Rate To Set" body="There Is No Fixed Percentage With The Gamification Scale -- The Ladder Sets Each Agent's Markup By Their Volume." />
+          </div>
+        )}
+
+        <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
+          This Is Only The Default For New Agents. You Can Change Any Agent To A Different Markup Or Method At Any Time From Your Agents Page.
+        </p>
         <ErrorLine msg={err} />
         <PrimaryButton onClick={submit} busy={busy}>Save Default And Continue</PrimaryButton>
       </div>

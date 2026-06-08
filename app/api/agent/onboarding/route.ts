@@ -115,7 +115,7 @@ export async function GET() {
 
   const { data: profile } = await service
     .from('profiles')
-    .select('id, role, is_super_agent, is_sub_agent, parent_agent_id, first_name, last_name, email, phone, username, must_change_password, custom_markup_override, commission_pct, default_sub_commission_pct, default_agent_markup_pct, onboarding_progress, onboarding_completed_at')
+    .select('id, role, is_super_agent, is_sub_agent, parent_agent_id, first_name, last_name, email, phone, username, must_change_password, custom_markup_override, commission_pct, default_sub_commission_pct, default_agent_markup_pct, default_agent_pricing_mode, onboarding_progress, onboarding_completed_at')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -220,6 +220,7 @@ export async function GET() {
     downstream: {
       default_sub_commission_pct: profile.default_sub_commission_pct != null ? Number(profile.default_sub_commission_pct) : null,
       default_agent_markup_pct: profile.default_agent_markup_pct != null ? Number(profile.default_agent_markup_pct) : null,
+      default_agent_pricing_mode: ((profile as { default_agent_pricing_mode?: string | null }).default_agent_pricing_mode as 'flat' | 'gamified' | null) ?? 'flat',
     },
     parent,
     progress,
@@ -248,7 +249,7 @@ const PostSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('warehouse'), data: WarehouseSchema }),
   z.object({ action: z.literal('markup'), markup_pct: z.number().min(0).max(500) }),
   z.object({ action: z.literal('downstream_commission'), pct: z.number().min(0).max(40) }),
-  z.object({ action: z.literal('downstream_markup'), pct: z.number().min(0).max(500) }),
+  z.object({ action: z.literal('downstream_markup'), mode: z.enum(['flat', 'gamified']), pct: z.number().min(0).max(500).optional() }),
   z.object({ action: z.literal('complete') }),
 ]);
 
@@ -368,21 +369,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, default_sub_commission_pct: pct });
   }
 
-  // Super agent sets the DEFAULT markup applied to future agents, and marks the
-  // downstream step done.
+  // Super agent chooses the DEFAULT pricing method applied to future agents,
+  // and marks the downstream step done. 'flat' stores a fixed markup percent;
+  // 'gamified' puts new agents on the platform volume ladder (no fixed markup).
+  // Either way it is just a default -- any individual agent can be changed later.
   if (action === 'downstream_markup') {
     if (role !== 'super_agent') {
       return NextResponse.json({ error: 'only_super_agents_set_agent_markup' }, { status: 403 });
     }
-    const pct = Math.round(parsed.data.pct * 100) / 100;
+    const mode = parsed.data.mode;
+    const update: Record<string, unknown> = { default_agent_pricing_mode: mode };
+    if (mode === 'flat') {
+      // Flat requires a percent; default to 0 if somehow omitted.
+      update.default_agent_markup_pct = Math.round((parsed.data.pct ?? 0) * 100) / 100;
+    }
     const { error } = await service
       .from('profiles')
-      .update({ default_agent_markup_pct: pct })
+      .update(update)
       .eq('id', user.id);
     if (error) return NextResponse.json({ error: 'downstream_markup_failed' }, { status: 500 });
     const { error: ackErr } = await setAck('downstream_tutorial_ack');
     if (ackErr) return NextResponse.json({ error: 'downstream_markup_failed' }, { status: 500 });
-    return NextResponse.json({ ok: true, default_agent_markup_pct: pct });
+    return NextResponse.json({ ok: true, mode, default_agent_markup_pct: update.default_agent_markup_pct ?? null });
   }
 
   if (action === 'complete') {
