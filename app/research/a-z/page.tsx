@@ -6,7 +6,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllCompounds } from '@/lib/compounds-server';
-import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import { evidenceTier } from '@/lib/compounds';
 
 export const metadata: Metadata = {
   title: 'A-Z Index | Research Library | Pep Nation Lab',
@@ -85,9 +85,6 @@ export default async function ResearchAZPage() {
                   <span style={{ fontSize: '1rem', fontWeight: 700 }}>{c.display_name}</span>
                   {c.plain_summary && (
                     <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.plain_summary}</span>
-                  )}
-                  {c.wada_status && c.wada_status !== 'not_listed' && (
-                    <span style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)', marginTop: '4px' }}>{wadaLabel(c.wada_status)}</span>
                   )}
                 </Link>
               );

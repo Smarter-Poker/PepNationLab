@@ -1,6 +1,6 @@
 /**
  * Per-compound regulatory dashboard. Shows FDA / EMA / Health Canada / TGA /
- * PMDA cards + DEA schedule + WADA chip + compound_recall_alerts rows.
+ * PMDA cards + DEA schedule + compound_recall_alerts rows.
  */
 
 import type { Metadata } from 'next';
@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCompound } from '@/lib/compounds-server';
-import { wadaLabel } from '@/lib/compounds';
+
 import IframeLink from '@/components/ui/IframeLink';
 
 type PageProps = { params: Promise<{ slug: string }> };
@@ -121,11 +121,7 @@ export default async function CompoundRegulatoryPage({ params }: PageProps) {
             agency="DEA Schedule (US)"
             status={reg.dea_schedule ?? 'Not Scheduled'}
           />
-          <RegCard
-            agency="WADA"
-            status={wadaLabel(compound.wada_status)}
-            detail={compound.wada_status && compound.wada_status !== 'not_listed' ? 'See Bibliography For Prohibition History' : undefined}
-          />
+
           <RegCard
             agency="FDA FAERS"
             status={reg.faers_event_count !== null ? `${reg.faers_event_count} Adverse Events Recorded` : 'Pending Sync'}

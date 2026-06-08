@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { getCompound } from '@/lib/compounds-server';
-import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import { evidenceTier } from '@/lib/compounds';
 import { generateQrDataUrl } from '@/lib/qr';
 import Image from 'next/image';
 import PrintButton from '@/components/research/PrintButton';
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 // Convert Celsius temperatures embedded in free text to Fahrenheit.
-// Ranges first ("2-8C" -> "36-46°F"), then single values ("-20C" -> "-4°F").
+// Ranges first ("2-8C" -> "36-46 F"), then single values ("-20C" -> "-4 F").
 function toFahrenheit(value?: string | null): string | null {
   if (!value) return value ?? null;
   let out = value.replace(/(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)\s*°?\s*C\b/gi, (_m, a, b) => {
@@ -176,7 +176,6 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
             />
             <Row label="Handling Notes" value={h.notes} />
             <Row label="Regulatory" value={compound.regulatory} />
-            <Row label="WADA Status" value={wadaLabel(compound.wada_status)} />
             <Row
               cap={false}
               label="Sources"

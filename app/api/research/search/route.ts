@@ -27,7 +27,6 @@ interface SearchResultRow {
   slug: string;
   display_name: string;
   evidence_tier: string;
-  wada_status: string;
   snippet: string;
   score: number;
   knowledge_panel_url: string;
@@ -68,7 +67,6 @@ async function runRankedSearch(
     slug: String(r.slug ?? ''),
     display_name: String(r.display_name ?? ''),
     evidence_tier: String(r.evidence_tier ?? ''),
-    wada_status: String(r.wada_status ?? 'not_listed'),
     snippet: typeof r.snippet === 'string' ? r.snippet : '',
     score: typeof r.score === 'number' ? r.score : Number(r.score ?? 0),
     knowledge_panel_url: `/research/compounds/${String(r.slug ?? '')}`,
@@ -110,7 +108,6 @@ async function runFallbackTrigram(
     slug: String(r.slug ?? ''),
     display_name: String(r.display_name ?? ''),
     evidence_tier: String(r.evidence_tier ?? ''),
-    wada_status: String(r.wada_status ?? 'not_listed'),
     snippet: typeof r.snippet === 'string' ? r.snippet : '',
     score: typeof r.score === 'number' ? r.score : Number(r.score ?? 0),
     knowledge_panel_url: `/research/compounds/${String(r.slug ?? '')}`,
@@ -235,7 +232,6 @@ async function performSearch(
             slug: String(r.slug ?? ''),
             display_name: String(r.display_name ?? ''),
             evidence_tier: String(r.evidence_tier ?? ''),
-            wada_status: String(r.wada_status ?? 'not_listed'),
             snippet:
               String(r.plain_summary ?? '').slice(0, 160) +
               (String(r.plain_summary ?? '').length > 160 ? '...' : ''),
