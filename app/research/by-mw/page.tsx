@@ -25,7 +25,7 @@ interface MwRow {
 
 const BUCKETS = [
   { key: 'small', label: 'Small (< 2,000 Da)', test: (mw: number) => mw < 2000 },
-  { key: 'medium', label: 'Medium (2,000–5,000 Da)', test: (mw: number) => mw >= 2000 && mw < 5000 },
+  { key: 'medium', label: 'Medium (2,000-5,000 Da)', test: (mw: number) => mw >= 2000 && mw < 5000 },
   { key: 'large', label: 'Large (> 5,000 Da)', test: (mw: number) => mw >= 5000 },
 ];
 

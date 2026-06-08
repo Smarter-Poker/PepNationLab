@@ -44,7 +44,7 @@ function normalizeRoute(r: string): string {
   if (lower.startsWith('intram') || lower === 'im') return 'intramuscular';
   if (lower.startsWith('top')) return 'topical';
   if (lower === 'iv' || lower.startsWith('intrav')) return 'iv';
-  // Any unrecognized string → bucket as 'other' so it's not silently dropped
+  // Any unrecognized string -> bucket as 'other' so it's not silently dropped
   return 'other';
 }
 
