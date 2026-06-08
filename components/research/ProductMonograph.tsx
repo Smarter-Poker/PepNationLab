@@ -3,8 +3,8 @@
 /**
  * ProductMonograph - research access shown inside the storefront product detail
  * modal. This is the STANDARD template for every compound: a break line under
- * the description, then five premium brushed-metal buttons (Research, Findings,
- * Preparation, Spec Sheet, FAQs) on a single row. Each button opens the
+ * the description, then six premium brushed-metal buttons (Research, Findings,
+ * Preparation, Spec Sheet, COA, FAQs). Each button opens the
  * ProductResearchPanel as an in-app popup showing only that one section; from
  * the FAQ the user can open the in-app Full Research Profile view.
  *
@@ -19,6 +19,7 @@ import ProductResearchPanel, { type ResearchSection } from '@/components/researc
 interface Props {
   compound: Compound;
   primaryColor?: string;
+  coaUrl?: string | null;
 }
 
 const PANEL_BUTTONS: { key: ResearchSection; label: string }[] = [
@@ -26,6 +27,7 @@ const PANEL_BUTTONS: { key: ResearchSection; label: string }[] = [
   { key: 'findings', label: 'Findings' },
   { key: 'prep', label: 'Preparation' },
   { key: 'spec', label: 'Spec Sheet' },
+  { key: 'coa', label: 'COA' },
   { key: 'faq', label: 'FAQs' },
 ];
 
@@ -49,7 +51,7 @@ const premiumMetalButton: React.CSSProperties = {
   lineHeight: 1,
 };
 
-export default function ProductMonograph({ compound, primaryColor = '#00C4BC' }: Props) {
+export default function ProductMonograph({ compound, primaryColor = '#00C4BC', coaUrl = null }: Props) {
   const [panelSection, setPanelSection] = useState<ResearchSection | null>(null);
   if (!compound) return null;
 
@@ -58,11 +60,11 @@ export default function ProductMonograph({ compound, primaryColor = '#00C4BC' }:
       {/* Break line under the description, above the buttons */}
       <div style={{ height: 1, background: 'rgba(255,255,255,0.10)', margin: '0 0 var(--space-5)' }} />
 
-      {/* Premium metal buttons on a single row (5 columns, centered labels) */}
+      {/* Premium metal buttons (six sections on a 3-col, 2-row grid for mobile safety) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(5, 1fr)',
+          gridTemplateColumns: 'repeat(3, 1fr)',
           gap: 6,
         }}
       >
@@ -87,6 +89,7 @@ export default function ProductMonograph({ compound, primaryColor = '#00C4BC' }:
               compound={compound}
               primaryColor={primaryColor}
               initialSection={panelSection}
+              coaUrl={coaUrl}
               onClose={() => setPanelSection(null)}
             />,
             document.body
