@@ -29,7 +29,6 @@
     { "path": "/api/cron/chembl-sync", "schedule": "0 4 * * 2" },
     { "path": "/api/cron/fda-drugs-sync", "schedule": "0 5 * * 2" },
     { "path": "/api/cron/dailymed-sync", "schedule": "0 6 * * 2" },
-    { "path": "/api/cron/wada-archive-sync", "schedule": "0 7 1 * *" },
     { "path": "/api/cron/patents-sync", "schedule": "0 8 1 * *" },
     { "path": "/api/cron/rxnorm-sync", "schedule": "0 3 * * 3" },
     { "path": "/api/cron/europepmc-sync", "schedule": "0 4 * * 3" },

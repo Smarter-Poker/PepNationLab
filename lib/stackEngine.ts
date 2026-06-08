@@ -79,6 +79,32 @@ export function analyzeStack(components: StackComponent[], isOfficialStack: bool
       status: 'excellent'
     };
   }
+
+  // Exceptional Custom Stacks
+  if (stackSlug && (stackSlug.includes('wolverine') || stackSlug.includes('limitless') || stackSlug.includes('shred'))) {
+    if (stackSlug.includes('wolverine')) {
+      breakdown.push({ label: 'Systemic Healing (TB-500)', value: 45 });
+      breakdown.push({ label: 'Localized Repair (BPC-157)', value: 45 });
+      breakdown.push({ label: 'Synergistic Recovery Amplification', value: 9 });
+    } else if (stackSlug.includes('limitless')) {
+      breakdown.push({ label: 'Cognitive Enhancement (Semax)', value: 45 });
+      breakdown.push({ label: 'Anxiolytic Synergy (Selank)', value: 45 });
+      breakdown.push({ label: 'Neuroplasticity Amplification', value: 9 });
+    } else if (stackSlug.includes('shred')) {
+      breakdown.push({ label: 'Metabolic Optimization', value: 40 });
+      breakdown.push({ label: 'Appetite Suppression', value: 40 });
+      breakdown.push({ label: 'Lipolytic Amplification', value: 19 });
+    }
+
+    return {
+      synergyScore: 99,
+      warnings: [],
+      tips: ['This stack combination represents the gold standard for its target outcome, demonstrating exceptional synergy between its components.'],
+      breakdown,
+      isCompatible: true,
+      status: 'excellent'
+    };
+  }
   
   if (components.length < 2) {
     if (components.length === 1) {

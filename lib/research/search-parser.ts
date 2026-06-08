@@ -41,7 +41,7 @@ export interface ParsedQuery {
 }
 
 const KNOWN_FIELDS = new Set([
-  'mechanism', 'tier', 'evidence', 'wada', 'class', 'category', 'area',
+  'mechanism', 'tier', 'evidence', 'class', 'category', 'area',
   'risk', 'mw', 'half_life', 'route', 'target', 'glp1', 'angiogenic', 'stack', 'hl',
 ]);
 

@@ -87,12 +87,7 @@ export const RISK_META: Record<Compound['risk_level'], { label: string; color: s
   low: { label: 'Low Risk', color: '#68D391', bg: 'rgba(104,211,145,0.12)', badgeUrl: '/images/badges/badge_risk_low.png' },
 };
 
-export const WADA_LABEL: Record<string, string> = {
-  prohibited: 'Not Listed',
-  prohibited_males: 'Not Listed',
-  permitted: 'Not Listed',
-  not_listed: 'Not Listed',
-};
+export const WADA_LABEL: Record<string, string> = {};
 
 export const RESEARCH_AREAS: Record<string, { label: string; blurb: string }> = {
   weight_management: { label: 'Weight Management & Fat Loss', blurb: 'GLP-1 / GIP / triple-agonist incretins, AOD9604, Tesamorelin, and related fat-axis compounds.' },
@@ -116,8 +111,8 @@ export function evidenceTier(tier: string) {
   return EVIDENCE_TIER[tier] ?? { label: tier, color: '#A8B4C0', blurb: '' };
 }
 
-export function wadaLabel(status: string): string {
-  return 'Not Listed';
+export function wadaLabel(_status: string): string {
+  return '';
 }
 
 export function researchAreaLabel(area: string): string {

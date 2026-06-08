@@ -20,15 +20,12 @@ export type EvidenceComfort =
   | 'preclinical_ok'
   | 'any';
 
-export type WadaConstraint = 'wada_permitted_only' | 'no_constraint';
-
 export type RiskTolerance = 'low_only' | 'moderate_ok' | 'any';
 
 export interface MatchInput {
   goal: string;
   goals?: string[];
   evidenceComfort: EvidenceComfort;
-  wadaConstraint: WadaConstraint;
   riskTolerance: RiskTolerance;
   excludeInjectables?: boolean;
   requireLongHalfLife?: boolean;
@@ -57,7 +54,6 @@ export interface MatchResult {
   score: number; // 0..100 (clamped)
   rationale: string; // 1-2 plain English sentences
   evidenceTier: string;
-  wadaStatus: string;
   riskLevel: string;
   halfLife: string | null;
   molecularWeight: number | null;
@@ -157,11 +153,6 @@ function goalMentionsBonus(goal: string, c: Compound): number {
 // --------------------------------------------------------------------------
 // Hard-reject gates.
 // --------------------------------------------------------------------------
-function failsWadaGate(c: Compound, constraint: WadaConstraint): boolean {
-  if (constraint === 'no_constraint') return false;
-  return c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males';
-}
-
 function failsRiskGate(c: Compound, tolerance: RiskTolerance): boolean {
   if (tolerance === 'any') return false;
   const risk = c.risk_level;
@@ -270,7 +261,6 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
   // Hard gates first - if any of these fail, the compound is excluded from
   // results entirely. We model that as returning { failReason } so callers can surface it.
   if (failsEvidenceGate(c, input.evidenceComfort)) return { failReason: 'Does not meet requested evidence comfort level.' };
-  if (failsWadaGate(c, input.wadaConstraint)) return { failReason: 'Contains WADA-prohibited substances.' };
   if (failsRiskGate(c, input.riskTolerance)) return { failReason: 'Exceeds requested risk tolerance.' };
   if (failsHandlingGate(c, input.excludeInjectables)) return { failReason: 'Requires injection (user requested non-injectable).' };
   if (failsPrepGate(c, input.prep)) return { failReason: 'Requires reconstitution equipment configuration mismatch.' };
@@ -383,7 +373,6 @@ export function scoreCompounds(
       score: result.score,
       rationale: result.rationale,
       evidenceTier: c.evidence_tier,
-      wadaStatus: c.wada_status,
       riskLevel: c.risk_level,
       halfLife: c.half_life,
       molecularWeight: c.molecular_weight_da ?? null,

@@ -2,7 +2,7 @@
  * Unit tests for the Match Me To A Peptide scoring engine.
  *
  * Pure in-memory tests. No DB, no network. We build synthetic Compound rows
- * to exercise the hard gates (evidence comfort, WADA, risk) and the ranking
+ * to exercise the hard gates (evidence comfort, risk) and the ranking
  * + result-cap behavior.
  */
 
@@ -58,7 +58,6 @@ function makeCompound(overrides: Partial<Compound> & { slug: string; display_nam
 const baseInput: MatchInput = {
   goal: 'metabolic',
   evidenceComfort: 'any',
-  wadaConstraint: 'no_constraint',
   riskTolerance: 'any',
 };
 
@@ -124,65 +123,6 @@ describe('scoreCompounds - evidence-comfort gate', () => {
 
     const slugs = results.map((r) => r.slug).sort();
     expect(slugs).toEqual(['approved', 'invest']);
-  });
-});
-
-describe('scoreCompounds - WADA gate', () => {
-  it('wada_permitted_only filters out WADA-prohibited compounds', () => {
-    const compounds: Compound[] = [
-      makeCompound({
-        slug: 'clean',
-        display_name: 'Clean Compound',
-        wada_status: 'permitted',
-        research_areas: ['metabolic'],
-      }),
-      makeCompound({
-        slug: 'banned',
-        display_name: 'Banned Compound',
-        wada_status: 'prohibited',
-        research_areas: ['metabolic'],
-      }),
-      makeCompound({
-        slug: 'banned-males',
-        display_name: 'Banned Males Compound',
-        wada_status: 'prohibited_males',
-        research_areas: ['metabolic'],
-      }),
-      makeCompound({
-        slug: 'unlisted',
-        display_name: 'Unlisted Compound',
-        wada_status: 'not_listed',
-        research_areas: ['metabolic'],
-      }),
-    ];
-
-    const { matches: results } = scoreCompounds(
-      { ...baseInput, wadaConstraint: 'wada_permitted_only' },
-      compounds,
-    );
-
-    const slugs = results.map((r) => r.slug).sort();
-    expect(slugs).toEqual(['clean', 'unlisted']);
-    expect(results.find((r) => r.slug === 'banned')).toBeUndefined();
-    expect(results.find((r) => r.slug === 'banned-males')).toBeUndefined();
-  });
-
-  it('no_constraint keeps WADA-prohibited compounds in the running', () => {
-    const compounds: Compound[] = [
-      makeCompound({
-        slug: 'banned',
-        display_name: 'Banned Compound',
-        wada_status: 'prohibited',
-        research_areas: ['metabolic'],
-      }),
-    ];
-
-    const { matches: results } = scoreCompounds(
-      { ...baseInput, wadaConstraint: 'no_constraint' },
-      compounds,
-    );
-
-    expect(results.map((r) => r.slug)).toEqual(['banned']);
   });
 });
 
