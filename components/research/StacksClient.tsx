@@ -10,8 +10,6 @@ import { analyzeStack, getCategoryFromName, type StackAnalysis } from '@/lib/sta
 import StackBuilder from './StackBuilder';
 import { FlaskConical, Beaker, CheckCircle2, X, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import IframeModal from '@/components/ui/IframeModal';
-import IframeModal from '@/components/ui/IframeModal';
-
 
 
 const SynergyBadge = ({ score, status }: { score: number, status: string }) => (
