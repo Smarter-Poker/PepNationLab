@@ -241,7 +241,7 @@ export async function GET(request: NextRequest) {
                     <div class="meta">${authors}<br>${journal}</div>
                     <div class="abstract">${abstract}</div>
                     <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
-                      <a href="${url}" target="_blank" style="color: #00C4BC; text-decoration: none; font-weight: bold;">View Original on PubMed</a>
+                      <a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #00C4BC; text-decoration: none; font-weight: bold;">View Original on PubMed</a>
                     </div>
                   </div>
                 </body></html>

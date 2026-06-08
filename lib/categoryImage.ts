@@ -13,6 +13,16 @@
 // ─── Individual product name → image path ────────────────────────────────────
 // Key: lowercase product name (trimmed). Add new entries here as images are generated.
 const PRODUCT_IMAGE_MAP: Record<string, string> = {
+  // ── Custom Stacks ───────────────────────────────────────────────────────────
+  'appetite crusher':                         '/images/products/cagrilintide-sema.png',
+  'furnace stack':                            '/images/products/l-carnitine-blend.png',
+  'skinny shot':                              '/images/products/lipo-c.png',
+  'lipolysis stack':                          '/images/products/lemon-bottle.png',
+  'gh synergy':                               '/images/products/cjc-1295-ipa.png',
+  'wolverine stack':                          '/images/products/wolverine-stack.png',
+  'shred stack':                              '/images/products/shred-stack.png',
+  'limitless stack':                          '/images/products/limitless-stack.png',
+  
   // ── Weight Loss & Metabolism - RED cap ──────────────────────────────────────
   'tirzepatide':                              '/images/products/tirzepatide.png',
   'semaglutide':                              '/images/products/semaglutide.png',

@@ -233,24 +233,41 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
              />
           )}
         </div>
-        <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
-          {categories.map(cat => (
+        <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 16, scrollbarWidth: 'none' }}>
+          {categories.map(cat => {
+            let areaId = 'all';
+            if (cat !== 'All') {
+              const entry = Object.entries(RESEARCH_AREAS).find(([k, v]) => v.label === cat);
+              if (entry) areaId = entry[0];
+            }
+            const imgSrc = cat === 'All' ? '/nav-icons/research-v2.png' : `/images/areas/${areaId}.png`;
+
+            return (
             <button 
               key={cat} 
               onClick={() => setActiveCategory(cat)}
               style={{ 
-                whiteSpace: 'nowrap', padding: '8px 20px', borderRadius: 24, 
-                border: activeCategory === cat ? '1px solid rgba(0, 229, 255, 0.5)' : '1px solid rgba(255,255,255,0.08)', 
-                background: activeCategory === cat ? 'rgba(0, 229, 255, 0.15)' : 'rgba(255,255,255,0.03)', 
-                color: activeCategory === cat ? '#00E5FF' : '#A8B4C0', 
-                cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem',
-                boxShadow: activeCategory === cat ? '0 0 20px rgba(0,229,255,0.2)' : 'none',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                flex: '0 0 auto',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                width: 110, height: 110, borderRadius: 16, 
+                border: activeCategory === cat ? '3px solid #C0C8D0' : '2px solid #88929C', 
+                background: activeCategory === cat ? 'linear-gradient(145deg, rgba(192,200,208,0.2) 0%, rgba(136,146,156,0.05) 100%)' : 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.2) 100%)', 
+                color: activeCategory === cat ? '#E2E8F0' : '#A8B4C0', 
+                cursor: 'pointer', fontWeight: 700, fontSize: '0.75rem',
+                boxShadow: activeCategory === cat ? '0 0 20px rgba(192,200,208,0.3), inset 0 2px 10px rgba(255,255,255,0.2)' : 'inset 0 1px 0 rgba(255,255,255,0.1)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                padding: '12px 8px',
+                textAlign: 'center',
+                lineHeight: 1.2
               }}
             >
+              <div style={{ width: 48, height: 48, marginBottom: 8, position: 'relative' }}>
+                <Image src={imgSrc} alt={cat} fill unoptimized style={{ objectFit: 'contain', filter: activeCategory === cat ? 'brightness(1.2)' : 'grayscale(0.4) brightness(0.8)', transition: 'all 0.3s' }} />
+              </div>
               {cat}
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -273,8 +290,13 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
               <motion.article
                 key={stack.slug}
                 className="glass-panel"
-                whileHover={{ y: -4, boxShadow: '0 12px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)' }}
-                style={{ padding: 0, overflow: 'hidden', position: 'relative', cursor: 'pointer', border: isComparing ? '1px solid #00E5FF' : undefined }}
+                whileHover={{ y: -4, boxShadow: '0 12px 30px rgba(0,0,0,0.5), inset 0 2px 10px rgba(255,255,255,0.3)' }}
+                style={{ 
+                  padding: 0, overflow: 'hidden', position: 'relative', cursor: 'pointer', 
+                  border: isComparing ? '3px solid #00E5FF' : '3px solid #A8B4C0',
+                  background: 'linear-gradient(145deg, rgba(30,35,40,0.9) 0%, rgba(15,20,25,0.95) 100%)',
+                  borderRadius: 24
+                }}
                 onClick={() => setActiveStackDrawer(stack.slug)}
               >
                 {/* Out of Stock Warning Badge */}
@@ -312,8 +334,9 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                           <div style={{
                             width: '100%', aspectRatio: '1 / 1.2',
                             borderRadius: 16, 
-                            background: 'radial-gradient(circle at center, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.2) 100%)',
-                            border: '1px solid rgba(255,255,255,0.05)',
+                            background: 'radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.3) 100%)',
+                            border: '2px solid #88929C',
+                            boxShadow: 'inset 0 2px 8px rgba(255,255,255,0.2), 0 4px 12px rgba(0,0,0,0.4)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             overflow: 'hidden', padding: 8,
                             position: 'relative'
@@ -352,16 +375,39 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-                    <h2 style={{ margin: 0, color: '#A8B4C0', fontWeight: 800, fontSize: '1.4rem', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
-                      {stack.display_name}
-                    </h2>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {(() => {
+                        const fullTitle = isPremade ? products.filter(p => p.compoundSlug === stack.slug).sort((a,b)=>a.retailPrice-b.retailPrice)[0].productName : stack.display_name;
+                        const hasSubtitle = fullTitle.includes('(') && fullTitle.endsWith(')');
+                        const mainTitle = hasSubtitle ? fullTitle.substring(0, fullTitle.indexOf('(')).trim() : fullTitle;
+                        const subtitle = hasSubtitle ? fullTitle.substring(fullTitle.indexOf('(')) : '';
+                        
+                        let titleFontSize = '1.4rem';
+                        if (mainTitle.length > 25) titleFontSize = '1.05rem';
+                        else if (mainTitle.length > 20) titleFontSize = '1.15rem';
+                        else if (mainTitle.length > 15) titleFontSize = '1.25rem';
+
+                        return (
+                          <>
+                            <h2 style={{ margin: 0, color: '#E2E8F0', fontWeight: 800, fontSize: titleFontSize, letterSpacing: '-0.01em', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {mainTitle}
+                            </h2>
+                            {subtitle && (
+                              <div style={{ fontSize: '0.75rem', color: '#A8B4C0', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {subtitle}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
                     {isPremade ? (
-                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#E2E8F0', whiteSpace: 'nowrap' }}>
                         ${bundlePrice.toFixed(2)}
                       </div>
                     ) : (
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#E2E8F0', whiteSpace: 'nowrap' }}>
                           ${(bundlePrice * 0.9).toFixed(2)}
                         </div>
                         <div style={{ fontSize: '0.65rem', color: '#68D391', fontWeight: 700, marginTop: 2 }}>Stack Discount Applied</div>
@@ -405,12 +451,12 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                               style={{
                                 padding: '0.4rem 0.8rem',
                                 borderRadius: '8px',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                                background: 'rgba(255,255,255,0.02)',
+                                border: '2px solid #88929C',
+                                background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.2) 100%)',
                                 color: '#D0DAE4',
                                 fontSize: '0.75rem',
                                 fontWeight: 600,
-                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
+                                boxShadow: 'inset 0 1px 3px rgba(255,255,255,0.1)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '8px'
