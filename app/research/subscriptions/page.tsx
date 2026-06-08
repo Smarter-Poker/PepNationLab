@@ -35,7 +35,7 @@ export default async function SubscriptionsPage() {
       <header style={{ marginBottom: 'var(--space-5, 24px)' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--white, #FFFFFF)', margin: 0 }}>Notification Subscriptions</h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1rem', marginTop: 'var(--space-2, 8px)' }}>
-          You Will Be Notified When Tracked Compounds Get New Evidence, A WADA Status Change, A Recall, Or A Trial Status Update.
+          You Will Be Notified When Tracked Compounds Get New Evidence, A Recall, Or A Trial Status Update.
         </p>
       </header>
       {items.length === 0 ? (
@@ -52,7 +52,6 @@ export default async function SubscriptionsPage() {
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: 'var(--space-2, 8px)' }}>
                 {row.notify_new_evidence && <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '999px', background: 'rgba(0,196,188,0.16)', color: 'var(--teal, #00C4BC)' }}>New Evidence</span>}
-                {row.notify_wada_change && <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '999px', background: 'rgba(246,173,85,0.16)', color: '#F6AD55' }}>WADA Changes</span>}
                 {row.notify_recall && <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '999px', background: 'rgba(229,62,62,0.16)', color: 'var(--red-600, #E53E3E)' }}>Recalls</span>}
                 {row.notify_trial_status && <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '999px', background: 'rgba(0,229,255,0.12)', color: '#00E5FF' }}>Trial Status</span>}
               </div>

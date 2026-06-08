@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
   const { data, count } = await supabase
     .from('compounds')
     .select(
-      'slug, display_name, aliases, category, research_areas, evidence_tier, wada_status, plain_summary, mechanism, half_life, pk_summary, fda_approval_year, ema_approval_year, pipeline_status, is_discontinued, is_orphan_drug, is_repurposed',
+      'slug, display_name, aliases, category, research_areas, evidence_tier, plain_summary, mechanism, half_life, pk_summary, fda_approval_year, ema_approval_year, pipeline_status, is_discontinued, is_orphan_drug, is_repurposed',
       { count: 'exact' },
     )
     .order('display_name', { ascending: true })

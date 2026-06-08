@@ -24,7 +24,6 @@ interface Suggestion {
   display_name: string;
   kind: 'compound' | 'area' | 'glossary';
   evidence_tier?: string;
-  wada_status?: string;
   blurb?: string;
 }
 
@@ -109,7 +108,6 @@ export async function GET(req: NextRequest) {
           display_name: String(row.display_name ?? ''),
           kind: 'compound',
           evidence_tier: String(row.evidence_tier ?? ''),
-          wada_status: String(row.wada_status ?? 'not_listed'),
           blurb: typeof row.snippet === 'string' ? (row.snippet as string).slice(0, 140) : '',
         });
       }
@@ -138,7 +136,6 @@ export async function GET(req: NextRequest) {
             display_name: String(row.display_name ?? ''),
             kind: 'compound',
             evidence_tier: String(row.evidence_tier ?? ''),
-            wada_status: String(row.wada_status ?? 'not_listed'),
             blurb: typeof row.snippet === 'string' ? (row.snippet as string).slice(0, 140) : '',
           });
         }

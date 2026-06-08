@@ -1,11 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-// ─── SITE LOCKDOWN ───────────────────────────────────────────────────
+// --- SITE LOCKDOWN ---
 // The site is locked. Only authenticated users may access any page.
-// New account registration is disabled — /register always redirects to /login.
+// New account registration is disabled -- /register always redirects to /login.
 // The only public route is /login itself (plus static assets handled by matcher).
-// ─────────────────────────────────────────────────────────────────────────────────
 
 // Routes that are always public (no auth required)
 const PUBLIC_ROUTES = [
@@ -71,7 +70,6 @@ const PUBLIC_ROUTES = [
   '/api/cron/chembl-sync',
   '/api/cron/fda-drugs-sync',
   '/api/cron/dailymed-sync',
-  '/api/cron/wada-archive-sync',
   '/api/cron/patents-sync',
   '/api/cron/rxnorm-sync',
   '/api/cron/europepmc-sync',
@@ -289,6 +287,6 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|logo.*|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|css|js|map)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|logo.*|.*\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|css|js|map)$).*)',
   ],
 };
