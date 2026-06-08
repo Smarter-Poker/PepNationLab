@@ -1991,8 +1991,8 @@ export default function AgentStorefrontGrid({
           .sf-modal-body { padding: 32px 40px 16px; }
           .sf-modal-h2 { font-size: 1.8rem !important; }
           .sf-modal-actions {
-            position: static; background: none; padding: 16px 0 24px;
-            margin-bottom: -12px;
+            position: static; background: none; padding: 16px 0 12px;
+            margin-bottom: -16px;
             justify-content: center; gap: 20px;
           }
           .sf-modal-actions .sf-add-btn { flex: none; padding: 10px 28px; }
