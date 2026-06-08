@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { isTierLadderV2 } from '@/lib/pricing';
 
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
  * is live yet (so the admin UI can show a "takes effect when enabled" hint).
  */
 export async function GET(req: NextRequest) {
-  const gate = await requireAdmin();
+  const gate = await requireAgent();
   if (!gate.ok) return gate.response;
 
   const agentId = req.nextUrl.searchParams.get('agentId') || '';
@@ -22,9 +22,14 @@ export async function GET(req: NextRequest) {
   const svc = await createServiceClient();
   const { data } = await svc
     .from('profiles')
-    .select('fixed_scale_override, locked_tier_level, house_tier_level, custom_markup_override')
+    .select('fixed_scale_override, locked_tier_level, house_tier_level, custom_markup_override, parent_agent_id')
     .eq('id', agentId)
     .maybeSingle();
+
+  const { data: caller } = await svc.from('profiles').select('role').eq('id', gate.user.id).maybeSingle();
+  if (caller?.role !== 'admin' && data?.parent_agent_id !== gate.user.id) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   return NextResponse.json({
     enabled: !!data?.fixed_scale_override,
@@ -48,7 +53,7 @@ export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  const gate = await requireAdmin();
+  const gate = await requireAgent();
   if (!gate.ok) return gate.response;
 
   const body = await req.json().catch(() => ({}));
@@ -69,9 +74,17 @@ export async function POST(req: NextRequest) {
 
   const svc = await createServiceClient();
 
-  const { data: target } = await svc.from('profiles').select('id, role').eq('id', agentId).maybeSingle();
+  const { data: target } = await svc.from('profiles').select('id, role, parent_agent_id').eq('id', agentId).maybeSingle();
   if (!target || !['agent', 'super_agent'].includes(String(target.role))) {
     return NextResponse.json({ error: 'Agent Not Found.' }, { status: 404 });
+  }
+
+  // If the user isn't an admin, they must be the super-agent who owns this sub-agent
+  const { data: caller } = await svc.from('profiles').select('role').eq('id', gate.user.id).maybeSingle();
+  if (caller?.role !== 'admin') {
+    if (target.parent_agent_id !== gate.user.id) {
+      return NextResponse.json({ error: 'Forbidden. You do not own this agent.' }, { status: 403 });
+    }
   }
 
   const update: Record<string, unknown> = {

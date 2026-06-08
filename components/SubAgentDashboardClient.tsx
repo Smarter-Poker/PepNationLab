@@ -69,8 +69,11 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
     router.push(`?${newParams.toString()}`, { scroll: false });
   };
 
-  const originUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const storefrontUrl = data.share_link ? `${originUrl}${data.share_link}` : '';
+  const [originUrl, setOriginUrl] = useState('');
+  useEffect(() => {
+    setOriginUrl(window.location.origin);
+  }, []);
+  const storefrontUrl = data.share_link && originUrl ? `${originUrl}${data.share_link}` : '';
 
   const copyStorefrontLink = () => {
     if (!storefrontUrl) return;

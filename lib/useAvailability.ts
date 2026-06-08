@@ -109,12 +109,14 @@ export function useAvailability(opts: UseAvailabilityOpts): AvailabilityResult {
     }
     const trimmed = String(value ?? '').trim();
     if (trimmed.length < minLength) {
-      setStatus('idle');
-      setAvailable(null);
-      setReason(null);
-      setNormalized('');
-      resetExtras();
-      return;
+      const handle = setTimeout(() => {
+        setStatus('idle');
+        setAvailable(null);
+        setReason(null);
+        setNormalized('');
+        resetExtras();
+      }, 0);
+      return () => clearTimeout(handle);
     }
 
     setStatus('checking');
