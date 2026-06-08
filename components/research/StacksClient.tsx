@@ -12,6 +12,51 @@ import { Search, FlaskConical, Beaker, Map as MapIcon, Grid as GridIcon, CheckCi
 import AutocompleteDropdown from '@/components/research/AutocompleteDropdown';
 import TrendingSearchesDropdown from '@/components/research/TrendingSearchesDropdown';
 import { useSearchHistory } from '@/components/research/useSearchHistory';
+import IframeModal from '@/components/ui/IframeModal';
+
+const ResearchBadge = ({ count, onClick }: { count: number, onClick?: (e: React.MouseEvent) => void }) => (
+  <button 
+    onClick={onClick}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      width: '100%',
+      background: 'linear-gradient(to right, #1b2027 0%, #11151a 100%)',
+      border: '3px solid #88929C',
+      borderRadius: 999,
+      padding: '4px 20px 4px 4px',
+      boxShadow: 'inset 0 1px 3px rgba(255,255,255,0.1), 0 10px 30px rgba(0,0,0,0.5)',
+      position: 'relative',
+      overflow: 'hidden',
+      cursor: onClick ? 'pointer' : 'default',
+      textAlign: 'left',
+      marginTop: 16
+    }}
+  >
+    <div style={{ position: 'absolute', inset: 0, borderRadius: 999, border: '1px solid rgba(255,255,255,0.2)', pointerEvents: 'none' }} />
+    <div style={{
+      width: 48,
+      height: 48,
+      borderRadius: '50%',
+      background: 'linear-gradient(135deg, #1A2129 0%, #0D1115 100%)',
+      border: '2px solid #88929C',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.1)',
+      flexShrink: 0,
+      position: 'relative',
+      zIndex: 2
+    }}>
+       <FlaskConical size={24} color="#00E5FF" style={{ filter: 'drop-shadow(0 0 4px rgba(0,229,255,0.6))' }} />
+    </div>
+    <div style={{ marginLeft: 16, flex: 1, zIndex: 2 }}>
+      <strong style={{ color: '#FFFFFF', fontSize: '1rem', letterSpacing: '0.02em', display: 'block', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+        {count} Published Scientific Papers
+      </strong>
+    </div>
+  </button>
+);
 
 interface Props {
   compounds: Compound[];
@@ -29,6 +74,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
   const [showCompareDrawer, setShowCompareDrawer] = useState(false);
   const [fridgeMode, setFridgeMode] = useState(false);
   const [fridgeInventory, setFridgeInventory] = useState<string[]>([]);
+  const [pubmedUrl, setPubmedUrl] = useState<string | null>(null);
 
   const { addToCart, addMultipleToCart } = useCart();
   const { recent, addHistory } = useSearchHistory();
@@ -173,6 +219,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 
   return (
     <div style={{ maxWidth: 1040, margin: '0 auto', padding: 'var(--space-6) var(--space-4)' }}>
+      {pubmedUrl && <IframeModal url={pubmedUrl} title="PubMed Scientific Papers" onClose={() => setPubmedUrl(null)} />}
       <style dangerouslySetInnerHTML={{__html: `
         .stack-card {
           content-visibility: auto;
@@ -320,20 +367,20 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                 <div style={{ background: 'linear-gradient(145deg, #1A1F26 0%, #0F1318 100%)', borderRadius: 20, height: '100%', position: 'relative', overflow: 'hidden', padding: 'var(--space-5)' }}>
                   {/* Out of Stock Warning Badge */}
                   {stack.stack_components.some(slug => !products.some(p => p.compoundSlug === slug && p.inventoryCount > 0)) && (
-                    <div style={{ position: 'absolute', top: 16, left: 16, background: 'rgba(255, 60, 60, 0.9)', color: '#fff', padding: '4px 10px', borderRadius: 6, fontSize: '0.7rem', fontWeight: 800, zIndex: 10, backdropFilter: 'blur(10px)', boxShadow: '0 4px 12px rgba(255, 60, 60, 0.4)' }}>
+                    <div style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255, 60, 60, 0.9)', color: '#fff', padding: '4px 10px', borderRadius: 6, fontSize: '0.7rem', fontWeight: 800, zIndex: 10, backdropFilter: 'blur(10px)', boxShadow: '0 4px 12px rgba(255, 60, 60, 0.4)' }}>
                       LOW STOCK
                     </div>
                   )}
                   {/* Compare Checkbox */}
                   <div 
                     onClick={(e) => { e.stopPropagation(); toggleCompare(stack.slug); }}
-                    style={{ position: 'absolute', top: 16, right: 16, zIndex: 10, width: 24, height: 24, borderRadius: 6, border: isComparing ? 'none' : '1px solid rgba(255,255,255,0.2)', background: isComparing ? '#00E5FF' : 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ position: 'absolute', top: 16, left: 16, zIndex: 10, width: 24, height: 24, borderRadius: 6, border: isComparing ? 'none' : '1px solid rgba(255,255,255,0.2)', background: isComparing ? '#00E5FF' : 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     {isComparing && <CheckCircle2 size={16} color="#000" />}
                   </div>
 
                   {/* TITLE BLOCK MOVED TO TOP */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20, paddingLeft: 36 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {(() => {
                         const fullTitle = isPremade ? products.filter(p => p.compoundSlug === stack.slug).sort((a,b)=>a.retailPrice-b.retailPrice)[0].productName : stack.display_name;
@@ -429,11 +476,24 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 
                   {/* Badges - BELOW IMAGES */}
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
-                    {citationCount > 0 && (
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg, rgba(192, 200, 208, 0.15) 0%, rgba(192, 200, 208, 0.05) 100%)', color: '#C0C8D0', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(192, 200, 208, 0.2)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        <FlaskConical size={12} /> {citationCount} Research Studies
-                      </div>
-                    )}
+                    {(() => {
+                      const citationCount = stack.stack_components.reduce((acc, slug) => acc + (bySlug.get(slug)?.pubmed_citation_count || 0), 0);
+                      if (citationCount > 0) {
+                        return (
+                          <div style={{ width: '100%', marginBottom: 8 }}>
+                            <ResearchBadge 
+                              count={citationCount} 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const query = stack.stack_components.map(slug => `"${bySlug.get(slug)?.display_name}"`).join(' AND ');
+                                setPubmedUrl(`https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(query)}`);
+                              }} 
+                            />
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                     {synergy.status === 'excellent' && (
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg, rgba(168, 180, 192, 0.2) 0%, rgba(168, 180, 192, 0.05) 100%)', color: '#A8B4C0', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(168, 180, 192, 0.3)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 0 12px rgba(168, 180, 192, 0.1)' }}>
                         Synergy: {synergy.synergyScore}
@@ -739,9 +799,10 @@ interface StackDrawerProps {
   onAddToCart: (stack: Compound) => void;
   bundlePrice: number;
   synergyData: StackAnalysis;
+  onOpenPubmed: (url: string) => void;
 }
 
-function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundlePrice, synergyData }: StackDrawerProps) {
+function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundlePrice, synergyData, onOpenPubmed }: StackDrawerProps) {
   const stack = bySlug.get(stackSlug);
   const [activeTab, setActiveTab] = useState<'overview' | 'calculator'>('overview');
   const [calcState, setCalcState] = useState<Record<string, { mass: number, diluent: number }>>({});
@@ -807,14 +868,16 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
               <p style={{ color: '#D0DAE4', lineHeight: 1.6, fontSize: '0.95rem' }}>{stack.stack_rationale}</p>
               
               {citationCount > 0 && (
-                <div style={{ marginTop: 24, background: 'linear-gradient(145deg, rgba(30, 40, 50, 0.4) 0%, rgba(15, 20, 25, 0.8) 100%)', borderRadius: 16, padding: 20, border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(0, 229, 255, 0.1)', color: '#00E5FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Beaker size={18} />
-                    </div>
-                    <h4 style={{ margin: 0, color: '#fff', fontSize: '1.1rem' }}>{citationCount} Research Studies</h4>
-                  </div>
-                  <p style={{ margin: 0, color: '#A8B4C0', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                <div style={{ marginTop: 24, marginBottom: 8 }}>
+                  <ResearchBadge 
+                    count={citationCount} 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const query = stack.stack_components.map((slug: string) => `"${bySlug.get(slug)?.display_name}"`).join(' AND ');
+                      onOpenPubmed(`https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(query)}`);
+                    }} 
+                  />
+                  <p style={{ margin: '8px 0 0 16px', color: '#A8B4C0', fontSize: '0.85rem', lineHeight: 1.5 }}>
                     This stack contains compounds that have been heavily researched. There are currently <strong>{citationCount.toLocaleString()} published scientific papers</strong> on PubMed evaluating the mechanisms, safety, and efficacy of these specific ingredients.
                   </p>
                 </div>

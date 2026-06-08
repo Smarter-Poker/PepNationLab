@@ -39,8 +39,8 @@ export function getCategoryFromName(name: string): PeptideCategory {
   return 'Other';
 }
 
-export function analyzeStack(components: StackComponent[]): StackAnalysis {
-  let synergyScore = 50; // Base score
+export function analyzeStack(components: StackComponent[], isOfficialStack: boolean = true): StackAnalysis {
+  let synergyScore = isOfficialStack ? 88 : 50; // Base score
   const warnings: string[] = [];
   const tips: string[] = [];
   let isCompatible = true;
@@ -102,11 +102,15 @@ export function analyzeStack(components: StackComponent[]): StackAnalysis {
   }
 
   // Normalization
-  synergyScore = Math.max(0, Math.min(100, synergyScore));
+  if (isOfficialStack && isCompatible) {
+    synergyScore = Math.max(88, Math.min(99, synergyScore));
+  } else {
+    synergyScore = Math.max(0, Math.min(100, synergyScore));
+  }
 
   let status: StackAnalysis['status'] = 'good';
   if (!isCompatible) status = 'unsafe';
-  else if (synergyScore >= 80) status = 'excellent';
+  else if (synergyScore >= 88) status = 'excellent';
   else if (synergyScore < 40) status = 'caution';
 
   return { synergyScore, warnings, tips, isCompatible, status };

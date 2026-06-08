@@ -337,7 +337,7 @@ export interface StackAnalysis {
   synergyExplanation: string;
 }
 
-export function calculateStackSynergy(compounds: Compound[]): StackAnalysis {
+export function calculateStackSynergy(compounds: Compound[], isOfficialStack = false): StackAnalysis {
   if (compounds.length <= 1) {
     return {
       synergyIndex: 0,
@@ -378,6 +378,10 @@ export function calculateStackSynergy(compounds: Compound[]): StackAnalysis {
     score += 20;
   }
 
+  if (isOfficialStack) {
+    score = Math.max(88, Math.min(99, 88 + (sharedAreasCount * 2) + (compounds.length * 2)));
+  }
+
   const isMultipleGlp1 = compounds.filter(c => c.is_glp1).length >= 2;
   const isMultipleProAngio = compounds.filter(c => c.is_pro_angiogenic).length >= 2;
   
@@ -393,7 +397,10 @@ export function calculateStackSynergy(compounds: Compound[]): StackAnalysis {
   if (maxRisk === 'critical') score -= 20;
   else if (maxRisk === 'high') score -= 10;
 
-  const finalScore = Math.max(0, Math.min(100, score));
+  let finalScore = Math.max(0, Math.min(100, score));
+  if (isOfficialStack) {
+    finalScore = Math.max(88, Math.min(99, finalScore));
+  }
 
   let riskLevel = maxRisk;
   if (isMultipleGlp1) {
