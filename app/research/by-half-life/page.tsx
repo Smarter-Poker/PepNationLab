@@ -27,9 +27,9 @@ interface HalfLifeRow {
 
 const BUCKETS: Array<{ key: string; label: string; range: string; test: (h: number) => boolean }> = [
   { key: 'acute', label: 'Acute (< 2 h)', range: 'Less Than 2h', test: (h) => h < 2 },
-  { key: 'short', label: 'Short (2–12 h)', range: '2 To 12h', test: (h) => h >= 2 && h < 12 },
-  { key: 'medium', label: 'Medium (12–72 h)', range: '12 To 72h', test: (h) => h >= 12 && h < 72 },
-  { key: 'long', label: 'Long (72 h–2 wk)', range: '72 To 336h', test: (h) => h >= 72 && h < 336 },
+  { key: 'short', label: 'Short (2-12 h)', range: '2 To 12h', test: (h) => h >= 2 && h < 12 },
+  { key: 'medium', label: 'Medium (12-72 h)', range: '12 To 72h', test: (h) => h >= 12 && h < 72 },
+  { key: 'long', label: 'Long (72 h-2 wk)', range: '72 To 336h', test: (h) => h >= 72 && h < 336 },
   { key: 'depot', label: 'Depot (> 2 wk)', range: 'Over 336h', test: (h) => h >= 336 },
 ];
 

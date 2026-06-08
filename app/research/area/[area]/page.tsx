@@ -111,7 +111,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
   // Build tabs
   const tabs: AreaTab[] = [];
 
-  // ── Overview tab ──
+  // -- Overview tab --
   if (content) {
     tabs.push({
       key: 'overview',
@@ -169,7 +169,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     });
   }
 
-  // ── Compounds tab - full product grid with images, pricing, cart, compare ──
+  // -- Compounds tab - full product grid with images, pricing, cart, compare --
   tabs.push({
     key: 'compounds',
     label: `Compounds (${compounds.length})`,
@@ -185,7 +185,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     ),
   });
 
-  // ── Key Mechanisms tab ──
+  // -- Key Mechanisms tab --
   if (content && content.keyMechanisms?.length > 0) {
     tabs.push({
       key: 'mechanisms',
@@ -203,7 +203,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     });
   }
 
-  // ── Studied For tab ──
+  // -- Studied For tab --
   if (content && content.studiedFor?.length > 0) {
     tabs.push({
       key: 'studied-for',
@@ -221,7 +221,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     });
   }
 
-  // ── Evidence tab ──
+  // -- Evidence tab --
   if (content) {
     const evidenceChildren = (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4, 16px)' }}>
@@ -264,7 +264,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     tabs.push({ key: 'evidence', label: 'Evidence', children: evidenceChildren });
   }
 
-  // ── Safety tab ──
+  // -- Safety tab --
   if (content) {
     tabs.push({
       key: 'safety',
@@ -278,7 +278,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     });
   }
 
-  // ── References tab ──
+  // -- References tab --
   if (content && content.keyReferences.length > 0) {
     tabs.push({
       key: 'references',
