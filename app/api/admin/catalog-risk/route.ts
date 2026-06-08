@@ -33,7 +33,7 @@ export async function GET() {
 
   const { data: compounds, error: cErr } = await service
     .from('compounds')
-    .select('slug, display_name, category, evidence_tier, wada_status, risk_level, risk_reasons, recommended_action');
+    .select('slug, display_name, category, evidence_tier, risk_level, risk_reasons, recommended_action');
   if (cErr) {
     return NextResponse.json({ error: 'Failed To Load Compounds.' }, { status: 500 });
   }
