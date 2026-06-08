@@ -98,6 +98,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
   const [fridgeMode, setFridgeMode] = useState(false);
   const [fridgeInventory, setFridgeInventory] = useState<string[]>([]);
   const [pubmedUrl, setPubmedUrl] = useState<string | null>(null);
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
   const { addToCart, addMultipleToCart } = useCart();
   const { recent, addHistory } = useSearchHistory();
@@ -406,10 +407,18 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20, paddingLeft: 36 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {(() => {
-                        const fullTitle = isPremade ? products.filter(p => p.compoundSlug === stack.slug).sort((a,b)=>a.retailPrice-b.retailPrice)[0].productName : stack.display_name;
-                        const hasSubtitle = fullTitle.includes('(') && fullTitle.endsWith(')');
-                        let mainTitle = hasSubtitle ? fullTitle.substring(0, fullTitle.indexOf('(')).trim() : fullTitle;
-                        const subtitle = hasSubtitle ? fullTitle.substring(fullTitle.indexOf('(')) : '';
+                        const product = isPremade ? products.filter(p => p.compoundSlug === stack.slug).sort((a,b)=>a.retailPrice-b.retailPrice)[0] : null;
+                        const fullProductName = product?.productName || '';
+                        const dbTitle = stack.display_name;
+                        
+                        let mainTitle = dbTitle.includes('(') ? dbTitle.substring(0, dbTitle.indexOf('(')).trim() : dbTitle;
+                        
+                        let subtitle = '';
+                        if (fullProductName.includes('(') && fullProductName.endsWith(')')) {
+                          subtitle = fullProductName.substring(fullProductName.indexOf('('));
+                        } else if (dbTitle.includes('(') && dbTitle.endsWith(')')) {
+                          subtitle = dbTitle.substring(dbTitle.indexOf('('));
+                        }
                         
                         mainTitle = mainTitle.replace(/\bKLOW\b/ig, 'Klow').replace(/\bGLOW\b/ig, 'Glow');
                         
@@ -639,8 +648,47 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 
       <div style={{ marginTop: 40, padding: '0 20px 40px', maxWidth: 1000, margin: '40px auto 0' }}>
         <h3 style={{ textAlign: 'center', margin: '0 0 8px', fontSize: '1.8rem', color: '#fff' }}>Build Your Own Stack</h3>
-        <p style={{ textAlign: 'center', color: '#A8B4C0', marginBottom: 32 }}>Analyze synergies and conflicts between any compounds in our library.</p>
-        <StackBuilder compounds={compounds} products={products} />
+        <p style={{ textAlign: 'center', color: '#A8B4C0', marginBottom: 24 }}>Analyze synergies and conflicts between any compounds in our library.</p>
+        
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+          <button
+            onClick={() => setIsBuilderOpen(!isBuilderOpen)}
+            style={{
+              background: 'linear-gradient(to right, #00E5FF, #007BFF)',
+              border: 'none',
+              borderRadius: 999,
+              color: '#000',
+              fontWeight: 900,
+              fontSize: '1.1rem',
+              padding: '12px 32px',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              boxShadow: '0 4px 16px rgba(0,229,255,0.4)',
+              transition: 'transform 0.1s ease-in-out'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <Beaker size={20} />
+            {isBuilderOpen ? 'Close Stack Builder' : 'Open Custom Stack Builder'}
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {isBuilderOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{ overflow: 'hidden' }}
+            >
+              <StackBuilder compounds={compounds} products={products} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

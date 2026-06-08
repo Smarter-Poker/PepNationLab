@@ -42,7 +42,7 @@ export default async function StacksPage() {
               lineHeight: 1.1,
             }}
           >
-            Stacks & Protocols
+            Peptide Stacks
           </h1>
           <p
             style={{
