@@ -317,6 +317,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                         const fullTitle = isPremade ? products.filter(p => p.compoundSlug === stack.slug).sort((a,b)=>a.retailPrice-b.retailPrice)[0].productName : stack.display_name;
                         const hasSubtitle = fullTitle.includes('(') && fullTitle.endsWith(')');
                         let mainTitle = hasSubtitle ? fullTitle.substring(0, fullTitle.indexOf('(')).trim() : fullTitle;
+                        const subtitle = hasSubtitle ? fullTitle.substring(fullTitle.indexOf('(')) : '';
                         
                         mainTitle = mainTitle.replace(/\bKLOW\b/ig, 'Klow').replace(/\bGLOW\b/ig, 'Glow');
                         

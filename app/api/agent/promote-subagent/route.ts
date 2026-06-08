@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
 
     const { data: callerProfile } = await admin
       .from('profiles')
-      .select('role, is_super_agent, is_sub_agent, full_name, username')
+      .select('role, is_super_agent, is_sub_agent, full_name, username, default_sub_commission_pct, default_agent_markup_pct')
       .eq('id', callerId)
       .single();
 
@@ -169,7 +169,15 @@ export async function POST(req: NextRequest) {
     if (typeof researcherId !== 'string' || researcherId.length === 0) {
       return NextResponse.json({ error: 'researcherId Is Required.' }, { status: 400 });
     }
-    const commissionPct = Number(commissionPctRaw);
+    // When the caller does not specify a rate, fall back to the parent's
+    // onboarding default commission (default_sub_commission_pct) so new
+    // sub-agents inherit the rate the parent configured during setup.
+    let commissionPct: number;
+    if (commissionPctRaw === undefined || commissionPctRaw === null || commissionPctRaw === '') {
+      commissionPct = Number((callerProfile as { default_sub_commission_pct?: number | null }).default_sub_commission_pct ?? 0);
+    } else {
+      commissionPct = Number(commissionPctRaw);
+    }
     if (!Number.isFinite(commissionPct) || commissionPct < 0 || commissionPct > 40) {
       return NextResponse.json(
         { error: 'commissionPct Must Be Between 0 And 40 Inclusive.' },
@@ -269,6 +277,16 @@ export async function POST(req: NextRequest) {
       onboarding_progress: {},
       updated_at: now,
     };
+    // Super agent promoting to a FULL agent: seed the new agent's markup from
+    // the super's onboarding default (default_agent_markup_pct, a whole percent
+    // stored as a custom_markup_override fraction). Per-agent overrides remain
+    // available later from the Agents page.
+    if (isPromotingToFullAgent) {
+      const dm = (callerProfile as { default_agent_markup_pct?: number | null }).default_agent_markup_pct;
+      if (dm != null && Number.isFinite(Number(dm))) {
+        updatePayload.custom_markup_override = Math.round((Number(dm) / 100) * 10000) / 10000;
+      }
+    }
     if (paymentModel === 'credit') {
       updatePayload.credit_limit = creditLimit;
     } else {

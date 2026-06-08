@@ -15,13 +15,13 @@
  * lucide-react.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Lock, BellRing, UserRound, Warehouse, Store, Tag, Percent, Users,
-  CheckCircle2, ArrowRight, ArrowLeft, Loader2, ShieldCheck, Smartphone,
+  CheckCircle2, XCircle, ArrowRight, ArrowLeft, Loader2, ShieldCheck, Smartphone, RotateCw,
 } from 'lucide-react';
-import { isWebPushSupported, notificationPermission, enablePush } from '@/lib/push-client';
+import { isWebPushSupported, enablePush } from '@/lib/push-client';
 
 type WizardRole = 'super_agent' | 'agent' | 'sub_agent';
 
@@ -33,9 +33,12 @@ interface OnboardingState {
   completed: boolean;
   completion_pct: number;
   steps: StepDef[];
+  notifications_enabled: boolean;
+  pricing_v2_active: boolean;
   profile: { first_name: string; last_name: string; email: string; phone: string; username: string; must_change_password: boolean };
   storefront: { slug: string | null; display_name: string | null; warehouse_address: Record<string, string> | null } | null;
   markup: { stored_pct: number | null; default_pct: number };
+  downstream: { default_sub_commission_pct: number | null; default_agent_markup_pct: number | null };
   parent: { name: string | null; slug: string | null; commission_pct: number | null } | null;
   progress: Record<string, unknown>;
 }
@@ -95,6 +98,7 @@ export default function OnboardingWizard() {
   const [state, setState] = useState<OnboardingState | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [idx, setIdx] = useState(0);
+  const [showResume, setShowResume] = useState(false);
 
   const refresh = useCallback(async (): Promise<OnboardingState | null> => {
     const res = await fetch('/api/agent/onboarding', { cache: 'no-store' });
@@ -112,7 +116,10 @@ export default function OnboardingWizard() {
       const s = await refresh();
       if (s) {
         const firstPending = s.steps.findIndex((st) => !st.done);
-        setIdx(firstPending === -1 ? s.steps.length : firstPending);
+        const landing = firstPending === -1 ? s.steps.length : firstPending;
+        setIdx(landing);
+        // Returning mid-flow: some steps already complete and there is more to do.
+        if (landing > 0 && landing < s.steps.length) setShowResume(true);
       }
     })();
   }, [refresh]);
@@ -125,13 +132,14 @@ export default function OnboardingWizard() {
 
   const currentKey = orderedKeys[idx] ?? FINISH_KEY;
 
-  const goBack = useCallback(() => setIdx((i) => Math.max(i - 1, 0)), []);
+  const goBack = useCallback(() => { setShowResume(false); setIdx((i) => Math.max(i - 1, 0)); }, []);
 
   // Called by a step after it persists; re-pulls state then lands on the first
   // still-incomplete step. Recomputing (instead of a blind +1) keeps the index
   // correct even when the step list shrinks -- e.g. the password step drops out
   // of the list once must_change_password is cleared.
   const completeStepAndAdvance = useCallback(async () => {
+    setShowResume(false);
     const s = await refresh();
     if (!s) return;
     const next = s.steps.findIndex((st) => !st.done);
@@ -162,6 +170,17 @@ export default function OnboardingWizard() {
 
   return (
     <Shell pct={pct} role={state.role} stepNumber={stepNumber} totalSteps={orderedKeys.length}>
+      {showResume && currentKey !== FINISH_KEY && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', marginBottom: 'var(--space-4, 16px)', borderRadius: 10, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.3)' }}>
+          <CheckCircle2 size={18} style={{ color: 'var(--teal)', flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '0.88rem', color: 'var(--white)', fontWeight: 700 }}>Welcome Back</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--grey-300)' }}>You Are {pct}% Done. Let Us Pick Up Where You Left Off.</div>
+          </div>
+          <button type="button" onClick={() => setShowResume(false)} aria-label="Dismiss" style={{ background: 'transparent', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.8rem' }}>Dismiss</button>
+        </div>
+      )}
+
       {currentKey === 'password' && <PasswordStep onDone={completeStepAndAdvance} />}
       {currentKey === 'notifications' && <NotificationsStep onDone={completeStepAndAdvance} />}
       {currentKey === 'profile' && <ProfileStep state={state} onDone={completeStepAndAdvance} />}
@@ -272,76 +291,88 @@ function PasswordStep({ onDone }: { onDone: () => void }) {
   );
 }
 
+/**
+ * Verified notifications: the step is satisfied only when enablePush() succeeds
+ * and persists a real subscription server-side. There is no "I have done this"
+ * bypass. On surfaces that cannot subscribe (e.g. an iOS Safari tab before the
+ * app is added to the home screen), we show install-first guidance and a
+ * Re-Check button -- once the user enables push in the installed app, the
+ * server sees the subscription and this step advances.
+ */
 function NotificationsStep({ onDone }: { onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [enabled, setEnabled] = useState(false);
   const [supported, setSupported] = useState<boolean | null>(null);
   const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop'>('desktop');
 
   useEffect(() => {
-    // Browser-only detection: web-push support, current permission, and OS.
-    // These APIs are undefined during SSR, so they must run after mount rather
-    // than in a render-time initializer.
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
     const detectedPlatform: 'ios' | 'android' | 'desktop' =
       /iphone|ipad|ipod/i.test(ua) ? 'ios' : /android/i.test(ua) ? 'android' : 'desktop';
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time post-mount sync of device capabilities
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time post-mount capability sync
     setSupported(isWebPushSupported());
-    setEnabled(notificationPermission() === 'granted');
     setPlatform(detectedPlatform);
   }, []);
 
   const installCopy =
     platform === 'ios'
-      ? 'On iPhone Or iPad: Tap The Share Button, Then "Add To Home Screen". Open Pep Nation From The Icon To Run It Full-Screen Like A Real App.'
+      ? 'On iPhone Or iPad: Tap The Share Button, Then "Add To Home Screen". Open Pep Nation From The New Icon, Then Turn On Notifications Here. Push Only Works From The Installed App On iOS.'
       : platform === 'android'
-        ? 'On Android: Open The Browser Menu, Then Tap "Install App" Or "Add To Home Screen". It Will Launch Full-Screen With No Address Bar.'
-        : 'On Desktop: Click The Install Icon In Your Browser Address Bar To Add Pep Nation As An App Window.';
+        ? 'On Android: Open The Browser Menu, Then Tap "Install App" Or "Add To Home Screen" For The Full-Screen App, Then Turn On Notifications.'
+        : 'On Desktop: Click The Install Icon In Your Browser Address Bar To Add Pep Nation As An App Window, Then Turn On Notifications.';
 
-  const enable = async () => {
+  const enableAndContinue = async () => {
     setBusy(true); setErr(null);
     try {
       const r = await enablePush();
-      if (r.ok) setEnabled(true);
-      else setErr(r.error || 'Notifications Could Not Be Enabled On This Device. You Can Enable Them Later In Settings.');
-    } catch { setErr('Notifications Could Not Be Enabled On This Device.'); }
-    finally { setBusy(false); }
+      if (r.ok) {
+        // Subscription is now saved server-side; advancing re-derives the step.
+        await onDone();
+        return;
+      }
+      setErr(r.error || 'Notifications Could Not Be Enabled. Please Follow The Install Steps Above And Try Again.');
+    } catch {
+      setErr('Notifications Could Not Be Enabled On This Device.');
+    }
+    setBusy(false);
   };
 
-  const continueOn = async () => {
+  const recheck = async () => {
     setBusy(true); setErr(null);
-    try { await postOnboarding({ action: 'ack', key: 'notifications' }); onDone(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Save Failed'); setBusy(false); }
+    await onDone();
+    setBusy(false);
   };
 
   return (
     <div>
       <StepIntro icon={BellRing} title="Install The App And Turn On Notifications"
-        blurb="Add Pep Nation To Your Home Screen So It Runs Full-Screen Like An App, And Turn On Notifications So You Never Miss An Order Or Payment." />
+        blurb="Add Pep Nation To Your Home Screen So It Runs Full-Screen Like An App, And Turn On Notifications So You Never Miss An Order Or Payment. This Step Completes Only After Notifications Are Actually On." />
 
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 'var(--space-3, 12px)', borderRadius: 10, background: 'rgba(255,255,255,0.04)', marginBottom: 'var(--space-3, 12px)' }}>
         <Smartphone size={18} style={{ color: 'var(--teal)', flexShrink: 0, marginTop: 2 }} />
         <p style={{ fontSize: '0.83rem', color: 'var(--grey-300)', margin: 0, lineHeight: 1.5 }}>{installCopy}</p>
       </div>
 
-      {enabled ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#68D391', fontSize: '0.9rem', padding: '10px 0' }}>
-          <CheckCircle2 size={18} /> Notifications Are On For This Device.
-        </div>
-      ) : supported === false ? (
-        <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
-          To Receive Push Notifications On iPhone, You Must First Add Pep Nation To Your Home Screen Using The Steps Above, Then Open It From The Icon And Return Here.
-        </p>
+      {supported === false ? (
+        <>
+          <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
+            This Browser Tab Cannot Receive Push Yet. Add Pep Nation To Your Home Screen Using The Steps Above, Open It From The Icon, Then Tap Re-Check.
+          </p>
+          <button type="button" className="btn btn-secondary" onClick={recheck} disabled={busy}
+            style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 'var(--space-3, 12px)' }}>
+            {busy ? <Loader2 size={16} className="spin" /> : <RotateCw size={16} />} Re-Check
+          </button>
+        </>
       ) : (
-        <button type="button" className="btn btn-secondary" onClick={enable} disabled={busy}
-          style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          {busy ? <Loader2 size={16} className="spin" /> : <BellRing size={16} />} Turn On Notifications
-        </button>
+        <>
+          <ErrorLine msg={err} />
+          <PrimaryButton onClick={enableAndContinue} busy={busy}>Turn On Notifications</PrimaryButton>
+          <button type="button" onClick={recheck} disabled={busy}
+            style={{ width: '100%', marginTop: 10, background: 'transparent', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <RotateCw size={13} /> Already Enabled It? Re-Check
+          </button>
+        </>
       )}
-
-      <ErrorLine msg={err} />
-      <PrimaryButton onClick={continueOn} busy={busy}>{enabled ? 'Continue' : 'I Have Done This, Continue'}</PrimaryButton>
     </div>
   );
 }
@@ -382,6 +413,15 @@ function ProfileStep({ state, onDone }: { state: OnboardingState; onDone: () => 
   );
 }
 
+/**
+ * Warehouse step with Shippo address validation. On save we validate the
+ * address; if Shippo returns a standardized suggestion that differs, we show a
+ * compare panel so the user can accept the corrected version before it is
+ * saved. If Shippo is unconfigured/unavailable the endpoint soft-oks and we
+ * save what was entered.
+ */
+type Addr = { street1: string; street2: string; city: string; state: string; zip: string };
+
 function WarehouseStep({ state, onDone }: { state: OnboardingState; onDone: () => void }) {
   const w = state.storefront?.warehouse_address ?? {};
   const [street1, setStreet1] = useState(w.street1 ?? '');
@@ -391,15 +431,50 @@ function WarehouseStep({ state, onDone }: { state: OnboardingState; onDone: () =
   const [zip, setZip] = useState(w.zip ?? '');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState<Addr | null>(null);
 
-  const submit = async () => {
-    setErr(null);
-    if (!street1.trim() || !city.trim() || !statev.trim() || !zip.trim()) { setErr('Street, City, State, And Zip Are Required.'); return; }
-    setBusy(true);
+  const current = (): Addr => ({ street1: street1.trim(), street2: street2.trim(), city: city.trim(), state: statev.trim(), zip: zip.trim() });
+
+  const persist = async (addr: Addr) => {
     try {
-      await postOnboarding({ action: 'warehouse', data: { street1: street1.trim(), street2: street2.trim(), city: city.trim(), state: statev.trim(), zip: zip.trim(), country: 'US' } });
+      await postOnboarding({ action: 'warehouse', data: { ...addr, country: 'US' } });
       onDone();
     } catch (e) { setErr(e instanceof Error ? e.message : 'Save Failed'); setBusy(false); }
+  };
+
+  const submit = async () => {
+    setErr(null); setSuggestion(null);
+    const a = current();
+    if (!a.street1 || !a.city || !a.state || !a.zip) { setErr('Street, City, State, And Zip Are Required.'); return; }
+    setBusy(true);
+    // Validate via Shippo (best-effort). A standardized suggestion prompts a confirm.
+    try {
+      const res = await fetch('/api/shipping/validate-address', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: { ...a, country: 'US' } }),
+      });
+      const v = await res.json().catch(() => ({}));
+      const s = v?.suggestion as Partial<Addr> | undefined;
+      if (s && (s.street1 || s.city || s.state || s.zip)) {
+        const norm: Addr = {
+          street1: String(s.street1 ?? a.street1), street2: String(s.street2 ?? a.street2),
+          city: String(s.city ?? a.city), state: String(s.state ?? a.state), zip: String(s.zip ?? a.zip),
+        };
+        const differs = norm.street1 !== a.street1 || norm.city !== a.city || norm.state !== a.state || norm.zip !== a.zip;
+        if (differs) { setSuggestion(norm); setBusy(false); return; }
+      }
+    } catch {
+      /* validation unavailable -- proceed to save as entered */
+    }
+    await persist(a);
+  };
+
+  const acceptSuggested = async () => {
+    if (!suggestion) return;
+    setStreet1(suggestion.street1); setStreet2(suggestion.street2); setCity(suggestion.city);
+    setStatev(suggestion.state); setZip(suggestion.zip);
+    setBusy(true);
+    await persist(suggestion);
   };
 
   return (
@@ -413,23 +488,72 @@ function WarehouseStep({ state, onDone }: { state: OnboardingState; onDone: () =
         <div style={{ flex: '1 1 80px' }}><Field label="State"><input style={inputStyle} value={statev} onChange={(e) => setStatev(e.target.value)} placeholder="TX" /></Field></div>
         <div style={{ flex: '1 1 100px' }}><Field label="Zip"><input style={inputStyle} value={zip} onChange={(e) => setZip(e.target.value)} /></Field></div>
       </div>
+
+      {suggestion && (
+        <div style={{ padding: 'var(--space-3, 12px)', borderRadius: 10, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.3)', marginTop: 'var(--space-2, 8px)' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--white)', fontWeight: 700, marginBottom: 4 }}>We Found A Standardized Address</div>
+          <div style={{ fontSize: '0.82rem', color: 'var(--grey-300)', lineHeight: 1.5 }}>
+            {suggestion.street1}{suggestion.street2 ? `, ${suggestion.street2}` : ''}<br />
+            {suggestion.city}, {suggestion.state} {suggestion.zip}
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-2, 8px)', marginTop: 'var(--space-3, 12px)', flexWrap: 'wrap' }}>
+            <button type="button" className="btn btn-primary" onClick={acceptSuggested} disabled={busy} style={{ flex: '1 1 160px' }}>Use Standardized Address</button>
+            <button type="button" className="btn btn-secondary" onClick={() => persist(current())} disabled={busy} style={{ flex: '1 1 140px' }}>Use What I Entered</button>
+          </div>
+        </div>
+      )}
+
       <ErrorLine msg={err} />
-      <PrimaryButton onClick={submit} busy={busy}>Save And Continue</PrimaryButton>
+      {!suggestion && <PrimaryButton onClick={submit} busy={busy}>Save And Continue</PrimaryButton>}
     </div>
   );
 }
 
+/**
+ * Storefront step with live slug availability (debounced) + tap-to-use
+ * suggestions. The POST remains authoritative; the live check is UX only.
+ */
 function StorefrontStep({ state, onDone }: { state: OnboardingState; onDone: () => void }) {
   const initialSlug = state.storefront?.slug && !/^agent(?:-|$)/i.test(state.storefront.slug) ? state.storefront.slug : '';
   const [slug, setSlug] = useState(initialSlug);
   const [displayName, setDisplayName] = useState(state.storefront?.display_name ?? '');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [avail, setAvail] = useState<{ available: boolean; reason?: string; suggestions: string[] } | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const formatOk = /^[a-z0-9-]{3,30}$/.test(slug.trim().toLowerCase());
+
+  useEffect(() => {
+    const clean = slug.trim().toLowerCase();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!/^[a-z0-9-]{3,30}$/.test(clean)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing stale availability for an invalid candidate
+      setAvail(null);
+      setChecking(false);
+      return;
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- show spinner while the debounced check is pending
+    setChecking(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/agent/storefront-slug/check?slug=${encodeURIComponent(clean)}`, { cache: 'no-store' });
+        const json = await res.json().catch(() => null);
+        if (json) setAvail({ available: !!json.available, reason: json.reason, suggestions: Array.isArray(json.suggestions) ? json.suggestions : [] });
+      } catch {
+        setAvail(null);
+      } finally {
+        setChecking(false);
+      }
+    }, 450);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [slug]);
 
   const submit = async () => {
     setErr(null);
     const clean = slug.trim().toLowerCase();
-    if (!/^[a-z0-9-]{3,30}$/.test(clean)) { setErr('Web Address Must Be 3-30 Characters: Lowercase Letters, Numbers, And Hyphens Only.'); return; }
+    if (!formatOk) { setErr('Web Address Must Be 3-30 Characters: Lowercase Letters, Numbers, And Hyphens Only.'); return; }
     setBusy(true);
     try {
       const slugRes = await fetch('/api/agent/storefront-slug', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: clean }) });
@@ -440,12 +564,12 @@ function StorefrontStep({ state, onDone }: { state: OnboardingState; onDone: () 
         // Best-effort display name; a 6-month cooldown collision should not block onboarding.
         await fetch('/api/agent/storefront-name', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_name: displayName.trim() }) }).catch(() => null);
       }
-      // Record the explicit storefront confirmation so this step counts as done
-      // (the step is no longer auto-completed from a pre-existing slug).
       await postOnboarding({ action: 'ack', key: 'storefront' });
       onDone();
     } catch (e) { setErr(e instanceof Error ? e.message : 'Save Failed'); setBusy(false); }
   };
+
+  const unavailable = formatOk && avail !== null && avail.available === false;
 
   return (
     <div>
@@ -457,11 +581,42 @@ function StorefrontStep({ state, onDone }: { state: OnboardingState; onDone: () 
           <input style={inputStyle} value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase())} placeholder="your-store" />
         </div>
       </Field>
+
+      {formatOk && (
+        <div style={{ minHeight: 22, marginTop: -4, marginBottom: 'var(--space-2, 8px)' }}>
+          {checking ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--grey-400)' }}>
+              <Loader2 size={13} className="spin" /> Checking Availability...
+            </span>
+          ) : avail?.available ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: '#68D391' }}>
+              <CheckCircle2 size={14} /> Available
+            </span>
+          ) : unavailable ? (
+            <div>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--danger, #E53E3E)' }}>
+                <XCircle size={14} /> {avail?.reason || 'Not Available'}
+              </span>
+              {avail && avail.suggestions.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                  {avail.suggestions.map((s) => (
+                    <button key={s} type="button" onClick={() => setSlug(s)}
+                      style={{ fontSize: '0.78rem', padding: '4px 10px', borderRadius: 999, border: '1px solid rgba(0,196,188,0.4)', background: 'rgba(0,196,188,0.08)', color: 'var(--teal)', cursor: 'pointer' }}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+      )}
+
       <Field label="Display Name (Shown On Your Store)">
         <input style={inputStyle} value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your Store Name" />
       </Field>
       <ErrorLine msg={err} />
-      <PrimaryButton onClick={submit} busy={busy}>Save And Continue</PrimaryButton>
+      <PrimaryButton onClick={submit} busy={busy} disabled={!formatOk || checking || unavailable}>Save And Continue</PrimaryButton>
     </div>
   );
 }
@@ -471,6 +626,7 @@ function ProductsTutorialStep({ state, onDone }: { state: OnboardingState; onDon
   const [markup, setMarkup] = useState(String(state.markup.default_pct ?? 0));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const pctNum = Number(markup) || 0;
 
   const submit = async () => {
     setErr(null);
@@ -487,12 +643,18 @@ function ProductsTutorialStep({ state, onDone }: { state: OnboardingState; onDon
   return (
     <div>
       <StepIntro icon={Tag} title="How Product Pricing And Markup Work"
-        blurb="Every Product Has A Wholesale Cost. Your Markup Is Added On Top Of That Cost To Set The Retail Price Your Researchers Pay. The Difference Is Your Profit." />
+        blurb="Every Product Has A Wholesale Cost. Your Markup Is The Percentage Added On Top Of That Cost To Set Your Price. A Higher Markup Means More Margin Per Sale." />
+
+      {state.pricing_v2_active && (
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.74rem', color: 'var(--teal)', fontWeight: 700, padding: '4px 10px', borderRadius: 999, background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', marginBottom: 'var(--space-3, 12px)' }}>
+          <CheckCircle2 size={13} /> Live Pricing Active -- Your Markup Applies Immediately
+        </div>
+      )}
 
       <div style={{ padding: 'var(--space-4, 16px)', borderRadius: 10, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.22)', marginBottom: 'var(--space-4, 16px)' }}>
         <div style={{ fontSize: '0.82rem', color: 'var(--grey-200, #D0DAE4)', lineHeight: 1.6 }}>
-          <strong style={{ color: 'var(--white)' }}>Example:</strong> A Product That Costs You $20 Wholesale, With A {markup || '0'}% Markup, Sells For{' '}
-          <strong style={{ color: 'var(--teal)' }}>${(20 * (1 + (Number(markup) || 0) / 100)).toFixed(2)}</strong>. You Keep The Difference.
+          <strong style={{ color: 'var(--white)' }}>Example:</strong> A Product With A $20 Wholesale Cost And A {markup || '0'}% Markup Is Priced At{' '}
+          <strong style={{ color: 'var(--teal)' }}>${(20 * (1 + pctNum / 100)).toFixed(2)}</strong>.
         </div>
       </div>
 
@@ -510,49 +672,68 @@ function ProductsTutorialStep({ state, onDone }: { state: OnboardingState; onDon
   );
 }
 
+/**
+ * Downstream step now captures a real default that is applied to FUTURE
+ * downstream accounts: a super agent sets a default markup for new agents, a
+ * regular agent sets a default commission for new sub-agents.
+ */
 function DownstreamStep({ state, onDone }: { state: OnboardingState; onDone: () => void }) {
   const isSuper = state.role === 'super_agent';
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const ack = async () => {
-    setBusy(true); setErr(null);
-    try { await postOnboarding({ action: 'ack', key: 'downstream_tutorial' }); onDone(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Save Failed'); setBusy(false); }
+  const initial = isSuper
+    ? (state.downstream.default_agent_markup_pct != null ? String(state.downstream.default_agent_markup_pct) : '30')
+    : (state.downstream.default_sub_commission_pct != null ? String(state.downstream.default_sub_commission_pct) : '10');
+  const [pct, setPct] = useState(initial);
+
+  const submit = async () => {
+    setErr(null);
+    const n = Number(pct);
+    if (isSuper) {
+      if (!Number.isFinite(n) || n < 0 || n > 500) { setErr('Enter A Markup Between 0 And 500 Percent.'); return; }
+    } else {
+      if (!Number.isFinite(n) || n < 0 || n > 40) { setErr('Enter A Commission Between 0 And 40 Percent.'); return; }
+    }
+    setBusy(true);
+    try {
+      await postOnboarding(isSuper ? { action: 'downstream_markup', pct: n } : { action: 'downstream_commission', pct: n });
+      onDone();
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Save Failed'); setBusy(false); }
   };
 
   if (isSuper) {
     return (
       <div>
         <StepIntro icon={Percent} title="Set Your Agent Markup"
-          blurb="As A Super Agent, You Decide The Markup Your Agents Pay On Top Of Wholesale Cost. You Can Assign A Standard Markup Tier Or A Custom Markup To Each Agent." />
+          blurb="As A Super Agent, You Decide The Markup Your Agents Pay On Top Of Wholesale Cost. Set A Default Now -- It Is Applied Automatically To Every New Agent You Create, And You Can Still Customize Any Individual Agent Later." />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 'var(--space-4, 16px)' }}>
-          <InfoRow icon={Users} title="Per-Agent Control" body="From Your Agents Page You Can Open Any Agent And Set Their Markup Tier Or A Custom Markup Just For Them." />
           <InfoRow icon={Tag} title="Markup, Not Commission" body="Agents Earn The Spread Between The Price They Pay You And The Price They Charge Their Researchers. You Set The Markup They Pay." />
+          <InfoRow icon={Users} title="Per-Agent Override" body="From Your Agents Page You Can Still Set A Custom Markup For Any Individual Agent At Any Time." />
         </div>
-        <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
-          You Can Do This Anytime From The Agents Section Of Your Dashboard. There Is Nothing To Set Until You Have Added Agents.
-        </p>
+        <Field label="Default Agent Markup %">
+          <input type="number" style={inputStyle} value={pct} onChange={(e) => setPct(e.target.value)} min="0" max="500" step="1" />
+        </Field>
         <ErrorLine msg={err} />
-        <PrimaryButton onClick={ack} busy={busy}>I Understand, Continue</PrimaryButton>
+        <PrimaryButton onClick={submit} busy={busy}>Save Default And Continue</PrimaryButton>
       </div>
     );
   }
 
-  // Regular agent setting sub-agent commissions.
+  // Regular agent setting a default sub-agent commission.
   return (
     <div>
       <StepIntro icon={Percent} title="Set Your Sub-Agent Commissions"
-        blurb="Sub-Agents Sell On Your Storefront And Earn A Commission On Every Sale They Bring In. You Choose Their Commission Rate." />
+        blurb="Sub-Agents Sell On Your Storefront And Earn A Commission On Every Sale They Bring In. Set A Default Rate Now -- It Is Applied Automatically To Every New Sub-Agent, And You Can Still Customize Any Individual Sub-Agent Later." />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 'var(--space-4, 16px)' }}>
         <InfoRow icon={Percent} title="A Share Of Sales, Not A Markup" body="A Sub-Agent's Commission Is A Percentage Of The Sales They Generate -- It Is Paid Out Of Your Margin, It Does Not Raise The Researcher's Price." />
-        <InfoRow icon={Users} title="Default Or Custom" body="You Can Use The Default Commission Rate Or Set A Custom Percentage For Each Sub-Agent, Up To The 40% Maximum." />
+        <InfoRow icon={Users} title="Up To 40%" body="You Can Set Any Default Between 0 And 40 Percent, And Override It Per Sub-Agent From The Sub-Agents Section." />
       </div>
-      <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
-        You Set Each Sub-Agent Commission From The Sub-Agents Section Of Your Dashboard. There Is Nothing To Set Until You Have Added Sub-Agents.
-      </p>
+      <Field label="Default Sub-Agent Commission %">
+        <input type="number" style={inputStyle} value={pct} onChange={(e) => setPct(e.target.value)} min="0" max="40" step="1" />
+      </Field>
       <ErrorLine msg={err} />
-      <PrimaryButton onClick={ack} busy={busy}>I Understand, Continue</PrimaryButton>
+      <PrimaryButton onClick={submit} busy={busy}>Save Default And Continue</PrimaryButton>
     </div>
   );
 }

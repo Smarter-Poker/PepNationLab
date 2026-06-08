@@ -75,13 +75,21 @@ export async function POST(req: NextRequest) {
 
     const { data: callerProfile } = await supabase
       .from('profiles')
-      .select('role, is_super_agent, is_sub_agent')
+      .select('role, is_super_agent, is_sub_agent, default_agent_markup_pct')
       .eq('id', callerId)
       .single();
 
     if (!callerProfile || !callerProfile.is_super_agent) {
       return NextResponse.json({ error: 'Forbidden. Only Super Agents can create Agent Accounts.' }, { status: 403 });
     }
+
+    // Super agent's onboarding default markup for new agents (whole percent ->
+    // custom_markup_override fraction). Seeds the new agent's pricing; the super
+    // can override any individual agent later.
+    const defaultAgentMarkupOverride =
+      (callerProfile as { default_agent_markup_pct?: number | null }).default_agent_markup_pct != null
+        ? Math.round((Number((callerProfile as { default_agent_markup_pct?: number | null }).default_agent_markup_pct) / 100) * 10000) / 10000
+        : undefined;
 
     const body = await req.json().catch(() => ({}));
     const {
@@ -218,6 +226,9 @@ export async function POST(req: NextRequest) {
       commission_max_pct: commMax,
       velocity_cap: velCap,
       commission_ladder_config: Array.isArray(custom_commission_scale) ? custom_commission_scale : undefined,
+      // Seed pricing from the super agent's onboarding default markup (omitted
+      // when the super never set one).
+      custom_markup_override: defaultAgentMarkupOverride,
     };
 
     const { error: profileError } = await supabase.from('profiles').upsert(profileData);
