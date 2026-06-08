@@ -104,9 +104,9 @@ function validateUsername(raw: string, reserved: Set<string>): Validation {
 
 function validateDisplayName(raw: string, _reserved: Set<string>): Validation {
   const nfkc = normalizeNfkc(raw);
-  if (nfkc.length < 2) return { ok: false, reason: 'Display Name Must Be At Least 2 Characters.', reasonCode: 'invalid_format' };
-  if (nfkc.length > 60) return { ok: false, reason: 'Display Name Must Be 60 Characters Or Fewer.', reasonCode: 'invalid_format' };
-  // Display name is the friendliest field - we allow mixed scripts and
+  if (nfkc.length < 2) return { ok: false, reason: 'User Name Must Be At Least 2 Characters.', reasonCode: 'invalid_format' };
+  if (nfkc.length > 60) return { ok: false, reason: 'User Name Must Be 60 Characters Or Fewer.', reasonCode: 'invalid_format' };
+  // User name is the friendliest field - we allow mixed scripts and
   // non-Latin entirely. But we still block obvious profanity.
   if (containsProfanity(nfkc)) {
     return { ok: false, reason: POLITELY_REJECT_REASON, reasonCode: 'profanity' };
@@ -336,7 +336,7 @@ export async function GET(req: NextRequest) {
             ? 'That Storefront URL Slug Is Already Taken - Try Another.'
             : field === 'username'
               ? 'That Username Is Already Taken - Try Another.'
-              : 'That Display Name Is Already Taken - Try Another.',
+              : 'That User Name Is Already Taken - Try Another.',
         suggestions,
       },
       { status: 200, headers: { 'Cache-Control': 'private, no-store, max-age=0' } },

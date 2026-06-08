@@ -316,7 +316,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
         <div className="" style={{ padding: 'var(--space-5)' }}>
           <h4 style={{ fontSize: '0.9rem', color: '#00E5FF', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Master Reset (Bulk Margin)</h4>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem', marginBottom: 'var(--space-4)', lineHeight: 1.4 }}>
-            Apply a universal margin percentage to all products. This will override existing custom margins and calculate new retail prices based on your base cost.
+            Apply a universal bulk margin percentage to all products. This will override existing custom margins and automatically mark up your direct cost, increasing the final displayed retail prices inside your store by this exact percentage.
           </p>
           <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)' }}>Apply +</span>

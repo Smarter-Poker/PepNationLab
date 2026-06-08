@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (role === 'agent' || role === 'super_agent') {
-    if (!slug || !display_name) return NextResponse.json({ error: 'Slug And Display Name Are Required For Agents' }, { status: 400 });
+    if (!slug || !display_name) return NextResponse.json({ error: 'Slug And User Name Are Required For Agents' }, { status: 400 });
     const slugRegex = /^[a-z0-9\-]+$/;
     if (!slugRegex.test(slug)) return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
     if (slug.length < 2 || slug.length > 50) return NextResponse.json({ error: 'Slug Length Must Be Between 2 And 50 Characters' }, { status: 400 });

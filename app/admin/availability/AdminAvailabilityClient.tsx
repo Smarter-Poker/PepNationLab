@@ -62,7 +62,7 @@ export default function AdminAvailabilityClient() {
     <div style={{ padding: 'var(--space-6)' }}>
       <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>Availability Audit</h1>
       <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginBottom: 'var(--space-6)' }}>
-        Failed Slug / Username / Display Name Checks. Useful For Spotting Enumeration Sweeps And Competitive Squatting.
+        Failed Slug / Username / User Name Checks. Useful For Spotting Enumeration Sweeps And Competitive Squatting.
       </p>
 
       {error && (

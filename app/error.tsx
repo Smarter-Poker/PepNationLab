@@ -66,7 +66,7 @@ export default function Error({
         </div>
         <h1 style={{ fontSize: '1.6rem', color: 'var(--white, #FFFFFF)', marginBottom: '0.75rem', fontWeight: 700 }}>Something Went Wrong</h1>
         <p style={{ fontSize: '0.95rem', color: 'var(--silver, #A8B4C0)', marginBottom: '1.5rem', lineHeight: 1.6 }}>An Unexpected Error Occurred. Please Try Again Or Contact Support If The Problem Persists.</p>
-        {process.env.NODE_ENV !== 'production' && error?.message ? (
+        {error?.message ? (
           <p style={{ fontSize: '0.8rem', color: 'var(--grey-400, #6B7785)', marginBottom: '2rem', fontFamily: 'monospace', wordBreak: 'break-word', textTransform: 'none' }}>{error.message}</p>
         ) : error?.digest ? (
           <p style={{ fontSize: '0.75rem', color: 'var(--grey-400, #6B7785)', marginBottom: '2rem', fontFamily: 'monospace', wordBreak: 'break-word', textTransform: 'none' }}>Reference: {error.digest}</p>

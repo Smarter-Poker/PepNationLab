@@ -93,29 +93,6 @@ export default function DynamicAddToCartButton({
         >
           ✓ Added
         </span>
-      ) : pendingQty > 0 ? (
-        <span
-          style={{
-            position: 'absolute',
-            top: -6,
-            right: -6,
-            background: '#00C4BC',
-            color: '#000',
-            fontSize: '0.7rem',
-            fontWeight: 900,
-            borderRadius: '9999px',
-            minWidth: 18,
-            height: 18,
-            padding: '0 4px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 2px 6px rgba(0, 196, 188, 0.4)',
-            border: '1.5px solid #0a0f14',
-          }}
-        >
-          {pendingQty}
-        </span>
       ) : null}
     </button>
   );

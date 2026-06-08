@@ -949,7 +949,7 @@ export default function AdminAgents() {
                 <AvailabilityIndicator status={slugStatus} />
               </div>
 
-              {/* Display Name */}
+              {/* User Name */}
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
                 <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>User Name</label>
                 <input

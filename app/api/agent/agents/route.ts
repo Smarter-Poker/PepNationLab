@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     } = body;
 
     if (!full_name || !username || !password || !account_type || !slug || !display_name) {
-      return NextResponse.json({ error: 'Missing Required Fields (Name, Username, Password, Billing, Slug, Display Name)' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing Required Fields (Name, Username, Password, Billing, Slug, User Name)' }, { status: 400 });
     }
 
     if (password.length < 8) {
