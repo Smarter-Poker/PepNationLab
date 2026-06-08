@@ -295,9 +295,10 @@ export default function NavbarNotificationBell() {
         onMouseEnter={e => { if (!open) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
         onMouseLeave={e => { if (!open) e.currentTarget.style.background = 'none'; }}
       >
-        <img
+        <Image
           src="/images/notification-bell-trimmed.png"
           alt="Notifications"
+          width={40} height={40} unoptimized
           style={{ width: 40, height: 40, transition: 'opacity 0.2s', display: 'block', objectFit: 'contain' }}
         />
 
