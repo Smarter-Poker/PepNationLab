@@ -8,10 +8,7 @@ import { AreaProduct } from '@/lib/area-products-server';
 import { useCart } from '@/components/CartContext';
 import { analyzeStack, getCategoryFromName, type StackAnalysis } from '@/lib/stackEngine';
 import StackBuilder from './StackBuilder';
-import { Search, FlaskConical, Beaker, Map as MapIcon, Grid as GridIcon, CheckCircle2, X } from 'lucide-react';
-import AutocompleteDropdown from '@/components/research/AutocompleteDropdown';
-import TrendingSearchesDropdown from '@/components/research/TrendingSearchesDropdown';
-import { useSearchHistory } from '@/components/research/useSearchHistory';
+import { FlaskConical, Beaker, CheckCircle2, X, AlertTriangle } from 'lucide-react';
 import IframeModal from '@/components/ui/IframeModal';
 import { ResearchLiteratureModal } from './ResearchLiteratureModal';
 
@@ -89,37 +86,17 @@ interface Props {
 }
 
 export default function StacksClient({ compounds, stacks, products }: Props) {
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
-  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
   const [activeStackDrawer, setActiveStackDrawer] = useState<string | null>(null);
-  const [suggestOpen, setSuggestOpen] = useState(false);
   const [showCompareDrawer, setShowCompareDrawer] = useState(false);
   const [pubmedUrl, setPubmedUrl] = useState<string | null>(null);
   const [literatureQuery, setLiteratureQuery] = useState<string | null>(null);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
   const { addToCart, addMultipleToCart } = useCart();
-  const { recent, addHistory } = useSearchHistory();
 
   const bySlug = useMemo(() => new Map(compounds.map((c) => [c.slug, c])), [compounds]);
-
-  const suggestions = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const lower = searchQuery.toLowerCase();
-    const matches = new Set<string>();
-    
-    compounds.forEach(c => {
-      if (c.display_name.toLowerCase().includes(lower)) matches.add(c.display_name);
-    });
-    
-    stacks.forEach(s => {
-      if (s.display_name.toLowerCase().includes(lower)) matches.add(s.display_name);
-    });
-    
-    return Array.from(matches).slice(0, 5).map(text => ({ text, slug: text, display_name: text, kind: 'compound' as const }));
-  }, [searchQuery, compounds, stacks]);
 
   const categories = useMemo(() => {
     const cats = new Set<string>();
@@ -133,18 +110,12 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 
   const filteredStacks = useMemo(() => {
     return stacks.filter(stack => {
-      const matchSearch = stack.display_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        stack.stack_components.some(c => {
-          const compName = bySlug.get(c)?.display_name || c;
-          return compName.toLowerCase().includes(searchQuery.toLowerCase()) || c.toLowerCase().includes(searchQuery.toLowerCase());
-        });
-      
       const matchCat = activeCategory === 'All' || 
         stack.research_areas?.some(a => RESEARCH_AREAS[a]?.label === activeCategory);
 
-      return matchSearch && matchCat;
+      return matchCat;
     });
-  }, [stacks, searchQuery, activeCategory, bySlug]);
+  }, [stacks, activeCategory]);
 
   const toggleCompare = (slug: string) => {
     setSelectedForCompare(prev => {
@@ -273,100 +244,47 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
           left: 200%;
         }
       `}} />
-      <header style={{ marginBottom: 'var(--space-6)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
-          <div style={{ display: 'flex', flex: 1 }}>
-            {/* Redundant header removed; handled by parent page.tsx */}
-          </div>
-          <div style={{ display: 'flex', gap: 8, background: 'rgba(255,255,255,0.05)', padding: 4, borderRadius: 12 }}>
 
-            <button onClick={() => setViewMode('grid')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: viewMode === 'grid' ? 'rgba(0,229,255,0.1)' : 'transparent', color: viewMode === 'grid' ? '#00E5FF' : '#A8B4C0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
-              <GridIcon size={18} /> Grid
-            </button>
-            <button onClick={() => setViewMode('map')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: viewMode === 'map' ? 'rgba(0,229,255,0.1)' : 'transparent', color: viewMode === 'map' ? '#00E5FF' : '#A8B4C0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
-              <MapIcon size={18} /> Map
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Category Tabs */}
+      <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16, marginBottom: 32, scrollbarWidth: 'none', alignItems: 'center' }}>
+        <button 
+          onClick={() => setActiveCategory('All')}
+          style={{ padding: '8px 20px', borderRadius: 20, whiteSpace: 'nowrap', border: '1px solid rgba(255,255,255,0.1)', background: activeCategory === 'All' ? '#00E5FF' : 'rgba(0,0,0,0.5)', color: activeCategory === 'All' ? '#000' : '#A8B4C0', fontWeight: activeCategory === 'All' ? 700 : 500, cursor: 'pointer', transition: 'all 0.2s' }}
+        >
+          All Stacks
+        </button>
+        {categories.map(cat => {
+          let areaId = 'all';
+          const entry = Object.entries(RESEARCH_AREAS).find(([k, v]) => v.label === cat);
+          if (entry) areaId = entry[0];
+          const imgSrc = `/images/areas/${areaId}.png`;
+          const isActive = activeCategory === cat;
 
-      {/* Toolbar */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 32, alignItems: 'center' }}>
-        <div style={{ position: 'relative', flexGrow: 1, maxWidth: 400, zIndex: 40 }}>
-          <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#A8B4C0' }} />
-          <input 
-            type="text" 
-            placeholder="Search stacks or compounds..." 
-            value={searchQuery}
-            onChange={e => { setSearchQuery(e.target.value); setSuggestOpen(true); }}
-            onFocus={() => setSuggestOpen(true)}
-            onBlur={() => setTimeout(() => setSuggestOpen(false), 200)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && searchQuery.trim()) {
-                e.preventDefault();
-                addHistory(searchQuery.trim());
-                setSuggestOpen(false);
-              }
+          return (
+          <button 
+            key={cat} 
+            onClick={() => setActiveCategory(isActive ? 'All' : cat)}
+            style={{ 
+              flex: '0 0 auto',
+              width: 140, height: 140,
+              border: 'none', 
+              background: 'transparent', 
+              cursor: 'pointer',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              padding: 0,
+              position: 'relative',
+              opacity: activeCategory === 'All' || isActive ? 1 : 0.4,
+              transform: isActive ? 'scale(1.05)' : 'scale(1)',
+              filter: isActive ? 'drop-shadow(0 0 16px rgba(0,229,255,0.4))' : 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
             }}
-            style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: '#fff', outline: 'none' }}
-          />
-          {suggestOpen && (searchQuery.trim().length > 0 || recent.length > 0) && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px' }}>
-              <AutocompleteDropdown
-                id="stacks-search-autocomplete"
-                suggestions={suggestions}
-                recent={recent}
-                onSelect={(s: { display_name: string }) => { addHistory(s.display_name); setSearchQuery(s.display_name); setSuggestOpen(false); }}
-                onSelectRecent={(t: string) => { addHistory(t); setSearchQuery(t); setSuggestOpen(false); }}
-              />
-            </div>
-          )}
-          {suggestOpen && searchQuery.trim().length === 0 && recent.length === 0 && (
-             <TrendingSearchesDropdown 
-               onSelect={(term: string) => {
-                 addHistory(term);
-                 setSearchQuery(term);
-                 setSuggestOpen(false);
-               }}
-             />
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16, scrollbarWidth: 'none', alignItems: 'center' }}>
-          {categories.map(cat => {
-            let areaId = 'all';
-            const entry = Object.entries(RESEARCH_AREAS).find(([k, v]) => v.label === cat);
-            if (entry) areaId = entry[0];
-            const imgSrc = `/images/areas/${areaId}.png`;
-            const isActive = activeCategory === cat;
-
-            return (
-            <button 
-              key={cat} 
-              onClick={() => setActiveCategory(isActive ? 'All' : cat)}
-              style={{ 
-                flex: '0 0 auto',
-                width: 140, height: 140,
-                border: 'none', 
-                background: 'transparent', 
-                cursor: 'pointer',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                padding: 0,
-                position: 'relative',
-                opacity: activeCategory === 'All' || isActive ? 1 : 0.4,
-                transform: isActive ? 'scale(1.05)' : 'scale(1)',
-                filter: isActive ? 'drop-shadow(0 0 16px rgba(0,229,255,0.4))' : 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
-              }}
-            >
-              <Image src={imgSrc} alt={cat} fill unoptimized style={{ objectFit: 'contain' }} />
-            </button>
-            );
-          })}
-        </div>
+          >
+            <Image src={imgSrc} alt={cat} fill unoptimized style={{ objectFit: 'contain' }} />
+          </button>
+          );
+        })}
       </div>
 
-      {viewMode === 'map' ? (
-        <NodeMapVisualizer stacks={filteredStacks} bySlug={bySlug} onStackClick={setActiveStackDrawer} />
-      ) : filteredStacks.length === 0 ? (
+      {filteredStacks.length === 0 ? (
         <div className="card" style={{ padding: 'var(--space-6)', color: '#A8B4C0', textAlign: 'center' }}>
           No Documented Combinations Match Your Filters.
         </div>
@@ -573,8 +491,8 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   {stack.stack_components.length > 0 && (
                     <div style={{ marginTop: 'var(--space-4)' }}>
                       {!isPremixedBlend && (
-                        <p style={{ margin: '0 0', color: '#FFB86C', fontSize: '0.75rem', fontWeight: 700, lineHeight: 1.4, background: 'rgba(255, 184, 108, 0.1)', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(255, 184, 108, 0.2)' }}>
-                          ⚠️ This Peptide Stack is not all inside one vial, it&apos;s individually packaged. You will receive {stack.stack_components.length} separate vials.
+                        <p style={{ margin: '0 0', color: '#FFB86C', fontSize: '0.75rem', fontWeight: 700, lineHeight: 1.4, background: 'rgba(255, 184, 108, 0.1)', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(255, 184, 108, 0.2)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                          <AlertTriangle size={16} style={{flexShrink:0, marginTop:1}} /><span>This Peptide Stack is not all inside one vial, it&apos;s individually packaged. You will receive {stack.stack_components.length} separate vials.</span>
                         </p>
                       )}
                       {isPremixedBlend && (
@@ -844,74 +762,7 @@ function StacksCompareDrawer({ stack1, stack2, bySlug, products, onClose, synerg
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Node Map Visualizer Component
-// ─────────────────────────────────────────────────────────────────────────────
-function NodeMapVisualizer({ stacks, bySlug, onStackClick }: { stacks: Compound[], bySlug: Map<string, Compound>, onStackClick?: (slug: string) => void }) {
-  const { centerName, orbitStacks } = useMemo(() => {
-    let topSlug = 'bpc-157';
-    if (stacks.length > 0) {
-      const compoundFreq = new Map<string, number>();
-      stacks.forEach(s => s.stack_components.forEach(c => compoundFreq.set(c, (compoundFreq.get(c) || 0) + 1)));
-      let maxFreq = 0;
-      for (const [slug, freq] of compoundFreq.entries()) {
-        if (freq > maxFreq) { maxFreq = freq; topSlug = slug; }
-      }
-    }
-    const centerName = bySlug.get(topSlug)?.display_name || topSlug;
-    const orbitStacks = stacks.filter(s => s.stack_components.includes(topSlug)).slice(0, 5);
-    return { centerName, orbitStacks };
-  }, [stacks, bySlug]);
 
-  return (
-    <div style={{ height: 600, width: '100%', background: '#0a0f14', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflowX: 'auto', overflowY: 'hidden' }}>
-      <div style={{ position: 'absolute', top: 20, left: 20, color: '#A8B4C0', fontSize: '0.85rem' }}>
-        Interactive Network Graph (Showing stacks for <strong>{centerName}</strong>)
-      </div>
-      
-      <div style={{ position: 'relative', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,229,255,0.02) 0%, transparent 70%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {/* Animated Radar Ring */}
-        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 20, ease: 'linear' }} style={{ position: 'absolute', inset: 20, borderRadius: '50%', border: '1px dashed rgba(0, 229, 255, 0.2)', pointerEvents: 'none' }} />
-        <motion.div animate={{ rotate: -360 }} transition={{ repeat: Infinity, duration: 30, ease: 'linear' }} style={{ position: 'absolute', inset: 60, borderRadius: '50%', border: '1px dotted rgba(104, 211, 145, 0.2)', pointerEvents: 'none' }} />
-        
-        {/* Center Node */}
-        <motion.div 
-          animate={{ boxShadow: ['0 0 20px rgba(0,229,255,0.2)', '0 0 40px rgba(0,229,255,0.5)', '0 0 20px rgba(0,229,255,0.2)'] }}
-          transition={{ repeat: Infinity, duration: 3 }}
-          style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 90, height: 90, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,229,255,0.15) 0%, rgba(0,0,0,0.9) 100%)', border: '2px solid #00E5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, zIndex: 10, textAlign: 'center', fontSize: '0.8rem', boxShadow: 'inset 0 0 20px rgba(0,229,255,0.2)' }}
-        >
-          {centerName}
-        </motion.div>
-
-        {/* Orbit Nodes */}
-        {orbitStacks.length === 0 ? (
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', marginTop: 80, color: '#A8B4C0', fontSize: '0.85rem' }}>No stacks available for this compound.</div>
-        ) : orbitStacks.map((orbitStack, i) => {
-          const angle = (360 / orbitStacks.length) * i;
-          const r = 140;
-          const rad = angle * (Math.PI / 180);
-          const x = 200 + r * Math.cos(rad) - 40;
-          const y = 200 + r * Math.sin(rad) - 40;
-          
-          return (
-            <motion.div 
-              key={orbitStack.slug}
-              onClick={() => onStackClick?.(orbitStack.slug)}
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.1 }}
-              style={{ position: 'absolute', left: x, top: y, width: 80, height: 80, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 5, cursor: 'pointer' }}
-            >
-              <svg style={{ position: 'absolute', top: '50%', left: '50%', width: 200, height: 200, overflow: 'visible', pointerEvents: 'none', zIndex: -1 }}>
-                <line x1={0} y1={0} x2={200 - x - 40} y2={200 - y - 40} stroke="rgba(0,229,255,0.2)" strokeWidth="2" strokeDasharray="4 4" />
-              </svg>
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#68D391', marginBottom: 8 }} />
-              <span style={{ color: '#A8B4C0', fontSize: '0.7rem', textAlign: 'center', whiteSpace: 'nowrap' }}>{orbitStack.display_name}</span>
-            </motion.div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stack Drawer / Modal (with Reconstitution Math)
