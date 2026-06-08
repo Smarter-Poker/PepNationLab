@@ -150,7 +150,7 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
               <input
                 type="number"
                 min="0"
-                max="100"
+                max="500"
                 value={customMarkup}
                 onChange={(e) => setCustomMarkup(e.target.value)}
                 onBlur={() => {

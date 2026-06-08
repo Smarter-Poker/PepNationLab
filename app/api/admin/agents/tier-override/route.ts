@@ -31,11 +31,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  // custom_markup_override is stored as a DECIMAL FRACTION (0.30 = 30%) because
+  // the pricing engine computes cost = base * (1 + custom_markup_override).
+  // The UI works in whole percent, so expose it multiplied by 100.
   return NextResponse.json({
     enabled: !!data?.fixed_scale_override,
     level: data?.locked_tier_level == null ? null : Number(data.locked_tier_level),
     currentLevel: data?.house_tier_level == null ? null : Number(data.house_tier_level),
-    customMarkup: data?.custom_markup_override == null ? null : Number(data.custom_markup_override),
+    customMarkup: data?.custom_markup_override == null ? null : Math.round(Number(data.custom_markup_override) * 100 * 100) / 100,
     ladderActive: isTierLadderV2(),
   });
 }
@@ -60,7 +63,11 @@ export async function POST(req: NextRequest) {
   const agentId = typeof body.agentId === 'string' ? body.agentId : '';
   const enabled = body.enabled === true;
   const level = body.level == null ? null : Number(body.level);
-  const customMarkup = body.customMarkup === '' ? null : (body.customMarkup == null ? null : Number(body.customMarkup));
+  // customMarkup arrives as a WHOLE PERCENT from the UI (e.g. 30 = 30%). It is
+  // persisted as a decimal fraction (0.30) so the pricing engine's
+  // cost = base * (1 + custom_markup_override) is correct. Range mirrors the
+  // onboarding flat-markup step (0-500%).
+  const customMarkupPct = body.customMarkup === '' ? null : (body.customMarkup == null ? null : Number(body.customMarkup));
 
   if (!agentId) {
     return NextResponse.json({ error: 'agentId Is Required.' }, { status: 400 });
@@ -68,9 +75,10 @@ export async function POST(req: NextRequest) {
   if (enabled && (!Number.isInteger(level) || (level as number) < 1 || (level as number) > 5)) {
     return NextResponse.json({ error: 'A Locked Level Between 1 And 5 Is Required When Enabling The Override.' }, { status: 400 });
   }
-  if (customMarkup !== null && (customMarkup < 0 || customMarkup > 100)) {
-    return NextResponse.json({ error: 'Custom Markup Must Be Between 0 And 100.' }, { status: 400 });
+  if (customMarkupPct !== null && (!Number.isFinite(customMarkupPct) || customMarkupPct < 0 || customMarkupPct > 500)) {
+    return NextResponse.json({ error: 'Custom Markup Must Be Between 0 And 500 Percent.' }, { status: 400 });
   }
+  const customMarkup = customMarkupPct === null ? null : Math.round((customMarkupPct / 100) * 10000) / 10000;
 
   const svc = await createServiceClient();
 
@@ -109,5 +117,5 @@ export async function POST(req: NextRequest) {
     console.error('[tier-override] recalculation failed:', err);
   }
 
-  return NextResponse.json({ success: true, agentId, enabled, level: enabled ? level : null, customMarkup });
+  return NextResponse.json({ success: true, agentId, enabled, level: enabled ? level : null, customMarkup: customMarkupPct });
 }
