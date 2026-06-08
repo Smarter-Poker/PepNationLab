@@ -911,12 +911,17 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                     
                     return (
                       <div key={slug} style={{
-                        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
-                        borderRadius: 16, padding: 12, display: 'flex', flexDirection: 'column', alignItems: 'center'
+                        background: '#0F1318', border: '1px solid rgba(255,255,255,0.15)',
+                        borderRadius: 16, padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        overflow: 'hidden', position: 'relative', height: 180
                       }}>
-                        <Image src={imageUrl} alt={label} width={200} height={200} unoptimized style={{ width: 80, height: 80, objectFit: 'contain', marginBottom: 12 }} />
-                        <div style={{ color: '#C0C8D0', fontSize: '0.85rem', fontWeight: 800, textAlign: 'center' }}>{label}</div>
-                        <div style={{ color: '#00E5FF', fontSize: '1rem', fontWeight: 700, marginTop: 4 }}>${price.toFixed(2)}</div>
+                        <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}>
+                          <Image src={imageUrl} alt={label} width={200} height={200} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+                        </div>
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '32px 8px 8px', background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 50%, #000 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <div style={{ color: '#C0C8D0', fontSize: '0.8rem', fontWeight: 800, textAlign: 'center', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', width: '100%' }}>{label}</div>
+                          <div style={{ color: '#00E5FF', fontSize: '0.9rem', fontWeight: 700, marginTop: 2 }}>${price.toFixed(2)}</div>
+                        </div>
                       </div>
                     );
                   })}
