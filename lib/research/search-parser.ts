@@ -141,10 +141,17 @@ export function parseQuery(raw: string): ParsedQuery {
 
 const STOP_WORDS = new Set(['for', 'the', 'and', 'in', 'to', 'with', 'a', 'an', 'of', 'is', 'it', 'on', 'peptides', 'peptide', 'best']);
 
+// Lay-term -> concept expansion for the FTS engine. Each key is a singular base
+// form (the term expander generates plural/singular variants before lookup) and
+// each value is a list of natural-language terms that actually appear in compound
+// names, aliases, mechanisms, research areas, and benefit prose. These are ORed
+// alternatives only - the user's original token is ALWAYS kept, so adding entries
+// can only widen recall (then re-ranked by ts_rank_cd), never drop a valid match.
 const SYNONYMS: Record<string, string[]> = {
+  // --- body-system / goal lay terms (original 15) ---
   fat: ['weight loss', 'lipolysis', 'obesity', 'adipose', 'slimming', 'lean', 'weight'],
   muscle: ['hypertrophy', 'bodybuilding', 'mass', 'strength', 'growth', 'anabolic', 'gains'],
-  sleep: ['insomnia', 'circadian', 'rest', 'recovery', 'rem'],
+  sleep: ['insomnia', 'circadian', 'rest', 'recovery', 'rem', 'melatonin', 'dsip'],
   pain: ['analgesic', 'inflammation', 'injury', 'healing', 'joint', 'tendon', 'nociception', 'soreness'],
   brain: ['cognitive', 'nootropic', 'memory', 'focus', 'neuro', 'alzheimers', 'dementia', 'learning'],
   skin: ['anti-aging', 'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow'],
@@ -157,6 +164,49 @@ const SYNONYMS: Record<string, string[]> = {
   immune: ['immunity', 'infection', 'virus', 'bacteria', 'autoimmune', 'sick'],
   stress: ['anxiety', 'cortisol', 'calm', 'relax', 'mood', 'depression', 'panic'],
   aging: ['longevity', 'senescence', 'lifespan', 'youth', 'telomere', 'anti-aging'],
+
+  // --- weight / metabolic intent ---
+  weight: ['weight loss', 'weight management', 'obesity', 'lipolysis', 'appetite', 'slimming', 'fat loss'],
+  obesity: ['weight management', 'glp-1', 'semaglutide', 'tirzepatide', 'appetite', 'metabolic', 'lipolysis'],
+  diet: ['weight management', 'appetite', 'obesity', 'metabolic', 'fat loss'],
+  appetite: ['glp-1', 'semaglutide', 'tirzepatide', 'satiety', 'obesity', 'weight management'],
+  glp1: ['glp-1', 'semaglutide', 'tirzepatide', 'retatrutide', 'incretin', 'weight management', 'appetite'],
+  metabolism: ['metabolic', 'energy', 'fat loss', 'mitochondrial', 'insulin', 'glucose'],
+  mitochondria: ['mitochondrial', 'mots-c', 'ss-31', 'energy', 'nad', 'cellular energy'],
+
+  // --- healing / recovery / tissue ---
+  recovery: ['healing', 'tissue repair', 'injury', 'tendon', 'bpc-157', 'tb-500', 'soft tissue'],
+  healing: ['tissue repair', 'recovery', 'wound', 'regeneration', 'bpc-157', 'tb-500'],
+  wound: ['healing', 'tissue repair', 'regeneration', 'collagen', 'angiogenesis'],
+  injury: ['healing', 'tissue repair', 'tendon', 'recovery', 'repair', 'soft tissue'],
+  joint: ['cartilage', 'tendon', 'bone joint', 'healing', 'repair', 'arthritis'],
+  tendon: ['ligament', 'cartilage', 'healing', 'tissue repair', 'bone joint'],
+  inflammation: ['anti-inflammatory', 'pain', 'immune', 'kpv', 'arthritis', 'swelling'],
+
+  // --- cognition / mood ---
+  focus: ['cognitive', 'nootropic', 'memory', 'attention', 'concentration', 'semax'],
+  memory: ['cognitive', 'nootropic', 'recall', 'learning', 'neuroprotective'],
+  nootropic: ['cognitive', 'focus', 'memory', 'semax', 'selank', 'neuroprotective'],
+  cognition: ['cognitive', 'nootropic', 'memory', 'focus', 'brain'],
+  anxiety: ['anxiolytic', 'stress', 'mood', 'calm', 'selank', 'gaba'],
+  mood: ['depression', 'anxiety', 'stress', 'wellbeing', 'oxytocin'],
+
+  // --- hormonal / sexual ---
+  hair: ['follicle', 'alopecia', 'regrowth', 'ghk-cu', 'ahk-cu', 'dermal', 'scalp', 'cosmetic'],
+  libido: ['sexual health', 'arousal', 'erectile', 'desire', 'pt-141', 'testosterone'],
+  testosterone: ['hormonal', 'hcg', 'trt', 'luteinizing', 'fertility', 'androgen'],
+  trt: ['testosterone', 'hcg', 'hormonal', 'fertility', 'luteinizing'],
+  fertility: ['hcg', 'hmg', 'gonadotropin', 'kisspeptin', 'reproductive', 'hormonal'],
+  tan: ['melanotan', 'melanocortin', 'tanning', 'pigmentation', 'melanin'],
+
+  // --- growth hormone axis ---
+  growth: ['growth hormone', 'ghrh', 'ghrp', 'secretagogue', 'igf', 'performance'],
+  hgh: ['growth hormone', 'igf', 'ghrh', 'ghrp', 'secretagogue', 'fragment'],
+  gh: ['growth hormone', 'ghrh', 'ghrp', 'secretagogue', 'igf'],
+
+  // --- longevity / antioxidant ---
+  antioxidant: ['glutathione', 'oxidative', 'free radical', 'longevity', 'mitochondrial'],
+  longevity: ['anti-aging', 'senescence', 'lifespan', 'epithalon', 'nad', 'telomere'],
 };
 
 function getTermExpansions(term: string): string[] {
