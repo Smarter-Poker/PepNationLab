@@ -13,6 +13,7 @@ import AutocompleteDropdown from '@/components/research/AutocompleteDropdown';
 import TrendingSearchesDropdown from '@/components/research/TrendingSearchesDropdown';
 import { useSearchHistory } from '@/components/research/useSearchHistory';
 import IframeModal from '@/components/ui/IframeModal';
+import { ResearchLiteratureModal } from './ResearchLiteratureModal';
 
 const ResearchBadge = ({ count, onClick }: { count: number, onClick?: (e: React.MouseEvent) => void }) => (
   <button 
@@ -98,6 +99,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
   const [fridgeMode, setFridgeMode] = useState(false);
   const [fridgeInventory, setFridgeInventory] = useState<string[]>([]);
   const [pubmedUrl, setPubmedUrl] = useState<string | null>(null);
+  const [literatureQuery, setLiteratureQuery] = useState<string | null>(null);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
   const { addToCart, addMultipleToCart } = useCart();
@@ -234,7 +236,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
       const compProducts = products.filter(p => p.compoundSlug === compSlug);
       if (compProducts.length > 0) {
         // Sort descending to get the largest/most expensive standard vials for the stack
-        compProducts.sort((a, b) => b.retailPrice - a.retailPrice);
+        compProducts.sort((a, b) => a.retailPrice - b.retailPrice);
         total += compProducts[0].retailPrice;
       }
     }
@@ -244,6 +246,18 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
   return (
     <div style={{ maxWidth: 1040, margin: '0 auto', padding: 'var(--space-6) var(--space-4)' }}>
       {pubmedUrl && <IframeModal url={pubmedUrl} title="PubMed Scientific Papers" onClose={() => setPubmedUrl(null)} />}
+      <AnimatePresence>
+        {literatureQuery && (
+          <ResearchLiteratureModal 
+            query={literatureQuery} 
+            onClose={() => setLiteratureQuery(null)} 
+            onSelectPaper={(pmid) => {
+              setLiteratureQuery(null);
+              setPubmedUrl(`https://pubmed.ncbi.nlm.nih.gov/${pmid}/`);
+            }} 
+          />
+        )}
+      </AnimatePresence>
       <style dangerouslySetInnerHTML={{__html: `
         .stack-card {
           content-visibility: auto;
@@ -446,11 +460,32 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                         );
                       })()}
                     </div>
-                    {isPremade ? (
-                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#E2E8F0', whiteSpace: 'nowrap' }}>
-                        ${bundlePrice.toFixed(2)}
-                      </div>
-                    ) : (
+                    {isPremade ? (() => {
+                      let componentSum = 0;
+                      if (stack.stack_components.length > 1) {
+                        for (const compSlug of stack.stack_components) {
+                          const compProducts = products.filter(p => p.compoundSlug === compSlug);
+                          if (compProducts.length > 0) {
+                            compProducts.sort((a,b) => a.retailPrice - b.retailPrice);
+                            componentSum += compProducts[0].retailPrice;
+                          }
+                        }
+                      }
+                      const savings = componentSum - bundlePrice;
+
+                      return (
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#E2E8F0', whiteSpace: 'nowrap' }}>
+                            ${bundlePrice.toFixed(2)}
+                          </div>
+                          {savings > 0 && componentSum > bundlePrice && stack.stack_components.length > 1 && (
+                            <div style={{ fontSize: '0.65rem', color: '#50FA7B', fontWeight: 800, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                              Saves ${(savings).toFixed(2)}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })() : (
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#E2E8F0', whiteSpace: 'nowrap' }}>
                           ${(bundlePrice * 0.9).toFixed(2)}
@@ -464,7 +499,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', justifyContent: 'center', marginBottom: 20, width: '100%', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
                     {stack.stack_components.map((compSlug, i) => {
                       const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
-                      compProducts.sort((a, b) => b.retailPrice - a.retailPrice);
+                      compProducts.sort((a, b) => a.retailPrice - b.retailPrice);
                       const p = compProducts.length > 0 ? compProducts[0] : undefined;
                       const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                       const comp = bySlug.get(compSlug);
@@ -499,7 +534,11 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                             </div>
                           </div>
                           <div style={{ marginTop: 6, fontSize: '0.85rem', fontWeight: 700, color: '#C0C8D0' }}>
-                            ${price.toFixed(2)}
+                            {isPremade && stack.stack_components.length > 1 ? (
+                              <span style={{ textDecoration: 'line-through', color: '#88929C' }}>${price.toFixed(2)}</span>
+                            ) : (
+                              `$${price.toFixed(2)}`
+                            )}
                           </div>
                         </div>
                       );
@@ -517,7 +556,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                             onClick={(e) => {
                               e.stopPropagation();
                               const query = stack.stack_components.map(slug => `"${bySlug.get(slug)?.display_name}"`).join(' AND ');
-                              setPubmedUrl(`https://europepmc.org/search?query=${encodeURIComponent(query)}`);
+                              setLiteratureQuery(query);
                             }} 
                           />
                         </div>
@@ -963,7 +1002,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                   onClick={(e) => {
                     e.stopPropagation();
                     const query = stack.stack_components.map((slug: string) => `"${bySlug.get(slug)?.display_name}"`).join(' AND ');
-                    onOpenPubmed(`https://europepmc.org/search?query=${encodeURIComponent(query)}`);
+                    setLiteratureQuery(query);
                   }} 
                 />
                 <p style={{ margin: '8px 0 0 16px', color: '#A8B4C0', fontSize: '0.85rem', lineHeight: 1.5 }}>
@@ -982,7 +1021,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16 }}>
                   {stack.stack_components.map((slug: string) => {
                     const compProducts = products.filter((prod) => prod.compoundSlug === slug);
-                    compProducts.sort((a, b) => b.retailPrice - a.retailPrice);
+                    compProducts.sort((a, b) => a.retailPrice - b.retailPrice);
                     const p = compProducts.length > 0 ? compProducts[0] : undefined;
                     const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                     const comp = bySlug.get(slug);
