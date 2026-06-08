@@ -1185,10 +1185,9 @@ export default function ProductModalEnhancements({
       }}>
         <DynamicDetailButton
           type="bulk"
+          height={76}
           onClick={onToggleBulkPricing || (() => {})}
           style={{
-            height: 38,
-            width: 180,
             filter: showBulkPricing
               ? 'brightness(1.2) drop-shadow(0 0 6px rgba(255, 255, 255, 0.3))'
               : 'none',
@@ -1206,8 +1205,8 @@ export default function ProductModalEnhancements({
             evidenceTierKey={currentCompound?.evidence_tier ?? undefined}
             category={currentCompound?.category ?? null}
             style={{
-              height: 38,
-              width: 180,
+              height: 76,
+              width: 360,
             }}
           />
         )}
