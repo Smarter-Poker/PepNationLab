@@ -1,6 +1,7 @@
 export type PeptideCategory = 
   | 'GLP-1' 
   | 'GIP'
+  | 'Amylin'
   | 'GHRH' 
   | 'GHRP' 
   | 'Healing' 
@@ -27,7 +28,8 @@ export interface StackAnalysis {
 export function getCategoryFromName(name: string): PeptideCategory {
   const lower = name.toLowerCase();
   
-  if (lower.includes('tirzepatide') || lower.includes('semaglutide') || lower.includes('retatrutide') || lower.includes('cagrilintide') || lower.includes('survodutide')) return 'GLP-1';
+  if (lower.includes('cagrilintide')) return 'Amylin';
+  if (lower.includes('tirzepatide') || lower.includes('semaglutide') || lower.includes('retatrutide') || lower.includes('survodutide')) return 'GLP-1';
   if (lower.includes('cjc')) return 'GHRH';
   if (lower.includes('tesamorelin') || lower.includes('sermorelin')) return 'GHRH';
   if (lower.includes('ipamorelin') || lower.includes('ghrp') || lower.includes('hexarelin')) return 'GHRP';
@@ -46,6 +48,18 @@ export function analyzeStack(components: StackComponent[], isOfficialStack: bool
   let isCompatible = true;
   
   if (components.length < 2) {
+    if (components.length === 1) {
+      const id = components[0].id;
+      if (id === 'lemon-bottle' || id === 'lipo-c' || id === 'l-carnitine' || id === 'glow' || id === 'klow') {
+        return {
+          synergyScore: 99,
+          warnings: [],
+          tips: ['This is a highly optimized, premixed proprietary blend with excellent synergistic properties.'],
+          isCompatible: true,
+          status: 'excellent'
+        };
+      }
+    }
     return {
       synergyScore: 0,
       warnings: [],
@@ -57,6 +71,7 @@ export function analyzeStack(components: StackComponent[], isOfficialStack: bool
 
   const categories = components.map(c => c.category);
   const glp1Count = categories.filter(c => c === 'GLP-1').length;
+  const amylinCount = categories.filter(c => c === 'Amylin').length;
   const ghrhCount = categories.filter(c => c === 'GHRH').length;
   const ghrpCount = categories.filter(c => c === 'GHRP').length;
   const healingCount = categories.filter(c => c === 'Healing').length;
@@ -64,6 +79,12 @@ export function analyzeStack(components: StackComponent[], isOfficialStack: bool
   // 1. Safety & Contraindication Checks
   if (glp1Count > 1) {
     warnings.push('RED ALERT: Stacking multiple GLP-1/GIP agonists is highly discouraged. This creates severe redundant receptor activation, leading to gastrointestinal paralysis, profound hypoglycemia, and rapid muscle catabolism.');
+    isCompatible = false;
+    synergyScore -= 50;
+  }
+  
+  if (amylinCount > 1) {
+    warnings.push('RED ALERT: Stacking multiple Amylin analogs can cause severe nausea and gastric distress.');
     isCompatible = false;
     synergyScore -= 50;
   }
@@ -86,6 +107,11 @@ export function analyzeStack(components: StackComponent[], isOfficialStack: bool
   }
 
   // 2. Synergy Checks
+  if (glp1Count === 1 && amylinCount === 1) {
+    tips.push('Excellent synergy! Combining a GLP-1 receptor agonist with an Amylin analog produces potent, non-redundant appetite suppression and metabolic optimization.');
+    synergyScore += 40;
+  }
+
   if (ghrhCount === 1 && ghrpCount === 1) {
     tips.push('Excellent synergy! Combining a single GHRH and a single GHRP amplifies natural growth hormone pulses exponentially more than either alone.');
     synergyScore += 30;

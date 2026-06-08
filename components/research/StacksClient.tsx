@@ -551,12 +551,25 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                     </div>
                   )}
 
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleAddToCart(stack); }}
-                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', marginTop: 24 }}
-                  >
-                    <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack To Cart" width={200} height={200} unoptimized style={{ height: 64, objectFit: 'contain' }} />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', marginTop: 24, gap: 16 }}>
+                    {isPremade && (() => {
+                      const premadeProducts = products.filter(p => p.compoundSlug === stack.slug);
+                      if (premadeProducts.length > 0 && premadeProducts[0].imageUrl) {
+                        return (
+                          <div style={{ width: 64, height: 64, position: 'relative', flexShrink: 0, borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', background: '#11151a', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <Image src={premadeProducts[0].imageUrl} alt="Premixed Stack Bottle" fill unoptimized style={{ objectFit: 'contain', padding: 4 }} />
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleAddToCart(stack); }}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    >
+                      <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack To Cart" width={200} height={200} unoptimized style={{ height: 64, objectFit: 'contain' }} />
+                    </button>
+                  </div>
                 </div>
               </motion.article>
             );
