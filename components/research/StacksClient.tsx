@@ -20,34 +20,34 @@ const ResearchBadge = ({ count, onClick }: { count: number, onClick?: (e: React.
     style={{
       display: 'inline-flex',
       alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      background: 'none',
-      border: 'none',
-      padding: 0,
-      cursor: onClick ? 'pointer' : 'default',
+      background: 'linear-gradient(to right, #1b2027 0%, #11151a 100%)',
+      border: '3px solid #88929C',
+      borderRadius: 999,
+      padding: '4px 20px 4px 4px',
+      gap: 16,
       width: '100%',
       maxWidth: 400,
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
+      marginBottom: 8,
+      cursor: onClick ? 'pointer' : 'default',
       transition: 'transform 0.1s ease-in-out, opacity 0.2s',
+      textAlign: 'left'
     }}
     onMouseOver={onClick ? (e) => (e.currentTarget.style.opacity = '0.85') : undefined}
     onMouseOut={onClick ? (e) => (e.currentTarget.style.opacity = '1') : undefined}
     onMouseDown={onClick ? (e) => (e.currentTarget.style.transform = 'scale(0.98)') : undefined}
     onMouseUp={onClick ? (e) => (e.currentTarget.style.transform = 'scale(1)') : undefined}
   >
-    <div style={{ position: 'relative', width: '100%', paddingTop: '31.25%' /* approx ratio */ }}>
-      <Image src="/images/badges/research_badge_blank.png" alt="Research Badge" fill unoptimized style={{ objectFit: 'contain' }} />
-      <div style={{
-        position: 'absolute',
-        top: 0, left: '26%', right: '5%', bottom: 0,
-        display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start'
-      }}>
-        <div style={{ color: '#00E5FF', fontSize: '1.4rem', fontWeight: 900, letterSpacing: '0.02em', lineHeight: 1.1 }}>
-          {count > 0 ? count.toLocaleString() : "1454"}
-        </div>
-        <div style={{ color: '#E2E8F0', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-          Published Scientific Papers
-        </div>
+    <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, #2b333e 0%, #151a21 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #5a6b7d', flexShrink: 0, boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.1)' }}>
+      <FlaskConical size={24} color="#00E5FF" style={{ filter: 'drop-shadow(0 0 8px rgba(0,229,255,0.6))' }} />
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+      <div style={{ color: '#00E5FF', fontSize: '1.1rem', fontWeight: 900, letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: 6 }}>
+        {count > 0 ? count.toLocaleString() : "1,454"} 
+        <span style={{ fontSize: '1rem', fontWeight: 700, color: '#E2E8F0', marginTop: 1 }}>Published Papers</span>
+      </div>
+      <div style={{ color: '#A8B4C0', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+        Click to view research literature
       </div>
     </div>
   </button>
