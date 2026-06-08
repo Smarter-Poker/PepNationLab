@@ -23,9 +23,9 @@ const SECTIONS: Section[] = [
     title: '1. Setting Up Your Storefront',
     body: [
       'Your storefront is your public sales surface at pepnationlab.com/<your-slug>. Researchers find you there, browse your catalog, sign up, and place orders. Until you finish setup, your storefront is offline and nobody can reach it.',
-      'Open the Storefront Config tab. Required fields: Slug (the URL segment, e.g. "midway"), Display Name (what researchers see at the top of the page), Warehouse Address (where you physically ship from - used for Shippo label generation), and at least one Payment Handle (Zelle / Venmo / Cash App / Apple Pay - researchers see these at checkout).',
-      'Optional but recommended: upload a Logo, set a Primary Color (the teal accent across your storefront), and enable Volume Pricing if you want quantity-discount tiers shown on product pages.',
-      'Once all required fields are populated, toggle Activate Storefront to flip is_active = true. The storefront is now live and the URL is shareable.',
+      'Open the Storefront Config tab. Required fields: Slug (the URL segment, e.g. "midway"), User Name (what researchers see at the top of the page), Warehouse Address (where you physically ship from - used for Shippo label generation), and at least one Payment Handle (Zelle / Venmo / Cash App / Apple Pay - researchers see these at checkout).',
+      'Optional but recommended: upload a Logo.',
+      'Your storefront is automatically activated once created. The URL is ready to share immediately.',
       'Shippo: if you have your own Shippo API key, paste it in. If you leave it blank, the platform shares its own Shippo account with you under a platform-pays model - the difference shows up on your weekly statement.',
     ],
   },
