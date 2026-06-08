@@ -70,9 +70,9 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
       setEnabled(nextEnabled);
       
       if (resolvedMarkup !== '' && resolvedMarkup !== null) {
-        toast.success(`Custom Pricing Successfully Changed To ${resolvedMarkup}%`);
+        toast.success(`Flat Markup Set To ${resolvedMarkup}%`);
       } else {
-        toast.success(nextEnabled ? `Locked To ${LEVELS.find((l) => l.level === nextLevel)?.name ?? `Level ${nextLevel}`}` : 'Override Released');
+        toast.success(nextEnabled ? `Locked To ${LEVELS.find((l) => l.level === nextLevel)?.name ?? `Level ${nextLevel}`}` : 'Switched To Gamification Scale');
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed To Save Override');
@@ -107,9 +107,9 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
   };
 
   const currentTierName = currentLevel ? LEVELS.find(l => l.level === currentLevel)?.name : null;
-  const autoLabel = currentTierName 
-    ? `Auto (Currently Tier ${currentLevel}: ${currentTierName})` 
-    : 'Auto (Volume Based)';
+  const autoLabel = currentTierName
+    ? `Gamification Scale (Currently Tier ${currentLevel}: ${currentTierName})`
+    : 'Gamification Scale (Volume-Based)';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
@@ -133,7 +133,7 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
         >
           <option value="auto">{autoLabel}</option>
           
-          <optgroup label="Gamification Tiers">
+          <optgroup label="Lock To A Gamification Tier">
             {LEVELS.map((l) => (
               <option key={`tier_${l.level}`} value={`tier_${l.level}`}>
                 Tier {l.level}: {l.name} ({[0.5, 0.6, 0.7][l.level - 1] * 100}% Markup)
@@ -141,7 +141,7 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
             ))}
           </optgroup>
 
-          <option value="custom">Custom Pricing Override...</option>
+          <option value="custom">Flat Markup (Custom %)...</option>
         </select>
         
         {selectValue === 'custom' && (
