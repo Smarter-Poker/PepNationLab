@@ -971,6 +971,5 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
           )}
         </div>
       </div>
-    </div>
   );
 }

@@ -534,7 +534,6 @@ function StorefrontStep({ state, onDone }: { state: OnboardingState; onDone: () 
       setChecking(false);
       return;
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- show spinner while the debounced check is pending
     setChecking(true);
     debounceRef.current = setTimeout(async () => {
       try {
