@@ -11,8 +11,13 @@ export default function PWAEnforcer() {
     if (typeof window === 'undefined') return;
 
     const supabase = createClient();
-    
-    supabase.auth.getUser().then(({ data: { user } }) => {
+
+    // Read the locally-cached session (getSession, no network) instead of
+    // getUser(). This is a client-side UI gate; the real security boundary is the
+    // RLS-protected profile read below. Avoids a per-page /auth/v1/user request
+    // (which also produced the benign "_getUser Failed to fetch" console noise).
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user;
       if (!user) {
         setLoading(false);
         return;
