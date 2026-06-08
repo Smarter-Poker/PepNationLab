@@ -15,7 +15,7 @@ export default async function DashboardPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, tier, prepaid_balance, credit_limit, account_type, disclaimer_v1_accepted, phone, referring_agent_id, username, is_sub_agent')
+    .select('full_name, role, tier, prepaid_balance, credit_limit, account_type, disclaimer_v1_accepted, phone, referring_agent_id, username, is_sub_agent, is_super_agent, onboarding_completed_at')
     .eq('id', user.id)
     .single();
 
@@ -24,6 +24,20 @@ export default async function DashboardPage({
   // Role-based routing
   if (role === 'admin') redirect('/admin');
   if (role === 'shipping') redirect('/shipping');
+
+  // Onboarding gate: new + promoted agent-type accounts must finish the guided
+  // setup wizard before reaching any dashboard. Admins/shipping above are
+  // exempt; researchers (handled below) are never gated.
+  // See migration 20260608000050 + /onboarding.
+  {
+    const isSubAgent = (profile as { is_sub_agent?: boolean | null })?.is_sub_agent === true;
+    const isAgentType =
+      isSubAgent || role === 'agent' || role === 'super_agent' ||
+      (profile as { is_super_agent?: boolean | null })?.is_super_agent === true;
+    if (isAgentType && !(profile as { onboarding_completed_at?: string | null })?.onboarding_completed_at) {
+      redirect('/onboarding');
+    }
+  }
   // SACA: sub-agents have role='agent' + is_sub_agent=true. They get their
   // own dashboard at /dashboard/sub-agent - NEVER the full agent dashboard,
   // which would expose storefront config they don't own and order management
@@ -38,7 +52,7 @@ export default async function DashboardPage({
   const name = profile?.full_name ?? profile?.username ?? user.email?.split('@')[0] ?? 'Researcher';
 
   // Get referring agent info
-  let agentId: string | null = profile?.referring_agent_id ?? null;
+  const agentId: string | null = profile?.referring_agent_id ?? null;
   let agentSlug: string | null = null;
   let agentName: string | null = null;
   if (agentId) {
