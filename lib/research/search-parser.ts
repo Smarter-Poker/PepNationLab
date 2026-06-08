@@ -83,7 +83,7 @@ function parseFieldValue(raw: string): FieldFilter | null {
 
 function tokenize(raw: string): string[] {
   const tokens: string[] = [];
-  const re = /"([^"]*)"|(\S+)/g;
+  const re = /"([^"]*)"|(\ S+)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(raw)) !== null) {
     if (m[1] !== undefined) tokens.push(`"${m[1]}"`);
@@ -210,7 +210,6 @@ const SYNONYMS: Record<string, string[]> = {
 };
 
 function getTermExpansions(term: string): string[] {
-  // basic stripping
   const cleanTerm = term.replace(/[^a-z0-9_\-]/gi, '');
   if (!cleanTerm || STOP_WORDS.has(cleanTerm)) return [];
   
@@ -225,11 +224,6 @@ function getTermExpansions(term: string): string[] {
     finalExpansions.add(exp);
     if (SYNONYMS[exp]) {
       for (const syn of SYNONYMS[exp]) {
-        // If a synonym has multiple words, we join them with <-> for postgres phrase matching
-        // or we just take the individual words if we want looser matching. For simplicity,
-        // we'll format them as individual words or phrase components later, but here we can
-        // just push single words if they don't have spaces.
-        // Actually, for tsquery, replacing spaces with ` <-> ` or ` & ` is best.
         finalExpansions.add(syn);
       }
     }
