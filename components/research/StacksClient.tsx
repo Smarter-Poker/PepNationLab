@@ -654,25 +654,34 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
           <button
             onClick={() => setIsBuilderOpen(!isBuilderOpen)}
             style={{
-              background: 'linear-gradient(to right, #00E5FF, #007BFF)',
-              border: 'none',
-              borderRadius: 999,
-              color: '#000',
-              fontWeight: 900,
-              fontSize: '1.1rem',
-              padding: '12px 32px',
-              cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 8,
-              boxShadow: '0 4px 16px rgba(0,229,255,0.4)',
-              transition: 'transform 0.1s ease-in-out'
+              background: 'linear-gradient(to right, #1b2027 0%, #11151a 100%)',
+              border: '3px solid #88929C',
+              borderRadius: 999,
+              padding: '6px 32px 6px 6px',
+              gap: 16,
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4), inset 0 2px 10px rgba(0,0,0,0.5)',
+              cursor: 'pointer',
+              transition: 'transform 0.1s ease-in-out, opacity 0.2s'
             }}
-            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 6px 24px rgba(0, 229, 255, 0.2), inset 0 2px 10px rgba(0,0,0,0.5)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.4), inset 0 2px 10px rgba(0,0,0,0.5)';
+            }}
+            onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
+            onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1.02)')}
           >
-            <Beaker size={20} />
-            {isBuilderOpen ? 'Close Stack Builder' : 'Open Custom Stack Builder'}
+            <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, #2b333e 0%, #151a21 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #5a6b7d', flexShrink: 0, boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.1)' }}>
+              <FlaskConical size={24} color="#00E5FF" style={{ filter: 'drop-shadow(0 0 8px rgba(0,229,255,0.6))' }} />
+            </div>
+            <div style={{ color: '#E2E8F0', fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+              {isBuilderOpen ? 'Close Custom Stack Builder' : 'Open Custom Stack Builder'}
+            </div>
           </button>
         </div>
 
