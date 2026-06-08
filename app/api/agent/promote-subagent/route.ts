@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
 
     const { data: callerProfile } = await admin
       .from('profiles')
-      .select('role, is_super_agent, is_sub_agent, full_name, username, default_sub_commission_pct, default_agent_markup_pct')
+      .select('role, is_super_agent, is_sub_agent, full_name, username, default_sub_commission_pct, default_agent_markup_pct, default_agent_pricing_mode')
       .eq('id', callerId)
       .single();
 
@@ -277,14 +277,16 @@ export async function POST(req: NextRequest) {
       onboarding_progress: {},
       updated_at: now,
     };
-    // Super agent promoting to a FULL agent: seed the new agent's markup from
-    // the super's onboarding default (default_agent_markup_pct, a whole percent
-    // stored as a custom_markup_override fraction). Per-agent overrides remain
-    // available later from the Agents page.
+    // Super agent promoting to a FULL agent: seed the new agent's pricing from
+    // the super's onboarding default (overridable per-agent later). 'gamified'
+    // -> NULL custom_markup_override so the agent rides the platform volume
+    // ladder. 'flat' -> fixed override fraction from default_agent_markup_pct.
     if (isPromotingToFullAgent) {
-      const dm = (callerProfile as { default_agent_markup_pct?: number | null }).default_agent_markup_pct;
-      if (dm != null && Number.isFinite(Number(dm))) {
-        updatePayload.custom_markup_override = Math.round((Number(dm) / 100) * 10000) / 10000;
+      const cp = callerProfile as { default_agent_markup_pct?: number | null; default_agent_pricing_mode?: string | null };
+      if (cp.default_agent_pricing_mode === 'gamified') {
+        updatePayload.custom_markup_override = null;
+      } else if (cp.default_agent_markup_pct != null && Number.isFinite(Number(cp.default_agent_markup_pct))) {
+        updatePayload.custom_markup_override = Math.round((Number(cp.default_agent_markup_pct) / 100) * 10000) / 10000;
       }
     }
     if (paymentModel === 'credit') {

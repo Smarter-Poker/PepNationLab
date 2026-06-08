@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
 
     const { data: callerProfile } = await supabase
       .from('profiles')
-      .select('role, is_super_agent, is_sub_agent, default_agent_markup_pct')
+      .select('role, is_super_agent, is_sub_agent, default_agent_markup_pct, default_agent_pricing_mode')
       .eq('id', callerId)
       .single();
 
@@ -83,13 +83,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden. Only Super Agents can create Agent Accounts.' }, { status: 403 });
     }
 
-    // Super agent's onboarding default markup for new agents (whole percent ->
-    // custom_markup_override fraction). Seeds the new agent's pricing; the super
-    // can override any individual agent later.
-    const defaultAgentMarkupOverride =
-      (callerProfile as { default_agent_markup_pct?: number | null }).default_agent_markup_pct != null
-        ? Math.round((Number((callerProfile as { default_agent_markup_pct?: number | null }).default_agent_markup_pct) / 100) * 10000) / 10000
-        : undefined;
+    // Super agent's onboarding default applied to new agents (overridable
+    // per-agent later). 'gamified' -> NULL custom_markup_override so the agent
+    // rides the platform volume ladder. 'flat' -> fixed override fraction from
+    // default_agent_markup_pct (whole percent). undefined leaves the column to
+    // the provisioning trigger's default when no onboarding default was set.
+    const callerPricing = callerProfile as { default_agent_markup_pct?: number | null; default_agent_pricing_mode?: string | null };
+    const defaultAgentMarkupOverride: number | null | undefined =
+      callerPricing.default_agent_pricing_mode === 'gamified'
+        ? null
+        : callerPricing.default_agent_markup_pct != null
+          ? Math.round((Number(callerPricing.default_agent_markup_pct) / 100) * 10000) / 10000
+          : undefined;
 
     const body = await req.json().catch(() => ({}));
     const {
