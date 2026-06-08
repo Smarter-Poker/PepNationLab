@@ -36,8 +36,8 @@ const premiumMetalButton: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   textAlign: 'center',
-  padding: '13px 4px',
-  borderRadius: 11,
+  padding: '10px 2px',
+  borderRadius: 8,
   cursor: 'pointer',
   border: '1px solid rgba(190,200,210,0.30)',
   background: 'linear-gradient(180deg, #34424f 0%, #1d2630 55%, #151d26 100%)',
@@ -45,8 +45,8 @@ const premiumMetalButton: React.CSSProperties = {
     'inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 4px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.5)',
   color: '#EAF2F8',
   fontWeight: 800,
-  fontSize: 'clamp(0.62rem, 2.7vw, 0.8rem)',
-  letterSpacing: 0,
+  fontSize: 'clamp(0.5rem, 1.5vw, 0.75rem)',
+  letterSpacing: '-0.02em',
   whiteSpace: 'nowrap',
   lineHeight: 1,
 };
@@ -60,12 +60,12 @@ export default function ProductMonograph({ compound, primaryColor = '#00C4BC', c
       {/* Break line under the description, above the buttons */}
       <div style={{ height: 1, background: 'rgba(255,255,255,0.10)', margin: '0 0 var(--space-5)' }} />
 
-      {/* Premium metal buttons (six sections on a 3-col, 2-row grid for mobile safety) */}
+      {/* Premium metal buttons (six sections on a 6-col, 1-row grid) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 6,
+          gridTemplateColumns: 'repeat(6, 1fr)',
+          gap: 4,
         }}
       >
         {PANEL_BUTTONS.map((b) => (
