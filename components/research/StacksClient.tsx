@@ -384,7 +384,9 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
             const citationCount = getCitationCount(stack);
             const bundlePrice = getBundlePrice(stack);
             const isComparing = selectedForCompare.includes(stack.slug);
-            const isPremade = products.some(p => p.compoundSlug === stack.slug);
+            const premadeProducts = products.filter(p => p.compoundSlug === stack.slug);
+            const isBundleProduct = premadeProducts.length > 0;
+            const isPremixedBlend = isBundleProduct && (stack.stack_components.length === 1 || !premadeProducts.some(p => p.description?.toLowerCase().includes('not all inside one vial')));
 
             return (
               <motion.article
@@ -421,7 +423,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20, paddingLeft: 36 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {(() => {
-                        const product = isPremade ? products.filter(p => p.compoundSlug === stack.slug).sort((a,b)=>a.retailPrice-b.retailPrice)[0] : null;
+                        const product = isBundleProduct ? products.filter(p => p.compoundSlug === stack.slug).sort((a,b)=>a.retailPrice-b.retailPrice)[0] : null;
                         const fullProductName = product?.productName || '';
                         const dbTitle = stack.display_name;
                         
@@ -460,7 +462,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                         );
                       })()}
                     </div>
-                    {isPremade ? (() => {
+                    {isBundleProduct ? (() => {
                       let componentSum = 0;
                       if (stack.stack_components.length > 1) {
                         for (const compSlug of stack.stack_components) {
@@ -534,7 +536,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                             </div>
                           </div>
                           <div style={{ marginTop: 6, fontSize: '0.85rem', fontWeight: 700, color: '#C0C8D0' }}>
-                            {isPremade && stack.stack_components.length > 1 ? (
+                            {isBundleProduct && stack.stack_components.length > 1 ? (
                               <span style={{ textDecoration: 'line-through', color: '#88929C' }}>${price.toFixed(2)}</span>
                             ) : (
                               `$${price.toFixed(2)}`
@@ -577,12 +579,12 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   
                   {stack.stack_components.length > 0 && (
                     <div style={{ marginTop: 'var(--space-4)' }}>
-                      {!isPremade && (
+                      {!isPremixedBlend && (
                         <p style={{ margin: '0 0', color: '#FFB86C', fontSize: '0.75rem', fontWeight: 700, lineHeight: 1.4, background: 'rgba(255, 184, 108, 0.1)', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(255, 184, 108, 0.2)' }}>
                           ⚠️ This Peptide Stack is not all inside one vial, it's individually packaged. You will receive {stack.stack_components.length} separate vials.
                         </p>
                       )}
-                      {isPremade && (
+                      {isPremixedBlend && (
                         <p style={{ margin: '0 0', color: '#50FA7B', fontSize: '0.75rem', fontWeight: 800, lineHeight: 1.4, background: 'rgba(80, 250, 123, 0.1)', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(80, 250, 123, 0.2)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
                           <CheckCircle2 size={16} /> Premixed Blend (All in 1 Vial)
                         </p>
@@ -591,7 +593,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   )}
 
                   <div style={{ display: 'flex', alignItems: 'center', marginTop: 24, gap: 16 }}>
-                    {isPremade && (() => {
+                    {isBundleProduct && (() => {
                       const premadeProducts = products.filter(p => p.compoundSlug === stack.slug);
                       if (premadeProducts.length > 0 && premadeProducts[0].imageUrl) {
                         return (
