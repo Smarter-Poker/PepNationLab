@@ -96,8 +96,6 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
   const [activeStackDrawer, setActiveStackDrawer] = useState<string | null>(null);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [showCompareDrawer, setShowCompareDrawer] = useState(false);
-  const [fridgeMode, setFridgeMode] = useState(false);
-  const [fridgeInventory, setFridgeInventory] = useState<string[]>([]);
   const [pubmedUrl, setPubmedUrl] = useState<string | null>(null);
   const [literatureQuery, setLiteratureQuery] = useState<string | null>(null);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
@@ -144,12 +142,9 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
       const matchCat = activeCategory === 'All' || 
         stack.research_areas?.some(a => RESEARCH_AREAS[a]?.label === activeCategory);
 
-      const matchFridge = !fridgeMode || fridgeInventory.length === 0 || 
-        stack.stack_components.some(c => fridgeInventory.includes(c));
-
-      return matchSearch && matchCat && matchFridge;
+      return matchSearch && matchCat;
     });
-  }, [stacks, searchQuery, activeCategory, bySlug, fridgeMode, fridgeInventory]);
+  }, [stacks, searchQuery, activeCategory, bySlug]);
 
   const toggleCompare = (slug: string) => {
     setSelectedForCompare(prev => {
@@ -284,9 +279,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
             {/* Redundant header removed; handled by parent page.tsx */}
           </div>
           <div style={{ display: 'flex', gap: 8, background: 'rgba(255,255,255,0.05)', padding: 4, borderRadius: 12 }}>
-            <button onClick={() => setFridgeMode(!fridgeMode)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: fridgeMode ? 'rgba(104, 211, 145, 0.15)' : 'transparent', color: fridgeMode ? '#68D391' : '#A8B4C0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.1)', borderRight: '1px solid rgba(255,255,255,0.1)' }}>
-              <Beaker size={18} /> My Fridge
-            </button>
+
             <button onClick={() => setViewMode('grid')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: viewMode === 'grid' ? 'rgba(0,229,255,0.1)' : 'transparent', color: viewMode === 'grid' ? '#00E5FF' : '#A8B4C0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
               <GridIcon size={18} /> Grid
             </button>
@@ -581,7 +574,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                     <div style={{ marginTop: 'var(--space-4)' }}>
                       {!isPremixedBlend && (
                         <p style={{ margin: '0 0', color: '#FFB86C', fontSize: '0.75rem', fontWeight: 700, lineHeight: 1.4, background: 'rgba(255, 184, 108, 0.1)', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(255, 184, 108, 0.2)' }}>
-                          ⚠️ This Peptide Stack is not all inside one vial, it's individually packaged. You will receive {stack.stack_components.length} separate vials.
+                          ⚠️ This Peptide Stack is not all inside one vial, it&apos;s individually packaged. You will receive {stack.stack_components.length} separate vials.
                         </p>
                       )}
                       {isPremixedBlend && (
@@ -981,10 +974,42 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
         <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'sticky', top: 0, background: 'linear-gradient(to bottom, rgba(10,15,20,0.98) 0%, rgba(10,15,20,0.9) 100%)', zIndex: 10 }}>
           <div>
             <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 900, color: '#C0C8D0' }}>{mainTitle}</h2>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0', marginTop: 4 }}>
-              ${(bundlePrice * 0.9).toFixed(2)}
-              <span style={{ fontSize: '0.7rem', color: '#68D391', marginLeft: 8, verticalAlign: 'middle' }}>10% Stack Discount</span>
-            </div>
+            {(() => {
+              const premadeProducts = products.filter(p => p.compoundSlug === stackSlug);
+              const isBundleProduct = premadeProducts.length > 0;
+              
+              if (isBundleProduct) {
+                let componentSum = 0;
+                if (stack.stack_components.length > 1) {
+                  for (const compSlug of stack.stack_components) {
+                    const compProducts = products.filter(p => p.compoundSlug === compSlug);
+                    if (compProducts.length > 0) {
+                      compProducts.sort((a,b) => a.retailPrice - b.retailPrice);
+                      componentSum += compProducts[0].retailPrice;
+                    }
+                  }
+                }
+                const savings = componentSum - bundlePrice;
+
+                return (
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0', marginTop: 4 }}>
+                    ${bundlePrice.toFixed(2)}
+                    {savings > 0 && componentSum > bundlePrice && stack.stack_components.length > 1 && (
+                      <span style={{ fontSize: '0.8rem', color: '#50FA7B', marginLeft: 12, verticalAlign: 'middle', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Saves ${(savings).toFixed(2)} vs buying separately
+                      </span>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0', marginTop: 4 }}>
+                  ${(bundlePrice * 0.9).toFixed(2)}
+                  <span style={{ fontSize: '0.7rem', color: '#68D391', marginLeft: 8, verticalAlign: 'middle' }}>10% Stack Discount</span>
+                </div>
+              );
+            })()}
           </div>
           <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}><X size={20} /></button>
         </div>
