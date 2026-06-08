@@ -392,19 +392,6 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
                   Each Production Lot, Is Available On Request.
                 </Para>
 
-                <div style={{ marginBottom: 'var(--space-4)' }}>
-                  <Label>Product Identity</Label>
-                  <Fact label="Product" value={compound.display_name} />
-                  {compound.aliases.length > 0 && <Fact label="Also Known As" value={compound.aliases.join(', ')} />}
-                  <Fact label="Category" value={compound.category} />
-                  <Fact label="Class" value={compound.compound_class} />
-                  <Fact label="Molecular Target" value={compound.molecular_target} />
-                  <Fact label="Sequence" value={id.sequence} capValue={false} />
-                  <Fact label="Molecular Weight" value={id.molecular_weight} />
-                  <Fact label="CAS" value={id.cas} capValue={false} />
-                  <Fact label="Physical Form" value={h.form} />
-                  <Fact label="Storage Temperature" value={toFahrenheit(h.storage_temp)} />
-                </div>
 
                 <div style={{ marginBottom: 'var(--space-4)' }}>
                   <Label>Analytical Specifications</Label>
