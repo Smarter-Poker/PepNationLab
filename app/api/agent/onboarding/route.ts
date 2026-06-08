@@ -38,22 +38,15 @@ function warehouseComplete(w: Record<string, unknown> | null | undefined): boole
   return Boolean(w.street1 && w.city && w.state && w.zip);
 }
 
-function slugIsCustom(slug: string | null | undefined): boolean {
-  if (!slug) return false;
-  // A freshly provisioned storefront gets an "agent-xxxx" placeholder slug.
-  return !/^agent(?:-|$)/i.test(slug);
-}
-
 /** Build the ordered, role-tailored step list with derived completion. */
 function buildSteps(args: {
   role: WizardRole;
   mustChangePassword: boolean;
   profileComplete: boolean;
   warehouseDone: boolean;
-  storefrontDone: boolean;
   progress: Record<string, unknown>;
 }) {
-  const { role, mustChangePassword, profileComplete, warehouseDone, storefrontDone, progress } = args;
+  const { role, mustChangePassword, profileComplete, warehouseDone, progress } = args;
   const ack = (k: string) => progress?.[k] === true;
 
   const steps: Array<{ key: string; label: string; done: boolean }> = [];
@@ -72,8 +65,10 @@ function buildSteps(args: {
   if (role === 'super_agent' || role === 'agent') {
     // 4. Warehouse address.
     steps.push({ key: 'warehouse', label: 'Add Your Warehouse Address', done: warehouseDone });
-    // 5. Storefront config.
-    steps.push({ key: 'storefront', label: 'Set Up Your Storefront', done: storefrontDone });
+    // 5. Storefront config. Requires an explicit in-wizard confirmation (not
+    // just a non-default slug) so every agent actively verifies or changes the
+    // public URL, even when a slug was auto-generated at provisioning.
+    steps.push({ key: 'storefront', label: 'Set Up Your Storefront', done: ack('storefront_ack') });
     // 6. Product management + markup tutorial.
     steps.push({ key: 'products', label: 'Learn Product Pricing And Markup', done: ack('product_tutorial_ack') });
     // 7. Downstream pricing (super -> agents markup, agent -> sub-agent commission).
@@ -116,7 +111,6 @@ export async function GET() {
   // Storefront-owning roles need their agent_profiles row.
   let storefront: { slug: string | null; display_name: string | null; warehouse_address: Record<string, unknown> | null } | null = null;
   let warehouseDone = false;
-  let storefrontDone = false;
   if (role === 'super_agent' || role === 'agent') {
     const { data: ap } = await service
       .from('agent_profiles')
@@ -129,7 +123,6 @@ export async function GET() {
       warehouse_address: (ap?.warehouse_address as Record<string, unknown>) ?? null,
     };
     warehouseDone = warehouseComplete(storefront.warehouse_address);
-    storefrontDone = slugIsCustom(storefront.slug);
   }
 
   // Sub-agent: surface the parent's name + storefront for the explainer.
@@ -170,7 +163,6 @@ export async function GET() {
     mustChangePassword: profile.must_change_password === true,
     profileComplete,
     warehouseDone,
-    storefrontDone,
     progress,
   });
 
@@ -222,7 +214,7 @@ const WarehouseSchema = z.object({
 });
 
 const PostSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('ack'), key: z.enum(['notifications', 'product_tutorial', 'downstream_tutorial']) }),
+  z.object({ action: z.literal('ack'), key: z.enum(['notifications', 'storefront', 'product_tutorial', 'downstream_tutorial']) }),
   z.object({ action: z.literal('profile'), data: ProfileSchema }),
   z.object({ action: z.literal('warehouse'), data: WarehouseSchema }),
   z.object({ action: z.literal('markup'), markup_pct: z.number().min(0).max(500) }),
@@ -231,6 +223,7 @@ const PostSchema = z.discriminatedUnion('action', [
 
 const ACK_COLUMN: Record<string, string> = {
   notifications: 'notifications_ack',
+  storefront: 'storefront_ack',
   product_tutorial: 'product_tutorial_ack',
   downstream_tutorial: 'downstream_tutorial_ack',
 };
@@ -343,11 +336,11 @@ export async function POST(req: NextRequest) {
     if (role === 'super_agent' || role === 'agent') {
       const { data: ap } = await service
         .from('agent_profiles')
-        .select('slug, warehouse_address')
+        .select('warehouse_address')
         .eq('id', user.id)
         .maybeSingle();
       if (!warehouseComplete((ap?.warehouse_address as Record<string, unknown>) ?? null)) missing.push('warehouse');
-      if (!slugIsCustom((ap?.slug as string) ?? null)) missing.push('storefront');
+      if (!ack('storefront_ack')) missing.push('storefront');
       if (!ack('product_tutorial_ack')) missing.push('products');
       if (!ack('downstream_tutorial_ack')) missing.push('downstream');
     } else {

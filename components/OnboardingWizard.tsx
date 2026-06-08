@@ -440,6 +440,9 @@ function StorefrontStep({ state, onDone }: { state: OnboardingState; onDone: () 
         // Best-effort display name; a 6-month cooldown collision should not block onboarding.
         await fetch('/api/agent/storefront-name', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_name: displayName.trim() }) }).catch(() => null);
       }
+      // Record the explicit storefront confirmation so this step counts as done
+      // (the step is no longer auto-completed from a pre-existing slug).
+      await postOnboarding({ action: 'ack', key: 'storefront' });
       onDone();
     } catch (e) { setErr(e instanceof Error ? e.message : 'Save Failed'); setBusy(false); }
   };
