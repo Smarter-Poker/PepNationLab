@@ -116,6 +116,36 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // 1b. Typo fallback - if exact FTS found no compounds, try trigram fuzzy match
+  //     on a single short token. Mirrors the full search route so autocomplete
+  //     stays useful when a compound name is misspelled (e.g., "tirzepatde").
+  if (compoundSuggestions.length === 0) {
+    const lone = [...parsed.required, ...parsed.terms][0];
+    if (
+      lone &&
+      lone.length >= 3 &&
+      parsed.phrases.length === 0 &&
+      parsed.terms.length + parsed.required.length === 1
+    ) {
+      const { data: trgm } = await supabase.rpc('search_compounds_trgm', {
+        p_term: lone,
+        p_limit: 6,
+      });
+      if (Array.isArray(trgm)) {
+        for (const row of trgm as Array<Record<string, unknown>>) {
+          compoundSuggestions.push({
+            slug: String(row.slug ?? ''),
+            display_name: String(row.display_name ?? ''),
+            kind: 'compound',
+            evidence_tier: String(row.evidence_tier ?? ''),
+            wada_status: String(row.wada_status ?? 'not_listed'),
+            blurb: typeof row.snippet === 'string' ? (row.snippet as string).slice(0, 140) : '',
+          });
+        }
+      }
+    }
+  }
+
   // 2. Research-area suggestions - pure in-memory scan.
   const areaCandidates: Array<{ s: Suggestion; score: number }> = [];
   for (const [key, meta] of Object.entries(RESEARCH_AREAS)) {
