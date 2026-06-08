@@ -1,11 +1,16 @@
 // Pep Nation Lab service worker - web push receiver, offline caching, and IndexedDB replication.
+// v6: Immutable hashed build assets (/_next/static/, fonts) now use a pure
+//     cache-first strategy (section F0) instead of stale-while-revalidate. Their
+//     URLs are content-hashed, so a cached entry can never be stale, and serving
+//     straight from cache skips the redundant background revalidation fetch that
+//     SWR fired on every repeat visit — faster repeat loads, less bandwidth.
 // v5: Cache-version bump to evict poisoned v4 static/_next chunks that caused the
 //     storefront to boot then crash on refresh (stale-chunk mismatch after deploys).
-const CACHE_VERSION = 'pnl-sw-v5';
-const STATIC_CACHE_NAME = 'pnl-static-cache-v5';
-const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v5';
-const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v5';
-const IMAGE_CACHE_NAME = 'pnl-image-cache-v5';
+const CACHE_VERSION = 'pnl-sw-v6';
+const STATIC_CACHE_NAME = 'pnl-static-cache-v6';
+const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v6';
+const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v6';
+const IMAGE_CACHE_NAME = 'pnl-image-cache-v6';
 
 // Catalog cache TTL in the service worker (5 min = 300,000 ms)
 // Matches the s-maxage set on the API route's Cache-Control header.
@@ -365,6 +370,32 @@ self.addEventListener('fetch', (event) => {
             }
             return response;
           }).catch(() => cached || new Response('', { status: 503 }));
+        })
+      )
+    );
+    return;
+  }
+
+  // ── F0. Immutable hashed build assets — cache-first. The URL embeds a content
+  //       hash, so a cached entry can never be stale for a given URL; serving it
+  //       straight from cache skips the redundant background revalidation that a
+  //       stale-while-revalidate strategy fires on every repeat visit. After a
+  //       deploy the HTML references new hashes -> cache miss -> fresh fetch, so
+  //       there is no stale-chunk risk. Old hashes are evicted on version bump.
+  const isImmutableBuildAsset =
+    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.endsWith('.woff2') ||
+    url.pathname.endsWith('.woff');
+
+  if (event.request.method === 'GET' && isImmutableBuildAsset) {
+    event.respondWith(
+      caches.open(STATIC_CACHE_NAME).then((cache) =>
+        cache.match(event.request).then((cached) => {
+          if (cached) return cached;
+          return fetch(event.request).then((networkResponse) => {
+            if (networkResponse.ok) cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
         })
       )
     );
