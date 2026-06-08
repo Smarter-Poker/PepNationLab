@@ -170,7 +170,7 @@ export default function EfficacyScoreChart({ scores, title, compact = false, acc
                 minWidth: 16,
                 textAlign: 'center',
               }}>
-                {i === 0 ? '★' : `#${i + 1}`}
+                {`#${i + 1}`}
               </span>
 
               {/* Label */}
