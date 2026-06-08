@@ -468,7 +468,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 
                   <div style={{ marginTop: 24 }}>
                     {/* Bottom thumbnails row */}
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', maxWidth: '100%' }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', justifyContent: 'center', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', maxWidth: '100%' }}>
                       {isPremixedBlend ? (() => {
                         const premadeProducts = products.filter(p => p.compoundSlug === stack.slug);
                         if (premadeProducts.length > 0 && premadeProducts[0].imageUrl) {
@@ -500,7 +500,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                         }
                         return null;
                       })() : (
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', justifyContent: 'center', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
                           {stack.stack_components.map((compSlug: string, i: number) => {
                             const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
                             compProducts.sort((a, b) => a.retailPrice - b.retailPrice);
