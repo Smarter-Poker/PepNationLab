@@ -35,7 +35,7 @@ export const getAllCompounds = unstable_cache(
     return data.map((row) => coerceCompound(row as Record<string, unknown>));
   },
   ['research-all-compounds'],
-  { revalidate: 3600, tags: ['compounds'] }
+  { revalidate: 60, tags: ['compounds'] }
 );
 
 /**
@@ -71,7 +71,7 @@ export async function getCompoundsBySlugs(
       return map;
     },
     [cacheKey],
-    { revalidate: 3600, tags: ['compounds'] }
+    { revalidate: 60, tags: ['compounds'] }
   );
 
   return fetcher();
@@ -89,7 +89,7 @@ export const getCompound = unstable_cache(
     return coerceCompound(data as Record<string, unknown>);
   },
   ['research-single-compound'],
-  { revalidate: 3600, tags: ['compounds'] }
+  { revalidate: 60, tags: ['compounds'] }
 );
 
 export const getCompoundBindings = unstable_cache(
@@ -103,7 +103,7 @@ export const getCompoundBindings = unstable_cache(
     return data ?? [];
   },
   ['research-compound-bindings'],
-  { revalidate: 3600, tags: ['compounds', 'bindings'] }
+  { revalidate: 60, tags: ['compounds', 'bindings'] }
 );
 
 export const getCompoundStructures = unstable_cache(
@@ -117,5 +117,5 @@ export const getCompoundStructures = unstable_cache(
     return data ?? [];
   },
   ['research-compound-structures'],
-  { revalidate: 3600, tags: ['compounds', 'structures'] }
+  { revalidate: 60, tags: ['compounds', 'structures'] }
 );
