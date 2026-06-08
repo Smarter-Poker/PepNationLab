@@ -19,7 +19,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Lock, BellRing, UserRound, Warehouse, Store, Tag, Percent, Users,
-  CheckCircle2, XCircle, ArrowRight, ArrowLeft, Loader2, ShieldCheck, Smartphone, RotateCw,
+  CheckCircle2, XCircle, ArrowRight, ArrowLeft, Loader2, ShieldCheck, Smartphone, RotateCw, ListChecks,
 } from 'lucide-react';
 import { isWebPushSupported, enablePush } from '@/lib/push-client';
 
@@ -279,6 +279,11 @@ function PasswordStep({ onDone }: { onDone: () => void }) {
     <div>
       <StepIntro icon={Lock} title="Secure Your Password"
         blurb="Your Account Was Created With A Temporary Password. Choose Your Own Private Password To Continue." />
+      <GuidePanel steps={[
+        'Type A New Password — At Least 8 Characters.',
+        'Type It A Second Time To Confirm It Matches.',
+        'Click "Set Password And Continue".',
+      ]} />
       <Field label="New Password">
         <input type="password" style={inputStyle} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" placeholder="At Least 8 Characters" />
       </Field>
@@ -305,6 +310,46 @@ function NumberedStep({ n, children }: { n: number; children: React.ReactNode })
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
       <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: 'rgba(0,196,188,0.15)', border: '1px solid rgba(0,196,188,0.5)', color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>{n}</div>
       <div style={{ fontSize: '0.84rem', color: 'var(--grey-200, #D0DAE4)', lineHeight: 1.5 }}>{children}</div>
+    </div>
+  );
+}
+
+/**
+ * GuidePanel - the reusable "What To Do" instruction card used on every step.
+ * Renders a small teal header (icon + label) and a numbered, plain-English
+ * list of click-by-click steps. Same pattern introduced on the notifications
+ * step so every step reads the same simple way.
+ */
+function GuidePanel({
+  steps,
+  heading = 'What To Do',
+  icon: Icon = ListChecks,
+}: {
+  steps: React.ReactNode[];
+  heading?: string;
+  icon?: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
+}) {
+  return (
+    <div style={{ padding: 'var(--space-4, 16px)', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 'var(--space-4, 16px)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3, 12px)' }}>
+        <Icon size={16} style={{ color: 'var(--teal)' }} />
+        <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--teal)' }}>{heading}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3, 12px)' }}>
+        {steps.map((s, i) => (
+          <NumberedStep key={i} n={i + 1}>{s}</NumberedStep>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** A highlighted single-line callout for the one thing a user must not miss. */
+function KeyCallout({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 'var(--space-3, 12px)', borderRadius: 10, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.3)', marginBottom: 'var(--space-4, 16px)' }}>
+      <CheckCircle2 size={18} style={{ color: 'var(--teal)', flexShrink: 0, marginTop: 1 }} />
+      <p style={{ fontSize: '0.82rem', color: 'var(--grey-200, #D0DAE4)', margin: 0, lineHeight: 1.5 }}>{children}</p>
     </div>
   );
 }
@@ -379,26 +424,11 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
       <StepIntro icon={BellRing} title="Turn On Notifications"
         blurb="Notifications Let You Know The Moment You Get A New Order Or Payment. Follow The Steps For Your Device Below. This Step Finishes Only Once Notifications Are Actually On." />
 
-      {/* Step-by-step instructions for the detected device */}
-      <div style={{ padding: 'var(--space-4, 16px)', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 'var(--space-4, 16px)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3, 12px)' }}>
-          <Smartphone size={16} style={{ color: 'var(--teal)' }} />
-          <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--teal)' }}>{heading}</span>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3, 12px)' }}>
-          {steps.map((s, i) => (
-            <NumberedStep key={i} n={i + 1}>{s}</NumberedStep>
-          ))}
-        </div>
-      </div>
+      <GuidePanel heading={heading} icon={Smartphone} steps={steps} />
 
-      {/* The single most-missed step, called out. */}
-      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 'var(--space-3, 12px)', borderRadius: 10, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.3)', marginBottom: 'var(--space-4, 16px)' }}>
-        <CheckCircle2 size={18} style={{ color: 'var(--teal)', flexShrink: 0, marginTop: 1 }} />
-        <p style={{ fontSize: '0.82rem', color: 'var(--grey-200, #D0DAE4)', margin: 0, lineHeight: 1.5 }}>
-          The Most Important Part: When Your Device Asks For Permission, You Must Choose <strong style={{ color: 'var(--white)' }}>Allow</strong>. If You Pick Block Or Don&apos;t Allow, Notifications Stay Off.
-        </p>
-      </div>
+      <KeyCallout>
+        The Most Important Part: When Your Device Asks For Permission, You Must Choose <strong style={{ color: 'var(--white)' }}>Allow</strong>. If You Pick Block Or Don&apos;t Allow, Notifications Stay Off.
+      </KeyCallout>
 
       {supported === false ? (
         <>
@@ -448,6 +478,12 @@ function ProfileStep({ state, onDone }: { state: OnboardingState; onDone: () => 
     <div>
       <StepIntro icon={UserRound} title="Confirm Your Contact Details"
         blurb="Make Sure Your Name, Phone, And Email Are Correct. We Use These For Order Updates And Account Recovery." />
+      <GuidePanel steps={[
+        'Check That Your First And Last Name Are Spelled Correctly.',
+        'Make Sure Your Email Address Is One You Can Access — It Is Used For Account Recovery.',
+        'Enter A Phone Number We Can Reach You At For Order Updates.',
+        'Click "Save And Continue" Below.',
+      ]} />
       <div style={{ display: 'flex', gap: 'var(--space-3, 12px)', flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 180px' }}><Field label="First Name"><input style={inputStyle} value={first} onChange={(e) => setFirst(e.target.value)} /></Field></div>
         <div style={{ flex: '1 1 180px' }}><Field label="Last Name"><input style={inputStyle} value={last} onChange={(e) => setLast(e.target.value)} /></Field></div>
@@ -528,6 +564,13 @@ function WarehouseStep({ state, onDone }: { state: OnboardingState; onDone: () =
     <div>
       <StepIntro icon={Warehouse} title="Add Your Warehouse Address"
         blurb="This Is Where Your Inventory Shipments Are Delivered. Your Restocks From Pep Nation Ship To This Address, So Make Sure It Is Accurate." />
+      <GuidePanel steps={[
+        'Enter The Street Address Where You Receive Inventory.',
+        'Add Any Suite Or Unit Number (Optional).',
+        'Fill In The City, State, And Zip.',
+        'Click "Save And Continue" — We Will Check The Address For You.',
+        'If We Suggest A Corrected Version, Pick The One You Want To Use.',
+      ]} />
       <Field label="Street Address"><input style={inputStyle} value={street1} onChange={(e) => setStreet1(e.target.value)} placeholder="100 Lab Way" /></Field>
       <Field label="Suite / Unit (Optional)"><input style={inputStyle} value={street2} onChange={(e) => setStreet2(e.target.value)} /></Field>
       <div style={{ display: 'flex', gap: 'var(--space-3, 12px)', flexWrap: 'wrap' }}>
@@ -621,6 +664,12 @@ function StorefrontStep({ state, onDone }: { state: OnboardingState; onDone: () 
     <div>
       <StepIntro icon={Store} title="Set Up Your Storefront"
         blurb="Choose The Web Address Your Researchers Will Use To Reach Your Store. Pick Something Short And Memorable -- This Is Your Public Storefront Link." />
+      <GuidePanel steps={[
+        'In The Web Address Box, Type The Word You Want After pepnationlab.com/ (Lowercase Letters, Numbers, And Hyphens Only).',
+        'Wait For The Green "Available" Check. If It Is Taken, Tap One Of The Suggested Names.',
+        'Enter A Display Name — This Is The Store Name Your Researchers See.',
+        'Click "Save And Continue".',
+      ]} />
       <Field label="Storefront Web Address">
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', whiteSpace: 'nowrap' }}>pepnationlab.com/</span>
@@ -690,6 +739,14 @@ function ProductsTutorialStep({ state, onDone }: { state: OnboardingState; onDon
     <div>
       <StepIntro icon={Tag} title="How Product Pricing And Markup Work"
         blurb="Every Product Has A Wholesale Cost. Your Markup Is The Percentage Added On Top Of That Cost To Set Your Price. A Higher Markup Means More Margin Per Sale." />
+
+      <GuidePanel steps={[
+        'Every Product Starts With A Wholesale Cost Set By Pep Nation.',
+        'Your Markup Is The Percentage Added On Top Of That Cost.',
+        'Type Your Markup Percentage In The Box Below.',
+        'Watch The Example Update To Show Your Selling Price.',
+        'Click "Save Markup And Continue". You Can Change It Or Override Any Single Product Later.',
+      ]} />
 
       {state.pricing_v2_active && (
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.74rem', color: 'var(--teal)', fontWeight: 700, padding: '4px 10px', borderRadius: 999, background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', marginBottom: 'var(--space-3, 12px)' }}>
@@ -766,6 +823,13 @@ function DownstreamStep({ state, onDone }: { state: OnboardingState; onDone: () 
         <StepIntro icon={Percent} title="Set Your Agent Markup"
           blurb="Decide How Your Agents Are Priced On Top Of Wholesale Cost. Choose A Flat Markup Or The Gamification Scale. This Is Just The Default For New Agents -- You Can Change The Markup For Any Agent At Any Time From Your Agents Page." />
 
+        <GuidePanel steps={[
+          'Pick A Method Below: "Flat Markup" For One Set Percentage, Or "Gamification Scale" For Volume-Based Pricing.',
+          'For Flat Markup, Type The Percentage You Want To Add On Top Of Wholesale Cost.',
+          'Check The Example To See What Your Agents Will Pay.',
+          'Click "Save Default And Continue". This Only Sets The Default For New Agents — You Can Change Any Agent Later.',
+        ]} />
+
         <div style={{ display: 'flex', gap: 'var(--space-2, 8px)', marginBottom: 'var(--space-4, 16px)' }}>
           <button type="button" style={tabStyle(mode === 'flat')} onClick={() => setMode('flat')}>Flat Markup</button>
           <button type="button" style={tabStyle(mode === 'gamified')} onClick={() => setMode('gamified')}>Gamification Scale</button>
@@ -804,6 +868,12 @@ function DownstreamStep({ state, onDone }: { state: OnboardingState; onDone: () 
     <div>
       <StepIntro icon={Percent} title="Set Your Sub-Agent Commissions"
         blurb="Sub-Agents Sell On Your Storefront And Earn A Commission On Every Sale They Bring In. Set A Default Rate Now -- It Is Applied Automatically To Every New Sub-Agent, And You Can Still Customize Any Individual Sub-Agent Later." />
+      <GuidePanel steps={[
+        'Decide What Share Of Each Sale Your Sub-Agents Should Earn (0 To 40 Percent).',
+        'Type That Percentage In The Box Below.',
+        'Remember: This Comes Out Of Your Margin, It Does Not Raise The Researcher’s Price.',
+        'Click "Save Default And Continue". You Can Set A Different Rate For Any Sub-Agent Later.',
+      ]} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 'var(--space-4, 16px)' }}>
         <InfoRow icon={Percent} title="A Share Of Sales, Not A Markup" body="A Sub-Agent's Commission Is A Percentage Of The Sales They Generate -- It Is Paid Out Of Your Margin, It Does Not Raise The Researcher's Price." />
         <InfoRow icon={Users} title="Up To 40%" body="You Can Set Any Default Between 0 And 40 Percent, And Override It Per Sub-Agent From The Sub-Agents Section." />
@@ -833,6 +903,13 @@ function CommissionInfoStep({ state, onDone }: { state: OnboardingState; onDone:
     <div>
       <StepIntro icon={Percent} title="Understand How You Earn"
         blurb={`You Sell On ${parentName}'s Storefront And Earn A Commission On Every Sale You Bring In. There Is No Inventory Or Storefront For You To Manage.`} />
+      <GuidePanel steps={[
+        `Share ${parentName}'s Storefront Link With Your Researchers.`,
+        'Every Order They Place Earns You A Commission On That Sale.',
+        'Your Commission Rate Is Shown Below.',
+        'Track Your Pending And Settled Earnings Anytime From Your Dashboard.',
+        'Click "Got It, Continue" When You Are Ready.',
+      ]} />
       <div style={{ padding: 'var(--space-4, 16px)', borderRadius: 10, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.22)', marginBottom: 'var(--space-4, 16px)' }}>
         <div style={{ fontSize: '0.9rem', color: 'var(--white)', marginBottom: 4 }}>Your Commission Rate</div>
         <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--teal)' }}>{pct != null ? `${pct}% Of Sales` : 'Set By Your Agent'}</div>
@@ -882,9 +959,27 @@ function FinishStep({ state, onEnter }: { state: OnboardingState; onEnter: () =>
       <h2 style={{ fontSize: '1.5rem', color: 'var(--white)', margin: '0 0 8px' }}>
         Congratulations, You Are Now A Pep Nation {ROLE_LABEL[state.role]}
       </h2>
-      <p style={{ fontSize: '0.92rem', color: 'var(--grey-300)', lineHeight: 1.55, margin: '0 auto', maxWidth: 440 }}>
+      <p style={{ fontSize: '0.92rem', color: 'var(--grey-300)', lineHeight: 1.55, margin: '0 auto 20px', maxWidth: 440 }}>
         Your Account Is Fully Set Up And Ready To Go. You Can Update Any Of These Settings Anytime From Your Dashboard.
       </p>
+      <div style={{ textAlign: 'left' }}>
+        <GuidePanel heading="What's Next" icon={ArrowRight} steps={
+          state.role === 'sub_agent'
+            ? [
+                'Open Your Dashboard To Track Your Sales And Commission.',
+                'Share Your Agent’s Storefront Link With Your Researchers.',
+                'Check Back Anytime To See Pending And Settled Earnings.',
+              ]
+            : [
+                'Open Your Dashboard To See Your Storefront, Orders, And Earnings.',
+                'Add Or Adjust The Products You Want To Sell.',
+                'Share Your Storefront Link With Your Researchers.',
+                state.role === 'super_agent'
+                  ? 'Create And Manage Your Agents From The Agents Section.'
+                  : 'Invite And Manage Your Sub-Agents From The Sub-Agents Section.',
+              ]
+        } />
+      </div>
       <ErrorLine msg={err} />
       <PrimaryButton onClick={finish} busy={busy}>Enter My Dashboard</PrimaryButton>
     </div>
