@@ -24,7 +24,6 @@ export interface DataRow {
   tierColor: string;
   target: string;
   halfLife: string;
-  wada: string;
   risk: string;
   riskColor: string;
   // Numeric / structured fields (null when not applicable, e.g. blends).
@@ -36,7 +35,7 @@ export interface DataRow {
 
 type SortKey =
   | 'name' | 'category' | 'klass' | 'tierLabel' | 'target'
-  | 'mw' | 'halfLife' | 'citations' | 'trials' | 'year' | 'wada' | 'risk';
+  | 'mw' | 'halfLife' | 'citations' | 'trials' | 'year' | 'risk';
 
 const COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
   { key: 'name', label: 'Compound' },

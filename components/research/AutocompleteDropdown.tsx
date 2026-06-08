@@ -15,7 +15,6 @@ export interface Suggestion {
   display_name: string;
   kind: 'compound' | 'area' | 'glossary';
   evidence_tier?: string;
-  wada_status?: string;
   blurb?: string;
 }
 

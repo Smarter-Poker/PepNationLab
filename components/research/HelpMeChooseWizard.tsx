@@ -6,7 +6,6 @@ import { X, Sparkles, Flame, Shield, Heart, Moon } from 'lucide-react';
 interface WizardFilters {
   area: string;
   form: string;
-  wada: string;
   budget: string;
   prep: string;
 }
@@ -21,7 +20,6 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
   const [step, setStep] = useState(1);
   const [area, setArea] = useState('all');
   const [form, setForm] = useState('all');
-  const [wada, setWada] = useState('all');
   const [budget, setBudget] = useState('all');
   const [prep, setPrep] = useState('all');
 
@@ -48,7 +46,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
   };
 
   const handleFinish = () => {
-    onComplete({ area, form, wada, budget, prep });
+    onComplete({ area, form, budget, prep });
     setStep(1);
     onClose();
   };
@@ -56,7 +54,6 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
   const handleReset = () => {
     setArea('all');
     setForm('all');
-    setWada('all');
     setBudget('all');
     setPrep('all');
     setStep(1);
@@ -141,7 +138,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
 
         {/* Step Indicator */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '28px' }}>
-          {[1, 2, 3, 4, 5].map((s) => (
+          {[1, 2, 3, 4].map((s) => (
             <div
               key={s}
               style={{
@@ -261,39 +258,8 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
           </div>
         )}
 
-        {/* Question 3: WADA */}
+        {/* Question 3: Budget */}
         {step === 3 && (
-          <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '18px' }}>
-              Do You Require Tested Athlete Compliance?
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button
-                type="button"
-                onClick={() => setWada('permitted')}
-                style={optionCardStyle(wada === 'permitted')}
-              >
-                <div>
-                  <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>WADA Permitted</div>
-                  <div style={{ fontSize: '0.75rem' }}>Show Only Compounds Not Prohibited In Sport</div>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setWada('all')}
-                style={optionCardStyle(wada === 'all')}
-              >
-                <div>
-                  <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>No Constraint</div>
-                  <div style={{ fontSize: '0.75rem' }}>Show All Compounds Including Prohibited Classes</div>
-                </div>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Question 4: Budget */}
-        {step === 4 && (
           <div>
             <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '18px' }}>
               What Is Your Target Budget Per Vial?
@@ -333,8 +299,8 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
           </div>
         )}
 
-        {/* Question 5: Reconstitution Prep */}
-        {step === 5 && (
+        {/* Question 4: Reconstitution Prep */}
+        {step === 4 && (
           <div>
             <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '18px' }}>
               Do You Have Reconstitution Equipment?
@@ -413,7 +379,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
           )}
 
           <div style={{ display: 'flex', gap: '10px' }}>
-            {step < 5 ? (
+            {step < 4 ? (
               <button
                 type="button"
                 onClick={handleNext}

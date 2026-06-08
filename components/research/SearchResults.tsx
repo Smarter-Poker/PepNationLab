@@ -17,7 +17,6 @@ export interface SearchHit {
   slug: string;
   display_name: string;
   evidence_tier?: string;
-  wada_status?: string;
   category?: string | null;
   compound_class?: string | null;
   plain_summary?: string | null;

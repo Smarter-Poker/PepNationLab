@@ -40,7 +40,6 @@ export interface InstantAnswerPayload {
     | 'mechanism'
     | 'reconstitution'
     | 'side_effects'
-    | 'wada'
     | 'half_life'
     | 'stack'
     | 'category'
@@ -55,8 +54,6 @@ export interface InstantAnswerPayload {
   handling?: CompoundLike['handling'];
   side_effects?: string | null;
   warnings?: string | null;
-  wada_status?: string;
-  wada_history?: Array<{ year: number; status: string; note?: string }>;
   half_life_text?: string | null;
   note?: string;
 }
@@ -125,7 +122,6 @@ export default function InstantAnswerCard({ payload }: { payload: InstantAnswerP
       case 'reconstitution': return Beaker;
       case 'side_effects':
       case 'safety': return ShieldAlert;
-      case 'wada': return Award;
       case 'half_life': return Calendar;
       case 'stack': return ListOrdered;
       case 'storage': return Beaker;
@@ -141,7 +137,6 @@ export default function InstantAnswerCard({ payload }: { payload: InstantAnswerP
       case 'mechanism': return 'Mechanism';
       case 'reconstitution': return 'Reconstitution';
       case 'side_effects': return 'Side Effects';
-      case 'wada': return 'WADA Status';
       case 'half_life': return 'Half-Life';
       case 'stack': return 'Stack';
       case 'category': return 'Category';

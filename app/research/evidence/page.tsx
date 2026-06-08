@@ -13,7 +13,6 @@ import { RISK_META, evidenceTier, wadaLabel } from '@/lib/compounds';
 import type { Compound } from '@/lib/compounds';
 import EvidenceSafetyTabs, {
   type EvidenceGroup,
-  type WadaRow,
   type FlaggedRow,
 } from '@/components/research/EvidenceSafetyTabs';
 
@@ -46,10 +45,7 @@ export default async function EvidenceSafetyPage() {
     };
   });
 
-  const wada: WadaRow[] = compounds
-    .filter((c) => c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males')
-    .sort((a, b) => a.display_name.localeCompare(b.display_name))
-    .map((c) => ({ slug: c.slug, name: c.display_name, label: wadaLabel(c.wada_status) }));
+
 
   const order = { critical: 0, high: 1, moderate: 2, low: 3 } as Record<string, number>;
   const flagged: FlaggedRow[] = compounds
@@ -91,7 +87,7 @@ export default async function EvidenceSafetyPage() {
         </p>
       </header>
 
-      <EvidenceSafetyTabs groups={groups} wada={wada} flagged={flagged} />
+      <EvidenceSafetyTabs groups={groups} flagged={flagged} />
     </div>
   );
 }

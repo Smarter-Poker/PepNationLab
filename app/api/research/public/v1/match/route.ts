@@ -15,7 +15,6 @@ import {
   scoreCompounds,
   type MatchInput,
   type EvidenceComfort,
-  type WadaConstraint,
   type RiskTolerance,
 } from '@/lib/match-engine';
 
@@ -28,7 +27,7 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders() });
 }
 
-async function handle(req: NextRequest, payload: { goal?: string; comfort?: string; wada?: string; risk?: string; limit?: number; exclude_injectables?: boolean; require_long_half_life?: boolean; exclude_slugs?: string[] }) {
+async function handle(req: NextRequest, payload: { goal?: string; comfort?: string; risk?: string; limit?: number; exclude_injectables?: boolean; require_long_half_life?: boolean; exclude_slugs?: string[] }) {
   const t0 = Date.now();
   const auth = await validateApiKey(req.headers.get('authorization'));
   if (!auth.ok) {
@@ -42,7 +41,6 @@ async function handle(req: NextRequest, payload: { goal?: string; comfort?: stri
   const input: MatchInput = {
     goal: payload.goal || 'tissue_repair',
     evidenceComfort: (payload.comfort || 'any') as EvidenceComfort,
-    wadaConstraint: (payload.wada || 'no_constraint') as WadaConstraint,
     riskTolerance: (payload.risk || 'any') as RiskTolerance,
     excludeInjectables: payload.exclude_injectables,
     requireLongHalfLife: payload.require_long_half_life,
@@ -58,7 +56,6 @@ export async function GET(req: NextRequest) {
   return handle(req, {
     goal: req.nextUrl.searchParams.get('goal') ?? '',
     comfort: req.nextUrl.searchParams.get('comfort') ?? '',
-    wada: req.nextUrl.searchParams.get('wada') ?? '',
     risk: req.nextUrl.searchParams.get('risk') ?? '',
     limit: Number(req.nextUrl.searchParams.get('limit') ?? '10') || 10,
     exclude_injectables: req.nextUrl.searchParams.get('exclude_injectables') === 'true',
@@ -68,7 +65,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { goal?: string; comfort?: string; wada?: string; risk?: string; limit?: number; exclude_injectables?: boolean; require_long_half_life?: boolean; exclude_slugs?: string[] } = {};
+  let body: { goal?: string; comfort?: string; risk?: string; limit?: number; exclude_injectables?: boolean; require_long_half_life?: boolean; exclude_slugs?: string[] } = {};
   try {
     body = (await req.json()) as typeof body;
   } catch {

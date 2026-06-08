@@ -10,7 +10,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FlaskConical, Ban, ShieldAlert } from 'lucide-react';
+import { FlaskConical, ShieldAlert } from 'lucide-react';
 import { RISK_META, evidenceTier } from '@/lib/compounds';
 
 export interface EvidenceGroup {
@@ -20,7 +20,6 @@ export interface EvidenceGroup {
   blurb: string;
   items: { slug: string; name: string }[];
 }
-export interface WadaRow { slug: string; name: string; label: string }
 export interface FlaggedRow {
   slug: string;
   name: string;
@@ -36,11 +35,9 @@ type TabKey = 'evidence' | 'flags';
 
 export default function EvidenceSafetyTabs({
   groups,
-  wada,
   flagged,
 }: {
   groups: EvidenceGroup[];
-  wada: WadaRow[];
   flagged: FlaggedRow[];
 }) {
   const [active, setActive] = useState<TabKey>('evidence');

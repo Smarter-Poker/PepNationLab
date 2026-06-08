@@ -17,7 +17,6 @@ import {
   scoreCompounds,
   type MatchInput,
   type EvidenceComfort,
-  type WadaConstraint,
   type RiskTolerance,
 } from '@/lib/match-engine';
 
@@ -32,15 +31,10 @@ const EVIDENCE_VALUES: EvidenceComfort[] = [
   'preclinical_ok',
   'any',
 ];
-const WADA_VALUES: WadaConstraint[] = ['wada_permitted_only', 'no_constraint'];
 const RISK_VALUES: RiskTolerance[] = ['low_only', 'moderate_ok', 'any'];
 
 function isEvidenceComfort(v: unknown): v is EvidenceComfort {
   return typeof v === 'string' && (EVIDENCE_VALUES as string[]).includes(v);
-}
-
-function isWadaConstraint(v: unknown): v is WadaConstraint {
-  return typeof v === 'string' && (WADA_VALUES as string[]).includes(v);
 }
 
 function isRiskTolerance(v: unknown): v is RiskTolerance {
@@ -54,13 +48,11 @@ function parseInput(raw: unknown): MatchInput | null {
     return null;
   }
   if (!isEvidenceComfort(obj.evidenceComfort)) return null;
-  if (!isWadaConstraint(obj.wadaConstraint)) return null;
   if (!isRiskTolerance(obj.riskTolerance)) return null;
   return {
     goal: obj.goal,
     goals: Array.isArray(obj.goals) ? obj.goals.filter((g): g is string => typeof g === 'string') : undefined,
     evidenceComfort: obj.evidenceComfort,
-    wadaConstraint: obj.wadaConstraint,
     riskTolerance: obj.riskTolerance,
     preference: typeof obj.preference === 'string' && ['single', 'stack', 'either'].includes(obj.preference) ? obj.preference as 'single' | 'stack' | 'either' : undefined,
     excludeInjectables: typeof obj.excludeInjectables === 'boolean' ? obj.excludeInjectables : undefined,
@@ -150,7 +142,6 @@ export async function POST(req: NextRequest) {
     .insert({
       goal: input.goal,
       evidence_comfort: input.evidenceComfort,
-      wada_constraint: input.wadaConstraint,
       risk_tolerance: input.riskTolerance,
       exclude_injectables: input.excludeInjectables ?? false,
       require_long_half_life: input.requireLongHalfLife ?? false,

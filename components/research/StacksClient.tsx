@@ -441,8 +441,8 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                     </div>
                   )}
 
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, gap: 16 }}>
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'nowrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, gap: 16, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', maxWidth: '100%' }}>
                       {isPremixedBlend ? (() => {
                         const premadeProducts = products.filter(p => p.compoundSlug === stack.slug);
                         if (premadeProducts.length > 0 && premadeProducts[0].imageUrl) {
@@ -450,7 +450,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                           const bottomTitle = (!tUpper.includes('STACK') && !tUpper.includes('PROTOCOL')) ? stack.display_name + ' Stack' : stack.display_name;
                           return (
                             <div style={{
-                              width: 100, aspectRatio: '1 / 1.2',
+                              width: 140, aspectRatio: '1 / 1.2',
                               borderRadius: 12, 
                               background: '#0F1318',
                               border: '1px solid rgba(255,255,255,0.15)',
@@ -474,28 +474,40 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                         }
                         return null;
                       })() : (
-                        stack.stack_components.slice(0, 3).map((compSlug: string, i: number) => {
-                          const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
-                          compProducts.sort((a, b) => a.retailPrice - b.retailPrice);
-                          const p = compProducts.length > 0 ? compProducts[0] : undefined;
-                          const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
-                          return (
-                            <div key={compSlug} style={{
-                              width: 60, aspectRatio: '1 / 1.2',
-                              borderRadius: 8, 
-                              background: '#0F1318',
-                              border: '1px solid rgba(255,255,255,0.15)',
-                              boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              overflow: 'hidden', padding: 0,
-                              position: 'relative', flexShrink: 0,
-                              zIndex: 3 - i,
-                              marginLeft: i > 0 ? -12 : 0
-                            }}>
-                              <Image src={imageUrl} alt={compSlug} width={100} height={100} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
-                            </div>
-                          );
-                        })
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+                          {stack.stack_components.map((compSlug: string, i: number) => {
+                            const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
+                            compProducts.sort((a, b) => a.retailPrice - b.retailPrice);
+                            const p = compProducts.length > 0 ? compProducts[0] : undefined;
+                            const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
+                            const comp = bySlug.get(compSlug);
+                            const label = comp?.display_name ?? compSlug;
+
+                            return (
+                              <div key={compSlug} style={{
+                                width: 140, aspectRatio: '1 / 1.2',
+                                borderRadius: 12, 
+                                background: '#0F1318',
+                                border: '1px solid rgba(255,255,255,0.15)',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                overflow: 'hidden', padding: 0,
+                                position: 'relative', flexShrink: 0
+                              }}>
+                                <Image src={imageUrl} alt={label} width={150} height={150} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+                                <div style={{
+                                  position: 'absolute', bottom: 0, left: 0, right: 0,
+                                  padding: '24px 4px 4px',
+                                  background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 50%, #000 100%)',
+                                  color: '#C0C8D0', fontSize: '0.55rem', fontWeight: 800, textTransform: 'uppercase',
+                                  textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                                }}>
+                                  {label}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
                     <button 

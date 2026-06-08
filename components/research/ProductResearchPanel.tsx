@@ -21,7 +21,6 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 import {
   type Compound,
   evidenceTier,
-  wadaLabel,
   researchAreaLabel,
   RISK_META,
 } from '@/lib/compounds';
@@ -173,8 +172,8 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
   if (compound.warnings) faqsRaw.push({ q: 'What Are The Warnings And Limitations?', a: compound.warnings });
   if (prepBits.length > 0) faqsRaw.push({ q: 'How Should It Be Stored And Prepared?', a: prepBits.join('; ') + '.' });
   if (tier.blurb) faqsRaw.push({ q: `What Does The ${tier.label} Evidence Tier Mean?`, a: tier.blurb });
-  if (compound.regulatory || compound.wada_status) {
-    faqsRaw.push({ q: 'What Is Its Regulatory And Anti-Doping Status?', a: `${compound.regulatory ? compound.regulatory + ' ' : ''}${wadaLabel(compound.wada_status)}.` });
+  if (compound.regulatory) {
+    faqsRaw.push({ q: 'What Is Its Regulatory Status?', a: `${compound.regulatory}.` });
   }
   faqsRaw.push({ q: 'Is It Approved For Human Use?', a: 'No. Every Product On Pep Nation Lab Is Sold Strictly For Laboratory And Research Use Only. It Is Not For Human Or Veterinary Use.' });
   const faqs = faqsRaw.map((f) => ({ q: noEmDash(f.q), a: noEmDash(f.a) }));
@@ -248,7 +247,6 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
               {badge(tier.label, tier.color)}
               {compound.category && badge(compound.category, primaryColor)}
               {isHighRisk && badge(`${risk.label} Risk`, risk.color)}
-              {compound.wada_status && compound.wada_status !== 'not_listed' && badge(wadaLabel(compound.wada_status), '#F6AD55')}
             </div>
           </header>
 
@@ -359,7 +357,6 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
                   <Fact label="Diluent" value={h.diluent} />
                   <Fact label="Storage Temperature" value={toFahrenheit(h.storage_temp)} />
                   <Fact label="Regulatory" value={compound.regulatory} />
-                  <Fact label="WADA Status" value={wadaLabel(compound.wada_status)} />
                 </div>
                 <Link
                   href={`/research/${compound.slug}/spec`}

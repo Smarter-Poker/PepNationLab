@@ -36,7 +36,6 @@ export interface CompoundInfo {
   displayName: string;
   aliases: string[];
   evidenceTier: string;
-  wadaStatus: string;
   category: string | null;
   mechanism: string | null;
   halfLife: string | null;

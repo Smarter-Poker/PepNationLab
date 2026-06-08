@@ -11,7 +11,6 @@ import type {
   EvidenceComfort,
   MatchResult,
   RiskTolerance,
-  WadaConstraint,
 } from '@/lib/match-engine';
 import CompoundDrawer from './CompoundDrawer';
 import { saveMatchAction } from '@/app/research/actions';
@@ -105,7 +104,6 @@ function MatchFormInner() {
 
   const [goal, setGoal] = useState<string>(searchParams.get('goal') || goalOptions[0]?.value || 'tissue_repair');
   const [evidenceComfort, setEvidenceComfort] = useState<EvidenceComfort>((searchParams.get('comfort') as EvidenceComfort) || 'preclinical_ok');
-  const [wadaConstraint, setWadaConstraint] = useState<WadaConstraint>((searchParams.get('wada') as WadaConstraint) || 'no_constraint');
   const [riskTolerance, setRiskTolerance] = useState<RiskTolerance>((searchParams.get('risk') as RiskTolerance) || 'moderate_ok');
   const [excludeInjectables, setExcludeInjectables] = useState<boolean>(searchParams.get('no_injectables') === 'true');
   const [requireLongHalfLife, setRequireLongHalfLife] = useState<boolean>(searchParams.get('long_half_life') === 'true');
@@ -134,21 +132,20 @@ function MatchFormInner() {
     if (goal) params.set('goal', goal);
     if (evidenceComfort) params.set('comfort', evidenceComfort);
     if (riskTolerance) params.set('risk', riskTolerance);
-    if (wadaConstraint && wadaConstraint !== 'no_constraint') params.set('wada', wadaConstraint);
     if (excludeInjectables) params.set('no_injectables', 'true');
     if (requireLongHalfLife) params.set('long_half_life', 'true');
     if (preference && preference !== 'either') params.set('preference', preference);
     if (budget && budget !== 'standard') params.set('budget', budget);
     excludeSlugs.forEach(s => params.append('exclude', s));
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [goal, evidenceComfort, riskTolerance, wadaConstraint, excludeInjectables, requireLongHalfLife, preference, budget, excludeSlugs, pathname, router]);
+  }, [goal, evidenceComfort, riskTolerance, excludeInjectables, requireLongHalfLife, preference, budget, excludeSlugs, pathname, router]);
 
   async function onSubmit(e?: React.FormEvent, overrides?: Record<string, unknown>) {
     if (e) e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
     try {
-      const payload = overrides ? overrides : { goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, excludeSlugs, preference, budget };
+      const payload = overrides ? overrides : { goal, evidenceComfort, riskTolerance, excludeInjectables, requireLongHalfLife, excludeSlugs, preference, budget };
       const res = await fetch('/api/research/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -206,7 +203,6 @@ function MatchFormInner() {
       if (data.result) {
         if (data.result.goal) setGoal(data.result.goal);
         if (data.result.evidenceComfort) setEvidenceComfort(data.result.evidenceComfort);
-        if (data.result.wadaConstraint) setWadaConstraint(data.result.wadaConstraint);
         if (data.result.riskTolerance) setRiskTolerance(data.result.riskTolerance);
         if (typeof data.result.excludeInjectables === 'boolean') setExcludeInjectables(data.result.excludeInjectables);
         if (typeof data.result.requireLongHalfLife === 'boolean') setRequireLongHalfLife(data.result.requireLongHalfLife);
@@ -218,7 +214,6 @@ function MatchFormInner() {
         onSubmit(undefined, {
           goal: data.result.goal || goal,
           evidenceComfort: data.result.evidenceComfort || evidenceComfort,
-          wadaConstraint: data.result.wadaConstraint || wadaConstraint,
           riskTolerance: data.result.riskTolerance || riskTolerance,
           excludeInjectables: typeof data.result.excludeInjectables === 'boolean' ? data.result.excludeInjectables : excludeInjectables,
           requireLongHalfLife: typeof data.result.requireLongHalfLife === 'boolean' ? data.result.requireLongHalfLife : requireLongHalfLife,
@@ -239,7 +234,7 @@ function MatchFormInner() {
   async function handleSaveMatch() {
     setSaving(true);
     try {
-      const payload = { goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, preference, budget, excludeSlugs };
+      const payload = { goal, evidenceComfort, riskTolerance, excludeInjectables, requireLongHalfLife, preference, budget, excludeSlugs };
       const res = await saveMatchAction(payload, results || []);
       if (res.error) {
         toast.error(res.error);
@@ -446,17 +441,6 @@ function MatchFormInner() {
                   <option value="conservative">Conservative (Cost-Sensitive)</option>
                   <option value="unlimited">Unlimited (Ignore Cost)</option>
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-white mb-2">WADA Status Filter</label>
-                <select value={wadaConstraint} onChange={(e) => setWadaConstraint(e.target.value as WadaConstraint)} className="w-full max-w-md p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
-                  <option value="no_constraint">No WADA Restriction (All Compounds)</option>
-                  <option value="wada_permitted_only">WADA Permitted Compounds Only</option>
-                </select>
-                <p style={{ color: 'var(--silver)', fontSize: '0.8rem', marginTop: '6px' }}>
-                  Select &quot;WADA Permitted Only&quot; To Exclude Prohibited And Prohibited-For-Males Compounds From Results.
-                </p>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

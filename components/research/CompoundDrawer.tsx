@@ -17,7 +17,6 @@ interface MatchResult {
   score: number;
   rationale: string;
   evidenceTier: string;
-  wadaStatus: string;
   riskLevel: string;
   halfLife: string | null;
   molecularWeight: number | null;
