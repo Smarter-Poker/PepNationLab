@@ -22,6 +22,7 @@ export interface AreaProduct {
   isOnSale: boolean;
   salePrice: number | null;
   inventoryCount: number;
+  description: string | null;
 }
 
 export interface AreaProductContext {
@@ -114,7 +115,7 @@ export async function getAreaProducts(
   const svc = createAdminClient();
   const { data: masterProducts } = await svc
     .from('products')
-    .select('id, name, compound_slug, category, image_url, unit_size, unit_measure, base_cost, weight_oz, sku, inventory_count')
+    .select('id, name, compound_slug, category, image_url, unit_size, unit_measure, base_cost, weight_oz, sku, inventory_count, description')
     .in('compound_slug', compoundSlugs)
     .eq('is_active', true)
     .eq('is_banned', false)
@@ -184,6 +185,7 @@ export async function getAreaProducts(
       isOnSale,
       salePrice: isOnSale ? Number(ap.sale_price) / 10 : null,
       inventoryCount: Number(mp.inventory_count) || 0,
+      description: mp.description || null,
     });
   }
 
