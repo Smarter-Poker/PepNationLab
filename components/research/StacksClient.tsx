@@ -905,9 +905,12 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
           <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}><X size={20} /></button>
         </div>
 
-        <div style={{ padding: '0 32px', display: 'flex', gap: 24, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <button onClick={() => setActiveTab('overview')} style={{ padding: '16px 0', background: 'none', border: 'none', borderBottom: activeTab === 'overview' ? '2px solid #C0C8D0' : '2px solid transparent', color: activeTab === 'overview' ? '#C0C8D0' : '#A8B4C0', fontWeight: 600, cursor: 'pointer' }}>Overview</button>
-          <button onClick={() => setActiveTab('calculator')} style={{ padding: '16px 0', background: 'none', border: 'none', borderBottom: activeTab === 'calculator' ? '2px solid #C0C8D0' : '2px solid transparent', color: activeTab === 'calculator' ? '#C0C8D0' : '#A8B4C0', fontWeight: 600, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center' }}><Beaker size={16} /> Reconstitution Math</button>
+        <div style={{ padding: '0 32px', display: 'flex', justifyContent: 'center', marginBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ position: 'relative', display: 'inline-block', width: '100%', maxWidth: 500, marginBottom: 16 }}>
+            <Image src="/images/overview_tabs_btn.png" alt="Tabs" width={800} height={200} style={{ width: '100%', height: 'auto', display: 'block' }} unoptimized />
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '50%', height: '100%', cursor: 'pointer', zIndex: 10 }} onClick={() => setActiveTab('overview')} />
+            <div style={{ position: 'absolute', top: 0, left: '50%', width: '50%', height: '100%', cursor: 'pointer', zIndex: 10 }} onClick={() => setActiveTab('calculator')} />
+          </div>
         </div>
 
         <div style={{ padding: 32, flex: 1 }}>
@@ -955,10 +958,10 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
               </div>
 
               <div 
-                style={{ marginTop: 24, background: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 20, cursor: 'pointer', transition: 'all 0.2s', border: '1px solid rgba(255,255,255,0.05)' }}
+                style={{ marginTop: 24, background: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 20, cursor: 'pointer', transition: 'all 0.2s', border: '3px solid #88929C', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)' }}
                 onClick={() => setIsSynergyExpanded(!isSynergyExpanded)}
-                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.2)'; }}
-                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = '#A0AAB4'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = '#88929C'; }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <h4 style={{ margin: 0, color: '#fff' }}>Synergy Profile</h4>
@@ -993,7 +996,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                         <div style={{ marginBottom: 16 }}>
                           <h5 style={{ color: '#00E5FF', fontSize: '0.85rem', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Score Breakdown</h5>
                           {synergyData.breakdown?.map((b: any, i: number) => (
-                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, padding: '6px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: 8 }}>
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, padding: '6px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '2px solid #5A6B7D' }}>
                               <span style={{ color: '#E2E8F0', fontSize: '0.85rem' }}>{b.label}</span>
                               <span style={{ color: b.value > 0 ? '#68D391' : b.value < 0 ? '#FF6B6B' : '#A8B4C0', fontWeight: 700, fontSize: '0.9rem' }}>
                                 {b.value > 0 ? '+' : ''}{b.value}
