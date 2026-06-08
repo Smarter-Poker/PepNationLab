@@ -299,6 +299,16 @@ function PasswordStep({ onDone }: { onDone: () => void }) {
  * Re-Check button -- once the user enables push in the installed app, the
  * server sees the subscription and this step advances.
  */
+/** A single numbered instruction row: teal circle + text. */
+function NumberedStep({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+      <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: 'rgba(0,196,188,0.15)', border: '1px solid rgba(0,196,188,0.5)', color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>{n}</div>
+      <div style={{ fontSize: '0.84rem', color: 'var(--grey-200, #D0DAE4)', lineHeight: 1.5 }}>{children}</div>
+    </div>
+  );
+}
+
 function NotificationsStep({ onDone }: { onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -314,12 +324,33 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
     setPlatform(detectedPlatform);
   }, []);
 
-  const installCopy =
+  // Platform-specific, click-by-click instructions. iOS push only works from
+  // the installed home-screen app, so its steps install first.
+  const heading =
+    platform === 'ios' ? 'On iPhone Or iPad' : platform === 'android' ? 'On Android' : 'On This Computer';
+  const steps: string[] =
     platform === 'ios'
-      ? 'On iPhone Or iPad: Tap The Share Button, Then "Add To Home Screen". Open Pep Nation From The New Icon, Then Turn On Notifications Here. Push Only Works From The Installed App On iOS.'
+      ? [
+          'Tap The Share Button In Safari (The Square With An Arrow Pointing Up).',
+          'Scroll Down, Tap "Add To Home Screen", Then Tap "Add".',
+          'Open Pep Nation From Its New Home Screen Icon.',
+          'Come Back Here And Tap "Turn On Notifications" Below.',
+          'When iOS Asks, Tap "Allow".',
+        ]
       : platform === 'android'
-        ? 'On Android: Open The Browser Menu, Then Tap "Install App" Or "Add To Home Screen" For The Full-Screen App, Then Turn On Notifications.'
-        : 'On Desktop: Click The Install Icon In Your Browser Address Bar To Add Pep Nation As An App Window, Then Turn On Notifications.';
+        ? [
+            'Open Your Browser Menu (The Three Dots In The Top Right).',
+            'Tap "Install App" Or "Add To Home Screen".',
+            'Open Pep Nation From Its New Home Screen Icon.',
+            'Tap "Turn On Notifications" Below.',
+            'When Your Browser Asks, Tap "Allow".',
+          ]
+        : [
+            'Click The "Turn On Notifications" Button Below.',
+            'A Small Box Will Pop Up At The Top Of Your Browser Window.',
+            'Click "Allow" In That Box.',
+            'Optional: Click The Install Icon In The Address Bar To Open Pep Nation As Its Own App.',
+          ];
 
   const enableAndContinue = async () => {
     setBusy(true); setErr(null);
@@ -330,9 +361,9 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
         await onDone();
         return;
       }
-      setErr(r.error || 'Notifications Could Not Be Enabled. Please Follow The Install Steps Above And Try Again.');
+      setErr(r.error || 'Notifications Could Not Be Turned On. Please Follow The Steps Above And Try Again.');
     } catch {
-      setErr('Notifications Could Not Be Enabled On This Device.');
+      setErr('Notifications Could Not Be Turned On On This Device.');
     }
     setBusy(false);
   };
@@ -345,22 +376,38 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
 
   return (
     <div>
-      <StepIntro icon={BellRing} title="Install The App And Turn On Notifications"
-        blurb="Add Pep Nation To Your Home Screen So It Runs Full-Screen Like An App, And Turn On Notifications So You Never Miss An Order Or Payment. This Step Completes Only After Notifications Are Actually On." />
+      <StepIntro icon={BellRing} title="Turn On Notifications"
+        blurb="Notifications Let You Know The Moment You Get A New Order Or Payment. Follow The Steps For Your Device Below. This Step Finishes Only Once Notifications Are Actually On." />
 
-      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 'var(--space-3, 12px)', borderRadius: 10, background: 'rgba(255,255,255,0.04)', marginBottom: 'var(--space-3, 12px)' }}>
-        <Smartphone size={18} style={{ color: 'var(--teal)', flexShrink: 0, marginTop: 2 }} />
-        <p style={{ fontSize: '0.83rem', color: 'var(--grey-300)', margin: 0, lineHeight: 1.5 }}>{installCopy}</p>
+      {/* Step-by-step instructions for the detected device */}
+      <div style={{ padding: 'var(--space-4, 16px)', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 'var(--space-4, 16px)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3, 12px)' }}>
+          <Smartphone size={16} style={{ color: 'var(--teal)' }} />
+          <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--teal)' }}>{heading}</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3, 12px)' }}>
+          {steps.map((s, i) => (
+            <NumberedStep key={i} n={i + 1}>{s}</NumberedStep>
+          ))}
+        </div>
+      </div>
+
+      {/* The single most-missed step, called out. */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 'var(--space-3, 12px)', borderRadius: 10, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.3)', marginBottom: 'var(--space-4, 16px)' }}>
+        <CheckCircle2 size={18} style={{ color: 'var(--teal)', flexShrink: 0, marginTop: 1 }} />
+        <p style={{ fontSize: '0.82rem', color: 'var(--grey-200, #D0DAE4)', margin: 0, lineHeight: 1.5 }}>
+          The Most Important Part: When Your Device Asks For Permission, You Must Choose <strong style={{ color: 'var(--white)' }}>Allow</strong>. If You Pick Block Or Don&apos;t Allow, Notifications Stay Off.
+        </p>
       </div>
 
       {supported === false ? (
         <>
           <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
-            This Browser Tab Cannot Receive Push Yet. Add Pep Nation To Your Home Screen Using The Steps Above, Open It From The Icon, Then Tap Re-Check.
+            This Browser Tab Cannot Receive Notifications Yet. Add Pep Nation To Your Home Screen Using The Steps Above, Open It From The Icon, Then Tap Re-Check.
           </p>
           <button type="button" className="btn btn-secondary" onClick={recheck} disabled={busy}
             style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 'var(--space-3, 12px)' }}>
-            {busy ? <Loader2 size={16} className="spin" /> : <RotateCw size={16} />} Re-Check
+            {busy ? <Loader2 size={16} className="spin" /> : <RotateCw size={16} />} I Have Done This, Re-Check
           </button>
         </>
       ) : (
@@ -369,7 +416,7 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
           <PrimaryButton onClick={enableAndContinue} busy={busy}>Turn On Notifications</PrimaryButton>
           <button type="button" onClick={recheck} disabled={busy}
             style={{ width: '100%', marginTop: 10, background: 'transparent', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <RotateCw size={13} /> Already Enabled It? Re-Check
+            <RotateCw size={13} /> Already Turned Them On? Re-Check
           </button>
         </>
       )}

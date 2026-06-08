@@ -9,15 +9,25 @@
  * in localStorage keyed by user id - and only when push is actually supported
  * and not already enabled on this device. iOS only exposes PushManager inside
  * the installed home-screen app, so in a plain Safari tab this self-suppresses.
+ *
+ * It is rendered globally from the root layout, so it must NOT fire on the
+ * onboarding wizard (the wizard owns the notifications step there) - otherwise
+ * a new agent gets two competing notification prompts at once.
+ *
+ * Rendered as a real HTML dialog with real buttons - an earlier version painted
+ * a PNG with invisible click "hitboxes" positioned by percentage, which
+ * misaligned on desktop and made the Enable button effectively unclickable.
  */
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
+import { useRouter, usePathname } from 'next/navigation';
+import { BellRing, CheckCircle2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { isWebPushSupported, notificationPermission, enablePush } from '@/lib/push-client';
 
 export default function FirstRunNotificationPrompt() {
+  const router = useRouter();
+  const pathname = usePathname();
   const [show, setShow] = useState(false);
   const [uid, setUid] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -25,7 +35,11 @@ export default function FirstRunNotificationPrompt() {
   const [enabled, setEnabled] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // The onboarding wizard has its own notifications step; never double-prompt there.
+  const onOnboarding = (pathname || '').startsWith('/onboarding');
+
   useEffect(() => {
+    if (onOnboarding) return;
     let cancelled = false;
     const supabase = createClient();
     (async () => {
@@ -66,7 +80,7 @@ export default function FirstRunNotificationPrompt() {
       if (!cancelled) setShow(true);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [onOnboarding]);
 
   const markDone = () => {
     if (!uid) return;
@@ -82,7 +96,7 @@ export default function FirstRunNotificationPrompt() {
       setEnabled(true);
       markDone();
     } else {
-      setError(r.error || 'Could Not Enable Notifications. You Can Try Again From Settings.');
+      setError(r.error || 'Could Not Turn On Notifications. You Can Try Again Later From Settings.');
     }
   };
 
@@ -91,120 +105,81 @@ export default function FirstRunNotificationPrompt() {
     setShow(false);
   };
 
-  if (!show) return null;
+  if (onOnboarding || !show) return null;
 
   const setupHref =
     role === 'admin' ? '/admin'
     : role === 'agent' || role === 'super_agent' ? '/dashboard/agent'
     : '/account';
 
+  const goSetup = () => {
+    onClose();
+    router.push(setupHref);
+  };
+
+  const cardStyle: React.CSSProperties = {
+    width: '100%', maxWidth: 460, borderRadius: 18, padding: 'var(--space-7, 28px)',
+    textAlign: 'center',
+  };
+  const primaryBtn: React.CSSProperties = {
+    width: '100%', marginTop: 'var(--space-4, 16px)', fontSize: '0.95rem',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+  };
+
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Enable Notifications"
+      aria-label={enabled ? "You're All Set" : 'Turn On Notifications'}
       style={{
         position: 'fixed', inset: 0, zIndex: 3000,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 16, background: 'rgba(3,8,15,0.82)', backdropFilter: 'blur(4px)',
       }}
     >
-      <div
-        className={!enabled ? "stagger-fade-in" : "glass-panel stagger-fade-in"}
-        style={{ width: '100%', maxWidth: 840, padding: !enabled ? 0 : 'var(--space-7, 28px)', textAlign: 'center', borderRadius: 18 }}
-      >
+      <div className="glass-panel stagger-fade-in" style={cardStyle}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: '50%', background: 'rgba(0,196,188,0.14)', border: '1px solid rgba(0,196,188,0.4)', color: 'var(--teal)', marginBottom: 'var(--space-4, 16px)' }}>
+          {enabled ? <CheckCircle2 size={28} /> : <BellRing size={28} />}
+        </div>
+
         {!enabled ? (
-          <div style={{ position: 'relative', width: '100%', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.6))' }}>
-            <Image 
-              src="/images/enable-notifications-dynamic.png" 
-              alt="Turn On Notifications" 
-              width={840}
-              height={600}
-              unoptimized
-              style={{ width: '100%', height: 'auto', display: 'block' }} 
-            />
-            {/* Hitbox for Enable Notifications */}
-            <button 
-              type="button" 
-              onClick={onEnable} 
-              disabled={busy} 
-              aria-label="Enable Notifications"
-              style={{ 
-                position: 'absolute', 
-                top: '59%', 
-                left: '12%', 
-                width: '76%', 
-                height: '14%', 
-                background: 'transparent', 
-                border: 'none', 
-                cursor: 'pointer',
-                outline: 'none',
-              }}
-            />
-            {/* Hitbox for Not Now */}
-            <button 
-              type="button" 
-              onClick={onClose} 
-              aria-label="Not Now"
-              style={{ 
-                position: 'absolute', 
-                top: '75%', 
-                left: '12%', 
-                width: '76%', 
-                height: '14%', 
-                background: 'transparent', 
-                border: 'none', 
-                cursor: 'pointer',
-                outline: 'none'
-              }}
-            />
-          </div>
+          <>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--white)', margin: '0 0 8px' }}>Turn On Notifications</h2>
+            <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.55, margin: '0 auto', maxWidth: 380 }}>
+              Get Alerts On This Device For New Orders, Payments, And Messages. When Your Browser Asks, Choose Allow.
+            </p>
+            {error && (
+              <p style={{ color: 'var(--danger, #E53E3E)', fontSize: '0.82rem', marginTop: 12 }}>{error}</p>
+            )}
+            <button type="button" className="btn btn-primary" onClick={onEnable} disabled={busy} style={primaryBtn}>
+              {busy ? 'Turning On...' : 'Enable Notifications'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={busy}
+              style={{ width: '100%', marginTop: 10, background: 'transparent', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              Not Now
+            </button>
+          </>
         ) : (
-          <div style={{ position: 'relative', width: '100%', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.6))' }}>
-            <Image 
-              src="/images/notifications-done-dynamic.png" 
-              alt="You're All Set" 
-              width={840}
-              height={600}
-              unoptimized
-              style={{ width: '100%', height: 'auto', display: 'block' }} 
-            />
-            {/* Hitbox for Finish Setting Up My Account */}
-            <Link 
-              href={setupHref} 
-              onClick={onClose} 
-              aria-label="Finish Setting Up My Account"
-              style={{ 
-                position: 'absolute', 
-                top: '59%', 
-                left: '12%', 
-                width: '76%', 
-                height: '14%', 
-                background: 'transparent', 
-                border: 'none', 
-                cursor: 'pointer',
-                outline: 'none',
-                display: 'block',
-              }}
-            />
-            {/* Hitbox for Done */}
-            <button 
-              type="button" 
-              onClick={onClose} 
-              aria-label="Done"
-              style={{ 
-                position: 'absolute', 
-                top: '75%', 
-                left: '12%', 
-                width: '76%', 
-                height: '14%', 
-                background: 'transparent', 
-                border: 'none', 
-                cursor: 'pointer',
-                outline: 'none'
-              }}
-            />
-          </div>
+          <>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--white)', margin: '0 0 8px' }}>You&apos;re All Set</h2>
+            <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.55, margin: '0 auto', maxWidth: 380 }}>
+              Notifications Are On For This Device. You Can Manage Them Anytime From Your Account Settings.
+            </p>
+            <button type="button" className="btn btn-primary" onClick={goSetup} style={primaryBtn}>
+              Finish Setting Up My Account
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ width: '100%', marginTop: 10, background: 'transparent', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              Done
+            </button>
+          </>
         )}
       </div>
     </div>
