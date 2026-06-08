@@ -4,6 +4,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
@@ -129,8 +130,8 @@ export default async function ResearchByRoutePage() {
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
-        <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
-          Back To Research Library
+        <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <ArrowLeft size={16} /> Back To Research Library
         </Link>
       </nav>
       <header style={{ marginBottom: 'var(--space-5, 24px)' }}>

@@ -2768,7 +2768,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                       const color = c ? colors[selected.indexOf(c) % colors.length] : '#00C4BC';
                       return (
                         <div key={compound} style={{ padding: '10px 14px', borderRadius: 10, background: `${color}08`, border: `1px solid ${color}25`, flex: '1 1 200px' }}>
-                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>★ {compound} leads in:</div>
+                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{compound} leads in:</div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                             {domains.sort((a, b) => b.score - a.score).slice(0, 5).map(d => (
                               <span key={d.domain} style={{ fontSize: '0.68rem', background: `${color}15`, color, border: `1px solid ${color}30`, padding: '1px 7px', borderRadius: 4, fontWeight: 600, textTransform: 'capitalize' }}>
@@ -2923,11 +2923,11 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                 <div className="no-print" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
                   <button type="button" onClick={() => { setShowWinnersOnly(v => !v); haptic(20); }}
                     style={{ display: 'flex', alignItems: 'center', gap: 5, background: showWinnersOnly ? 'rgba(104,211,145,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${showWinnersOnly ? 'rgba(104,211,145,0.4)' : 'rgba(255,255,255,0.1)'}`, color: showWinnersOnly ? '#68D391' : '#A8B4C0', borderRadius: 8, padding: '7px 12px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
-                    <Trophy size={12} /> {showWinnersOnly ? 'Winners Only ✓' : 'Winners Only'}
+                    <Trophy size={12} /> {showWinnersOnly ? 'Winners Only' : 'Winners Only'}
                   </button>
                   <button type="button" onClick={() => { setCellColorCode(v => !v); haptic(20); }}
                     style={{ display: 'flex', alignItems: 'center', gap: 5, background: cellColorCode ? 'rgba(0,196,188,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${cellColorCode ? 'rgba(0,196,188,0.4)' : 'rgba(255,255,255,0.1)'}`, color: cellColorCode ? '#FFF' : '#A8B4C0', borderRadius: 8, padding: '7px 12px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
-                    <BarChart3 size={12} /> {cellColorCode ? 'Color Rank ✓' : 'Color Rank'}
+                    <BarChart3 size={12} /> {cellColorCode ? 'Color Rank' : 'Color Rank'}
                   </button>
                   {!isMobile && (
                     <div style={{ display: 'flex', gap: 4, marginLeft: 'auto', alignItems: 'center' }}>

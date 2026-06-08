@@ -6,6 +6,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { getAreaProducts, type AreaProduct } from '@/lib/area-products-server';
 import CompareTool from '@/components/research/CompareTool';
@@ -43,7 +44,7 @@ export default async function CompareCompoundsPage({
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: 'var(--space-6, 40px) var(--space-4, 20px)', position: 'relative', zIndex: 1 }}>
         <nav style={{ marginBottom: 'var(--space-5, 24px)' }}>
           <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, letterSpacing: '0.02em', background: 'rgba(0,196,188,0.08)', padding: '6px 14px', borderRadius: 99, border: '1px solid rgba(0,196,188,0.2)', transition: 'all 0.2s ease-out' }} onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(0,196,188,0.15)')} onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(0,196,188,0.08)')}>
-            ← Back To Research Library
+            <ArrowLeft size={16} /> Back To Research Library
           </Link>
         </nav>
 
