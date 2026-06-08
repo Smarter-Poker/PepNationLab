@@ -53,6 +53,34 @@ const ResearchBadge = ({ count, onClick }: { count: number, onClick?: (e: React.
   </button>
 );
 
+const SynergyBadge = ({ score, status }: { score: number, status: string }) => (
+  <div style={{
+    display: 'inline-flex',
+    alignItems: 'center',
+    background: 'linear-gradient(to right, #1b2027 0%, #11151a 100%)',
+    border: '3px solid #88929C',
+    borderRadius: 999,
+    padding: '4px 20px 4px 4px',
+    gap: 16,
+    width: '100%',
+    maxWidth: 400,
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
+    marginBottom: 8
+  }}>
+    <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, #2b333e 0%, #151a21 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #5a6b7d', flexShrink: 0, boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.1)' }}>
+      <div style={{ color: '#00E5FF', fontSize: '1.3rem', fontWeight: 900, textShadow: '0 0 8px rgba(0,229,255,0.6)' }}>{score}</div>
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+      <div style={{ color: '#00E5FF', fontSize: '1.1rem', fontWeight: 900, letterSpacing: '0.02em' }}>
+        Synergy Score
+      </div>
+      <div style={{ color: '#A8B4C0', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+        {status} Profile
+      </div>
+    </div>
+  </div>
+);
+
 interface Props {
   compounds: Compound[];
   stacks: Compound[];
@@ -486,9 +514,9 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                         </div>
                       );
                     })()}
-                    {synergy.status === 'excellent' && (
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(90deg, rgba(168, 180, 192, 0.2) 0%, rgba(168, 180, 192, 0.05) 100%)', color: '#A8B4C0', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(168, 180, 192, 0.3)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 0 12px rgba(168, 180, 192, 0.1)' }}>
-                        Synergy: {synergy.synergyScore}
+                    {synergy.synergyScore > 0 && (
+                      <div style={{ width: '100%', marginBottom: 8 }}>
+                        <SynergyBadge score={synergy.synergyScore} status={synergy.status} />
                       </div>
                     )}
                   </div>
