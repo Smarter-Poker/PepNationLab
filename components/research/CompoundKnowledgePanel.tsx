@@ -2,7 +2,7 @@
 
 /**
  * CompoundKnowledgePanel -- reusable right-rail card showing the structure,
- * stack relationships, evidence tier, WADA status, and a CTA to the full
+ * stack relationships, evidence tier, and a CTA to the full
  * monograph. Used on /research/search and on /research/[slug].
  */
 

@@ -26,10 +26,6 @@ const RESPONSE_SCHEMA = {
       type: Type.STRING,
       description: "The user's comfort with unproven compounds. Must be one of: 'strict_human_only', 'investigational_ok', 'preclinical_ok', 'any'. If they seem highly risk-averse, use strict_human_only. If they mention research chemicals, use 'any'. Default to 'preclinical_ok'.",
     },
-    wadaConstraint: {
-      type: Type.STRING,
-      description: "Must be either 'wada_permitted_only' or 'no_constraint'. Use 'wada_permitted_only' if they mention athletics, sports, tested, or WADA.",
-    },
     riskTolerance: {
       type: Type.STRING,
       description: "Must be one of: 'low_only', 'moderate_ok', 'any'. If they want super safe, use 'low_only'. Default to 'any'.",
@@ -51,7 +47,7 @@ const RESPONSE_SCHEMA = {
       description: "Must be 'conservative', 'standard', or 'unlimited'. If they mention cost, cheap, budget, use 'conservative'. Default to 'standard'.",
     }
   },
-  required: ['goal', 'goals', 'evidenceComfort', 'wadaConstraint', 'riskTolerance', 'excludeInjectables', 'requireLongHalfLife', 'preference', 'budget'],
+  required: ['goal', 'goals', 'evidenceComfort', 'riskTolerance', 'excludeInjectables', 'requireLongHalfLife', 'preference', 'budget'],
 };
 
 export async function POST(req: NextRequest) {

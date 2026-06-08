@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { wadaLabel } from '@/lib/compounds';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +22,6 @@ interface CompoundRow {
   warnings: string | null;
   plain_summary: string | null;
   handling: { storage_temp?: string } | null;
-  wada_status: string;
   regulatory: string | null;
   search_keywords: string[] | null;
   match_phrases: string[] | null;
@@ -161,7 +159,6 @@ function buildMatch(s: Scored) {
   if (row.studied_for && row.studied_for.length > 0) {
     composedParts.push(`Studied For: ${row.studied_for.slice(0, 4).join(', ')}`);
   }
-  composedParts.push(`Status: ${wadaLabel(row.wada_status)}`);
   return {
     slug: row.slug,
     name: row.display_name,
@@ -187,7 +184,7 @@ async function handle(q: string) {
   const { data, error } = await supabase
     .from('compounds')
     .select(
-      'slug, display_name, aliases, category, evidence_tier, compound_class, molecular_target, mechanism, studied_for, research_areas, benefits, side_effects, warnings, plain_summary, handling, wada_status, regulatory, search_keywords, match_phrases',
+      'slug, display_name, aliases, category, evidence_tier, compound_class, molecular_target, mechanism, studied_for, research_areas, benefits, side_effects, warnings, plain_summary, handling, regulatory, search_keywords, match_phrases',
     );
 
   if (error || !data) {

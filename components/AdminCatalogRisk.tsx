@@ -8,7 +8,6 @@ interface RiskRow {
   display_name: string;
   category: string | null;
   evidence_tier: string;
-  wada_status: string;
   risk_level: 'critical' | 'high' | 'moderate' | 'low';
   risk_reasons: string[];
   recommended_action: 'keep' | 'review' | 'restrict' | 'remove';

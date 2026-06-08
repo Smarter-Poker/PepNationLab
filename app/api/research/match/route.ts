@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          'Invalid Match Input. Expected { goal, evidenceComfort, wadaConstraint, riskTolerance }.',
+          'Invalid Match Input. Expected { goal, evidenceComfort, riskTolerance }.',
         note: RESEARCH_NOTE,
       },
       { status: 400 },

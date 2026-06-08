@@ -6,7 +6,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllCompounds } from '@/lib/compounds-server';
-import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
@@ -89,11 +89,6 @@ export default async function ResearchByMechanismPage() {
                     }}
                   >
                     {c.plain_summary}
-                  </span>
-                )}
-                {c.wada_status && c.wada_status !== 'not_listed' && (
-                  <span style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)', marginTop: '4px' }}>
-                    {wadaLabel(c.wada_status)}
                   </span>
                 )}
               </Link>

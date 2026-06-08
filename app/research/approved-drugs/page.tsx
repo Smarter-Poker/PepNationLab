@@ -6,7 +6,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllCompounds } from '@/lib/compounds-server';
-import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
@@ -20,7 +20,6 @@ interface ApprovedDrug {
   slug: string;
   display_name: string;
   evidence_tier: string;
-  wada_status: string;
   category: string | null;
   plain_summary: string | null;
   year_first_approved?: number | null;
@@ -68,9 +67,6 @@ function ApprovalCard({ c }: { c: ApprovedDrug }) {
         <span style={{ fontSize: '0.78rem', color: 'var(--silver-light, #D0DAE4)', marginTop: '4px' }}>
           {c.plain_summary}
         </span>
-      )}
-      {c.wada_status && c.wada_status !== 'not_listed' && (
-        <span style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>{wadaLabel(c.wada_status)}</span>
       )}
     </Link>
   );

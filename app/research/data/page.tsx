@@ -8,7 +8,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Table2 } from 'lucide-react';
 import { getAllCompounds } from '@/lib/compounds-server';
-import { evidenceTier, wadaLabel, RISK_META } from '@/lib/compounds';
+import { evidenceTier, RISK_META } from '@/lib/compounds';
 import CompoundDataTable, { type DataRow } from '@/components/research/CompoundDataTable';
 
 export const metadata: Metadata = {
@@ -39,7 +39,6 @@ export default async function ResearchDataPage() {
       tierColor: tier.color,
       target: dash(c.molecular_target),
       halfLife: dash(c.half_life),
-      wada: wadaLabel(c.wada_status),
       risk: risk?.label ?? '-',
       riskColor: risk?.color ?? '#A8B4C0',
       mw: c.molecular_weight_da ?? null,
@@ -64,7 +63,7 @@ export default async function ResearchDataPage() {
         </h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1.05rem', marginTop: 'var(--space-2, 8px)', maxWidth: '760px' }}>
           Every Compound In One Sortable, Filterable Grid - Category, Class, Evidence Tier, Molecular Target, Molecular
-          Weight, Half-Life, PubMed Citations, Clinical Trials, Year Discovered, WADA Status, And Risk. Click Any Column
+          Weight, Half-Life, PubMed Citations, Clinical Trials, Year Discovered, And Risk. Click Any Column
           To Sort. For Laboratory Research Only.
         </p>
       </header>

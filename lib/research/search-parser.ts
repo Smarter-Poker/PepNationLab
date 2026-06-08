@@ -4,7 +4,7 @@
  * Supports:
  *   - "quoted phrase"          -> exact phrase match
  *   - field:value             -> scoped filter (mechanism:GLP-1, tier:approved_drug,
- *                                wada:prohibited, mw:>3000, area:weight_management,
+ *                                mw:>3000, area:weight_management,
  *                                class:peptide, risk:low, half_life:<2)
  *   - +required  -term        -> Google +/- operators
  *   - AND, OR, NOT            -> boolean operators (case-insensitive)

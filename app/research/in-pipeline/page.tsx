@@ -6,7 +6,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllCompounds } from '@/lib/compounds-server';
-import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
@@ -20,7 +20,6 @@ interface PipelineRow {
   slug: string;
   display_name: string;
   evidence_tier: string;
-  wada_status: string;
   pipeline_status: string | null;
   pipeline_phase: string | null;
   pipeline_indication: string | null;
@@ -107,9 +106,6 @@ export default async function ResearchInPipelinePage() {
                 )}
                 {c.pipeline_status && (
                   <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)' }}>{c.pipeline_status}</span>
-                )}
-                {c.wada_status && c.wada_status !== 'not_listed' && (
-                  <span style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)' }}>{wadaLabel(c.wada_status)}</span>
                 )}
               </Link>
             );

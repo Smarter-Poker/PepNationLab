@@ -398,33 +398,32 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                               {label}
                             </div>
                           </div>
-                          <div style={{ marginTop: 6, fontSize: '0.85rem', fontWeight: 700, color: '#C0C8D0' }}>
-                            {isBundleProduct && stack.stack_components.length > 1 ? (
-                              <span style={{ textDecoration: 'line-through', color: '#88929C' }}>${price.toFixed(2)}</span>
-                            ) : (
-                              `$${price.toFixed(2)}`
-                            )}
-                          </div>
+
                         </div>
                       );
                     })}
                   </div>
 
-                  {/* Badges - BELOW IMAGES */}
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
+                  {/* ELI5 Summary (Replaces rationale) */}
+                  {(stack.eli5_summary || stack.plain_summary || stack.stack_rationale) && (
+                    <div style={{ marginTop: 'var(--space-3)', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+                        Explain It To Me Like I&apos;m 5
+                      </div>
+                      <p style={{ margin: 0, color: '#D0DAE4', lineHeight: 1.55, fontSize: '0.9rem' }}>
+                        {stack.eli5_summary || stack.plain_summary || stack.stack_rationale}
+                      </p>
+                    </div>
+                  )}
 
+                  {/* Synergy Score (Moved under description) */}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 16, marginBottom: 16 }}>
                     {synergy.synergyScore > 0 && (
                       <div style={{ width: '100%', marginBottom: 8 }}>
                         <SynergyBadge score={synergy.synergyScore} status={synergy.status} />
                       </div>
                     )}
                   </div>
-                  
-                  {stack.stack_rationale && (
-                    <p style={{ margin: 'var(--space-2) 0 0', color: '#D0DAE4', lineHeight: 1.55, fontSize: '0.9rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {stack.stack_rationale}
-                    </p>
-                  )}
                   
                   {stack.stack_components.length > 0 && (
                     <div style={{ marginTop: 'var(--space-4)' }}>

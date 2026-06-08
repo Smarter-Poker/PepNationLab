@@ -62,7 +62,7 @@ export default function ApiDocsPage() {
         </pre>
 
         <h3 style={{ fontSize: 18, fontWeight: 600, marginTop: 16 }}>POST /api/research/public/v1/match</h3>
-        <p>Suggestion Engine. Body: <code>{`{ goal, comfort, wada, risk, limit }`}</code>.</p>
+        <p>Suggestion Engine. Body: <code>{`{ goal, comfort, risk, limit }`}</code>.</p>
         <pre style={{ background: 'var(--surface, #0F1923)', padding: 16, borderRadius: 8, overflow: 'auto' }}>
 {`curl -X POST -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\

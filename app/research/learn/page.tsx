@@ -1,7 +1,7 @@
 /**
  * Learn hub - foundational, research-use-only education guides covering what
  * peptides are, evidence tiers, reconstitution, storage, reading a monograph,
- * WADA, quality verification, and the major peptide classes. Server shell;
+ * quality verification, and the major peptide classes. Server shell;
  * the interactive guide-picker (LearnGuidesExplorer) shows one guide at a time
  * instead of one endless scroll. No dosing or medical advice.
  */

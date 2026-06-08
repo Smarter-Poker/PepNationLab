@@ -465,7 +465,7 @@ function MatchResultsDrawer({
                   <Sparkles size={48} color={primaryColor} style={{ marginBottom: 16, opacity: 0.5 }} />
                   <h3 style={{ color: '#FFF', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8 }}>0 Matches Found</h3>
                   <p style={{ color: '#A8B4C0', marginBottom: 24, lineHeight: 1.5 }}>
-                    We couldn&apos;t find a protocol matching all of your strict constraints (e.g. Oral-Only, Low-Risk, WADA-Permitted).
+                    We couldn&apos;t find a protocol matching all of your strict constraints (e.g. Oral-Only, Low-Risk).
                   </p>
                   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
                     <button type="button" onClick={() => setFilterOralOnly(false)} style={{ padding: '10px 16px', background: 'rgba(255,255,255,0.1)', color: '#FFF', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Drop Oral-Only</button>
@@ -1281,7 +1281,6 @@ export default function DiscoveryHero({
     goal: string;
     goals?: string[];
     evidenceComfort?: 'strict_human_only' | 'investigational_ok' | 'preclinical_ok' | 'any';
-    wadaConstraint?: 'wada_permitted_only' | 'no_constraint';
     riskTolerance?: 'low_only' | 'moderate_ok' | 'any';
     preference?: 'single' | 'stack' | 'either';
     budget?: 'conservative' | 'standard' | 'unlimited';
@@ -1303,7 +1302,6 @@ export default function DiscoveryHero({
             goal: input.goal,
             goals: input.goals,
             evidenceComfort: input.evidenceComfort || 'preclinical_ok',
-            wadaConstraint: input.wadaConstraint || 'no_constraint',
             riskTolerance: input.riskTolerance || 'moderate_ok',
             preference: input.preference,
             budget: input.budget || 'standard',

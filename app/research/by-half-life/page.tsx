@@ -6,7 +6,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllCompounds } from '@/lib/compounds-server';
-import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
@@ -20,7 +20,6 @@ interface HalfLifeRow {
   slug: string;
   display_name: string;
   evidence_tier: string;
-  wada_status: string;
   plain_summary: string | null;
   measured_half_life_hours: number | null;
   predicted_half_life_hours: number | null;
@@ -62,9 +61,6 @@ function CompoundCard({ c }: { c: HalfLifeRow }) {
         <span style={{ fontSize: '0.78rem', color: 'var(--teal, #00C4BC)' }}>
           Half-Life: {hl.toFixed(1)} h {!measured && '(predicted)'}
         </span>
-      )}
-      {c.wada_status && c.wada_status !== 'not_listed' && (
-        <span style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)' }}>{wadaLabel(c.wada_status)}</span>
       )}
     </Link>
   );

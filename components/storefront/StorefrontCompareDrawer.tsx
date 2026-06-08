@@ -13,7 +13,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import { X, Scale, ChevronDown, ChevronRight, GripHorizontal, ChevronLeft, ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info, Zap, BookOpen, Clock, Thermometer, Check, Shield } from 'lucide-react';
-import { evidenceTier, type Compound, RISK_META, researchAreaLabel, wadaLabel } from '@/lib/compounds';
+import { evidenceTier, type Compound, RISK_META, researchAreaLabel } from '@/lib/compounds';
 import InCellGlossaryTooltip from '../research/InCellGlossaryTooltip';
 import { scoreCompound, type CompoundScore } from '../research/CompareTool';
 import DynamicAddToCartButton from './DynamicAddToCartButton';

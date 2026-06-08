@@ -6,7 +6,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllCompounds } from '@/lib/compounds-server';
-import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
@@ -20,7 +20,6 @@ interface CitedCompound {
   slug: string;
   display_name: string;
   evidence_tier: string;
-  wada_status: string;
   category: string | null;
   citation_count: number;
   [key: string]: unknown;
@@ -48,7 +47,6 @@ function RankCard({ c, rank }: { c: CitedCompound; rank: number }) {
         <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{c.display_name}</span>
         <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)' }}>
           {c.category} · <span style={{ color: t.color }}>{t.label}</span>
-          {c.wada_status && c.wada_status !== 'not_listed' ? ` · ${wadaLabel(c.wada_status)}` : ''}
         </span>
       </div>
       <span style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--teal, #00C4BC)', whiteSpace: 'nowrap' }}>

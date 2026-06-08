@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getAllCompounds } from '@/lib/compounds-server';
-import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import { evidenceTier } from '@/lib/compounds';
 import ReceptorAffinityHeatmap from '@/components/research/ReceptorAffinityHeatmap';
 
 type PageProps = { params: Promise<{ target: string }> };
@@ -29,7 +29,6 @@ interface CompoundRow {
   display_name: string;
   category: string | null;
   evidence_tier: string;
-  wada_status: string;
   plain_summary: string | null;
   receptors: string[] | null;
 }
@@ -114,9 +113,6 @@ export default async function ResearchTargetDetailPage({ params }: PageProps) {
                 <span style={{ fontSize: '1rem', fontWeight: 700 }}>{c.display_name}</span>
                 {c.plain_summary && (
                   <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.plain_summary}</span>
-                )}
-                {c.wada_status && c.wada_status !== 'not_listed' && (
-                  <span style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)', marginTop: '4px' }}>{wadaLabel(c.wada_status)}</span>
                 )}
               </Link>
             );

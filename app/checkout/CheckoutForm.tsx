@@ -1080,7 +1080,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         </div>
       )}
 
-      {/* Research-use-only compound warnings: WADA-prohibited items, stacked
+      {/* Research-use-only compound warnings: stacked
           pro-angiogenic / multiple GLP-1 agents, and cold-chain handling. */}
       <CartWarnings productIds={cart.map((item) => item.id)} />
 

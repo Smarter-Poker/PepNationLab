@@ -6,7 +6,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllCompounds } from '@/lib/compounds-server';
-import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
@@ -20,7 +20,6 @@ interface TrialRow {
   slug: string;
   display_name: string;
   evidence_tier: string;
-  wada_status: string;
   category: string | null;
   active_trial_count: number | null;
   completed_trial_count: number | null;
@@ -52,7 +51,6 @@ function TrialCard({ c, rank }: { c: TrialCompound; rank: number }) {
         <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{c.display_name}</span>
         <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)' }}>
           {c.category} · <span style={{ color: t.color }}>{t.label}</span>
-          {c.wada_status && c.wada_status !== 'not_listed' ? ` · ${wadaLabel(c.wada_status)}` : ''}
         </span>
       </div>
       <span style={{ fontSize: '0.82rem', color: '#00E5FF', fontWeight: 700, whiteSpace: 'nowrap' }}>

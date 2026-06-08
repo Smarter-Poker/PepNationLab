@@ -8,7 +8,7 @@
  *   PHASE 2
  *     1. IsThisRightForMe         - collapsible expander that surfaces the
  *                                   compound's studied_for + research areas +
- *                                   WADA + cold-chain in a researcher-friendly
+ *                                   cold-chain in a researcher-friendly
  *                                   "Is This Right For My Research?" panel
  *                                   (PHASE 3 addition).
  *     2. StackComponentsCards     - when the current compound is itself a
@@ -57,7 +57,6 @@ import {
   reconstitutionVolumeMl,
   drawVolumeMl,
   researchAreaLabel,
-  wadaLabel,
   type Compound,
 } from '@/lib/compounds';
 
@@ -457,9 +456,8 @@ function IsThisRightForMe({
   if (!compound) return null;
   const studied = (compound.studied_for || []).slice(0, 6);
   const areas = (compound.research_areas || []).slice(0, 6);
-  const isWadaProhibited = false;
   const isTempSensitive = compound.is_temp_sensitive;
-  if (studied.length === 0 && areas.length === 0 && !isWadaProhibited && !isTempSensitive) return null;
+  if (studied.length === 0 && areas.length === 0 && !isTempSensitive) return null;
 
   return (
     <section aria-label="Is This Right For My Research" style={{
@@ -533,20 +531,8 @@ function IsThisRightForMe({
               </div>
             </div>
           )}
-          {(isWadaProhibited || isTempSensitive) && (
+          {isTempSensitive && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {isWadaProhibited && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '8px 12px', borderRadius: 10,
-                  background: 'rgba(229,62,62,0.10)',
-                  border: '1px solid rgba(229,62,62,0.30)',
-                  color: '#F08A8A', fontSize: '0.82rem', fontWeight: 700,
-                }}>
-                  <AlertCircle size={14} aria-hidden="true" />
-                  {wadaLabel(compound.wada_status)} - Not For Tested Athletes
-                </div>
-              )}
               {isTempSensitive && (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 8,

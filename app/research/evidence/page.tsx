@@ -1,15 +1,15 @@
 /**
  * Evidence & Safety Reference - a cross-compound hub that surfaces how strong
- * the evidence is for each catalog compound, which compounds are WADA-prohibited,
+ * the evidence is for each catalog compound, which compounds carry risk flags,
  * and which carry notable safety flags. Server component computes the data and
  * hands it to EvidenceSafetyTabs, which shows one category at a time (Evidence /
- * WADA / Safety Flags) instead of one long scroll. Research-use-only throughout.
+ * Safety Flags) instead of one long scroll. Research-use-only throughout.
  */
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllCompounds } from '@/lib/compounds-server';
-import { RISK_META, evidenceTier, wadaLabel } from '@/lib/compounds';
+import { RISK_META, evidenceTier } from '@/lib/compounds';
 import type { Compound } from '@/lib/compounds';
 import EvidenceSafetyTabs, {
   type EvidenceGroup,
@@ -82,7 +82,7 @@ export default async function EvidenceSafetyPage() {
           Evidence & Safety Reference
         </h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1.05rem', marginTop: 'var(--space-2, 8px)', maxWidth: '760px' }}>
-          A Cross-Compound View Of How Strong The Evidence Is, Which Compounds Are WADA-Prohibited, And Which Carry
+          A Cross-Compound View Of How Strong The Evidence Is, And Which Compounds Carry
           Notable Safety Flags. Pick A Category Below. For Laboratory Research Only. Not Medical Advice Or Dosing Guidance.
         </p>
       </header>

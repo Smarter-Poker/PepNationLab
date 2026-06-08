@@ -89,7 +89,6 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     displayName: c.display_name,
     aliases: c.aliases ?? [],
     evidenceTier: c.evidence_tier ?? '',
-    wadaStatus: c.wada_status ?? 'not_listed',
     category: c.category ?? null,
     mechanism: c.mechanism ?? null,
     halfLife: c.half_life || (c.measured_half_life_hours ? `${c.measured_half_life_hours}h (measured)` : c.predicted_half_life_hours ? `${c.predicted_half_life_hours}h (predicted)` : null),

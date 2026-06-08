@@ -166,7 +166,7 @@ export interface CartWarning {
 
 /**
  * Analyze a set of compounds in a cart and return contextual, research-framed
- * warnings: WADA-prohibited items, stacked pro-angiogenic compounds, multiple
+ * warnings: stacked pro-angiogenic compounds, multiple
  * GLP-1 agents, and a cold-chain shipping note for temperature-sensitive items.
  */
 export function analyzeCartWarnings(compounds: Compound[]): CartWarning[] {

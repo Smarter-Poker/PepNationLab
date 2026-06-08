@@ -33,7 +33,7 @@ export default function GlossaryPage() {
           Peptide Glossary
         </h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1.05rem', marginTop: 'var(--space-2, 8px)', maxWidth: '720px' }}>
-          Plain-Language Definitions Of The Terms Used Throughout The Research Library, From Amino Acid To WADA. Tap A
+          Plain-Language Definitions Of The Terms Used Throughout The Research Library, From Amino Acid To Angiogenesis. Tap A
           Letter Or Search. For Laboratory Research Only.
         </p>
       </header>

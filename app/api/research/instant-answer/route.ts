@@ -39,7 +39,6 @@ interface CompoundCardRow {
   warnings: string | null;
   plain_summary: string | null;
   handling: Record<string, unknown> | null;
-  wada_status: string;
   is_stack: boolean | null;
   stack_components: string[] | null;
   stack_rationale: string | null;
@@ -57,7 +56,7 @@ async function fetchCompoundCards(
   const { data, error } = await supabase
     .from('compounds')
     .select(
-      'slug, display_name, aliases, category, evidence_tier, compound_class, molecular_target, mechanism, studied_for, research_areas, side_effects, warnings, plain_summary, handling, wada_status, is_stack, stack_components, stack_rationale, half_life, pk_summary, measured_half_life_hours, predicted_half_life_hours',
+      'slug, display_name, aliases, category, evidence_tier, compound_class, molecular_target, mechanism, studied_for, research_areas, side_effects, warnings, plain_summary, handling, is_stack, stack_components, stack_rationale, half_life, pk_summary, measured_half_life_hours, predicted_half_life_hours',
     )
     .in('slug', slugs);
   if (error || !data) return [];
@@ -113,7 +112,6 @@ async function buildPayload(
             name: primary.display_name,
             plain_summary: primary.plain_summary,
             evidence_tier: primary.evidence_tier,
-            wada_status: primary.wada_status,
             mechanism: primary.mechanism,
             molecular_target: primary.molecular_target,
             studied_for: primary.studied_for ?? [],
@@ -133,7 +131,6 @@ async function buildPayload(
             name: c.display_name,
             plain_summary: c.plain_summary,
             evidence_tier: c.evidence_tier,
-            wada_status: c.wada_status,
             mechanism: c.mechanism,
             studied_for: c.studied_for ?? [],
             url: `/research/compounds/${c.slug}`,
@@ -224,7 +221,6 @@ async function buildPayload(
             name: c.display_name,
             plain_summary: c.plain_summary,
             evidence_tier: c.evidence_tier,
-            wada_status: c.wada_status,
             url: `/research/compounds/${c.slug}`,
           })),
           rationale: primary.stack_rationale,
