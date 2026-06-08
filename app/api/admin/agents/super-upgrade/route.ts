@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Only Agents Can Be Upgraded To Super Agents' }, { status: 400 });
     }
     if (is_super_agent && agentProfile.parent_agent_id) {
-      return NextResponse.json({ error: 'Sub-Agents cannot be upgraded to Super Agents' }, { status: 400 });
+      return NextResponse.json({ error: 'Sub-Agents Cannot Be Upgraded To Super Agents' }, { status: 400 });
     }
 
     // Upgrading to Super Agent re-triggers onboarding so the new super agent
@@ -52,6 +52,10 @@ export async function POST(req: NextRequest) {
     const upgradeUpdate: Record<string, unknown> = { is_super_agent };
     if (is_super_agent === true) {
       upgradeUpdate.onboarding_completed_at = null;
+      // Clear stale step acknowledgments so the agent does not skip the new
+      // super-agent-specific steps (agent markup tutorial) with flags left
+      // over from their prior agent onboarding.
+      upgradeUpdate.onboarding_progress = {};
     }
 
     const { error } = await supabase

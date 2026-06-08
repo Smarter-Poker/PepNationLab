@@ -262,8 +262,11 @@ export async function POST(req: NextRequest) {
       referring_sub_agent_id: null,
       // Promotion re-triggers the role-tailored onboarding wizard: the newly
       // promoted account must complete setup for its new role before reaching
-      // any dashboard. See app/dashboard/layout.tsx + /onboarding.
+      // any dashboard. Also clear the prior step acknowledgments so a once-
+      // onboarded account does not skip role-specific steps with stale flags.
+      // See app/dashboard/layout.tsx + /onboarding.
       onboarding_completed_at: null,
+      onboarding_progress: {},
       updated_at: now,
     };
     if (paymentModel === 'credit') {

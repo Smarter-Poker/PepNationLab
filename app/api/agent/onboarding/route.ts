@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
@@ -13,11 +13,12 @@ export const dynamic = 'force-dynamic';
  * prefilled with the data each step needs. POST performs the per-step writes
  * (profile, warehouse, markup, acknowledgments) and the final completion.
  *
- * All writes are scoped to the authenticated caller's own row via the service
- * client. The service connection is not the `authenticated` Postgres role, so
- * the protect_profile_columns trigger does not fire on it -- meaning we MUST
+ * All DB access uses the admin client (raw supabase-js) which truly bypasses
+ * RLS and is not the `authenticated` Postgres role, so the
+ * protect_profile_columns trigger does not fire on it -- meaning we MUST
  * build explicit, allow-listed update objects and never echo client input
- * into protected columns (role, tier, commission_pct, balances, etc.).
+ * into protected columns (role, tier, commission_pct, balances, etc.). Every
+ * write is scoped to the authenticated caller's own id.
  */
 
 // Default super-agent markup (percent; stored as a decimal fraction).
@@ -94,7 +95,7 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const service = await createServiceClient();
+  const service = createAdminClient();
 
   const { data: profile } = await service
     .from('profiles')
@@ -178,7 +179,7 @@ export async function GET() {
 
   // Markup prefill: stored override (as %), else the super-agent default.
   const storedMarkup = profile.custom_markup_override != null ? Number(profile.custom_markup_override) * 100 : null;
-  const markupDefaultPct = role === 'super_agent' ? SUPER_AGENT_DEFAULT_MARKUP_PCT : (storedMarkup ?? 0);
+  const markupDefaultPct = storedMarkup ?? (role === 'super_agent' ? SUPER_AGENT_DEFAULT_MARKUP_PCT : 0);
 
   return NextResponse.json({
     role,
@@ -248,7 +249,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'invalid_body', details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const service = await createServiceClient();
+  const service = createAdminClient();
   const { data: profile } = await service
     .from('profiles')
     .select('id, role, is_super_agent, is_sub_agent, onboarding_progress, must_change_password, first_name, last_name, email, phone, custom_markup_override')
@@ -293,11 +294,18 @@ export async function POST(req: NextRequest) {
       zip: w.zip,
       country: w.country || 'US',
     };
-    const { error } = await service
+    const { data: whRows, error } = await service
       .from('agent_profiles')
       .update({ warehouse_address })
-      .eq('id', user.id);
+      .eq('id', user.id)
+      .select('id');
     if (error) return NextResponse.json({ error: 'warehouse_update_failed' }, { status: 500 });
+    // A zero-row update means this account has no agent_profiles row (should never
+    // happen -- all agents/super-agents are provisioned one). Surface a clear
+    // error instead of returning ok and looping the wizard on this step forever.
+    if (!whRows || whRows.length === 0) {
+      return NextResponse.json({ error: 'storefront_not_provisioned' }, { status: 409 });
+    }
     return NextResponse.json({ ok: true, warehouse_address });
   }
 
