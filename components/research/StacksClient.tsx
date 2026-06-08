@@ -173,6 +173,26 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 
   return (
     <div style={{ maxWidth: 1040, margin: '0 auto', padding: 'var(--space-6) var(--space-4)' }}>
+      <style dangerouslySetInnerHTML={{__html: `
+        .stack-card {
+          content-visibility: auto;
+          contain-intrinsic-size: 500px;
+        }
+        .stack-card::after {
+          content: '';
+          position: absolute;
+          top: 0; left: -150%;
+          width: 50%; height: 100%;
+          background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0) 100%);
+          transform: skewX(-25deg);
+          transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+          pointer-events: none;
+          z-index: 20;
+        }
+        .stack-card:hover::after {
+          left: 200%;
+        }
+      `}} />
       <header style={{ marginBottom: 'var(--space-6)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ display: 'flex', flex: 1 }}>
@@ -284,14 +304,16 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
             return (
               <motion.article
                 key={stack.slug}
-                className="glass-panel"
-                whileHover={{ y: -4, boxShadow: '0 12px 30px rgba(0,0,0,0.5), inset 0 2px 10px rgba(255,255,255,0.3)' }}
+                className="glass-panel stack-card"
+                whileHover={{ y: -6, scale: 1.02, boxShadow: '0 20px 40px rgba(0,0,0,0.6), inset 0 2px 10px rgba(255,255,255,0.4)' }}
                 style={{ 
                   padding: 4, overflow: 'hidden', position: 'relative', cursor: 'pointer', 
                   background: isComparing ? '#00E5FF' : 'linear-gradient(135deg, #e0e5ec 0%, #88929c 25%, #e0e5ec 50%, #a3b1c6 75%, #f0f4f8 100%)',
                   borderRadius: 24,
                   boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-                  border: 'none'
+                  border: 'none',
+                  contentVisibility: 'auto',
+                  containIntrinsicSize: '500px'
                 }}
                 onClick={() => setActiveStackDrawer(stack.slug)}
               >

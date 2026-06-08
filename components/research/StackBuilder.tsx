@@ -11,6 +11,7 @@ import {
 import { 
   analyzeCartWarnings, 
   calculateStackSynergy, 
+  RESEARCH_AREAS,
   type Compound, 
   type CartWarning 
 } from '@/lib/compounds';
@@ -86,6 +87,25 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
     () => compounds.filter((c) => !c.is_stack && !c.display_name.toLowerCase().includes('water') && !c.display_name.toLowerCase().includes('acetic')).sort((a, b) => a.display_name.localeCompare(b.display_name)),
     [compounds]
   );
+  
+  const groupedCompounds = useMemo(() => {
+    const groups: Record<string, Compound[]> = { 'Other': [] };
+    selectable.forEach(c => {
+      let placed = false;
+      if (c.research_areas && c.research_areas.length > 0) {
+        const primaryArea = c.research_areas[0];
+        if (RESEARCH_AREAS[primaryArea]) {
+          const label = RESEARCH_AREAS[primaryArea].label;
+          if (!groups[label]) groups[label] = [];
+          groups[label].push(c);
+          placed = true;
+        }
+      }
+      if (!placed) groups['Other'].push(c);
+    });
+    if (groups['Other'].length === 0) delete groups['Other'];
+    return Object.fromEntries(Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0])));
+  }, [selectable]);
   const stacks = useMemo(() => compounds.filter((c) => c.is_stack), [compounds]);
   const bySlug = useMemo(() => new Map(compounds.map((c) => [c.slug, c])), [compounds]);
 
@@ -340,12 +360,19 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
     e.dataTransfer.setData('text/plain', JSON.stringify({ sourceDay, compoundSlug }));
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent, dayName: string) => {
     e.preventDefault();
+    if (dragOverDay !== dayName) setDragOverDay(dayName);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverDay(null);
   };
 
   const handleDrop = (e: React.DragEvent, targetDay: string) => {
     e.preventDefault();
+    setDragOverDay(null);
     try {
       const dataStr = e.dataTransfer.getData('text/plain');
       if (!dataStr) return;
@@ -471,6 +498,29 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
 
   return (
     <div className="glass-panel" style={{ padding: 0, border: '3px solid #88929C', borderRadius: 24, background: 'linear-gradient(145deg, rgba(30,35,40,0.9) 0%, rgba(15,20,25,0.95) 100%)', boxShadow: 'inset 0 1px 3px rgba(255,255,255,0.1), 0 10px 30px rgba(0,0,0,0.5)' }}>
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes pulseGlow {
+          0% { filter: drop-shadow(0 0 4px rgba(0,229,255,0.4)); }
+          50% { filter: drop-shadow(0 0 16px rgba(0,229,255,0.8)); }
+          100% { filter: drop-shadow(0 0 4px rgba(0,229,255,0.4)); }
+        }
+        @keyframes emptyStateFloat {
+          0% { transform: translateY(0px); opacity: 0.5; }
+          50% { transform: translateY(-10px); opacity: 1; }
+          100% { transform: translateY(0px); opacity: 0.5; }
+        }
+        .drag-over-active {
+          background: rgba(0,229,255,0.1) !important;
+          border: 2px dashed #00E5FF !important;
+        }
+        .compound-pill {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .compound-pill:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+      `}} />
       <div style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
             <Layers size={22} color="#00C4BC" aria-hidden="true" />
@@ -480,46 +530,55 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
             Select Two Or More Compounds To See Synergy Index Gauges, Active Half-Life Concentration Decays, And Create Fully Customizable 12-Week Dosing Protocol Sheets.
           </p>
 
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '0.5rem',
-              marginBottom: 'var(--space-5)',
-            }}
-          >
-            {selectable.map((c) => {
-              const isOn = selected.includes(c.slug);
-              return (
-                <button
-                  key={c.slug}
-                  type="button"
-                  onClick={() => toggle(c.slug)}
-                  aria-pressed={isOn}
-                  style={{
-                    padding: '0.4rem 0.8rem',
-                    borderRadius: '999px',
-                    border: `1px solid ${isOn ? '#00C4BC' : '#1D2D3E'}`,
-                    background: isOn ? 'rgba(0,196,188,0.14)' : '#0F1923',
-                    color: isOn ? '#00C4BC' : '#D0DAE4',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                    fontWeight: isOn ? 700 : 400,
-                    transition: 'all 0.2s',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
-                >
-                  <Image src={products.find(p => p.compoundSlug === c.slug)?.imageUrl || '/images/placeholder_vial.png'} alt={c.slug} width={14} height={14} unoptimized style={{ width: 14, height: 14, objectFit: 'contain', opacity: isOn ? 1 : 0.5 }} />
-                  {c.display_name}
-                </button>
-              );
-            })}
+          <div style={{ marginBottom: 'var(--space-5)', display: 'grid', gap: 20 }}>
+            {Object.entries(groupedCompounds).map(([groupName, groupSelectables]) => (
+              <div key={groupName}>
+                <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: '#A8B4C0', marginBottom: 8, letterSpacing: '0.05em' }}>
+                  {groupName}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {groupSelectables.map((c) => {
+                    const isOn = selected.includes(c.slug);
+                    return (
+                      <button
+                        key={c.slug}
+                        type="button"
+                        className="compound-pill"
+                        onClick={() => toggle(c.slug)}
+                        aria-pressed={isOn}
+                        style={{
+                          padding: '0.4rem 0.8rem',
+                          borderRadius: '999px',
+                          border: `1px solid ${isOn ? '#00C4BC' : '#1D2D3E'}`,
+                          background: isOn ? 'rgba(0,196,188,0.14)' : '#0F1923',
+                          color: isOn ? '#00C4BC' : '#D0DAE4',
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          fontWeight: isOn ? 700 : 400,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          boxShadow: isOn ? '0 0 12px rgba(0,196,188,0.2)' : 'none'
+                        }}
+                      >
+                        <Image src={products.find(p => p.compoundSlug === c.slug)?.imageUrl || '/images/placeholder_vial.png'} alt={c.slug} width={14} height={14} unoptimized style={{ width: 14, height: 14, objectFit: 'contain', opacity: isOn ? 1 : 0.5 }} />
+                        {c.display_name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
 
           {selected.length < 2 ? (
-            <p style={{ color: '#A8B4C0', margin: 0 }}>Select At Least Two Compounds To Evaluate A Combination.</p>
+            <div style={{ padding: '60px 20px', textAlign: 'center', background: 'rgba(0,0,0,0.2)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, animation: 'emptyStateFloat 4s ease-in-out infinite' }}>
+                <Layers size={32} color="#00E5FF" />
+              </div>
+              <h3 style={{ margin: '0 0 8px', color: '#fff', fontSize: '1.2rem' }}>Awaiting Stack Selection</h3>
+              <p style={{ color: '#A8B4C0', margin: 0, maxWidth: 400, lineHeight: 1.5 }}>Select at least two compounds from the categories above to analyze synergies, decay curves, and generate a 12-week protocol.</p>
+            </div>
           ) : (
             <>
               {/* Synergy Index & Risk Gauge Section */}
@@ -540,7 +599,7 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
                     Stack Synergy Index
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 60, height: 60, borderRadius: '50%', border: '4px solid #162230', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    <div style={{ width: 60, height: 60, borderRadius: '50%', border: '4px solid #162230', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', animation: 'pulseGlow 4s infinite' }}>
                       <svg width="60" height="60" style={{ transform: 'rotate(-90deg)', position: 'absolute', top: -4, left: -4 }}>
                         <circle 
                           cx="30" 
@@ -551,6 +610,7 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
                           strokeWidth="4" 
                           strokeDasharray={2 * Math.PI * 26} 
                           strokeDashoffset={2 * Math.PI * 26 * (1 - synergyAnalysis.synergyIndex / 100)} 
+                          style={{ transition: 'stroke-dashoffset 1s ease-in-out' }}
                         />
                       </svg>
                       <strong style={{ fontSize: 16, color: '#FFFFFF' }}>{synergyAnalysis.synergyIndex}</strong>
