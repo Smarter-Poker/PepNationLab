@@ -75,7 +75,16 @@ export async function enablePush(): Promise<EnableResult> {
 
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
-      return { ok: false, error: 'Permission Was Not Granted.' };
+      // 'denied' is sticky: the browser will not prompt again until the user
+      // unblocks the site in settings. 'default' means they dismissed the
+      // prompt and can simply try again. Surface the difference so the UI can
+      // show the right recovery path instead of a dead-end.
+      return {
+        ok: false,
+        error: permission === 'denied'
+          ? 'Notifications Are Blocked For This Site In Your Browser Settings.'
+          : 'You Closed The Permission Box Before Choosing Allow.',
+      };
     }
 
     const reg = await navigator.serviceWorker.register('/sw.js');

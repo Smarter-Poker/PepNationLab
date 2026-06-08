@@ -21,7 +21,7 @@ import {
   Lock, BellRing, UserRound, Warehouse, Store, Tag, Percent, Users,
   CheckCircle2, XCircle, ArrowRight, ArrowLeft, Loader2, ShieldCheck, Smartphone, RotateCw, ListChecks,
 } from 'lucide-react';
-import { isWebPushSupported, enablePush } from '@/lib/push-client';
+import { isWebPushSupported, enablePush, notificationPermission } from '@/lib/push-client';
 
 type WizardRole = 'super_agent' | 'agent' | 'sub_agent';
 
@@ -51,6 +51,39 @@ const ROLE_LABEL: Record<WizardRole, string> = {
 
 const FINISH_KEY = 'finish';
 
+/**
+ * The onboarding API returns machine-readable snake_case error codes. Map them
+ * to plain-English, Title Case messages so a failure never shows a raw code
+ * like "storefront_not_provisioned" in the red error line. Unknown codes fall
+ * back to a generic, still-friendly message.
+ */
+const ONBOARDING_ERROR_MESSAGES: Record<string, string> = {
+  unauthorized: 'Your Session Expired. Please Refresh The Page And Sign In Again.',
+  invalid_body: 'Some Of The Details Were Not Valid. Please Check Your Entries And Try Again.',
+  profile_not_found: 'We Could Not Find Your Account. Please Refresh And Try Again.',
+  not_onboardable: 'This Step Is Not Available For Your Account Type.',
+  ack_failed: 'We Could Not Save Your Progress. Please Try Again.',
+  profile_update_failed: 'We Could Not Save Your Contact Details. Please Try Again.',
+  warehouse_update_failed: 'We Could Not Save Your Warehouse Address. Please Try Again.',
+  storefront_not_provisioned: 'Your Storefront Is Not Ready Yet. Please Refresh The Page. If This Keeps Happening, Contact Support.',
+  sub_agents_have_no_warehouse: 'Sub-Agents Do Not Manage A Warehouse.',
+  sub_agents_have_no_markup: 'Sub-Agents Do Not Set Their Own Markup.',
+  markup_update_failed: 'We Could Not Save Your Markup. Please Try Again.',
+  downstream_commission_failed: 'We Could Not Save The Commission. Please Try Again.',
+  downstream_markup_failed: 'We Could Not Save The Markup. Please Try Again.',
+  only_agents_set_sub_commission: 'Only Agents Can Set Sub-Agent Commissions.',
+  only_super_agents_set_agent_markup: 'Only Super Agents Can Set Agent Markup.',
+  complete_failed: 'We Could Not Finish Your Setup. Please Try Again.',
+  incomplete: 'Some Steps Are Still Incomplete. Please Use The Back Button To Finish Them.',
+  unknown_action: 'Something Went Wrong. Please Refresh The Page And Try Again.',
+};
+
+function friendlyOnboardingError(code: unknown): string {
+  if (typeof code === 'string' && ONBOARDING_ERROR_MESSAGES[code]) return ONBOARDING_ERROR_MESSAGES[code];
+  if (typeof code === 'string' && code && !code.includes('_')) return code; // already human-readable
+  return 'Something Went Wrong. Please Try Again.';
+}
+
 async function postOnboarding(payload: Record<string, unknown>) {
   const res = await fetch('/api/agent/onboarding', {
     method: 'POST',
@@ -58,7 +91,7 @@ async function postOnboarding(payload: Record<string, unknown>) {
     body: JSON.stringify(payload),
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error || 'Save Failed');
+  if (!res.ok) throw new Error(friendlyOnboardingError(json.error));
   return json;
 }
 
@@ -359,6 +392,10 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
   const [err, setErr] = useState<string | null>(null);
   const [supported, setSupported] = useState<boolean | null>(null);
   const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop'>('desktop');
+  // True when the browser permission is 'denied' (sticky block). In that state
+  // clicking Turn On can never prompt again, so we must guide the user to
+  // unblock the site in settings rather than leave them at a dead-end.
+  const [blocked, setBlocked] = useState(false);
 
   useEffect(() => {
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
@@ -367,7 +404,30 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time post-mount capability sync
     setSupported(isWebPushSupported());
     setPlatform(detectedPlatform);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time post-mount permission sync
+    setBlocked(notificationPermission() === 'denied');
   }, []);
+
+  // Platform-specific steps to UNBLOCK notifications once they were denied.
+  const unblockSteps: string[] =
+    platform === 'ios'
+      ? [
+          'Open The iPhone Or iPad Settings App.',
+          'Scroll Down And Tap Pep Nation, Then Tap Notifications.',
+          'Turn On "Allow Notifications".',
+          'Return Here And Tap Re-Check Below.',
+        ]
+      : platform === 'android'
+        ? [
+            'Tap The Lock Or Tune Icon At The Left Of The Address Bar (Or Browser Menu, Then Site Settings).',
+            'Find "Notifications" And Switch It To Allow.',
+            'Reload This Page, Then Tap "Turn On Notifications" Again.',
+          ]
+        : [
+            'Click The Lock Or Sliders Icon At The Left End Of The Address Bar.',
+            'Find "Notifications" And Switch It From Block To Allow.',
+            'Reload This Page, Then Click "Turn On Notifications" Again.',
+          ];
 
   // Platform-specific, click-by-click instructions. iOS push only works from
   // the installed home-screen app, so its steps install first.
@@ -410,11 +470,14 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
     } catch {
       setErr('Notifications Could Not Be Turned On On This Device.');
     }
+    // Re-read permission: if it is now blocked, switch to the unblock guidance.
+    setBlocked(notificationPermission() === 'denied');
     setBusy(false);
   };
 
   const recheck = async () => {
     setBusy(true); setErr(null);
+    setBlocked(notificationPermission() === 'denied');
     await onDone();
     setBusy(false);
   };
@@ -424,7 +487,11 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
       <StepIntro icon={BellRing} title="Turn On Notifications"
         blurb="Notifications Let You Know The Moment You Get A New Order Or Payment. Follow The Steps For Your Device Below. This Step Finishes Only Once Notifications Are Actually On." />
 
-      <GuidePanel heading={heading} icon={Smartphone} steps={steps} />
+      {blocked ? (
+        <GuidePanel heading="Notifications Are Blocked -- How To Unblock" icon={RotateCw} steps={unblockSteps} />
+      ) : (
+        <GuidePanel heading={heading} icon={Smartphone} steps={steps} />
+      )}
 
       <KeyCallout>
         The Most Important Part: When Your Device Asks For Permission, You Must Choose <strong style={{ color: 'var(--white)' }}>Allow</strong>. If You Pick Block Or Don&apos;t Allow, Notifications Stay Off.

@@ -10,46 +10,9 @@ import { analyzeStack, getCategoryFromName, type StackAnalysis } from '@/lib/sta
 import StackBuilder from './StackBuilder';
 import { FlaskConical, Beaker, CheckCircle2, X, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import IframeModal from '@/components/ui/IframeModal';
-import { ResearchLiteratureModal } from './ResearchLiteratureModal';
+import IframeModal from '@/components/ui/IframeModal';
 
-const ResearchBadge = ({ count, onClick }: { count: number, onClick?: (e: React.MouseEvent) => void }) => (
-  <button 
-    onClick={onClick}
-    style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      background: 'linear-gradient(to right, #1b2027 0%, #11151a 100%)',
-      border: '3px solid #88929C',
-      borderRadius: 999,
-      padding: '4px 20px 4px 4px',
-      gap: 16,
-      width: '100%',
-      maxWidth: 400,
-      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
-      marginBottom: 8,
-      cursor: onClick ? 'pointer' : 'default',
-      transition: 'transform 0.1s ease-in-out, opacity 0.2s',
-      textAlign: 'left'
-    }}
-    onMouseOver={onClick ? (e) => (e.currentTarget.style.opacity = '0.85') : undefined}
-    onMouseOut={onClick ? (e) => (e.currentTarget.style.opacity = '1') : undefined}
-    onMouseDown={onClick ? (e) => (e.currentTarget.style.transform = 'scale(0.98)') : undefined}
-    onMouseUp={onClick ? (e) => (e.currentTarget.style.transform = 'scale(1)') : undefined}
-  >
-    <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, #2b333e 0%, #151a21 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #5a6b7d', flexShrink: 0, boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.1)' }}>
-      <FlaskConical size={24} color="#00E5FF" style={{ filter: 'drop-shadow(0 0 8px rgba(0,229,255,0.6))' }} />
-    </div>
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-      <div style={{ color: '#00E5FF', fontSize: '1.1rem', fontWeight: 900, letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: 6 }}>
-        {count > 0 ? count.toLocaleString() : "1,454"} 
-        <span style={{ fontSize: '1rem', fontWeight: 700, color: '#E2E8F0', marginTop: 1 }}>Published Papers</span>
-      </div>
-      <div style={{ color: '#A8B4C0', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-        Click to view research literature
-      </div>
-    </div>
-  </button>
-);
+
 
 const SynergyBadge = ({ score, status }: { score: number, status: string }) => (
   <div style={{
@@ -91,7 +54,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
   const [activeStackDrawer, setActiveStackDrawer] = useState<string | null>(null);
   const [showCompareDrawer, setShowCompareDrawer] = useState(false);
   const [pubmedUrl, setPubmedUrl] = useState<string | null>(null);
-  const [literatureQuery, setLiteratureQuery] = useState<string | null>(null);
+
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
   const { addToCart, addMultipleToCart } = useCart();
@@ -212,18 +175,6 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
   return (
     <div style={{ maxWidth: 1040, margin: '0 auto', padding: 'var(--space-6) var(--space-4)' }}>
       {pubmedUrl && <IframeModal url={pubmedUrl} title="PubMed Scientific Papers" onClose={() => setPubmedUrl(null)} />}
-      <AnimatePresence>
-        {literatureQuery && (
-          <ResearchLiteratureModal 
-            query={literatureQuery} 
-            onClose={() => setLiteratureQuery(null)} 
-            onSelectPaper={(pmid) => {
-              setLiteratureQuery(null);
-              setPubmedUrl(`https://pubmed.ncbi.nlm.nih.gov/${pmid}/`);
-            }} 
-          />
-        )}
-      </AnimatePresence>
       <style dangerouslySetInnerHTML={{__html: `
         .stack-card {
           content-visibility: auto;
@@ -441,7 +392,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                             <Image src={imageUrl} alt={label} width={200} height={200} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
                             <div style={{
                               position: 'absolute', bottom: 0, left: 0, right: 0,
-                              padding: '24px 8px 8px',
+                              padding: '32px 4px 4px',
                               background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 50%, #000 100%)',
                               color: '#C0C8D0', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
                               textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
@@ -463,21 +414,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 
                   {/* Badges - BELOW IMAGES */}
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
-                    {(() => {
-                      const citationCount = stack.stack_components.reduce((acc, slug) => acc + (bySlug.get(slug)?.pubmed_citation_count || 0), 0);
-                      return (
-                        <div style={{ width: '100%', marginBottom: 8 }}>
-                          <ResearchBadge 
-                            count={citationCount} 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const query = stack.stack_components.map(slug => `"${bySlug.get(slug)?.display_name}"`).join(' AND ');
-                              setLiteratureQuery(query);
-                            }} 
-                          />
-                        </div>
-                      );
-                    })()}
+
                     {synergy.synergyScore > 0 && (
                       <div style={{ width: '100%', marginBottom: 8 }}>
                         <SynergyBadge score={synergy.synergyScore} status={synergy.status} />
@@ -511,8 +448,26 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                       const premadeProducts = products.filter(p => p.compoundSlug === stack.slug);
                       if (premadeProducts.length > 0 && premadeProducts[0].imageUrl) {
                         return (
-                          <div style={{ width: 64, height: 64, position: 'relative', flexShrink: 0, borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', background: '#11151a', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <Image src={premadeProducts[0].imageUrl} alt="Premixed Stack Bottle" fill unoptimized style={{ objectFit: 'contain', padding: 4 }} />
+                          <div style={{
+                            width: 130, aspectRatio: '1 / 1.2',
+                            borderRadius: 16, 
+                            background: '#0F1318',
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            overflow: 'hidden', padding: 0,
+                            position: 'relative', flexShrink: 0
+                          }}>
+                            <Image src={premadeProducts[0].imageUrl} alt={stack.display_name} width={200} height={200} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+                            <div style={{
+                              position: 'absolute', bottom: 0, left: 0, right: 0,
+                              padding: '32px 4px 4px',
+                              background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 50%, #000 100%)',
+                              color: '#C0C8D0', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
+                              textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                            }}>
+                              {stack.display_name}
+                            </div>
                           </div>
                         );
                       }
@@ -542,7 +497,6 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
             onAddToCart={(stack: Compound) => handleAddToCart(stack)}
             bundlePrice={getBundlePrice(bySlug.get(activeStackDrawer!)!)}
             synergyData={getSynergyScore(bySlug.get(activeStackDrawer!)!)}
-            setLiteratureQuery={setLiteratureQuery}
           />
         )}
       </AnimatePresence>
@@ -778,10 +732,9 @@ interface StackDrawerProps {
   onAddToCart: (stack: Compound) => void;
   bundlePrice: number;
   synergyData: StackAnalysis;
-  setLiteratureQuery: (query: string) => void;
 }
 
-function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundlePrice, synergyData, setLiteratureQuery }: StackDrawerProps) {
+function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundlePrice, synergyData }: StackDrawerProps) {
   const stack = bySlug.get(stackSlug);
   const [activeTab, setActiveTab] = useState<'overview' | 'calculator'>('overview');
   const [calcState, setCalcState] = useState<Record<string, { mass: number, diluent: number }>>({});
@@ -879,19 +832,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
             <>
               <p style={{ color: '#D0DAE4', lineHeight: 1.6, fontSize: '0.95rem' }}>{stack.stack_rationale}</p>
               
-              <div style={{ marginTop: 24, marginBottom: 8 }}>
-                <ResearchBadge 
-                  count={citationCount} 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const query = stack.stack_components.map((slug: string) => `"${bySlug.get(slug)?.display_name}"`).join(' AND ');
-                    setLiteratureQuery(query);
-                  }} 
-                />
-                <p style={{ margin: '8px 0 0 16px', color: '#A8B4C0', fontSize: '0.85rem', lineHeight: 1.5 }}>
-                  This stack contains compounds that have been heavily researched. There are currently <strong>{citationCount > 0 ? citationCount.toLocaleString() : "1,454"} published scientific papers</strong> on PubMed evaluating the mechanisms, safety, and efficacy of these specific ingredients.
-                </p>
-              </div>
+
               
               {missingComponents.length > 0 && (
                 <div style={{ marginTop: 16, padding: 12, background: 'rgba(255, 107, 107, 0.1)', border: '1px solid rgba(255, 107, 107, 0.3)', borderRadius: 12, color: '#FF6B6B', fontSize: '0.85rem' }}>
@@ -920,7 +861,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                         <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}>
                           <Image src={imageUrl} alt={label} width={200} height={200} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
                         </div>
-                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '32px 8px 8px', background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 50%, #000 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '40px 4px 4px', background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 50%, #000 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <div style={{ color: '#C0C8D0', fontSize: '0.8rem', fontWeight: 800, textAlign: 'center', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', width: '100%' }}>{label}</div>
                           <div style={{ color: '#00E5FF', fontSize: '0.9rem', fontWeight: 700, marginTop: 2 }}>${price.toFixed(2)}</div>
                         </div>
