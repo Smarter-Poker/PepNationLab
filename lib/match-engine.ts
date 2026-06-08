@@ -158,7 +158,8 @@ function goalMentionsBonus(goal: string, c: Compound): number {
 // Hard-reject gates.
 // --------------------------------------------------------------------------
 function failsWadaGate(c: Compound, constraint: WadaConstraint): boolean {
-  return false;
+  if (constraint === 'no_constraint') return false;
+  return c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males';
 }
 
 function failsRiskGate(c: Compound, tolerance: RiskTolerance): boolean {

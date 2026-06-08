@@ -196,7 +196,9 @@ function MatchFormInner() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setErrorMsg(data.error ?? 'AI Failed. Is your API key configured?');
+        const msg = data.error ?? 'AI Configure Failed. Please Try Again.';
+        setErrorMsg(msg);
+        toast.error(msg);
         return;
       }
       if (data.result) {
@@ -223,7 +225,9 @@ function MatchFormInner() {
         });
       }
     } catch {
-      setErrorMsg('Network error communicating with AI.');
+      const msg = 'Network Error Communicating With AI.';
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setAiLoading(false);
     }
