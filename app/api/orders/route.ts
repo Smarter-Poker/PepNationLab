@@ -902,6 +902,9 @@ export async function POST(request: NextRequest) {
       unit_retail_price: item.unit_retail_price,
       unit_cost_price: item.unit_cost_price,
       unit_super_agent_cost: item.unit_super_agent_cost,
+      // Tag agent-local lines so a later cancel restores exactly what
+      // reserve_inventory took from agent_inventory (China is never tracked).
+      fulfilled_locally: (item as any).isLocalFulfillment === true,
     }));
 
     const { error: itemsError } = await serviceSupabase
