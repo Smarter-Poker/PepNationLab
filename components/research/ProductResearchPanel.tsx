@@ -6,8 +6,8 @@
  * brushed-nickel frame, the global back arrow, short paragraphs, Title Case prose.
  *
  * Each toolbar button in ProductMonograph opens this panel at one section
- * (`initialSection`): Research, Findings, Preparation, Spec Sheet, FAQs. From the
- * FAQ section, 'View The Full Research Page' switches to an in-app 'full' view
+ * (`initialSection`): Research, Findings, Preparation, Spec Sheet, COA, FAQs. From
+ * the FAQ section, 'View The Full Research Page' switches to an in-app 'full' view
  * that stacks every section; its Back arrow returns to the FAQ (true back). The
  * top back arrow otherwise returns to the product modal.
  *
@@ -26,8 +26,9 @@ import {
 } from '@/lib/compounds';
 import ReconstitutionCalculator from '@/components/research/ReconstitutionCalculator';
 import GlossaryText from '@/components/research/GlossaryText';
+import IframeModal from '@/components/ui/IframeModal';
 
-export type ResearchSection = 'profile' | 'findings' | 'prep' | 'spec' | 'faq';
+export type ResearchSection = 'profile' | 'findings' | 'prep' | 'spec' | 'coa' | 'faq';
 type View = ResearchSection | 'full';
 
 interface Props {
@@ -35,6 +36,7 @@ interface Props {
   primaryColor?: string;
   onClose: () => void;
   initialSection?: ResearchSection;
+  coaUrl?: string | null;
 }
 
 const cap: React.CSSProperties = { textTransform: 'capitalize' };
@@ -44,6 +46,7 @@ const VIEW_TITLE: Record<View, string> = {
   findings: 'Reported Findings',
   prep: 'Preparation',
   spec: 'Spec Sheet',
+  coa: 'Certificate Of Analysis',
   faq: 'Frequently Asked Questions',
   full: 'Full Research Profile',
 };
@@ -134,8 +137,9 @@ function Eli5Formatter({ text, color }: { text: string; color: string }) {
   );
 }
 
-export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC', onClose, initialSection = 'profile' }: Props) {
+export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC', onClose, initialSection = 'profile', coaUrl = null }: Props) {
   const [view, setView] = useState<View>(initialSection);
+  const [coaOpen, setCoaOpen] = useState(false);
   const tier = evidenceTier(compound.evidence_tier);
   const risk = RISK_META[compound.risk_level];
   const isHighRisk = compound.risk_level === 'critical' || compound.risk_level === 'high';
@@ -379,6 +383,60 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
               </div>
             )}
 
+            {show('coa') && (
+              <div style={{ marginBottom: full ? 'var(--space-6)' : 0 }}>
+                {full ? <SectionHeading>Certificate Of Analysis</SectionHeading> : <Label>Certificate Of Analysis</Label>}
+                <Para>
+                  This Certificate Confirms The Identity And Specifications Of {compound.display_name}. A
+                  Batch-Specific Laboratory Certificate Of Analysis, Documenting The Analytical Results For
+                  Each Production Lot, Is Available On Request.
+                </Para>
+
+                <div style={{ marginBottom: 'var(--space-4)' }}>
+                  <Label>Product Identity</Label>
+                  <Fact label="Product" value={compound.display_name} />
+                  {compound.aliases.length > 0 && <Fact label="Also Known As" value={compound.aliases.join(', ')} />}
+                  <Fact label="Category" value={compound.category} />
+                  <Fact label="Class" value={compound.compound_class} />
+                  <Fact label="Molecular Target" value={compound.molecular_target} />
+                  <Fact label="Sequence" value={id.sequence} capValue={false} />
+                  <Fact label="Molecular Weight" value={id.molecular_weight} />
+                  <Fact label="CAS" value={id.cas} capValue={false} />
+                  <Fact label="Physical Form" value={h.form} />
+                  <Fact label="Storage Temperature" value={toFahrenheit(h.storage_temp)} />
+                </div>
+
+                <div style={{ marginBottom: 'var(--space-4)' }}>
+                  <Label>Analytical Specifications</Label>
+                  <Fact label="Identity (Mass Spectrometry)" value="Confirmed On The Batch Certificate" />
+                  <Fact label="Purity (HPLC)" value="Reported On The Batch Certificate" />
+                  <Fact label="Appearance" value={h.form ? h.form : 'Reported On The Batch Certificate'} />
+                  <Fact label="Net Quantity Per Vial" value="Reported On The Batch Certificate" />
+                </div>
+
+                {coaUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => setCoaOpen(true)}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 18px',
+                      borderRadius: 'var(--radius-md)', background: primaryColor, color: '#04221F',
+                      fontWeight: 800, fontSize: '0.88rem', border: 'none', cursor: 'pointer',
+                    }}
+                  >
+                    View Batch Certificate Of Analysis
+                  </button>
+                ) : (
+                  <div style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                    <Para>
+                      A Batch-Specific Certificate Of Analysis For The Current Lot Is Available On Request.
+                      Contact Your Agent To Receive The Latest Lot Certificate For This Product.
+                    </Para>
+                  </div>
+                )}
+              </div>
+            )}
+
             {show('faq') && (
               <div>
                 {full && <SectionHeading>Frequently Asked Questions</SectionHeading>}
@@ -434,6 +492,10 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
             Research Use Only. Not For Human Or Veterinary Use. Information Provided For Laboratory Research Purposes Only.
           </p>
         </div>
+
+        {coaOpen && coaUrl ? (
+          <IframeModal url={coaUrl} title={`${compound.display_name} Certificate Of Analysis`} onClose={() => setCoaOpen(false)} />
+        ) : null}
       </div>
     </div>
   );
