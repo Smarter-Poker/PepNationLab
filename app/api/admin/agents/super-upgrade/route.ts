@@ -46,9 +46,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Sub-Agents cannot be upgraded to Super Agents' }, { status: 400 });
     }
 
+    // Upgrading to Super Agent re-triggers onboarding so the new super agent
+    // completes the super-agent setup (incl. agent markup) before using the
+    // dashboard. A downgrade does not force re-onboarding.
+    const upgradeUpdate: Record<string, unknown> = { is_super_agent };
+    if (is_super_agent === true) {
+      upgradeUpdate.onboarding_completed_at = null;
+    }
+
     const { error } = await supabase
       .from('profiles')
-      .update({ is_super_agent })
+      .update(upgradeUpdate)
       .eq('id', agentId);
 
     if (error) {

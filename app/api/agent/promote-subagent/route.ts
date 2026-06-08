@@ -260,6 +260,10 @@ export async function POST(req: NextRequest) {
       // another sub-agent (no nested sub-agents), and an existing tag from
       // when they were a researcher would now be inconsistent.
       referring_sub_agent_id: null,
+      // Promotion re-triggers the role-tailored onboarding wizard: the newly
+      // promoted account must complete setup for its new role before reaching
+      // any dashboard. See app/dashboard/layout.tsx + /onboarding.
+      onboarding_completed_at: null,
       updated_at: now,
     };
     if (paymentModel === 'credit') {
