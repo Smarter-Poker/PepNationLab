@@ -131,18 +131,25 @@ export async function GET() {
   const notificationsDone = await hasActivePushSubscription(service, user.id);
 
   // Storefront-owning roles need their agent_profiles row.
-  let storefront: { slug: string | null; display_name: string | null; warehouse_address: Record<string, unknown> | null } | null = null;
+  let storefront: { slug: string | null; display_name: string | null; warehouse_address: Record<string, unknown> | null; payment_ready: boolean } | null = null;
   let warehouseDone = false;
   if (role === 'super_agent' || role === 'agent') {
     const { data: ap } = await service
       .from('agent_profiles')
-      .select('slug, display_name, warehouse_address')
+      .select('slug, display_name, warehouse_address, payment_handles')
       .eq('id', user.id)
       .maybeSingle();
+    // payment_ready mirrors the dashboard's own gate: at least one non-empty
+    // payment handle (Zelle / Venmo / Cash App / Apple Pay). The dashboard
+    // hard-blocks every tab except Storefront Config until this is true, so the
+    // finish screen uses it to point the agent at the real next required step.
+    const handles = (ap?.payment_handles as Record<string, unknown> | null) ?? null;
+    const paymentReady = !!handles && Object.values(handles).some((v) => v != null && String(v).trim() !== '');
     storefront = {
       slug: (ap?.slug as string) ?? null,
       display_name: (ap?.display_name as string) ?? null,
       warehouse_address: (ap?.warehouse_address as Record<string, unknown>) ?? null,
+      payment_ready: paymentReady,
     };
     warehouseDone = warehouseComplete(storefront.warehouse_address);
   }

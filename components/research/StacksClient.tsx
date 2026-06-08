@@ -69,13 +69,49 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
     return Array.from(cats);
   }, [stacks]);
 
+  const POPULARITY_ORDER = [
+    'the-appetite-crusher-stack',
+    'appetite-crusher',
+    'cagrilintide-semaglutide',
+    'gh-synergy-stack',
+    'gh-synergy',
+    'cjc-1295-ipamorelin',
+    'the-wolverine-stack',
+    'wolverine-stack',
+    'bpc-157-tb-500',
+    'glow-stack',
+    'glow',
+    'klow-stack',
+    'klow',
+    'the-furnace-stack',
+    'furnace-stack',
+    'the-lipolysis-stack',
+    'lipolysis-stack',
+    'limitless-stack',
+    'shred-stack',
+    'semaglutide',
+  ];
+
   const filteredStacks = useMemo(() => {
-    return stacks.filter(stack => {
+    const arr = stacks.filter(stack => {
       const matchCat = activeCategory === 'All' || 
         stack.research_areas?.some(a => RESEARCH_AREAS[a]?.label === activeCategory);
 
       return matchCat;
     });
+
+    arr.sort((a, b) => {
+      let idxA = POPULARITY_ORDER.indexOf(a.slug);
+      let idxB = POPULARITY_ORDER.indexOf(b.slug);
+      
+      if (idxA === -1) idxA = 999;
+      if (idxB === -1) idxB = 999;
+
+      if (idxA !== idxB) return idxA - idxB;
+      return a.display_name.localeCompare(b.display_name);
+    });
+
+    return arr;
   }, [stacks, activeCategory]);
 
   const toggleCompare = (slug: string) => {
