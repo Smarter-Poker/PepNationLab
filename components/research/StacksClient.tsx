@@ -317,15 +317,12 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                         const fullTitle = isPremade ? products.filter(p => p.compoundSlug === stack.slug).sort((a,b)=>a.retailPrice-b.retailPrice)[0].productName : stack.display_name;
                         const hasSubtitle = fullTitle.includes('(') && fullTitle.endsWith(')');
                         let mainTitle = hasSubtitle ? fullTitle.substring(0, fullTitle.indexOf('(')).trim() : fullTitle;
-                        const subtitle = hasSubtitle ? fullTitle.substring(fullTitle.indexOf('(')) : '';
+                        
+                        mainTitle = mainTitle.replace(/\bKLOW\b/ig, 'Klow').replace(/\bGLOW\b/ig, 'Glow');
                         
                         const tUpper = mainTitle.toUpperCase();
                         if (!tUpper.includes('STACK') && !tUpper.includes('PROTOCOL')) {
-                          if (mainTitle === mainTitle.toUpperCase()) {
-                            mainTitle = `${mainTitle} ${stack.type === 'protocol' ? 'PROTOCOL' : 'STACK'}`;
-                          } else {
-                            mainTitle = `${mainTitle} ${stack.type === 'protocol' ? 'Protocol' : 'Stack'}`;
-                          }
+                          mainTitle = `${mainTitle} ${stack.type === 'protocol' ? 'Protocol' : 'Stack'}`;
                         }
 
                         let titleFontSize = '1.4rem';
@@ -746,6 +743,18 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
     return s.mass / s.diluent; // mg/mL
   };
 
+  const citationCount = stack.stack_components.reduce((acc: number, slug: string) => {
+    const c = bySlug.get(slug);
+    return acc + (c?.pubmed_citation_count || 0);
+  }, 0);
+
+  let mainTitle = stack.display_name;
+  mainTitle = mainTitle.replace(/\\bKLOW\\b/ig, 'Klow').replace(/\\bGLOW\\b/ig, 'Glow');
+  const tUpper = mainTitle.toUpperCase();
+  if (!tUpper.includes('STACK') && !tUpper.includes('PROTOCOL')) {
+    mainTitle = `${mainTitle} ${stack.type === 'protocol' ? 'Protocol' : 'Stack'}`;
+  }
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
       <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
@@ -755,7 +764,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
       >
         <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'sticky', top: 0, background: 'linear-gradient(to bottom, rgba(10,15,20,0.98) 0%, rgba(10,15,20,0.9) 100%)', zIndex: 10 }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 900, color: '#C0C8D0' }}>{stack.display_name}</h2>
+            <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 900, color: '#C0C8D0' }}>{mainTitle}</h2>
             <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0', marginTop: 4 }}>
               ${(bundlePrice * 0.9).toFixed(2)}
               <span style={{ fontSize: '0.7rem', color: '#68D391', marginLeft: 8, verticalAlign: 'middle' }}>10% Stack Discount</span>
@@ -773,6 +782,20 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
           {activeTab === 'overview' ? (
             <>
               <p style={{ color: '#D0DAE4', lineHeight: 1.6, fontSize: '0.95rem' }}>{stack.stack_rationale}</p>
+              
+              {citationCount > 0 && (
+                <div style={{ marginTop: 24, background: 'linear-gradient(145deg, rgba(30, 40, 50, 0.4) 0%, rgba(15, 20, 25, 0.8) 100%)', borderRadius: 16, padding: 20, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(0, 229, 255, 0.1)', color: '#00E5FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Beaker size={18} />
+                    </div>
+                    <h4 style={{ margin: 0, color: '#fff', fontSize: '1.1rem' }}>{citationCount} Research Studies</h4>
+                  </div>
+                  <p style={{ margin: 0, color: '#A8B4C0', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                    This stack contains compounds that have been heavily researched. There are currently <strong>{citationCount.toLocaleString()} published scientific papers</strong> on PubMed evaluating the mechanisms, safety, and efficacy of these specific ingredients.
+                  </p>
+                </div>
+              )}
               
               {missingComponents.length > 0 && (
                 <div style={{ marginTop: 16, padding: 12, background: 'rgba(255, 107, 107, 0.1)', border: '1px solid rgba(255, 107, 107, 0.3)', borderRadius: 12, color: '#FF6B6B', fontSize: '0.85rem' }}>

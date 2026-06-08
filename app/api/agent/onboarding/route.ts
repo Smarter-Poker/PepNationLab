@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { isTierLadderV2 } from '@/lib/pricing';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,8 @@ export const dynamic = 'force-dynamic';
  * Single backend for the role-tailored onboarding wizard (super agent / agent
  * / sub-agent). GET returns the computed step list + completion percentage,
  * prefilled with the data each step needs. POST performs the per-step writes
- * (profile, warehouse, markup, acknowledgments) and the final completion.
+ * (profile, warehouse, markup, downstream defaults, acknowledgments) and the
+ * final completion.
  *
  * All DB access uses the admin client (raw supabase-js) which truly bypasses
  * RLS and is not the `authenticated` Postgres role, so the
@@ -19,12 +21,18 @@ export const dynamic = 'force-dynamic';
  * build explicit, allow-listed update objects and never echo client input
  * into protected columns (role, tier, commission_pct, balances, etc.). Every
  * write is scoped to the authenticated caller's own id.
+ *
+ * The notifications step is VERIFIED, not acknowledged: it is only "done" when
+ * an active push_subscriptions row exists for the user (enablePush persists one
+ * via /api/push/subscribe). There is no "I have done this" bypass.
  */
 
 // Default super-agent markup (percent; stored as a decimal fraction).
 const SUPER_AGENT_DEFAULT_MARKUP_PCT = 50;
 
 type WizardRole = 'super_agent' | 'agent' | 'sub_agent';
+
+type AdminClient = ReturnType<typeof createAdminClient>;
 
 function resolveRole(p: { role: string | null; is_super_agent: boolean | null; is_sub_agent: boolean | null }): WizardRole | null {
   if (p.is_sub_agent === true) return 'sub_agent';
@@ -38,15 +46,28 @@ function warehouseComplete(w: Record<string, unknown> | null | undefined): boole
   return Boolean(w.street1 && w.city && w.state && w.zip);
 }
 
+/** True when the user has at least one active web-push subscription on file. */
+async function hasActivePushSubscription(service: AdminClient, userId: string): Promise<boolean> {
+  const { data } = await service
+    .from('push_subscriptions')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .limit(1)
+    .maybeSingle();
+  return !!data;
+}
+
 /** Build the ordered, role-tailored step list with derived completion. */
 function buildSteps(args: {
   role: WizardRole;
   mustChangePassword: boolean;
+  notificationsDone: boolean;
   profileComplete: boolean;
   warehouseDone: boolean;
   progress: Record<string, unknown>;
 }) {
-  const { role, mustChangePassword, profileComplete, warehouseDone, progress } = args;
+  const { role, mustChangePassword, notificationsDone, profileComplete, warehouseDone, progress } = args;
   const ack = (k: string) => progress?.[k] === true;
 
   const steps: Array<{ key: string; label: string; done: boolean }> = [];
@@ -56,8 +77,8 @@ function buildSteps(args: {
     steps.push({ key: 'password', label: 'Secure Your Password', done: false });
   }
 
-  // 2. Install + notifications (all roles).
-  steps.push({ key: 'notifications', label: 'Install The App And Turn On Notifications', done: ack('notifications_ack') });
+  // 2. Install + notifications (all roles). Verified by a real subscription.
+  steps.push({ key: 'notifications', label: 'Install The App And Turn On Notifications', done: notificationsDone });
 
   // 3. Verify profile (all roles).
   steps.push({ key: 'profile', label: 'Confirm Your Contact Details', done: profileComplete });
@@ -94,7 +115,7 @@ export async function GET() {
 
   const { data: profile } = await service
     .from('profiles')
-    .select('id, role, is_super_agent, is_sub_agent, parent_agent_id, first_name, last_name, email, phone, username, must_change_password, custom_markup_override, commission_pct, onboarding_progress, onboarding_completed_at')
+    .select('id, role, is_super_agent, is_sub_agent, parent_agent_id, first_name, last_name, email, phone, username, must_change_password, custom_markup_override, commission_pct, default_sub_commission_pct, default_agent_markup_pct, onboarding_progress, onboarding_completed_at')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -107,6 +128,7 @@ export async function GET() {
   }
 
   const progress = (profile.onboarding_progress as Record<string, unknown>) ?? {};
+  const notificationsDone = await hasActivePushSubscription(service, user.id);
 
   // Storefront-owning roles need their agent_profiles row.
   let storefront: { slug: string | null; display_name: string | null; warehouse_address: Record<string, unknown> | null } | null = null;
@@ -161,6 +183,7 @@ export async function GET() {
   const steps = buildSteps({
     role,
     mustChangePassword: profile.must_change_password === true,
+    notificationsDone,
     profileComplete,
     warehouseDone,
     progress,
@@ -179,6 +202,8 @@ export async function GET() {
     completed: profile.onboarding_completed_at != null,
     completion_pct: completionPct,
     steps,
+    notifications_enabled: notificationsDone,
+    pricing_v2_active: isTierLadderV2(),
     profile: {
       first_name: profile.first_name ?? '',
       last_name: profile.last_name ?? '',
@@ -191,6 +216,10 @@ export async function GET() {
     markup: {
       stored_pct: storedMarkup,
       default_pct: markupDefaultPct,
+    },
+    downstream: {
+      default_sub_commission_pct: profile.default_sub_commission_pct != null ? Number(profile.default_sub_commission_pct) : null,
+      default_agent_markup_pct: profile.default_agent_markup_pct != null ? Number(profile.default_agent_markup_pct) : null,
     },
     parent,
     progress,
@@ -214,15 +243,16 @@ const WarehouseSchema = z.object({
 });
 
 const PostSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('ack'), key: z.enum(['notifications', 'storefront', 'product_tutorial', 'downstream_tutorial']) }),
+  z.object({ action: z.literal('ack'), key: z.enum(['storefront', 'product_tutorial', 'downstream_tutorial']) }),
   z.object({ action: z.literal('profile'), data: ProfileSchema }),
   z.object({ action: z.literal('warehouse'), data: WarehouseSchema }),
   z.object({ action: z.literal('markup'), markup_pct: z.number().min(0).max(500) }),
+  z.object({ action: z.literal('downstream_commission'), pct: z.number().min(0).max(40) }),
+  z.object({ action: z.literal('downstream_markup'), pct: z.number().min(0).max(500) }),
   z.object({ action: z.literal('complete') }),
 ]);
 
 const ACK_COLUMN: Record<string, string> = {
-  notifications: 'notifications_ack',
   storefront: 'storefront_ack',
   product_tutorial: 'product_tutorial_ack',
   downstream_tutorial: 'downstream_tutorial_ack',
@@ -255,12 +285,17 @@ export async function POST(req: NextRequest) {
 
   const action = parsed.data.action;
 
+  // Helper to merge an acknowledgment flag into onboarding_progress.
+  const setAck = async (col: string) => {
+    const progress = { ...((profile.onboarding_progress as Record<string, unknown>) ?? {}), [col]: true };
+    return service.from('profiles').update({ onboarding_progress: progress }).eq('id', user.id);
+  };
+
   if (action === 'ack') {
     const col = ACK_COLUMN[parsed.data.key];
-    const progress = { ...((profile.onboarding_progress as Record<string, unknown>) ?? {}), [col]: true };
-    const { error } = await service.from('profiles').update({ onboarding_progress: progress }).eq('id', user.id);
+    const { error } = await setAck(col);
     if (error) return NextResponse.json({ error: 'ack_failed' }, { status: 500 });
-    return NextResponse.json({ ok: true, progress });
+    return NextResponse.json({ ok: true });
   }
 
   if (action === 'profile') {
@@ -316,6 +351,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, markup_pct: parsed.data.markup_pct });
   }
 
+  // Agent sets the DEFAULT commission applied to future sub-agents, and marks
+  // the downstream step done.
+  if (action === 'downstream_commission') {
+    if (role !== 'agent') {
+      return NextResponse.json({ error: 'only_agents_set_sub_commission' }, { status: 403 });
+    }
+    const pct = Math.round(parsed.data.pct * 100) / 100;
+    const { error } = await service
+      .from('profiles')
+      .update({ default_sub_commission_pct: pct })
+      .eq('id', user.id);
+    if (error) return NextResponse.json({ error: 'downstream_commission_failed' }, { status: 500 });
+    const { error: ackErr } = await setAck('downstream_tutorial_ack');
+    if (ackErr) return NextResponse.json({ error: 'downstream_commission_failed' }, { status: 500 });
+    return NextResponse.json({ ok: true, default_sub_commission_pct: pct });
+  }
+
+  // Super agent sets the DEFAULT markup applied to future agents, and marks the
+  // downstream step done.
+  if (action === 'downstream_markup') {
+    if (role !== 'super_agent') {
+      return NextResponse.json({ error: 'only_super_agents_set_agent_markup' }, { status: 403 });
+    }
+    const pct = Math.round(parsed.data.pct * 100) / 100;
+    const { error } = await service
+      .from('profiles')
+      .update({ default_agent_markup_pct: pct })
+      .eq('id', user.id);
+    if (error) return NextResponse.json({ error: 'downstream_markup_failed' }, { status: 500 });
+    const { error: ackErr } = await setAck('downstream_tutorial_ack');
+    if (ackErr) return NextResponse.json({ error: 'downstream_markup_failed' }, { status: 500 });
+    return NextResponse.json({ ok: true, default_agent_markup_pct: pct });
+  }
+
   if (action === 'complete') {
     // Server-side re-derivation of required steps so a client cannot complete
     // the wizard with gaps. Mirror buildSteps' "done" logic for required items.
@@ -324,7 +393,8 @@ export async function POST(req: NextRequest) {
 
     const missing: string[] = [];
     if (profile.must_change_password === true) missing.push('password');
-    if (!ack('notifications_ack')) missing.push('notifications');
+    // Notifications must be VERIFIED by a real subscription, not acknowledged.
+    if (!(await hasActivePushSubscription(service, user.id))) missing.push('notifications');
     const profileComplete = Boolean(
       (profile.first_name && String(profile.first_name).trim()) &&
       (profile.last_name && String(profile.last_name).trim()) &&
