@@ -58,7 +58,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
         if (RESEARCH_AREAS[a]) cats.add(RESEARCH_AREAS[a].label);
       });
     });
-    return ['All', ...Array.from(cats)];
+    return Array.from(cats);
   }, [stacks]);
 
   const filteredStacks = useMemo(() => {
@@ -233,38 +233,33 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
              />
           )}
         </div>
-        <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 16, scrollbarWidth: 'none' }}>
+        <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16, scrollbarWidth: 'none', alignItems: 'center' }}>
           {categories.map(cat => {
             let areaId = 'all';
-            if (cat !== 'All') {
-              const entry = Object.entries(RESEARCH_AREAS).find(([k, v]) => v.label === cat);
-              if (entry) areaId = entry[0];
-            }
-            const imgSrc = cat === 'All' ? '/nav-icons/research-v2.png' : `/images/areas/${areaId}.png`;
+            const entry = Object.entries(RESEARCH_AREAS).find(([k, v]) => v.label === cat);
+            if (entry) areaId = entry[0];
+            const imgSrc = `/images/areas/${areaId}.png`;
+            const isActive = activeCategory === cat;
 
             return (
             <button 
               key={cat} 
-              onClick={() => setActiveCategory(cat)}
+              onClick={() => setActiveCategory(isActive ? 'All' : cat)}
               style={{ 
                 flex: '0 0 auto',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                width: 110, height: 110, borderRadius: 16, 
-                border: activeCategory === cat ? '3px solid #C0C8D0' : '2px solid #88929C', 
-                background: activeCategory === cat ? 'linear-gradient(145deg, rgba(192,200,208,0.2) 0%, rgba(136,146,156,0.05) 100%)' : 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.2) 100%)', 
-                color: activeCategory === cat ? '#E2E8F0' : '#A8B4C0', 
-                cursor: 'pointer', fontWeight: 700, fontSize: '0.75rem',
-                boxShadow: activeCategory === cat ? '0 0 20px rgba(192,200,208,0.3), inset 0 2px 10px rgba(255,255,255,0.2)' : 'inset 0 1px 0 rgba(255,255,255,0.1)',
+                width: 140, height: 140,
+                border: 'none', 
+                background: 'transparent', 
+                cursor: 'pointer',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                padding: '12px 8px',
-                textAlign: 'center',
-                lineHeight: 1.2
+                padding: 0,
+                position: 'relative',
+                opacity: activeCategory === 'All' || isActive ? 1 : 0.4,
+                transform: isActive ? 'scale(1.05)' : 'scale(1)',
+                filter: isActive ? 'drop-shadow(0 0 16px rgba(0,229,255,0.4))' : 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
               }}
             >
-              <div style={{ width: 48, height: 48, marginBottom: 8, position: 'relative' }}>
-                <Image src={imgSrc} alt={cat} fill unoptimized style={{ objectFit: 'contain', filter: activeCategory === cat ? 'brightness(1.2)' : 'grayscale(0.4) brightness(0.8)', transition: 'all 0.3s' }} />
-              </div>
-              {cat}
+              <Image src={imgSrc} alt={cat} fill unoptimized style={{ objectFit: 'contain' }} />
             </button>
             );
           })}
@@ -292,29 +287,81 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                 className="glass-panel"
                 whileHover={{ y: -4, boxShadow: '0 12px 30px rgba(0,0,0,0.5), inset 0 2px 10px rgba(255,255,255,0.3)' }}
                 style={{ 
-                  padding: 0, overflow: 'hidden', position: 'relative', cursor: 'pointer', 
-                  border: isComparing ? '3px solid #00E5FF' : '3px solid #A8B4C0',
-                  background: 'linear-gradient(145deg, rgba(30,35,40,0.9) 0%, rgba(15,20,25,0.95) 100%)',
-                  borderRadius: 24
+                  padding: 4, overflow: 'hidden', position: 'relative', cursor: 'pointer', 
+                  background: isComparing ? '#00E5FF' : 'linear-gradient(135deg, #e0e5ec 0%, #88929c 25%, #e0e5ec 50%, #a3b1c6 75%, #f0f4f8 100%)',
+                  borderRadius: 24,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                  border: 'none'
                 }}
                 onClick={() => setActiveStackDrawer(stack.slug)}
               >
-                {/* Out of Stock Warning Badge */}
-                {stack.stack_components.some(slug => !products.some(p => p.compoundSlug === slug && p.inventoryCount > 0)) && (
-                  <div style={{ position: 'absolute', top: 16, left: 16, background: 'rgba(255, 60, 60, 0.9)', color: '#fff', padding: '4px 10px', borderRadius: 6, fontSize: '0.7rem', fontWeight: 800, zIndex: 10, backdropFilter: 'blur(10px)', boxShadow: '0 4px 12px rgba(255, 60, 60, 0.4)' }}>
-                    LOW STOCK
+                <div style={{ background: 'linear-gradient(145deg, #1A1F26 0%, #0F1318 100%)', borderRadius: 20, height: '100%', position: 'relative', overflow: 'hidden', padding: 'var(--space-5)' }}>
+                  {/* Out of Stock Warning Badge */}
+                  {stack.stack_components.some(slug => !products.some(p => p.compoundSlug === slug && p.inventoryCount > 0)) && (
+                    <div style={{ position: 'absolute', top: 16, left: 16, background: 'rgba(255, 60, 60, 0.9)', color: '#fff', padding: '4px 10px', borderRadius: 6, fontSize: '0.7rem', fontWeight: 800, zIndex: 10, backdropFilter: 'blur(10px)', boxShadow: '0 4px 12px rgba(255, 60, 60, 0.4)' }}>
+                      LOW STOCK
+                    </div>
+                  )}
+                  {/* Compare Checkbox */}
+                  <div 
+                    onClick={(e) => { e.stopPropagation(); toggleCompare(stack.slug); }}
+                    style={{ position: 'absolute', top: 16, right: 16, zIndex: 10, width: 24, height: 24, borderRadius: 6, border: isComparing ? 'none' : '1px solid rgba(255,255,255,0.2)', background: isComparing ? '#00E5FF' : 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {isComparing && <CheckCircle2 size={16} color="#000" />}
                   </div>
-                )}
-                {/* Compare Checkbox */}
-                <div 
-                  onClick={(e) => { e.stopPropagation(); toggleCompare(stack.slug); }}
-                  style={{ position: 'absolute', top: 16, right: 16, zIndex: 10, width: 24, height: 24, borderRadius: 6, border: isComparing ? 'none' : '1px solid rgba(255,255,255,0.2)', background: isComparing ? '#00E5FF' : 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  {isComparing && <CheckCircle2 size={16} color="#000" />}
-                </div>
 
-                <div style={{ padding: 'var(--space-5)' }}>
-                  {/* Image Cluster - AT VERY TOP */}
+                  {/* TITLE BLOCK MOVED TO TOP */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {(() => {
+                        const fullTitle = isPremade ? products.filter(p => p.compoundSlug === stack.slug).sort((a,b)=>a.retailPrice-b.retailPrice)[0].productName : stack.display_name;
+                        const hasSubtitle = fullTitle.includes('(') && fullTitle.endsWith(')');
+                        let mainTitle = hasSubtitle ? fullTitle.substring(0, fullTitle.indexOf('(')).trim() : fullTitle;
+                        const subtitle = hasSubtitle ? fullTitle.substring(fullTitle.indexOf('(')) : '';
+                        
+                        const tUpper = mainTitle.toUpperCase();
+                        if (!tUpper.includes('STACK') && !tUpper.includes('PROTOCOL')) {
+                          if (mainTitle === mainTitle.toUpperCase()) {
+                            mainTitle = `${mainTitle} ${stack.type === 'protocol' ? 'PROTOCOL' : 'STACK'}`;
+                          } else {
+                            mainTitle = `${mainTitle} ${stack.type === 'protocol' ? 'Protocol' : 'Stack'}`;
+                          }
+                        }
+
+                        let titleFontSize = '1.4rem';
+                        if (mainTitle.length > 25) titleFontSize = '1.05rem';
+                        else if (mainTitle.length > 20) titleFontSize = '1.15rem';
+                        else if (mainTitle.length > 15) titleFontSize = '1.25rem';
+
+                        return (
+                          <>
+                            <h2 style={{ margin: 0, color: '#E2E8F0', fontWeight: 800, fontSize: titleFontSize, letterSpacing: '-0.01em', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {mainTitle}
+                            </h2>
+                            {subtitle && (
+                              <div style={{ fontSize: '0.75rem', color: '#A8B4C0', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {subtitle}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                    {isPremade ? (
+                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#E2E8F0', whiteSpace: 'nowrap' }}>
+                        ${bundlePrice.toFixed(2)}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#E2E8F0', whiteSpace: 'nowrap' }}>
+                          ${(bundlePrice * 0.9).toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '0.65rem', color: '#68D391', fontWeight: 700, marginTop: 2 }}>Stack Discount Applied</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Image Cluster */}
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', justifyContent: 'center', marginBottom: 20, width: '100%', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
                     {stack.stack_components.map((compSlug, i) => {
                       const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
@@ -373,47 +420,6 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                       </div>
                     )}
                   </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      {(() => {
-                        const fullTitle = isPremade ? products.filter(p => p.compoundSlug === stack.slug).sort((a,b)=>a.retailPrice-b.retailPrice)[0].productName : stack.display_name;
-                        const hasSubtitle = fullTitle.includes('(') && fullTitle.endsWith(')');
-                        const mainTitle = hasSubtitle ? fullTitle.substring(0, fullTitle.indexOf('(')).trim() : fullTitle;
-                        const subtitle = hasSubtitle ? fullTitle.substring(fullTitle.indexOf('(')) : '';
-                        
-                        let titleFontSize = '1.4rem';
-                        if (mainTitle.length > 25) titleFontSize = '1.05rem';
-                        else if (mainTitle.length > 20) titleFontSize = '1.15rem';
-                        else if (mainTitle.length > 15) titleFontSize = '1.25rem';
-
-                        return (
-                          <>
-                            <h2 style={{ margin: 0, color: '#E2E8F0', fontWeight: 800, fontSize: titleFontSize, letterSpacing: '-0.01em', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {mainTitle}
-                            </h2>
-                            {subtitle && (
-                              <div style={{ fontSize: '0.75rem', color: '#A8B4C0', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {subtitle}
-                              </div>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                    {isPremade ? (
-                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#E2E8F0', whiteSpace: 'nowrap' }}>
-                        ${bundlePrice.toFixed(2)}
-                      </div>
-                    ) : (
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#E2E8F0', whiteSpace: 'nowrap' }}>
-                          ${(bundlePrice * 0.9).toFixed(2)}
-                        </div>
-                        <div style={{ fontSize: '0.65rem', color: '#68D391', fontWeight: 700, marginTop: 2 }}>Stack Discount Applied</div>
-                      </div>
-                    )}
-                  </div>
                   
                   {stack.stack_rationale && (
                     <p style={{ margin: 'var(--space-2) 0 0', color: '#D0DAE4', lineHeight: 1.55, fontSize: '0.9rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -424,63 +430,24 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   {stack.stack_components.length > 0 && (
                     <div style={{ marginTop: 'var(--space-4)' }}>
                       {!isPremade && (
-                        <p style={{ margin: '0 0 var(--space-4)', color: '#FFB86C', fontSize: '0.75rem', fontWeight: 700, lineHeight: 1.4, background: 'rgba(255, 184, 108, 0.1)', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(255, 184, 108, 0.2)' }}>
+                        <p style={{ margin: '0 0', color: '#FFB86C', fontSize: '0.75rem', fontWeight: 700, lineHeight: 1.4, background: 'rgba(255, 184, 108, 0.1)', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(255, 184, 108, 0.2)' }}>
                           ⚠️ This Peptide Stack is not all inside one vial, it's individually packaged. You will receive {stack.stack_components.length} separate vials.
                         </p>
                       )}
                       {isPremade && (
-                        <p style={{ margin: '0 0 var(--space-4)', color: '#50FA7B', fontSize: '0.75rem', fontWeight: 800, lineHeight: 1.4, background: 'rgba(80, 250, 123, 0.1)', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(80, 250, 123, 0.2)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <p style={{ margin: '0 0', color: '#50FA7B', fontSize: '0.75rem', fontWeight: 800, lineHeight: 1.4, background: 'rgba(80, 250, 123, 0.1)', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(80, 250, 123, 0.2)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
                           <CheckCircle2 size={16} /> Premixed Blend (All in 1 Vial)
                         </p>
                       )}
-                      <p style={{ margin: '0 0 var(--space-2)', color: '#A8B4C0', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Components
-                      </p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                        {stack.stack_components.map((compSlug) => {
-                          const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
-                          compProducts.sort((a, b) => b.retailPrice - a.retailPrice);
-                          const p = compProducts.length > 0 ? compProducts[0] : undefined;
-                          const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
-                          const comp = bySlug.get(compSlug);
-                          const label = comp?.display_name ?? compSlug;
-                          const priceText = p ? `$${p.retailPrice.toFixed(2)}` : '';
-                          return (
-                            <div
-                              key={compSlug}
-                              style={{
-                                padding: '0.4rem 0.8rem',
-                                borderRadius: '8px',
-                                border: '2px solid #88929C',
-                                background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.2) 100%)',
-                                color: '#D0DAE4',
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                boxShadow: 'inset 0 1px 3px rgba(255,255,255,0.1)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px'
-                              }}
-                            >
-                              <Image src={imageUrl} alt={label} width={200} height={200} unoptimized style={{ width: 16, height: 16, objectFit: 'contain' }} />
-                              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span>{label}</span>
-                                {priceText && <span style={{ color: '#A8B4C0', fontSize: '0.65rem' }}>{priceText}</span>}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
                     </div>
                   )}
 
-                    {/* Removed redundant Est Price display since it's now in the header */}
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleAddToCart(stack); }}
-                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', marginTop: 24 }}
-                    >
-                      <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack To Cart" width={200} height={200} unoptimized style={{ height: 64, objectFit: 'contain' }} />
-                    </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleAddToCart(stack); }}
+                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', marginTop: 24 }}
+                  >
+                    <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack To Cart" width={200} height={200} unoptimized style={{ height: 64, objectFit: 'contain' }} />
+                  </button>
                 </div>
               </motion.article>
             );
