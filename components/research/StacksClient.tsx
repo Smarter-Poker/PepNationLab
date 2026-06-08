@@ -429,18 +429,18 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                           <div style={{
                             width: '100%', aspectRatio: '1 / 1.2',
                             borderRadius: 16, 
-                            background: 'radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.3) 100%)',
-                            border: '2px solid #88929C',
-                            boxShadow: 'inset 0 2px 8px rgba(255,255,255,0.2), 0 4px 12px rgba(0,0,0,0.4)',
+                            background: '#0F1318',
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            overflow: 'hidden', padding: 8,
+                            overflow: 'hidden', padding: 0,
                             position: 'relative'
                           }}>
-                            <Image src={imageUrl} alt={label} width={200} height={200} unoptimized style={{ width: '90%', height: '90%', objectFit: 'contain' }} />
+                            <Image src={imageUrl} alt={label} width={200} height={200} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
                             <div style={{
                               position: 'absolute', bottom: 0, left: 0, right: 0,
-                              padding: '16px 4px 6px',
-                              background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.9) 100%)',
+                              padding: '24px 8px 8px',
+                              background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 50%, #000 100%)',
                               color: '#C0C8D0', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
                               textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                             }}>
