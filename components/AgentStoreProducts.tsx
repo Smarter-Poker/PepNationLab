@@ -689,18 +689,22 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             )}
                           </div>
                           <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer' }} onClick={() => handleEdit(p)} title="Click to edit price">
-                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Listed:</span>
-                            <span style={{ fontSize: '0.9rem', color: '#00E5FF', fontWeight: 700, borderBottom: '1px dashed rgba(0,229,255,0.5)', paddingBottom: 1 }}>${(Number(p.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }} onClick={() => handleEdit(p)} title="Click to edit price" onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
+                              Listed Price <Edit2 size={10} color="#00E5FF" />
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>/ {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</span></span>
+                              {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
+                                <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)', color: '#00E5FF', border: '1px solid rgba(0,229,255,0.2)' }}>
+                                  {p.retail_price >= p.agent_cost ? '+' : ''}{Math.round((p.retail_price / p.agent_cost - 1) * 100)}%
+                                </span>
+                              )}
+                            </div>
                           </div>
                           {p.is_on_sale && p.sale_price && (
                             <span style={{ fontSize: '0.7rem', color: '#FC8181', fontWeight: 700, background: 'rgba(229,62,62,0.10)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(229,62,62,0.2)' }}>
                               On Sale ${(Number(p.sale_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}
-                            </span>
-                          )}
-                          {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
-                            <span onClick={() => handleEdit(p)} style={{ cursor: 'pointer', fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)', color: (p.retail_price / p.agent_cost - 1) >= 0.15 ? '#00E5FF' : '#00E5FF', border: '1px solid rgba(0,229,255,0.2)' }} title="Click to edit margin">
-                              +{Math.round((p.retail_price / p.agent_cost - 1) * 100)}%
                             </span>
                           )}
                         </div>
