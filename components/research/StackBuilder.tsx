@@ -898,7 +898,7 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
                     {protocol.find(w => w.weekNumber === activeWeek)?.schedule.map((s) => (
                       <div 
                         key={s.day} 
-                        onDragOver={handleDragOver}
+                        onDragOver={(e) => handleDragOver(e, s.day)}
                         onDragEnter={() => setDragOverDay(s.day)}
                         onDragLeave={() => setDragOverDay(null)}
                         onDrop={(e) => handleDrop(e, s.day)}

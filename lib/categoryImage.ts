@@ -159,9 +159,6 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'dihexa':                                   '/images/products/dihexa.png',
 
   // ── Curated Stacks ─────────────────────────────────────────────────────────
-  'wolverine stack':                          '/images/products/wolverine-stack.png',
-  'shred stack':                              '/images/products/shred-stack.png',
-  'limitless stack':                          '/images/products/limitless-stack.png',
   'gh synergy stack':                         '/images/products/cjc-1295-ipa.png',
 };
 

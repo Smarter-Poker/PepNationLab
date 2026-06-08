@@ -438,7 +438,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                         
                         const tUpper = mainTitle.toUpperCase();
                         if (!tUpper.includes('STACK') && !tUpper.includes('PROTOCOL')) {
-                          mainTitle = `${mainTitle} ${stack.type === 'protocol' ? 'Protocol' : 'Stack'}`;
+                          mainTitle = `${mainTitle} Stack`;
                         }
 
                         let titleFontSize = '1.4rem';
@@ -626,6 +626,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
             onAddToCart={(stack: Compound) => handleAddToCart(stack)}
             bundlePrice={getBundlePrice(bySlug.get(activeStackDrawer!)!)}
             synergyData={getSynergyScore(bySlug.get(activeStackDrawer!)!)}
+            setLiteratureQuery={setLiteratureQuery}
           />
         )}
       </AnimatePresence>
@@ -928,10 +929,10 @@ interface StackDrawerProps {
   onAddToCart: (stack: Compound) => void;
   bundlePrice: number;
   synergyData: StackAnalysis;
-  onOpenPubmed: (url: string) => void;
+  setLiteratureQuery: (query: string) => void;
 }
 
-function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundlePrice, synergyData, onOpenPubmed }: StackDrawerProps) {
+function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundlePrice, synergyData, setLiteratureQuery }: StackDrawerProps) {
   const stack = bySlug.get(stackSlug);
   const [activeTab, setActiveTab] = useState<'overview' | 'calculator'>('overview');
   const [calcState, setCalcState] = useState<Record<string, { mass: number, diluent: number }>>({});
@@ -965,7 +966,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
   mainTitle = mainTitle.replace(/\\bKLOW\\b/ig, 'Klow').replace(/\\bGLOW\\b/ig, 'Glow');
   const tUpper = mainTitle.toUpperCase();
   if (!tUpper.includes('STACK') && !tUpper.includes('PROTOCOL')) {
-    mainTitle = `${mainTitle} ${stack.type === 'protocol' ? 'Protocol' : 'Stack'}`;
+    mainTitle = `${mainTitle} Stack`;
   }
 
   return (
