@@ -459,7 +459,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', marginTop: 16, marginBottom: 16 }}>
                     {synergy.synergyScore > 0 && (
                       <div style={{ width: '100%', marginBottom: 8, display: 'flex', justifyContent: 'center' }}>
-                        <div style={{ maxWidth: 500, width: '100%' }}>
+                        <div style={{ maxWidth: 500, width: '100%', display: 'flex', justifyContent: 'center' }}>
                           <SynergyBadge score={synergy.synergyScore} status={synergy.status} />
                         </div>
                       </div>
