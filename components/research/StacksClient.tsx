@@ -399,6 +399,14 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                             </div>
                           </div>
 
+                          {/* Slashed Pricing for Non-Premixed Bundles */}
+                          {!isPremixedBlend && stack.stack_components.length > 1 && (
+                            <div style={{ marginTop: 8, fontSize: '0.85rem', fontWeight: 700, textAlign: 'center', display: 'flex', justifyContent: 'center', gap: 6 }}>
+                              <span style={{ textDecoration: 'line-through', color: '#88929C' }}>${price.toFixed(2)}</span>
+                              <span style={{ color: '#C0C8D0' }}>${(price * 0.9).toFixed(2)}</span>
+                            </div>
+                          )}
+
                         </div>
                       );
                     })}
@@ -420,7 +428,8 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, gap: 16, flexWrap: 'wrap' }}>
+                  <div style={{ marginTop: 24 }}>
+                    {/* Bottom thumbnails row */}
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', maxWidth: '100%' }}>
                       {isPremixedBlend ? (() => {
                         const premadeProducts = products.filter(p => p.compoundSlug === stack.slug);
@@ -489,17 +498,11 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                         </div>
                       )}
                     </div>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleAddToCart(stack); }}
-                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                    >
-                      <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack To Cart" width={200} height={200} unoptimized style={{ height: 64, objectFit: 'contain' }} />
-                    </button>
                   </div>
                   
                   {/* Badges moved to the very bottom */}
                   {stack.stack_components.length > 0 && (
-                    <div style={{ marginTop: 'var(--space-4)' }}>
+                    <div style={{ marginTop: 'var(--space-4)', display: 'flex', justifyContent: 'center' }}>
                       {!isPremixedBlend && (
                         <div style={{ width: '100%', maxWidth: 500 }}>
                           <Image src="/images/badge_not_premixed.png" alt="Not Premixed Warning" width={800} height={120} style={{ width: '100%', height: 'auto', display: 'block' }} unoptimized />
@@ -512,6 +515,16 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                       )}
                     </div>
                   )}
+
+                  {/* Add To Cart Button Centered At Very Bottom */}
+                  <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleAddToCart(stack); }}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', outline: 'none' }}
+                    >
+                      <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack To Cart" width={200} height={200} unoptimized style={{ height: 60, objectFit: 'contain' }} />
+                    </button>
+                  </div>
                 </div>
               </motion.article>
             );
