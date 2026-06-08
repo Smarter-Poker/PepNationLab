@@ -534,7 +534,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
         )}
       </AnimatePresence>
 
-      <div style={{ padding: '40px', background: 'linear-gradient(135deg, rgba(0, 229, 255, 0.05) 0%, rgba(0,0,0,0) 100%)', borderRadius: 24, border: '1px solid rgba(0, 229, 255, 0.1)', marginTop: 40 }}>
+      <div style={{ marginTop: 40, padding: '0 20px 40px', maxWidth: 1000, margin: '40px auto 0' }}>
         <h3 style={{ textAlign: 'center', margin: '0 0 8px', fontSize: '1.8rem', color: '#fff' }}>Build Your Own Stack</h3>
         <p style={{ textAlign: 'center', color: '#A8B4C0', marginBottom: 32 }}>Analyze synergies and conflicts between any compounds in our library.</p>
         <StackBuilder compounds={compounds} products={products} />

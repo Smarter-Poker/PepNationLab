@@ -45,10 +45,19 @@ function parseHalfLife(c: Compound): number {
   if (c.measured_half_life_hours) return c.measured_half_life_hours;
   if (c.predicted_half_life_hours) return c.predicted_half_life_hours;
   if (c.half_life) {
-    const match = c.half_life.match(/(\d+(?:\.\d+)?)/);
+    const str = c.half_life.toLowerCase();
+    const match = str.match(/(\d+(?:\.\d+)?)\s*(min|hour|hr|h|day|d|week|wk|w|month|mo)/i);
     if (match) {
-      return parseFloat(match[1]);
+      let val = parseFloat(match[1]);
+      let unit = match[2];
+      if (unit.startsWith('min')) return val / 60;
+      if (unit.startsWith('day') || unit === 'd') return val * 24;
+      if (unit.startsWith('week') || unit.startsWith('wk') || unit === 'w') return val * 24 * 7;
+      if (unit.startsWith('month') || unit.startsWith('mo')) return val * 24 * 30;
+      return val;
     }
+    const match2 = str.match(/(\d+(?:\.\d+)?)/);
+    if (match2) return parseFloat(match2[1]);
   }
   return 24; // Default to 24 hours
 }
@@ -74,7 +83,7 @@ const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'S
 
 export default function StackBuilder({ compounds, products = [] }: StackBuilderProps) {
   const selectable = useMemo(
-    () => compounds.filter((c) => !c.is_stack).sort((a, b) => a.display_name.localeCompare(b.display_name)),
+    () => compounds.filter((c) => !c.is_stack && !c.display_name.toLowerCase().includes('water') && !c.display_name.toLowerCase().includes('acetic')).sort((a, b) => a.display_name.localeCompare(b.display_name)),
     [compounds]
   );
   const stacks = useMemo(() => compounds.filter((c) => c.is_stack), [compounds]);
@@ -129,6 +138,18 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
     return stacks.find((st) => sameSet(st.stack_components, selected)) ?? null;
   }, [selected, stacks]);
 
+  const maxHours = useMemo(() => {
+    if (selectedCompounds.length === 0) return 72;
+    const maxHl = Math.max(...selectedCompounds.map(parseHalfLife));
+    const needed = maxHl * 2.5; // Show 2.5 half-lives of longest compound
+    if (needed <= 24) return 24;
+    if (needed <= 72) return 72;
+    if (needed <= 168) return 168; // 1 week
+    if (needed <= 336) return 336; // 2 weeks
+    if (needed <= 720) return 720; // 1 month
+    return Math.ceil(needed / 24) * 24; 
+  }, [selectedCompounds]);
+
   // SVG half-life curves data
   const timelinePoints = useMemo(() => {
     if (selectedCompounds.length === 0) return [];
@@ -140,8 +161,8 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
       const coords = [];
       const color = colors[idx % colors.length];
       
-      // Plot decay over 72 hours
-      for (let t = 0; t <= 72; t += 2) {
+      const step = Math.max(1, Math.floor(maxHours / 40)); // ~40 points per curve
+      for (let t = 0; t <= maxHours; t += step) {
         // C(t) = 100 * (0.5)^(t / hl)
         const conc = 100 * Math.pow(0.5, t / hl);
         coords.push({ x: t, y: conc });
@@ -150,7 +171,7 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
     });
     
     return points;
-  }, [selectedCompounds]);
+  }, [selectedCompounds, maxHours]);
 
   function toggle(slug: string) {
     setSelected((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]));
@@ -449,9 +470,8 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
   };
 
   return (
-    <div className="glass-panel" style={{ padding: 0 }}>
-      <div className="glass-panel">
-        <div className="" style={{ padding: 'var(--space-6)' }}>
+    <div className="glass-panel" style={{ padding: 0, border: '3px solid #88929C', borderRadius: 24, background: 'linear-gradient(145deg, rgba(30,35,40,0.9) 0%, rgba(15,20,25,0.95) 100%)', boxShadow: 'inset 0 1px 3px rgba(255,255,255,0.1), 0 10px 30px rgba(0,0,0,0.5)' }}>
+      <div style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
             <Layers size={22} color="#00C4BC" aria-hidden="true" />
             <h2 style={{ margin: 0, color: '#FFFFFF', fontSize: '1.35rem', fontWeight: 700 }}>Guided Stack Builder & Planner</h2>
@@ -577,10 +597,10 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
                 }}
               >
                 <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: '#A8B4C0', marginBottom: 10, letterSpacing: '0.05em' }}>
-                  Concentration Decay Curves Overlay (72 Hours)
+                  Concentration Decay Curves Overlay ({maxHours} Hours)
                 </div>
-                <div style={{ height: 100, position: 'relative' }}>
-                  <svg width="100%" height="100%" viewBox="0 0 400 100" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+                <div style={{ height: 120, position: 'relative' }}>
+                  <svg width="100%" height="100%" viewBox="0 0 400 120" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
                     <defs>
                       <linearGradient id="decayGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="rgba(0,229,255,0.4)" />
@@ -588,15 +608,15 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
                       </linearGradient>
                     </defs>
                     {/* grid lines */}
-                    <line x1="0" y1="50" x2="400" y2="50" stroke="rgba(255,255,255,0.06)" strokeWidth="1" strokeDasharray="3,3" />
-                    <line x1="0" y1="95" x2="400" y2="95" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
+                    <line x1="0" y1="60" x2="400" y2="60" stroke="rgba(255,255,255,0.06)" strokeWidth="1" strokeDasharray="3,3" />
+                    <line x1="0" y1="115" x2="400" y2="115" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
                     
                     {timelinePoints.map((tp, idx) => {
-                      const pathData = tp.coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${(c.x / 72) * 400} ${95 - (c.y / 100) * 85}`).join(' ');
+                      const pathData = tp.coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${(c.x / maxHours) * 400} ${115 - (c.y / 100) * 105}`).join(' ');
                       return (
                         <g key={tp.slug}>
                           <path
-                            d={`${pathData} L ${((tp.coords[tp.coords.length-1]?.x || 72) / 72) * 400} 95 L 0 95 Z`}
+                            d={`${pathData} L ${((tp.coords[tp.coords.length-1]?.x || maxHours) / maxHours) * 400} 115 L 0 115 Z`}
                             fill="url(#decayGrad)"
                             style={{ opacity: 0.3 }}
                           />
@@ -612,11 +632,11 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
                     })}
                   </svg>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#A8B4C0', marginTop: 6, fontFamily: 'monospace' }}>
-                  <span>0 hrs (Injection)</span>
-                  <span>24 hrs</span>
-                  <span>48 hrs</span>
-                  <span>72 hrs</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#A8B4C0', marginTop: 8, fontFamily: 'monospace' }}>
+                  <span>0h (Inj)</span>
+                  <span>{Math.round(maxHours * 0.33)}h</span>
+                  <span>{Math.round(maxHours * 0.66)}h</span>
+                  <span>{maxHours}h</span>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 8 }}>
                   {selectedCompounds.map((c, idx) => {
