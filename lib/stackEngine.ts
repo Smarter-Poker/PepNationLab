@@ -41,11 +41,22 @@ export function getCategoryFromName(name: string): PeptideCategory {
   return 'Other';
 }
 
-export function analyzeStack(components: StackComponent[], isOfficialStack: boolean = true): StackAnalysis {
+export function analyzeStack(components: StackComponent[], isOfficialStack: boolean = true, stackSlug?: string): StackAnalysis {
   let synergyScore = isOfficialStack ? 88 : 50; // Base score
   const warnings: string[] = [];
   const tips: string[] = [];
   let isCompatible = true;
+
+  // Hardcoded proprietary stack overrides
+  if (stackSlug && ['lemon-bottle', 'lipo-c', 'l-carnitine', 'glow', 'klow'].includes(stackSlug)) {
+    return {
+      synergyScore: 99,
+      warnings: [],
+      tips: ['This is a highly optimized, premixed proprietary blend with excellent synergistic properties.'],
+      isCompatible: true,
+      status: 'excellent'
+    };
+  }
   
   if (components.length < 2) {
     if (components.length === 1) {

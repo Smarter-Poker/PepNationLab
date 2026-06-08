@@ -208,7 +208,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
       const c = bySlug.get(slug);
       return { id: slug, name: c?.display_name || slug, category: getCategoryFromName(c?.display_name || slug) };
     });
-    return analyzeStack(compObjects);
+    return analyzeStack(compObjects, true, stack.slug);
   };
 
   const getCitationCount = (stack: Compound) => {
