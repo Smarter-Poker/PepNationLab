@@ -20,6 +20,7 @@ export interface StackAnalysis {
   synergyScore: number; // 0 to 100
   warnings: string[];
   tips: string[];
+  breakdown: { label: string, value: number }[];
   isCompatible: boolean;
   status: 'excellent' | 'good' | 'caution' | 'unsafe';
 }
@@ -42,17 +43,38 @@ export function getCategoryFromName(name: string): PeptideCategory {
 }
 
 export function analyzeStack(components: StackComponent[], isOfficialStack: boolean = true, stackSlug?: string): StackAnalysis {
-  let synergyScore = isOfficialStack ? 88 : 50; // Base score
+  let synergyScore = isOfficialStack ? 70 : 50; // Base score
   const warnings: string[] = [];
   const tips: string[] = [];
+  const breakdown: { label: string, value: number }[] = [];
   let isCompatible = true;
 
   // Hardcoded proprietary stack overrides
   if (stackSlug && ['lemon-bottle', 'lipo-c', 'l-carnitine', 'glow', 'klow'].includes(stackSlug)) {
+    if (stackSlug === 'lemon-bottle') {
+      breakdown.push({ label: 'Riboflavin (Vitamin B2) Optimization', value: 33 });
+      breakdown.push({ label: 'Bromelain Integration', value: 33 });
+      breakdown.push({ label: 'Lecithin Synergism', value: 33 });
+    } else if (stackSlug === 'lipo-c') {
+      breakdown.push({ label: 'Methionine Optimization', value: 25 });
+      breakdown.push({ label: 'Inositol & Choline Integration', value: 50 });
+      breakdown.push({ label: 'L-Carnitine Base', value: 24 });
+    } else if (stackSlug === 'glow' || stackSlug === 'klow') {
+      breakdown.push({ label: 'Glutathione Base', value: 40 });
+      breakdown.push({ label: 'Ascorbic Acid Catalysis', value: 30 });
+      breakdown.push({ label: 'Zinc Integration', value: 29 });
+    } else if (stackSlug === 'l-carnitine') {
+      breakdown.push({ label: 'Pure L-Carnitine Base', value: 50 });
+      breakdown.push({ label: 'Metabolic Optimization', value: 49 });
+    } else {
+      breakdown.push({ label: 'Proprietary Blend Optimization', value: 99 });
+    }
+
     return {
       synergyScore: 99,
       warnings: [],
       tips: ['This is a highly optimized, premixed proprietary blend with excellent synergistic properties.'],
+      breakdown,
       isCompatible: true,
       status: 'excellent'
     };
@@ -62,10 +84,12 @@ export function analyzeStack(components: StackComponent[], isOfficialStack: bool
     if (components.length === 1) {
       const id = components[0].id;
       if (id === 'lemon-bottle' || id === 'lipo-c' || id === 'l-carnitine' || id === 'glow' || id === 'klow') {
+        breakdown.push({ label: 'Proprietary Blend Optimization', value: 99 });
         return {
           synergyScore: 99,
           warnings: [],
           tips: ['This is a highly optimized, premixed proprietary blend with excellent synergistic properties.'],
+          breakdown,
           isCompatible: true,
           status: 'excellent'
         };
@@ -75,10 +99,13 @@ export function analyzeStack(components: StackComponent[], isOfficialStack: bool
       synergyScore: 0,
       warnings: [],
       tips: ['Add another compound to analyze stack synergy.'],
+      breakdown: [{ label: 'Insufficient Components', value: 0 }],
       isCompatible: true,
       status: 'good'
     };
   }
+
+  breakdown.push({ label: isOfficialStack ? 'Official Stack Base Score' : 'Custom Stack Base Score', value: synergyScore });
 
   const categories = components.map(c => c.category);
   const glp1Count = categories.filter(c => c === 'GLP-1').length;
@@ -92,63 +119,73 @@ export function analyzeStack(components: StackComponent[], isOfficialStack: bool
     warnings.push('RED ALERT: Stacking multiple GLP-1/GIP agonists is highly discouraged. This creates severe redundant receptor activation, leading to gastrointestinal paralysis, profound hypoglycemia, and rapid muscle catabolism.');
     isCompatible = false;
     synergyScore -= 50;
+    breakdown.push({ label: 'Multiple GLP-1/GIP Agonists Penalty', value: -50 });
   }
   
   if (amylinCount > 1) {
     warnings.push('RED ALERT: Stacking multiple Amylin analogs can cause severe nausea and gastric distress.');
     isCompatible = false;
     synergyScore -= 50;
+    breakdown.push({ label: 'Multiple Amylin Analogs Penalty', value: -50 });
   }
   
   if (ghrhCount > 1 || ghrpCount > 1) {
     warnings.push('RED ALERT: Competing Secretagogues. Stacking multiple peptides of the exact same class (e.g., two GHRHs or two GHRPs) aggressively competes for the same receptors, causing rapid receptor downregulation without added benefit.');
     synergyScore -= 20;
     isCompatible = false;
+    breakdown.push({ label: 'Competing Secretagogues Penalty', value: -20 });
   }
 
   if (categories.includes('Metabolism') && glp1Count > 0) {
-    // Some are okay (AOD), but aggressive stimulant based ones might clash.
     warnings.push('CAUTION: Stacking aggressive metabolic/lipolytic compounds with GLP-1s can rapidly deplete energy stores. Ensure adequate caloric intake and hydration.');
     synergyScore -= 5;
+    breakdown.push({ label: 'Metabolism/GLP-1 Clash Penalty', value: -5 });
   }
 
   if (components.length > 4) {
     warnings.push('CAUTION: Stacking more than 4 compounds simultaneously increases the risk of unpredictable systemic interactions and immune fatigue.');
     synergyScore -= 10;
+    breakdown.push({ label: 'Excessive Compounds Penalty', value: -10 });
   }
 
   // 2. Synergy Checks
   if (glp1Count === 1 && amylinCount === 1) {
     tips.push('Excellent synergy! Combining a GLP-1 receptor agonist with an Amylin analog produces potent, non-redundant appetite suppression and metabolic optimization.');
     synergyScore += 40;
+    breakdown.push({ label: 'GLP-1 + Amylin Synergy', value: 40 });
   }
 
   if (ghrhCount === 1 && ghrpCount === 1) {
     tips.push('Excellent synergy! Combining a single GHRH and a single GHRP amplifies natural growth hormone pulses exponentially more than either alone.');
     synergyScore += 30;
+    breakdown.push({ label: 'GHRH + GHRP Synergy', value: 30 });
   }
 
   if (healingCount >= 2) {
     tips.push('Strong healing and recovery protocol. BPC-157 and TB-500 work synergistically through different systemic pathways.');
     synergyScore += 20;
+    breakdown.push({ label: 'Multi-Pathway Healing Synergy', value: 20 });
   }
 
   if (categories.includes('GLP-1') && categories.includes('Metabolism')) {
     tips.push('Great fat loss stack! GLP-1s control appetite while metabolic peptides like AOD9604 directly target fat oxidation.');
     synergyScore += 15;
+    breakdown.push({ label: 'Fat Loss Optimization', value: 15 });
   }
 
   // Normalization
-  if (isOfficialStack && isCompatible) {
-    synergyScore = Math.max(88, Math.min(99, synergyScore));
-  } else {
-    synergyScore = Math.max(0, Math.min(100, synergyScore));
+  let finalScore = Math.max(0, Math.min(100, synergyScore));
+  
+  if (finalScore !== synergyScore) {
+    const capLabel = finalScore === 100 ? 'Maximum Score Cap' : 'Minimum Score Cap';
+    breakdown.push({ label: capLabel, value: finalScore - synergyScore });
   }
+  synergyScore = finalScore;
 
   let status: StackAnalysis['status'] = 'good';
   if (!isCompatible) status = 'unsafe';
   else if (synergyScore >= 88) status = 'excellent';
   else if (synergyScore < 40) status = 'caution';
 
-  return { synergyScore, warnings, tips, isCompatible, status };
+  return { synergyScore, warnings, tips, breakdown, isCompatible, status };
 }

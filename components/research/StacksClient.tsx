@@ -402,9 +402,11 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                     })() : (
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#E2E8F0', whiteSpace: 'nowrap' }}>
-                          ${(bundlePrice * 0.9).toFixed(2)}
+                          ${(!isBundleProduct && stack.stack_components.length > 1 ? (bundlePrice * 0.9) : bundlePrice).toFixed(2)}
                         </div>
-                        <div style={{ fontSize: '0.65rem', color: '#68D391', fontWeight: 700, marginTop: 2 }}>Stack Discount Applied</div>
+                        {(!isBundleProduct && stack.stack_components.length > 1) && (
+                          <div style={{ fontSize: '0.65rem', color: '#68D391', fontWeight: 700, marginTop: 2 }}>Stack Discount Applied</div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -858,8 +860,8 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
 
               return (
                 <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0', marginTop: 4 }}>
-                  ${(bundlePrice * 0.9).toFixed(2)}
-                  <span style={{ fontSize: '0.7rem', color: '#68D391', marginLeft: 8, verticalAlign: 'middle' }}>10% Stack Discount</span>
+                  ${(stack.stack_components.length > 1 ? (bundlePrice * 0.9) : bundlePrice).toFixed(2)}
+                  {stack.stack_components.length > 1 && <span style={{ fontSize: '0.7rem', color: '#68D391', marginLeft: 8, verticalAlign: 'middle' }}>10% Stack Discount</span>}
                 </div>
               );
             })()}
@@ -964,6 +966,17 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                       style={{ overflow: 'hidden' }}
                     >
                       <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ marginBottom: 16 }}>
+                          <h5 style={{ color: '#00E5FF', fontSize: '0.85rem', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Score Breakdown</h5>
+                          {synergyData.breakdown?.map((b: any, i: number) => (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, padding: '6px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: 8 }}>
+                              <span style={{ color: '#E2E8F0', fontSize: '0.85rem' }}>{b.label}</span>
+                              <span style={{ color: b.value > 0 ? '#68D391' : b.value < 0 ? '#FF6B6B' : '#A8B4C0', fontWeight: 700, fontSize: '0.9rem' }}>
+                                {b.value > 0 ? '+' : ''}{b.value}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                         {synergyData.warnings.length > 0 && (
                           <div style={{ marginBottom: 16 }}>
                             <h5 style={{ color: '#FF6B6B', fontSize: '0.85rem', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Warnings</h5>
@@ -1048,10 +1061,16 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
 
         <div style={{ padding: '20px 32px', background: 'rgba(0,0,0,0.4)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: '0.75rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Bundle Price (-10%)</div>
+            <div style={{ fontSize: '0.75rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>
+              {stack.stack_components.length > 1 ? 'Bundle Price (-10%)' : 'Price'}
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '1rem', color: '#64748b', textDecoration: 'line-through' }}>${bundlePrice.toFixed(2)}</span>
-              <span style={{ fontSize: '1.4rem', color: '#00E5FF', fontWeight: 800 }}>${(bundlePrice * 0.9).toFixed(2)}</span>
+              {stack.stack_components.length > 1 && (
+                <span style={{ fontSize: '1rem', color: '#64748b', textDecoration: 'line-through' }}>${bundlePrice.toFixed(2)}</span>
+              )}
+              <span style={{ fontSize: '1.4rem', color: '#00E5FF', fontWeight: 800 }}>
+                ${(stack.stack_components.length > 1 ? (bundlePrice * 0.9) : bundlePrice).toFixed(2)}
+              </span>
             </div>
           </div>
           <button 
