@@ -3477,7 +3477,9 @@ export default function AgentStorefrontGrid({
                     ? compoundsBySlug[detailProduct.compoundSlug]
                     : undefined;
                   if (!compound) return null;
-                  return <ProductMonograph compound={compound} primaryColor={primaryColor} />;
+                  const coaPid = detailProduct.variants[0]?.product_id;
+                  const coaUrl = coaPid ? (coaByProductId?.[coaPid] ?? null) : null;
+                  return <ProductMonograph compound={compound} primaryColor={primaryColor} coaUrl={coaUrl} />;
                 })()}
 
                 {(() => {
