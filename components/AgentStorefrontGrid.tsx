@@ -2795,6 +2795,24 @@ export default function AgentStorefrontGrid({
                           {highlightText(subtitle, deferredSearch)}
                         </span>
                       )}
+                      {(() => {
+                        const etKey = group.compoundSlug ? compoundsBySlug[group.compoundSlug]?.evidence_tier : null;
+                        const ti = etKey ? EVIDENCE_TIER[etKey] : null;
+                        if (!ti) return null;
+                        return (
+                          <div style={{ marginTop: 6, display: 'flex', justifyContent: 'center' }}>
+                            <span title={`Evidence Tier: ${ti.label}`} style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 5,
+                              border: `1px solid ${ti.color}55`, color: ti.color, background: `${ti.color}14`,
+                              fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.04em',
+                              textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999,
+                            }}>
+                              <span style={{ width: 5, height: 5, borderRadius: '50%', background: ti.color, flexShrink: 0 }} />
+                              {ti.label}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })()}
