@@ -2,7 +2,7 @@
 
 import { X } from 'lucide-react';
 import Link from 'next/link';
-import { Compound, evidenceTier, wadaLabel } from '@/lib/compounds';
+import { Compound, evidenceTier } from '@/lib/compounds';
 import InteractiveGlossaryText from '@/components/research/InteractiveGlossaryText';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
@@ -18,13 +18,6 @@ export default function QuickViewModal({ compound, isOpen, onClose }: QuickViewM
 
   const t = evidenceTier(compound.evidence_tier);
   const aliasLine = (compound.aliases ?? []).slice(0, 3).join(', ');
-
-  const wadaBadgeStyle = (status: string) => {
-    if (status === 'permitted') return { color: '#68D391', border: '1px solid #68D391' };
-    if (status === 'prohibited') return { color: '#FC8181', border: '1px solid #FC8181' };
-    if (status === 'prohibited_males') return { color: '#F6AD55', border: '1px solid #F6AD55' };
-    return { color: '#A8B4C0', border: '1px solid rgba(168,180,192,0.3)' };
-  };
 
   return (
     <div
@@ -104,20 +97,6 @@ export default function QuickViewModal({ compound, isOpen, onClose }: QuickViewM
             {compound.category && (
               <span style={{ fontSize: '0.75rem', color: 'var(--teal, #00C4BC)', fontWeight: 600 }}>
                 {compound.category}
-              </span>
-            )}
-            {compound.wada_status && compound.wada_status !== 'not_listed' && (
-              <span
-                style={{
-                  fontSize: '0.7rem',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  ...wadaBadgeStyle(compound.wada_status),
-                }}
-              >
-                {wadaLabel(compound.wada_status)}
               </span>
             )}
           </div>

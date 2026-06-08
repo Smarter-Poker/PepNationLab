@@ -17,8 +17,6 @@ import {
   EVIDENCE_TIER,
   evidenceTier,
   RESEARCH_AREAS,
-  WADA_LABEL,
-  wadaLabel,
 } from '@/lib/compounds';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
@@ -103,7 +101,6 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
   const categories = parseArrayParam('category');
   const tiers = parseArrayParam('tier');
   const areas = parseArrayParam('area');
-  const wadas = parseArrayParam('wada');
   const forms = parseArrayParam('form');
   const budgets = parseArrayParam('budget');
   const preps = parseArrayParam('prep');
@@ -170,7 +167,6 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
       if (categories.length > 0 && !categories.includes(c.category || '')) return false;
       if (tiers.length > 0 && !tiers.includes(c.evidence_tier)) return false;
       if (areas.length > 0 && !(c.research_areas ?? []).some(a => areas.includes(a))) return false;
-      if (wadas.length > 0 && !wadas.includes(c.wada_status)) return false;
 
       if (forms.length > 0) {
         const cForm = getCompoundForm(c);
@@ -200,7 +196,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
     }
 
     return results;
-  }, [compounds, query, categories, tiers, areas, wadas, forms, budgets, preps, sortParam]);
+  }, [compounds, query, categories, tiers, areas, forms, budgets, preps, sortParam]);
 
   const paginatedResults = filtered.slice(0, page * ITEMS_PER_PAGE);
   const hasMore = paginatedResults.length < filtered.length;
@@ -211,7 +207,6 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
     else if (wizardFilters.area !== 'all') params.set('area', wizardFilters.area);
     
     if (wizardFilters.form !== 'all') params.set('form', wizardFilters.form);
-    if (wizardFilters.wada !== 'all') params.set('wada', wizardFilters.wada);
     if (wizardFilters.budget !== 'all') params.set('budget', wizardFilters.budget);
     if (wizardFilters.prep !== 'all') params.set('prep', wizardFilters.prep);
 
@@ -228,7 +223,6 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
   tiers.forEach(v => activePills.push({ key: 'tier', val: v, label: EVIDENCE_TIER[v]?.label || v }));
   areas.forEach(v => activePills.push({ key: 'area', val: v, label: RESEARCH_AREAS[v]?.label || v }));
   forms.forEach(v => activePills.push({ key: 'form', val: v, label: v === 'injection' ? 'Injection (Vial)' : v === 'oral' ? 'Oral' : 'Topical' }));
-  wadas.forEach(v => activePills.push({ key: 'wada', val: v, label: WADA_LABEL[v] || v }));
   budgets.forEach(v => activePills.push({ key: 'budget', val: v, label: v === 'conservative' ? 'Conservative' : 'Standard' }));
   preps.forEach(v => activePills.push({ key: 'prep', val: v, label: v === 'reconstitution' ? 'Lyophilized Only' : 'Ready-To-Use' }));
 
@@ -337,7 +331,6 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
           <FilterGroup title="Evidence Tier" selected={tiers} onToggle={(v) => toggleParam('tier', v)} options={Object.keys(EVIDENCE_TIER).map(k => ({ label: EVIDENCE_TIER[k].label, value: k }))} />
           <FilterGroup title="Budget" selected={budgets} onToggle={(v) => toggleParam('budget', v)} options={[{ label: 'Conservative Budget', value: 'conservative' }, { label: 'Standard Budget', value: 'standard' }]} />
           <FilterGroup title="Preparation" selected={preps} onToggle={(v) => toggleParam('prep', v)} options={[{ label: 'Lyophilized Vials Only', value: 'reconstitution' }, { label: 'Ready-To-Use Formats Only', value: 'no_reconstitution' }]} />
-          <FilterGroup title="WADA Status" selected={wadas} onToggle={(v) => toggleParam('wada', v)} options={Object.keys(WADA_LABEL).map(k => ({ label: WADA_LABEL[k], value: k }))} />
         </aside>
 
         {/* Main Content Area */}

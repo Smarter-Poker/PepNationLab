@@ -10,14 +10,13 @@
  *   - year_discovered (research timeline context)
  *   - Deep links to ClinicalTrials.gov and PubMed searches
  *   - Evidence tier context card
- *   - WADA status detail card
  *   - chembl_id / uniprot_id / unii external links
  */
 
 import { useState } from 'react';
 import Link from 'next/link';
 import IframeModal from '@/components/ui/IframeModal';
-import { type Compound, evidenceTier, wadaLabel, RISK_META } from '@/lib/compounds';
+import { type Compound, evidenceTier, RISK_META } from '@/lib/compounds';
 import { isSocialPlatformUrl } from '@/lib/ArticleProxyUtils';
 
 interface Props {
@@ -331,56 +330,6 @@ export default function TrialsMetricsPanel({ compound }: Props) {
           })}
         </div>
       </div>
-
-      {/* ── WADA Card ───────────────────────────────────────────────── */}
-      {compound.wada_status && compound.wada_status !== 'not_listed' && (() => {
-        const isProhibited = compound.wada_status === 'prohibited' || compound.wada_status === 'prohibited_males';
-        const isPermitted = compound.wada_status === 'permitted';
-        const wadaColor = isProhibited ? '#FC8181' : isPermitted ? '#68D391' : '#F6AD55';
-        const wadaDesc = isProhibited
-          ? 'This compound is listed on the WADA Prohibited List and is not permitted in any tested competitive sport. Researchers working with athletes must be aware of this restriction.'
-          : compound.wada_status === 'prohibited_males'
-          ? 'Prohibited for male athletes under WADA regulations. Female athletes should verify current WADA list status.'
-          : isPermitted
-          ? 'This compound is not prohibited under WADA regulations and may be used by tested athletes without concern for anti-doping violations based on current regulations.'
-          : 'Current WADA status requires verification. Researchers should consult the current WADA Prohibited List before designing athlete-related protocols.';
-        return (
-          <div style={{
-            background: `${wadaColor}08`,
-            border: `1px solid ${wadaColor}25`,
-            borderRadius: 12,
-            padding: '14px 16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
-                WADA Anti-Doping Status
-              </div>
-              <span style={{
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                color: wadaColor,
-                background: `${wadaColor}15`,
-                border: `1px solid ${wadaColor}30`,
-                padding: '2px 10px',
-                borderRadius: 4,
-              }}>
-                {wadaLabel(compound.wada_status)}
-              </span>
-            </div>
-            <p style={{ margin: 0, fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.55 }}>{wadaDesc}</p>
-            <a
-              href="https://www.wada-ama.org/en/prohibited-list"
-              onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl("https://www.wada-ama.org/en/prohibited-list") ? window.open("https://www.wada-ama.org/en/prohibited-list", '_blank') : setModalUrl("https://www.wada-ama.org/en/prohibited-list")); }}
-              style={{ fontSize: '0.72rem', color: wadaColor, textDecoration: 'none', fontWeight: 700 }}
-            >
-              View current WADA Prohibited List →
-            </a>
-          </div>
-        );
-      })()}
 
       {/* ── Risk Reasons ───────────────────────────────────────────── */}
       {compound.risk_reasons && compound.risk_reasons.length > 0 && (

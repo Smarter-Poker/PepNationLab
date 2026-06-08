@@ -7,7 +7,7 @@
  *   3. Mechanism      - MOA, molecular target, PK summary
  *   4. Studied For    - studied_for, research_areas, benefits, best_stacked_with
  *   5. Handling       - reconstitution, shelf life, storage, half-life, PK
- *   6. Safety         - warnings, side_effects, risk_reasons, WADA detail
+ *   6. Safety         - warnings, side_effects, risk_reasons
  *   7. Research Data  - trials metrics, citations, external DB links (NEW)
  *   8. Sources        - linked references
  *
@@ -24,7 +24,6 @@ import {
   type Compound,
   type RelatedCompoundRef,
   evidenceTier,
-  wadaLabel,
   researchAreaLabel,
   RISK_META,
 } from '@/lib/compounds';
@@ -167,7 +166,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
 
   tabs.push({ key: 'handling', label: 'Handling', icon: <Snowflake size={15} aria-hidden="true" /> });
 
-  if (compound.side_effects || compound.warnings || compound.regulatory || compound.wada_status || (compound.risk_reasons && compound.risk_reasons.length > 0)) {
+  if (compound.side_effects || compound.warnings || compound.regulatory || (compound.risk_reasons && compound.risk_reasons.length > 0)) {
     tabs.push({ key: 'safety', label: 'Safety', icon: <ShieldAlert size={15} aria-hidden="true" /> });
   }
 
@@ -257,11 +256,6 @@ export default function MonographTabs({ compound, related = [] }: Props) {
           {isHighRisk && (
             <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '4px 12px', borderRadius: 9999, background: risk.bg, border: `1px solid ${risk.color}`, color: risk.color }}>
               {risk.label} Risk
-            </span>
-          )}
-          {compound.wada_status && compound.wada_status !== 'not_listed' && (
-            <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '4px 12px', borderRadius: 9999, background: 'rgba(246,173,85,0.12)', border: '1px solid #F6AD55', color: '#F6AD55' }}>
-              {wadaLabel(compound.wada_status)}
             </span>
           )}
           {compound.is_glp1 && (
@@ -744,40 +738,13 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               </div>
             )}
 
-            <SectionDivider title="Regulatory & Anti-Doping" />
+            <SectionDivider title="Regulatory" />
             {compound.regulatory && (
               <div style={{ marginBottom: 12 }}>
                 <Label>Regulatory Status</Label>
                 <Para>{compound.regulatory}</Para>
               </div>
             )}
-
-            {/* WADA detail */}
-            {compound.wada_status && (() => {
-              const isProhibited = compound.wada_status === 'prohibited' || compound.wada_status === 'prohibited_males';
-              const isPermitted = compound.wada_status === 'permitted';
-              const wadaColor = isProhibited ? '#FC8181' : isPermitted ? '#68D391' : '#F6AD55';
-              const wadaDesc = isProhibited
-                ? 'Listed on the WADA Prohibited List. Not permitted in tested competitive sport. Researchers working with athletes must be aware of this designation.'
-                : compound.wada_status === 'prohibited_males'
-                ? 'Prohibited for male athletes under WADA regulations.'
-                : isPermitted
-                ? 'Not prohibited under current WADA regulations. May be used by tested athletes without anti-doping concern under current rules.'
-                : 'WADA status is not specifically listed. Verify with the current WADA Prohibited List before athlete-related research.';
-              return (
-                <InfoCard color={wadaColor}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>WADA Anti-Doping</div>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: wadaColor }}>{wadaLabel(compound.wada_status)}</span>
-                  </div>
-                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{wadaDesc}</p>
-                  <a href="https://www.wada-ama.org/en/prohibited-list" onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl("https://www.wada-ama.org/en/prohibited-list") ? window.open("https://www.wada-ama.org/en/prohibited-list", '_blank') : setModalUrl("https://www.wada-ama.org/en/prohibited-list")); }}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: wadaColor, textDecoration: 'none', fontWeight: 700, marginTop: 8 }}>
-                    <ExternalLink size={11} /> View WADA Prohibited List
-                  </a>
-                </InfoCard>
-              );
-            })()}
           </div>
         )}
 

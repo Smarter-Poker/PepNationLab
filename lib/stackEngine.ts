@@ -51,27 +51,33 @@ export function analyzeStack(components: StackComponent[], isOfficialStack: bool
 
   // Hardcoded proprietary stack overrides
   if (stackSlug && ['lemon-bottle', 'lipo-c', 'l-carnitine', 'glow', 'klow'].includes(stackSlug)) {
+    let finalScore = 99;
     if (stackSlug === 'lemon-bottle') {
-      breakdown.push({ label: 'Riboflavin (Vitamin B2) Optimization', value: 33 });
-      breakdown.push({ label: 'Bromelain Integration', value: 33 });
-      breakdown.push({ label: 'Lecithin Synergism', value: 33 });
+      breakdown.push({ label: 'Riboflavin (Vitamin B2) Optimization', value: 32 });
+      breakdown.push({ label: 'Bromelain Integration', value: 32 });
+      breakdown.push({ label: 'Lecithin Synergism', value: 32 });
+      finalScore = 96;
     } else if (stackSlug === 'lipo-c') {
-      breakdown.push({ label: 'Methionine Optimization', value: 25 });
-      breakdown.push({ label: 'Inositol & Choline Integration', value: 50 });
-      breakdown.push({ label: 'L-Carnitine Base', value: 24 });
+      breakdown.push({ label: 'Methionine Optimization', value: 23 });
+      breakdown.push({ label: 'Inositol & Choline Integration', value: 45 });
+      breakdown.push({ label: 'L-Carnitine Base', value: 25 });
+      finalScore = 93;
     } else if (stackSlug === 'glow' || stackSlug === 'klow') {
       breakdown.push({ label: 'Glutathione Base', value: 40 });
       breakdown.push({ label: 'Ascorbic Acid Catalysis', value: 30 });
-      breakdown.push({ label: 'Zinc Integration', value: 29 });
+      breakdown.push({ label: 'Zinc Integration', value: 27 });
+      finalScore = 97;
     } else if (stackSlug === 'l-carnitine') {
       breakdown.push({ label: 'Pure L-Carnitine Base', value: 50 });
-      breakdown.push({ label: 'Metabolic Optimization', value: 49 });
+      breakdown.push({ label: 'Metabolic Optimization', value: 45 });
+      finalScore = 95;
     } else {
       breakdown.push({ label: 'Proprietary Blend Optimization', value: 99 });
+      finalScore = 99;
     }
 
     return {
-      synergyScore: 99,
+      synergyScore: finalScore,
       warnings: [],
       tips: ['This is a highly optimized, premixed proprietary blend with excellent synergistic properties.'],
       breakdown,
@@ -82,22 +88,26 @@ export function analyzeStack(components: StackComponent[], isOfficialStack: bool
 
   // Exceptional Custom Stacks
   if (stackSlug && (stackSlug.includes('wolverine') || stackSlug.includes('limitless') || stackSlug.includes('shred'))) {
+    let finalScore = 99;
     if (stackSlug.includes('wolverine')) {
-      breakdown.push({ label: 'Systemic Healing (TB-500)', value: 45 });
-      breakdown.push({ label: 'Localized Repair (BPC-157)', value: 45 });
-      breakdown.push({ label: 'Synergistic Recovery Amplification', value: 9 });
+      breakdown.push({ label: 'Systemic Healing Base (TB-500)', value: 45 });
+      breakdown.push({ label: 'Localized Repair Synergy (BPC-157)', value: 45 });
+      breakdown.push({ label: 'Recovery Amplification Factor', value: 8 });
+      finalScore = 98;
     } else if (stackSlug.includes('limitless')) {
-      breakdown.push({ label: 'Cognitive Enhancement (Semax)', value: 45 });
-      breakdown.push({ label: 'Anxiolytic Synergy (Selank)', value: 45 });
-      breakdown.push({ label: 'Neuroplasticity Amplification', value: 9 });
+      breakdown.push({ label: 'Cognitive Enhancement (Semax)', value: 42 });
+      breakdown.push({ label: 'Anxiolytic Synergy (Selank)', value: 42 });
+      breakdown.push({ label: 'Neuroplasticity Amplification', value: 11 });
+      finalScore = 95;
     } else if (stackSlug.includes('shred')) {
-      breakdown.push({ label: 'Metabolic Optimization', value: 40 });
-      breakdown.push({ label: 'Appetite Suppression', value: 40 });
-      breakdown.push({ label: 'Lipolytic Amplification', value: 19 });
+      breakdown.push({ label: 'Metabolic Optimization Base', value: 40 });
+      breakdown.push({ label: 'Appetite Suppression Synergy', value: 40 });
+      breakdown.push({ label: 'Lipolytic Amplification Factor', value: 14 });
+      finalScore = 94;
     }
 
     return {
-      synergyScore: 99,
+      synergyScore: finalScore,
       warnings: [],
       tips: ['This stack combination represents the gold standard for its target outcome, demonstrating exceptional synergy between its components.'],
       breakdown,
@@ -109,16 +119,8 @@ export function analyzeStack(components: StackComponent[], isOfficialStack: bool
   if (components.length < 2) {
     if (components.length === 1) {
       const id = components[0].id;
-      if (id === 'lemon-bottle' || id === 'lipo-c' || id === 'l-carnitine' || id === 'glow' || id === 'klow') {
-        breakdown.push({ label: 'Proprietary Blend Optimization', value: 99 });
-        return {
-          synergyScore: 99,
-          warnings: [],
-          tips: ['This is a highly optimized, premixed proprietary blend with excellent synergistic properties.'],
-          breakdown,
-          isCompatible: true,
-          status: 'excellent'
-        };
+      if (['lemon-bottle', 'lipo-c', 'l-carnitine', 'glow', 'klow', 'wolverine', 'limitless', 'shred'].some(s => id.includes(s))) {
+        return analyzeStack(components, isOfficialStack, id);
       }
     }
     return {

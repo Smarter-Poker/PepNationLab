@@ -9,7 +9,7 @@
  */
 
 import Link from 'next/link';
-import { Beaker, BookOpen, ShieldAlert, Calendar, FlaskConical, Calculator, ListOrdered, Award } from 'lucide-react';
+import { Beaker, BookOpen, ShieldAlert, Calendar, FlaskConical, Calculator, ListOrdered } from 'lucide-react';
 import { evidenceTier } from '@/lib/compounds';
 
 const RESEARCH_NOTE = 'Research Use Only. Not Intended As Medical Advice Or Human Dosing.';
@@ -20,7 +20,6 @@ interface CompoundLike {
   plain_summary?: string | null;
   mechanism?: string | null;
   evidence_tier?: string;
-  wada_status?: string;
   category?: string | null;
   half_life?: string | null;
   side_effects?: string | null;
