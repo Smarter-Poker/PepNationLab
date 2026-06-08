@@ -31,7 +31,7 @@ export function ResearchLiteratureModal({ query, onClose, onSelectPaper }: Resea
         setError(null);
 
         // 1. Fetch PMIDs
-        const searchRes = await fetch(`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retmode=json&retmax=20`);
+        const searchRes = await fetch(`/api/pubmed?action=esearch&term=${encodeURIComponent(query)}`);
         if (!searchRes.ok) throw new Error('Failed to fetch from PubMed');
         const searchData = await searchRes.json();
         const idList = searchData.esearchresult?.idlist || [];
@@ -42,7 +42,7 @@ export function ResearchLiteratureModal({ query, onClose, onSelectPaper }: Resea
         }
 
         // 2. Fetch Summaries
-        const summaryRes = await fetch(`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${idList.join(',')}&retmode=json`);
+        const summaryRes = await fetch(`/api/pubmed?action=esummary&id=${idList.join(',')}`);
         if (!summaryRes.ok) throw new Error('Failed to fetch paper details');
         const summaryData = await summaryRes.json();
 

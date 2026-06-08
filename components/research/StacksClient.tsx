@@ -8,7 +8,7 @@ import { AreaProduct } from '@/lib/area-products-server';
 import { useCart } from '@/components/CartContext';
 import { analyzeStack, getCategoryFromName, type StackAnalysis } from '@/lib/stackEngine';
 import StackBuilder from './StackBuilder';
-import { FlaskConical, Beaker, CheckCircle2, X, AlertTriangle } from 'lucide-react';
+import { FlaskConical, Beaker, CheckCircle2, X, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import IframeModal from '@/components/ui/IframeModal';
 import { ResearchLiteratureModal } from './ResearchLiteratureModal';
 
@@ -783,6 +783,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
   const stack = bySlug.get(stackSlug);
   const [activeTab, setActiveTab] = useState<'overview' | 'calculator'>('overview');
   const [calcState, setCalcState] = useState<Record<string, { mass: number, diluent: number }>>({});
+  const [isSynergyExpanded, setIsSynergyExpanded] = useState(false);
 
   if (!stack) return null;
 
@@ -922,8 +923,16 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                 </div>
               </div>
 
-              <div style={{ marginTop: 24, background: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 20 }}>
-                <h4 style={{ margin: '0 0 16px', color: '#fff' }}>Synergy Profile</h4>
+              <div 
+                style={{ marginTop: 24, background: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 20, cursor: 'pointer', transition: 'all 0.2s', border: '1px solid rgba(255,255,255,0.05)' }}
+                onClick={() => setIsSynergyExpanded(!isSynergyExpanded)}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.2)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <h4 style={{ margin: 0, color: '#fff' }}>Synergy Profile</h4>
+                  {isSynergyExpanded ? <ChevronUp size={20} color="#A8B4C0" /> : <ChevronDown size={20} color="#A8B4C0" />}
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
                   <div style={{ width: 60, height: 60, borderRadius: '50%', background: `conic-gradient(#00E5FF 0%, #00E5FF ${synergyData.synergyScore}%, rgba(255,255,255,0.1) ${synergyData.synergyScore}%, rgba(255,255,255,0.1) 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ width: 50, height: 50, borderRadius: '50%', background: '#0F1923', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800 }}>{synergyData.synergyScore}</div>
@@ -933,7 +942,41 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                     <div style={{ color: '#A8B4C0', fontSize: '0.85rem' }}>Calculated Synergy Score</div>
                   </div>
                 </div>
-                {synergyData.tips.map((t: string, i: number) => <div key={i} style={{ color: '#68D391', fontSize: '0.85rem', marginBottom: 8, display: 'flex', gap: 8 }}><CheckCircle2 size={16} /> {t}</div>)}
+                
+                {synergyData.tips.length > 0 && !isSynergyExpanded && (
+                  <div style={{ color: '#68D391', fontSize: '0.85rem', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                    <CheckCircle2 size={16} style={{ flexShrink: 0, marginTop: 2 }} /> 
+                    <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{synergyData.tips[0]}</span>
+                  </div>
+                )}
+                
+                <AnimatePresence>
+                  {isSynergyExpanded && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }} 
+                      animate={{ opacity: 1, height: 'auto' }} 
+                      exit={{ opacity: 0, height: 0 }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                        {synergyData.warnings.length > 0 && (
+                          <div style={{ marginBottom: 16 }}>
+                            <h5 style={{ color: '#FF6B6B', fontSize: '0.85rem', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Warnings</h5>
+                            {synergyData.warnings.map((w: string, i: number) => <div key={i} style={{ color: '#FFB86C', fontSize: '0.85rem', marginBottom: 8, display: 'flex', gap: 8, alignItems: 'flex-start' }}><AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2 }} /> <span>{w}</span></div>)}
+                          </div>
+                        )}
+                        <div>
+                          <h5 style={{ color: '#68D391', fontSize: '0.85rem', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Synergy Analysis</h5>
+                          {synergyData.tips.length > 0 ? (
+                            synergyData.tips.map((t: string, i: number) => <div key={i} style={{ color: '#A8B4C0', fontSize: '0.85rem', marginBottom: 8, display: 'flex', gap: 8, alignItems: 'flex-start' }}><CheckCircle2 size={16} color="#68D391" style={{ flexShrink: 0, marginTop: 2 }} /> <span>{t}</span></div>)
+                          ) : (
+                            <div style={{ color: '#A8B4C0', fontSize: '0.85rem' }}>No specific synergy documented for this combination.</div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </>
           ) : (
