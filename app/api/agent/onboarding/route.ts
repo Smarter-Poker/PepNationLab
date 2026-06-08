@@ -339,8 +339,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'markup') {
-    if (role === 'sub_agent') {
-      return NextResponse.json({ error: 'sub_agents_have_no_markup' }, { status: 403 });
+    // Only super agents set their own house cost markup here. A regular agent's
+    // custom_markup_override is assigned by their super agent (flat percent, or
+    // NULL for the volume ladder); the agent's onboarding products step is
+    // read-only education and must never overwrite it.
+    if (role !== 'super_agent') {
+      return NextResponse.json({ error: 'only_super_agents_set_markup' }, { status: 403 });
     }
     // Store as a decimal fraction (50% -> 0.50) in the uncapped override column.
     const fraction = Math.round((parsed.data.markup_pct / 100) * 10000) / 10000;

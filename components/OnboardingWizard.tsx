@@ -69,6 +69,7 @@ const ONBOARDING_ERROR_MESSAGES: Record<string, string> = {
   sub_agents_have_no_warehouse: 'Sub-Agents Do Not Manage A Warehouse.',
   sub_agents_have_no_markup: 'Sub-Agents Do Not Set Their Own Markup.',
   markup_update_failed: 'We Could Not Save Your Markup. Please Try Again.',
+  only_super_agents_set_markup: 'Only Super Agents Set Their Own Markup.',
   downstream_commission_failed: 'We Could Not Save The Commission. Please Try Again.',
   downstream_markup_failed: 'We Could Not Save The Markup. Please Try Again.',
   only_agents_set_sub_commission: 'Only Agents Can Set Sub-Agent Commissions.',
@@ -783,6 +784,20 @@ function StorefrontStep({ state, onDone }: { state: OnboardingState; onDone: () 
   );
 }
 
+/**
+ * Products / markup step.
+ *
+ * SUPER AGENTS set their own house markup here (custom_markup_override, the
+ * percentage over wholesale cost that defines what they pay), defaulting to 50%.
+ *
+ * REGULAR AGENTS do NOT set their own cost markup -- it is assigned by their
+ * super agent at creation (a flat percent, or NULL = the volume-based ladder).
+ * Letting an agent write their own custom_markup_override here would overwrite
+ * that (e.g. zeroing it, or knocking a gamified agent onto a flat 0%). So for
+ * agents this step is read-only education: it shows their assigned cost basis
+ * and explains they set each product's SELLING price from the Products page.
+ * It only acknowledges the tutorial; it never writes markup.
+ */
 function ProductsTutorialStep({ state, onDone }: { state: OnboardingState; onDone: () => void }) {
   const isSuper = state.role === 'super_agent';
   const [markup, setMarkup] = useState(String(state.markup.default_pct ?? 0));
@@ -790,7 +805,7 @@ function ProductsTutorialStep({ state, onDone }: { state: OnboardingState; onDon
   const [err, setErr] = useState<string | null>(null);
   const pctNum = Number(markup) || 0;
 
-  const submit = async () => {
+  const submitSuper = async () => {
     setErr(null);
     const pct = Number(markup);
     if (!Number.isFinite(pct) || pct < 0 || pct > 500) { setErr('Enter A Markup Between 0 And 500 Percent.'); return; }
@@ -802,6 +817,46 @@ function ProductsTutorialStep({ state, onDone }: { state: OnboardingState; onDon
     } catch (e) { setErr(e instanceof Error ? e.message : 'Save Failed'); setBusy(false); }
   };
 
+  const acknowledgeAgent = async () => {
+    setErr(null);
+    setBusy(true);
+    try {
+      await postOnboarding({ action: 'ack', key: 'product_tutorial' });
+      onDone();
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Save Failed'); setBusy(false); }
+  };
+
+  // ---- Regular agent: read-only education, no cost-markup write. ----
+  if (!isSuper) {
+    const storedPct = state.markup.stored_pct;
+    const costLine = storedPct != null
+      ? `Your Wholesale Cost Markup Is ${storedPct}%, Set By Your Agent. A $20 Product Costs You $${(20 * (1 + storedPct / 100)).toFixed(2)}.`
+      : 'Your Pricing Is Volume-Based: Your Cost Automatically Improves As Your Sales Grow.';
+    return (
+      <div>
+        <StepIntro icon={Tag} title="How Product Pricing Works"
+          blurb="Every Product Has A Wholesale Cost. You Earn The Difference Between That Cost And The Price You Sell It For." />
+
+        <GuidePanel steps={[
+          'Each Product Has A Wholesale Cost Set For You.',
+          'You Choose The Selling Price For Each Product From Your Products Page After Setup.',
+          'Your Profit Is The Selling Price Minus The Wholesale Cost.',
+          'Click "Got It, Continue" To Move On.',
+        ]} />
+
+        <div style={{ padding: 'var(--space-4, 16px)', borderRadius: 10, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.22)', marginBottom: 'var(--space-4, 16px)' }}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--grey-200, #D0DAE4)', lineHeight: 1.6 }}>
+            {costLine}
+          </div>
+        </div>
+
+        <ErrorLine msg={err} />
+        <PrimaryButton onClick={acknowledgeAgent} busy={busy}>Got It, Continue</PrimaryButton>
+      </div>
+    );
+  }
+
+  // ---- Super agent: set their own default house markup. ----
   return (
     <div>
       <StepIntro icon={Tag} title="How Product Pricing And Markup Work"
@@ -828,16 +883,14 @@ function ProductsTutorialStep({ state, onDone }: { state: OnboardingState; onDon
         </div>
       </div>
 
-      <Field label={isSuper ? 'Your Default Markup % (Recommended: 50%)' : 'Your Markup %'}>
+      <Field label="Your Default Markup % (Recommended: 50%)">
         <input type="number" style={inputStyle} value={markup} onChange={(e) => setMarkup(e.target.value)} min="0" max="500" step="1" />
       </Field>
       <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
-        {isSuper
-          ? 'We Have Set Your Default Markup To 50% To Get You Started. You Can Change This Anytime, And You Can Override The Price On Individual Products From The Products Page.'
-          : 'You Can Change This Anytime, And You Can Override The Price On Individual Products From The Products Page.'}
+        We Have Set Your Default Markup To 50% To Get You Started. You Can Change This Anytime, And You Can Override The Price On Individual Products From The Products Page.
       </p>
       <ErrorLine msg={err} />
-      <PrimaryButton onClick={submit} busy={busy}>Save Markup And Continue</PrimaryButton>
+      <PrimaryButton onClick={submitSuper} busy={busy}>Save Markup And Continue</PrimaryButton>
     </div>
   );
 }
