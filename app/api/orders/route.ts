@@ -188,7 +188,11 @@ export async function POST(request: NextRequest) {
       }
 
       let availableStock = Number(dbProduct.inventory_count);
-      let bypassInventoryCheck = false;
+      // China/global ships infinitely, so a checkout never blocks on stock
+      // availability. Agent LOCAL stock is the only finite inventory and is
+      // still enforced precisely by reserve_inventory() below (it caps localQty
+      // at the agent's on-hand and backfills the remainder from China).
+      let bypassInventoryCheck = true;
       let localQty = 0;
       let chinaQty = qty;
 
@@ -840,6 +844,10 @@ export async function POST(request: NextRequest) {
         discount_amount: discountAmount,
         coupon_code: appliedCouponCode,
         total: total,
+        // Route owns this order's inventory (reserve_inventory ran above with a
+        // precise local/China split). The approval trigger skips reserved orders
+        // so stock is never deducted a second time on approval.
+        inventory_reserved: localReserved || chinaReserved,
 
 
         idempotency_key: idempotencyKey ?? null,
