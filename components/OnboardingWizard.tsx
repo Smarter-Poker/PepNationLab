@@ -1013,7 +1013,7 @@ function FinishStep({ state, onEnter }: { state: OnboardingState; onEnter: () =>
       onEnter();
     } catch (e) {
       const m = e instanceof Error ? e.message : 'Could Not Finish Setup';
-      setErr(m === 'incomplete' ? 'Some Steps Are Still Incomplete. Please Go Back And Finish Them.' : m);
+      setErr(m);
       setBusy(false);
     }
   };
