@@ -429,14 +429,14 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   {stack.stack_components.length > 0 && (
                     <div style={{ marginTop: 'var(--space-4)' }}>
                       {!isPremixedBlend && (
-                        <p style={{ margin: '0 0', color: '#FFB86C', fontSize: '0.75rem', fontWeight: 700, lineHeight: 1.4, background: 'rgba(255, 184, 108, 0.1)', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(255, 184, 108, 0.2)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                          <AlertTriangle size={16} style={{flexShrink:0, marginTop:1}} /><span>This Peptide Stack is not all inside one vial, it&apos;s individually packaged. You will receive {stack.stack_components.length} separate vials.</span>
-                        </p>
+                        <div style={{ width: '100%', maxWidth: 500 }}>
+                          <Image src="/images/badge_not_premixed.png" alt="Not Premixed Warning" width={800} height={120} style={{ width: '100%', height: 'auto', display: 'block' }} unoptimized />
+                        </div>
                       )}
                       {isPremixedBlend && (
-                        <p style={{ margin: '0 0', color: '#50FA7B', fontSize: '0.75rem', fontWeight: 800, lineHeight: 1.4, background: 'rgba(80, 250, 123, 0.1)', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(80, 250, 123, 0.2)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <CheckCircle2 size={16} /> Premixed Blend (All in 1 Vial)
-                        </p>
+                        <div style={{ width: '100%', maxWidth: 500 }}>
+                          <Image src="/images/badge_premixed.png" alt="Premixed Blend" width={800} height={120} style={{ width: '100%', height: 'auto', display: 'block' }} unoptimized />
+                        </div>
                       )}
                     </div>
                   )}
