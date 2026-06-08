@@ -1,10 +1,11 @@
 // Pep Nation Lab service worker - web push receiver, offline caching, and IndexedDB replication.
-// v4: Added catalog API caching and Supabase storage image caching.
-const CACHE_VERSION = 'pnl-sw-v4';
-const STATIC_CACHE_NAME = 'pnl-static-cache-v4';
-const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v4';
-const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v4';
-const IMAGE_CACHE_NAME = 'pnl-image-cache-v4';
+// v5: Cache-version bump to evict poisoned v4 static/_next chunks that caused the
+//     storefront to boot then crash on refresh (stale-chunk mismatch after deploys).
+const CACHE_VERSION = 'pnl-sw-v5';
+const STATIC_CACHE_NAME = 'pnl-static-cache-v5';
+const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v5';
+const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v5';
+const IMAGE_CACHE_NAME = 'pnl-image-cache-v5';
 
 // Catalog cache TTL in the service worker (5 min = 300,000 ms)
 // Matches the s-maxage set on the API route's Cache-Control header.
@@ -109,14 +110,14 @@ function saveCompoundsToDB(compounds) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction('compounds', 'readwrite');
       const store = tx.objectStore('compounds');
-      
+
       const clearReq = store.clear();
       clearReq.onsuccess = () => {
         for (const compound of compounds) {
           store.put(compound);
         }
       };
-      
+
       tx.oncomplete = () => resolve();
       tx.onerror = (e) => reject(e.target.error);
     });
@@ -139,7 +140,7 @@ async function searchOffline(queryStr) {
   try {
     const compounds = await getCompoundsFromDB();
     const q = queryStr.toLowerCase().trim();
-    
+
     if (!q) {
       return { results: [], total: 0, latencyMs: 0, note: "Offline Mode. Stored laboratory data.", filters_applied: [] };
     }
@@ -296,7 +297,7 @@ self.addEventListener('fetch', (event) => {
                 );
               }
             }).catch(() => {});
-            
+
             caches.open(DYNAMIC_CACHE_NAME).then((cache) => {
               cache.put(event.request, response.clone());
             });
@@ -306,7 +307,7 @@ self.addEventListener('fetch', (event) => {
         .catch(() => {
           return caches.match(event.request).then((cachedResponse) => {
             if (cachedResponse) return cachedResponse;
-            
+
             return getCompoundsFromDB().then((compounds) => {
               return new Response(JSON.stringify({ compounds }), {
                 headers: { 'Content-Type': 'application/json' },
@@ -371,14 +372,14 @@ self.addEventListener('fetch', (event) => {
   }
 
   // ── F. Static assets & research pages — stale-while-revalidate ──────────────
-  const isStaticAsset = 
-    url.pathname.includes('/_next/') || 
-    url.pathname.startsWith('/fonts/') || 
-    url.pathname.startsWith('/images/') || 
-    url.pathname.endsWith('.js') || 
-    url.pathname.endsWith('.css') || 
-    url.pathname.endsWith('.png') || 
-    url.pathname.endsWith('.svg') || 
+  const isStaticAsset =
+    url.pathname.includes('/_next/') ||
+    url.pathname.startsWith('/fonts/') ||
+    url.pathname.startsWith('/images/') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.svg') ||
     url.pathname.endsWith('.ico');
 
   const isResearchPage = url.pathname.startsWith('/research');
