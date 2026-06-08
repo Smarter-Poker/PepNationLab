@@ -601,6 +601,18 @@ export async function POST(request: NextRequest) {
       discountAmount = Number(row.discount_amount) || 0;
     }
 
+    // Roll back everything committed before the order row exists - reserved
+    // inventory and a redeemed coupon. Every rejection path between here and the
+    // order insert calls this so a refused checkout never leaks stock or a coupon
+    // use (no order row exists for the stale-order cron to reconcile).
+    const rollbackPreOrder = async () => {
+      await releaseReservedInventory();
+      if (appliedCouponId) {
+        await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
+        appliedCouponId = null;
+      }
+    };
+
     // Calculate shipping costs
     const actualShippingOption = shippingOption || (fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'usps');
     const shippingCost = calculateShippingCost(actualShippingOption, totalWeightOz);
@@ -624,7 +636,7 @@ export async function POST(request: NextRequest) {
           .rpc('fn_sub_agent_consumed_velocity', { p_sub: agentProfile.id });
         const used = Number(consumed) || 0;
         if (used + total > cap + 0.001) {
-          await releaseReservedInventory();
+          await rollbackPreOrder();
           const remaining = Math.max(0, cap - used);
           return NextResponse.json(
             { error: `Velocity Cap Reached. This Order Of $${total.toFixed(2)} Would Exceed Your Available Limit ($${remaining.toFixed(2)} Remaining). Contact Your Agent To Raise It.` },
@@ -656,6 +668,7 @@ export async function POST(request: NextRequest) {
 
     if (disclaimerError || !disclaimerRow) {
       console.error('Checkout Disclaimer Audit Insert Failed:', disclaimerError);
+      await rollbackPreOrder();
       return NextResponse.json(
         { error: 'Disclaimer audit failed; order not placed.' },
         { status: 500 }
@@ -735,7 +748,7 @@ export async function POST(request: NextRequest) {
       if (profile.role === 'super_agent') {
         if (isUserCredit) {
           const res = await checkSuperAgentCredit(profile, total);
-          if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
+          if (res.error) { await rollbackPreOrder(); return NextResponse.json({ error: res.error }, { status: res.status }); }
           prepaidDeducted = res.prepaidDeducted || false;
           if (prepaidDeducted) {
             prepaidDeductedAmount = res.amount || 0;
@@ -754,7 +767,7 @@ export async function POST(request: NextRequest) {
           wholesaleCogs += shippingCost;
 
           const res = await checkSuperAgentCredit(superAgentProfile, wholesaleCogs);
-          if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
+          if (res.error) { await rollbackPreOrder(); return NextResponse.json({ error: res.error }, { status: res.status }); }
           prepaidDeducted = res.prepaidDeducted || false;
           if (prepaidDeducted) {
             prepaidDeductedAmount = res.amount || 0;
@@ -777,7 +790,7 @@ export async function POST(request: NextRequest) {
             retailCogs += shippingCost;
 
             const res = await checkSuperAgentCredit(superAgentProfile, retailCogs);
-            if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
+            if (res.error) { await rollbackPreOrder(); return NextResponse.json({ error: res.error }, { status: res.status }); }
             prepaidDeducted = res.prepaidDeducted || false;
             if (prepaidDeducted) {
               prepaidDeductedAmount = res.amount || 0;
@@ -795,7 +808,7 @@ export async function POST(request: NextRequest) {
           retailCogs += shippingCost;
 
           const res = await checkSuperAgentCredit(agentProfile, retailCogs);
-          if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
+          if (res.error) { await rollbackPreOrder(); return NextResponse.json({ error: res.error }, { status: res.status }); }
           prepaidDeducted = res.prepaidDeducted || false;
           if (prepaidDeducted) {
             prepaidDeductedAmount = res.amount || 0;
