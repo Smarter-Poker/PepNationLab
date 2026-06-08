@@ -246,42 +246,43 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
       `}} />
 
       {/* Category Tabs */}
-      <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16, marginBottom: 32, scrollbarWidth: 'none', alignItems: 'center' }}>
-        <button 
-          onClick={() => setActiveCategory('All')}
-          style={{ padding: '8px 20px', borderRadius: 20, whiteSpace: 'nowrap', border: '1px solid rgba(255,255,255,0.1)', background: activeCategory === 'All' ? '#00E5FF' : 'rgba(0,0,0,0.5)', color: activeCategory === 'All' ? '#000' : '#A8B4C0', fontWeight: activeCategory === 'All' ? 700 : 500, cursor: 'pointer', transition: 'all 0.2s' }}
-        >
-          All Stacks
-        </button>
-        {categories.map(cat => {
-          let areaId = 'all';
-          const entry = Object.entries(RESEARCH_AREAS).find(([k, v]) => v.label === cat);
-          if (entry) areaId = entry[0];
-          const imgSrc = `/images/areas/${areaId}.png`;
-          const isActive = activeCategory === cat;
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16, scrollbarWidth: 'none', alignItems: 'center' }}>
+          {categories.map(cat => {
+            let areaId = 'all';
+            const entry = Object.entries(RESEARCH_AREAS).find(([k, v]) => v.label === cat);
+            if (entry) areaId = entry[0];
+            const imgSrc = `/images/areas/${areaId}.png`;
+            const isActive = activeCategory === cat;
 
-          return (
-          <button 
-            key={cat} 
-            onClick={() => setActiveCategory(isActive ? 'All' : cat)}
-            style={{ 
-              flex: '0 0 auto',
-              width: 140, height: 140,
-              border: 'none', 
-              background: 'transparent', 
-              cursor: 'pointer',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              padding: 0,
-              position: 'relative',
-              opacity: activeCategory === 'All' || isActive ? 1 : 0.4,
-              transform: isActive ? 'scale(1.05)' : 'scale(1)',
-              filter: isActive ? 'drop-shadow(0 0 16px rgba(0,229,255,0.4))' : 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
-            }}
-          >
-            <Image src={imgSrc} alt={cat} fill unoptimized style={{ objectFit: 'contain' }} />
-          </button>
-          );
-        })}
+            return (
+            <button 
+              key={cat} 
+              onClick={() => setActiveCategory(isActive ? 'All' : cat)}
+              style={{ 
+                flex: '0 0 auto',
+                width: 140, height: 140,
+                border: 'none', 
+                background: 'transparent', 
+                cursor: 'pointer',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                padding: 0,
+                position: 'relative',
+                opacity: activeCategory === 'All' || isActive ? 1 : 0.4,
+                transform: isActive ? 'scale(1.05)' : 'scale(1)',
+                filter: isActive ? 'drop-shadow(0 0 16px rgba(0,229,255,0.4))' : 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
+              }}
+            >
+              <Image src={imgSrc} alt={cat} fill unoptimized style={{ objectFit: 'contain' }} />
+            </button>
+            );
+          })}
+        </div>
+        <div style={{ textAlign: 'left', color: '#A8B4C0', fontSize: '0.9rem', marginTop: 8, paddingLeft: 4 }}>
+          {activeCategory === 'All' 
+            ? 'Displaying All Stacks Currently, Click A Category To See Specific Stacks' 
+            : `Displaying ${activeCategory} Stacks, Click Again To Show All`}
+        </div>
       </div>
 
       {filteredStacks.length === 0 ? (
