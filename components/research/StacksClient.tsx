@@ -404,16 +404,11 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                     })}
                   </div>
 
-                  {/* ELI5 Summary (Replaces rationale) */}
+                  {/* Description (Simplified) */}
                   {(stack.eli5_summary || stack.plain_summary || stack.stack_rationale) && (
-                    <div style={{ marginTop: 'var(--space-3)', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
-                        Explain It To Me Like I&apos;m 5
-                      </div>
-                      <p style={{ margin: 0, color: '#D0DAE4', lineHeight: 1.55, fontSize: '0.9rem' }}>
-                        {stack.eli5_summary || stack.plain_summary || stack.stack_rationale}
-                      </p>
-                    </div>
+                    <p style={{ margin: 'var(--space-3) 0 0', color: '#D0DAE4', lineHeight: 1.55, fontSize: '0.9rem' }}>
+                      {stack.eli5_summary || stack.plain_summary || stack.stack_rationale}
+                    </p>
                   )}
 
                   {/* Synergy Score (Moved under description) */}
@@ -424,21 +419,6 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                       </div>
                     )}
                   </div>
-                  
-                  {stack.stack_components.length > 0 && (
-                    <div style={{ marginTop: 'var(--space-4)' }}>
-                      {!isPremixedBlend && (
-                        <div style={{ width: '100%', maxWidth: 500 }}>
-                          <Image src="/images/badge_not_premixed.png" alt="Not Premixed Warning" width={800} height={120} style={{ width: '100%', height: 'auto', display: 'block' }} unoptimized />
-                        </div>
-                      )}
-                      {isPremixedBlend && (
-                        <div style={{ width: '100%', maxWidth: 500 }}>
-                          <Image src="/images/badge_premixed.png" alt="Premixed Blend" width={800} height={120} style={{ width: '100%', height: 'auto', display: 'block' }} unoptimized />
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, gap: 16, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', maxWidth: '100%' }}>
@@ -516,6 +496,22 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                       <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack To Cart" width={200} height={200} unoptimized style={{ height: 64, objectFit: 'contain' }} />
                     </button>
                   </div>
+                  
+                  {/* Badges moved to the very bottom */}
+                  {stack.stack_components.length > 0 && (
+                    <div style={{ marginTop: 'var(--space-4)' }}>
+                      {!isPremixedBlend && (
+                        <div style={{ width: '100%', maxWidth: 500 }}>
+                          <Image src="/images/badge_not_premixed.png" alt="Not Premixed Warning" width={800} height={120} style={{ width: '100%', height: 'auto', display: 'block' }} unoptimized />
+                        </div>
+                      )}
+                      {isPremixedBlend && (
+                        <div style={{ width: '100%', maxWidth: 500 }}>
+                          <Image src="/images/badge_premixed.png" alt="Premixed Blend" width={800} height={120} style={{ width: '100%', height: 'auto', display: 'block' }} unoptimized />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </motion.article>
             );
