@@ -6,7 +6,7 @@ import { toTitleCase } from '@/lib/categoryImage';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FlaskConical, Dna, ArrowRight, X } from 'lucide-react';
-import { prewarmProxy, isSocialPlatformUrl } from '@/lib/ArticleProxyUtils';
+import { prewarmProxy } from '@/lib/ArticleProxyUtils';
 import DynamicAddToCartButton from '../storefront/DynamicAddToCartButton';
 import IframeModal from '../ui/IframeModal';
 import Image from 'next/image';
@@ -617,9 +617,9 @@ export default function AreaProductGrid({
             }}
           >
             <option value="evidence">Evidence Tier</option>
-            <option value="price_low">Price: Low → High</option>
-            <option value="price_high">Price: High → Low</option>
-            <option value="name_asc">Name A–Z</option>
+            <option value="price_low">Price: Low to High</option>
+            <option value="price_high">Price: High to Low</option>
+            <option value="name_asc">Name A-Z</option>
             <option value="risk">Risk Level</option>
             <option value="citations">Most Citations</option>
           </select>
@@ -819,13 +819,9 @@ export default function AreaProductGrid({
                       href={compound.coaUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={(e) => { 
-                        e.preventDefault(); 
-                        if (isSocialPlatformUrl(compound.coaUrl)) {
-                          window.open(compound.coaUrl!, '_blank');
-                        } else {
-                          setModalUrl(compound.coaUrl!); 
-                        }
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setModalUrl(compound.coaUrl!);
                       }}
                       onMouseEnter={() => prewarmProxy(compound.coaUrl)}
                       style={{
@@ -847,7 +843,7 @@ export default function AreaProductGrid({
                       }}
                       title="View Certificate of Analysis"
                     >
-                      <FlaskConical size={12} style={{ marginRight: 4 }} /> {compound.purityPercentage}% Purity ↗
+                      <FlaskConical size={12} style={{ marginRight: 4 }} /> {compound.purityPercentage}% Purity
                     </a>
                   ) : (
                     <span style={{
@@ -1209,7 +1205,7 @@ export default function AreaProductGrid({
                 const p = products.find(pr => pr.agentProductId === id);
                 if (p) addToCart(p);
               });
-              showToast('Stack Bundle Added To Cart!');
+              showToast('Stack Bundle Added To Cart');
               setStackItems(new Set());
             }}
             style={{
