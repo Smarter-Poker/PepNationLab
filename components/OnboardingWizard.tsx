@@ -697,11 +697,12 @@ function WarehouseStep({ state, onDone }: { state: OnboardingState; onDone: () =
             value={street1}
             onChange={(e) => setStreet1(e.target.value)}
             onFocus={() => { if (acItems.length > 0) setAcOpen(true); }}
+            onBlur={() => { setTimeout(() => setAcOpen(false), 150); }}
             placeholder="Start Typing Your Address..."
             autoComplete="off"
           />
           {acOpen && acItems.length > 0 && (
-            <div role="listbox" style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 50, background: 'var(--bg-metal-dark, #0d1722)', border: '1px solid rgba(0,196,188,0.4)', borderRadius: 8, overflow: 'hidden', boxShadow: '0 10px 28px rgba(0,0,0,0.55)' }}>
+            <div role="listbox" style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 9999, background: 'var(--bg-metal-dark, #0d1722)', border: '1px solid rgba(0,196,188,0.4)', borderRadius: 8, overflow: 'hidden', boxShadow: '0 10px 28px rgba(0,0,0,0.55)' }}>
               {acItems.map((s, i) => (
                 <button
                   key={`${s.label}-${i}`}
