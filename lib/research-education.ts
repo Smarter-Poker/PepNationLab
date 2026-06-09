@@ -381,3 +381,162 @@ export const PEPTIDE_FAQ: FaqEntry[] = [
     "a": "Ask A Real Scientist! A Teacher! A Lab Person! Don't Guess. Get Expert Help. They'll Explain Things Right."
   }
 ];
+export const LEARN_GUIDES: Guide[] = [
+  {
+    "slug": "what-are-research-peptides",
+    "title": "What Are Research Peptides?",
+    "intro": "Peptides are short chains of amino acids, and the compounds in this catalog are supplied strictly for laboratory research use. This guide explains what a peptide is and what research use only means in practice.",
+    "sections": [
+      {
+        "heading": "What A Peptide Is",
+        "body": "A peptide is a short chain of amino acids linked by peptide bonds, sitting in size between a single amino acid and a full protein. Many are signaling molecules: they bind a receptor or interact with another protein to nudge a biological process. The compounds profiled in the PepNationLab library range from tiny tripeptides such as GHK-Cu (three amino acids) to larger sequences such as Thymosin Alpha-1 (twenty-eight residues), and a few entries are related small molecules or cofactors rather than peptides in the strict sense.\n\nMost are supplied as a lyophilized (freeze-dried) powder. Identity is described by a sequence, a molecular weight, and where one exists a CAS registry number, which together let a researcher confirm what is actually in the vial against a certificate of analysis."
+      },
+      {
+        "heading": "Why These Are Sold For Research Use Only",
+        "body": "The large majority of these compounds are not approved drugs. Some are investigational and still in human trials, some have only animal or cell-culture data, and several are sold purely as research chemicals with no approved human use at all. A compound that has not cleared regulatory review for a given use cannot be lawfully marketed as a treatment for that use.\n\nResearch-use-only framing reflects that reality honestly. Products are intended for in-vitro and laboratory study by qualified researchers, not for human consumption. The platform describes what a compound is studied for and what researchers have reported, never what it will do for a person."
+      },
+      {
+        "heading": "What That Means Legally And Practically",
+        "body": "Practically, research use only means no dosing protocols, no medical claims, and no therapeutic promises accompany any product. Where a number appears, it is cited only as a published study or label parameter, such as a dose used in a named clinical trial, and never as a recommendation.\n\nThe site enforces this with a four-layer disclaimer that a researcher acknowledges at site entry, registration, add-to-cart, and checkout. These gates are a compliance backbone, not a formality. Anyone evaluating a compound should treat the evidence tier on its page as the most important piece of information on it."
+      }
+    ]
+  },
+  {
+    "slug": "understanding-evidence-tiers",
+    "title": "Understanding Evidence Tiers",
+    "intro": "Not all compounds carry the same weight of evidence behind them. This guide explains the five evidence tiers used across the library so you can calibrate any claim you read.",
+    "sections": [
+      {
+        "heading": "The Five Tiers",
+        "body": "Every profile carries an evidence tier so a reader can judge how much trust a claim deserves. Approved drug means the compound is FDA and/or EMA approved with robust human trial data. Investigational means it is in active human clinical trials but not yet approved. Preliminary or preclinical means the evidence is mainly from animal or in-vitro work, or from limited single-group human data. Research-chemical only means there is no approved human use and the compound is sold for laboratory research. Cosmetic ingredient means it is a recognized topical cosmetic active rather than a drug.\n\nThese tiers are deliberately blunt. A compound can be genuinely interesting and still sit at the bottom of the ladder."
+      },
+      {
+        "heading": "How To Calibrate A Claim",
+        "body": "Tier tells you the type of evidence; you still have to read the context. Reported in animal models to is a far weaker statement than in the STEP-1 trial. In-vitro evidence in cultured cells does not predict what happens in a living organism, and a single-group human cohort with no control arm is not the same as a randomized trial.\n\nBe especially cautious with compounds whose human data is old, non-independent, or comes from a single research lineage. Several entries in this catalog fit that description and say so plainly."
+      },
+      {
+        "heading": "Weak Evidence Is Stated, Not Hidden",
+        "body": "Some catalog compounds are entirely preclinical, and at least one failed its pivotal human trial. The library names these cases rather than burying them. Surfacing weak evidence is treated as a feature: it is what separates a credible research reference from marketing copy.\n\nWhen a page says evidence is thin, that is the finding, not an oversight. Plan any research design around the honest tier, not around the most optimistic single study."
+      }
+    ]
+  },
+  {
+    "slug": "reconstitution-basics",
+    "title": "Reconstitution Basics",
+    "intro": "Most catalog compounds arrive as a lyophilized powder that must be brought into solution before laboratory use. This guide explains the general concept of reconstitution and how diluent choice is decided, with no dosing guidance.",
+    "sections": [
+      {
+        "heading": "From Lyophilized Powder To Solution",
+        "body": "Lyophilization (freeze-drying) removes water so a peptide stays stable as a dry powder during shipping and storage. Reconstitution is simply adding a sterile liquid (a diluent) back to that powder to form a solution for laboratory work.\n\nThe powder is fragile. Diluent is generally added slowly down the side of the vial and the vial is swirled gently rather than shaken, because vigorous agitation and foaming can damage the peptide. This is a general lab-preparation concept, not an instruction for any human use."
+      },
+      {
+        "heading": "Choosing A Diluent",
+        "body": "Bacteriostatic water (sterile water with a small amount of benzyl alcohol) is the most common diluent and is suitable for the majority of catalog peptides; sterile water is also used. Some poorly soluble or aggregation-prone peptides dissolve better with a dilute acetic acid solution, which lowers pH to help the peptide go into solution. Many entries note that acetic acid is generally not needed.\n\nDiluent choice is compound-specific. Copper peptides such as GHK-Cu are pH and redox sensitive and are degraded by strong acids and reducing agents, so the per-compound handling note on each monograph is the authority. Always follow the compound's own profile rather than a one-size-fits-all rule."
+      },
+      {
+        "heading": "Use The Reconstitution Calculator",
+        "body": "Working out the relationship between powder mass, diluent volume, and resulting concentration is arithmetic, and the platform provides a reconstitution calculator for it. Use that tool to plan concentration for a research preparation.\n\nThe calculator handles concentration math only. It is not a dosing tool and does not imply any human administration. Pair it with the compound's handling note for diluent type and storage."
+      }
+    ]
+  },
+  {
+    "slug": "storage-cold-chain-shelf-life",
+    "title": "Storage, Cold Chain & Shelf Life",
+    "intro": "Peptides are sensitive molecules, and how they are stored before and after reconstitution determines whether they remain intact. This guide covers temperature, light, freeze-thaw, and general shelf-life concepts.",
+    "sections": [
+      {
+        "heading": "Lyophilized Versus Reconstituted Storage",
+        "body": "As a dry lyophilized powder, most catalog peptides are stable for extended periods when kept cold, dark, and dry. Common guidance across profiles is refrigeration at 2 to 8 degrees Celsius for nearer-term storage and freezing around minus 20 degrees Celsius for long-term storage. A few hygroscopic powders, such as injectable NAD+, readily absorb moisture and need especially careful dry, cold storage.\n\nOnce reconstituted, the same peptide is far less stable. A solution is generally refrigerated and treated as having a much shorter usable window than the dry powder."
+      },
+      {
+        "heading": "Temperature, Light And Moisture",
+        "body": "Heat, light, oxygen, and moisture all degrade peptides. Many compounds are explicitly light-sensitive: methylcobalamin (vitamin B12) and melatonin are notable examples, and copper peptides are sensitive to pH and redox conditions. The default for nearly every entry is cold, dark, and dry.\n\nThiol-containing compounds add another wrinkle. Reduced glutathione oxidizes readily on contact with air, light, or metals and can develop a sulfurous odor as it degrades, so it is stored cold and reconstituted fresh."
+      },
+      {
+        "heading": "Freeze-Thaw And Reconstituted Shelf Life",
+        "body": "Repeated freeze-thaw cycles are a common cause of peptide damage. Several profiles, including SS-31 (elamipretide) and CJC-1295 with DAC, specifically warn to avoid freeze-thaw because each cycle can denature or aggregate the molecule. Note also that some formulated products, such as Zadaxin (Thymosin Alpha-1), should not be frozen at all once formulated.\n\nReconstituted shelf life is best thought of as a short window measured in days to a few weeks, refrigerated, and shorter still for chemically labile peptides that the profile flags as unstable in solution. Always defer to the specific compound's handling note, which captures these quirks per molecule."
+      }
+    ]
+  },
+  {
+    "slug": "how-to-read-a-compound-monograph",
+    "title": "How To Read A Compound Monograph",
+    "intro": "Every compound in the library follows the same fixed schema so you can compare entries quickly. This guide walks through each section of a monograph and what it tells you.",
+    "sections": [
+      {
+        "heading": "Identity And Mechanism",
+        "body": "A monograph opens with the compound's class or type and an identity block: sequence, molecular weight, and a CAS number where one exists, plus common aliases. These identifiers let you verify what is in a vial against a certificate of analysis, and to catch labeling ambiguities the references flag for compounds such as Thymalin.\n\nThe mechanism section then describes the molecular target and how the compound is thought to operate, in plain prose. For example, SS-31 is described as binding cardiolipin in the inner mitochondrial membrane to stabilize cristae rather than acting as a free-radical scavenger."
+      },
+      {
+        "heading": "What It Is Studied For And Reported Findings",
+        "body": "What it is studied for lists research use cases, each carrying its own evidence tier so you can tell investigational human work from preclinical animal work. Reported findings then gives the benefits with study context, naming named trials such as STEP or SURMOUNT where they exist, and stating in-vitro versus animal versus human honestly.\n\nThese two sections are deliberately framed as studied for and researchers report, never as promises. A finding in cultured cells or mice is labeled as such."
+      },
+      {
+        "heading": "Side Effects, Warnings And Handling",
+        "body": "The reported side effects section is candid and unsoftened. Warnings and limitations carry the hard safety flags and the regulatory status, including not approved, failed trial, or preclinical where it applies. These are the lines to read first for any safety-sensitive compound, such as the opioid risk on dermorphin or the melanoma signal on Melanotan II.\n\nHandling, storage and reconstitution covers lyophilized versus solution state, diluent, temperature, light sensitivity, freeze-thaw, and shelf life."
+      },
+      {
+        "heading": "Regulatory Status And Sources",
+        "body": "The regulatory block states FDA or EMA status. The sources block lists the key references behind the profile, from peer-reviewed literature and regulatory labels to DrugBank and PubChem entries.\n\nRead a monograph top to bottom and the page is verifiable: you can check the identity against a CoA, the claims against the cited studies, and the status against current regulatory lists."
+      }
+    ]
+  },
+  {
+    "slug": "quality-verification",
+    "title": "Quality & Verification",
+    "intro": "A research compound is only as good as the evidence that it is what the label says. This guide covers the documents and tests used to verify identity, purity, and safety of a peptide vial.",
+    "sections": [
+      {
+        "heading": "The Certificate Of Analysis",
+        "body": "A certificate of analysis (CoA) is the document that reports the testing performed on a specific lot of product. A useful CoA ties to a lot or batch number, states the methods used, and reports results you can check against the compound's known identity.\n\nBecause labeling ambiguities are real, the references flag cases such as Thymalin where a vendor may equate a complex with a single dipeptide. The CoA, read against the monograph's identity block, is how you catch that kind of mismatch."
+      },
+      {
+        "heading": "Purity And Identity Testing",
+        "body": "High-performance liquid chromatography (HPLC) is the standard method for assessing purity: it separates the components in a sample so that the main peptide can be quantified against impurities, usually reported as a percentage purity. Mass spectrometry confirms identity by measuring molecular mass, which should match the compound's stated molecular weight.\n\nTogether, HPLC and mass spec answer two different questions: how pure the sample is, and whether it is actually the molecule it claims to be. A high purity figure for the wrong molecule is still the wrong molecule."
+      },
+      {
+        "heading": "Endotoxin, Sterility And Third-Party Testing",
+        "body": "For preparations intended for sterile laboratory work, endotoxin (bacterial pyrogen) testing and sterility testing address contamination that HPLC and mass spec do not. These are particularly relevant for any aqueous or parenteral research preparation.\n\nThird-party testing, where an independent lab rather than the seller runs the assays, adds credibility because the tester has no incentive in the result. Independent verification carries more weight than an in-house claim alone."
+      },
+      {
+        "heading": "Vial Verification",
+        "body": "At the point of receipt, basic checks matter: confirm the lot number on the vial matches the CoA, that the labeled identity and quantity match what was ordered, and that the physical product matches expectations, such as the characteristic blue color of a copper-peptide complex like GHK-Cu.\n\nAppearance is a weak signal on its own, but a mismatch between vial, label, and CoA is a clear reason to stop and question the product before any research use."
+      }
+    ]
+  },
+  {
+    "slug": "peptide-classes-overview",
+    "title": "Peptide Classes Overview",
+    "intro": "The library groups compounds into families that share a mechanism or origin. This guide gives a short orientation to each major class so you know where a compound sits.",
+    "sections": [
+      {
+        "heading": "GHRH Analogs",
+        "body": "Growth-hormone-releasing hormone (GHRH) analogs are synthetic agonists of the GHRH receptor on the pituitary, prompting it to release growth hormone. Examples in the catalog include CJC-1295, where a DAC modification binds albumin to extend the half-life to several days and produce sustained rather than pulsatile growth-hormone release. Most members of the growth-hormone-axis class are research chemicals, not approved drugs."
+      },
+      {
+        "heading": "Growth-Hormone-Releasing Peptides And Secretagogues",
+        "body": "Secretagogues such as the GHRP family and ipamorelin act mainly through the ghrelin and GH-secretagogue receptor rather than the GHRH receptor, providing a second, complementary pathway to stimulate growth-hormone release. They are often discussed alongside GHRH analogs because the two mechanisms are studied in combination. Like the GHRH analogs, these carry the general GH-axis caveats around glucose tolerance."
+      },
+      {
+        "heading": "GLP-1 And Incretin Agonists",
+        "body": "Incretin agonists mimic gut hormones such as GLP-1 (and in dual or triple agonists, GIP and glucagon) that regulate insulin secretion, appetite, and gastric emptying. This class includes the most rigorously trialed compounds in the catalog, with named human programs such as STEP and SURMOUNT behind several entries. Class-wide warnings include gastrointestinal side effects and a thyroid C-cell tumor signal observed in rodents, which belongs on every incretin page."
+      },
+      {
+        "heading": "Copper Peptides",
+        "body": "Copper peptides such as GHK-Cu (Copper Tripeptide-1) and AHK-Cu are small tripeptides that chelate and deliver copper into cells, where they are studied for collagen synthesis, wound repair, and hair-follicle signaling. GHK-Cu is a recognized cosmetic ingredient rather than an approved drug. They are pH and redox sensitive, degrade in contact with strong acids and reducing agents, and carry a pro-angiogenic caveat for any systemic use."
+      },
+      {
+        "heading": "Peptide Bioregulators",
+        "body": "Bioregulators are very short peptides, often two to four amino acids, associated with the Khavinson research tradition. Examples include Epithalon, Pinealon, and Thymalin, proposed to bind DNA and modulate gene expression in a tissue-specific way. The evidence is largely preliminary, frequently from a single research lineage and not independently replicated, and these are research chemicals not approved in the United States or European Union."
+      },
+      {
+        "heading": "Melanocortins",
+        "body": "Melanocortin peptides act on the melanocortin receptor family and are studied for pigmentation and sexual-function endpoints, with Melanotan II as the prototypical catalog example. This class carries notable safety flags that the library surfaces plainly, including a melanoma signal for Melanotan II. They are research chemicals without approval for the uses for which they are commonly studied."
+      },
+      {
+        "heading": "Mitochondrial Peptides",
+        "body": "Mitochondrial peptides target mitochondrial function and integrity. SS-31 (elamipretide) binds cardiolipin to stabilize the inner mitochondrial membrane and recently gained a narrow FDA approval for Barth syndrome, making it the strongest human evidence in its anti-aging-adjacent category, while remaining investigational for everything else. MOTS-c is a mitochondrial-derived peptide studied as a metabolic regulator."
+      }
+    ]
+  }
+];
