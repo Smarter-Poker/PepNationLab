@@ -97,7 +97,7 @@ export default function AdminAgents() {
     try {
       const res = await fetch('/api/admin/agents');
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to fetch agents');
+      if (!res.ok) throw new Error(json.error || 'Failed To Fetch Agents');
       setAgents(json.data || []);
     } catch (err: any) {
       setError(err.message);
@@ -262,12 +262,12 @@ export default function AdminAgents() {
         body: JSON.stringify({ agentId, tier: newTier }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to update tier');
+      if (!res.ok) throw new Error(json.error || 'Failed To Update Tier');
       toast.success(`Tier updated to ${newTier.replace('_', ' ').toUpperCase()}`);
       // Update local state immediately (no full refetch needed)
       setAgents(prev => prev.map(a => a.id === agentId ? { ...a, tier: newTier } : a));
     } catch (err: any) {
-      toast.error(err.message || 'Failed to update tier');
+      toast.error(err.message || 'Failed To Update Tier');
     } finally {
       setTierSaving(prev => { const n = new Set(prev); n.delete(agentId); return n; });
       setTierEditing(prev => { const n = new Set(prev); n.delete(agentId); return n; });
@@ -341,7 +341,7 @@ export default function AdminAgents() {
 
 
 
-  if (loading) return <div style={{ color: 'var(--silver)' }}>Loading agents...</div>;
+  if (loading) return <div style={{ color: 'var(--silver)' }}>Loading Agents...</div>;
   if (error) return <div style={{ color: 'var(--red)' }}>Error: {error}</div>;
 
   return (
@@ -382,7 +382,7 @@ export default function AdminAgents() {
           });
 
           if (filteredAgents.length === 0) {
-            return <div style={{ textAlign: 'center', padding: 'var(--space-6)', opacity: 0.5 }}>No matching agents found.</div>;
+            return <div style={{ textAlign: 'center', padding: 'var(--space-6)', opacity: 0.5 }}>No Matching Agents Found.</div>;
           }
 
           return filteredAgents.map(agent => {
@@ -435,17 +435,17 @@ export default function AdminAgents() {
                           type="checkbox" 
                           checked={!!agent.auto_approve_orders}
                           onChange={() => handleToggleTrust(agent.id, !!agent.auto_approve_orders)}
-                          disabled={togglingTrust === agent.id || agent.account_type === 'credit' || agent.account_type === 'prepaid'}
-                          style={{ opacity: 0, width: 0, height: 0 }} 
+                          disabled={togglingTrust === agent.id}
+                          style={{ opacity: 0, width: 0, height: 0 }}
                         />
                         <span style={{
                           position: 'absolute',
-                          cursor: (togglingTrust === agent.id || agent.account_type === 'credit' || agent.account_type === 'prepaid') ? 'not-allowed' : 'pointer',
+                          cursor: togglingTrust === agent.id ? 'not-allowed' : 'pointer',
                           top: 0, left: 0, right: 0, bottom: 0,
                           backgroundColor: agent.auto_approve_orders ? 'var(--teal)' : 'var(--grey-500)',
                           transition: '.4s',
                           borderRadius: '16px',
-                          opacity: (togglingTrust === agent.id || agent.account_type === 'credit' || agent.account_type === 'prepaid') ? 0.5 : 1
+                          opacity: togglingTrust === agent.id ? 0.5 : 1
                         }}>
                           <span style={{
                             position: 'absolute',
@@ -460,11 +460,6 @@ export default function AdminAgents() {
                         </span>
                       </label>
                       {togglingTrust === agent.id && <span style={{ fontSize: '0.65rem', color: 'var(--teal)' }}>Saving...</span>}
-                      {(agent.account_type === 'credit' || agent.account_type === 'prepaid') && (
-                        <span style={{ fontSize: '0.65rem', color: 'var(--silver)', fontStyle: 'italic' }} title="Locked by Account Type">
-                          (Locked)
-                        </span>
-                      )}
                     </div>
                   )}
                 </div>

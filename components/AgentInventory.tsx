@@ -73,7 +73,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
       if (res.ok) {
         setInventory(json.data || []);
       } else {
-        setError(json.error || 'Failed to load inventory');
+        setError(json.error || 'Failed To Load Inventory');
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -350,7 +350,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
                     <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>
                       ${(item.agent_cost / 10).toFixed(2)} / Vial
                     </span>
-                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
+                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</span>
                   </>
                 )}
                 <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', marginTop: 2, marginBottom: 0 }}>
