@@ -4,8 +4,6 @@ import { RESEARCH_AREAS } from '@/lib/compounds';
 
 export const dynamic = 'force-dynamic';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 const RESPONSE_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -55,6 +53,8 @@ export async function POST(req: NextRequest) {
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json({ error: 'GEMINI_API_KEY is not configured.' }, { status: 501 });
     }
+
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     const { prompt } = await req.json();
     if (!prompt || typeof prompt !== 'string') {

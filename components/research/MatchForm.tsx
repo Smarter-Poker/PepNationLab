@@ -210,9 +210,11 @@ function MatchFormInner() {
         if (data.result.budget) setBudget(data.result.budget);
         setAiPrompt('');
         
-        // Use overrides to bypass React closure state delays
+        // Advance to results step, then run matching with overrides to bypass React closure state delays
+        setStep(5);
         onSubmit(undefined, {
           goal: data.result.goal || goal,
+          goals: data.result.goals || (data.result.goal ? [data.result.goal] : undefined),
           evidenceComfort: data.result.evidenceComfort || evidenceComfort,
           riskTolerance: data.result.riskTolerance || riskTolerance,
           excludeInjectables: typeof data.result.excludeInjectables === 'boolean' ? data.result.excludeInjectables : excludeInjectables,

@@ -651,6 +651,10 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                 icon={<svg {...IP}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></svg>}
               />
 
+              <DrawerLink href="/peptide-101.html" label="Peptide 101" onClick={closeDrawer}
+                icon={<svg {...IP}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>}
+              />
+
               <button
                 onClick={() => { closeDrawer(); handleSignOut(); }}
                 style={{
