@@ -38,17 +38,20 @@ export default function AdminAnalytics() {
       const weekAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
 
       // Parallel queries
-      const [ordersRes, allOrdersRes, itemsRes, researchersRes, agentsRes] = await Promise.all([
+      const [ordersRes, allOrdersRes, ordersWithItemsRes, researchersRes, agentsRes] = await Promise.all([
         supabase.from('orders').select('id, total, status, created_at, agent_id').gte('created_at', rangeStart).neq('status', 'cancelled'),
         supabase.from('orders').select('total, status, created_at').neq('status', 'cancelled'),
-        supabase.from('order_items').select('product_name, product_id, quantity, unit_retail_price, orders!inner(created_at, status), products(name)').gte('orders.created_at', rangeStart).neq('orders.status', 'cancelled'),
+        // Fetch orders in range with nested items - filters applied directly on orders
+        // to avoid PostgREST nested FK filter silent failures.
+        supabase.from('orders').select('order_items(product_name, product_id, quantity, unit_retail_price, products(name))').gte('created_at', rangeStart).neq('status', 'cancelled'),
         supabase.from('profiles').select('created_at').eq('role', 'researcher').gte('created_at', weekAgo),
         supabase.from('profiles').select('id, full_name, email').in('role', ['agent', 'super_agent']),
       ]);
 
       const orders = ordersRes.data ?? [];
       const allOrders = allOrdersRes.data ?? [];
-      const items = itemsRes.data ?? [];
+      // Flatten nested order_items from each order into a single array
+      const items = (ordersWithItemsRes.data ?? []).flatMap((o: any) => o.order_items ?? []);
       const agents = agentsRes.data ?? [];
 
       // Revenue by day

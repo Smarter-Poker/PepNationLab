@@ -7,6 +7,7 @@ import { carrierInfo } from '@/lib/carrier';
 import AgentPaymentProofs from './AgentPaymentProofs';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import IframeLink from '@/components/ui/IframeLink';
+import IframeModal from '@/components/ui/IframeModal';
 
 interface Order {
   id: string;
@@ -75,6 +76,7 @@ function formatAddress(address: any): string {
 export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
   const [buyingLabelId, setBuyingLabelId] = useState<string | null>(null);
+  const [labelModalUrl, setLabelModalUrl] = useState<string | null>(null);
   const [trackingNumbers, setTrackingNumbers] = useState<Record<string, string>>({});
   const [showManualOrder, setShowManualOrder] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -176,7 +178,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
 
       toast.success('Shipping Label Purchased Successfully');
       if (data.labelUrl) {
-        window.open(data.labelUrl, '_blank');
+        setLabelModalUrl(data.labelUrl);
       }
 
       setOrders((prev) =>
@@ -234,6 +236,9 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
 
   return (
     <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
+      {labelModalUrl && (
+        <IframeModal url={labelModalUrl} title="Shipping Label" onClose={() => setLabelModalUrl(null)} />
+      )}
       <div className="">
       <h3
         className="metal-text"
@@ -336,7 +341,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         {order.is_sub_agent_order ? `Sub-Agent Order #${order.id.slice(0, 8).toUpperCase()}` : `Order #${order.id.slice(0, 8).toUpperCase()}`}
                       </span>
                       <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', fontWeight: 600 }}>
-                        •
+                        &bull;
                       </span>
                       <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', fontWeight: 500 }}>
                         {new Date(order.created_at).toLocaleDateString('en-US', {
@@ -452,7 +457,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.open(order.label_url!, '_blank');
+                            setLabelModalUrl(order.label_url!);
                           }}
                           className="btn btn-secondary"
                           style={{
