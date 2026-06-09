@@ -69,8 +69,7 @@ export default function FooterSection() {
               ].map(({ label, href }) => (
                 <Link key={label} href={href} style={{ fontSize: '0.85rem', color: 'var(--grey-400)', transition: 'color 0.2s' }}
                       onMouseOver={e => (e.currentTarget.style.color = 'var(--teal)')}
-                      onMouseOut={e => (e.currentTarget.style.color = 'var(--grey-400)')}>
-                  {label}
+                      onMouseOut={e => (e.currentTarget.style.color = 'var(--grey-400)')}>\n                  {label}
                 </Link>
               ))}
             </div>
@@ -94,8 +93,7 @@ export default function FooterSection() {
               ].map(({ label, href }) => (
                 <Link key={label} href={href} style={{ fontSize: '0.85rem', color: 'var(--grey-400)', transition: 'color 0.2s' }}
                       onMouseOver={e => (e.currentTarget.style.color = 'var(--teal)')}
-                      onMouseOut={e => (e.currentTarget.style.color = 'var(--grey-400)')}>
-                  {label}
+                      onMouseOut={e => (e.currentTarget.style.color = 'var(--grey-400)')}>\n                  {label}
                 </Link>
               ))}
             </div>
@@ -117,8 +115,7 @@ export default function FooterSection() {
                 transition: 'color 0.2s'
               }}
                  onMouseOver={e => (e.currentTarget.style.color = 'var(--teal)')}
-                 onMouseOut={e => (e.currentTarget.style.color = 'var(--grey-400)')}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                 onMouseOut={e => (e.currentTarget.style.color = 'var(--grey-400)')}>\n                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                   <polyline points="22,6 12,13 2,6"/>
                 </svg>
@@ -149,7 +146,7 @@ export default function FooterSection() {
             All products sold on PepNationLab.com are strictly for <em>in vitro</em> laboratory research and analytical purposes only. 
             They are NOT intended for human or animal consumption, ingestion, or injection. 
             These products have not been evaluated or approved by the FDA. 
-            Pep Nation Lab does not sell BAC water, needles, syringes, or any injection delivery devices. 
+            Pep Nation Lab does not sell needles, syringes, or any injection delivery devices.
             Purchasers assume full legal responsibility for compliance with all applicable laws.
           </p>
         </div>
@@ -165,7 +162,7 @@ export default function FooterSection() {
           gap: 'var(--space-4)'
         }}>
           <p style={{ fontSize: '0.78rem', color: 'var(--grey-600)', margin: 0 }}>
-            © {new Date().getFullYear()} Pep Nation Lab LLC. All Rights Reserved.
+            &copy; {new Date().getFullYear()} Pep Nation Lab LLC. All Rights Reserved.
           </p>
           <p style={{ fontSize: '0.78rem', color: 'var(--grey-600)', margin: 0 }}>
             PepNationLab.com | For Qualified Researchers Only

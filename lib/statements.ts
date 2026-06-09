@@ -23,7 +23,7 @@ export async function computeStatement(
   weekStart: string
 ): Promise<{ ok: true; data: ComputeResult } | { ok: false; error: string }> {
   const weekEnd = addDays(weekStart, 6);
-  // Billing weeks live in America/Chicago. Mon 00:00 CT → next Mon 00:00 CT
+  // Billing weeks live in America/Chicago. Mon 00:00 CT -> next Mon 00:00 CT
   // - matches the spec ("Week ends Sunday 23:59:59 CST") and handles DST.
   const rangeStart = chicagoMidnightIso(weekStart);
   const rangeEndExclusive = chicagoMidnightIso(addDays(weekStart, 7));
@@ -63,6 +63,8 @@ export async function computeStatement(
     .select('id, agent_id, shipping_cost, order_items(quantity, unit_cost_price, unit_super_agent_cost)')
     .in('agent_id', billableAgentIds)
     .neq('status', 'cancelled')
+    .neq('status', 'pending_customer_payment')
+    .neq('status', 'agent_approval_pending')
     .gte('created_at', rangeStart)
     .lt('created_at', rangeEndExclusive);
 

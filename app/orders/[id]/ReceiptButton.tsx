@@ -147,7 +147,7 @@ export default function ReceiptButton(props: ReceiptProps) {
           const bundleTotal = g.items.reduce((acc, it) => acc + (it.unit_retail_price * it.quantity), 0);
           html += `
             <tr style="background-color: #f8fafc;">
-              <td colspan="4" style="font-weight: bold; color: #0d9488; padding-top: 12px;">📦 ${esc(g.name)} (Stack)</td>
+              <td colspan="4" style="font-weight: bold; color: #0d9488; padding-top: 12px;">[Stack] ${esc(g.name)}</td>
             </tr>
           `;
           g.items.forEach(it => {

@@ -61,6 +61,8 @@ const NICKNAME_MAP: Record<string, string> = {
   'ahk cu': 'The Hair Growth Copper Peptide',
   'ghk-cu': "Nature's Botox",
   'ghk cu': "Nature's Botox",
+  'melanotan-1': 'The Tanning Peptide',
+  'melanotan 1': 'The Tanning Peptide',
   'mt-1': 'The Tanning Peptide',
   'mt1': 'The Tanning Peptide',
   'mt 1': 'The Tanning Peptide',

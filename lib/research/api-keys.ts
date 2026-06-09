@@ -44,8 +44,8 @@ export async function validateApiKey(bearerToken: string | null): Promise<ApiKey
     if (!data) return { ok: false, reason: 'unknown' };
     if (data.is_active === false || data.revoked_at) return { ok: false, reason: 'revoked' };
 
-    const { data: limitOk } = await supabase.rpc('check_api_rate_limit', { p_key_id: data.id });
-    if (limitOk === false) return { ok: false, reason: 'rate_limited' };
+    const { data: limitRows } = await supabase.rpc('check_api_rate_limit', { p_key_id: data.id });
+    if (limitRows?.[0]?.allowed !== true) return { ok: false, reason: 'rate_limited' };
 
     return {
       ok: true,
@@ -72,9 +72,9 @@ export async function logApiRequest(
       api_key_id: key_id,
       endpoint: endpoint.slice(0, 256),
       method: method.slice(0, 8),
-      status,
+      status_code: status,
       latency_ms,
-      ip: ip ? ip.slice(0, 64) : null,
+      ip_address: ip ? ip.slice(0, 64) : null,
     });
   } catch {
     // logging is best-effort
