@@ -574,6 +574,8 @@ function ProfileStep({ state, onDone }: { state: OnboardingState; onDone: () => 
  */
 type Addr = { street1: string; street2: string; city: string; state: string; zip: string };
 
+type AcItem = { label: string; street1: string; city: string; state: string; zip: string };
+
 function WarehouseStep({ state, onDone }: { state: OnboardingState; onDone: () => void }) {
   const w = state.storefront?.warehouse_address ?? {};
   const [street1, setStreet1] = useState(w.street1 ?? '');
@@ -584,6 +586,54 @@ function WarehouseStep({ state, onDone }: { state: OnboardingState; onDone: () =
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [suggestion, setSuggestion] = useState<Addr | null>(null);
+
+  // Live type-ahead: as the street field is typed, fetch clickable address
+  // suggestions that auto-fill street/city/state/zip. The Shippo standardize
+  // confirm below remains the secondary "use this / keep mine" layer on save.
+  const [acItems, setAcItems] = useState<AcItem[]>([]);
+  const [acOpen, setAcOpen] = useState(false);
+  const [acLoading, setAcLoading] = useState(false);
+  const acDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Skip the very next query after a programmatic street1 change (suggestion
+  // pick or the prefill-from-saved-state on mount) so it doesn't re-open.
+  const acSuppress = useRef(true);
+
+  useEffect(() => {
+    const q = street1.trim();
+    if (acDebounce.current) clearTimeout(acDebounce.current);
+    if (acSuppress.current) { acSuppress.current = false; return; }
+    // Only start once "enough data" is typed.
+    if (q.length < 4) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing stale suggestions for a too-short query
+      setAcItems([]); setAcOpen(false); setAcLoading(false);
+      return;
+    }
+    setAcLoading(true);
+    acDebounce.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/shipping/address-autocomplete?q=${encodeURIComponent(q)}`, { cache: 'no-store' });
+        const json = await res.json().catch(() => null);
+        const items: AcItem[] = Array.isArray(json?.suggestions) ? json.suggestions : [];
+        setAcItems(items);
+        setAcOpen(items.length > 0);
+      } catch {
+        setAcItems([]); setAcOpen(false);
+      } finally {
+        setAcLoading(false);
+      }
+    }, 350);
+    return () => { if (acDebounce.current) clearTimeout(acDebounce.current); };
+  }, [street1]);
+
+  const pickSuggestion = (s: AcItem) => {
+    acSuppress.current = true;
+    if (s.street1) setStreet1(s.street1);
+    if (s.city) setCity(s.city);
+    if (s.state) setStatev(s.state);
+    if (s.zip) setZip(s.zip);
+    setAcOpen(false);
+    setAcItems([]);
+  };
 
   const current = (): Addr => ({ street1: street1.trim(), street2: street2.trim(), city: city.trim(), state: statev.trim(), zip: zip.trim() });
 
@@ -634,13 +684,42 @@ function WarehouseStep({ state, onDone }: { state: OnboardingState; onDone: () =
       <StepIntro icon={Warehouse} title="Add Your Warehouse Address"
         blurb="This Is Where Your Inventory Shipments Are Delivered. Your Restocks From Pep Nation Ship To This Address, So Make Sure It Is Accurate." />
       <GuidePanel steps={[
-        'Enter The Street Address Where You Receive Inventory.',
+        'Start Typing Your Street Address, Then Pick A Suggestion To Auto-Fill City, State, And Zip.',
         'Add Any Suite Or Unit Number (Optional).',
-        'Fill In The City, State, And Zip.',
+        'Double-Check The City, State, And Zip.',
         'Click "Save And Continue" — We Will Check The Address For You.',
         'If We Suggest A Corrected Version, Pick The One You Want To Use.',
       ]} />
-      <Field label="Street Address"><input style={inputStyle} value={street1} onChange={(e) => setStreet1(e.target.value)} placeholder="100 Lab Way" /></Field>
+      <Field label="Street Address">
+        <div style={{ position: 'relative' }}>
+          <input
+            style={inputStyle}
+            value={street1}
+            onChange={(e) => setStreet1(e.target.value)}
+            onFocus={() => { if (acItems.length > 0) setAcOpen(true); }}
+            placeholder="Start Typing Your Address..."
+            autoComplete="off"
+          />
+          {acOpen && acItems.length > 0 && (
+            <div role="listbox" style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 50, background: 'var(--bg-metal-dark, #0d1722)', border: '1px solid rgba(0,196,188,0.4)', borderRadius: 8, overflow: 'hidden', boxShadow: '0 10px 28px rgba(0,0,0,0.55)' }}>
+              {acItems.map((s, i) => (
+                <button
+                  key={`${s.label}-${i}`}
+                  type="button"
+                  role="option"
+                  aria-selected={false}
+                  onMouseDown={(e) => { e.preventDefault(); pickSuggestion(s); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', borderBottom: i < acItems.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none', color: 'var(--grey-200, #D0DAE4)', fontSize: '0.84rem', cursor: 'pointer' }}
+                >
+                  <Warehouse size={14} style={{ color: 'var(--teal)', flexShrink: 0 }} />
+                  <span>{s.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {acLoading && <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', marginTop: 4 }}>Searching Addresses...</div>}
+      </Field>
       <Field label="Suite / Unit (Optional)"><input style={inputStyle} value={street2} onChange={(e) => setStreet2(e.target.value)} /></Field>
       <div style={{ display: 'flex', gap: 'var(--space-3, 12px)', flexWrap: 'wrap' }}>
         <div style={{ flex: '2 1 160px' }}><Field label="City"><input style={inputStyle} value={city} onChange={(e) => setCity(e.target.value)} /></Field></div>
