@@ -296,7 +296,7 @@ export default function AdminAnalytics() {
         <div className="glass-panel">
           <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 className="metal-text" style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
-              Top Products (Revenue)
+              Top Products (By Units Sold)
             </h3>
           {data.topProducts.length > 0 ? (
             <div style={{ height: 240, width: '100%' }}>

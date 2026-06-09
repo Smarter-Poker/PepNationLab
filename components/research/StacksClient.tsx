@@ -820,7 +820,7 @@ interface StackDrawerProps {
 function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundlePrice, synergyData }: StackDrawerProps) {
   const stack = bySlug.get(stackSlug);
   const [activeTab, setActiveTab] = useState<'overview' | 'calculator'>('overview');
-  const [calcState, setCalcState] = useState<Record<string, { mass: number, diluent: number }>>({});
+  const [reconstMode, setReconstMode] = useState<'standard' | 'concentrated' | 'diluted'>('standard');
   const [isSynergyExpanded, setIsSynergyExpanded] = useState(false);
 
   if (!stack) return null;
@@ -834,21 +834,9 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
 
   const missingComponents = stack.stack_components.filter((slug: string) => !products.some((p: AreaProduct) => p.compoundSlug === slug));
 
-  const handleCalcChange = (slug: string, field: 'mass' | 'diluent', value: number) => {
-    setCalcState(prev => ({
-      ...prev,
-      [slug]: {
-        ...(prev[slug] || { mass: 5, diluent: 2 }),
-        [field]: value
-      }
-    }));
-  };
-
-  const getConcentration = (slug: string) => {
-    const s = calcState[slug] || { mass: 5, diluent: 2 };
-    if (!s.diluent || !s.mass) return 0;
-    return s.mass / s.diluent; // mg/mL
-  };
+  const premadeProducts = products.filter(p => p.compoundSlug === stackSlug);
+  const isBundleProduct = premadeProducts.length > 0;
+  const bundleImageUrl = isBundleProduct ? premadeProducts[0].imageUrl : null;
 
   const citationCount = stack.stack_components.reduce((acc: number, slug: string) => {
     const c = bySlug.get(slug);
@@ -905,12 +893,28 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
           <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}><X size={20} /></button>
         </div>
 
-        <div style={{ padding: '32px 32px 0 32px' }}>
-          <p style={{ color: '#D0DAE4', lineHeight: 1.6, fontSize: '0.95rem', margin: '0 0 24px 0' }}>{stack.eli5_summary || stack.plain_summary || stack.stack_rationale}</p>
+        <div style={{ padding: '24px 32px 0 32px' }}>
+          {/* Banner Image */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24, padding: '24px 0', background: 'radial-gradient(circle at center, rgba(0,229,255,0.05) 0%, transparent 70%)' }}>
+            {isBundleProduct && bundleImageUrl ? (
+              <Image src={bundleImageUrl} alt={mainTitle} width={180} height={180} style={{ objectFit: 'contain', filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }} unoptimized />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {stack.stack_components.map((slug: string, i: number) => {
+                  const p = products.find((pr: AreaProduct) => pr.compoundSlug === slug);
+                  return (
+                    <div key={slug} style={{ position: 'relative', zIndex: 10 - i, marginLeft: i > 0 ? -40 : 0 }}>
+                      <Image src={p?.imageUrl || '/images/placeholder_vial.png'} alt={slug} width={140} height={140} style={{ objectFit: 'contain', filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }} unoptimized />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <div style={{ position: 'relative', display: 'inline-block', width: '100%', maxWidth: 500, marginBottom: 16 }}>
-              <Image src={activeTab === 'overview' ? "/images/overview_tabs_btn.png" : "/images/calculator_tabs_btn.png"} alt="Tabs" width={800} height={200} style={{ width: '100%', height: 'auto', display: 'block' }} unoptimized />
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 16 }}>
+            <div style={{ position: 'relative', display: 'inline-block', height: 60 }}>
+              <Image src={activeTab === 'overview' ? "/images/overview_tabs_btn.png" : "/images/calculator_tabs_btn.png"} alt="Tabs" width={300} height={60} style={{ width: 'auto', height: 60, display: 'block', objectFit: 'contain' }} unoptimized />
               <div style={{ position: 'absolute', top: 0, left: 0, width: '50%', height: '100%', cursor: 'pointer', zIndex: 10 }} onClick={() => setActiveTab('overview')} />
               <div style={{ position: 'absolute', top: 0, left: '50%', width: '50%', height: '100%', cursor: 'pointer', zIndex: 10 }} onClick={() => setActiveTab('calculator')} />
             </div>
@@ -921,6 +925,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
           {activeTab === 'overview' ? (
             <>
               <div style={{ height: 16 }} />
+              <p style={{ color: '#D0DAE4', lineHeight: 1.6, fontSize: '0.95rem', margin: '0 0 24px 0' }}>{stack.eli5_summary || stack.plain_summary || stack.stack_rationale}</p>
               
 
               
@@ -1031,11 +1036,32 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
           ) : (
             <div>
               <p style={{ color: '#A8B4C0', fontSize: '0.9rem', marginBottom: 24 }}>Calculate exactly how much Bacteriostatic Water to add to each component in this stack based on your target concentration.</p>
+
+              <div style={{ display: 'flex', gap: 12, marginBottom: 32, justifyContent: 'center', flexWrap: 'wrap' }}>
+                {['concentrated', 'standard', 'diluted'].map(mode => (
+                  <button key={mode} onClick={() => setReconstMode(mode as any)} style={{
+                    padding: '10px 24px', borderRadius: 8, fontWeight: 700, fontSize: '0.9rem', textTransform: 'capitalize',
+                    background: reconstMode === mode ? 'rgba(0,229,255,0.15)' : 'rgba(255,255,255,0.05)',
+                    border: reconstMode === mode ? '1px solid #00E5FF' : '1px solid rgba(255,255,255,0.1)',
+                    color: reconstMode === mode ? '#00E5FF' : '#A8B4C0',
+                    cursor: 'pointer', transition: 'all 0.2s'
+                  }}>
+                    {mode}
+                  </button>
+                ))}
+              </div>
+
               {stack.stack_components.map((slug: string) => {
-                const s = calcState[slug] || { mass: 5, diluent: 2 };
-                const mgPerMl = getConcentration(slug);
-                const mcgPerMl = mgPerMl * 1000;
                 const p = products.find((pr: AreaProduct) => pr.compoundSlug === slug);
+                let mass = 5;
+                if (p?.unitSize && p.unitSize.toLowerCase().includes('mg')) mass = parseInt(p.unitSize);
+                else {
+                  const match = p?.productName.match(/(\d+)\s*mg/i);
+                  if (match) mass = parseInt(match[1]);
+                }
+                const diluent = reconstMode === 'concentrated' ? 1 : reconstMode === 'diluted' ? 3 : 2;
+                const mgPerMl = mass / diluent;
+                const mcgPerMl = mgPerMl * 1000;
                 const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
 
                 return (
@@ -1046,13 +1072,15 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                     </h4>
                     <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.75rem', color: '#A8B4C0', marginBottom: 6 }}>Vial Mass: {s.mass}mg</label>
-                          <input type="range" min="1" max="30" step="1" value={s.mass} onChange={e => handleCalcChange(slug, 'mass', parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#00E5FF' }} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.75rem', color: '#A8B4C0', marginBottom: 6 }}>BAC Water Added: {s.diluent}mL</label>
-                          <input type="range" min="0.5" max="5" step="0.1" value={s.diluent} onChange={e => handleCalcChange(slug, 'diluent', parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#00E5FF' }} />
+                        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <span style={{ fontSize: '0.85rem', color: '#A8B4C0' }}>Vial Mass</span>
+                            <span style={{ fontSize: '0.9rem', color: '#fff', fontWeight: 600 }}>{mass}mg</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#A8B4C0' }}>BAC Water Added</span>
+                            <span style={{ fontSize: '0.9rem', color: '#00E5FF', fontWeight: 700 }}>{diluent}mL</span>
+                          </div>
                         </div>
                       </div>
                       <div style={{ width: 80, height: 160, position: 'relative' }}>
@@ -1064,13 +1092,13 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                           <rect x="10" y="20" width="20" height="90" rx="2" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
                           
                           {/* Liquid */}
-                          <rect x="11" y="21" width="18" height={Math.max(0, (20 + (s.diluent / 5) * 85) - 21)} fill="rgba(0,229,255,0.4)" />
+                          <rect x="11" y="21" width="18" height={Math.max(0, (20 + (diluent / 5) * 85) - 21)} fill="rgba(0,229,255,0.4)" />
                           
                           {/* Plunger Top (Rubber stopper) */}
-                          <rect x="11" y={20 + (s.diluent / 5) * 85} width="18" height="5" fill="#1e293b" />
+                          <rect x="11" y={20 + (diluent / 5) * 85} width="18" height="5" fill="#1e293b" />
                           
                           {/* Plunger Rod */}
-                          <rect x="16" y={(20 + (s.diluent / 5) * 85) + 5} width="8" height={130 - ((20 + (s.diluent / 5) * 85) + 5)} fill="#334155" />
+                          <rect x="16" y={(20 + (diluent / 5) * 85) + 5} width="8" height={130 - ((20 + (diluent / 5) * 85) + 5)} fill="#334155" />
                           
                           {/* Tick marks */}
                           {[1, 2, 3, 4, 5].map(mL => {
