@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
+import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 
 interface AgentProduct {
   product_id: string;
@@ -138,7 +139,14 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
             
             <div className="form-group" style={{ marginTop: 'var(--space-4)' }}>
               <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Street Address</label>
-              <input type="text" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={street} onChange={e => setStreet(e.target.value)} />
+              <AddressAutocompleteInput
+                className="form-input"
+                style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
+                required
+                value={street}
+                onChange={setStreet}
+                onSelect={(a) => { setStreet(a.street1); if (a.city) setCity(a.city); if (a.state) setState(a.state); if (a.zip) setZip(a.zip); }}
+              />
             </div>
             
             <div className="grid-3" style={{ gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>

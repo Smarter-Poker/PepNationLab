@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { requireAgent } from '@/lib/admin-auth';
+import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -114,8 +114,11 @@ async function mapbox(q: string, token: string): Promise<Suggestion[]> {
 }
 
 export async function GET(req: NextRequest) {
-  const gate = await requireAgent();
-  if (!gate.ok) return gate.response;
+  // Any authenticated user may use address autocomplete: researchers fill
+  // checkout/saved-address forms, agents fill warehouse, admins fill origins.
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const q = (new URL(req.url).searchParams.get('q') || '').trim();
   // Only start once "enough data" is typed, so we don't fire on a few letters.
