@@ -11,6 +11,7 @@ import PaymentProofUpload from '@/components/PaymentProofUpload';
 import { toTitleCase } from '@/lib/categoryImage';
 import { createClient } from '@/lib/supabase/client';
 import { calculateShippingCost as getShippingCost, ShippingOption } from '@/lib/shipping';
+import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 
 type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'paypal' | 'apple_cash' | 'google_wallet' | 'wise' | 'chime';
 
@@ -1444,12 +1445,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                       <div className="grid-2">
                         <div className="form-group" style={{ marginTop: 0 }}>
                           <label className="form-label">Street Address</label>
-                          <input
-                            type="text"
+                          <AddressAutocompleteInput
                             className="form-input premium-input"
                             placeholder="123 Lab Street"
                             value={street}
-                            onChange={(e) => setStreet(e.target.value)}
+                            onChange={setStreet}
+                            onSelect={(a) => { setStreet(a.street1); if (a.city) setCity(a.city); if (a.state) setState(a.state); if (a.zip) setZip(a.zip); }}
                           />
                         </div>
                         <div className="form-group" style={{ marginTop: 0 }}>
