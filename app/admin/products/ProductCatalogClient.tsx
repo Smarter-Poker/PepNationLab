@@ -38,7 +38,7 @@ interface GroupedProduct {
 
 type SortKey = "name-asc" | "category" | "price-asc" | "price-desc";
 
-/* ── helpers ── */
+/* -- helpers -- */
 interface GroupedProductInternal extends GroupedProduct {
   /** Representative product id used to look up per-product tier overrides. */
   representativeId: string;
@@ -96,7 +96,7 @@ function fuzzyMatch(text: string, query: string): boolean {
   return true;
 }
 
-/* ── component ── */
+/* -- component -- */
 export default function ProductCatalogClient({
   products,
   multipliers,
@@ -155,7 +155,7 @@ export default function ProductCatalogClient({
       list = list.filter((p) => p.totalInventory === 0);
     }
 
-    // sort (always A→Z by default; category and price options still available)
+    // sort (always A->Z by default; category and price options still available)
     list = [...list];
     switch (sort) {
       case "name-asc":
@@ -272,7 +272,7 @@ export default function ProductCatalogClient({
     }
   };
 
-  /* ── styles ── */
+  /* -- styles -- */
   const controlBarStyle: React.CSSProperties = {
     display: "flex",
     flexWrap: "wrap",
@@ -521,7 +521,7 @@ export default function ProductCatalogClient({
                                     : "rotate(0)",
                                 }}
                               >
-                                ▶
+                                &#9658;
                               </span>
                             )}
                             <span
@@ -584,6 +584,9 @@ export default function ProductCatalogClient({
                           }}
                         >
                           ${(p.baseCost / 10).toFixed(2)}
+                          <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.18)', marginTop: 2, fontFamily: 'var(--font-brand)' }}>
+                            2x: ${(p.baseCost * 2 / 10).toFixed(2)}
+                          </div>
                         </td>
 
                         {/* Tier prices per unit */}
@@ -745,6 +748,9 @@ export default function ProductCatalogClient({
                                 }}
                               >
                                 ${(vCost / 10).toFixed(2)}
+                                <div style={{ fontSize: '0.60rem', color: 'rgba(255,255,255,0.15)', marginTop: 1, fontFamily: 'var(--font-brand)' }}>
+                                  2x: ${(vCost * 2 / 10).toFixed(2)}
+                                </div>
                               </td>
                               {/* Per-unit tier prices */}
                               <td

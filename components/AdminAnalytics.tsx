@@ -297,7 +297,7 @@ export default function AdminAnalytics() {
         <div className="glass-panel">
           <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 className="metal-text" style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
-              Top Products (By Units Sold)
+              Top Products (By Revenue)
             </h3>
           {data.topProducts.length > 0 ? (
             <div style={{ height: 240, width: '100%' }}>
@@ -360,6 +360,47 @@ export default function AdminAnalytics() {
           </div>
         </div>
       </div>
+
+      {/* Top 10 Peptides */}
+      {data.topProducts.length > 0 && (
+        <div className="glass-panel" style={{ marginTop: 'var(--space-6)' }}>
+          <div style={{ padding: 'var(--space-6)' }}>
+            <h3 className="metal-text" style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
+              Top 10 Peptides
+            </h3>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', minWidth: 360 }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: 'var(--space-2) var(--space-4)', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid rgba(255,255,255,0.06)', whiteSpace: 'nowrap' }}>Rank</th>
+                    <th style={{ padding: 'var(--space-2) var(--space-4)', textAlign: 'left', color: 'rgba(255,255,255,0.3)', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid rgba(255,255,255,0.06)', whiteSpace: 'nowrap' }}>Product</th>
+                    <th style={{ padding: 'var(--space-2) var(--space-4)', textAlign: 'right', color: 'rgba(255,255,255,0.3)', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid rgba(255,255,255,0.06)', whiteSpace: 'nowrap' }}>Units Sold</th>
+                    <th style={{ padding: 'var(--space-2) var(--space-4)', textAlign: 'right', color: 'rgba(255,255,255,0.3)', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid rgba(255,255,255,0.06)', whiteSpace: 'nowrap' }}>Revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.topProducts.map((prod, i) => (
+                    <tr key={i} style={{ borderBottom: i < data.topProducts.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                      <td style={{ padding: 'var(--space-2) var(--space-4)', textAlign: 'center', fontWeight: 800, fontSize: '0.78rem', color: i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : 'rgba(255,255,255,0.25)' }}>
+                        {i + 1}
+                      </td>
+                      <td style={{ padding: 'var(--space-2) var(--space-4)', color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '0.85rem' }}>
+                        {prod.name}
+                      </td>
+                      <td style={{ padding: 'var(--space-2) var(--space-4)', textAlign: 'right', color: 'var(--teal)', fontWeight: 700, fontFamily: 'var(--font-brand)' }}>
+                        {prod.sales}
+                      </td>
+                      <td style={{ padding: 'var(--space-2) var(--space-4)', textAlign: 'right', color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>
+                        ${prod.revenue.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
