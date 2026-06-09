@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import {
   Truck,
   Wifi,
@@ -653,7 +654,15 @@ export default function AdminShippingSettingsClient() {
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Street 1</label>
-                <input id="origin-street1" className="input" placeholder="123 Warehouse Blvd" value={originForm.street1} onChange={(e) => setOriginForm(f => ({ ...f, street1: e.target.value }))} required />
+                <AddressAutocompleteInput
+                  id="origin-street1"
+                  className="input"
+                  placeholder="123 Warehouse Blvd"
+                  required
+                  value={originForm.street1}
+                  onChange={(v) => setOriginForm(f => ({ ...f, street1: v }))}
+                  onSelect={(a) => setOriginForm(f => ({ ...f, street1: a.street1, city: a.city || f.city, state: a.state || f.state, zip: a.zip || f.zip }))}
+                />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Street 2</label>
