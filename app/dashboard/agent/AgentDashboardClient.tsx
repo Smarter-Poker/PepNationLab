@@ -15,6 +15,7 @@ import AgentDownline from '@/components/AgentDownline';
 import AgentInbox from '@/components/AgentInbox';
 import AgentOverview from '@/components/AgentOverview';
 import AgentStorefrontConfig from '@/components/AgentStorefrontConfig';
+import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import AgentOrders from '@/components/AgentOrders';
 import AgentBundles from '@/components/AgentBundles';
 import AgentResearcherCRMv2 from '@/components/AgentResearcherCRMv2';
@@ -517,7 +518,13 @@ export default function AgentDashboardClient({
               </div>
               <div className="form-group">
                 <label className="form-label">Street Address Line 1</label>
-                <input type="text" className="form-input" value={setupWhStreet1} onChange={(e) => setSetupWhStreet1(e.target.value)} required />
+                <AddressAutocompleteInput
+                  className="form-input"
+                  required
+                  value={setupWhStreet1}
+                  onChange={setSetupWhStreet1}
+                  onSelect={(a) => { setSetupWhStreet1(a.street1); if (a.city) setSetupWhCity(a.city); if (a.state) setSetupWhState(a.state); if (a.zip) setSetupWhZip(a.zip); }}
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Street Address Line 2 (Optional)</label>
