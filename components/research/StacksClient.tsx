@@ -903,8 +903,8 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
           </div>
           
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 24 }}>
-            <div style={{ position: 'relative', display: 'inline-block', height: 60, width: '100%', maxWidth: 280 }}>
-              <Image src={activeTab === 'overview' ? "/images/overview_tabs_btn.png" : "/images/calculator_tabs_btn.png"} alt="Tabs" width={400} height={80} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }} unoptimized />
+            <div style={{ position: 'relative', display: 'inline-block', width: '100%', maxWidth: 360 }}>
+              <Image src={activeTab === 'overview' ? "/images/overview_tabs_btn.png" : "/images/calculator_tabs_btn.png"} alt="Tabs" width={1024} height={576} style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }} unoptimized />
               <div style={{ position: 'absolute', top: 0, left: 0, width: '50%', height: '100%', cursor: 'pointer', zIndex: 10 }} onClick={() => setActiveTab('overview')} />
               <div style={{ position: 'absolute', top: 0, left: '50%', width: '50%', height: '100%', cursor: 'pointer', zIndex: 10 }} onClick={() => setActiveTab('calculator')} />
             </div>
@@ -1039,11 +1039,22 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
 
               {stack.stack_components.map((slug: string) => {
                 const p = products.find((pr: AreaProduct) => pr.compoundSlug === slug);
+                const targetP = p || (isBundleProduct && premadeProducts.length > 0 ? premadeProducts[0] : undefined);
                 let mass = 5;
-                if (p?.unitSize && p.unitSize.toLowerCase().includes('mg')) mass = parseInt(p.unitSize);
-                else {
-                  const match = p?.productName.match(/(\d+)\s*mg/i);
-                  if (match) mass = parseInt(match[1]);
+                if (targetP) {
+                  const eachMatch = targetP.productName.match(/(\d+)\s*mg\s*each/i);
+                  if (eachMatch) {
+                    mass = parseInt(eachMatch[1]);
+                  } else {
+                    const sizeStr = targetP.unitSize || targetP.productName;
+                    const sizeMatch = sizeStr.match(/(\d+)\s*mg/i);
+                    if (sizeMatch) {
+                      mass = parseInt(sizeMatch[1]);
+                      if (isBundleProduct && !p && mass > 15 && targetP.productName.toLowerCase().includes('stack')) {
+                        mass = Math.round(mass / stack.stack_components.length);
+                      }
+                    }
+                  }
                 }
                 const diluent = reconstMode === 'concentrated' ? 1 : reconstMode === 'diluted' ? 3 : 2;
                 const mgPerMl = mass / diluent;
