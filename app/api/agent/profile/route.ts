@@ -12,6 +12,7 @@ const ProfilePatchSchema = z
     email:      z.union([z.string().trim().email().max(120), z.literal('')]).nullable().optional(),
     phone:      z.string().trim().max(40).nullable().optional(),
     timezone:   z.string().trim().min(1).max(60).optional(),
+    avatar_url: z.string().trim().url().max(1024).nullable().optional().or(z.literal('default')),
   })
   .strict();
 

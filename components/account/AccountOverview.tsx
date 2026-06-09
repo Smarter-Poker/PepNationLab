@@ -376,7 +376,15 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
                         const isInlineEditable = ['first-name', 'last-name', 'email', 'phone', 'timezone', 'avatar'].includes(t.id);
                         if (isInlineEditable) {
                           setExpandedTask(t.id);
-                          setInputValue('');
+                          const keyMap: Record<string, string> = {
+                            'first-name': 'first_name',
+                            'last-name': 'last_name',
+                            'email': 'email',
+                            'phone': 'phone',
+                            'timezone': 'timezone',
+                          };
+                          const dbKey = keyMap[t.id] || t.id;
+                          setInputValue((profile as any)?.[dbKey] || '');
                         } else if (t.target.startsWith('modal:')) {
                           setMissingTasksModalOpen(false);
                           const id = t.target.split(':')[1];

@@ -11,6 +11,8 @@ import AvatarUpload from '@/components/AvatarUpload';
 export default function GlobalCompletenessWidget() {
   const [percent, setPercent] = useState<number | null>(null);
   const [missingTasks, setMissingTasks] = useState<Array<{ id: string; label: string; actionText: string; target: string }>>([]);
+  const [profileData, setProfileData] = useState<any>(null);
+  const [agentProfileData, setAgentProfileData] = useState<any>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const router = useRouter();
 
@@ -39,7 +41,9 @@ export default function GlobalCompletenessWidget() {
     
     if (cancelled) return;
     
-    const fullProfile = { ...profile, email: session.user.email };
+    const fullProfile = { ...profile, email: profile.email || session.user.email };
+    setProfileData(fullProfile);
+    setAgentProfileData(agentProfile);
     const { percent: p, missingTasks: m } = getCompletenessData(fullProfile, agentProfile);
     setPercent(p);
     setMissingTasks(m);
@@ -60,13 +64,18 @@ export default function GlobalCompletenessWidget() {
     };
     try {
       const dbKey = keyMap[t.id] || t.id;
-      await fetch('/api/agent/profile', { 
+      const res = await fetch('/api/agent/profile', { 
         method: 'PATCH', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [dbKey]: inputValue }) 
       });
-      // Optimistically remove the task to feel instant
-      setMissingTasks(prev => prev.filter(x => x.id !== t.id));
+      if (res.ok) {
+        const nextProfile = { ...profileData, [dbKey]: inputValue };
+        setProfileData(nextProfile);
+        const { percent: newP, missingTasks: newM } = getCompletenessData(nextProfile, agentProfileData);
+        setPercent(newP);
+        setMissingTasks(newM);
+      }
       await fetchCompleteness();
     } catch(err) {}
     setSavingTask(false);
@@ -128,7 +137,15 @@ export default function GlobalCompletenessWidget() {
                         const isInlineEditable = ['first-name', 'last-name', 'email', 'phone', 'timezone', 'avatar'].includes(t.id);
                         if (isInlineEditable) {
                           setExpandedTask(t.id);
-                          setInputValue('');
+                          const keyMap: Record<string, string> = {
+                            'first-name': 'first_name',
+                            'last-name': 'last_name',
+                            'email': 'email',
+                            'phone': 'phone',
+                            'timezone': 'timezone',
+                          };
+                          const dbKey = keyMap[t.id] || t.id;
+                          setInputValue(profileData?.[dbKey] || '');
                         } else if (t.target.startsWith('nav:')) {
                           setModalOpen(false);
                           router.push(t.target.split('nav:')[1]);
@@ -150,8 +167,14 @@ export default function GlobalCompletenessWidget() {
                             name="User" 
                             onUploadSuccess={async (url) => {
                               try {
-                                await fetch('/api/agent/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatar_url: url }) });
-                                setMissingTasks(prev => prev.filter(x => x.id !== 'avatar'));
+                                const res = await fetch('/api/agent/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatar_url: url }) });
+                                if (res.ok) {
+                                  const nextProfile = { ...profileData, avatar_url: url };
+                                  setProfileData(nextProfile);
+                                  const { percent: newP, missingTasks: newM } = getCompletenessData(nextProfile, agentProfileData);
+                                  setPercent(newP);
+                                  setMissingTasks(newM);
+                                }
                                 await fetchCompleteness();
                               } catch(err) {}
                               setExpandedTask(null);
