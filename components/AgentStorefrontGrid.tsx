@@ -3,12 +3,8 @@
 import React, { useState, useMemo, useCallback, useEffect, useDeferredValue, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { motion, Variants, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
-import {
-  ShoppingCart, Heart, X, Search, SlidersHorizontal, ChevronDown, FileText,
-  Star, Zap, Award, TrendingUp, Package, Flame, Eye, Clock,
-} from 'lucide-react';
-import IframeLink from './IframeLink';
-import IframeModal from './IframeModal';
+import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check, ShoppingCart, ArrowRight, Sparkles, Flame, Zap, Brain, Shield, Hourglass, Moon, Activity, Syringe } from 'lucide-react';
+import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
+import ProductMonograph from './research/ProductMonograph';
