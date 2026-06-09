@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import Pagination from "@/components/Pagination";
 import { exportCSV, downloadCSV } from "@/lib/export";
 import { paymentMethodLabel, type PaymentMethodSlug } from "@/lib/payment-method-labels";
+import IframeModal from "@/components/ui/IframeModal";
 
 const PAGE_SIZE = 25;
 
@@ -125,6 +126,9 @@ function AdminOrdersPageInner() {
 
   // User Auth
   const [userRole, setUserRole] = useState<string>("");
+
+  // Label modal state
+  const [labelModalUrl, setLabelModalUrl] = useState<string | null>(null);
 
   // Cancel modal state
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -338,15 +342,11 @@ function AdminOrdersPageInner() {
         }
       }
 
-      if (action === "generate_labels" && Array.isArray(json.labels)) {
-        // Open each label PDF in a new tab with a small gap between opens so
-        // browsers don't treat the burst as a popup attack.
-        for (let i = 0; i < json.labels.length; i++) {
-          const url = json.labels[i].label_url;
-          setTimeout(() => {
-            window.open(url, "_blank", "noopener,noreferrer");
-          }, i * 250);
-        }
+      if (action === "generate_labels" && Array.isArray(json.labels) && json.labels.length > 0) {
+        // Open the first label in IframeModal; remaining labels are accessible via
+        // the individual order detail view. IframeModal enforces the Omega Protocol
+        // (no navigation away from pepnationlab.com).
+        setLabelModalUrl(json.labels[0].label_url);
       }
 
       setSelectedIds(new Set());
@@ -434,6 +434,9 @@ function AdminOrdersPageInner() {
 
   return (
     <div style={{ padding: "var(--space-8)" }}>
+      {labelModalUrl && (
+        <IframeModal url={labelModalUrl} title="Shipping Label" onClose={() => setLabelModalUrl(null)} />
+      )}
       {/* Header */}
       <div
         style={{
