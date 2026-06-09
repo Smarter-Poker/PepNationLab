@@ -41,7 +41,7 @@ export default function AdminAnalytics() {
       const [ordersRes, allOrdersRes, itemsRes, researchersRes, agentsRes] = await Promise.all([
         supabase.from('orders').select('id, total, status, created_at, agent_id').gte('created_at', rangeStart).neq('status', 'cancelled'),
         supabase.from('orders').select('total, status, created_at').neq('status', 'cancelled'),
-        supabase.from('order_items').select('product_name, quantity, unit_retail_price, orders!inner(created_at, status)').gte('orders.created_at', rangeStart).neq('orders.status', 'cancelled'),
+        supabase.from('order_items').select('product_name, product_id, quantity, unit_retail_price, orders!inner(created_at, status), products(name)').gte('orders.created_at', rangeStart).neq('orders.status', 'cancelled'),
         supabase.from('profiles').select('created_at').eq('role', 'researcher').gte('created_at', weekAgo),
         supabase.from('profiles').select('id, full_name, email').in('role', ['agent', 'super_agent']),
       ]);
@@ -65,14 +65,15 @@ export default function AdminAnalytics() {
         date: date.slice(5), revenue: Math.round(revenue * 100) / 100,
       }));
 
-      // Top products
+      // Top products -- use canonical products.name via FK join; fall back to snapshot
       const productMap = new Map<string, { sales: number; revenue: number }>();
       items.forEach((item: any) => {
-        if (!item.product_name) return;
-        const existing = productMap.get(item.product_name) || { sales: 0, revenue: 0 };
+        const name = (item.products as any)?.name || item.product_name;
+        if (!name) return;
+        const existing = productMap.get(name) || { sales: 0, revenue: 0 };
         existing.sales += Number(item.quantity) || 0;
         existing.revenue += (Number(item.quantity) || 0) * (Number(item.unit_retail_price) || 0);
-        productMap.set(item.product_name, existing);
+        productMap.set(name, existing);
       });
       const topProducts = Array.from(productMap.entries())
         .map(([name, v]) => ({ name: name.length > 20 ? name.slice(0, 18) + '…' : name, ...v }))

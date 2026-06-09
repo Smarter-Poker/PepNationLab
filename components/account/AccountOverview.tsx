@@ -102,6 +102,32 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
 
   const { percent: completeness, missingTasks } = useMemo(() => getCompletenessData(profile, agentProfile), [profile, agentProfile]);
 
+  const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  const [inputValue, setInputValue] = useState('');
+  const [savingTask, setSavingTask] = useState(false);
+
+  const handleSaveInline = async (t: { id: string }) => {
+    setSavingTask(true);
+    const keyMap: Record<string, string> = {
+      'first-name': 'first_name',
+      'last-name': 'last_name',
+      'email': 'email',
+      'phone': 'phone',
+      'timezone': 'timezone',
+    };
+    const key = keyMap[t.id] || t.id;
+    try {
+      await fetch('/api/agent/profile', { 
+        method: 'PATCH', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: inputValue }) 
+      });
+      onProfileChange({ ...profile, [key]: inputValue } as AccountProfile);
+    } catch(err) {}
+    setSavingTask(false);
+    setExpandedTask(null);
+  };
+
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
@@ -333,36 +359,73 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {missingTasks.map((t) => (
-                <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)' }}>
-                  <span style={{ fontSize: '0.95rem', color: 'var(--white)', fontWeight: 600 }}>{t.label}</span>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    style={{ minWidth: 100 }}
-                    onClick={() => {
-                      setMissingTasksModalOpen(false);
-                      if (t.target.startsWith('focus:')) {
-                        const id = t.target.split(':')[1];
-                        if (id === 'avatar') {
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                <div key={t.id} style={{ display: 'flex', flexDirection: 'column', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px' }}>
+                    <span style={{ fontSize: '0.95rem', color: 'var(--white)', fontWeight: 600 }}>{t.label}</span>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      style={{ minWidth: 100 }}
+                      disabled={expandedTask === t.id}
+                      onClick={() => {
+                        const isInlineEditable = ['first-name', 'last-name', 'email', 'phone', 'timezone', 'avatar'].includes(t.id);
+                        if (isInlineEditable) {
+                          setExpandedTask(t.id);
+                          setInputValue('');
+                        } else if (t.target.startsWith('modal:')) {
+                          setMissingTasksModalOpen(false);
+                          const id = t.target.split(':')[1];
+                          if (id === 'username') setUsernameModalOpen(true);
+                        } else if (t.target.startsWith('nav:')) {
+                          setMissingTasksModalOpen(false);
+                          router.push(t.target.split('nav:')[1]);
                         } else {
-                          const el = document.getElementById(id);
-                          if (el) {
-                            el.focus();
-                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          }
+                          setExpandedTask(t.id);
+                          setInputValue('');
                         }
-                      } else if (t.target.startsWith('modal:')) {
-                        const id = t.target.split(':')[1];
-                        if (id === 'username') setUsernameModalOpen(true);
-                      } else if (t.target.startsWith('nav:')) {
-                        const path = t.target.split(':')[1];
-                        router.push(path);
-                      }
-                    }}
-                  >
-                    {t.actionText}
-                  </button>
+                      }}
+                    >
+                      {expandedTask === t.id ? 'Editing...' : t.actionText}
+                    </button>
+                  </div>
+                  {expandedTask === t.id && (
+                    <div style={{ padding: '0 16px 16px 16px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                      {t.id === 'avatar' ? (
+                        <div style={{ marginTop: 16 }}>
+                          <AvatarUpload 
+                            currentAvatarUrl={null} 
+                            name="User" 
+                            onUploadSuccess={async (url) => {
+                              try {
+                                await fetch('/api/agent/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatar_url: url }) });
+                                onProfileChange({ ...profile, avatar_url: url });
+                              } catch(err) {}
+                              setExpandedTask(null);
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            style={{ flex: 1, margin: 0 }} 
+                            placeholder={`Enter ${t.label}`}
+                            value={inputValue}
+                            onChange={e => setInputValue(e.target.value)}
+                            autoFocus
+                          />
+                          <button 
+                            className="btn btn-primary" 
+                            disabled={savingTask || !inputValue.trim()}
+                            onClick={() => handleSaveInline(t)}
+                          >
+                            {savingTask ? '...' : 'Save'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
