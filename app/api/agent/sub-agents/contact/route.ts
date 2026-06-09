@@ -36,21 +36,34 @@ export async function PATCH(req: NextRequest) {
     }
 
     const updates: { email?: string; phone?: string | null } = {};
-    if (typeof email === 'string' && email.trim()) updates.email = email.trim();
+    if (typeof email === 'string' && email.trim()) updates.email = email.trim().toLowerCase();
     if (phone !== undefined) updates.phone = typeof phone === 'string' ? phone.trim() : null;
 
+    // Validate before writing so profiles.email cannot drift away from the
+    // auth login identity (a divergence silently breaks username login).
+    if (updates.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) {
+      return NextResponse.json({ error: 'Please Enter A Valid Email Address' }, { status: 400 });
+    }
+
     if (Object.keys(updates).length > 0) {
+      // Update the AUTH identity FIRST; abort before the profile write if it
+      // fails, so the two can never diverge.
+      if (updates.email) {
+        const { error: authErr } = await admin.auth.admin.updateUserById(subAgentId, {
+          email: updates.email,
+          email_confirm: true,
+        });
+        if (authErr) {
+          return NextResponse.json({ error: 'Could Not Update Login Email. Please Check The Address And Try Again.' }, { status: 400 });
+        }
+      }
+
       const { error } = await admin
         .from('profiles')
         .update(updates)
         .eq('id', subAgentId);
 
       if (error) throw error;
-
-      // If email was updated, update auth user
-      if (updates.email) {
-        await admin.auth.admin.updateUserById(subAgentId, { email: updates.email });
-      }
     }
 
     return NextResponse.json({ success: true });

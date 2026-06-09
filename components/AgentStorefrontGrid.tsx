@@ -21,6 +21,7 @@ import PeptideVialCard from '@/components/PeptideVialCard';
 import { toast } from 'sonner';
 import { writeCatalogCache, isCatalogCacheFresh, readCatalogCache, CATALOG_TTL_MS, evictCatalogCache } from '@/lib/storefront-cache';
 import { createClient } from '@/lib/supabase/client';
+import { getPopularName } from '@/lib/peptide-popular-names';
 
 interface ProductItem {
   id: string;
@@ -2808,6 +2809,16 @@ export default function AgentStorefrontGrid({
                         </span>
                       )}
                       {(() => {
+                        const _canonicalName = group.variants[0]?.products?.name || group.name;
+                        const _nick = getPopularName(_canonicalName);
+                        if (!_nick) return null;
+                        return (
+                          <span style={{ fontSize: '0.72rem', color: 'var(--teal)', fontStyle: 'italic', fontWeight: 500, display: 'block', marginTop: 2 }}>
+                            {_nick}
+                          </span>
+                        );
+                      })()}
+                      {(() => {
                         const etKey = group.compoundSlug ? compoundsBySlug[group.compoundSlug]?.evidence_tier : null;
                         const ti = etKey ? EVIDENCE_TIER[etKey] : null;
                         if (!ti) return null;
@@ -3360,6 +3371,16 @@ export default function AgentStorefrontGrid({
                             {subtitle}
                           </div>
                         )}
+                        {(() => {
+                          const _canonicalName = detailProduct.variants[0]?.products?.name || detailProduct.name;
+                          const _nick = getPopularName(_canonicalName);
+                          if (!_nick) return null;
+                          return (
+                            <div style={{ fontSize: '0.85rem', color: 'var(--teal)', fontStyle: 'italic', fontWeight: 500, marginTop: 4 }}>
+                              {_nick}
+                            </div>
+                          );
+                        })()}
                       </>
                     );
                   })()}
