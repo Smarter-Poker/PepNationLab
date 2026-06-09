@@ -404,8 +404,8 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   </div>
 
                   {/* Image Cluster */}
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', justifyContent: 'center', marginBottom: 20, width: '100%', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
-                    {stack.stack_components.map((compSlug, i) => {
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 20, width: '100%', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+                    {stack.stack_components.map((compSlug: string, i: number) => {
                       const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
                       compProducts.sort(sortStackProducts);
                       const p = compProducts.length > 0 ? compProducts[0] : undefined;
@@ -416,7 +416,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                       
                       return (
                         <div key={compSlug} style={{ 
-                          flex: '1 1 0', minWidth: 0, maxWidth: 160,
+                          flex: '0 0 28%', minWidth: 90, maxWidth: 160,
                           position: 'relative',
                           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
                         }}>
