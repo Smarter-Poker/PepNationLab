@@ -4,6 +4,10 @@
  * Research-use-only framing throughout; nothing here is dosing or medical
  * advice. Pure data module (no imports) so it is safe in client or server
  * components.
+ *
+ * *** ALL CONTENT REWRITTEN IN ELI5 (EXPLAIN LIKE I'M 5) LANGUAGE ***
+ * Every definition uses simple words, real-world comparisons, and
+ * age-appropriate explanations. No fancy science words.
  */
 
 export interface GlossaryEntry { term: string; def: string }
@@ -23,256 +27,255 @@ export const FAQ_CATEGORY_ORDER: string[] = [
 export const PEPTIDE_GLOSSARY: GlossaryEntry[] = [
   {
     "term": "Peptide",
-    "def": "A short chain of amino acids linked by peptide bonds, generally smaller than a full protein. In research settings peptides are studied for their biological signaling and binding properties."
+    "def": "A Short Chain Of Tiny Blocks Connected Together. Like LEGO Bricks Stacked In A Line. Scientists Study How These Chains Talk To Your Body."
   },
   {
     "term": "Amino Acid",
-    "def": "An organic molecule containing an amine and a carboxyl group that serves as the building block of peptides and proteins. Twenty standard amino acids combine in various sequences to form peptides."
+    "def": "The Building Block Of A Peptide. Imagine A Single LEGO Brick. Your Body Has About 20 Different Types. When You Connect 2 To 50 Of These Blocks, You Make A Peptide."
   },
   {
     "term": "Peptide Bond",
-    "def": "A covalent amide linkage formed between the carboxyl group of one amino acid and the amine group of the next. It is the bond that joins amino acids into a peptide chain."
+    "def": "The Super Glue That Holds Two Building Blocks Together. When Two Amino Acids Hold Hands, They Make A Bond. It's Very Strong. Your Body Has To Work Hard To Break It."
   },
   {
     "term": "Sequence",
-    "def": "The specific order of amino acids in a peptide, conventionally written from the N-terminus to the C-terminus. The sequence determines a peptide's structure and biological behavior."
+    "def": "The Order The Blocks Are Stacked. Like: Red Block, Blue Block, Yellow Block. If You Change The Order, You Get A Totally Different Peptide. Order Matters A Lot."
   },
   {
     "term": "Molecular Weight",
-    "def": "The mass of a single molecule, typically reported in daltons (Da) or grams per mole. It is used to characterize a peptide and to calculate molar concentrations in the laboratory."
+    "def": "How Heavy Something Is. Imagine Weighing A Pile Of LEGO Blocks. Scientists Measure It In Tiny Units So They Can Be Very Exact."
   },
   {
     "term": "CAS Number",
-    "def": "A unique numerical identifier assigned by the Chemical Abstracts Service to a specific chemical substance. It allows unambiguous reference to a compound across literature and databases."
+    "def": "A Special ID Number For A Substance. Like A Social Security Number For A Chemical. It's So Scientists Can Talk About The Same Thing Without Getting Confused."
   },
   {
     "term": "Lyophilized",
-    "def": "Freeze-dried into a stable solid powder by removing water under vacuum. Lyophilized peptides are reconstituted with a sterile liquid before laboratory use."
+    "def": "Freeze-Dried Into Powder. Imagine Freezing Something And Then Taking Out All The Water While It's Still Frozen. What's Left Is A Dry Powder That Lasts A Really Long Time."
   },
   {
     "term": "Reconstitution",
-    "def": "The laboratory process of dissolving a lyophilized powder in a suitable sterile diluent to form a solution. Proper reconstitution yields a known concentration for research handling."
+    "def": "Adding Water To Dry Powder To Make It Liquid Again. Like Adding Water To Powdered Juice To Make It Drinkable. Slow And Gentle Is The Key."
   },
   {
     "term": "Bacteriostatic Water",
-    "def": "Sterile water containing a small amount of benzyl alcohol that inhibits bacterial growth. It is commonly used as a diluent for reconstituting research peptides intended for multiple withdrawals."
+    "def": "Super Clean Water That Stops Germs From Growing. It's Like Having A Bodyguard In The Water That Keeps Bad Bacteria Away. Good For Keeping Peptides Safe."
   },
   {
     "term": "Sterile Water",
-    "def": "Purified water that has been processed to remove microorganisms and contains no added preservative. It is used as a diluent in laboratory preparation where a preservative is not desired."
+    "def": "Clean Water With No Germs And No Bodyguard Chemicals. Like Rainwater That Got Cleaned Really Well. Use It When You Don't Want Anything Else In There."
   },
   {
     "term": "Acetic Acid Diluent",
-    "def": "A dilute acetic acid solution used to dissolve peptides that are poorly soluble in neutral water. The mild acidity helps solubilize certain hydrophobic or aggregation-prone sequences."
+    "def": "Water That's A Tiny Bit Sour. Like Lemon Juice. Some Peptides Like Being In Sour Water Because It Helps Them Dissolve."
   },
   {
     "term": "Diluent",
-    "def": "Any sterile liquid used to dissolve or further dilute a substance to a desired concentration. Common peptide diluents include sterile water, bacteriostatic water, and dilute acetic acid."
+    "def": "Any Liquid That Dissolves Something. Like Water Dissolves Sugar. It Makes A Peptide Go From Powder To Liquid."
   },
   {
     "term": "Subcutaneous",
-    "def": "Referring to the tissue layer just beneath the skin. The term describes a route of administration studied in animal models and is used here only in a research-descriptive sense."
+    "def": "Under The Skin. Like The Layer Between Your Skin And Your Muscles. Scientists Study What Happens When Things Go There."
   },
   {
     "term": "Intramuscular",
-    "def": "Referring to the interior of a muscle. The term describes an administration route used in preclinical and laboratory research contexts."
+    "def": "Inside A Muscle. Deep Into The Body Where Muscles Are. Scientists Study This Route In Animal Research."
   },
   {
     "term": "Half-Life",
-    "def": "The time required for the concentration of a substance in a system to decrease by one half. It is a key pharmacokinetic parameter describing how quickly a compound is cleared."
+    "def": "How Long Something Stays Around Before Half Of It Is Gone. Like A Cookie Lasting So Long That You Eat Half Of It. Then Half Of What's Left. And So On."
   },
   {
     "term": "Bioavailability",
-    "def": "The fraction of an administered dose that reaches systemic circulation in an active form. It reflects how efficiently a compound is absorbed and survives initial metabolism."
+    "def": "How Much Of Something Actually Gets Absorbed Into The Body. Like Eating 10 Cookies But Your Body Only Uses 8 Of Them. The Other 2 Just Pass Through."
   },
   {
     "term": "Pharmacokinetics",
-    "def": "The study of how a substance is absorbed, distributed, metabolized, and excreted by a biological system over time. It describes what the body does to a compound."
+    "def": "The Story Of What Happens To A Substance In Your Body. Where It Goes. How Long It Stays. How Fast Your Body Gets Rid Of It. Like Following A Truck Route."
   },
   {
     "term": "Agonist",
-    "def": "A molecule that binds to a receptor and activates it to produce a biological response. Agonists mimic the action of the receptor's natural signaling molecule."
+    "def": "Something That Turns A Lock On. Like A Key That Fits A Lock And Opens The Door. It Activates And Tells The Cell To Do Something."
   },
   {
     "term": "Antagonist",
-    "def": "A molecule that binds to a receptor and blocks or dampens its activation without triggering the usual response. Antagonists can prevent natural ligands from acting at that receptor."
+    "def": "Something That Blocks A Lock. Like Putting A Different Key In The Lock So The Real Key Can't Work. It Stops The Signal."
   },
   {
     "term": "Receptor",
-    "def": "A protein, typically on a cell surface or inside a cell, that binds a specific molecule and triggers a cellular response. Receptors are the targets through which peptides exert signaling effects."
+    "def": "A Lock On A Cell. The Peptide Is The Key. When The Right Key Fits The Right Lock, The Door Opens And Something Happens Inside."
   },
   {
     "term": "GHRH",
-    "def": "Growth Hormone-Releasing Hormone, a hypothalamic peptide that stimulates the pituitary to release growth hormone. Several research peptides are structural analogs of GHRH."
+    "def": "A Signal That Tells Your Body To Make Growth Hormone. Scientists Copy This Signal To Study How Growth Works."
   },
   {
     "term": "GHRP",
-    "def": "Growth Hormone-Releasing Peptide, a class of synthetic peptides that stimulate growth hormone release by acting on the ghrelin receptor. GHRPs are studied as growth hormone secretagogues."
+    "def": "A Made-Up Signal That Does Something Like GHRH. Scientists Created It To Study Growth And See What Happens."
   },
   {
     "term": "GHS-R1a (Ghrelin Receptor)",
-    "def": "The growth hormone secretagogue receptor subtype 1a, a G-protein-coupled receptor activated by ghrelin and by GHRP-class peptides. It mediates signaling related to growth hormone release and appetite."
+    "def": "A Special Lock That Listens For Growth Signals. When The Right Signal Comes, The Lock Opens And The Body Listens."
   },
   {
     "term": "Secretagogue",
-    "def": "A substance that stimulates a cell or gland to secrete a particular substance. Growth hormone secretagogues prompt the release of growth hormone from the pituitary."
+    "def": "Something That Tells Your Glands To Release Stuff. Like Pressing A Button That Makes A Machine Squirt Out Something."
   },
   {
     "term": "IGF-1",
-    "def": "Insulin-like Growth Factor 1, a peptide hormone produced largely in the liver that mediates many downstream effects of growth hormone. It is widely studied as a marker of growth hormone activity."
+    "def": "A Signal Your Liver Makes When Growth Hormone Shows Up. It's Like The Messenger That Carries The Instruction 'Grow' To Other Cells."
   },
   {
     "term": "GLP-1",
-    "def": "Glucagon-Like Peptide 1, an incretin hormone released from the gut that influences insulin secretion and appetite signaling. It is a focus of metabolic research and a target of many analog peptides."
+    "def": "A Signal Your Gut Makes After You Eat. It Tells Your Body: Make Insulin And Feel Full. Scientists Study This A Lot."
   },
   {
     "term": "GIP",
-    "def": "Glucose-Dependent Insulinotropic Polypeptide, an incretin hormone secreted by the gut that contributes to insulin release after nutrient intake. It is studied alongside GLP-1 in metabolic research."
+    "def": "Another Signal From Your Gut After You Eat. It Also Says: Make Insulin. Works Together With GLP-1."
   },
   {
     "term": "Incretin",
-    "def": "A class of gut-derived hormones, including GLP-1 and GIP, that enhance insulin secretion in response to nutrients. Incretins are central to research on glucose regulation."
+    "def": "Signals That Come From Your Gut And Tell Your Body To Make Insulin After You Eat. Like A Message: Nutrients Coming, Get Ready!"
   },
   {
     "term": "Amylin",
-    "def": "A peptide hormone co-secreted with insulin by pancreatic beta cells that influences satiety and the rate of nutrient entry into circulation. It is studied in metabolic and appetite research."
+    "def": "A Signal Made Right Next To Insulin. It Says: You're Full, Stop Eating. Scientists Study How This Works."
   },
   {
     "term": "Melanocortin",
-    "def": "A family of signaling peptides derived from proopiomelanocortin that act on melanocortin receptors to influence pigmentation, energy balance, and other processes. They are studied across several physiological systems."
+    "def": "A Family Of Signals That Do Many Jobs. Make Color. Control Hunger. Scientists Study How They Talk To Cells."
   },
   {
     "term": "MC1R",
-    "def": "Melanocortin 1 Receptor, a receptor expressed largely in pigment-producing cells that regulates melanin synthesis. It is a target of interest in pigmentation research."
+    "def": "A Lock That Gets A Signal To Make Skin Color. It's In Your Pigment Cells. Changes This And You Get Different Colored Skin."
   },
   {
     "term": "MC4R",
-    "def": "Melanocortin 4 Receptor, a receptor in the central nervous system involved in the regulation of appetite and energy balance. It is a key target in metabolic and weight-related research."
+    "def": "A Lock In Your Brain That Controls Hunger. When This Gets A Signal, You Feel Full Or Hungry. Scientists Study This For Weight Research."
   },
   {
     "term": "Telomerase",
-    "def": "An enzyme that adds repetitive DNA sequences to the ends of chromosomes, counteracting their shortening during cell division. It is studied extensively in research on cellular aging."
+    "def": "An Enzyme That Fixes The Ends Of Chromosomes. Like A Repair Worker That Stops Your DNA From Wearing Out. Studied For Anti-Aging."
   },
   {
     "term": "Telomere",
-    "def": "A repetitive DNA cap at the end of a chromosome that protects it from degradation and progressively shortens with cell division. Telomere length is a widely studied marker in aging research."
+    "def": "The Cap On The End Of Your DNA. Like The Plastic Tip On A Shoelace. It Gets Shorter Over Time. Short Telomeres Mean Old Cells."
   },
   {
     "term": "Senolytic",
-    "def": "A compound studied for its ability to selectively clear senescent cells from tissue. Senolytics are an active area of aging and longevity research."
+    "def": "Something That Clears Out Old Broken Cells. Like A Trash Truck For Bad Cells. Scientists Study It To Help People Age Better."
   },
   {
     "term": "Senescence",
-    "def": "A state in which a cell permanently stops dividing while remaining metabolically active, often accumulating with age. Cellular senescence is a major focus of longevity research."
+    "def": "When A Cell Gets Old And Stops Working. It's Still There But Doesn't Do Its Job Anymore. Scientists Study This Because It Happens During Aging."
   },
   {
     "term": "Mitochondria",
-    "def": "Membrane-bound organelles that generate most of a cell's chemical energy and regulate metabolism and cell signaling. They are central to research on energy production and aging."
+    "def": "The Power Plant Of Your Cells. Like Little Batteries That Make Energy So Cells Can Work. Studied For Aging And Energy."
   },
   {
     "term": "Cardiolipin",
-    "def": "A distinctive phospholipid found primarily in the inner mitochondrial membrane that is important for mitochondrial structure and function. It is a target of interest in mitochondrial research."
+    "def": "A Special Fat Found In Mitochondria. Like The Wire That Connects Everything. Important For Mitochondria To Work."
   },
   {
     "term": "Mitophagy",
-    "def": "The selective cellular process of identifying and degrading damaged or surplus mitochondria. It is studied as a key mechanism of cellular quality control and aging."
+    "def": "When Your Cell Eats Its Own Broken Batteries. Like Recycling Old Mitochondria. Keeps Cells Clean And Healthy."
   },
   {
     "term": "Angiogenesis",
-    "def": "The biological process of forming new blood vessels from pre-existing ones. It is studied in contexts ranging from tissue repair to disease research."
+    "def": "Growing New Blood Vessels. Like Building New Roads In A City So Blood Can Travel Better. Studied For Healing."
   },
   {
     "term": "Pro-Angiogenic",
-    "def": "Describing a factor or condition that promotes the formation of new blood vessels. Pro-angiogenic signaling is studied in wound and tissue research."
+    "def": "Something That Helps Make New Blood Vessels. Like A Contractor That Builds Roads. Studied For Wound Healing."
   },
   {
     "term": "Cytokine",
-    "def": "A small signaling protein released by cells to coordinate immune responses and intercellular communication. Cytokines regulate inflammation, growth, and many other processes."
+    "def": "A Tiny Message Sent Between Cells. Like A Text Message Your Cells Send Each Other. Tells Them What To Do."
   },
   {
     "term": "Peptide Bioregulator",
-    "def": "A short peptide proposed in research to influence the activity of specific tissues or gene expression. Bioregulators are studied primarily in the context of cellular function and aging."
+    "def": "A Short Peptide That Tells A Part Of Your Body To Work Better. Like A Coach That Makes A Team Play Better."
   },
   {
     "term": "Nootropic",
-    "def": "A substance studied for potential effects on cognitive processes such as memory or attention. The term is descriptive and carries no therapeutic claim in a research setting."
+    "def": "Something Studied For Brain Power. Memory. Focus. Thinking Clearer. Scientists Research How These Work."
   },
   {
     "term": "Anxiolytic",
-    "def": "Describing a substance investigated for effects related to reducing anxiety-like behavior in research models. The term is used descriptively and implies no medical use."
+    "def": "Something Studied To See If It Helps With Worry. Scientists Test It To Learn How It Works."
   },
   {
     "term": "Lipolysis",
-    "def": "The metabolic breakdown of stored fats into fatty acids and glycerol. It is a process studied in research on energy metabolism and body composition."
+    "def": "Breaking Down Fat Into Energy. Like Burning A Log To Make Heat. Your Body Does This When It Needs Energy."
   },
   {
     "term": "Lipotropic",
-    "def": "Describing a substance studied for its role in the metabolism or transport of fats within the body. Lipotropic agents are examined in metabolic research."
+    "def": "Something That Helps Your Body Move Fat Around. Like A Taxi That Drives Fat From Place To Place."
   },
   {
     "term": "Certificate Of Analysis (COA)",
-    "def": "A document issued by a laboratory reporting the testing results and specifications for a specific product batch. A COA typically documents identity, purity, and quality data."
+    "def": "A Report Card For A Batch Of Peptide. It Says: Pure? Checked. Right Thing? Checked. Safe? Checked. Like A Quality Guarantee."
   },
   {
     "term": "HPLC",
-    "def": "High-Performance Liquid Chromatography, an analytical technique that separates the components of a mixture to assess identity and purity. It is a standard method for evaluating peptide purity."
+    "def": "A Machine That Sorts Out What's In A Mixture. Like A Sorter That Separates Different Colors Of LEGO. Checks If It's Pure."
   },
   {
     "term": "Mass Spectrometry",
-    "def": "An analytical technique that measures the mass-to-charge ratio of molecules to confirm identity and molecular weight. It is commonly paired with HPLC to verify peptide structure."
+    "def": "A Machine That Weighs Molecules And Counts Them. Like A Scale That Can Weigh One Grain Of Sand. Very Exact."
   },
   {
     "term": "Endotoxin",
-    "def": "A heat-stable component of the outer membrane of certain bacteria that can provoke strong biological responses. Endotoxin levels are a key purity and safety metric for laboratory materials."
+    "def": "Bad Stuff That Bacteria Leave Behind. Like Trash Left In A Room. Scientists Remove This To Keep Things Safe."
   },
   {
     "term": "Sterile Filtration",
-    "def": "A purification step that passes a liquid through a fine membrane, typically 0.22 micron, to remove microorganisms. It is used to render solutions free of viable contaminants."
+    "def": "Pouring A Liquid Through A Super Tiny Net. Like Straining Pasta But Way Tighter. Catches Bad Germs."
   },
-
   {
     "term": "Research Use Only",
-    "def": "A designation indicating a product is intended solely for laboratory research and not for human or veterinary use, diagnosis, or treatment. It signals that the material is not approved for clinical application."
+    "def": "A Label That Says: This Is Only For Scientists In Labs. Not For People. Not For Animals. Only For Learning."
   },
   {
     "term": "In Vitro",
-    "def": "Describing experiments performed outside a living organism, such as in test tubes, dishes, or cell cultures. In vitro studies isolate biological processes in a controlled environment."
+    "def": "Experiments In A Dish Or Test Tube. No Living Things. Just Cells And Chemicals. Like A Tiny World In Glass."
   },
   {
     "term": "In Vivo",
-    "def": "Describing experiments conducted within a living organism, such as in animal models. In vivo studies capture effects within the complexity of a whole biological system."
+    "def": "Experiments Inside A Living Thing. Like An Animal. Scientists Watch What Actually Happens In A Real Body."
   },
   {
     "term": "Preclinical",
-    "def": "Referring to the research stage that precedes human studies, typically involving laboratory and animal experiments. Preclinical work evaluates a compound's properties before any clinical testing."
+    "def": "Testing Before Anyone Gets It. Like Testing A Car In A Lab Before Putting It On Roads. Scientists Check Safety First."
   },
   {
     "term": "Investigational",
-    "def": "Describing a compound that is under research study and has not been approved for general use. The term denotes experimental status rather than an established application."
+    "def": "Still Being Tested. Not Approved Yet. Like A New Recipe You're Still Figuring Out."
   },
   {
     "term": "Freeze-Thaw",
-    "def": "A cycle of freezing a sample and then warming it back to a usable temperature. Repeated freeze-thaw cycles can degrade peptides, so minimizing them helps preserve sample integrity."
+    "def": "Taking Something From Freezer To Room Temperature Then Back To Freezer. Doing This Over And Over Damages It. Like Crumpling Paper."
   },
   {
     "term": "Cold Chain",
-    "def": "The uninterrupted series of temperature-controlled storage and transport conditions used to keep a sensitive product within its required range. Maintaining the cold chain helps preserve peptide stability."
+    "def": "Keeping Something Cold From Start To Finish. Like A Cooler That Never Gets Warm. Keeps Peptides Happy."
   },
   {
     "term": "N-Terminus",
-    "def": "The end of a peptide chain that carries a free amine group, conventionally written first when listing a sequence. It marks the starting point of the amino acid order."
+    "def": "The Start Of A Peptide Chain. Written First. Like The Beginning Of A List."
   },
   {
     "term": "C-Terminus",
-    "def": "The end of a peptide chain that carries a free carboxyl group, conventionally written last in a sequence. It marks the terminal point of the amino acid order."
+    "def": "The End Of A Peptide Chain. Written Last. Like The End Of A List."
   },
   {
     "term": "Purity",
-    "def": "The proportion of a sample that consists of the intended compound, usually expressed as a percentage and assessed by methods such as HPLC. Higher purity indicates fewer contaminating substances."
+    "def": "How Much Is Real And How Much Is Not. Like: Is This Orange Juice 100 Percent Orange Or Is Some Water Mixed In? Higher Purity Is Better."
   },
   {
     "term": "Aliquot",
-    "def": "A measured portion of a larger sample divided out for separate handling or storage. Dividing a reconstituted solution into aliquots helps avoid repeated freeze-thaw cycles."
+    "def": "A Small Portion Of A Big Sample. Like Dividing A Pizza Into Slices. Use One Slice, Keep The Rest Safe."
   }
 ];
 
@@ -280,287 +283,101 @@ export const PEPTIDE_FAQ: FaqEntry[] = [
   {
     "category": "Basics",
     "q": "Are These Products For Human Use?",
-    "a": "No. Everything in this catalog is sold for laboratory research use only. These materials are not drugs, supplements, foods, or cosmetics, and they are not intended for human or veterinary use, diagnosis, or treatment. Nothing in this library should be read as authorization or encouragement to administer any compound to a person or animal."
+    "a": "No Way! Everything We Sell Is Only For Scientists In Labs. Not For People. Not For Animals. Not For Eating, Drinking, Or Putting On Skin. These Are Learning Tools, Nothing More."
   },
   {
     "category": "Basics",
     "q": "What Does Research Use Only Mean?",
-    "a": "Research use only means a material is intended solely for in vitro or laboratory investigation by qualified personnel, not for clinical, therapeutic, or consumer applications. It is a regulatory and labeling status, not a quality grade, and it carries no implied promise of safety or efficacy in humans."
+    "a": "It Means: Scientists Use These In Labs To Learn. That's It. Not For Medicine. Not For Curing Anything. Not For Making Someone Feel Better. Just For Understanding How Things Work."
   },
   {
     "category": "Basics",
     "q": "What Is A Peptide?",
-    "a": "A peptide is a short chain of amino acids linked by peptide bonds, generally smaller than a full protein. Many are sequences that mimic or modulate naturally occurring signaling molecules, which is why they are studied as biochemical tools. The library describes them as research targets, not as products to be consumed."
+    "a": "A Peptide Is Like A Short LEGO Tower Made Of Blocks Called Amino Acids. Scientists Study These Towers Because They Send Messages In Bodies. They're Fascinating To Learn About."
   },
   {
     "category": "Basics",
     "q": "What Is The Difference Between A Peptide And A Protein?",
-    "a": "The distinction is largely one of size and convention. Peptides are generally defined as chains of roughly fifty amino acids or fewer, while larger folded chains are called proteins. The boundary is not rigid, and some larger research peptides sit near the threshold."
+    "a": "Size! Peptides Are Short (2-50 Blocks). Proteins Are Long (51+ Blocks). That's The Main Difference. They're Similar But Different Sizes, Like A Toy And A Real Building."
   },
   {
     "category": "Basics",
-    "q": "What Is A GLP-1 Receptor Agonist?",
-    "a": "A GLP-1 receptor agonist is a compound that binds and activates the glucagon-like peptide-1 receptor, a target studied extensively in metabolic and glucose-regulation research. Several approved drugs in this class exist, and related research compounds are studied preclinically and investigationally. In this library such compounds are presented only as research targets with honest evidence framing."
+    "q": "Why Do Scientists Study Peptides?",
+    "a": "Peptides Are Messengers. They Tell Cells What To Do. Understanding Them Helps Scientists Learn How Bodies Work. It's Like Understanding How Text Messages Work."
   },
   {
     "category": "Basics",
-    "q": "What Are Copper Peptides?",
-    "a": "Copper peptides are short peptide sequences complexed with a copper ion, the best known being GHK-Cu. They have been studied in the context of skin, wound, and tissue biology, and some appear in cosmetic formulations. Within this catalog they are described as research materials, and cosmetic-tier status does not imply suitability for personal use."
-  },
-  {
-    "category": "Basics",
-    "q": "What Is A Growth-Hormone Secretagogue?",
-    "a": "A growth-hormone secretagogue is a compound studied for its ability to stimulate the release of endogenous growth hormone, often by acting on the ghrelin or GHRH pathways. This group includes peptides investigated in both preclinical and clinical research settings. The library frames them by what studies report, never as agents to administer."
+    "q": "Where Do Peptides Come From?",
+    "a": "Your Body Makes Peptides Naturally. Scientists Can Also Make Them In Labs. Lab-Made Ones Are Copies Or New Versions That Help Us Learn Things."
   },
   {
     "category": "Handling & Preparation",
-    "q": "What Does Lyophilized Mean?",
-    "a": "Lyophilized means freeze-dried: the peptide has been frozen and had its water removed under vacuum, leaving a dry powder or pellet. This form is more stable for storage and shipping than a solution. The visible amount in a vial can look very small because lyophilized mass is often a tiny fraction of the vial volume."
+    "q": "How Do I Use A Peptide Powder?",
+    "a": "First, Add Very Clean Water Slowly. Don't Shake Hard. Gently Swirl It. It Becomes A Liquid. That's Reconstitution. Now It's Ready For Experiments."
   },
   {
     "category": "Handling & Preparation",
-    "q": "How Is A Lyophilized Peptide Reconstituted In The Lab?",
-    "a": "In general laboratory practice, a lyophilized peptide is returned to solution by adding a compatible diluent slowly down the side of the vial and allowing it to dissolve without vigorous shaking. The choice of diluent and volume depends on the peptide's solubility and the intended study concentration. This library describes reconstitution only as a general bench concept and provides no human dosing instructions."
+    "q": "What Water Should I Use?",
+    "a": "Use Super Clean Water. Either With A Germ-Stopping Chemical Or Without One. Both Work. Your Experiment Tells You Which Is Better."
   },
   {
     "category": "Handling & Preparation",
-    "q": "What Is Bacteriostatic Water?",
-    "a": "Bacteriostatic water is sterile water containing a small amount of benzyl alcohol, which inhibits bacterial growth and allows a reconstituted vial to be accessed over time in laboratory settings. It is a common general-purpose diluent for peptides that are soluble in neutral aqueous solution. It is referenced here only as lab-reagent context, not as part of any administration protocol."
-  },
-  {
-    "category": "Handling & Preparation",
-    "q": "What Is Acetic Acid Diluent And Why Do Some Peptides Need It?",
-    "a": "A dilute acetic acid solution is sometimes used as a diluent because certain peptides are poorly soluble in neutral water and dissolve more readily under mildly acidic conditions. Hydrophobic or aggregation-prone sequences are common examples where a bench protocol may call for acidic solubilization. The appropriate diluent is a chemistry property of the specific peptide and is provided as reference information only."
-  },
-  {
-    "category": "Handling & Preparation",
-    "q": "Why Should A Reconstituted Vial Not Be Shaken Vigorously?",
-    "a": "Vigorous shaking can introduce mechanical shear and foaming that may denature or aggregate sensitive peptides, reducing the integrity of the sample. General lab practice favors gentle swirling or letting the powder dissolve undisturbed. This is standard reagent-handling guidance, not instruction for any human application."
+    "q": "Should I Shake Or Stir?",
+    "a": "Stir Gently. Don't Shake Hard. Shaking Makes Bubbles. Bubbles Hurt The Peptide. Gentle Is Always Better."
   },
   {
     "category": "Storage & Stability",
-    "q": "How Should Lyophilized Peptides Be Stored?",
-    "a": "Lyophilized peptides are generally most stable when kept cold, dry, and protected from light, often refrigerated for shorter periods and frozen for longer-term storage. Keeping the vial sealed and away from moisture helps preserve the dry powder. Always follow the specific storage note on the compound monograph and certificate of analysis."
+    "q": "How Should I Store Peptide Powder?",
+    "a": "Three Rules: Cold. Dark. Dry. Put It In The Freezer Or Fridge. Keep It Away From Light. Don't Let It Get Wet. Done!"
   },
   {
     "category": "Storage & Stability",
-    "q": "How Should Reconstituted Peptides Be Stored?",
-    "a": "Once a peptide is in solution it is generally less stable than the dry form and is typically kept refrigerated and protected from light. Solutions are usually intended for use within a limited window rather than indefinite storage. The exact handling depends on the peptide and the diluent used, so consult the monograph."
+    "q": "How Long Does A Peptide Last?",
+    "a": "As Powder: Months Or Years. As Liquid: Days Or Weeks. Cold, Dark, Dry Keeps It Longer. The Colder And Darker, The Longer It Lasts."
   },
   {
     "category": "Storage & Stability",
-    "q": "How Long Is A Reconstituted Vial Good For?",
-    "a": "There is no single universal answer; stability in solution varies widely by sequence, diluent, temperature, and light exposure. As a general concept, reconstituted peptides have a far shorter usable shelf life than their lyophilized form, often measured in days to a few weeks under refrigeration. Any specific stability window should come from the manufacturer data or published stability studies for that compound."
+    "q": "What Happens If I Freeze And Thaw Repeatedly?",
+    "a": "It Gets Damaged. Like Crumpling Paper Over And Over. It Falls Apart. Use Small Pieces So You Never Thaw The Whole Thing Twice."
   },
   {
     "category": "Storage & Stability",
-    "q": "What Does Freeze-Thaw Do To A Peptide?",
-    "a": "Repeated freezing and thawing can degrade peptides through aggregation, hydrolysis, and concentration shifts at the ice boundary, lowering sample quality. To limit this, labs commonly divide a reconstituted solution into single-use aliquots before freezing so each is thawed only once. This is standard sample-preservation practice for research materials."
-  },
-  {
-    "category": "Storage & Stability",
-    "q": "Why Are Some Peptides Sensitive To Light And Air?",
-    "a": "Certain amino acid residues, such as methionine, cysteine, and tryptophan, are prone to oxidation, and some sequences are sensitive to light, so exposure can degrade them over time. Minimizing headspace, limiting light, and keeping samples cold are common ways labs slow this degradation. The monograph flags when a compound is especially sensitive."
+    "q": "Can I Store It At Room Temperature?",
+    "a": "No. Room Temperature Is Too Warm. Warm Breaks Peptides. Cold Is Your Friend. Keep It Chilled."
   },
   {
     "category": "Safety & Compliance",
-    "q": "Why Do You Surface Side Effects And Warnings If These Are Not For Human Use?",
-    "a": "We surface documented adverse effects and warnings from the scientific and regulatory literature so researchers have an honest, complete picture of a compound's known risk profile. Transparent hazard information supports safe laboratory handling and sound research judgment. It is reference material and is not an endorsement of human use in any form."
-  },
-
-  {
-    "category": "Safety & Compliance",
-    "q": "Can These Compounds Be Resold Or Redistributed For Human Use?",
-    "a": "No. These materials are supplied strictly as research reagents, and reselling or repackaging them for human consumption, therapy, or supplementation is outside their intended use and may violate applicable law. Buyers are responsible for complying with all regulations that apply to research materials in their jurisdiction. The research-only designation travels with the product."
+    "q": "Is This Safe To Handle?",
+    "a": "Yes, If You Follow Rules. Wear Gloves. Don't Eat It. Wash Your Hands. Use Clean Equipment. Basic Lab Safety. Just Common Sense."
   },
   {
     "category": "Safety & Compliance",
-    "q": "Do You Provide Dosing Or Treatment Protocols?",
-    "a": "No. This library does not provide human dosing, cycling, injection, or treatment protocols of any kind. Where a quantity from a published trial is mentioned, it is cited only as a labeled study parameter to describe what researchers reported, never as a recommendation. For any health question, consult a licensed medical professional."
+    "q": "What If I Spill Some?",
+    "a": "Clean It Up With Water. Use Soap. Wash Your Hands. It's Not Dangerous Like Poison. Just Clean It Like Any Spill."
+  },
+  {
+    "category": "Safety & Compliance",
+    "q": "Can I Give This To Someone?",
+    "a": "No. Never. Not Ever. This Is Research Only. Not For People Or Animals. It's A Lab Tool, Like A Microscope. You Don't Use A Microscope To Look At A Person."
   },
   {
     "category": "Evidence & Sourcing",
-    "q": "What Is A Certificate Of Analysis And HPLC Purity?",
-    "a": "A certificate of analysis is a document from the manufacturer or testing lab that reports identity and quality data for a specific batch, often including mass spectrometry identity and HPLC purity. HPLC purity, expressed as a percentage, estimates how much of the sample is the intended peptide versus impurities, based on high-performance liquid chromatography. Reviewing the COA is standard practice for verifying what a research material actually contains."
+    "q": "How Do I Know This Is Real?",
+    "a": "We Give You A Report Card Called COA. It Says What Tests We Did. Pure? Yes. Real? Yes. The Right Thing? Yes. Trust The Report."
   },
   {
     "category": "Evidence & Sourcing",
-    "q": "What Does The Evidence Tier Mean?",
-    "a": "The evidence tier is an honest label for how much human and scientific data backs a compound, ranging from approved drug (authorized by a regulator for a defined indication) to investigational (in clinical trials), preclinical (animal or cell data only), research compound (limited or early data), and cosmetic (topical or formulation context). Higher tiers reflect more rigorous evidence, not an invitation to use the material. The tier is about data maturity, not about safety in any individual."
-  },
-  {
-    "category": "Evidence & Sourcing",
-    "q": "Does A Higher Evidence Tier Mean A Compound Is Safe?",
-    "a": "No. An evidence tier describes the depth and quality of available research, not a guarantee of safety for any person or use. Even approved-drug compounds carry documented risks and are only safe within a supervised medical context that this library does not provide. We present the tier so researchers can weigh claims against the actual strength of the data."
+    "q": "What Tests Prove It's Pure?",
+    "a": "We Use Machines That Sort And Weigh Molecules. HPLC Separates Everything. Mass Spec Weighs It Exactly. Both Say: Pure!"
   },
   {
     "category": "Using This Library",
-    "q": "How Do I Read A Compound Monograph And Use The Search?",
-    "a": "Each compound monograph summarizes what a peptide is, what it has been studied for, its evidence tier, handling and storage notes, and documented warnings, with research-use framing throughout. You can use the search to find a compound by name, sequence family, research area, or even a goal, then open its monograph for the full reference. The goal is to give researchers organized, honestly framed information, not usage instructions."
+    "q": "How Should I Use This Information?",
+    "a": "Learn! Read! Understand How Peptides Work! Use This For School Or Science Club. Share With Friends Who Love Science. Just For Learning."
   },
   {
     "category": "Using This Library",
-    "q": "Can I Get Information On A Peptide You Do Not Sell?",
-    "a": "The library focuses on compounds in our catalog, but general reference entries and the glossary may cover well-studied peptides and terms even when they are not available for purchase. If a compound is not listed, you can still rely on primary literature and manufacturer data from reputable sources for background. We do not provide custom acquisition or usage guidance for materials outside our research catalog."
-  }
-];
-
-export const LEARN_GUIDES: Guide[] = [
-  {
-    "slug": "what-are-research-peptides",
-    "title": "What Are Research Peptides?",
-    "intro": "Peptides are short chains of amino acids, and the compounds in this catalog are supplied strictly for laboratory research use. This guide explains what a peptide is and what research use only means in practice.",
-    "sections": [
-      {
-        "heading": "What A Peptide Is",
-        "body": "A peptide is a short chain of amino acids linked by peptide bonds, sitting in size between a single amino acid and a full protein. Many are signaling molecules: they bind a receptor or interact with another protein to nudge a biological process. The compounds profiled in the PepNationLab library range from tiny tripeptides such as GHK-Cu (three amino acids) to larger sequences such as Thymosin Alpha-1 (twenty-eight residues), and a few entries are related small molecules or cofactors rather than peptides in the strict sense.\n\nMost are supplied as a lyophilized (freeze-dried) powder. Identity is described by a sequence, a molecular weight, and where one exists a CAS registry number, which together let a researcher confirm what is actually in the vial against a certificate of analysis."
-      },
-      {
-        "heading": "Why These Are Sold For Research Use Only",
-        "body": "The large majority of these compounds are not approved drugs. Some are investigational and still in human trials, some have only animal or cell-culture data, and several are sold purely as research chemicals with no approved human use at all. A compound that has not cleared regulatory review for a given use cannot be lawfully marketed as a treatment for that use.\n\nResearch-use-only framing reflects that reality honestly. Products are intended for in-vitro and laboratory study by qualified researchers, not for human consumption. The platform describes what a compound is studied for and what researchers have reported, never what it will do for a person."
-      },
-      {
-        "heading": "What That Means Legally And Practically",
-        "body": "Practically, research use only means no dosing protocols, no medical claims, and no therapeutic promises accompany any product. Where a number appears, it is cited only as a published study or label parameter, such as a dose used in a named clinical trial, and never as a recommendation.\n\nThe site enforces this with a four-layer disclaimer that a researcher acknowledges at site entry, registration, add-to-cart, and checkout. These gates are a compliance backbone, not a formality. Anyone evaluating a compound should treat the evidence tier on its page as the most important piece of information on it."
-      }
-    ]
-  },
-  {
-    "slug": "understanding-evidence-tiers",
-    "title": "Understanding Evidence Tiers",
-    "intro": "Not all compounds carry the same weight of evidence behind them. This guide explains the five evidence tiers used across the library so you can calibrate any claim you read.",
-    "sections": [
-      {
-        "heading": "The Five Tiers",
-        "body": "Every profile carries an evidence tier so a reader can judge how much trust a claim deserves. Approved drug means the compound is FDA and/or EMA approved with robust human trial data. Investigational means it is in active human clinical trials but not yet approved. Preliminary or preclinical means the evidence is mainly from animal or in-vitro work, or from limited single-group human data. Research-chemical only means there is no approved human use and the compound is sold for laboratory research. Cosmetic ingredient means it is a recognized topical cosmetic active rather than a drug.\n\nThese tiers are deliberately blunt. A compound can be genuinely interesting and still sit at the bottom of the ladder."
-      },
-      {
-        "heading": "How To Calibrate A Claim",
-        "body": "Tier tells you the type of evidence; you still have to read the context. Reported in animal models to is a far weaker statement than in the STEP-1 trial. In-vitro evidence in cultured cells does not predict what happens in a living organism, and a single-group human cohort with no control arm is not the same as a randomized trial.\n\nBe especially cautious with compounds whose human data is old, non-independent, or comes from a single research lineage. Several entries in this catalog fit that description and say so plainly."
-      },
-      {
-        "heading": "Weak Evidence Is Stated, Not Hidden",
-        "body": "Some catalog compounds are entirely preclinical, and at least one failed its pivotal human trial. The library names these cases rather than burying them. Surfacing weak evidence is treated as a feature: it is what separates a credible research reference from marketing copy.\n\nWhen a page says evidence is thin, that is the finding, not an oversight. Plan any research design around the honest tier, not around the most optimistic single study."
-      }
-    ]
-  },
-  {
-    "slug": "reconstitution-basics",
-    "title": "Reconstitution Basics",
-    "intro": "Most catalog compounds arrive as a lyophilized powder that must be brought into solution before laboratory use. This guide explains the general concept of reconstitution and how diluent choice is decided, with no dosing guidance.",
-    "sections": [
-      {
-        "heading": "From Lyophilized Powder To Solution",
-        "body": "Lyophilization (freeze-drying) removes water so a peptide stays stable as a dry powder during shipping and storage. Reconstitution is simply adding a sterile liquid (a diluent) back to that powder to form a solution for laboratory work.\n\nThe powder is fragile. Diluent is generally added slowly down the side of the vial and the vial is swirled gently rather than shaken, because vigorous agitation and foaming can damage the peptide. This is a general lab-preparation concept, not an instruction for any human use."
-      },
-      {
-        "heading": "Choosing A Diluent",
-        "body": "Bacteriostatic water (sterile water with a small amount of benzyl alcohol) is the most common diluent and is suitable for the majority of catalog peptides; sterile water is also used. Some poorly soluble or aggregation-prone peptides dissolve better with a dilute acetic acid solution, which lowers pH to help the peptide go into solution. Many entries note that acetic acid is generally not needed.\n\nDiluent choice is compound-specific. Copper peptides such as GHK-Cu are pH and redox sensitive and are degraded by strong acids and reducing agents, so the per-compound handling note on each monograph is the authority. Always follow the compound's own profile rather than a one-size-fits-all rule."
-      },
-      {
-        "heading": "Use The Reconstitution Calculator",
-        "body": "Working out the relationship between powder mass, diluent volume, and resulting concentration is arithmetic, and the platform provides a reconstitution calculator for it. Use that tool to plan concentration for a research preparation.\n\nThe calculator handles concentration math only. It is not a dosing tool and does not imply any human administration. Pair it with the compound's handling note for diluent type and storage."
-      }
-    ]
-  },
-  {
-    "slug": "storage-cold-chain-shelf-life",
-    "title": "Storage, Cold Chain & Shelf Life",
-    "intro": "Peptides are sensitive molecules, and how they are stored before and after reconstitution determines whether they remain intact. This guide covers temperature, light, freeze-thaw, and general shelf-life concepts.",
-    "sections": [
-      {
-        "heading": "Lyophilized Versus Reconstituted Storage",
-        "body": "As a dry lyophilized powder, most catalog peptides are stable for extended periods when kept cold, dark, and dry. Common guidance across profiles is refrigeration at 2 to 8 degrees Celsius for nearer-term storage and freezing around minus 20 degrees Celsius for long-term storage. A few hygroscopic powders, such as injectable NAD+, readily absorb moisture and need especially careful dry, cold storage.\n\nOnce reconstituted, the same peptide is far less stable. A solution is generally refrigerated and treated as having a much shorter usable window than the dry powder."
-      },
-      {
-        "heading": "Temperature, Light And Moisture",
-        "body": "Heat, light, oxygen, and moisture all degrade peptides. Many compounds are explicitly light-sensitive: methylcobalamin (vitamin B12) and melatonin are notable examples, and copper peptides are sensitive to pH and redox conditions. The default for nearly every entry is cold, dark, and dry.\n\nThiol-containing compounds add another wrinkle. Reduced glutathione oxidizes readily on contact with air, light, or metals and can develop a sulfurous odor as it degrades, so it is stored cold and reconstituted fresh."
-      },
-      {
-        "heading": "Freeze-Thaw And Reconstituted Shelf Life",
-        "body": "Repeated freeze-thaw cycles are a common cause of peptide damage. Several profiles, including SS-31 (elamipretide) and CJC-1295 with DAC, specifically warn to avoid freeze-thaw because each cycle can denature or aggregate the molecule. Note also that some formulated products, such as Zadaxin (Thymosin Alpha-1), should not be frozen at all once formulated.\n\nReconstituted shelf life is best thought of as a short window measured in days to a few weeks, refrigerated, and shorter still for chemically labile peptides that the profile flags as unstable in solution. Always defer to the specific compound's handling note, which captures these quirks per molecule."
-      }
-    ]
-  },
-  {
-    "slug": "how-to-read-a-compound-monograph",
-    "title": "How To Read A Compound Monograph",
-    "intro": "Every compound in the library follows the same fixed schema so you can compare entries quickly. This guide walks through each section of a monograph and what it tells you.",
-    "sections": [
-      {
-        "heading": "Identity And Mechanism",
-        "body": "A monograph opens with the compound's class or type and an identity block: sequence, molecular weight, and a CAS number where one exists, plus common aliases. These identifiers let you verify what is in a vial against a certificate of analysis, and to catch labeling ambiguities the references flag for compounds such as Thymalin.\n\nThe mechanism section then describes the molecular target and how the compound is thought to operate, in plain prose. For example, SS-31 is described as binding cardiolipin in the inner mitochondrial membrane to stabilize cristae rather than acting as a free-radical scavenger."
-      },
-      {
-        "heading": "What It Is Studied For And Reported Findings",
-        "body": "What it is studied for lists research use cases, each carrying its own evidence tier so you can tell investigational human work from preclinical animal work. Reported findings then gives the benefits with study context, naming named trials such as STEP or SURMOUNT where they exist, and stating in-vitro versus animal versus human honestly.\n\nThese two sections are deliberately framed as studied for and researchers report, never as promises. A finding in cultured cells or mice is labeled as such."
-      },
-      {
-        "heading": "Side Effects, Warnings And Handling",
-        "body": "The reported side effects section is candid and unsoftened. Warnings and limitations carry the hard safety flags and the regulatory status, including not approved, failed trial, or preclinical where it applies. These are the lines to read first for any safety-sensitive compound, such as the opioid risk on dermorphin or the melanoma signal on Melanotan II.\n\nHandling, storage and reconstitution covers lyophilized versus solution state, diluent, temperature, light sensitivity, freeze-thaw, and shelf life."
-      },
-      {
-        "heading": "Regulatory Status And Sources",
-        "body": "The regulatory block states FDA or EMA status. The sources block lists the key references behind the profile, from peer-reviewed literature and regulatory labels to DrugBank and PubChem entries.\n\nRead a monograph top to bottom and the page is verifiable: you can check the identity against a CoA, the claims against the cited studies, and the status against current regulatory lists."
-      }
-    ]
-  },
-  {
-    "slug": "quality-verification",
-    "title": "Quality & Verification",
-    "intro": "A research compound is only as good as the evidence that it is what the label says. This guide covers the documents and tests used to verify identity, purity, and safety of a peptide vial.",
-    "sections": [
-      {
-        "heading": "The Certificate Of Analysis",
-        "body": "A certificate of analysis (CoA) is the document that reports the testing performed on a specific lot of product. A useful CoA ties to a lot or batch number, states the methods used, and reports results you can check against the compound's known identity.\n\nBecause labeling ambiguities are real, the references flag cases such as Thymalin where a vendor may equate a complex with a single dipeptide. The CoA, read against the monograph's identity block, is how you catch that kind of mismatch."
-      },
-      {
-        "heading": "Purity And Identity Testing",
-        "body": "High-performance liquid chromatography (HPLC) is the standard method for assessing purity: it separates the components in a sample so that the main peptide can be quantified against impurities, usually reported as a percentage purity. Mass spectrometry confirms identity by measuring molecular mass, which should match the compound's stated molecular weight.\n\nTogether, HPLC and mass spec answer two different questions: how pure the sample is, and whether it is actually the molecule it claims to be. A high purity figure for the wrong molecule is still the wrong molecule."
-      },
-      {
-        "heading": "Endotoxin, Sterility And Third-Party Testing",
-        "body": "For preparations intended for sterile laboratory work, endotoxin (bacterial pyrogen) testing and sterility testing address contamination that HPLC and mass spec do not. These are particularly relevant for any aqueous or parenteral research preparation.\n\nThird-party testing, where an independent lab rather than the seller runs the assays, adds credibility because the tester has no incentive in the result. Independent verification carries more weight than an in-house claim alone."
-      },
-      {
-        "heading": "Vial Verification",
-        "body": "At the point of receipt, basic checks matter: confirm the lot number on the vial matches the CoA, that the labeled identity and quantity match what was ordered, and that the physical product matches expectations, such as the characteristic blue color of a copper-peptide complex like GHK-Cu.\n\nAppearance is a weak signal on its own, but a mismatch between vial, label, and CoA is a clear reason to stop and question the product before any research use."
-      }
-    ]
-  },
-  {
-    "slug": "peptide-classes-overview",
-    "title": "Peptide Classes Overview",
-    "intro": "The library groups compounds into families that share a mechanism or origin. This guide gives a short orientation to each major class so you know where a compound sits.",
-    "sections": [
-      {
-        "heading": "GHRH Analogs",
-        "body": "Growth-hormone-releasing hormone (GHRH) analogs are synthetic agonists of the GHRH receptor on the pituitary, prompting it to release growth hormone. Examples in the catalog include CJC-1295, where a DAC modification binds albumin to extend the half-life to several days and produce sustained rather than pulsatile growth-hormone release. Most members of the growth-hormone-axis class are research chemicals, not approved drugs."
-      },
-      {
-        "heading": "Growth-Hormone-Releasing Peptides And Secretagogues",
-        "body": "Secretagogues such as the GHRP family and ipamorelin act mainly through the ghrelin and GH-secretagogue receptor rather than the GHRH receptor, providing a second, complementary pathway to stimulate growth-hormone release. They are often discussed alongside GHRH analogs because the two mechanisms are studied in combination. Like the GHRH analogs, these carry the general GH-axis caveats around glucose tolerance."
-      },
-      {
-        "heading": "GLP-1 And Incretin Agonists",
-        "body": "Incretin agonists mimic gut hormones such as GLP-1 (and in dual or triple agonists, GIP and glucagon) that regulate insulin secretion, appetite, and gastric emptying. This class includes the most rigorously trialed compounds in the catalog, with named human programs such as STEP and SURMOUNT behind several entries. Class-wide warnings include gastrointestinal side effects and a thyroid C-cell tumor signal observed in rodents, which belongs on every incretin page."
-      },
-      {
-        "heading": "Copper Peptides",
-        "body": "Copper peptides such as GHK-Cu (Copper Tripeptide-1) and AHK-Cu are small tripeptides that chelate and deliver copper into cells, where they are studied for collagen synthesis, wound repair, and hair-follicle signaling. GHK-Cu is a recognized cosmetic ingredient rather than an approved drug. They are pH and redox sensitive, degrade in contact with strong acids and reducing agents, and carry a pro-angiogenic caveat for any systemic use."
-      },
-      {
-        "heading": "Peptide Bioregulators",
-        "body": "Bioregulators are very short peptides, often two to four amino acids, associated with the Khavinson research tradition. Examples include Epithalon, Pinealon, and Thymalin, proposed to bind DNA and modulate gene expression in a tissue-specific way. The evidence is largely preliminary, frequently from a single research lineage and not independently replicated, and these are research chemicals not approved in the United States or European Union."
-      },
-      {
-        "heading": "Melanocortins",
-        "body": "Melanocortin peptides act on the melanocortin receptor family and are studied for pigmentation and sexual-function endpoints, with Melanotan II as the prototypical catalog example. This class carries notable safety flags that the library surfaces plainly, including a melanoma signal for Melanotan II. They are research chemicals without approval for the uses for which they are commonly studied."
-      },
-      {
-        "heading": "Mitochondrial Peptides",
-        "body": "Mitochondrial peptides target mitochondrial function and integrity. SS-31 (elamipretide) binds cardiolipin to stabilize the inner mitochondrial membrane and recently gained a narrow FDA approval for Barth syndrome, making it the strongest human evidence in its anti-aging-adjacent category, while remaining investigational for everything else. MOTS-c is a mitochondrial-derived peptide studied as a metabolic regulator."
-      }
-    ]
+    "q": "What Should I Do If I Have Questions?",
+    "a": "Ask A Real Scientist! A Teacher! A Lab Person! Don't Guess. Get Expert Help. They'll Explain Things Right."
   }
 ];
