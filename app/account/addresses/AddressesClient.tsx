@@ -20,6 +20,7 @@
 
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 
 interface Address {
   id: string;
@@ -182,7 +183,17 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px,1fr))', gap: 'var(--space-3)' }}>
             <Field label="Label (Optional)" value={form.label ?? ''} onChange={(v) => setForm({ ...form, label: v })} placeholder="Home, Lab, Office" />
             <Field label="Full Name" value={form.full_name} onChange={(v) => setForm({ ...form, full_name: v })} required />
-            <Field label="Street Address" value={form.street1} onChange={(v) => setForm({ ...form, street1: v })} required />
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+              <span style={{ color: 'var(--silver)', fontSize: '0.78rem' }}>Street Address *</span>
+              <AddressAutocompleteInput
+                className="input"
+                style={{ background: 'var(--surface-2)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--white)', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-md)', fontSize: '0.9rem' }}
+                required
+                value={form.street1}
+                onChange={(v) => setForm({ ...form, street1: v })}
+                onSelect={(a) => setForm((prev) => ({ ...prev, street1: a.street1, city: a.city || prev.city, state: a.state || prev.state, zip: a.zip || prev.zip }))}
+              />
+            </label>
             <Field label="Apt / Suite (Optional)" value={form.street2 ?? ''} onChange={(v) => setForm({ ...form, street2: v })} />
             <Field label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} required />
             <Field label="State" value={form.state} onChange={(v) => setForm({ ...form, state: v })} required />

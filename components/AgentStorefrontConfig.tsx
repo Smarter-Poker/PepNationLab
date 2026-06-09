@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import UniqueField from '@/components/UniqueField';
+import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 
 interface AgentStorefrontConfigProps {
   displayName: string;
@@ -281,7 +282,13 @@ export default function AgentStorefrontConfig({
             </div>
             <div className="form-group" style={{ margin: 0 }}>
               <label className="form-label" style={{ color: 'var(--grey-400)' }}>Street Address</label>
-              <input className="form-input" value={whStreet1} onChange={e => setWhStreet1(e.target.value)} placeholder="123 Science Way" />
+              <AddressAutocompleteInput
+                className="form-input"
+                value={whStreet1}
+                onChange={setWhStreet1}
+                onSelect={(a) => { setWhStreet1(a.street1); if (a.city) setWhCity(a.city); if (a.state) setWhState(a.state); if (a.zip) setWhZip(a.zip); }}
+                placeholder="123 Science Way"
+              />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
               <div className="form-group" style={{ margin: 0 }}>
