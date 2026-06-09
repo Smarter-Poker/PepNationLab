@@ -404,108 +404,55 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   </div>
 
                   {/* Image Cluster */}
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', justifyContent: 'center', marginBottom: 20, width: '100%', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', flexDirection: 'column', alignItems: 'center' }}>
-                    {(!isPremixedBlend && ['limitless-stack', 'shred-stack', 'bpc-tb', 'cagrisema', 'cjc-ipamorelin', 'glow', 'klow'].includes(stack.slug)) ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-                        <div style={{
-                          width: '100%', maxWidth: 300, aspectRatio: '1.2 / 1',
-                          borderRadius: 16, 
-                          background: '#0F1318',
-                          border: '2px solid rgba(255,255,255,0.2)',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          overflow: 'hidden', padding: 0,
-                          position: 'relative'
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', justifyContent: 'center', marginBottom: 20, width: '100%', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+                    {stack.stack_components.map((compSlug, i) => {
+                      const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
+                      compProducts.sort(sortStackProducts);
+                      const p = compProducts.length > 0 ? compProducts[0] : undefined;
+                      const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
+                      const comp = bySlug.get(compSlug);
+                      const label = comp?.display_name ?? compSlug;
+                      const price = p ? p.retailPrice : 0;
+                      
+                      return (
+                        <div key={compSlug} style={{ 
+                          flex: '1 1 0', minWidth: 0, maxWidth: 160,
+                          position: 'relative',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
                         }}>
-                          <Image 
-                            src={`/images/products/${stack.slug === 'glow' || stack.slug === 'klow' ? stack.slug + '-blend.png' : stack.slug + '-combo.png'}`} 
-                            alt={stack.display_name} 
-                            fill 
-                            unoptimized 
-                            style={{ objectFit: 'cover', objectPosition: 'center' }} 
-                          />
                           <div style={{
-                            position: 'absolute', bottom: 0, left: 0, right: 0,
-                            padding: '32px 4px 4px',
-                            background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 50%, #000 100%)',
-                            color: '#C0C8D0', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
-                            textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                            width: '100%', aspectRatio: '1 / 1.2',
+                            borderRadius: 16, 
+                            background: '#0F1318',
+                            border: '2px solid rgba(255,255,255,0.2)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            overflow: 'hidden', padding: 0,
+                            position: 'relative'
                           }}>
-                            {stack.display_name.includes('(') ? stack.display_name.substring(0, stack.display_name.indexOf('(')).trim() : stack.display_name}
-                          </div>
-                        </div>
-                        {/* Pricing row for multipack components */}
-                        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 12, flexWrap: 'wrap' }}>
-                          {stack.stack_components.map(compSlug => {
-                            const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
-                            compProducts.sort(sortStackProducts);
-                            const price = compProducts.length > 0 ? compProducts[0].retailPrice : 0;
-                            const comp = bySlug.get(compSlug);
-                            const label = comp?.display_name ?? compSlug;
-                            return (
-                              <div key={compSlug} style={{ fontSize: '0.85rem', fontWeight: 700, textAlign: 'center' }}>
-                                <div style={{ color: '#A8B4C0', fontSize: '0.65rem', marginBottom: 2, textTransform: 'uppercase' }}>{label}</div>
-                                <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                                  <span style={{ textDecoration: 'line-through', color: '#88929C' }}>${price.toFixed(2)}</span>
-                                  <span style={{ color: '#C0C8D0' }}>${(price * 0.9).toFixed(2)}</span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', justifyContent: 'center', width: '100%' }}>
-                        {stack.stack_components.map((compSlug, i) => {
-                          const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
-                          compProducts.sort(sortStackProducts);
-                          const p = compProducts.length > 0 ? compProducts[0] : undefined;
-                          const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
-                          const comp = bySlug.get(compSlug);
-                          const label = comp?.display_name ?? compSlug;
-                          const price = p ? p.retailPrice : 0;
-                          
-                          return (
-                            <div key={compSlug} style={{ 
-                              flex: '1 1 0', minWidth: 0, maxWidth: 160,
-                              position: 'relative',
-                              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+                            <Image src={imageUrl} alt={label} width={200} height={200} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+                            <div style={{
+                              position: 'absolute', bottom: 0, left: 0, right: 0,
+                              padding: '32px 4px 4px',
+                              background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 50%, #000 100%)',
+                              color: '#C0C8D0', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
+                              textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                             }}>
-                              <div style={{
-                                width: '100%', aspectRatio: '1 / 1.2',
-                                borderRadius: 16, 
-                                background: '#0F1318',
-                                border: '2px solid rgba(255,255,255,0.2)',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                overflow: 'hidden', padding: 0,
-                                position: 'relative'
-                              }}>
-                                <Image src={imageUrl} alt={label} fill unoptimized style={{ objectFit: 'cover', objectPosition: 'center' }} />
-                                <div style={{
-                                  position: 'absolute', bottom: 0, left: 0, right: 0,
-                                  padding: '32px 4px 4px',
-                                  background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 50%, #000 100%)',
-                                  color: '#C0C8D0', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
-                                  textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                                }}>
-                                  {label}
-                                </div>
-                              </div>
-
-                              {/* Slashed Pricing for Non-Premixed Bundles */}
-                              {!isPremixedBlend && stack.stack_components.length > 1 && (
-                                <div style={{ marginTop: 8, fontSize: '0.85rem', fontWeight: 700, textAlign: 'center', display: 'flex', justifyContent: 'center', gap: 6 }}>
-                                  <span style={{ textDecoration: 'line-through', color: '#88929C' }}>${price.toFixed(2)}</span>
-                                  <span style={{ color: '#C0C8D0' }}>${(price * 0.9).toFixed(2)}</span>
-                                </div>
-                              )}
-
+                              {label}
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                          </div>
+
+                          {/* Slashed Pricing for Non-Premixed Bundles */}
+                          {!isPremixedBlend && stack.stack_components.length > 1 && (
+                            <div style={{ marginTop: 8, fontSize: '0.85rem', fontWeight: 700, textAlign: 'center', display: 'flex', justifyContent: 'center', gap: 6 }}>
+                              <span style={{ textDecoration: 'line-through', color: '#88929C' }}>${price.toFixed(2)}</span>
+                              <span style={{ color: '#C0C8D0' }}>${(price * 0.9).toFixed(2)}</span>
+                            </div>
+                          )}
+
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Description (Simplified) */}
@@ -536,8 +483,8 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                           const bottomTitle = (!tUpper.includes('STACK') && !tUpper.includes('PROTOCOL')) ? stack.display_name + ' Stack' : stack.display_name;
                           return (
                             <div style={{
-                              width: 140, aspectRatio: '1 / 1.2',
-                              borderRadius: 12, 
+                              width: '100%', maxWidth: 300, aspectRatio: '1.2 / 1',
+                              borderRadius: 16, 
                               background: '#0F1318',
                               border: '2px solid rgba(255,255,255,0.2)',
                               boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
@@ -548,9 +495,9 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                               <Image src={premadeProducts[0].imageUrl} alt={stack.display_name} fill unoptimized style={{ objectFit: 'cover', objectPosition: 'center' }} />
                               <div style={{
                                 position: 'absolute', bottom: 0, left: 0, right: 0,
-                                padding: '24px 4px 4px',
+                                padding: '32px 4px 4px',
                                 background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 50%, #000 100%)',
-                                color: '#C0C8D0', fontSize: '0.55rem', fontWeight: 800, textTransform: 'uppercase',
+                                color: '#C0C8D0', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
                                 textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                               }}>
                                 {bottomTitle}
@@ -561,8 +508,8 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                         return null;
                       })() : (!isPremixedBlend && ['limitless-stack', 'shred-stack', 'bpc-tb', 'cagrisema', 'cjc-ipamorelin', 'glow', 'klow'].includes(stack.slug)) ? (
                         <div style={{
-                          width: 140, aspectRatio: '1.2 / 1',
-                          borderRadius: 12, 
+                          width: '100%', maxWidth: 300, aspectRatio: '1.2 / 1',
+                          borderRadius: 16, 
                           background: '#0F1318',
                           border: '2px solid rgba(255,255,255,0.2)',
                           boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
@@ -579,9 +526,9 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                           />
                           <div style={{
                             position: 'absolute', bottom: 0, left: 0, right: 0,
-                            padding: '24px 4px 4px',
+                            padding: '32px 4px 4px',
                             background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 50%, #000 100%)',
-                            color: '#C0C8D0', fontSize: '0.55rem', fontWeight: 800, textTransform: 'uppercase',
+                            color: '#C0C8D0', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
                             textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                           }}>
                             {stack.display_name.includes('(') ? stack.display_name.substring(0, stack.display_name.indexOf('(')).trim() : stack.display_name}
@@ -972,8 +919,6 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
             <div style={{ background: '#0F1318', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 16, padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 200, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
               {isBundleProduct && bundleImageUrl ? (
                 <Image src={bundleImageUrl} alt={mainTitle} width={180} height={180} style={{ objectFit: 'contain', filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }} unoptimized />
-              ) : (!isBundleProduct && ['limitless-stack', 'shred-stack', 'bpc-tb', 'cagrisema', 'cjc-ipamorelin', 'glow', 'klow'].includes(stackSlug)) ? (
-                <Image src={`/images/products/${stackSlug === 'glow' || stackSlug === 'klow' ? stackSlug + '-blend.png' : stackSlug + '-combo.png'}`} alt={mainTitle} width={180} height={180} style={{ objectFit: 'contain', filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }} unoptimized />
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {stack.stack_components.map((slug: string, i: number) => {
