@@ -365,41 +365,67 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {missingTasks.map((t) => (
                 <div key={t.id} style={{ display: 'flex', flexDirection: 'column', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px' }}>
-                    <span style={{ fontSize: '0.95rem', color: 'var(--white)', fontWeight: 600 }}>{t.label}</span>
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-sm"
-                      style={{ minWidth: 100 }}
-                      disabled={expandedTask === t.id}
-                      onClick={() => {
-                        const isInlineEditable = ['first-name', 'last-name', 'email', 'phone', 'timezone', 'avatar'].includes(t.id);
-                        if (isInlineEditable) {
-                          setExpandedTask(t.id);
-                          const keyMap: Record<string, string> = {
-                            'first-name': 'first_name',
-                            'last-name': 'last_name',
-                            'email': 'email',
-                            'phone': 'phone',
-                            'timezone': 'timezone',
-                          };
-                          const dbKey = keyMap[t.id] || t.id;
-                          setInputValue((profile as any)?.[dbKey] || '');
-                        } else if (t.target.startsWith('modal:')) {
-                          setMissingTasksModalOpen(false);
-                          const id = t.target.split(':')[1];
-                          if (id === 'username') setUsernameModalOpen(true);
-                        } else if (t.target.startsWith('nav:')) {
-                          setMissingTasksModalOpen(false);
-                          router.push(t.target.split('nav:')[1]);
-                        } else {
-                          setExpandedTask(t.id);
-                          setInputValue('');
-                        }
-                      }}
-                    >
-                      {expandedTask === t.id ? 'Editing...' : t.actionText}
-                    </button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      {getIcon(t.id)}
+                      <span style={{ fontSize: '0.95rem', color: 'var(--white)', fontWeight: 500 }}>{t.label}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      {t.id === 'avatar' && (
+                        <button
+                          type="button"
+                          style={{
+                            background: 'transparent',
+                            color: 'var(--silver)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '4px 12px',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                          onClick={async () => {
+                            try {
+                              const res = await fetch('/api/agent/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatar_url: 'default' }) });
+                              if (res.ok) {
+                                onProfileChange?.({ ...profile, avatar_url: 'default' } as any);
+                              }
+                            } catch(err) {}
+                          }}
+                        >
+                          Use Default
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        disabled={expandedTask === t.id}
+                        onClick={() => {
+                          const isInlineEditable = ['first-name', 'last-name', 'email', 'phone', 'timezone', 'avatar'].includes(t.id);
+                          if (isInlineEditable) {
+                            setExpandedTask(t.id);
+                            const keyMap: Record<string, string> = {
+                              'first-name': 'first_name',
+                              'last-name': 'last_name',
+                              'email': 'email',
+                              'phone': 'phone',
+                              'timezone': 'timezone',
+                            };
+                            const dbKey = keyMap[t.id] || t.id;
+                            setInputValue((profile as any)?.[dbKey] || '');
+                          } else if (t.target.startsWith('modal:')) {
+                            setMissingTasksModalOpen(false);
+                            const id = t.target.split(':')[1];
+                            if (id === 'username') setUsernameModalOpen(true);
+                          } else {
+                            setExpandedTask(t.id);
+                            setInputValue('');
+                          }
+                        }}
+                      >
+                        {expandedTask === t.id ? 'Editing...' : t.actionText}
+                      </button>
+                    </div>
                   </div>
                   {expandedTask === t.id && (
                     <div style={{ padding: '0 16px 16px 16px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
