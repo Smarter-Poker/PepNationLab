@@ -825,6 +825,13 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
 
   if (!stack) return null;
 
+  let mainTitle = stack.display_name;
+  mainTitle = mainTitle.replace(/\bKLOW\b/g, 'Klow').replace(/\bGLOW\b/g, 'Glow');
+  const tUpper = mainTitle.toUpperCase();
+  if (!tUpper.includes('STACK') && !tUpper.includes('PROTOCOL')) {
+    mainTitle = `${mainTitle} Stack`;
+  }
+
   const missingComponents = stack.stack_components.filter((slug: string) => !products.some((p: AreaProduct) => p.compoundSlug === slug));
 
   const handleCalcChange = (slug: string, field: 'mass' | 'diluent', value: number) => {
@@ -848,13 +855,6 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
     return acc + (c?.pubmed_citation_count || 0);
   }, 0);
 
-  let mainTitle = stack.display_name;
-  mainTitle = mainTitle.replace(/\\bKLOW\\b/ig, 'Klow').replace(/\\bGLOW\\b/ig, 'Glow');
-  const tUpper = mainTitle.toUpperCase();
-  if (!tUpper.includes('STACK') && !tUpper.includes('PROTOCOL')) {
-    mainTitle = `${mainTitle} Stack`;
-  }
-
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
       <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
@@ -863,7 +863,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
         style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', background: 'rgba(10, 15, 20, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}
       >
         <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'sticky', top: 0, background: 'linear-gradient(to bottom, rgba(10,15,20,0.98) 0%, rgba(10,15,20,0.9) 100%)', zIndex: 10 }}>
-          <div>
+          <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '16px' }}>
             <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 900, color: '#C0C8D0' }}>{mainTitle}</h2>
             {(() => {
               const premadeProducts = products.filter(p => p.compoundSlug === stackSlug);
@@ -883,7 +883,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                 const savings = componentSum - bundlePrice;
 
                 return (
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0', marginTop: 4 }}>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0' }}>
                     ${bundlePrice.toFixed(2)}
                     {savings > 0 && componentSum > bundlePrice && stack.stack_components.length > 1 && (
                       <span style={{ fontSize: '0.8rem', color: '#50FA7B', marginLeft: 12, verticalAlign: 'middle', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -895,7 +895,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
               }
 
               return (
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0', marginTop: 4 }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0' }}>
                   ${(stack.stack_components.length > 1 ? (bundlePrice * 0.9) : bundlePrice).toFixed(2)}
                   {stack.stack_components.length > 1 && <span style={{ fontSize: '0.7rem', color: '#68D391', marginLeft: 8, verticalAlign: 'middle' }}>10% Stack Discount</span>}
                 </div>
@@ -905,18 +905,22 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
           <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}><X size={20} /></button>
         </div>
 
-        <div style={{ padding: '0 32px', display: 'flex', justifyContent: 'center', marginBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ position: 'relative', display: 'inline-block', width: '100%', maxWidth: 500, marginBottom: 16 }}>
-            <Image src="/images/overview_tabs_btn.png" alt="Tabs" width={800} height={200} style={{ width: '100%', height: 'auto', display: 'block' }} unoptimized />
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '50%', height: '100%', cursor: 'pointer', zIndex: 10 }} onClick={() => setActiveTab('overview')} />
-            <div style={{ position: 'absolute', top: 0, left: '50%', width: '50%', height: '100%', cursor: 'pointer', zIndex: 10 }} onClick={() => setActiveTab('calculator')} />
+        <div style={{ padding: '32px 32px 0 32px' }}>
+          <p style={{ color: '#D0DAE4', lineHeight: 1.6, fontSize: '0.95rem', margin: '0 0 24px 0' }}>{stack.eli5_summary || stack.plain_summary || stack.stack_rationale}</p>
+          
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ position: 'relative', display: 'inline-block', width: '100%', maxWidth: 500, marginBottom: 16 }}>
+              <Image src={activeTab === 'overview' ? "/images/overview_tabs_btn.png" : "/images/calculator_tabs_btn.png"} alt="Tabs" width={800} height={200} style={{ width: '100%', height: 'auto', display: 'block' }} unoptimized />
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '50%', height: '100%', cursor: 'pointer', zIndex: 10 }} onClick={() => setActiveTab('overview')} />
+              <div style={{ position: 'absolute', top: 0, left: '50%', width: '50%', height: '100%', cursor: 'pointer', zIndex: 10 }} onClick={() => setActiveTab('calculator')} />
+            </div>
           </div>
         </div>
 
-        <div style={{ padding: 32, flex: 1 }}>
+        <div style={{ padding: '0 32px 32px 32px', flex: 1 }}>
           {activeTab === 'overview' ? (
             <>
-              <p style={{ color: '#D0DAE4', lineHeight: 1.6, fontSize: '0.95rem' }}>{stack.stack_rationale}</p>
+              <div style={{ height: 16 }} />
               
 
               
