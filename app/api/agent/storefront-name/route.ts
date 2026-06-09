@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     .from('agent_profiles')
     .select('display_name, display_name_changed_at')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (fetchErr || !currentProfile) {
     return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
@@ -56,7 +56,8 @@ export async function POST(req: NextRequest) {
     .from('agent_profiles')
     .select('id')
     .eq('display_name', newName)
-    .single();
+    .neq('id', user.id)
+    .maybeSingle();
 
   if (existing) {
     return NextResponse.json({ error: 'User Name Is Already Taken - Try Another.' }, { status: 409 });

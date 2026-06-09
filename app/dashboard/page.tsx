@@ -17,7 +17,7 @@ export default async function DashboardPage({
     .from('profiles')
     .select('full_name, role, tier, prepaid_balance, credit_limit, account_type, disclaimer_v1_accepted, phone, referring_agent_id, username, is_sub_agent, is_super_agent, onboarding_completed_at')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   const role = profile?.role ?? 'researcher';
 
@@ -60,7 +60,7 @@ export default async function DashboardPage({
       .from('agent_profiles')
       .select('display_name, slug')
       .eq('id', agentId)
-      .single();
+      .maybeSingle();
     agentName = agent?.display_name ?? null;
     agentSlug = agent?.slug ?? null;
   }

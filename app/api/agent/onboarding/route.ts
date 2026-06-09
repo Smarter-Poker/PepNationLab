@@ -162,10 +162,14 @@ export async function GET() {
     if (profile.parent_agent_id) {
       const { data: par } = await service
         .from('profiles')
-        .select('full_name, username')
+        .select('full_name, first_name, last_name, username')
         .eq('id', profile.parent_agent_id)
         .maybeSingle();
-      parentName = (par?.full_name as string) ?? (par?.username as string) ?? null;
+      // Prefer full_name, but fall back to first+last (the profile refactor moved
+      // names there) and finally username, so the sub-agent explainer shows the
+      // real parent name instead of a generic placeholder when full_name is unset.
+      const composedParent = [par?.first_name, par?.last_name].filter(Boolean).join(' ').trim();
+      parentName = (par?.full_name as string) || composedParent || (par?.username as string) || null;
       const { data: parAp } = await service
         .from('agent_profiles')
         .select('slug')
@@ -355,9 +359,15 @@ export async function POST(req: NextRequest) {
     }
     // Store as a decimal fraction (50% -> 0.50) in the uncapped override column.
     const fraction = Math.round((parsed.data.markup_pct / 100) * 10000) / 10000;
+    // Atomically also mark the product tutorial acknowledged. The super-agent
+    // markup step IS the product-pricing tutorial; the client previously sent a
+    // separate ack POST after this one, so a failure of that second call left the
+    // markup saved but the step incomplete. Persisting both here closes that
+    // partial-write window (the client's follow-up ack is then idempotent).
+    const mergedProgress = { ...((profile.onboarding_progress as Record<string, unknown>) ?? {}), product_tutorial_ack: true };
     const { error } = await service
       .from('profiles')
-      .update({ custom_markup_override: fraction })
+      .update({ custom_markup_override: fraction, onboarding_progress: mergedProgress })
       .eq('id', user.id);
     if (error) return NextResponse.json({ error: 'markup_update_failed' }, { status: 500 });
     return NextResponse.json({ ok: true, markup_pct: parsed.data.markup_pct });

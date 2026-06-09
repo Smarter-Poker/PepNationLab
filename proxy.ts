@@ -253,7 +253,11 @@ export default async function proxy(request: NextRequest) {
     return redirectWithCookies(url);
   }
 
-  const mfaRequiredRoles = new Set(['super_agent']);
+  // Mandatory 2FA enforcement is DISABLED per owner decision (2026-06-09).
+  // Two-factor auth remains available for anyone who wants it via
+  // /account/security, but no role is forced to enroll. To re-enable the hard
+  // gate for a role, add it back to this set (e.g. new Set(['super_agent'])).
+  const mfaRequiredRoles = new Set<string>();
   if (profile?.role && mfaRequiredRoles.has(profile.role)) {
     const isMfaExempt =
       pathname === '/' ||
