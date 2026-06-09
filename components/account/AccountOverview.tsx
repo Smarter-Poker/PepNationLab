@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import AvatarUpload from '@/components/AvatarUpload';
@@ -101,6 +101,17 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
   const router = useRouter();
 
   const { percent: completeness, missingTasks } = useMemo(() => getCompletenessData(profile, agentProfile), [profile, agentProfile]);
+
+  const prevPercentRef = useRef(completeness);
+  useEffect(() => {
+    if (completeness === 100 && prevPercentRef.current !== 100) {
+      toast.success("Profile is 100% Completed!", { duration: 2000 });
+      if (missingTasksModalOpen) {
+        setTimeout(() => setMissingTasksModalOpen(false), 2000);
+      }
+    }
+    prevPercentRef.current = completeness;
+  }, [completeness, missingTasksModalOpen]);
 
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');

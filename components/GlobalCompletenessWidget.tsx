@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getCompletenessData } from '@/lib/profile-utils';
 import ProfileCompletenessRing from './account/ProfileCompletenessRing';
 import AvatarUpload from '@/components/AvatarUpload';
+import { toast } from 'sonner';
 
 export default function GlobalCompletenessWidget() {
   const [percent, setPercent] = useState<number | null>(null);
@@ -75,6 +76,10 @@ export default function GlobalCompletenessWidget() {
         const { percent: newP, missingTasks: newM } = getCompletenessData(nextProfile, agentProfileData);
         setPercent(newP);
         setMissingTasks(newM);
+        if (newP === 100 && percent !== 100) {
+          toast.success("Profile is 100% Completed!", { duration: 2000 });
+          setTimeout(() => setModalOpen(false), 2000);
+        }
       }
       await fetchCompleteness();
     } catch(err) {}
@@ -89,7 +94,7 @@ export default function GlobalCompletenessWidget() {
     return () => { cancelled = true; };
   }, []);
 
-  if (percent === null || percent >= 100) return null;
+  if (percent === null || (percent >= 100 && !modalOpen)) return null;
 
   return (
     <>
@@ -143,6 +148,10 @@ export default function GlobalCompletenessWidget() {
                                 const { percent: newP, missingTasks: newM } = getCompletenessData(nextProfile, agentProfileData);
                                 setPercent(newP);
                                 setMissingTasks(newM);
+                                if (newP === 100 && percent !== 100) {
+                                  toast.success("Profile is 100% Completed!", { duration: 2000 });
+                                  setTimeout(() => setModalOpen(false), 2000);
+                                }
                               }
                               await fetchCompleteness();
                             } catch(err) {}
@@ -198,6 +207,10 @@ export default function GlobalCompletenessWidget() {
                                   const { percent: newP, missingTasks: newM } = getCompletenessData(nextProfile, agentProfileData);
                                   setPercent(newP);
                                   setMissingTasks(newM);
+                                  if (newP === 100 && percent !== 100) {
+                                    toast.success("Profile is 100% Completed!", { duration: 2000 });
+                                    setTimeout(() => setModalOpen(false), 2000);
+                                  }
                                 }
                                 await fetchCompleteness();
                               } catch(err) {}
