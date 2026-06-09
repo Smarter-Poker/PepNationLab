@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<!-- CANONICAL PEPTIDE 101 COURSE PAGE. Do NOT replace, simplify, or "fix" this file. The interactive lesson engine lives in /peptide-101.app.js (v3) and /peptide-101.v4.js (v4); this file is only the static screen markup they enhance. A byte-identical backup exists at public/peptide-101.engine.html and app/peptide-101/route.ts self-heals to it if this file ever loses the engine. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peptide 101 | PepNationLab</title>
+<meta name="description" content="The Complete Beginner Guide To Research Peptides.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/peptide-101.css">
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" role="navigation" aria-label="Peptide 101 Navigation">
+  <a href="/dashboard" class="nav-back" aria-label="Back To Dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Dashboard
+  </a>
+  <div class="nav-logo">Peptide 101</div>
+  <button class="btn btn-ghost" style="padding:8px 14px;font-size:13px;min-height:40px;" onclick="openGloss()" aria-label="Open Glossary">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    Glossary
+  </button>
+</nav>
+
+<!-- PROGRESS -->
+<div class="prog-wrap no-print" role="progressbar" aria-label="Course Progress">
+  <div class="prog-steps" id="progDots" aria-hidden="true"></div>
+  <div class="prog-track">
+    <div class="prog-fill" id="progFill"></div>
+  </div>
+  <div class="prog-label" id="progLabel">0%</div>
+</div>
+
+<div class="app" id="app">
+
+<!-- DYNAMIC COURSE NAV -->
+<div class="course-nav-wrap no-print">
+  <nav class="course-nav" role="navigation" aria-label="Course Sections">
+    <button class="course-tab active" onclick="courseGo(0,this)" aria-label="Overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+      <span class="ct-label">Overview</span>
+    </button>
+    <button class="course-tab" onclick="courseGo(1,this)" aria-label="Research Roadmap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M8.5 6H14a2 2 0 0 1 2 2v2M8.5 18H14a2 2 0 0 0 2-2v-2"/></svg>
+      <span class="ct-label">Research Roadmap</span>
+    </button>
+    <button class="course-tab" onclick="courseGo(6,this)" aria-label="Peptide Families">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3c4 4 10 6 14 4M5 21c4-4 10-6 14-4M6 4c0 6 12 10 12 16M18 4c0 6-12 10-12 16"/></svg>
+      <span class="ct-label">Peptide Families</span>
+    </button>
+    <button class="course-tab" onclick="courseGo(8,this)" aria-label="Reconstitution">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M7.5 14h9"/></svg>
+      <span class="ct-label">Reconstitution</span>
+    </button>
+    <button class="course-tab" onclick="courseGo(10,this)" aria-label="Certificate">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="9" r="6"/><path d="M9 14.5 8 22l4-2.5L16 22l-1-7.5"/></svg>
+      <span class="ct-label">Certificate</span>
+    </button>
+  </nav>
+</div>
+
+<!-- =========================================================
+     SCREEN 0: INTRO
+     ========================================================= -->
+<div class="screen active" id="s0">
+  <!-- HERO -->
+  <div class="card hero-card">
+    <div class="hero-left">
+      <div class="badge badge-blue" style="margin-bottom:14px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Research Academy
+      </div>
+      <h1 class="title-metal" style="font-size:clamp(34px,7vw,58px);margin-bottom:6px;">PEPTIDE 101</h1>
+      <div class="title-sub" style="margin-bottom:16px;">RESEARCH FUNDAMENTALS</div>
+      <p style="font-size:16px;color:var(--silver);max-width:420px;">
+        The Complete Beginner Guide To Research Peptides. No Science Degree Required.
+      </p>
+      <div class="hero-tags">
+        <div class="hero-tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h6a3 3 0 0 1 3 3 3 3 0 0 1 3-3h6v13h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3H3z"/><path d="M12 8v13"/></svg>
+          Learn
+        </div>
+        <div class="hero-tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg>
+          Understand
+        </div>
+        <div class="hero-tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M7.5 14h9"/></svg>
+          Apply
+        </div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="mol-wrap" aria-hidden="true">
+        <svg viewBox="0 0 220 220" width="100%" height="100%">
+          <defs>
+            <radialGradient id="molNode" cx="40%" cy="35%" r="70%">
+              <stop offset="0%" stop-color="#cfe2ff"/><stop offset="55%" stop-color="#3f74c8"/><stop offset="100%" stop-color="#16315e"/>
+            </radialGradient>
+            <linearGradient id="molRibbon" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#9fc4ff"/><stop offset="100%" stop-color="#27508f"/>
+            </linearGradient>
+            <radialGradient id="molDisc" cx="50%" cy="38%" r="62%">
+              <stop offset="0%" stop-color="#2a3850"/><stop offset="100%" stop-color="#0a1322"/>
+            </radialGradient>
+          </defs>
+          <ellipse class="mol-base" cx="110" cy="190" rx="74" ry="15" fill="url(#molDisc)" stroke="#5a6675" stroke-width="1.5"/>
+          <ellipse cx="110" cy="190" rx="40" ry="6" fill="rgba(94,160,255,.28)"/>
+          <g class="mol-spin">
+            <path d="M70 36 C 156 58, 56 100, 152 122 C 56 144, 156 166, 82 182" fill="none" stroke="url(#molRibbon)" stroke-width="9" stroke-linecap="round" opacity=".85"/>
+            <path d="M70 36 L152 122 M156 58 L82 182 M56 100 L156 166" stroke="#3a5a8c" stroke-width="2" opacity=".45"/>
+            <circle class="mol-node mol-pulse" cx="70" cy="36" r="11" fill="url(#molNode)"/>
+            <circle class="mol-node" cx="156" cy="58" r="9" fill="url(#molNode)"/>
+            <circle class="mol-node mol-pulse" cx="56" cy="100" r="12" fill="url(#molNode)"/>
+            <circle class="mol-node" cx="152" cy="122" r="10" fill="url(#molNode)"/>
+            <circle class="mol-node mol-pulse" cx="56" cy="144" r="9" fill="url(#molNode)"/>
+            <circle class="mol-node" cx="156" cy="166" r="11" fill="url(#molNode)"/>
+            <circle class="mol-node" cx="82" cy="182" r="8" fill="url(#molNode)"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="grid3" style="margin-bottom:16px;">
+    <div class="card stat-card">
+      <div class="stat-ring">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h6a3 3 0 0 1 3 3 3 3 0 0 1 3-3h6v13h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3H3z"/><path d="M12 8v13"/></svg>
+      </div>
+      <div>
+        <div class="stat-bignum">10</div>
+        <div class="stat-cap">Research Modules</div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-ring">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3c4 4 10 6 14 4M5 21c4-4 10-6 14-4M6 4c0 6 12 10 12 16M18 4c0 6-12 10-12 16"/></svg>
+      </div>
+      <div>
+        <div class="stat-bignum">6</div>
+        <div class="stat-cap">Peptide Families</div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-ring">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="9" r="6"/><path d="M9 14.5 8 22l4-2.5L16 22l-1-7.5"/></svg>
+      </div>
+      <div>
+        <div class="stat-bignum">1</div>
+        <div class="stat-cap">Completion Certificate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- START LEARNING -->
+  <div style="text-align:center;margin:8px 0 28px;">
+    <button class="btn btn-primary btn-xl" onclick="goTo(1)" aria-label="Start Learning">
+      <span class="pill-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/></svg></span>
+      Start Learning
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-left:2px;"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+
+  <!-- WHAT YOU WILL LEARN -->
+  <div class="card">
+    <div class="section-h"><span class="title-metal">What You Will Learn</span></div>
+    <div class="learn-grid">
+      <div class="learn-card">
+        <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg></div>
+        <h4>Peptide Basics</h4>
+        <p>Understand What Peptides Are And How They Work.</p>
+      </div>
+      <div class="learn-card">
+        <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></div>
+        <h4>Mechanisms</h4>
+        <p>How Peptides Send Their Messages In The Body.</p>
+      </div>
+      <div class="learn-card">
+        <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M7.5 14h9"/></svg></div>
+        <h4>Reconstitution</h4>
+        <p>How To Turn Dry Powder Into A Liquid, Step By Step.</p>
+      </div>
+      <div class="learn-card">
+        <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div>
+        <h4>Storage</h4>
+        <p>Best Practices For Storing Peptides Safely.</p>
+      </div>
+      <div class="learn-card">
+        <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M8 11h8M8 15h6"/></svg></div>
+        <h4>Protocols</h4>
+        <p>How Scientists Use Peptides Together, And The Safety Rules.</p>
+      </div>
+      <div class="learn-card">
+        <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18"/><rect x="5" y="11" width="3" height="7" rx="1"/><rect x="10.5" y="6" width="3" height="12" rx="1"/><rect x="16" y="13" width="3" height="5" rx="1"/></svg></div>
+        <h4>Research</h4>
+        <p>What Real Studies Have Found So Far.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- COURSE MODULES ROADMAP -->
+  <div class="card">
+    <div class="roadmap-head">
+      <strong style="font-size:17px;color:#eef3f9;letter-spacing:.5px;">Course Modules</strong>
+      <span style="font-size:12px;color:var(--nk2);font-weight:600;white-space:nowrap;">0 Of 10 Modules Complete</span>
+      <div class="mini-track"><div class="mini-fill"></div></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(1)" role="button" tabindex="0" aria-label="Module 1: What Is A Peptide?">
+      <div class="rm-num">1</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg>
+      <div class="rm-title">What Is A Peptide?</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>4 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(2)" role="button" tabindex="0" aria-label="Module 2: Building A Peptide">
+      <div class="rm-num">2</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6"/><path d="M8 8a4 4 0 0 0 0 8h2"/><path d="M16 16a4 4 0 0 0 0-8h-2"/></svg>
+      <div class="rm-title">Building A Peptide</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>5 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(3)" role="button" tabindex="0" aria-label="Module 3: The Lock And Key">
+      <div class="rm-num">3</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="4"/><path d="M11 11l8 8M16 16l2-2M18 18l2-2"/></svg>
+      <div class="rm-title">The Lock And Key</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>4 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(4)" role="button" tabindex="0" aria-label="Module 4: What Peptides Are Studied For">
+      <div class="rm-num">4</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <div class="rm-title">What Peptides Are Studied For</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>5 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(5)" role="button" tabindex="0" aria-label="Module 5: Handling And Storage">
+      <div class="rm-num">5</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+      <div class="rm-title">Handling And Storage</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>6 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(6)" role="button" tabindex="0" aria-label="Module 6: Peptide Families">
+      <div class="rm-num">6</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <div class="rm-title">Peptide Families</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>8 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(7)" role="button" tabindex="0" aria-label="Module 7: Stacking And Protocols">
+      <div class="rm-num">7</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5z"/><path d="M2 12l10 5 10-5M2 17l10 5 10-5"/></svg>
+      <div class="rm-title">Stacking And Protocols</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>4 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(8)" role="button" tabindex="0" aria-label="Module 8: Reconstitution Calculator">
+      <div class="rm-num">8</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M8 14h2M12 14h2M8 18h6"/></svg>
+      <div class="rm-title">Reconstitution Calculator</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>4 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(9)" role="button" tabindex="0" aria-label="Module 9: Dosing Reference">
+      <div class="rm-num">9</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>
+      <div class="rm-title">Dosing Reference</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>3 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(10)" role="button" tabindex="0" aria-label="Module 10: Completion And Certificate" style="margin-bottom:0;">
+      <div class="rm-num">10</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="9" r="6"/><path d="M9 14.5 8 22l4-2.5L16 22l-1-7.5"/></svg>
+      <div class="rm-title">Completion And Certificate</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>2 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+  </div>
+
+  <!-- BADGES -->
+  <div class="grid2" style="margin-top:16px;">
+    <div class="dyn-badge">
+      <div class="badge-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/></svg></div>
+      <div>
+        <h4>Beginner Friendly</h4>
+        <p>No Prior Knowledge Required. We Explain Every Step.</p>
+      </div>
+    </div>
+    <div class="dyn-badge">
+      <div class="badge-ring bshield"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div>
+        <h4>Research Use Only</h4>
+        <p>For Laboratory Research Purposes Only.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESEARCH NOTICE + TOTAL TIME -->
+  <div class="grid2" style="margin-top:16px;align-items:stretch;">
+    <div class="stop-card" style="margin:0;display:flex;align-items:center;gap:13px;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" style="flex-shrink:0;"><path d="M12 3 2 20h20z"/><path d="M12 9v5M12 17h.01"/></svg>
+      <div style="font-size:13px;">
+        <strong style="color:var(--yellow);">Research Use Only:</strong> Not For Human Use. For Laboratory Research Only. Always Follow Applicable Laws And Institutional Guidelines.
+      </div>
+    </div>
+    <div class="card time-card" style="margin:0;">
+      <div class="stat-ring" style="width:48px;height:48px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      </div>
+      <div>
+        <div class="stat-cap" style="margin:0 0 2px;">Total Time To Complete</div>
+        <div class="time-big">45 Min</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-ctrl">
+    <div></div>
+    <button class="btn btn-primary" onclick="goTo(1)" aria-label="Next: Module 1">
+      <span class="pill-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/></svg></span>
+      Next: Module 1
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- =========================================================
+     SCREEN 1: OVERVIEW
+     ========================================================= -->
+<div class="screen" id="s1">
+  <div class="badge badge-teal">Module 1 - Complete Overview</div>
+  <h2 style="font-size:28px;margin-bottom:8px;">What Exactly Is A Peptide?</h2>
+  <p style="margin-bottom:24px;">A Peptide Is A Short Chain Of Amino Acids. Think Of Amino Acids As Individual Lego Bricks. A Peptide Is What You Get When You Connect 2 To 50 Of Those Bricks In A Specific Order. When Chains Grow Beyond 50, They Become Proteins.</p>
+
+  <div class="card-nickel">
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div style="text-align:center;min-width:80px;">
+        <div style="font-size:28px;font-weight:800;font-family:'Space Grotesk',sans-serif;color:var(--teal);">2-50</div>
+        <div style="font-size:11px;color:var(--muted);">Amino Acids</div>
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-top:4px;">Peptide</div>
+      </div>
+      <div style="flex:1;height:2px;background:linear-gradient(90deg,var(--teal),var(--blue));border-radius:99px;"></div>
+      <div style="text-align:center;min-width:80px;">
+        <div style="font-size:28px;font-weight:800;font-family:'Space Grotesk',sans-serif;color:var(--blue-l);">51+</div>
+        <div style="font-size:11px;color:var(--muted);">Amino Acids</div>
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-top:4px;">Protein</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:16px;margin-bottom:16px;color:var(--text);">The Three Key Properties Of Peptides</h3>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="min-width:32px;height:32px;background:rgba(0,196,188,0.12);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-top:2px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        </div>
+        <div>
+          <strong>They Send Messages</strong>
+          <p style="font-size:13px;margin-top:2px;">Think Of A Peptide Like A Tiny Text Message For Your Cells. It Tells One Exact Cell What To Do, And Nothing Else Gets The Message.</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="min-width:32px;height:32px;background:rgba(59,130,246,0.12);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-top:2px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <div>
+          <strong>They Do Not Last Long</strong>
+          <p style="font-size:13px;margin-top:2px;">Your Body Breaks Peptides Down Fast, In Hours Not Days. That Is A Good Thing. It Means Your Body Stays In Control.</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="min-width:32px;height:32px;background:rgba(138,155,176,0.12);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-top:2px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--silver)" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+        </div>
+        <div>
+          <strong>Your Body Makes Them</strong>
+          <p style="font-size:13px;margin-top:2px;">Right Now, Your Body Is Making Peptides Of Its Own. Scientists Often Just Copy The Ones Your Body Already Knows How To Use.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:16px;margin:20px 0 12px;">Peptides You Already Know</h3>
+  <div class="grid3">
+    <div class="card" style="padding:16px;">
+      <div style="font-weight:700;color:var(--teal);font-size:14px;">Insulin</div>
+      <p style="font-size:12px;margin-top:4px;">A Peptide That Controls Your Blood Sugar. It Tells Your Body To Lower Blood Sugar After You Eat.</p>
+    </div>
+    <div class="card" style="padding:16px;">
+      <div style="font-weight:700;color:var(--teal);font-size:14px;">Oxytocin</div>
+      <p style="font-size:12px;margin-top:4px;">The Bonding Peptide. Your Body Releases It During Hugs And Time With People You Love.</p>
+    </div>
+    <div class="card" style="padding:16px;">
+      <div style="font-weight:700;color:var(--teal);font-size:14px;">Endorphins</div>
+      <p style="font-size:12px;margin-top:4px;">Your Body's Feel-Good Chemicals. Released When You Laugh Or Exercise, To Help You Feel Good.</p>
+    </div>
+  </div>
+
+  <div class="stop-card" style="margin-top:20px;">
+    <strong>Research Note:</strong> The Peptides Here Are For Research Only. They Are Not Medicines. Scientists Use Them In Labs To Learn How Things Work.
+  </div>
+
+  <div class="nav-ctrl">
+    <button class="btn btn-ghost" onclick="goTo(0)" aria-label="Previous">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    </button>
+    <button class="btn btn-primary" onclick="goTo(2)" aria-label="Next: The Science">
+      Next: The Science
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- =========================================================
+     SCREEN 2: SCIENCE - CHAIN BUILDER
+     ========================================================= -->
+<div class="screen" id="s2">
+  <div class="badge badge-teal">Module 2 - The Science</div>
+  <h2 style="font-size:28px;margin-bottom:8px;">Building A Peptide</h2>
+  <p style="margin-bottom:20px;">A Peptide Is Just Building Blocks Holding Hands In A Row. Tap The Buttons Below To Add Blocks And Watch Your Chain Grow. The Little Line Between Each Pair Is The Super Glue That Holds Them Together.</p>
+
+  <div class="card" style="padding:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <strong style="font-size:14px;">Your Peptide Chain</strong>
+      <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;min-height:36px;" onclick="clearChain()" aria-label="Clear Chain">Clear</button>
+    </div>
+    <div class="chain-area" id="chainArea" aria-live="polite" aria-label="Peptide Chain Builder">
+      <span style="font-size:13px;color:var(--muted);">Add Amino Acids Below To Build Your Chain...</span>
+    </div>
+    <div id="chainInfo" style="font-size:13px;color:var(--muted);margin-bottom:12px;display:none;">
+      Chain Length: <strong id="chainLen" style="color:var(--teal);">0</strong> Amino Acids
+      <span id="chainType" style="margin-left:8px;"></span>
+    </div>
+    <div class="aa-grid" role="group" aria-label="Amino Acid Selection">
+      <button class="aa-btn" onclick="addAA('Gly','G')" aria-label="Add Glycine">Gly</button>
+      <button class="aa-btn" onclick="addAA('Ala','A')" aria-label="Add Alanine">Ala</button>
+      <button class="aa-btn" onclick="addAA('Val','V')" aria-label="Add Valine">Val</button>
+      <button class="aa-btn" onclick="addAA('Leu','L')" aria-label="Add Leucine">Leu</button>
+      <button class="aa-btn" onclick="addAA('Pro','P')" aria-label="Add Proline">Pro</button>
+      <button class="aa-btn" onclick="addAA('Ser','S')" aria-label="Add Serine">Ser</button>
+      <button class="aa-btn" onclick="addAA('Thr','T')" aria-label="Add Threonine">Thr</button>
+      <button class="aa-btn" onclick="addAA('Cys','C')" aria-label="Add Cysteine">Cys</button>
+      <button class="aa-btn" onclick="addAA('Met','M')" aria-label="Add Methionine">Met</button>
+      <button class="aa-btn" onclick="addAA('Phe','F')" aria-label="Add Phenylalanine">Phe</button>
+      <button class="aa-btn" onclick="addAA('Trp','W')" aria-label="Add Tryptophan">Trp</button>
+      <button class="aa-btn" onclick="addAA('His','H')" aria-label="Add Histidine">His</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:12px;">What Is A Peptide Bond?</h3>
+    <p style="font-size:14px;">When Two Building Blocks Connect, They Grab On Tight And A Tiny Drop Of Water Pops Out. That Strong Grip Has A Name: A Peptide Bond. It Is Like Super Glue Between Two LEGO Bricks, Hard To Pull Apart.</p>
+    <div class="callout" style="margin-top:12px;">
+      <strong>BPC-157 Example:</strong> BPC-157 Is Made Of 15 Building Blocks Linked In A Row. Every Single Link Matters. Remove One And It Stops Working.
+    </div>
+  </div>
+
+  <h3 style="font-size:16px;margin:20px 0 12px;">Peptide Vs. Protein: Size Comparison</h3>
+  <div class="svg-compare">
+    <div class="svg-compare-box">
+      <svg width="120" height="80" viewBox="0 0 120 80" aria-label="Peptide structure diagram">
+        <circle cx="20" cy="40" r="10" fill="rgba(0,196,188,0.3)" stroke="var(--teal)" stroke-width="2"/>
+        <line x1="30" y1="40" x2="40" y2="40" stroke="var(--teal)" stroke-width="2"/>
+        <circle cx="50" cy="40" r="10" fill="rgba(0,196,188,0.3)" stroke="var(--teal)" stroke-width="2"/>
+        <line x1="60" y1="40" x2="70" y2="40" stroke="var(--teal)" stroke-width="2"/>
+        <circle cx="80" cy="40" r="10" fill="rgba(0,196,188,0.3)" stroke="var(--teal)" stroke-width="2"/>
+        <line x1="90" y1="40" x2="100" y2="40" stroke="var(--teal)" stroke-width="2"/>
+        <circle cx="110" cy="40" r="8" fill="rgba(0,196,188,0.2)" stroke="var(--teal)" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <text x="15" y="44" fill="var(--text)" font-size="7" font-family="Inter,sans-serif">AA</text>
+        <text x="45" y="44" fill="var(--text)" font-size="7" font-family="Inter,sans-serif">AA</text>
+        <text x="75" y="44" fill="var(--text)" font-size="7" font-family="Inter,sans-serif">AA</text>
+      </svg>
+      <div class="svg-compare-label" style="color:var(--teal);">Peptide (2-50 AA)</div>
+      <p style="font-size:11px;color:var(--muted);margin-top:4px;">Short And Simple. Small Enough To Move Around Easily.</p>
+    </div>
+    <div class="svg-compare-box">
+      <svg width="120" height="80" viewBox="0 0 120 80" aria-label="Protein structure diagram">
+        <path d="M20,60 Q30,20 50,40 Q70,60 90,30 Q100,15 110,35" fill="none" stroke="var(--blue-l)" stroke-width="3"/>
+        <circle cx="20" cy="60" r="5" fill="var(--blue-l)" opacity="0.6"/>
+        <circle cx="50" cy="40" r="5" fill="var(--blue-l)" opacity="0.6"/>
+        <circle cx="90" cy="30" r="5" fill="var(--blue-l)" opacity="0.6"/>
+        <circle cx="110" cy="35" r="5" fill="var(--blue-l)" opacity="0.6"/>
+        <ellipse cx="65" cy="40" rx="35" ry="25" fill="none" stroke="rgba(96,165,250,0.25)" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <text x="52" y="72" fill="var(--muted)" font-size="7" font-family="Inter,sans-serif">Folded 3D</text>
+      </svg>
+      <div class="svg-compare-label" style="color:var(--blue-l);">Protein (51+ AA)</div>
+      <p style="font-size:11px;color:var(--muted);margin-top:4px;">Long And Folded Into A Big Shape. Much Bigger Than A Peptide.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <strong style="font-size:15px;">Module 2 Quiz</strong>
+    <p style="font-size:14px;margin:10px 0;">If You Connect 30 Building Blocks, What Do You Have?</p>
+    <div class="quiz-opts" role="group" aria-label="Quiz Options">
+      <button class="quiz-opt" onclick="quiz('q2',this,false)" aria-label="Option: Protein">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        Protein
+      </button>
+      <button class="quiz-opt" onclick="quiz('q2',this,true)" aria-label="Option: Peptide">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        Peptide
+      </button>
+      <button class="quiz-opt" onclick="quiz('q2',this,false)" aria-label="Option: Enzyme">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        Enzyme
+      </button>
+    </div>
+    <div class="quiz-fb" id="q2-fb"></div>
+  </div>
+
+  <div class="nav-ctrl">
+    <button class="btn btn-ghost" onclick="goTo(1)" aria-label="Back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    </button>
+    <button class="btn btn-primary" onclick="goTo(3)" aria-label="Next: How They Work">
+      Next: How They Work
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- =========================================================
+     SCREEN 3: MECHANISM
+     ========================================================= -->
+<div class="screen" id="s3">
+  <div class="badge badge-teal">Module 3 - How Peptides Work</div>
+  <h2 style="font-size:28px;margin-bottom:8px;">The Lock And Key</h2>
+  <p style="margin-bottom:20px;">Peptides Work Like Keys. Your Cells Have Tiny Locks On Them. Each Peptide Is Shaped To Fit One Special Lock. When The Right Key Slides In, The Door Opens And Something Happens Inside The Cell. Scientists Call That Lock A Receptor.</p>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:16px;text-align:center;">Interactive Demo: Binding A Peptide To Its Receptor</h3>
+    <div class="lk-arena" id="lkArena">
+      <div>
+        <div class="lk-receptor" id="lkReceptor" aria-label="Receptor Site">
+          <div style="text-align:center;padding:8px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <div style="font-size:10px;margin-top:4px;">Receptor</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px;">Cell Surface</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;" id="lkInstr">Tap The Peptide To Try Binding</div>
+        <div class="lk-peptide" id="lkPeptide" onclick="bindPeptide()" role="button" tabindex="0" aria-label="Peptide - tap to bind" onkeydown="if(event.key==='Enter'||event.key===' ')bindPeptide()">
+          <div style="text-align:center;font-size:9px;line-height:1.3;">BPC<br>157</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Peptide</div>
+      </div>
+      <div style="text-align:center;max-width:140px;">
+        <div style="font-size:13px;color:var(--muted);" id="lkEffect">Drag The Peptide Onto The Receptor To See What Happens</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;">
+      <button class="btn btn-secondary" style="font-size:13px;padding:8px 16px;min-height:40px;" onclick="resetBinding()" aria-label="Reset Demo">Reset</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:12px;">What Happens After Binding?</h3>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
+        <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">1</div>
+        <p style="font-size:13px;margin:0;">The Peptide Key Slides Into Its Matching Lock</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
+        <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">2</div>
+        <p style="font-size:13px;margin:0;">The Lock Changes Shape And Opens</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
+        <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">3</div>
+        <p style="font-size:13px;margin:0;">A Signal Travels Inside The Cell</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
+        <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">4</div>
+        <p style="font-size:13px;margin:0;">The Cell Does Something New</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <strong style="font-size:15px;">Module 3 Quiz</strong>
+    <p style="font-size:14px;margin:10px 0;">A Peptide Can Only Work If...</p>
+    <div class="quiz-opts" role="group" aria-label="Quiz Options">
+      <button class="quiz-opt" onclick="quiz('q3',this,false)" aria-label="Option: It is very large">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        It Is Very Large
+      </button>
+      <button class="quiz-opt" onclick="quiz('q3',this,true)" aria-label="Option: Its shape matches the receptor">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        Its Shape Matches The Lock
+      </button>
+      <button class="quiz-opt" onclick="quiz('q3',this,false)" aria-label="Option: It has a positive charge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        It Is A Certain Color
+      </button>
+    </div>
+    <div class="quiz-fb" id="q3-fb"></div>
+  </div>
+
+  <div class="nav-ctrl">
+    <button class="btn btn-ghost" onclick="goTo(2)" aria-label="Back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    </button>
+    <button class="btn btn-primary" onclick="goTo(4)" aria-label="Next: Use Cases">
+      Next: Use Cases
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- =========================================================
+     SCREEN 4: USE CASES
+     ========================================================= -->
+<div class="screen" id="s4">
+  <div class="badge badge-teal">Module 4 - Use Cases</div>
+  <h2 style="font-size:28px;margin-bottom:8px;">What Peptides Are Studied For</h2>
+  <p style="margin-bottom:20px;">Scientists Study Peptides Because They Might Help With Lots Of Things. Here Are The Main Areas They Are Curious About.</p>
+
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(0,196,188,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </div>
+      <div>
+        <strong style="font-size:15px;">Helping Wounds Heal</strong>
+        <p style="font-size:13px;margin-top:4px;">Some Peptides Might Help The Body Fix Cuts, Scrapes, And Sore Spots Faster. Scientists Are Still Learning Exactly How.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">BPC-157</span>
+          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">TB-500</span>
+          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">GHK-Cu</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(59,130,246,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      </div>
+      <div>
+        <strong style="font-size:15px;">Building Muscle And Growth</strong>
+        <p style="font-size:13px;margin-top:4px;">Some Peptides Nudge The Body To Make More Of Its Own Growth Signals. Scientists Study How That Affects Muscle And Body Shape.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Sermorelin</span>
+          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">CJC-1295</span>
+          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">Ipamorelin</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(138,155,176,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--silver)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      </div>
+      <div>
+        <strong style="font-size:15px;">Energy And Weight</strong>
+        <p style="font-size:13px;margin-top:4px;">Some Peptides Help The Body Use Fat For Energy. Scientists Study Whether They Help Manage Weight.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">AOD-9604</span>
+          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">CJC-1295</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(0,196,188,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </div>
+      <div>
+        <strong style="font-size:15px;">Sleep And The Brain</strong>
+        <p style="font-size:13px;margin-top:4px;">Some Peptides Are Studied For Better Sleep. Sleep Is When A Lot Of The Body's Repair Happens.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Sermorelin</span>
+          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Ipamorelin</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(59,130,246,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div>
+        <strong style="font-size:15px;">Skin And Other Signals</strong>
+        <p style="font-size:13px;margin-top:4px;">Some Peptides Affect Things Like Skin Color And Certain Brain And Body Signals. Scientists Are Exploring How.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">PT-141</span>
+          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Melanotan II</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <strong style="font-size:15px;">Module 4 Quiz</strong>
+    <p style="font-size:14px;margin:10px 0;">Which Peptide Is Studied For Growth And Building Muscle?</p>
+    <div class="quiz-opts" role="group" aria-label="Quiz Options">
+      <button class="quiz-opt" onclick="quiz('q4',this,false)" aria-label="Option: BPC-157">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        BPC-157
+      </button>
+      <button class="quiz-opt" onclick="quiz('q4',this,false)" aria-label="Option: TB-500">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        TB-500
+      </button>
+      <button class="quiz-opt" onclick="quiz('q4',this,true)" aria-label="Option: Ipamorelin">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        Ipamorelin
+      </button>
+    </div>
+    <div class="quiz-fb" id="q4-fb"></div>
+  </div>
+
+  <div class="nav-ctrl">
+    <button class="btn btn-ghost" onclick="goTo(3)" aria-label="Back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    </button>
+    <button class="btn btn-primary" onclick="goTo(5)" aria-label="Next: Practical Basics">
+      Next: Practical Basics
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- =========================================================
+     SCREEN 5: PRACTICAL BASICS
+     ========================================================= -->
+<div class="screen" id="s5">
+  <div class="badge badge-teal">Module 5 - Practical Basics</div>
+  <h2 style="font-size:28px;margin-bottom:8px;">Handling And Storage</h2>
+  <p style="margin-bottom:20px;">Peptides Are Fragile, A Bit Like A Snowflake. Heat, Light, Water, And Freezing Them Over And Over Can Break Them. So You Have To Keep Them Comfortable.</p>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:16px;">Half-Life Explorer</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Tap A Peptide To See How Long It Lasts In The Body Before It Breaks Down:</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      <button class="btn btn-secondary" style="font-size:13px;padding:8px 14px;min-height:40px;" onclick="showHL('BPC-157',4,'#00C4BC')" aria-label="Show BPC-157 half-life">BPC-157</button>
+      <button class="btn btn-secondary" style="font-size:13px;padding:8px 14px;min-height:40px;" onclick="showHL('TB-500',72,'#3B82F6')" aria-label="Show TB-500 half-life">TB-500</button>
+      <button class="btn btn-secondary" style="font-size:13px;padding:8px 14px;min-height:40px;" onclick="showHL('Sermorelin',0.25,'#D0DAE4')" aria-label="Show Sermorelin half-life">Sermorelin</button>
+      <button class="btn btn-secondary" style="font-size:13px;padding:8px 14px;min-height:40px;" onclick="showHL('Ipamorelin',2,'#8A9BB0')" aria-label="Show Ipamorelin half-life">Ipamorelin</button>
+      <button class="btn btn-secondary" style="font-size:13px;padding:8px 14px;min-height:40px;" onclick="showHL('CJC-1295 (DAC)',192,'#60A5FA')" aria-label="Show CJC-1295 half-life">CJC-1295 (DAC)</button>
+    </div>
+    <div id="hlResult" style="display:none;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;">
+        <strong id="hlName"></strong>
+        <span id="hlTime" style="color:var(--teal);font-weight:700;"></span>
+      </div>
+      <div class="hl-bar-wrap">
+        <div class="hl-bar" id="hlBar" style="width:0%;"></div>
+      </div>
+      <p id="hlNote" style="font-size:12px;margin-top:8px;"></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:16px;">Storage Guide</h3>
+    <div class="tabs" role="tablist" aria-label="Storage Tabs">
+      <button class="tab active" onclick="switchTab('dry')" role="tab" aria-selected="true" aria-controls="tab-dry" id="tab-btn-dry">Dry Storage (Lyophilized)</button>
+      <button class="tab" onclick="switchTab('recon')" role="tab" aria-selected="false" aria-controls="tab-recon" id="tab-btn-recon">After Reconstitution</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-dry" role="tabpanel" aria-labelledby="tab-btn-dry">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+          <div><strong style="font-size:13px;">Temperature: 36-46 Degrees F (Refrigerator)</strong><p style="font-size:12px;margin-top:2px;">Dry Peptides Stay Good For 3-6 Months In The Fridge. Need Longer? Put Them In The Freezer.</p></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+          <div><strong style="font-size:13px;">Light: Keep In Original Dark Vial</strong><p style="font-size:12px;margin-top:2px;">Bright Light Slowly Breaks Peptides Apart. Keep Them In A Dark Bottle, Out Of The Light.</p></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+          <div><strong style="font-size:13px;">Moisture: Keep Dry Before Reconstitution</strong><p style="font-size:12px;margin-top:2px;">Dry Peptides Stay Safe As Long As They Stay Dry. Do Not Open Them In Steamy, Humid Air.</p></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <div><strong style="font-size:13px;">Freeze-Thaw: Minimize Cycles</strong><p style="font-size:12px;margin-top:2px;">Freezing And Thawing Over And Over Slowly Damages Peptides. Split Them Into Small One-Time Portions So You Never Thaw The Same Batch Twice.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-recon" role="tabpanel" aria-labelledby="tab-btn-recon">
+      <div class="callout callout-red" style="margin-bottom:16px;">
+        <strong style="color:var(--red);">Important:</strong> Once You Add Water To A Peptide, It Becomes Much More Fragile. Liquid Peptides Do Not Last Nearly As Long As Dry Powder.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+          <div><strong style="font-size:13px;">Temperature: 36-46 Degrees F Always</strong><p style="font-size:12px;margin-top:2px;">Liquid Peptides Must Stay In The Fridge. Do Not Leave Them Out For More Than About Half An Hour.</p></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <div><strong style="font-size:13px;">Use Window: 28-30 Days Maximum</strong><p style="font-size:12px;margin-top:2px;">In The Fridge With Special BAC Water, A Liquid Peptide Lasts About 4 Weeks. With Plain Sterile Water, Only A Day Or Two.</p></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <div><strong style="font-size:13px;">Do Not Freeze After Reconstitution</strong><p style="font-size:12px;margin-top:2px;">Freezing A Liquid Peptide Makes Sharp Ice Crystals That Tear It Apart. For Long Storage, Keep It As Dry Powder And Only Mix What You Need.</p></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+          <div><strong style="font-size:13px;">Light Sensitivity Increases After Reconstitution</strong><p style="font-size:12px;margin-top:2px;">Liquid Peptides Are Even More Sensitive To Light Than Dry Ones. Keep The Bottle Wrapped Up Or In A Drawer.</p></div>
+        </div>
+      </div>
+      <div class="callout" style="margin-top:16px;">
+        <strong>BAC Water Vs. Sterile Water:</strong> BAC Water Has A Tiny Bit Of Alcohol In It That Stops Germs From Growing. That Is Why It Keeps Peptides Good For About 4 Weeks, While Plain Water Only Lasts A Day Or Two.
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-ctrl">
+    <button class="btn btn-ghost" onclick="goTo(4)" aria-label="Back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    </button>
+    <button class="btn btn-primary" onclick="goTo(6)" aria-label="Next: Peptide Families">
+      Next: Peptide Families
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- =========================================================
+     SCREEN 6: PEPTIDE FAMILIES AND CATEGORIES
+     ========================================================= -->
+<div class="screen" id="s6">
+  <div class="badge badge-teal">Module 6 - Peptide Families</div>
+  <h2 style="font-size:28px;margin-bottom:8px;">Peptide Families And Categories</h2>
+  <p style="margin-bottom:20px;">Just Like Your Family Has Cousins And Siblings, Peptides Have Families Too. Each Family Does A Different Kind Of Job In The Body.</p>
+
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(0,196,188,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </div>
+      <div>
+        <strong style="font-size:15px;">Tissue And Recovery Peptides</strong>
+        <p style="font-size:13px;margin-top:4px;">This Family Helps The Body Heal And Repair Itself, Things Like Skin, Muscle, And Tendons.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">BPC-157</span>
+          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">TB-500</span>
+          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">GHK-Cu</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(59,130,246,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      </div>
+      <div>
+        <strong style="font-size:15px;">Growth Hormone Axis Peptides</strong>
+        <p style="font-size:13px;margin-top:4px;">This Family Tells The Body To Grow And Build, By Nudging It To Make More Of Its Own Growth Signals.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Sermorelin</span>
+          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">CJC-1295</span>
+          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">Ipamorelin</span>
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">GHRP-6</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(138,155,176,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--silver)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div>
+        <strong style="font-size:15px;">Melanocortin System Peptides</strong>
+        <p style="font-size:13px;margin-top:4px;">This Family Affects Things Like Skin Color And Certain Brain And Body Signals.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">PT-141</span>
+          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Melanotan II</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(0,196,188,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      </div>
+      <div>
+        <strong style="font-size:15px;">Metabolic And Fat Regulation Peptides</strong>
+        <p style="font-size:13px;margin-top:4px;">This Family Helps The Body Use Energy And Manage Fat, Without Telling The Body To Grow.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">AOD-9604</span>
+          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">Fragment 176-191</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(59,130,246,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+      </div>
+      <div>
+        <strong style="font-size:15px;">Skin, Collagen And Anti-Aging Peptides</strong>
+        <p style="font-size:13px;margin-top:4px;">This Family Is Studied For Healthier, Bouncier Skin And For Slowing Down Signs Of Aging.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">GHK-Cu</span>
+          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">Epithalon</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(138,155,176,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--silver)" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <div>
+        <strong style="font-size:15px;">Cognitive And Nootropic Peptides</strong>
+        <p style="font-size:13px;margin-top:4px;">This Family Is Studied For Focus, Memory, And Feeling Calm.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Selank</span>
+          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Semax</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-ctrl">
+    <button class="btn btn-ghost" onclick="goTo(5)" aria-label="Back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    </button>
+    <button class="btn btn-primary" onclick="goTo(7)" aria-label="Next: Stacking And Protocols">
+      Next: Stacking And Protocols
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- =========================================================
+     SCREEN 7: STACKING AND PROTOCOLS
+     ========================================================= -->
+<div class="screen" id="s7">
+  <div class="badge badge-teal">Module 7 - Stacking And Protocols</div>
+  <h2 style="font-size:28px;margin-bottom:8px;">Stacking And Research Protocols</h2>
+  <p style="margin-bottom:20px;">Stacking Means Using More Than One Peptide At The Same Time. Like Mixing LEGO Colors, Each One Does A Different Job, And Together They Can Work Better Than Either One Alone.</p>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:16px;">Why Researchers Stack</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="padding:10px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--teal);">
+        <strong style="font-size:13px;">Complementary Pathways</strong>
+        <p style="font-size:12px;margin-top:4px;">Two Peptides Can Push The Same Goal Through Two Different Doors At Once. Using Both Gives A Bigger Result Than Either One Alone.</p>
+      </div>
+      <div style="padding:10px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--blue-l);">
+        <strong style="font-size:13px;">Sequential Mechanisms</strong>
+        <p style="font-size:12px;margin-top:4px;">One Peptide Works Right Where You Put It, While Another Travels All Over The Body. Together They Cover Both The Spot And The Whole System.</p>
+      </div>
+      <div style="padding:10px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--silver);">
+        <strong style="font-size:13px;">Timing Optimization</strong>
+        <p style="font-size:12px;margin-top:4px;">Some Peptides Are Quick And Are Used Right Before Sleep. Others Last For Days And Are Used Just Once A Week. Timing Them Right Makes A Difference.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:16px;text-align:center;">Visual Protocol Diagram</h3>
+    <p style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:16px;">GH Axis Stack: CJC-1295 + Ipamorelin</p>
+    <div style="overflow-x:auto;">
+      <svg width="100%" viewBox="0 0 380 200" xmlns="http://www.w3.org/2000/svg" aria-label="Stacking protocol diagram showing CJC-1295 and Ipamorelin pathways converging on the pituitary to release GH">
+        <rect x="10" y="30" width="110" height="40" rx="8" fill="#162230" stroke="#00C4BC" stroke-width="1.5"/>
+        <text x="65" y="46" fill="#00C4BC" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">GHRH Receptor</text>
+        <text x="65" y="59" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">CJC-1295 Binds Here</text>
+        <rect x="10" y="130" width="110" height="40" rx="8" fill="#162230" stroke="#3B82F6" stroke-width="1.5"/>
+        <text x="65" y="146" fill="#3B82F6" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">GHS-R1a Receptor</text>
+        <text x="65" y="159" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Ipamorelin Binds Here</text>
+        <rect x="140" y="75" width="100" height="50" rx="8" fill="#1D2D3E" stroke="rgba(0,196,188,0.3)" stroke-width="1.5"/>
+        <text x="190" y="97" fill="#FFFFFF" font-size="10" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600">Pituitary</text>
+        <text x="190" y="112" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Somatotroph Cells</text>
+        <path d="M120,50 Q130,50 140,100" fill="none" stroke="#00C4BC" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <polygon points="136,97 144,102 140,106" fill="#00C4BC"/>
+        <path d="M120,150 Q130,150 140,110" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <polygon points="136,113 144,108 140,104" fill="#3B82F6"/>
+        <rect x="260" y="75" width="110" height="50" rx="8" fill="#162230" stroke="rgba(208,218,228,0.4)" stroke-width="1.5"/>
+        <text x="315" y="97" fill="#D0DAE4" font-size="10" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600">GH Release</text>
+        <text x="315" y="112" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Synergistic Pulse</text>
+        <line x1="240" y1="100" x2="258" y2="100" stroke="#D0DAE4" stroke-width="1.5"/>
+        <polygon points="255,96 262,100 255,104" fill="#D0DAE4"/>
+        <rect x="10" y="0" width="110" height="18" rx="4" fill="rgba(0,196,188,0.15)" stroke="rgba(0,196,188,0.3)" stroke-width="1"/>
+        <text x="65" y="13" fill="#00C4BC" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">CJC-1295 (GHRH Analogue)</text>
+        <rect x="10" y="180" width="110" height="18" rx="4" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.3)" stroke-width="1"/>
+        <text x="65" y="193" fill="#60A5FA" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">Ipamorelin (Ghrelin Mimetic)</text>
+        <line x1="65" y1="18" x2="65" y2="30" stroke="rgba(0,196,188,0.5)" stroke-width="1"/>
+        <line x1="65" y1="170" x2="65" y2="180" stroke="rgba(59,130,246,0.5)" stroke-width="1"/>
+      </svg>
+    </div>
+    <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px;">Two Different Locks, One Bigger Result.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:16px;">Common Research Protocol Frameworks</h3>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="padding:12px;background:var(--surface2);border-radius:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <strong style="font-size:14px;">GH Axis Protocol</strong>
+          <span style="font-size:11px;padding:3px 8px;background:rgba(0,196,188,0.1);border-radius:6px;color:var(--teal);">Most Common Stack</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <span style="font-size:12px;padding:4px 10px;background:rgba(0,196,188,0.12);border-radius:6px;color:var(--teal);">CJC-1295 DAC</span>
+          <span style="font-size:14px;color:var(--muted);">+</span>
+          <span style="font-size:12px;padding:4px 10px;background:rgba(59,130,246,0.12);border-radius:6px;color:var(--blue-l);">Ipamorelin</span>
+        </div>
+        <p style="font-size:12px;color:var(--muted);">One Peptide Is Used Once Or Twice A Week. The Other Is Used Each Night Before Sleep. Together They Boost The Body's Natural Nighttime Growth Signal.</p>
+      </div>
+      <div style="padding:12px;background:var(--surface2);border-radius:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <strong style="font-size:14px;">Tissue Research Protocol</strong>
+          <span style="font-size:11px;padding:3px 8px;background:rgba(59,130,246,0.1);border-radius:6px;color:var(--blue-l);">Targeted Stack</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <span style="font-size:12px;padding:4px 10px;background:rgba(0,196,188,0.12);border-radius:6px;color:var(--teal);">BPC-157</span>
+          <span style="font-size:14px;color:var(--muted);">+</span>
+          <span style="font-size:12px;padding:4px 10px;background:rgba(59,130,246,0.12);border-radius:6px;color:var(--blue-l);">TB-500</span>
+        </div>
+        <p style="font-size:12px;color:var(--muted);">One Peptide Works Right At The Sore Spot. The Other Spreads Through The Whole Body. Together They Cover Both The Spot And Everything Around It.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-red">
+    <strong style="color:var(--red);">Research Context Only:</strong> Everything Here Describes What Scientists Do In Labs And Studies. None Of It Is Approved Medicine, And It Is Not Advice For People. This Is For Research Only.
+  </div>
+
+  <div class="nav-ctrl">
+    <button class="btn btn-ghost" onclick="goTo(6)" aria-label="Back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    </button>
+    <button class="btn btn-primary" onclick="goTo(8)" aria-label="Next: Reconstitution Calculator">
+      Next: Reconstitution Calculator
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- =========================================================
+     SCREEN 8: RECONSTITUTION CALCULATOR
+     ========================================================= -->
+<div class="screen" id="s8">
+  <div class="badge badge-teal">Module 8 - Reconstitution Calculator</div>
+  <h2 style="font-size:28px;margin-bottom:8px;">Reconstitution Calculator</h2>
+  <p style="margin-bottom:20px;">Most Peptides Come As Dry Powder. To Use Them, You Add Special Water To Turn Them Into A Liquid. This Is Called Reconstitution, Which Just Means Make It Liquid Again. Getting The Strength Right Matters.</p>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:4px;">What Is Reconstitution?</h3>
+    <p style="font-size:13px;margin-bottom:16px;">Dry Powder Comes Sealed In A Little Bottle. You Add Water To Dissolve It. How Much Water You Add Decides How Strong Or Weak The Liquid Turns Out.</p>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <div style="flex:1;padding:10px;background:var(--surface2);border-radius:10px;text-align:center;">
+        <div style="font-size:22px;font-weight:800;color:var(--teal);">5mg</div>
+        <div style="font-size:11px;color:var(--muted);">Vial Powder</div>
+      </div>
+      <div style="display:flex;align-items:center;font-size:20px;color:var(--muted);">+</div>
+      <div style="flex:1;padding:10px;background:var(--surface2);border-radius:10px;text-align:center;">
+        <div style="font-size:22px;font-weight:800;color:var(--blue-l);">2mL</div>
+        <div style="font-size:11px;color:var(--muted);">BAC Water</div>
+      </div>
+      <div style="display:flex;align-items:center;font-size:20px;color:var(--muted);">=</div>
+      <div style="flex:1;padding:10px;background:var(--surface2);border-radius:10px;text-align:center;">
+        <div style="font-size:22px;font-weight:800;color:var(--silver);">2500</div>
+        <div style="font-size:11px;color:var(--muted);">mcg/mL</div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);">Formula: (Vial mg * 1000) / Target Concentration mcg/mL = mL Of Water To Add.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:16px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-right:6px;vertical-align:-3px;"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/></svg>
+      Interactive Calculator
+    </h3>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div>
+        <label style="font-size:13px;display:block;margin-bottom:6px;" for="calcVial">Vial Size (mg)</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <button class="calc-preset" onclick="setPreset(2)" aria-label="Set 2mg vial">2 mg</button>
+          <button class="calc-preset" onclick="setPreset(5)" aria-label="Set 5mg vial">5 mg</button>
+          <button class="calc-preset" onclick="setPreset(10)" aria-label="Set 10mg vial">10 mg</button>
+        </div>
+        <input type="number" id="calcVial" min="0.5" max="100" step="0.5" value="5" class="calc-input" oninput="calcRecon()" aria-label="Vial size in milligrams"/>
+      </div>
+      <div>
+        <label style="font-size:13px;display:block;margin-bottom:6px;" for="calcConc">Target Concentration (mcg/mL)</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <button class="calc-preset" onclick="setConc(500)" aria-label="Set 500 mcg/mL">500</button>
+          <button class="calc-preset" onclick="setConc(1000)" aria-label="Set 1000 mcg/mL">1000</button>
+          <button class="calc-preset" onclick="setConc(2000)" aria-label="Set 2000 mcg/mL">2000</button>
+          <button class="calc-preset" onclick="setConc(2500)" aria-label="Set 2500 mcg/mL">2500</button>
+        </div>
+        <input type="number" id="calcConc" min="100" max="10000" step="100" value="1000" class="calc-input" oninput="calcRecon()" aria-label="Target concentration in micrograms per milliliter"/>
+      </div>
+      <div id="calcResult" style="padding:16px;background:linear-gradient(135deg,rgba(0,196,188,0.12),rgba(59,130,246,0.08));border:1px solid rgba(0,196,188,0.3);border-radius:12px;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Add This Much BAC Water:</div>
+        <div style="font-size:36px;font-weight:800;color:var(--teal);" id="calcWater">5.00 mL</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px;" id="calcSummary">5 mg Vial + 5.00 mL BAC Water = 1000 mcg/mL Solution</div>
+      </div>
+      <div id="calcDoseTable" style="display:none;">
+        <h4 style="font-size:13px;margin-bottom:10px;">Drawing Table For This Concentration</h4>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;" aria-label="Dose to volume reference table">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="padding:8px;text-align:left;color:var(--muted);">Dose</th>
+                <th style="padding:8px;text-align:right;color:var(--muted);">Volume</th>
+                <th style="padding:8px;text-align:right;color:var(--muted);">100-Unit Syringe</th>
+              </tr>
+            </thead>
+            <tbody id="calcTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:12px;">Reconstitution Technique</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
+        <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">1</div>
+        <p style="font-size:12px;margin:0;">Let The Powder Bottle And The Water Warm Up To Room Temperature First.</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
+        <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">2</div>
+        <p style="font-size:12px;margin:0;">Wipe The Bottle Top With An Alcohol Pad And Let It Dry. This Keeps Germs Out.</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
+        <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">3</div>
+        <p style="font-size:12px;margin:0;">Add The Water Slowly, Letting It Run Down The Side Of The Glass, Not Straight Onto The Powder.</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
+        <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">4</div>
+        <p style="font-size:12px;margin:0;">Gently Swirl Until It Looks Clear. Do Not Shake Hard. Shaking Makes Bubbles That Can Damage It, Like Shaking A Soda Can.</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
+        <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">5</div>
+        <p style="font-size:12px;margin:0;">Label It With The Name And Date, Then Put It Straight In The Fridge. Use It Within About 4 Weeks.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-ctrl">
+    <button class="btn btn-ghost" onclick="goTo(7)" aria-label="Back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    </button>
+    <button class="btn btn-primary" onclick="goTo(9)" aria-label="Next: Dosing Reference Table">
+      Next: Dosing Reference Table
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- =========================================================
+     SCREEN 9: DOSING REFERENCE TABLE
+     ========================================================= -->
+<div class="screen" id="s9">
+  <div class="badge badge-teal">Module 9 - Dosing Reference</div>
+  <h2 style="font-size:28px;margin-bottom:8px;">Dosing Reference Table</h2>
+  <p style="margin-bottom:20px;">Different Peptides Need Different Amounts. The Dose Is Just How Much You Use. This Table Shows The Amounts Scientists Use In Studies. Tap Any Heading To Sort It.</p>
+
+  <div class="callout callout-red" style="margin-bottom:16px;">
+    <strong style="color:var(--red);">Research Use Only:</strong> These Numbers Come From Lab And Early Studies. They Are Not Instructions For People, And None Of These Are Approved Medicines.
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);">
+      <input type="text" id="doseSearch" class="calc-input" placeholder="Filter By Peptide Name..." oninput="filterDose()" aria-label="Filter dosing table" style="margin-bottom:0;"/>
+    </div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;" id="doseTable" aria-label="Peptide dosing reference table">
+        <thead>
+          <tr style="background:var(--surface2);">
+            <th class="sort-th" onclick="sortDose(0)" style="padding:12px 16px;text-align:left;cursor:pointer;white-space:nowrap;" aria-sort="none">Peptide <span class="sort-arrow">&#8597;</span></th>
+            <th class="sort-th" onclick="sortDose(1)" style="padding:12px 16px;text-align:left;cursor:pointer;white-space:nowrap;" aria-sort="none">Dose Range <span class="sort-arrow">&#8597;</span></th>
+            <th class="sort-th" onclick="sortDose(2)" style="padding:12px 16px;text-align:left;cursor:pointer;white-space:nowrap;" aria-sort="none">Frequency <span class="sort-arrow">&#8597;</span></th>
+            <th class="sort-th" onclick="sortDose(3)" style="padding:12px 16px;text-align:left;cursor:pointer;white-space:nowrap;" aria-sort="none">Half-Life <span class="sort-arrow">&#8597;</span></th>
+            <th class="sort-th" onclick="sortDose(4)" style="padding:12px 16px;text-align:left;cursor:pointer;white-space:nowrap;" aria-sort="none">Route <span class="sort-arrow">&#8597;</span></th>
+          </tr>
+        </thead>
+        <tbody id="doseTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:12px;">Route Abbreviations</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      <div style="padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:12px;"><strong>Sub-Q:</strong> Subcutaneous (Under The Skin)</div>
+      <div style="padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:12px;"><strong>IM:</strong> Intramuscular (Into Muscle)</div>
+      <div style="padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:12px;"><strong>Intranasal:</strong> Via Nasal Spray</div>
+    </div>
+  </div>
+
+  <div class="nav-ctrl">
+    <button class="btn btn-ghost" onclick="goTo(8)" aria-label="Back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    </button>
+    <button class="btn btn-primary" onclick="goTo(10)" aria-label="Next: Complete The Course">
+      Complete The Course
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- =========================================================
+     SCREEN 10: COMPLETION
+     ========================================================= -->
+<div class="screen" id="s10">
+  <div style="text-align:center;padding:20px 0;">
+    <div style="width:80px;height:80px;background:linear-gradient(135deg,var(--teal),var(--blue));border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <h2 style="font-size:32px;margin-bottom:8px;">Course Complete</h2>
+    <p style="color:var(--muted);font-size:15px;">You Finished Peptide 101. You Now Know More About Peptides Than Most People.</p>
+  </div>
+
+  <div id="certBlock" class="card" style="text-align:center;">
+    <div style="border:2px solid var(--teal);border-radius:14px;padding:24px;background:linear-gradient(135deg,rgba(0,196,188,0.06),rgba(59,130,246,0.06));">
+      <div style="font-size:11px;letter-spacing:3px;color:var(--muted);margin-bottom:8px;">CERTIFICATE OF COMPLETION</div>
+      <h3 style="font-size:22px;margin-bottom:4px;">Peptide 101</h3>
+      <p style="font-size:14px;color:var(--muted);margin-bottom:4px;">Foundations Of Peptide Research</p>
+      <div style="width:60px;height:2px;background:linear-gradient(90deg,var(--teal),var(--blue));margin:12px auto;"></div>
+      <p style="font-size:13px;color:var(--silver);">This Certifies The Completion Of All 10 Modules Covering Peptide Biology, Mechanisms Of Action, Peptide Family Categories, Stacking Frameworks, Reconstitution Techniques, And Dosing Reference.</p>
+      <div style="margin-top:16px;font-size:12px;color:var(--muted);" id="certDate"></div>
+      <div style="margin-top:4px;font-size:11px;color:rgba(168,180,192,0.6);">PepNationLab - Research Education Division</div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%;" onclick="printCert()" aria-label="Print Certificate">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print Certificate
+    </button>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:12px;">Share Your Achievement</h3>
+    <div style="background:var(--surface2);border-radius:10px;padding:14px;font-size:13px;color:var(--silver);font-family:monospace;line-height:1.6;user-select:all;" id="shareText">
+      I Completed Peptide 101 - Foundations Of Peptide Research On PepNationLab. 10 Modules Covering Peptide Biology, Mechanisms Of Action, The GH Axis, Reconstitution Techniques, And Peptide Family Categories. #PepNationLab #PeptideResearch #ResearchEducation
+    </div>
+    <button class="btn btn-secondary" style="margin-top:12px;width:100%;" onclick="copyShare()" aria-label="Copy Share Text" id="copyBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy To Clipboard
+    </button>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:12px;">Modules Completed</h3>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 1: What Is A Peptide?</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 2: The Science Behind Peptides</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 3: How Peptides Work</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 4: Use Cases</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 5: Practical Basics And Storage</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 6: Peptide Families And Categories</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 7: Stacking And Protocols</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 8: Reconstitution Calculator</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;"><span>Module 9: Dosing Reference Table</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+    </div>
+  </div>
+
+  <button class="btn btn-ghost" style="width:100%;margin-top:4px;" onclick="goTo(0)" aria-label="Restart Course">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
+    Restart Course
+  </button>
+</div>
+
+<!-- GLOSSARY MODAL -->
+<div id="glossaryModal" role="dialog" aria-modal="true" aria-labelledby="glossaryTitle" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(5,10,15,0.92);overflow-y:auto;">
+  <div style="max-width:600px;margin:40px auto;padding:20px;padding-bottom:60px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h2 id="glossaryTitle" style="font-size:20px;">Peptide Glossary</h2>
+      <button onclick="closeGlossary()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:8px;min-height:48px;min-width:48px;display:flex;align-items:center;justify-content:center;" aria-label="Close Glossary">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <input type="text" id="glossarySearch" class="calc-input" placeholder="Search Terms..." oninput="filterGlossary()" aria-label="Search Glossary" style="margin-bottom:16px;"/>
+    <div id="glossaryList"></div>
+    <button id="glossaryFocusTrap" style="opacity:0;pointer-events:none;width:1px;height:1px;position:absolute;" aria-hidden="true" tabindex="-1"></button>
+  </div>
+</div>
+
+<style>
+@media print {
+  body * { visibility: hidden; }
+  #certBlock, #certBlock * { visibility: visible; }
+  #certBlock { position: fixed; top: 0; left: 0; width: 100%; padding: 40px; }
+  nav, .progress-wrap, .nav-ctrl, button { display: none !important; }
+}
+</style>
+
+<script src="/peptide-101.app.js"></script>
+<script src="/peptide-101.v4.js"></script>
+</div><!-- end app -->
+</body>
+</html>
