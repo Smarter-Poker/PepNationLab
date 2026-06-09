@@ -13,6 +13,7 @@ import ReorderStackButton from './ReorderStackButton';
 import ChangePaymentMethod from '@/components/ChangePaymentMethod';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import HelpHint from '@/components/help/HelpHint';
+import { getPopularName } from '@/lib/peptide-popular-names';
 
 // R28: map order status → matching FAQ id so the contextual help pill lands
 // the buyer on the exact answer for their state (not the FAQ root). Every id
@@ -532,7 +533,7 @@ export default async function OrderDetailPage(
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,229,255,0.1)', paddingBottom: 8, marginBottom: 4 }}>
                           <div>
                             <h4 style={{ fontSize: '0.95rem', margin: 0, fontFamily: 'var(--font-brand)', color: '#00E5FF', display: 'flex', alignItems: 'center', gap: 6 }}>
-                              📦 {group.name}
+                              {group.name}
                             </h4>
                             <div style={{ fontSize: '0.65rem', color: '#68D391', marginTop: 2, fontWeight: 700 }}>Stack Discount (10% Off) Included</div>
                             <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', marginTop: 4, fontStyle: 'italic', maxWidth: '90%' }}>
@@ -551,6 +552,11 @@ export default async function OrderDetailPage(
                             <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 8, paddingTop: 4 }}>
                               <div>
                                 <div style={{ fontSize: '0.88rem', color: 'var(--silver-light)', fontWeight: 600 }}>↳ {cleanName}</div>
+                                {getPopularName(cleanName) && (
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--teal)', fontStyle: 'italic', fontWeight: 500, marginTop: 2 }}>
+                                    {getPopularName(cleanName)}
+                                  </div>
+                                )}
                                 <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 2 }}>
                                   Quantity: <span style={{ color: 'var(--teal)' }}>{item.quantity}</span>
                                   {' / '}Unit: ${num(item.unit_retail_price).toFixed(2)}
@@ -578,6 +584,11 @@ export default async function OrderDetailPage(
                     >
                       <div>
                         <div style={{ fontSize: '0.92rem', color: 'var(--silver)', fontWeight: 600 }}>{item.product_name}</div>
+                        {getPopularName(item.product_name) && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--teal)', fontStyle: 'italic', fontWeight: 500, marginTop: 2 }}>
+                            {getPopularName(item.product_name)}
+                          </div>
+                        )}
                         {stackInfo && (
                           <div style={{ fontSize: '0.8rem', color: 'var(--silver)', marginTop: '4px' }}>
                             {stackInfo.isPreBlended ? (
