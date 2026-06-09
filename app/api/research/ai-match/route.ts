@@ -1,94 +1,87 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { GoogleGenAI, Type } from '@google/genai';
-import { RESEARCH_AREAS } from '@/lib/compounds';
 
 export const dynamic = 'force-dynamic';
 
-const RESPONSE_SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    followUpQuestion: {
-      type: Type.STRING,
-      description: "If the user's goal is extremely vague (e.g., 'weight loss' without specifying how), ask a short clarifying question here (e.g., 'Do you want appetite suppression or metabolic enhancement?'). If the goal is clear, omit this or leave it empty.",
-    },
-    goal: {
-      type: Type.STRING,
-      description: `The best matching primary research area. Must be one of the following exact keys: ${Object.keys(RESEARCH_AREAS).join(', ')}, or 'any'.`,
-    },
-    goals: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: `List of all matching research areas, sorted from most relevant to least relevant. Must be populated with one or more keys from: ${Object.keys(RESEARCH_AREAS).join(', ')}.`,
-    },
-    evidenceComfort: {
-      type: Type.STRING,
-      description: "The user's comfort with unproven compounds. Must be one of: 'strict_human_only', 'investigational_ok', 'preclinical_ok', 'any'. If they seem highly risk-averse, use strict_human_only. If they mention research chemicals, use 'any'. Default to 'preclinical_ok'.",
-    },
-    riskTolerance: {
-      type: Type.STRING,
-      description: "Must be one of: 'low_only', 'moderate_ok', 'any'. If they want super safe, use 'low_only'. Default to 'any'.",
-    },
-    excludeInjectables: {
-      type: Type.BOOLEAN,
-      description: "True if they mention they hate needles, want oral/topical, or do not want to inject.",
-    },
-    requireLongHalfLife: {
-      type: Type.BOOLEAN,
-      description: "True if they want low frequency of administration, e.g., 'once a week' or 'long acting'.",
-    },
-    preference: {
-      type: Type.STRING,
-      description: "Must be 'single', 'stack', or 'either'. If they specifically want a pre-blended stack or synergy, use 'stack'. If they want a single compound, use 'single'. Default to 'either'.",
-    },
-    budget: {
-      type: Type.STRING,
-      description: "Must be 'conservative', 'standard', or 'unlimited'. If they mention cost, cheap, budget, use 'conservative'. Default to 'standard'.",
-    }
-  },
-  required: ['goal', 'goals', 'evidenceComfort', 'riskTolerance', 'excludeInjectables', 'requireLongHalfLife', 'preference', 'budget'],
+// NLP keyword map -- mirrors GOAL_KEYWORDS in lib/match-engine.ts
+const NLP_GOAL_KEYWORDS: Record<string, string[]> = {
+  tissue_repair: ['repair', 'tendon', 'ligament', 'wound', 'injury', 'healing', 'cartilage', 'muscle repair', 'bpc', 'tb4', 'thymosin', 'torn', 'sprain', 'strain'],
+  healing: ['healing', 'recovery', 'cytoprotection', 'regeneration', 'wound', 'gut', 'colitis', 'ulcer', 'gastrointestinal', 'stomach', 'intestine', 'leaky'],
+  metabolic: ['metabolic', 'glucose', 'insulin', 'fat loss', 'lipolysis', 'obesity', 'diabetes', 'appetite', 'metabolism'],
+  weight_management: ['weight', 'fat', 'appetite', 'obesity', 'lipolysis', 'satiety', 'glp', 'incretin', 'slim', 'lean', 'cutting', 'diet'],
+  longevity: ['aging', 'longevity', 'senescent', 'senolytic', 'telomere', 'healthspan', 'lifespan', 'anti-aging', 'anti aging', 'age', 'epigenetic'],
+  cosmetic: ['skin', 'hair', 'follicle', 'collagen', 'cosmetic', 'wrinkle', 'pigment', 'tan', 'tanning', 'melanotan', 'melanin', 'complexion', 'glow'],
+  cognitive: ['cognition', 'cognitive', 'memory', 'mood', 'neuroprotection', 'brain', 'focus', 'nootropic', 'anxiety', 'depression', 'mental', 'concentration', 'clarity', 'alzheimer'],
+  immune: ['immune', 'immunity', 'thymus', 'host defense', 'infection', 'antiviral', 'thymulin', 'thymosin alpha', 'ta1', 'autoimmune', 'inflammation'],
+  sexual_health: ['libido', 'sexual', 'erectile', 'arousal', 'desire', 'reproductive', 'fertility', 'hormone', 'testosterone', 'estrogen', 'dysfunction'],
+  performance: ['growth hormone', 'gh', 'igf', 'anabolic', 'muscle', 'lean mass', 'performance', 'strength', 'athletic', 'ghrh', 'ghrp', 'sermorelin', 'ipamorelin', 'cjc', 'ibutamoren'],
+  sleep: ['sleep', 'insomnia', 'circadian', 'melatonin', 'rest', 'wake', 'tired', 'fatigue', 'night'],
+  mitochondrial: ['mitochondrial', 'mitochondria', 'energy', 'cardiolipin', 'mitophagy', 'nad', 'fatigue', 'cellular energy', 'atp', 'mots-c'],
+  pain_inflammation: ['pain', 'inflammation', 'anti-inflammatory', 'analgesic', 'inflammatory', 'arthritis', 'chronic pain', 'joint pain', 'swelling', 'ache'],
+  gut_health: ['gut', 'gi', 'mucosal', 'ulcer', 'colitis', 'crohn', 'leaky', 'gastric', 'digestive', 'ibs', 'intestinal', 'bowel', 'microbiome'],
+  bone_joint: ['bone', 'joint', 'cartilage', 'osteo', 'density', 'fracture', 'synovial', 'skeletal', 'osteoporosis', 'osteoarthritis'],
 };
+
+const INJECTABLE_EXCLUDE = ['no needle', 'no needles', 'oral', 'topical', 'sublingual', 'nasal', 'cream', 'pill', 'tablet', 'capsule', 'hate inject', 'scared of needle', 'afraid of needle', 'no inject', 'non-injectable', 'non injectable'];
+const LONG_HALF_LIFE = ['once a week', 'weekly', 'long acting', 'long-acting', 'slow release', 'low frequency', 'infrequent', 'extended release', 'biweekly'];
+const STACK_KW = ['stack', 'combination', 'combine', 'synergy', 'synergistic', 'multiple', 'together', 'protocol', 'blend'];
+const SINGLE_KW = ['single', 'one compound', 'just one', 'only one', 'solo'];
+const CONSERVATIVE_BUDGET = ['cheap', 'budget', 'affordable', 'inexpensive', 'low cost', 'cost effective', 'cost-effective', 'save money', 'economical'];
+const STRICT_EVIDENCE = ['safe', 'proven', 'clinical', 'human study', 'human trial', 'fda', 'approved', 'well studied', 'established'];
+const PERMISSIVE_EVIDENCE = ['cutting edge', 'research chemical', 'experimental', 'novel', 'latest', 'frontier', 'investigational', 'preclinical'];
+const LOW_RISK = ['safe', 'gentle', 'low risk', 'minimal side', 'no side effect', 'well tolerated', 'conservative'];
+
+function scoreGoals(text: string): Array<{ key: string; score: number }> {
+  const lower = text.toLowerCase();
+  const scores: Array<{ key: string; score: number }> = [];
+  for (const [area, keywords] of Object.entries(NLP_GOAL_KEYWORDS)) {
+    let score = 0;
+    for (const kw of keywords) {
+      if (lower.includes(kw)) {
+        score += kw.split(' ').length;
+      }
+    }
+    scores.push({ key: area, score });
+  }
+  return scores.sort((a, b) => b.score - a.score);
+}
+
+function hasAny(text: string, keywords: string[]): boolean {
+  const lower = text.toLowerCase();
+  return keywords.some(kw => lower.includes(kw));
+}
 
 export async function POST(req: NextRequest) {
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY is not configured.' }, { status: 501 });
-    }
-
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
     const { prompt } = await req.json();
     if (!prompt || typeof prompt !== 'string') {
       return NextResponse.json({ error: 'Invalid prompt' }, { status: 400 });
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        { role: 'user', parts: [{ text: `Translate the following research request into strict search parameters for our peptide database: "${prompt}"` }] }
-      ],
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: RESPONSE_SCHEMA,
-        temperature: 0.1,
-      }
+    const scored = scoreGoals(prompt);
+    const topScore = scored[0]?.score ?? 0;
+
+    const goal = topScore > 0 ? scored[0].key : 'any';
+    const goals = topScore > 0 ? scored.filter(s => s.score > 0).map(s => s.key) : ['any'];
+
+    let evidenceComfort = 'preclinical_ok';
+    if (hasAny(prompt, PERMISSIVE_EVIDENCE)) evidenceComfort = 'any';
+    else if (hasAny(prompt, STRICT_EVIDENCE)) evidenceComfort = 'investigational_ok';
+
+    const riskTolerance = hasAny(prompt, LOW_RISK) ? 'low_only' : 'any';
+    const excludeInjectables = hasAny(prompt, INJECTABLE_EXCLUDE);
+    const requireLongHalfLife = hasAny(prompt, LONG_HALF_LIFE);
+
+    let preference: 'single' | 'stack' | 'either' = 'either';
+    if (hasAny(prompt, STACK_KW)) preference = 'stack';
+    else if (hasAny(prompt, SINGLE_KW)) preference = 'single';
+
+    const budget = hasAny(prompt, CONSERVATIVE_BUDGET) ? 'conservative' : 'standard';
+
+    return NextResponse.json({
+      result: { goal, goals, evidenceComfort, riskTolerance, excludeInjectables, requireLongHalfLife, preference, budget },
     });
-
-    const text = response.text;
-    if (!text) throw new Error('Empty response from AI');
-
-    try {
-      const cleanText = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
-      const result = JSON.parse(cleanText);
-      if (result && result.goal && !result.goals) {
-        result.goals = [result.goal];
-      }
-      return NextResponse.json({ result });
-    } catch (parseError: any) {
-      console.error('JSON Parse Error:', parseError);
-      return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
-    }
   } catch (error: any) {
     console.error('AI Match Error:', error);
-    return NextResponse.json({ error: error.message || 'AI request failed' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Match request failed' }, { status: 500 });
   }
 }
