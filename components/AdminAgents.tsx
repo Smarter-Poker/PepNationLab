@@ -81,7 +81,7 @@ export default function AdminAgents() {
   // Commission Settings (for new agents)
   const [caCommissionMode, setCaCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
   const [caCommissionPct, setCaCommissionPct] = useState('');
-  // 'default' = read-only house ladder (20% → 40%); 'custom' = fully adjustable.
+  // 'default' = read-only house ladder (20% -> 40%); 'custom' = fully adjustable.
   const [caScaleType, setCaScaleType] = useState<'default' | 'custom'>('default');
   const [caCustomSteps, setCaCustomSteps] = useState(freshDefaultLadder());
   const [showGamificationInfo, setShowGamificationInfo] = useState(false);
