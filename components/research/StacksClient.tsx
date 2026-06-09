@@ -826,8 +826,6 @@ interface StackDrawerProps {
 
 function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundlePrice, synergyData }: StackDrawerProps) {
   const stack = bySlug.get(stackSlug);
-  const [activeTab, setActiveTab] = useState<'overview' | 'calculator'>('overview');
-  const [reconstMode, setReconstMode] = useState<'standard' | 'concentrated' | 'diluted'>('standard');
   const [isSynergyExpanded, setIsSynergyExpanded] = useState(false);
 
   if (!stack) return null;
@@ -909,17 +907,9 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
             </div>
           </div>
           
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 24 }}>
-            <div style={{ position: 'relative', display: 'inline-block', width: '100%', maxWidth: 360 }}>
-              <Image src={activeTab === 'overview' ? "/images/overview_tabs_btn.png" : "/images/calculator_tabs_btn.png"} alt="Tabs" width={1024} height={576} style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }} unoptimized />
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '50%', height: '100%', cursor: 'pointer', zIndex: 10 }} onClick={() => setActiveTab('overview')} />
-              <div style={{ position: 'absolute', top: 0, left: '50%', width: '50%', height: '100%', cursor: 'pointer', zIndex: 10 }} onClick={() => setActiveTab('calculator')} />
-            </div>
-          </div>
         </div>
 
         <div style={{ padding: '0 32px 32px 32px', flex: 1 }}>
-          {activeTab === 'overview' ? (
             <>
               <div style={{ height: 16 }} />              
               {missingComponents.length > 0 && (
@@ -1026,100 +1016,6 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                 </AnimatePresence>
               </div>
             </>
-          ) : (
-            <div>
-              <p style={{ color: '#A8B4C0', fontSize: '0.9rem', marginBottom: 24 }}>Calculate exactly how much Bacteriostatic Water to add to each component in this stack based on your target concentration.</p>
-
-              <div style={{ display: 'flex', gap: 12, marginBottom: 32, justifyContent: 'center', flexWrap: 'wrap' }}>
-                {['concentrated', 'standard', 'diluted'].map(mode => (
-                  <button key={mode} onClick={() => setReconstMode(mode as any)} style={{
-                    padding: '10px 24px', borderRadius: 8, fontWeight: 700, fontSize: '0.9rem', textTransform: 'capitalize',
-                    background: reconstMode === mode ? 'rgba(0,229,255,0.15)' : 'rgba(255,255,255,0.05)',
-                    border: reconstMode === mode ? '1px solid #00E5FF' : '1px solid rgba(255,255,255,0.1)',
-                    color: reconstMode === mode ? '#00E5FF' : '#A8B4C0',
-                    cursor: 'pointer', transition: 'all 0.2s'
-                  }}>
-                    {mode}
-                  </button>
-                ))}
-              </div>
-
-              {stack.stack_components.map((slug: string) => {
-                const p = products.find((pr: AreaProduct) => pr.compoundSlug === slug);
-                const targetP = p || (isBundleProduct && premadeProducts.length > 0 ? premadeProducts[0] : undefined);
-                let mass = 5;
-                if (targetP) {
-                  const eachMatch = targetP.productName.match(/(\d+)\s*mg\s*each/i);
-                  if (eachMatch) {
-                    mass = parseInt(eachMatch[1]);
-                  } else {
-                    const sizeStr = targetP.unitSize || targetP.productName;
-                    const sizeMatch = sizeStr.match(/(\d+)\s*mg/i);
-                    if (sizeMatch) {
-                      mass = parseInt(sizeMatch[1]);
-                      if (isBundleProduct && !p && mass > 15 && targetP.productName.toLowerCase().includes('stack')) {
-                        mass = Math.round(mass / stack.stack_components.length);
-                      }
-                    }
-                  }
-                }
-                const diluent = reconstMode === 'concentrated' ? 1 : reconstMode === 'diluted' ? 3 : 2;
-                const mgPerMl = mass / diluent;
-                const mcgPerMl = mgPerMl * 1000;
-                const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
-
-                return (
-                  <div key={slug} style={{ marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <h4 style={{ margin: '0 0 12px', color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Image src={imageUrl} alt={slug} width={200} height={200} unoptimized style={{ width: 20, height: 20, objectFit: 'contain' }} />
-                      {bySlug.get(slug)?.display_name}
-                    </h4>
-                    <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <span style={{ fontSize: '0.85rem', color: '#A8B4C0' }}>Vial Mass</span>
-                            <span style={{ fontSize: '0.9rem', color: '#fff', fontWeight: 600 }}>{mass}mg</span>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ fontSize: '0.85rem', color: '#A8B4C0' }}>BAC Water Added</span>
-                            <span style={{ fontSize: '0.9rem', color: '#00E5FF', fontWeight: 700 }}>{diluent}mL</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ width: 80, height: 160, position: 'relative' }}>
-                        {/* SVG Syringe Visualizer */}
-                        <svg viewBox="0 0 40 130" style={{ width: '100%', height: '100%' }}>
-                          {/* Tip (pointing UP) */}
-                          <path d="M 17 20 L 19 5 L 21 5 L 23 20 Z" fill="rgba(255,255,255,0.1)" />
-                          {/* Barrel */}
-                          <rect x="10" y="20" width="20" height="90" rx="2" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-                          
-                          {/* Liquid */}
-                          <rect x="11" y="21" width="18" height={Math.max(0, (20 + (diluent / 5) * 85) - 21)} fill="rgba(0,229,255,0.4)" />
-                          
-                          {/* Plunger Top (Rubber stopper) */}
-                          <rect x="11" y={20 + (diluent / 5) * 85} width="18" height="5" fill="#1e293b" />
-                          
-                          {/* Plunger Rod */}
-                          <rect x="16" y={(20 + (diluent / 5) * 85) + 5} width="8" height={130 - ((20 + (diluent / 5) * 85) + 5)} fill="#334155" />
-                          
-                          {/* Tick marks */}
-                          {[1, 2, 3, 4, 5].map(mL => {
-                            const tickY = 20 + (mL / 5) * 85;
-                            return <line key={mL} x1="10" y1={tickY} x2="16" y2={tickY} stroke="rgba(255,255,255,0.3)" strokeWidth="1" />;
-                          })}
-                        </svg>
-                      </div>
-                    </div>
-                    <div style={{ marginTop: 16, padding: 12, background: 'rgba(0,229,255,0.05)', borderRadius: 8, color: '#00E5FF', fontSize: '0.85rem', fontWeight: 600 }}>
-                      Concentration: {mgPerMl.toFixed(2)} mg / mL ({mcgPerMl.toFixed(0)} mcg / mL)
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </div>
 
         <div style={{ padding: '20px 32px', background: 'rgba(0,0,0,0.4)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

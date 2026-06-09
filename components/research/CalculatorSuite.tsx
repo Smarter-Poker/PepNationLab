@@ -638,6 +638,26 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
           </label>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Step 3: Diluent Added (<span className="calc-no-capitalize">mL</span>)</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+              {['concentrated (1mL)', 'standard (2mL)', 'diluted (3mL)'].map(mode => {
+                const ml = mode.includes('1mL') ? '1' : mode.includes('3mL') ? '3' : '2';
+                return (
+                  <button 
+                    key={mode} 
+                    type="button"
+                    onClick={() => setDiluentMl(ml)} 
+                    style={{
+                      padding: '6px 12px', borderRadius: 6, fontWeight: 700, fontSize: '0.8rem', textTransform: 'capitalize',
+                      background: diluentMl === ml ? 'rgba(0,229,255,0.15)' : 'rgba(255,255,255,0.05)',
+                      border: diluentMl === ml ? '1px solid #00E5FF' : '1px solid rgba(255,255,255,0.1)',
+                      color: diluentMl === ml ? '#00E5FF' : '#A8B4C0',
+                      cursor: 'pointer', transition: 'all 0.2s', flex: 1
+                    }}>
+                    {mode}
+                  </button>
+                )
+              })}
+            </div>
             <StyledInput type="number" step="any" min={0} value={diluentMl} placeholder="e.g. 2" onChange={(e) => setDiluentMl(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
@@ -659,6 +679,9 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
           {vMass > 0 && dilMl > 0 ? (
             <div style={{ color: '#00E5FF', fontWeight: 800, fontSize: 18 }}>
               Add {dilMl} <span className="calc-no-capitalize">mL</span> Of {diluentType === 'bac-water' ? 'Bacteriostatic Water' : '0.6% Acetic Acid'} To The Vial.
+              <div style={{ fontSize: 14, fontWeight: 600, marginTop: 8, color: '#68D391' }}>
+                Concentration: {(vMass / dilMl).toFixed(2)} mg / mL ({((vMass / dilMl) * 1000).toFixed(0)} mcg / mL)
+              </div>
             </div>
           ) : (
             <div style={{ fontSize: 14 }}>Enter Vial Mass And Diluent Volume Above.</div>
