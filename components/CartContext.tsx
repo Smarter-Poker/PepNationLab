@@ -18,7 +18,7 @@ import { getProductImage } from '@/lib/categoryImage';
 import DynamicAddToCartButton from '@/components/storefront/DynamicAddToCartButton';
 import DynamicCartButton from '@/components/storefront/DynamicCartButton';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Types
 
 export interface CartItem {
   id: string;
@@ -43,7 +43,7 @@ export interface SmartRec {
   retail_price?: number;
   unit_size: string | null;
   unit_measure: string | null;
-  reason?: string; // why it's recommended
+  reason?: string;
 }
 
 interface BacWaterResult {
@@ -79,7 +79,7 @@ interface PendingAddition {
   quantity: number;
 }
 
-// ─── CartProvider ─────────────────────────────────────────────────────────────
+// CartProvider
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -195,7 +195,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // Allow local storefront grids to handle it first (they run in the same event tick)
       setTimeout(async () => {
         if (detail.handled) return;
-        detail.handled = true; // Mark handled just in case
+        detail.handled = true;
 
         try {
           const res = await fetch('/api/cart/resolve-name', {
@@ -211,7 +211,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           }
 
           if (data.item) {
-            // Add via the multiple additions method to support bypassing the acknowledgment safely
             addMultipleToCart([{ product: data.item, quantity: data.quantity || 1 }], detail.name);
             toast.success(`${data.item.name} Added To Cart.`);
           } else {
@@ -273,10 +272,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addMultipleToCart = (items: { product: Omit<CartItem, 'quantity'>, quantity: number }[], bundleName?: string) => {
     if (items.length === 0) return;
     if (!addToCartAcknowledged) {
-      // Show acknowledgment using the bundle name or the first product's name
       setPendingAddition({
         product: { ...items[0].product, name: bundleName || `${items.length} items` },
-        quantity: 1, // Doesn't matter, we will intercept this below
+        quantity: 1,
         _isBundle: items,
       } as any);
       return;
@@ -346,7 +344,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── Acknowledgment Modal ─────────────────────────────────────────────────────
+// Acknowledgment Modal
 
 function AddToCartAcknowledgment({
   productName,
@@ -386,7 +384,7 @@ function AddToCartAcknowledgment({
   );
 }
 
-// ─── useCart hook ─────────────────────────────────────────────────────────────
+// useCart hook
 
 export function useCart() {
   const context = useContext(CartContext);
@@ -394,7 +392,7 @@ export function useCart() {
   return context;
 }
 
-// ─── BAC Water Calculator ─────────────────────────────────────────────────────
+// BAC Water Calculator
 
 function BacWaterCalculator({
   cart,
@@ -409,7 +407,6 @@ function BacWaterCalculator({
   const abortRef = useRef<AbortController | null>(null);
   const prevKeyRef = useRef<string>('');
 
-  // Build a cache key from current cart state (ids + quantities)
   const cartKey = cart
     .map(i => `${i.id}:${i.quantity}`)
     .sort()
@@ -453,14 +450,12 @@ function BacWaterCalculator({
     return () => ctrl.abort();
   }, [cartKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Don't show if no peptides or loading failed
   if (loading) return null;
   if (!result) return null;
   if (result.peptideCount === 0) return null;
 
   const { vialsNeeded, alreadyInCart, alreadyInCartQty, bacWaterProduct, totalPeptideVials, totalMlNeeded } = result;
 
-  // All covered - show a green confirmation
   if (alreadyInCart && alreadyInCartQty >= vialsNeeded) {
     return (
       <div
@@ -485,7 +480,6 @@ function BacWaterCalculator({
     );
   }
 
-  // Need more BAC water
   const stillNeeded = alreadyInCart ? Math.max(0, vialsNeeded - alreadyInCartQty) : vialsNeeded;
   if (stillNeeded === 0) return null;
 
@@ -499,7 +493,6 @@ function BacWaterCalculator({
         background: 'linear-gradient(135deg, rgba(0,229,255,0.04) 0%, rgba(192,184,168,0.03) 100%)',
       }}
     >
-      {/* Header */}
       <div
         style={{
           padding: '10px 14px',
@@ -510,7 +503,6 @@ function BacWaterCalculator({
           gap: 8,
         }}
       >
-        {/* Beaker icon */}
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2">
           <path d="M9 3h6M9 3v8L4.5 17a2 2 0 001.8 3h11.4a2 2 0 001.8-3L15 11V3" />
           <line x1="8" y1="14" x2="16" y2="14" />
@@ -529,7 +521,6 @@ function BacWaterCalculator({
         </span>
       </div>
 
-      {/* Body */}
       <div style={{ padding: '10px 14px' }}>
         <div
           style={{
@@ -548,7 +539,6 @@ function BacWaterCalculator({
           )}
         </div>
 
-        {/* Calculation breakdown */}
         <div
           style={{
             fontSize: '0.68rem',
@@ -560,8 +550,8 @@ function BacWaterCalculator({
             alignItems: 'center',
           }}
         >
-          <span>{totalPeptideVials} vials × 2 mL/vial</span>
-          <span style={{ color: 'rgba(255,255,255,0.2)' }}>÷</span>
+          <span>{totalPeptideVials} vials x 2 mL/vial</span>
+          <span style={{ color: 'rgba(255,255,255,0.2)' }}>/</span>
           <span>10 mL/bottle</span>
           <span style={{ color: 'rgba(255,255,255,0.2)' }}>=</span>
           <span style={{ color: 'var(--teal)', fontWeight: 700 }}>
@@ -569,7 +559,6 @@ function BacWaterCalculator({
           </span>
         </div>
 
-        {/* CTA Button */}
         {bacWaterProduct ? (
           <button
             type="button"
@@ -624,7 +613,7 @@ function BacWaterCalculator({
   );
 }
 
-// ─── Smart Recommendation Strip ───────────────────────────────────────────────
+// Smart Recommendation Strip
 
 function SmartRecommendationStrip({
   cart,
@@ -638,7 +627,6 @@ function SmartRecommendationStrip({
   const abortRef = useRef<AbortController | null>(null);
   const prevKeyRef = useRef<string>('');
 
-  // Rebuild recommendations whenever cart contents change
   const cartIds = cart.map(i => i.id).sort().join(',');
 
   useEffect(() => {
@@ -687,7 +675,6 @@ function SmartRecommendationStrip({
         borderTop: '1px solid rgba(192,184,168,0.1)',
       }}
     >
-      {/* Section header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)' }}>
         <div
           style={{
@@ -711,7 +698,6 @@ function SmartRecommendationStrip({
         </div>
       </div>
 
-      {/* Cards */}
       <div
         style={{
           display: 'flex', gap: 8, overflowX: 'auto',
@@ -775,7 +761,6 @@ function SmartRecCard({
         transition: 'border-color 0.25s ease, transform 0.2s ease',
       }}
     >
-      {/* Reason badge */}
       {rec.reason && (
         <div
           style={{
@@ -790,7 +775,6 @@ function SmartRecCard({
         </div>
       )}
 
-      {/* Product image */}
       <div
         style={{
           width: '100%', height: 82, flexShrink: 0,
@@ -818,7 +802,6 @@ function SmartRecCard({
         )}
       </div>
 
-      {/* Info */}
       <div style={{ padding: '6px 8px 0', flexGrow: 1 }}>
         <div
           style={{
@@ -842,7 +825,6 @@ function SmartRecCard({
         )}
       </div>
 
-      {/* Quick-add button */}
       <DynamicAddToCartButton
         onClick={handleAdd}
         isSmall={true}
@@ -853,7 +835,7 @@ function SmartRecCard({
   );
 }
 
-// ─── Cart Drawer ───────────────────────────────────────────────────────────────
+// Cart Drawer
 
 function CartDrawer() {
   const router = useRouter();
@@ -869,7 +851,6 @@ function CartDrawer() {
 
   const cartIds = new Set(cart.map(i => i.id));
 
-  // Quick-add handler - fetches live pricing before adding
   const handleQuickAdd = useCallback(async (rec: SmartRec) => {
     try {
       const res = await fetch('/api/cart/refresh', {
@@ -898,7 +879,6 @@ function CartDrawer() {
     }
   }, [addToCart]);
 
-  // BAC water add handler - adds the specified quantity
   const handleAddBacWater = useCallback(async (product: SmartRec, qty: number) => {
     try {
       const res = await fetch('/api/cart/refresh', {
@@ -912,7 +892,6 @@ function CartDrawer() {
         toast.error(`BAC Water Is Not Currently Available`);
         return;
       }
-      // Add the computed quantity
       addToCart(
         {
           id: product.id,
@@ -926,7 +905,7 @@ function CartDrawer() {
         },
         qty
       );
-      toast.success(`${qty} vial${qty !== 1 ? 's' : ''} of BAC Water added ✓`);
+      toast.success(`${qty} vial${qty !== 1 ? 's' : ''} of BAC Water Added`);
     } catch {
       toast.error('Failed To Add BAC Water');
     }
@@ -941,10 +920,8 @@ function CartDrawer() {
         background: 'rgba(5, 10, 15, 0.75)', backdropFilter: 'blur(6px)',
       }}
     >
-      {/* Backdrop */}
       <div onClick={() => setIsCartOpen(false)} style={{ flexGrow: 1, cursor: 'pointer' }} />
 
-      {/* Drawer panel */}
       <motion.div
         initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
@@ -964,10 +941,8 @@ function CartDrawer() {
           position: 'relative', overflow: 'hidden',
         }}
       >
-        {/* Top shimmer bar */}
         <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, transparent 0%, rgba(0,229,255,0.7) 40%, rgba(192,184,168,0.5) 60%, transparent 100%)', pointerEvents: 'none', zIndex: 1 }} />
 
-        {/* ── Header ── */}
         <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(0,229,255,0.15) 0%, rgba(192,184,168,0.08) 100%)', border: '1.5px solid rgba(0,229,255,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -982,7 +957,7 @@ function CartDrawer() {
               </h3>
               {cart.length > 0 && (
                 <div style={{ fontSize: '0.66rem', color: 'var(--grey-400)', marginTop: 1 }}>
-                  {cart.reduce((a, i) => a + i.quantity, 0)} item{cart.reduce((a, i) => a + i.quantity, 0) !== 1 ? 's' : ''} · ${cartSubtotal.toFixed(2)}
+                  {cart.reduce((a, i) => a + i.quantity, 0)} item{cart.reduce((a, i) => a + i.quantity, 0) !== 1 ? 's' : ''} - ${cartSubtotal.toFixed(2)}
                 </div>
               )}
             </div>
@@ -998,12 +973,9 @@ function CartDrawer() {
           </button>
         </div>
 
-        {/* ── Scrollable Content ── */}
         <div style={{ flexGrow: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {cart.length > 0 ? (
             <>
-              {/* Cart Items */}
-              {/* Group items by bundleName */}
               {(() => {
                 const groupedCart: { isBundle: boolean, name: string, items: typeof cart }[] = [];
                 const processedIds = new Set<string>();
@@ -1044,7 +1016,7 @@ function CartDrawer() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,229,255,0.1)', paddingBottom: 8, marginBottom: 4 }}>
                           <div>
                             <h4 style={{ fontSize: '0.9rem', margin: 0, fontFamily: 'var(--font-brand)', color: '#00E5FF', display: 'flex', alignItems: 'center', gap: 6 }}>
-                              📦 {group.name}
+                              {group.name}
                             </h4>
                             <div style={{ fontSize: '0.65rem', color: '#68D391', marginTop: 2, fontWeight: 700 }}>Stack Discount (10% Off) Applied</div>
                             <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', marginTop: 4, fontStyle: 'italic', maxWidth: '90%' }}>
@@ -1068,11 +1040,11 @@ function CartDrawer() {
                             <div key={item.id} style={{ display: 'flex', gap: 10, position: 'relative', paddingLeft: 8 }}>
                               <div style={{ flexGrow: 1, minWidth: 0 }}>
                                 <h4 style={{ fontSize: '0.8rem', margin: '0 0 3px', color: 'var(--silver-light)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  ↳ {item.name}
+                                  {item.name}
                                 </h4>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.09)' }}>
-                                    <button onClick={() => updateQuantity(item.id, item.quantity - 1, item.bundleName)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 22, height: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>−</button>
+                                    <button onClick={() => updateQuantity(item.id, item.quantity - 1, item.bundleName)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 22, height: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>-</button>
                                     <span style={{ fontSize: '0.75rem', width: 20, textAlign: 'center', color: 'var(--teal)', fontWeight: 700 }}>{item.quantity}</span>
                                     <button onClick={() => updateQuantity(item.id, item.quantity + 1, item.bundleName)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 22, height: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>+</button>
                                   </div>
@@ -1089,7 +1061,6 @@ function CartDrawer() {
                     );
                   }
 
-                  // Standard individual item
                   return group.items.map(item => {
                     const bulkEligible = !item.agentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold;
                     const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice;
@@ -1102,7 +1073,7 @@ function CartDrawer() {
                           {item.sku && <div style={{ fontSize: '0.67rem', color: 'var(--grey-400)', marginBottom: 6 }}>SKU: {item.sku}</div>}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                             <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.09)' }}>
-                              <button onClick={() => updateQuantity(item.id, item.quantity - 1, item.bundleName)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>−</button>
+                              <button onClick={() => updateQuantity(item.id, item.quantity - 1, item.bundleName)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>-</button>
                               <span style={{ fontSize: '0.82rem', width: 22, textAlign: 'center', color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontWeight: 700 }}>{item.quantity}</span>
                               <button onClick={() => updateQuantity(item.id, item.quantity + 1, item.bundleName)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>+</button>
                             </div>
@@ -1110,7 +1081,7 @@ function CartDrawer() {
                               <div style={{ fontSize: '0.88rem', color: 'var(--white)', fontWeight: 700, fontFamily: 'var(--font-brand)' }}>
                                 ${(activePrice * item.quantity).toFixed(2)}
                               </div>
-                              {bulkEligible && <div style={{ fontSize: '0.61rem', color: 'var(--teal)' }}>Bulk rate ✓</div>}
+                              {bulkEligible && <div style={{ fontSize: '0.61rem', color: 'var(--teal)' }}>Bulk Rate (Active)</div>}
                             </div>
                           </div>
                         </div>
@@ -1126,14 +1097,12 @@ function CartDrawer() {
                 });
               })()}
 
-              {/* ── BAC Water Calculator ── */}
               <BacWaterCalculator cart={cart} onAddBacWater={handleAddBacWater} />
 
-              {/* ── Smart Recommendations ── */}
               <SmartRecommendationStrip
                 cart={cart}
                 onQuickAdd={(rec) => {
-                  if (cartIds.has(rec.id)) return; // already in cart
+                  if (cartIds.has(rec.id)) return;
                   handleQuickAdd(rec);
                 }}
               />
@@ -1154,10 +1123,8 @@ function CartDrawer() {
           )}
         </div>
 
-        {/* ── Footer ── */}
         {cart.length > 0 && (
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '14px 20px', paddingBottom: 'calc(18px + var(--safe-bottom, 0px))', flexShrink: 0 }}>
-            {/* Subtotal */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '10px 14px', background: 'rgba(0,229,255,0.04)', borderRadius: 8, border: '1px solid rgba(0,229,255,0.1)' }}>
               <span style={{ fontSize: '0.86rem', color: 'var(--grey-400)', fontWeight: 600 }}>Subtotal</span>
               <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.02em' }}>

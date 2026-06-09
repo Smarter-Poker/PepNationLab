@@ -36,7 +36,6 @@ function resolveTitle(pathname: string, role: string): string {
   if (pathname.startsWith('/admin/moderation')) return 'Message Moderation';
   if (pathname.startsWith('/admin/messenger')) return 'Messenger';
   if (pathname.startsWith('/admin/subscriptions')) return 'Subscriptions';
-
   if (pathname.startsWith('/admin/scheduled-prices')) return 'Scheduled Prices';
   if (pathname.startsWith('/admin/store-credits')) return 'Store Credits';
   if (pathname.startsWith('/admin/store-preview')) return 'Store Preview';
@@ -168,8 +167,6 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
     }
   };
 
-  // Canonical per-role hamburger menu - identical on every page for a given
-  // role. Null for researchers / logged-out, who keep the generic drawer links.
   const roleLinks = user
     ? getRoleNavLinks(role, {
         isSuperAgent: profile?.is_super_agent === true,
@@ -203,8 +200,6 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
           .then(({ data }) => {
             if (data) {
               setProfile(data);
-              // A sub-agent is role='agent' + is_sub_agent=true and has no
-              // storefront, so only fetch a storefront slug for non-sub agents.
               if (data.role === 'researcher' && data.referring_agent_id) {
                 supabase
                   .from('agent_profiles')
@@ -266,14 +261,17 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                   });
               }
             }
+          })
+          .finally(() => {
+            setLoading(false);
           });
       } else {
         setUser(null);
         setProfile(null);
         setAgentSlug(null);
         setAgentName(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -282,8 +280,6 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    // Clear catalog caches - prevents stale product data for the next user
-    // (especially important on shared / public devices)
     evictAllCatalogCaches();
     window.location.replace('/');
   };
@@ -291,21 +287,19 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
   const handleBack = () => {
     const isHistoryEmpty = typeof window !== 'undefined' && window.history.length <= 1;
 
-    // 1. If on /research/[slug]/[subpage] (e.g. spec, regulatory, references, structure), go to /research/[slug]
     const compoundSubpageMatch = pathname.match(/^\/research\/([a-zA-Z0-9_-]+)\/(spec|regulatory|references|structure)$/);
     if (compoundSubpageMatch) {
       router.push(`/research/${compoundSubpageMatch[1]}`);
       return;
     }
 
-    // 2. If on /research/[slug] monograph
     const compoundPageMatch = pathname.match(/^\/research\/([a-zA-Z0-9_-]+)$/);
     const reservedResearchSlugs = [
-      'areas', 'catalog', 'compare', 'stacks', 'calculators', 'about-areas', 
-      'approved-drugs', 'discontinued', 'orphan-drugs', 
-      'reading-queue', 'saved', 'timeline', 'in-pipeline', 'most-cited', 
-      'most-studied-2026', 'new-additions', 'evidence', 'correlated', 'faq', 
-      'glossary', 'api-docs', 'search-index', 'search', 'learn', 'data', 
+      'areas', 'catalog', 'compare', 'stacks', 'calculators', 'about-areas',
+      'approved-drugs', 'discontinued', 'orphan-drugs',
+      'reading-queue', 'saved', 'timeline', 'in-pipeline', 'most-cited',
+      'most-studied-2026', 'new-additions', 'evidence', 'correlated', 'faq',
+      'glossary', 'api-docs', 'search-index', 'search', 'learn', 'data',
       'match', 'subscriptions'
     ];
     if (compoundPageMatch && !reservedResearchSlugs.includes(compoundPageMatch[1])) {
@@ -317,14 +311,12 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
       return;
     }
 
-    // 3. If on /research/area/[area]
     const areaPageMatch = pathname.match(/^\/research\/area\/([a-zA-Z0-9_-]+)$/);
     if (areaPageMatch) {
       router.push('/research/areas');
       return;
     }
 
-    // 4. If on a category filter page
     const isCategoryFilter = pathname.startsWith('/research/by-class') ||
                              pathname.startsWith('/research/by-half-life') ||
                              pathname.startsWith('/research/by-mechanism') ||
@@ -336,13 +328,11 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
       return;
     }
 
-    // 5. If on /research landing page
     if (pathname === '/research' || pathname === '/research/') {
       router.push(dashLink);
       return;
     }
 
-    // 5.5. If on /messenger
     if (pathname.startsWith('/messenger')) {
       if (activeId) {
         router.back();
@@ -352,7 +342,6 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
       return;
     }
 
-    // 6. Generic research sub-pages
     const isGenericResearchPage = pathname.startsWith('/research/') && reservedResearchSlugs.some(s => pathname.startsWith(`/research/${s}`));
     if (isGenericResearchPage) {
       if (isHistoryEmpty) {
@@ -363,7 +352,6 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
       return;
     }
 
-    // 7. General fallback
     if (isHistoryEmpty) {
       router.push(dashLink);
     } else {
@@ -373,9 +361,6 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
 
   const isStorefront = activeAgentSlug && pathname === `/${activeAgentSlug}`;
   const showBack = pathname !== '/' && !isStorefront;
-
-  // QR popup details - sub-agents recruit via /invite?ref (no storefront);
-  // agents/super-agents share their storefront slug.
 
   return (
     <>
@@ -593,11 +578,6 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
         )}
 
         <nav style={{ flex: 1, padding: 'var(--space-3) 0' }}>
-          
-          {/* Role-based menu: identical for a given role on EVERY page, so the
-              hamburger matches that role's dashboard menu everywhere. Admin /
-              agent / super-agent / sub-agent render their canonical menu; all
-              other states (researchers, logged-out) keep the generic links. */}
           {roleLinks ? (
             roleLinks.map((l) => (
               <DrawerLink key={`${l.href}-${l.label}`} href={l.href} label={l.label} onClick={() => handleMenuClick(l.href)} icon={l.icon} />
@@ -700,10 +680,10 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
             alignItems: 'center',
             gap: 'var(--space-3)'
           }}>
-            <div style={{ 
-              width: 36, height: 36, borderRadius: '50%', 
-              background: 'var(--teal)', color: '#000', 
-              display: 'flex', alignItems: 'center', justifyContent: 'center', 
+            <div style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'var(--teal)', color: '#000',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontWeight: 800, fontSize: '1rem', flexShrink: 0
             }}>
               {displayName ? displayName.charAt(0).toUpperCase() : '?'}
@@ -719,7 +699,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
           </div>
         )}
       </div>
-      )} {/* end !onMenuClick drawer panel */}
+      )}
 
       <MyQRCodeModal open={showQRModal} onClose={() => setShowQRModal(false)} />
 

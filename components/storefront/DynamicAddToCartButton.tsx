@@ -91,7 +91,7 @@ export default function DynamicAddToCartButton({
             letterSpacing: '0.04em',
           }}
         >
-          ✓ Added
+          Added
         </span>
       ) : null}
     </button>
