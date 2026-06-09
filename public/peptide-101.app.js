@@ -724,7 +724,7 @@ document.addEventListener("DOMContentLoaded", function() {
      INJECT META (hooks, checks, takeaways, lib links, refs) per module
      =================================================================== */
   function injectMeta(id){
-    var sc=document.getElementById(id); if(!sc) return; var m=META[id]||{};
+    var sc=document.getElementById(id); if(!sc) return; if(sc.getAttribute('data-meta-done')) return; sc.setAttribute('data-meta-done','1'); var m=META[id]||{};
     var nc=sc.querySelector('.nav-ctrl');
     // why-hook after first h2
     if(m.why){ var h2=sc.querySelector('h2'); var hk=el('<div class="why-hook">'+ic('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')+'<p><strong>Why This Matters:</strong> '+m.why+'</p></div>'); if(h2&&h2.nextSibling) h2.parentNode.insertBefore(hk,h2.nextSibling); else sc.insertBefore(hk,sc.firstChild); }
@@ -1016,6 +1016,7 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   function init(){
+    if(window.__p101init) return; window.__p101init=1;
     buildRefModal();
     buildNewModules();
     buildAssessment();
