@@ -45,6 +45,7 @@ interface UserSession {
 
 interface Props {
   userEmail: string;
+  profileEmail: string;
   role: string;
   reason: string | null;
 }
@@ -56,6 +57,7 @@ const SURFACE_2 = '#162230';
 
 export default function AccountSecurityClient({
   userEmail,
+  profileEmail,
   role,
   reason,
 }: Props) {
@@ -321,7 +323,11 @@ export default function AccountSecurityClient({
         <section className="glass-panel hover-lift" style={cardStyle}>
           <h2 style={h2Style}>What's Enabled</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <StatusRow label="Email" value={userEmail} ok />
+            {(() => {
+              const isInternal = userEmail.endsWith('@internal.auth');
+              const displayEmail = (isInternal && role !== 'admin') ? (profileEmail || 'Not Provided') : (isInternal ? (profileEmail || userEmail) : userEmail);
+              return <StatusRow label="Email" value={displayEmail} ok />;
+            })()}
             <StatusRow
               label="Password"
               value="Set"

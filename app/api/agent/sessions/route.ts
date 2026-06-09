@@ -26,6 +26,37 @@ export async function GET() {
   return NextResponse.json({ sessions: data ?? [] });
 }
 
+export async function POST(req: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
+  const ua = req.headers.get('user-agent') || 'Unknown';
+  const ip = req.headers.get('x-forwarded-for') || req.ip || null;
+
+  let deviceName = 'Unknown Device';
+  if (ua.includes('Macintosh')) deviceName = 'Mac';
+  else if (ua.includes('Windows')) deviceName = 'Windows PC';
+  else if (ua.includes('iPhone')) deviceName = 'iPhone';
+  else if (ua.includes('iPad')) deviceName = 'iPad';
+  else if (ua.includes('Android')) deviceName = 'Android Device';
+
+  const { error } = await supabase.from('user_sessions').insert({
+    user_id: user.id,
+    device_name: deviceName,
+    user_agent: ua,
+    ip: ip ? ip.split(',')[0].trim() : null
+  });
+
+  if (error) {
+    return NextResponse.json({ error: 'session_record_failed' }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}
+
 export async function DELETE(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
