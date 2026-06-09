@@ -927,25 +927,33 @@ export default function AgentStorefrontGrid({
   const grouped = useMemo(() => {
     const map = new Map<string, GroupedProduct>();
     products.forEach(item => {
-      const name = item.products?.name ?? 'Research Compound';
-      if (!map.has(name)) {
-        map.set(name, {
-          name,
+      let rawName = item.products?.name ?? 'Research Compound';
+      // Strip out " Research Grade" suffix to normalize names and prevent duplicate groups
+      rawName = rawName.replace(/\s*Research Grade$/i, '');
+      // Normalize BPC-157 to match POPULAR_ORDER exactly if it happens to be hyphenated
+      if (rawName.toUpperCase() === 'BPC-157') rawName = 'BPC 157';
+
+      // Group by compoundSlug if available, otherwise fallback to normalized name
+      const groupKey = item.products?.compound_slug ?? rawName;
+
+      if (!map.has(groupKey)) {
+        map.set(groupKey, {
+          name: rawName,
           category: item.products?.category || 'Other',
           desc: item.custom_description ?? item.products?.description ?? '',
           imageUrl: getProductImage(
             item.custom_image_url ?? item.products?.image_url ?? null,
             item.products?.category || 'Other',
-            name,
+            rawName,
           ),
           variants: [],
           lowestPrice: Infinity,
-          popularity: POPULAR_ORDER.indexOf(name),
+          popularity: POPULAR_ORDER.indexOf(rawName),
           defaultVariantId: '',
           compoundSlug: item.products?.compound_slug ?? null,
         });
       }
-      const group = map.get(name)!;
+      const group = map.get(groupKey)!;
       group.variants.push(item);
       if (item.retail_price < group.lowestPrice) group.lowestPrice = item.retail_price;
     });
