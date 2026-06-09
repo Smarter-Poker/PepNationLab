@@ -754,3 +754,72 @@ a:focus-visible, button:focus-visible, .quiz-opt:focus-visible, .roadmap-card:fo
 .assess-q.locked .quiz-opt{cursor:default;}
 
 @media print{ .cert-name-row,.p101-toast,.ref-modal,.gloss-pop,.why-hook,.refs,.check-q{display:none!important;} }
+
+/* =====================================================================
+   PEPTIDE 101 v4 - DEPTH & VISUAL AIDS (explorer, amino grid, comparison)
+   ===================================================================== */
+
+/* --- Peptide Explorer --- */
+.pex-chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px;}
+.pex-fchip{padding:7px 13px;border-radius:999px;font-size:12.5px;font-weight:600;cursor:pointer;color:#cdd9e6;border:1px solid transparent;
+  background:linear-gradient(180deg,#15243c,#0c1626) padding-box,linear-gradient(155deg,#cfd9e3,#5a6675,#aeb9c5) border-box;box-shadow:inset 0 1px 0 rgba(255,255,255,.06);transition:all .15s;}
+.pex-fchip:hover{color:#fff;}
+.pex-fchip.active{color:#eaf2fb;background:linear-gradient(180deg,#1d3357,#102444) padding-box,linear-gradient(155deg,#bfe0ff,#3b6ea8,#8fc0ff) border-box;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 12px rgba(59,130,246,.3);}
+.pex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;}
+.pex-card{text-align:left;cursor:pointer;border:1.5px solid transparent;border-radius:13px;padding:13px 14px;color:#e8eff7;
+  background:linear-gradient(180deg,#13223a,#0b1525) padding-box,linear-gradient(155deg,#cdd7e2,#4f5a68,#9eaab7) border-box;
+  box-shadow:0 5px 14px rgba(0,0,0,.4);transition:transform .14s,box-shadow .2s;}
+.pex-card:hover{transform:translateY(-2px);box-shadow:0 9px 20px rgba(0,0,0,.5),0 0 14px rgba(59,130,246,.18);}
+.pex-card.sel{box-shadow:0 7px 18px rgba(0,0,0,.5),inset 0 0 0 1.5px var(--teal);}
+.pex-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;}
+.pex-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:var(--teal);}
+.pex-use{font-size:12px;color:var(--muted);line-height:1.4;}
+.pex-chip{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:999px;white-space:nowrap;border:1px solid transparent;}
+.pex-recovery{background:rgba(0,196,188,.14);color:#2de0d8;border-color:rgba(0,196,188,.3);}
+.pex-growth{background:rgba(59,130,246,.14);color:#7fb3ff;border-color:rgba(59,130,246,.3);}
+.pex-metabolic{background:rgba(234,179,8,.14);color:#eab308;border-color:rgba(234,179,8,.3);}
+.pex-melanocortin{background:rgba(167,139,250,.14);color:#a78bfa;border-color:rgba(167,139,250,.3);}
+.pex-cognitive{background:rgba(45,224,216,.14);color:#7ff0ea;border-color:rgba(45,224,216,.3);}
+.pex-antiaging{background:rgba(208,218,228,.14);color:#d0dae4;border-color:rgba(208,218,228,.3);}
+.pex-detail{display:none;border-radius:14px;padding:16px 18px;margin-bottom:14px;
+  border:1.5px solid transparent;background:linear-gradient(180deg,#0f1f37,#0a1322) padding-box,linear-gradient(155deg,#e4ebf2,#56616f,#aab5c2) border-box;box-shadow:0 10px 26px rgba(0,0,0,.5);}
+.pex-detail.show{display:block;animation:fadeIn .25s ease;}
+.pex-d-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px;}
+.pex-d-name{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;color:#eaf2fb;margin-bottom:4px;}
+.pex-d-m{font-size:13.5px;color:var(--silver);line-height:1.55;margin-bottom:12px;}
+.pex-d-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(min-width:520px){.pex-d-grid{grid-template-columns:repeat(4,1fr);}}
+.pex-d-lbl{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--nk2);font-weight:700;margin-bottom:3px;}
+.pex-d-val{font-size:13px;color:#e8eff7;font-weight:500;}
+
+/* --- Amino-acid grid (Module 1) --- */
+.amino-wrap{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;}
+@media(max-width:420px){.amino-wrap{grid-template-columns:repeat(4,1fr);}}
+.amino-tile{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;border-radius:11px;cursor:pointer;
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;color:#eaf2fb;border:1.5px solid transparent;transition:transform .12s,box-shadow .2s;
+  background:linear-gradient(180deg,#16263f,#0a1322) padding-box,linear-gradient(155deg,#cdd7e2,#4f5a68,#9eaab7) border-box;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 3px 9px rgba(0,0,0,.35);}
+.amino-tile:hover{transform:translateY(-2px) scale(1.03);}
+.amino-tile.sel{box-shadow:0 0 0 2px var(--teal),0 4px 12px rgba(0,196,188,.3);}
+.amino-np{border-image:none;box-shadow:inset 0 0 0 1.5px rgba(0,196,188,.45),inset 0 1px 0 rgba(255,255,255,.05),0 3px 9px rgba(0,0,0,.35);}
+.amino-po{box-shadow:inset 0 0 0 1.5px rgba(94,160,255,.5),inset 0 1px 0 rgba(255,255,255,.05),0 3px 9px rgba(0,0,0,.35);}
+.amino-ac{box-shadow:inset 0 0 0 1.5px rgba(229,62,62,.5),inset 0 1px 0 rgba(255,255,255,.05),0 3px 9px rgba(0,0,0,.35);}
+.amino-ba{box-shadow:inset 0 0 0 1.5px rgba(167,139,250,.55),inset 0 1px 0 rgba(255,255,255,.05),0 3px 9px rgba(0,0,0,.35);}
+.amino-info{margin-top:12px;font-size:13px;color:var(--silver);line-height:1.5;background:var(--recess,#0b1525);border-radius:10px;padding:11px 13px;box-shadow:inset 0 1px 3px rgba(0,0,0,.5);min-height:20px;}
+.amino-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11px;color:var(--muted);}
+.amino-legend span{display:flex;align-items:center;gap:5px;}
+.amino-dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
+.amino-dot.amino-np{background:#00C4BC;box-shadow:none;}
+.amino-dot.amino-po{background:#5ea0ff;box-shadow:none;}
+.amino-dot.amino-ac{background:#E53E3E;box-shadow:none;}
+.amino-dot.amino-ba{background:#a78bfa;box-shadow:none;}
+
+/* --- Comparison table (Module 11) --- */
+.cmp-scroll{overflow-x:auto;border-radius:12px;}
+table.cmp{width:100%;border-collapse:collapse;font-size:12.5px;min-width:460px;}
+table.cmp th,table.cmp td{padding:10px 12px;text-align:left;border-bottom:1px solid rgba(150,170,200,.14);vertical-align:top;}
+table.cmp thead th{background:var(--surface2);color:var(--muted);font-size:11px;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap;}
+table.cmp .cmp-lbl{font-weight:700;color:#cdd9e6;white-space:nowrap;}
+table.cmp .cmp-hi{color:#eaf2fb;}
+table.cmp thead th.cmp-hi{color:var(--teal);background:rgba(0,196,188,.08);}
+table.cmp tbody td.cmp-hi{background:rgba(0,196,188,.05);font-weight:600;}
+table.cmp tr:last-child td{border-bottom:none;}
