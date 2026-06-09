@@ -60,6 +60,9 @@ function LoginPageInner() {
     // Best-effort: failures are ignored (old sessions expire naturally).
     const supabaseForSignOut = supabase; // capture ref
 
+    // Record session
+    fetch('/api/agent/sessions', { method: 'POST' }).catch(() => {});
+
     const redirectTo = searchParams.get('redirect') ?? '/dashboard';
     
     // Wait until Supabase confirms the session is readable locally (max 3s).

@@ -60,6 +60,8 @@ export default function AgentStorefrontLogin({
         throw new Error('Invalid Username Or Password');
       }
 
+      fetch('/api/agent/sessions', { method: 'POST' }).catch(() => {});
+
       if (!authData?.user?.id) {
         throw new Error('Sign In Failed. Please Try Again.');
       }
