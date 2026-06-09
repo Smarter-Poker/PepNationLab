@@ -132,16 +132,8 @@ export default function GlobalCompletenessWidget() {
                       {t.id === 'avatar' && (
                         <button
                           type="button"
-                          style={{
-                            background: 'transparent',
-                            color: 'var(--silver)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '4px 12px',
-                            fontSize: '0.8rem',
-                            fontWeight: 600,
-                            cursor: 'pointer'
-                          }}
+                          className="btn btn-primary btn-sm"
+                          style={{ minWidth: 100 }}
                           onClick={async () => {
                             try {
                               const res = await fetch('/api/agent/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatar_url: 'default' }) });
