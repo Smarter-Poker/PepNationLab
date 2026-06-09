@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { isTierLadderV2 } from '@/lib/pricing';
 
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
  * is live yet (so the admin UI can show a "takes effect when enabled" hint).
  */
 export async function GET(req: NextRequest) {
-  const gate = await requireAgent();
+  const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
   const agentId = req.nextUrl.searchParams.get('agentId') || '';
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  const gate = await requireAgent();
+  const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
   const body = await req.json().catch(() => ({}));

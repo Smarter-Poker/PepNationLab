@@ -49,7 +49,7 @@ async function handle(req: NextRequest, payload: { goal?: string; comfort?: stri
   const data = scoreCompounds(input, compounds, limit);
   const status = 200;
   await logApiRequest(auth.key_id!, '/api/research/public/v1/match', req.method, status, Date.now() - t0, firstClientIp(req));
-  return NextResponse.json({ note: RESEARCH_NOTE, results: data ?? [] }, { status, headers: corsHeaders() });
+  return NextResponse.json({ note: RESEARCH_NOTE, results: data?.matches ?? [] }, { status, headers: corsHeaders() });
 }
 
 export async function GET(req: NextRequest) {

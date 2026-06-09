@@ -146,6 +146,7 @@ export async function POST(req: NextRequest) {
       exclude_injectables: input.excludeInjectables ?? false,
       require_long_half_life: input.requireLongHalfLife ?? false,
       preference: input.preference ?? 'either',
+      wada_constraint: 'none',
     });
   if (error) console.error('[Match Analytics] Failed to insert', error);
 

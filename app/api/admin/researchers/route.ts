@@ -22,11 +22,6 @@ export async function GET(req: NextRequest) {
 
   if (role) {
     dbQuery = dbQuery.eq('role', role);
-    if (role === 'researcher') {
-      dbQuery = dbQuery.eq('referring_agent_id', gate.userId);
-    }
-  } else {
-    dbQuery = dbQuery.or(`role.neq.researcher,referring_agent_id.eq.${gate.userId}`);
   }
 
   if (rawQuery) {
@@ -90,7 +85,7 @@ export async function POST(req: NextRequest) {
   if (action === 'adjust_balance') {
     const delta = Number(balance_delta);
     if (isNaN(delta) || !isFinite(delta)) return NextResponse.json({ error: 'Invalid Balance Amount' }, { status: 400 });
-    // Cap single adjustments to ±$10,000 to prevent accidental massive credits.
+    // Cap single adjustments to +-$10,000 to prevent accidental massive credits.
     if (Math.abs(delta) > 10000) return NextResponse.json({ error: 'Balance Adjustment Exceeds $10,000 Limit' }, { status: 400 });
 
     const { data: currentProfile, error: fetchError } = await supabase.from('profiles').select('prepaid_balance, full_name').eq('id', id).single();

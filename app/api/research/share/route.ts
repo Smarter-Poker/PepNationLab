@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
 
 export async function POST(req: NextRequest) {
+  assertSameOrigin(req);
   try {
     const payload = await req.json();
     if (!payload || !payload.results) {

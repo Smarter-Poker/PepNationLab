@@ -50,7 +50,36 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ subscription: data });
 }
 
-export const PATCH = POST;
+export async function PATCH(req: NextRequest) {
+  const { supabase, user } = await getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  let body: { compound_slug?: string; notify_new_evidence?: boolean; notify_wada_change?: boolean; notify_recall?: boolean; notify_trial_status?: boolean };
+  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  const compound_slug = (body.compound_slug ?? '').slice(0, 80).trim();
+  if (!compound_slug) return NextResponse.json({ error: 'compound_slug required' }, { status: 400 });
+  // Read existing row first to avoid overwriting unmentioned prefs
+  const { data: existing } = await supabase
+    .from('user_compound_subscriptions')
+    .select('notify_new_evidence, notify_wada_change, notify_recall, notify_trial_status')
+    .eq('user_id', user.id)
+    .eq('compound_slug', compound_slug)
+    .maybeSingle();
+  const merged = {
+    user_id: user.id,
+    compound_slug,
+    notify_new_evidence: 'notify_new_evidence' in body ? body.notify_new_evidence : (existing?.notify_new_evidence ?? true),
+    notify_wada_change: 'notify_wada_change' in body ? body.notify_wada_change : (existing?.notify_wada_change ?? false),
+    notify_recall: 'notify_recall' in body ? body.notify_recall : (existing?.notify_recall ?? true),
+    notify_trial_status: 'notify_trial_status' in body ? body.notify_trial_status : (existing?.notify_trial_status ?? false),
+  };
+  const { data, error } = await supabase
+    .from('user_compound_subscriptions')
+    .upsert(merged, { onConflict: 'user_id,compound_slug' })
+    .select('compound_slug, notify_new_evidence, notify_wada_change, notify_recall, notify_trial_status')
+    .single();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ subscription: data });
+}
 
 export async function DELETE(req: NextRequest) {
   const { supabase, user } = await getUser();
