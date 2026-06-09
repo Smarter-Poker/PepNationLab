@@ -326,7 +326,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
       {/* Tab panels */}
       <section role="tabpanel" className="glass-panel" style={{ padding: 'var(--space-5)', minHeight: 160 }}>
 
-        {/* ── OVERVIEW ─────────────────────────────────────────────────── */}
+        {/* OVERVIEW */}
         {active === 'overview' && (
           <div>
             {compound.eli5_summary && (
@@ -437,7 +437,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
           </div>
         )}
 
-        {/* ── ANALYTICS (NEW) ──────────────────────────────────────── */}
+        {/* ANALYTICS (NEW) */}
         {active === 'analytics' && (
           <div>
             <div style={{ marginBottom: 16 }}>
@@ -445,7 +445,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 Application Domain Efficacy Profile
               </div>
               <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', margin: 0, lineHeight: 1.6 }}>
-                Per-domain efficacy scores derived from compound research metadata. Scores represent the strength of research evidence and mechanistic alignment with each application area (0–100 scale).
+                Per-domain efficacy scores derived from compound research metadata. Scores represent the strength of research evidence and mechanistic alignment with each application area (0-100 scale).
               </p>
             </div>
 
@@ -457,7 +457,6 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               />
             )}
 
-            {/* Best stacked with context in analytics */}
             {hasStackData && (
               <>
                 <SectionDivider title="Synergy Potential" />
@@ -472,7 +471,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                         href={`/research/${slug}`}
                         style={{ fontSize: '0.78rem', fontWeight: 700, padding: '4px 10px', borderRadius: 9999, background: 'rgba(246,173,85,0.1)', border: '1px solid rgba(246,173,85,0.3)', color: '#F6AD55', textDecoration: 'none' }}
                       >
-                        {slug} →
+                        {slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())} &rarr;
                       </Link>
                     ))}
                   </div>
@@ -480,7 +479,6 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               </>
             )}
 
-            {/* Research breadth */}
             {compound.research_areas.length > 0 && (
               <>
                 <SectionDivider title="Research Coverage" />
@@ -505,7 +503,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
           </div>
         )}
 
-        {/* ── MECHANISM ────────────────────────────────────────────── */}
+        {/* MECHANISM */}
         {active === 'mechanism' && (
           <div>
             {compound.compound_class && (
@@ -545,7 +543,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               </>
             )}
 
-            {/* External ID quick links in mechanism tab */}
+            {/* External ID quick links - all open in IframeModal (Omega Protocol) */}
             {(() => {
               const ext = compound as unknown as Record<string, unknown>;
               const chemblId = typeof ext.chembl_id === 'string' ? ext.chembl_id : null;
@@ -574,7 +572,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
           </div>
         )}
 
-        {/* ── STUDIED FOR ──────────────────────────────────────────── */}
+        {/* STUDIED FOR */}
         {active === 'studied' && (
           <div>
             {compound.studied_for.length > 0 && (
@@ -606,7 +604,6 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               </div>
             )}
 
-            {/* Best Stacked With - now shown here with links */}
             {hasStackData && (
               <>
                 <SectionDivider title="Stack Compatibility" />
@@ -619,7 +616,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                         href={`/research/${slug}`}
                         style={{ fontSize: '0.8rem', fontWeight: 700, padding: '5px 12px', borderRadius: 9999, background: 'rgba(246,173,85,0.1)', border: '1px solid rgba(246,173,85,0.3)', color: '#F6AD55', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}
                       >
-                        {slug} <ExternalLink size={11} />
+                        {slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())} <ExternalLink size={11} />
                       </Link>
                     ))}
                   </div>
@@ -627,7 +624,6 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               </>
             )}
 
-            {/* Stack components if this is a pre-made combo */}
             {compound.is_stack && compound.stack_components && compound.stack_components.length > 0 && (
               <>
                 <SectionDivider title="Pre-Formulated Stack" />
@@ -651,7 +647,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
           </div>
         )}
 
-        {/* ── HANDLING ─────────────────────────────────────────────── */}
+        {/* HANDLING */}
         {active === 'handling' && (
           <div>
             <div style={{ marginBottom: 'var(--space-4)' }}>
@@ -669,7 +665,6 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                     </span>
                   : null}
               />
-              {/* Purity in handling context */}
               {compound.purity_percentage != null && (
                 <div style={{ display: 'flex', gap: 'var(--space-3)', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.88rem', alignItems: 'center' }}>
                   <span style={{ flex: '0 0 42%', color: 'var(--silver)', fontWeight: 700 }}>Purity</span>
@@ -699,10 +694,9 @@ export default function MonographTabs({ compound, related = [] }: Props) {
           </div>
         )}
 
-        {/* ── SAFETY ───────────────────────────────────────────────── */}
+        {/* SAFETY */}
         {active === 'safety' && (
           <div>
-            {/* Risk Level Card */}
             {risk && (
               <InfoCard color={risk.color}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -711,7 +705,6 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                   </div>
                   <span style={{ fontSize: '0.8rem', fontWeight: 800, color: risk.color }}>{risk.label} Risk</span>
                 </div>
-                {/* Risk reasons - full list */}
                 {compound.risk_reasons && compound.risk_reasons.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {compound.risk_reasons.map((reason, i) => (
@@ -748,7 +741,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
           </div>
         )}
 
-        {/* ── RESEARCH DATA (NEW) ──────────────────────────────────── */}
+        {/* RESEARCH DATA (NEW) */}
         {active === 'research_data' && (
           <div>
             <div style={{ marginBottom: 16 }}>
@@ -763,7 +756,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
           </div>
         )}
 
-        {/* ── SOURCES ──────────────────────────────────────────────── */}
+        {/* SOURCES */}
         {active === 'sources' && (
           <div>
             <Label>Sources</Label>
