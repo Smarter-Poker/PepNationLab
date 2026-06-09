@@ -13,20 +13,16 @@ import { createClient } from '@/lib/supabase/client';
 import { calculateShippingCost as getShippingCost, ShippingOption } from '@/lib/shipping';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 
-type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'paypal' | 'apple_cash' | 'google_wallet' | 'wise' | 'chime';
+type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'apple_cash';
 
 const baseStyle = { height: 28, width: 'auto', objectFit: 'contain' as const };
 const scaleStyle = (scale: number) => ({ ...baseStyle, transform: `scale(${scale})` });
 
 const ALL_PAYMENT_METHODS: { id: PaymentMethodId; name: string; desc: string; icon: React.ReactNode }[] = [
-  { id: 'zelle',         name: 'Zelle',           desc: 'Instant Direct Transfer. Fastest Processing.', icon: <Image src="/payment-logos/zelle.svg" width={40} height={28} alt="Zelle" unoptimized style={baseStyle} /> },
-  { id: 'cashapp',       name: 'Cash App',        desc: 'Secure Mobile Check. Handled Manually.', icon: <Image src="/payment-logos/cashapp.svg" width={40} height={28} alt="Cash App" unoptimized style={baseStyle} /> },
-  { id: 'venmo',         name: 'Venmo',           desc: 'Social Transfer. Manual Clearance.', icon: <Image src="/payment-logos/venmo.svg" width={40} height={28} alt="Venmo" unoptimized style={scaleStyle(1.4)} /> },
-  { id: 'paypal',        name: 'PayPal',          desc: 'Email Or @Username.', icon: <Image src="/payment-logos/paypal.svg" width={40} height={28} alt="PayPal" unoptimized style={baseStyle} /> },
-  { id: 'apple_cash',    name: 'Apple Cash',      desc: 'Secure Contactless Flow. Fast Settlement.', icon: <Image src="/payment-logos/apple_cash.svg" width={40} height={28} alt="Apple Cash" unoptimized style={scaleStyle(1.4)} /> },
-  { id: 'google_wallet', name: 'Google Wallet',   desc: 'Gmail Address.', icon: <Image src="/payment-logos/google_wallet.svg" width={40} height={28} alt="Google Wallet" unoptimized style={scaleStyle(1.4)} /> },
-  { id: 'wise',          name: 'Wise',            desc: 'Email Or Wise Username.', icon: <Image src="/payment-logos/wise.svg" width={40} height={28} alt="Wise" unoptimized style={baseStyle} /> },
-  { id: 'chime',         name: 'Chime',           desc: 'Chime Username Or Link.', icon: <Image src="/payment-logos/chime.png" width={40} height={28} alt="Chime" unoptimized style={baseStyle} /> },
+  { id: 'zelle',      name: 'Zelle',      desc: 'Instant Direct Transfer. Fastest Processing.', icon: <Image src="/payment-logos/zelle.svg" width={40} height={28} alt="Zelle" unoptimized style={baseStyle} /> },
+  { id: 'cashapp',    name: 'Cash App',   desc: 'Secure Mobile Check. Handled Manually.', icon: <Image src="/payment-logos/cashapp.svg" width={40} height={28} alt="Cash App" unoptimized style={baseStyle} /> },
+  { id: 'venmo',      name: 'Venmo',      desc: 'Social Transfer. Manual Clearance.', icon: <Image src="/payment-logos/venmo.svg" width={40} height={28} alt="Venmo" unoptimized style={scaleStyle(1.4)} /> },
+  { id: 'apple_cash', name: 'Apple Cash', desc: 'Secure Contactless Flow. Fast Settlement.', icon: <Image src="/payment-logos/apple_cash.svg" width={40} height={28} alt="Apple Cash" unoptimized style={scaleStyle(1.4)} /> },
 ];
 
 interface Profile {
@@ -64,7 +60,7 @@ interface SavedAddress {
 }
 
 export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1, minOrderQty = 1 }: CheckoutFormProps) {
-  // Agent buying from their own store → show tier-discounted pricing.
+  // Agent buying from their own store -> show tier-discounted pricing.
   // Cross-check: only treat as self-buy when the agentSlug in the URL
   // matches the agent's OWN store. If an agent visits another agent's
   // storefront, isAgentSelfBuy must be false so UI/rules are correct.
@@ -920,11 +916,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         };
       case 'apple_cash':
         return {
-          label: 'Apple Pay Details',
+          label: 'Apple Cash Details',
           handle: handle || noHandle,
           instructions: handle
-            ? `Send Total Amount Via Apple Pay Cash To: ${handle}. Please Reference Your Order ID.`
-            : 'Contact Your Agent For Apple Pay Instructions.',
+            ? `Send Total Amount Via Apple Cash To: ${handle}. Please Reference Your Order ID.`
+            : 'Contact Your Agent For Apple Cash Payment Instructions.',
         };
       default:
         return {
@@ -1017,7 +1013,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payment Method</span>
-              <strong style={{ color: 'var(--white)', fontSize: '0.95rem', textTransform: 'capitalize' }}>{paymentMethod === 'cashapp' ? 'Cash App' : paymentMethod === 'apple_cash' ? 'Apple Pay' : paymentMethod}</strong>
+              <strong style={{ color: 'var(--white)', fontSize: '0.95rem', textTransform: 'capitalize' }}>{paymentMethod === 'cashapp' ? 'Cash App' : paymentMethod === 'apple_cash' ? 'Apple Cash' : paymentMethod}</strong>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
@@ -1760,7 +1756,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,229,255,0.1)', paddingBottom: 6, marginBottom: 4 }}>
                           <div>
                             <h4 style={{ fontSize: '0.85rem', margin: 0, fontFamily: 'var(--font-brand)', color: '#00E5FF', display: 'flex', alignItems: 'center', gap: 6 }}>
-                              📦 {group.name}
+                              {group.name}
                             </h4>
                             <div style={{ fontSize: '0.65rem', color: '#68D391', marginTop: 2, fontWeight: 700 }}>Stack Discount (10% Off) Applied</div>
                             <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', marginTop: 4, fontStyle: 'italic', maxWidth: '90%' }}>
@@ -1777,7 +1773,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                           return (
                             <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', alignItems: 'flex-start', paddingLeft: 6 }}>
                               <div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}>
-                                <span style={{ color: 'var(--silver-light)', fontWeight: 500 }}>↳ {toTitleCase(item.name)}</span>
+                                <span style={{ color: 'var(--silver-light)', fontWeight: 500 }}>&#x21B3; {toTitleCase(item.name)}</span>
                                 <div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div>
                               </div>
                               <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
