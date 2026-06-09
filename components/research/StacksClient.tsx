@@ -11,6 +11,13 @@ import StackBuilder from './StackBuilder';
 import { FlaskConical, Beaker, CheckCircle2, X, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import IframeModal from '@/components/ui/IframeModal';
 
+function sortStackProducts(a: AreaProduct, b: AreaProduct) {
+  const a10 = (a.productName || '').includes('10mg') || (a.unitSize || '').includes('10mg');
+  const b10 = (b.productName || '').includes('10mg') || (b.unitSize || '').includes('10mg');
+  if (a10 && !b10) return -1;
+  if (!a10 && b10) return 1;
+  return b.retailPrice - a.retailPrice;
+}
 
 const SynergyBadge = ({ score, status }: { score: number, status: string }) => (
   <div style={{
@@ -128,7 +135,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
     // Check if there is a premixed blend product for this stack
     const premadeProducts = products.filter(p => p.compoundSlug === stack.slug);
     if (premadeProducts.length > 0) {
-      premadeProducts.sort((a, b) => a.retailPrice - b.retailPrice);
+      premadeProducts.sort(sortStackProducts);
       const p = premadeProducts[0];
       addToCart({
         id: p.agentProductId || p.compoundSlug,
@@ -148,7 +155,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
       // Find the lowest price product for this compound
       const compProducts = products.filter(p => p.compoundSlug === compSlug);
       if (compProducts.length > 0) {
-        compProducts.sort((a, b) => a.retailPrice - b.retailPrice);
+        compProducts.sort(sortStackProducts);
         const p = compProducts[0];
         itemsToAdd.push({
           product: {
@@ -190,7 +197,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
     // Check if there is a premixed blend product for this stack
     const premadeProducts = products.filter(p => p.compoundSlug === stack.slug);
     if (premadeProducts.length > 0) {
-      premadeProducts.sort((a, b) => a.retailPrice - b.retailPrice);
+      premadeProducts.sort(sortStackProducts);
       return premadeProducts[0].retailPrice;
     }
 
@@ -199,7 +206,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
       const compProducts = products.filter(p => p.compoundSlug === compSlug);
       if (compProducts.length > 0) {
         // Sort descending to get the largest/most expensive standard vials for the stack
-        compProducts.sort((a, b) => a.retailPrice - b.retailPrice);
+        compProducts.sort(sortStackProducts);
         total += compProducts[0].retailPrice;
       }
     }
@@ -320,7 +327,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20, paddingLeft: 36 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {(() => {
-                        const product = isBundleProduct ? products.filter(p => p.compoundSlug === stack.slug).sort((a,b)=>a.retailPrice-b.retailPrice)[0] : null;
+                        const product = isBundleProduct ? products.filter(p => p.compoundSlug === stack.slug).sort(sortStackProducts)[0] : null;
                         const fullProductName = product?.productName || '';
                         const dbTitle = stack.display_name;
                         
@@ -365,7 +372,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                         for (const compSlug of stack.stack_components) {
                           const compProducts = products.filter(p => p.compoundSlug === compSlug);
                           if (compProducts.length > 0) {
-                            compProducts.sort((a,b) => a.retailPrice - b.retailPrice);
+                            compProducts.sort(sortStackProducts);
                             componentSum += compProducts[0].retailPrice;
                           }
                         }
@@ -400,7 +407,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', justifyContent: 'center', marginBottom: 20, width: '100%', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
                     {stack.stack_components.map((compSlug, i) => {
                       const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
-                      compProducts.sort((a, b) => a.retailPrice - b.retailPrice);
+                      compProducts.sort(sortStackProducts);
                       const p = compProducts.length > 0 ? compProducts[0] : undefined;
                       const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                       const comp = bySlug.get(compSlug);
@@ -503,7 +510,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', justifyContent: 'center', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
                           {stack.stack_components.map((compSlug: string, i: number) => {
                             const compProducts = products.filter((prod) => prod.compoundSlug === compSlug);
-                            compProducts.sort((a, b) => a.retailPrice - b.retailPrice);
+                            compProducts.sort(sortStackProducts);
                             const p = compProducts.length > 0 ? compProducts[0] : undefined;
                             const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                             const comp = bySlug.get(compSlug);
@@ -926,7 +933,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {stack.stack_components.map((slug: string) => {
                     const compProducts = products.filter((prod) => prod.compoundSlug === slug);
-                    compProducts.sort((a, b) => a.retailPrice - b.retailPrice);
+                    compProducts.sort(sortStackProducts);
                     const p = compProducts.length > 0 ? compProducts[0] : undefined;
                     const imageUrl = p?.imageUrl || '/images/placeholder_vial.png';
                     const comp = bySlug.get(slug);
