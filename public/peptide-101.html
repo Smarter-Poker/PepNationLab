@@ -446,6 +446,218 @@ tr:hover td{background:rgba(0,196,188,0.04);}
   opacity:0;transition:opacity .3s;
 }
 </style>
+<style>
+/* =====================================================================
+   METALLIC RESEARCH ACADEMY REDESIGN LAYER (overrides base styles above)
+   Brushed nickel frames, 3D pill buttons, dynamic stat/roadmap cards,
+   metallic course nav, info panels, badges, accordions, molecule.
+   ===================================================================== */
+:root{
+  --navy:#070e1b; --panelA:#0f1c31; --panelB:#0a1322; --panelSoft:#101f37;
+  --recess:#0b1525;
+  --nk1:#eaeff5; --nk2:#aeb9c6; --nk3:#6d7a8a; --nk4:#39434f;
+  --accent:#5ea0ff; --accent2:#3B82F6; --glow:rgba(74,134,232,.35);
+}
+body{
+  background:
+    radial-gradient(1100px 560px at 50% -14%, rgba(42,86,156,.20), transparent 60%),
+    radial-gradient(900px 520px at 112% 2%, rgba(22,64,128,.16), transparent 55%),
+    linear-gradient(180deg,#070e1b 0%,#050a14 100%);
+  background-attachment:fixed;
+}
+
+/* ---- brushed-nickel frame applied to common containers ---- */
+.card,
+.stop-card,
+.stat-box,
+.card-nickel,
+.prog-wrap,
+.metal-frame,
+.course-nav,
+.dyn-badge{
+  border:1.5px solid transparent;
+  border-radius:16px;
+  background:
+    linear-gradient(180deg,var(--panelA),var(--panelB)) padding-box,
+    linear-gradient(155deg,#e4ebf2 0%,#9aa7b6 20%,#495466 50%,#76828f 78%,#c4cdd7 100%) border-box;
+  box-shadow:0 12px 30px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.07);
+}
+.card:hover,.card-nickel:hover{border:1.5px solid transparent;}
+.metal-frame .metal-inner{background:var(--recess);border-radius:12px;padding:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);}
+
+/* ---- info panels (callouts) keep nickel frame + colored inset accent ---- */
+.callout,.callout-red,.callout-blue,.info-panel{
+  border:1.5px solid transparent;border-radius:14px;
+  background:
+    linear-gradient(180deg,var(--panelA),var(--panelB)) padding-box,
+    linear-gradient(155deg,#dbe3eb,#566270,#aeb9c5) border-box;
+  box-shadow:0 10px 26px rgba(0,0,0,.5), inset 6px 0 0 var(--teal), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.callout-red{box-shadow:0 10px 26px rgba(0,0,0,.5), inset 6px 0 0 var(--red), inset 0 1px 0 rgba(255,255,255,.06);}
+.callout-blue{box-shadow:0 10px 26px rgba(0,0,0,.5), inset 6px 0 0 var(--blue), inset 0 1px 0 rgba(255,255,255,.06);}
+.stop-card{box-shadow:0 10px 26px rgba(0,0,0,.5), inset 6px 0 0 var(--red), inset 0 1px 0 rgba(255,255,255,.06);}
+.info-teal{box-shadow:0 10px 26px rgba(0,0,0,.5), inset 6px 0 0 var(--teal), inset 0 1px 0 rgba(255,255,255,.06)!important;}
+
+/* ---- pill buttons: brushed nickel, 3D raised ---- */
+.btn{border-radius:999px;letter-spacing:.2px;}
+.btn-primary{
+  background:linear-gradient(180deg,#f3f7fb 0%,#cbd5e1 26%,#94a0b0 54%,#aeb9c6 78%,#e7eef5 100%);
+  color:#0a1322;border:1px solid #dbe3ec;
+  box-shadow:0 8px 20px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.9), inset 0 -3px 7px rgba(0,0,0,.32);
+  text-shadow:0 1px 0 rgba(255,255,255,.55);
+}
+.btn-primary:hover{background:linear-gradient(180deg,#ffffff 0%,#d6dfe9 26%,#9caab9 54%,#bcc6d2 78%,#f1f6fb 100%);box-shadow:0 10px 24px rgba(0,0,0,.55), 0 0 18px var(--glow), inset 0 1px 0 rgba(255,255,255,.95), inset 0 -3px 7px rgba(0,0,0,.32);transform:translateY(-1px);}
+.btn-secondary,.btn-ghost,.btn-blue{
+  color:#dce6f2;border:1px solid transparent;
+  background:
+    linear-gradient(180deg,#172742,#0c1626) padding-box,
+    linear-gradient(155deg,#cfd9e3,#5a6675,#aeb9c5) border-box;
+  box-shadow:0 7px 18px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.09);
+  text-shadow:0 1px 1px rgba(0,0,0,.5);
+}
+.btn-secondary:hover,.btn-ghost:hover,.btn-blue:hover{color:#fff;background:linear-gradient(180deg,#1d3252,#0e1a2e) padding-box,linear-gradient(155deg,#e0e8f0,#6b7785,#c2ccd6) border-box;box-shadow:0 9px 22px rgba(0,0,0,.55),0 0 16px var(--glow),inset 0 1px 0 rgba(255,255,255,.12);transform:translateY(-1px);}
+/* circular icon badge inside a pill */
+.pill-ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;
+  background:radial-gradient(circle at 50% 34%,#1b2c47,#0a1322);
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.6),0 0 0 1.5px rgba(176,190,210,.55);}
+.pill-ic svg{width:16px;height:16px;color:#cfe0f5;}
+.btn-primary .pill-ic{background:radial-gradient(circle at 50% 34%,#2a3a55,#101a2c);box-shadow:inset 0 1px 3px rgba(0,0,0,.5),0 0 0 1.5px rgba(255,255,255,.5);}
+.btn-primary .pill-ic svg{color:#eaf2fb;}
+.btn-xl{font-size:18px;padding:14px 16px 14px 14px;min-height:62px;gap:14px;}
+
+/* ---- metallic title text ---- */
+.title-metal{
+  font-family:'Space Grotesk',sans-serif;font-weight:800;letter-spacing:1.5px;line-height:1.02;
+  background:linear-gradient(180deg,#ffffff 0%,#d4deea 42%,#8492a6 60%,#f0f5fb 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 1px rgba(0,0,0,.55));
+}
+.title-sub{font-family:'Space Grotesk',sans-serif;font-weight:600;letter-spacing:7px;color:var(--accent);font-size:13px;text-shadow:0 0 14px rgba(94,160,255,.5);}
+
+/* ---- DynamicCourseNav ---- */
+.course-nav-wrap{position:sticky;top:104px;z-index:80;padding:8px 12px 0;margin:0 auto;max-width:1000px;}
+.course-nav{display:flex;gap:4px;padding:5px;}
+.course-nav::-webkit-scrollbar{display:none;}
+.course-tab{flex:1 0 auto;display:flex;align-items:center;justify-content:center;gap:7px;min-height:46px;padding:8px 12px;border-radius:10px;font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:none;cursor:pointer;white-space:nowrap;transition:all .2s;}
+.course-tab+.course-tab{box-shadow:inset 1.5px 0 0 rgba(150,168,192,.18);}
+.course-tab svg{width:17px;height:17px;color:var(--nk2);transition:color .2s;}
+.course-tab:hover{color:#dbe7f4;}
+.course-tab.active{color:#eaf2fb;background:linear-gradient(180deg,#1d3357,#102444);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 14px rgba(59,130,246,.35);}
+.course-tab.active svg{color:var(--accent);}
+@media(max-width:680px){.course-nav{overflow-x:auto;}.course-tab{flex:0 0 auto;}.course-tab .ct-label{display:none;}.course-tab.active .ct-label{display:inline;}}
+
+/* ---- DynamicStatCard ---- */
+.stat-card{display:flex;align-items:center;gap:14px;padding:16px 18px;}
+.stat-ring{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;
+  border:2px solid transparent;
+  background:
+    radial-gradient(circle at 50% 32%,#16263f,#0a1322) padding-box,
+    linear-gradient(155deg,#e6edf3,#5a6675,#bcc6d2) border-box;
+  box-shadow:inset 0 2px 7px rgba(0,0,0,.6),0 0 16px rgba(59,130,246,.22);}
+.stat-ring svg{width:26px;height:26px;color:var(--accent);}
+.stat-bignum{font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:800;line-height:1;
+  background:linear-gradient(180deg,#ffffff,#9fb0c4);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.stat-cap{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--nk2);font-weight:600;margin-top:3px;}
+
+/* ---- What You Will Learn grid ---- */
+.learn-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+@media(max-width:640px){.learn-grid{grid-template-columns:repeat(2,1fr);}}
+.learn-card{text-align:center;padding:16px 10px;border-radius:12px;background:var(--recess);box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 4px 12px rgba(0,0,0,.3);}
+.learn-ic{width:48px;height:48px;margin:0 auto 9px;border-radius:13px;display:grid;place-items:center;
+  border:1.5px solid transparent;
+  background:
+    radial-gradient(circle at 50% 30%,#1a2c48,#0a1322) padding-box,
+    linear-gradient(155deg,#dde5ee,#56616f,#aab5c2) border-box;
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.5),0 0 12px rgba(59,130,246,.16);}
+.learn-ic svg{width:24px;height:24px;color:var(--accent);}
+.learn-card h4{font-size:13.5px;color:#eaf1f8;margin-bottom:4px;}
+.learn-card p{font-size:11.5px;line-height:1.45;color:var(--muted);}
+
+/* ---- ModuleRoadmapCard ---- */
+.roadmap-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+.mini-track{flex:1;min-width:140px;height:8px;border-radius:99px;background:var(--recess);box-shadow:inset 0 1px 3px rgba(0,0,0,.6);overflow:hidden;}
+.mini-fill{height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,var(--accent2),#9fc4ff);box-shadow:0 0 10px var(--glow);}
+.roadmap-card{display:flex;align-items:center;gap:14px;padding:12px 14px;margin-bottom:9px;border-radius:13px;cursor:pointer;
+  border:1.5px solid transparent;
+  background:
+    linear-gradient(180deg,#13223a,#0b1525) padding-box,
+    linear-gradient(155deg,#cdd7e2,#4f5a68,#9eaab7) border-box;
+  box-shadow:0 6px 16px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05);transition:transform .15s,box-shadow .2s;}
+.roadmap-card:hover{transform:translateY(-1px);box-shadow:0 9px 22px rgba(0,0,0,.5),0 0 16px rgba(59,130,246,.2),inset 0 1px 0 rgba(255,255,255,.08);}
+.rm-num{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;font-weight:700;font-size:14px;color:#cfe0f5;
+  border:1.5px solid transparent;
+  background:
+    radial-gradient(circle at 50% 34%,#1a2c48,#0a1322) padding-box,
+    linear-gradient(155deg,#e3eaf2,#566270,#b3bdc9) border-box;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.55);}
+.rm-ic{width:22px;height:22px;color:var(--accent);flex-shrink:0;}
+.rm-title{flex:1;font-weight:600;font-size:14px;color:#e8eff7;}
+.rm-time{display:flex;align-items:center;gap:5px;color:#9fc0ee;font-weight:600;font-size:12.5px;white-space:nowrap;}
+.rm-time svg{width:14px;height:14px;}
+.rm-state{width:22px;height:22px;display:grid;place-items:center;flex-shrink:0;color:var(--nk3);}
+.rm-state svg{width:16px;height:16px;}
+
+/* ---- DynamicBadge ---- */
+.dyn-badge{display:flex;align-items:center;gap:13px;padding:15px 18px;}
+.badge-ring{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;
+  border:1.5px solid transparent;
+  background:
+    radial-gradient(circle at 50% 30%,#1c2b22,#0a1322) padding-box,
+    linear-gradient(155deg,#e7d9a6,#7a6a3a,#cdbb7e) border-box;
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.5),0 0 12px rgba(200,170,90,.2);}
+.badge-ring svg{width:24px;height:24px;color:#e7cf86;}
+.badge-ring.bshield{background:radial-gradient(circle at 50% 30%,#15243c,#0a1322) padding-box,linear-gradient(155deg,#dbe5ef,#536c8c,#aab9cc) border-box;box-shadow:inset 0 2px 6px rgba(0,0,0,.5),0 0 12px rgba(59,130,246,.2);}
+.badge-ring.bshield svg{color:#9fc4ff;}
+.dyn-badge h4{font-size:13.5px;color:#eef3f9;margin-bottom:2px;}
+.dyn-badge p{font-size:11.5px;line-height:1.4;color:var(--muted);}
+
+/* ---- total time card ---- */
+.time-card{display:flex;align-items:center;gap:13px;padding:15px 18px;}
+.time-big{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:800;color:#eaf2fb;line-height:1;}
+
+/* ---- DynamicAccordionButton ---- */
+.accordion-btn{width:100%;display:flex;align-items:center;gap:11px;min-height:54px;padding:12px 18px;border-radius:999px;cursor:pointer;font-size:14px;font-weight:600;color:#e7eff7;
+  border:1px solid transparent;
+  background:
+    linear-gradient(180deg,#17284450,#0c162680) padding-box,
+    linear-gradient(155deg,#cfd9e3,#5a6675,#aeb9c5) border-box;
+  box-shadow:0 6px 16px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);}
+.accordion-btn .chev{margin-left:auto;transition:transform .25s;color:var(--nk2);}
+.accordion-btn[aria-expanded="true"] .chev{transform:rotate(180deg);}
+
+/* ---- nav + progress polished ---- */
+.nav{background:rgba(7,13,24,.92);border-bottom:1px solid rgba(150,168,192,.18);box-shadow:0 1px 0 rgba(255,255,255,.04);}
+.prog-wrap{border-radius:0;border-top:none;border-left:none;border-right:none;}
+.prog-track{box-shadow:inset 0 1px 3px rgba(0,0,0,.6);}
+.prog-fill{background:linear-gradient(90deg,var(--accent2),#9fc4ff);box-shadow:0 0 10px var(--glow);}
+
+/* ---- badges (chips) made metallic-dark, colored text retained ---- */
+.badge{background:linear-gradient(180deg,#15243c,#0c1626);border:1px solid rgba(150,170,200,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);}
+
+/* ---- hero layout ---- */
+.hero-card{display:flex;align-items:center;gap:24px;padding:28px 30px;}
+.hero-left{flex:1 1 320px;min-width:0;}
+.hero-right{flex:0 0 auto;display:flex;align-items:center;justify-content:center;}
+.hero-tags{display:flex;gap:22px;margin-top:18px;flex-wrap:wrap;}
+.hero-tag{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;letter-spacing:1px;color:#c2cdd9;text-transform:uppercase;}
+.hero-tag svg{width:18px;height:18px;color:var(--nk2);}
+@media(max-width:760px){.hero-card{flex-direction:column;text-align:center;padding:24px 20px;}.hero-tags{justify-content:center;}}
+
+/* ---- animated molecule ---- */
+.mol-wrap{width:210px;height:210px;position:relative;animation:molFloat 6s ease-in-out infinite;}
+@media(max-width:760px){.mol-wrap{width:170px;height:170px;}}
+.mol-spin{transform-origin:50% 50%;animation:molSpin 22s linear infinite;}
+.mol-node{filter:drop-shadow(0 0 4px rgba(94,160,255,.8));}
+.mol-pulse{animation:molPulse 3.2s ease-in-out infinite;}
+.mol-base{filter:drop-shadow(0 6px 10px rgba(0,0,0,.6));}
+@keyframes molSpin{to{transform:rotate(360deg);}}
+@keyframes molFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+@keyframes molPulse{0%,100%{opacity:.55;}50%{opacity:1;}}
+
+/* ---- section heading ---- */
+.section-h{display:flex;align-items:center;justify-content:center;gap:10px;margin:4px 0 16px;text-align:center;}
+.section-h .title-metal{font-size:18px;letter-spacing:2px;text-transform:uppercase;}
+</style>
 </head>
 <body>
 
@@ -473,71 +685,310 @@ tr:hover td{background:rgba(0,196,188,0.04);}
 
 <div class="app" id="app">
 
+<!-- DYNAMIC COURSE NAV -->
+<div class="course-nav-wrap no-print">
+  <nav class="course-nav" role="navigation" aria-label="Course Sections">
+    <button class="course-tab active" onclick="courseGo(0,this)" aria-label="Overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+      <span class="ct-label">Overview</span>
+    </button>
+    <button class="course-tab" onclick="courseGo(1,this)" aria-label="Research Roadmap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M8.5 6H14a2 2 0 0 1 2 2v2M8.5 18H14a2 2 0 0 0 2-2v-2"/></svg>
+      <span class="ct-label">Research Roadmap</span>
+    </button>
+    <button class="course-tab" onclick="courseGo(6,this)" aria-label="Peptide Families">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3c4 4 10 6 14 4M5 21c4-4 10-6 14-4M6 4c0 6 12 10 12 16M18 4c0 6-12 10-12 16"/></svg>
+      <span class="ct-label">Peptide Families</span>
+    </button>
+    <button class="course-tab" onclick="courseGo(8,this)" aria-label="Reconstitution">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M7.5 14h9"/></svg>
+      <span class="ct-label">Reconstitution</span>
+    </button>
+    <button class="course-tab" onclick="courseGo(10,this)" aria-label="Certificate">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="9" r="6"/><path d="M9 14.5 8 22l4-2.5L16 22l-1-7.5"/></svg>
+      <span class="ct-label">Certificate</span>
+    </button>
+  </nav>
+</div>
+<script>
+function courseGo(n, el){
+  document.querySelectorAll('.course-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (typeof goTo === 'function') goTo(n);
+}
+</script>
+
 <!-- =========================================================
      SCREEN 0: INTRO
      ========================================================= -->
 <div class="screen active" id="s0">
-  <div style="text-align:center;padding:40px 0 32px;position:relative;">
-    <div class="hero-orb" style="width:300px;height:300px;background:radial-gradient(circle,rgba(0,196,188,0.12),transparent 70%);top:-60px;left:50%;transform:translateX(-50%);" aria-hidden="true"></div>
-    <div class="badge badge-teal" style="margin-bottom:20px;">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-      10 Modules - 45 Minutes
+  <!-- HERO -->
+  <div class="card hero-card">
+    <div class="hero-left">
+      <div class="badge badge-blue" style="margin-bottom:14px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Research Academy
+      </div>
+      <h1 class="title-metal" style="font-size:clamp(34px,7vw,58px);margin-bottom:6px;">PEPTIDE 101</h1>
+      <div class="title-sub" style="margin-bottom:16px;">RESEARCH FUNDAMENTALS</div>
+      <p style="font-size:16px;color:var(--silver);max-width:420px;">
+        The Complete Beginner Guide To Research Peptides. No Science Degree Required.
+      </p>
+      <div class="hero-tags">
+        <div class="hero-tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h6a3 3 0 0 1 3 3 3 3 0 0 1 3-3h6v13h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3H3z"/><path d="M12 8v13"/></svg>
+          Learn
+        </div>
+        <div class="hero-tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg>
+          Understand
+        </div>
+        <div class="hero-tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M7.5 14h9"/></svg>
+          Apply
+        </div>
+      </div>
     </div>
-    <h1 style="font-size:clamp(30px,6vw,52px);margin-bottom:16px;background:linear-gradient(135deg,var(--text),var(--silver));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
-      Peptide 101
-    </h1>
-    <p style="font-size:18px;color:var(--silver);max-width:520px;margin:0 auto 32px;">
-      The Complete Beginner Guide To Research Peptides. No Science Degree Required.
-    </p>
-    <div class="stat-row" style="max-width:480px;margin:0 auto 32px;">
-      <div class="stat-box">
-        <div class="stat-num">10</div>
-        <div class="stat-label">Modules</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-num">6</div>
-        <div class="stat-label">Peptides Covered</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-num">1</div>
-        <div class="stat-label">Certificate</div>
+    <div class="hero-right">
+      <div class="mol-wrap" aria-hidden="true">
+        <svg viewBox="0 0 220 220" width="100%" height="100%">
+          <defs>
+            <radialGradient id="molNode" cx="40%" cy="35%" r="70%">
+              <stop offset="0%" stop-color="#cfe2ff"/><stop offset="55%" stop-color="#3f74c8"/><stop offset="100%" stop-color="#16315e"/>
+            </radialGradient>
+            <linearGradient id="molRibbon" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#9fc4ff"/><stop offset="100%" stop-color="#27508f"/>
+            </linearGradient>
+            <radialGradient id="molDisc" cx="50%" cy="38%" r="62%">
+              <stop offset="0%" stop-color="#2a3850"/><stop offset="100%" stop-color="#0a1322"/>
+            </radialGradient>
+          </defs>
+          <ellipse class="mol-base" cx="110" cy="190" rx="74" ry="15" fill="url(#molDisc)" stroke="#5a6675" stroke-width="1.5"/>
+          <ellipse cx="110" cy="190" rx="40" ry="6" fill="rgba(94,160,255,.28)"/>
+          <g class="mol-spin">
+            <path d="M70 36 C 156 58, 56 100, 152 122 C 56 144, 156 166, 82 182" fill="none" stroke="url(#molRibbon)" stroke-width="9" stroke-linecap="round" opacity=".85"/>
+            <path d="M70 36 L152 122 M156 58 L82 182 M56 100 L156 166" stroke="#3a5a8c" stroke-width="2" opacity=".45"/>
+            <circle class="mol-node mol-pulse" cx="70" cy="36" r="11" fill="url(#molNode)"/>
+            <circle class="mol-node" cx="156" cy="58" r="9" fill="url(#molNode)"/>
+            <circle class="mol-node mol-pulse" cx="56" cy="100" r="12" fill="url(#molNode)"/>
+            <circle class="mol-node" cx="152" cy="122" r="10" fill="url(#molNode)"/>
+            <circle class="mol-node mol-pulse" cx="56" cy="144" r="9" fill="url(#molNode)"/>
+            <circle class="mol-node" cx="156" cy="166" r="11" fill="url(#molNode)"/>
+            <circle class="mol-node" cx="82" cy="182" r="8" fill="url(#molNode)"/>
+          </g>
+        </svg>
       </div>
     </div>
-    <button class="btn btn-primary" style="font-size:16px;padding:16px 40px;" onclick="goTo(1)" aria-label="Start Learning">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="grid3" style="margin-bottom:16px;">
+    <div class="card stat-card">
+      <div class="stat-ring">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h6a3 3 0 0 1 3 3 3 3 0 0 1 3-3h6v13h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3H3z"/><path d="M12 8v13"/></svg>
+      </div>
+      <div>
+        <div class="stat-bignum">10</div>
+        <div class="stat-cap">Research Modules</div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-ring">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3c4 4 10 6 14 4M5 21c4-4 10-6 14-4M6 4c0 6 12 10 12 16M18 4c0 6-12 10-12 16"/></svg>
+      </div>
+      <div>
+        <div class="stat-bignum">6</div>
+        <div class="stat-cap">Peptide Families</div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-ring">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="9" r="6"/><path d="M9 14.5 8 22l4-2.5L16 22l-1-7.5"/></svg>
+      </div>
+      <div>
+        <div class="stat-bignum">1</div>
+        <div class="stat-cap">Completion Certificate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- START LEARNING -->
+  <div style="text-align:center;margin:8px 0 28px;">
+    <button class="btn btn-primary btn-xl" onclick="goTo(1)" aria-label="Start Learning">
+      <span class="pill-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/></svg></span>
       Start Learning
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-left:2px;"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </button>
   </div>
 
-  <div class="callout" style="margin-top:32px;">
-    <strong>What You Will Learn:</strong> What peptides are, how they work at the molecular level, the top research peptides, how to reconstitute and dose them, stacking protocols, and practical storage rules.
+  <!-- WHAT YOU WILL LEARN -->
+  <div class="card">
+    <div class="section-h"><span class="title-metal">What You Will Learn</span></div>
+    <div class="learn-grid">
+      <div class="learn-card">
+        <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg></div>
+        <h4>Peptide Basics</h4>
+        <p>Understand What Peptides Are And How They Work.</p>
+      </div>
+      <div class="learn-card">
+        <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></div>
+        <h4>Mechanisms</h4>
+        <p>How Peptides Interact With The Body And Systems.</p>
+      </div>
+      <div class="learn-card">
+        <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M7.5 14h9"/></svg></div>
+        <h4>Reconstitution</h4>
+        <p>Step-By-Step Guidance On Reconstituting Peptides.</p>
+      </div>
+      <div class="learn-card">
+        <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div>
+        <h4>Storage</h4>
+        <p>Best Practices For Storing Peptides Safely.</p>
+      </div>
+      <div class="learn-card">
+        <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M8 11h8M8 15h6"/></svg></div>
+        <h4>Protocols</h4>
+        <p>Stacking Protocols, Cycle Structures, And Best Practices.</p>
+      </div>
+      <div class="learn-card">
+        <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18"/><rect x="5" y="11" width="3" height="7" rx="1"/><rect x="10.5" y="6" width="3" height="12" rx="1"/><rect x="16" y="13" width="3" height="5" rx="1"/></svg></div>
+        <h4>Research</h4>
+        <p>Evidence, Studies, And Real-World Research Insights.</p>
+      </div>
+    </div>
   </div>
 
-  <div class="grid2" style="margin-top:20px;">
-    <div class="card-nickel">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636-.707.707M21 12h-1M4 12H3m3.343-5.657-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 1 1-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-        <strong style="color:var(--text);">Beginner Friendly</strong>
-      </div>
-      <p style="font-size:13px;">Zero prior knowledge needed. We explain every term as we go.</p>
+  <!-- COURSE MODULES ROADMAP -->
+  <div class="card">
+    <div class="roadmap-head">
+      <strong style="font-size:17px;color:#eef3f9;letter-spacing:.5px;">Course Modules</strong>
+      <span style="font-size:12px;color:var(--nk2);font-weight:600;white-space:nowrap;">0 Of 10 Modules Complete</span>
+      <div class="mini-track"><div class="mini-fill"></div></div>
     </div>
-    <div class="card-nickel">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <strong style="color:var(--text);">Research Only</strong>
-      </div>
-      <p style="font-size:13px;">All information is for research and educational purposes only.</p>
+
+    <div class="roadmap-card" onclick="goTo(1)" role="button" tabindex="0" aria-label="Module 1: What Is A Peptide?">
+      <div class="rm-num">1</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg>
+      <div class="rm-title">What Is A Peptide?</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>4 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(2)" role="button" tabindex="0" aria-label="Module 2: Building A Peptide">
+      <div class="rm-num">2</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6"/><path d="M8 8a4 4 0 0 0 0 8h2"/><path d="M16 16a4 4 0 0 0 0-8h-2"/></svg>
+      <div class="rm-title">Building A Peptide</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>5 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(3)" role="button" tabindex="0" aria-label="Module 3: The Lock And Key">
+      <div class="rm-num">3</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="4"/><path d="M11 11l8 8M16 16l2-2M18 18l2-2"/></svg>
+      <div class="rm-title">The Lock And Key</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>4 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(4)" role="button" tabindex="0" aria-label="Module 4: What Peptides Are Studied For">
+      <div class="rm-num">4</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <div class="rm-title">What Peptides Are Studied For</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>5 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(5)" role="button" tabindex="0" aria-label="Module 5: Handling And Storage">
+      <div class="rm-num">5</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+      <div class="rm-title">Handling And Storage</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>6 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(6)" role="button" tabindex="0" aria-label="Module 6: Peptide Families">
+      <div class="rm-num">6</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <div class="rm-title">Peptide Families</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>8 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(7)" role="button" tabindex="0" aria-label="Module 7: Stacking And Protocols">
+      <div class="rm-num">7</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5z"/><path d="M2 12l10 5 10-5M2 17l10 5 10-5"/></svg>
+      <div class="rm-title">Stacking And Protocols</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>4 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(8)" role="button" tabindex="0" aria-label="Module 8: Reconstitution Calculator">
+      <div class="rm-num">8</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M8 14h2M12 14h2M8 18h6"/></svg>
+      <div class="rm-title">Reconstitution Calculator</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>4 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(9)" role="button" tabindex="0" aria-label="Module 9: Dosing Reference">
+      <div class="rm-num">9</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>
+      <div class="rm-title">Dosing Reference</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>3 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    </div>
+
+    <div class="roadmap-card" onclick="goTo(10)" role="button" tabindex="0" aria-label="Module 10: Completion And Certificate" style="margin-bottom:0;">
+      <div class="rm-num">10</div>
+      <svg class="rm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="9" r="6"/><path d="M9 14.5 8 22l4-2.5L16 22l-1-7.5"/></svg>
+      <div class="rm-title">Completion And Certificate</div>
+      <div class="rm-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>2 Min</div>
+      <div class="rm-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
     </div>
   </div>
 
-  <div class="stop-card" style="border-color:rgba(0,196,188,0.25);background:rgba(0,196,188,0.04);">
-    <strong style="color:var(--teal);">Research Use Only:</strong> PepNationLab peptides are for laboratory research only. Not for human use. Always follow applicable laws and institutional guidelines.
+  <!-- BADGES -->
+  <div class="grid2" style="margin-top:16px;">
+    <div class="dyn-badge">
+      <div class="badge-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/></svg></div>
+      <div>
+        <h4>Beginner Friendly</h4>
+        <p>No Prior Knowledge Required. We Explain Every Step.</p>
+      </div>
+    </div>
+    <div class="dyn-badge">
+      <div class="badge-ring bshield"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div>
+        <h4>Research Use Only</h4>
+        <p>For Laboratory Research Purposes Only.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESEARCH NOTICE + TOTAL TIME -->
+  <div class="grid2" style="margin-top:16px;align-items:stretch;">
+    <div class="stop-card" style="margin:0;display:flex;align-items:center;gap:13px;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" style="flex-shrink:0;"><path d="M12 3 2 20h20z"/><path d="M12 9v5M12 17h.01"/></svg>
+      <div style="font-size:13px;">
+        <strong style="color:var(--yellow);">Research Use Only:</strong> Not For Human Use. For Laboratory Research Only. Always Follow Applicable Laws And Institutional Guidelines.
+      </div>
+    </div>
+    <div class="card time-card" style="margin:0;">
+      <div class="stat-ring" style="width:48px;height:48px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      </div>
+      <div>
+        <div class="stat-cap" style="margin:0 0 2px;">Total Time To Complete</div>
+        <div class="time-big">45 Min</div>
+      </div>
+    </div>
   </div>
 
   <div class="nav-ctrl">
     <div></div>
-    <button class="btn btn-primary" onclick="goTo(1)" aria-label="Next: Complete Overview">
-      Next: Complete Overview
+    <button class="btn btn-primary" onclick="goTo(1)" aria-label="Next: Module 1">
+      <span class="pill-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/></svg></span>
+      Next: Module 1
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </button>
   </div>
@@ -549,7 +1000,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
 <div class="screen" id="s1">
   <div class="badge badge-teal">Module 1 - Complete Overview</div>
   <h2 style="font-size:28px;margin-bottom:8px;">What Exactly Is A Peptide?</h2>
-  <p style="margin-bottom:24px;">A peptide is a short chain of amino acids. Think of amino acids as individual Lego bricks. A peptide is what you get when you connect 2 to 50 of those bricks in a specific order. When chains grow beyond 50, they become proteins.</p>
+  <p style="margin-bottom:24px;">A Peptide Is A Short Chain Of Amino Acids. Think Of Amino Acids As Individual Lego Bricks. A Peptide Is What You Get When You Connect 2 To 50 Of Those Bricks In A Specific Order. When Chains Grow Beyond 50, They Become Proteins.</p>
 
   <div class="card-nickel">
     <div style="display:flex;align-items:center;gap:16px;">
@@ -576,7 +1027,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
         </div>
         <div>
           <strong>Precision Signaling</strong>
-          <p style="font-size:13px;margin-top:2px;">Each peptide has an exact shape that keys into specific receptors. Your body does not confuse one signal for another.</p>
+          <p style="font-size:13px;margin-top:2px;">Each Peptide Has An Exact Shape That Keys Into Specific Receptors. Your Body Does Not Confuse One Signal For Another.</p>
         </div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:12px;">
@@ -585,7 +1036,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
         </div>
         <div>
           <strong>Short Duration</strong>
-          <p style="font-size:13px;margin-top:2px;">Peptides are broken down quickly by enzymes. Half-lives range from minutes to hours, not days. This limits off-target effects.</p>
+          <p style="font-size:13px;margin-top:2px;">Peptides Are Broken Down Quickly By Enzymes. Half-Lives Range From Minutes To Hours, Not Days. This Limits Off-Target Effects.</p>
         </div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:12px;">
@@ -594,7 +1045,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
         </div>
         <div>
           <strong>Natural Blueprint</strong>
-          <p style="font-size:13px;margin-top:2px;">Research peptides are often synthetic copies of sequences your own body already uses. BPC-157, for example, is derived from a gastric protein.</p>
+          <p style="font-size:13px;margin-top:2px;">Research Peptides Are Often Synthetic Copies Of Sequences Your Own Body Already Uses. BPC-157, For Example, Is Derived From A Gastric Protein.</p>
         </div>
       </div>
     </div>
@@ -604,20 +1055,20 @@ tr:hover td{background:rgba(0,196,188,0.04);}
   <div class="grid3">
     <div class="card" style="padding:16px;">
       <div style="font-weight:700;color:var(--teal);font-size:14px;">Insulin</div>
-      <p style="font-size:12px;margin-top:4px;">51 amino acids. Regulates blood glucose. Used medically since the 1920s. At 51 AAs, insulin sits at the peptide-protein boundary and is technically classified as a polypeptide hormone -- included here as a well-known example of a biologically active amino acid chain.</p>
+      <p style="font-size:12px;margin-top:4px;">51 Amino Acids. Regulates Blood Glucose. Used Medically Since The 1920s. At 51 AAs, Insulin Sits At The Peptide-Protein Boundary And Is Technically Classified As A Polypeptide Hormone -- Included Here As A Well-Known Example Of A Biologically Active Amino Acid Chain.</p>
     </div>
     <div class="card" style="padding:16px;">
       <div style="font-weight:700;color:var(--teal);font-size:14px;">Oxytocin</div>
-      <p style="font-size:12px;margin-top:4px;">9 amino acids. Known as the bonding hormone. Naturally released during social contact.</p>
+      <p style="font-size:12px;margin-top:4px;">9 Amino Acids. Known As The Bonding Hormone. Naturally Released During Social Contact.</p>
     </div>
     <div class="card" style="padding:16px;">
       <div style="font-weight:700;color:var(--teal);font-size:14px;">Endorphins</div>
-      <p style="font-size:12px;margin-top:4px;">31 amino acids. Natural pain-relief. Released after intense exercise.</p>
+      <p style="font-size:12px;margin-top:4px;">31 Amino Acids. Natural Pain-Relief. Released After Intense Exercise.</p>
     </div>
   </div>
 
   <div class="stop-card" style="margin-top:20px;">
-    <strong>Research Note:</strong> The peptides sold by PepNationLab are synthetic research compounds. They are not medications. Their research applications range from tissue modeling to metabolic studies.
+    <strong>Research Note:</strong> The Peptides Sold By PepNationLab Are Synthetic Research Compounds. They Are Not Medications. Their Research Applications Range From Tissue Modeling To Metabolic Studies.
   </div>
 
   <div class="nav-ctrl">
@@ -638,7 +1089,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
 <div class="screen" id="s2">
   <div class="badge badge-teal">Module 2 - The Science</div>
   <h2 style="font-size:28px;margin-bottom:8px;">Building A Peptide</h2>
-  <p style="margin-bottom:20px;">Every peptide starts as a sequence of amino acids linked by peptide bonds. Tap the buttons below to add amino acids to your growing chain and watch the structure form. The line connecting each pair is a peptide bond.</p>
+  <p style="margin-bottom:20px;">Every Peptide Starts As A Sequence Of Amino Acids Linked By Peptide Bonds. Tap The Buttons Below To Add Amino Acids To Your Growing Chain And Watch The Structure Form. The Line Connecting Each Pair Is A Peptide Bond.</p>
 
   <div class="card" style="padding:20px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -646,10 +1097,10 @@ tr:hover td{background:rgba(0,196,188,0.04);}
       <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;min-height:36px;" onclick="clearChain()" aria-label="Clear Chain">Clear</button>
     </div>
     <div class="chain-area" id="chainArea" aria-live="polite" aria-label="Peptide Chain Builder">
-      <span style="font-size:13px;color:var(--muted);">Add amino acids below to build your chain...</span>
+      <span style="font-size:13px;color:var(--muted);">Add Amino Acids Below To Build Your Chain...</span>
     </div>
     <div id="chainInfo" style="font-size:13px;color:var(--muted);margin-bottom:12px;display:none;">
-      Chain length: <strong id="chainLen" style="color:var(--teal);">0</strong> amino acids
+      Chain Length: <strong id="chainLen" style="color:var(--teal);">0</strong> Amino Acids
       <span id="chainType" style="margin-left:8px;"></span>
     </div>
     <div class="aa-grid" role="group" aria-label="Amino Acid Selection">
@@ -670,14 +1121,14 @@ tr:hover td{background:rgba(0,196,188,0.04);}
 
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:12px;">What Is A Peptide Bond?</h3>
-    <p style="font-size:14px;">When two amino acids join, the carboxyl group (-COOH) of the first reacts with the amino group (-NH2) of the second. Water (H2O) is released as a byproduct. The resulting C-N bond is what we call a peptide bond. It is very strong and holds the chain together.</p>
+    <p style="font-size:14px;">When Two Amino Acids Join, The Carboxyl Group (-COOH) Of The First Reacts With The Amino Group (-NH2) Of The Second. Water (H2O) Is Released As A Byproduct. The Resulting C-N Bond Is What We Call A Peptide Bond. It Is Very Strong And Holds The Chain Together.</p>
     <div class="callout" style="margin-top:12px;">
-      <strong>BPC-157 Example:</strong> BPC-157 is a 15 amino acid sequence (Gly-Glu-Pro-Pro-Pro-Gly-Lys-Pro-Ala-Asp-Asp-Ala-Gly-Leu-Val). All 14 peptide bonds are required for its activity.
+      <strong>BPC-157 Example:</strong> BPC-157 Is A 15 Amino Acid Sequence (Gly-Glu-Pro-Pro-Pro-Gly-Lys-Pro-Ala-Asp-Asp-Ala-Gly-Leu-Val). All 14 Peptide Bonds Are Required For Its Activity.
     </div>
   </div>
 
   <!-- Peptide vs Protein side-by-side SVG comparison -->
-  <h3 style="font-size:16px;margin:20px 0 12px;">Peptide vs. Protein: Size Comparison</h3>
+  <h3 style="font-size:16px;margin:20px 0 12px;">Peptide Vs. Protein: Size Comparison</h3>
   <div class="svg-compare">
     <div class="svg-compare-box">
       <svg width="120" height="80" viewBox="0 0 120 80" aria-label="Peptide structure diagram">
@@ -693,7 +1144,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
         <text x="75" y="44" fill="var(--text)" font-size="7" font-family="Inter,sans-serif">AA</text>
       </svg>
       <div class="svg-compare-label" style="color:var(--teal);">Peptide (2-50 AA)</div>
-      <p style="font-size:11px;color:var(--muted);margin-top:4px;">Simple linear chain. Small molecule. Moves easily across tissues.</p>
+      <p style="font-size:11px;color:var(--muted);margin-top:4px;">Simple Linear Chain. Small Molecule. Moves Easily Across Tissues.</p>
     </div>
     <div class="svg-compare-box">
       <svg width="120" height="80" viewBox="0 0 120 80" aria-label="Protein structure diagram">
@@ -706,13 +1157,13 @@ tr:hover td{background:rgba(0,196,188,0.04);}
         <text x="52" y="72" fill="var(--muted)" font-size="7" font-family="Inter,sans-serif">Folded 3D</text>
       </svg>
       <div class="svg-compare-label" style="color:var(--blue-l);">Protein (51+ AA)</div>
-      <p style="font-size:11px;color:var(--muted);margin-top:4px;">Folds into complex 3D shapes. Large molecule. Often injected for direct delivery.</p>
+      <p style="font-size:11px;color:var(--muted);margin-top:4px;">Folds Into Complex 3D Shapes. Large Molecule. Often Injected For Direct Delivery.</p>
     </div>
   </div>
 
   <div class="card" style="margin-top:16px;">
     <strong style="font-size:15px;">Module 2 Quiz</strong>
-    <p style="font-size:14px;margin:10px 0;">A chain of 30 amino acids would be classified as a...</p>
+    <p style="font-size:14px;margin:10px 0;">A Chain Of 30 Amino Acids Would Be Classified As A...</p>
     <div class="quiz-opts" role="group" aria-label="Quiz Options">
       <button class="quiz-opt" onclick="quiz('q2',this,false)" aria-label="Option: Protein">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
@@ -748,7 +1199,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
 <div class="screen" id="s3">
   <div class="badge badge-teal">Module 3 - How Peptides Work</div>
   <h2 style="font-size:28px;margin-bottom:8px;">The Lock And Key</h2>
-  <p style="margin-bottom:20px;">Peptides work by binding to specific receptors on cell surfaces. Each peptide has a unique 3D shape that fits only certain receptors - like a key fitting a specific lock. When bound, the receptor sends a signal into the cell, triggering a biological response.</p>
+  <p style="margin-bottom:20px;">Peptides Work By Binding To Specific Receptors On Cell Surfaces. Each Peptide Has A Unique 3D Shape That Fits Only Certain Receptors - Like A Key Fitting A Specific Lock. When Bound, The Receptor Sends A Signal Into The Cell, Triggering A Biological Response.</p>
 
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:16px;text-align:center;">Interactive Demo: Binding A Peptide To Its Receptor</h3>
@@ -763,14 +1214,14 @@ tr:hover td{background:rgba(0,196,188,0.04);}
         <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px;">Cell Surface</div>
       </div>
       <div style="text-align:center;">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;" id="lkInstr">Tap the peptide to try binding</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;" id="lkInstr">Tap The Peptide To Try Binding</div>
         <div class="lk-peptide" id="lkPeptide" onclick="bindPeptide()" role="button" tabindex="0" aria-label="Peptide - tap to bind" onkeydown="if(event.key==='Enter'||event.key===' ')bindPeptide()">
           <div style="text-align:center;font-size:9px;line-height:1.3;">BPC<br>157</div>
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:6px;">Peptide</div>
       </div>
       <div style="text-align:center;max-width:140px;">
-        <div style="font-size:13px;color:var(--muted);" id="lkEffect">Drag the peptide onto the receptor to see what happens</div>
+        <div style="font-size:13px;color:var(--muted);" id="lkEffect">Drag The Peptide Onto The Receptor To See What Happens</div>
       </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;">
@@ -783,38 +1234,38 @@ tr:hover td{background:rgba(0,196,188,0.04);}
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
         <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">1</div>
-        <p style="font-size:13px;margin:0;">Peptide locks onto its specific receptor (like BPC-157 activating VEGFR2 and the FAK-paxillin signaling pathway)</p>
+        <p style="font-size:13px;margin:0;">Peptide Locks Onto Its Specific Receptor (Like BPC-157 Activating VEGFR2 And The FAK-Paxillin Signaling Pathway)</p>
       </div>
       <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
         <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">2</div>
-        <p style="font-size:13px;margin:0;">Receptor changes shape (conformation change), activating its inner signaling domain</p>
+        <p style="font-size:13px;margin:0;">Receptor Changes Shape (Conformation Change), Activating Its Inner Signaling Domain</p>
       </div>
       <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
         <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">3</div>
-        <p style="font-size:13px;margin:0;">Intracellular signaling cascade begins (second messengers, kinase activation)</p>
+        <p style="font-size:13px;margin:0;">Intracellular Signaling Cascade Begins (Second Messengers, Kinase Activation)</p>
       </div>
       <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
         <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">4</div>
-        <p style="font-size:13px;margin:0;">Biological response occurs: gene expression changes, protein synthesis begins, or enzyme activity shifts</p>
+        <p style="font-size:13px;margin:0;">Biological Response Occurs: Gene Expression Changes, Protein Synthesis Begins, Or Enzyme Activity Shifts</p>
       </div>
     </div>
   </div>
 
   <div class="card">
     <strong style="font-size:15px;">Module 3 Quiz</strong>
-    <p style="font-size:14px;margin:10px 0;">A peptide can only bind to a receptor if...</p>
+    <p style="font-size:14px;margin:10px 0;">A Peptide Can Only Bind To A Receptor If...</p>
     <div class="quiz-opts" role="group" aria-label="Quiz Options">
       <button class="quiz-opt" onclick="quiz('q3',this,false)" aria-label="Option: It is very large">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-        It is very large
+        It Is Very Large
       </button>
       <button class="quiz-opt" onclick="quiz('q3',this,true)" aria-label="Option: Its shape matches the receptor">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-        Its shape matches the receptor
+        Its Shape Matches The Receptor
       </button>
       <button class="quiz-opt" onclick="quiz('q3',this,false)" aria-label="Option: It has a positive charge">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-        It has a positive charge
+        It Has A Positive Charge
       </button>
     </div>
     <div class="quiz-fb" id="q3-fb"></div>
@@ -838,7 +1289,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
 <div class="screen" id="s4">
   <div class="badge badge-teal">Module 4 - Use Cases</div>
   <h2 style="font-size:28px;margin-bottom:8px;">What Peptides Are Studied For</h2>
-  <p style="margin-bottom:20px;">Researchers study peptides across a wide range of fields. Below are the primary research categories with examples of which peptides are being investigated.</p>
+  <p style="margin-bottom:20px;">Researchers Study Peptides Across A Wide Range Of Fields. Below Are The Primary Research Categories With Examples Of Which Peptides Are Being Investigated.</p>
 
   <div class="card">
     <div style="display:flex;align-items:flex-start;gap:14px;">
@@ -847,7 +1298,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
       </div>
       <div>
         <strong style="font-size:15px;">Tissue And Wound Research</strong>
-        <p style="font-size:13px;margin-top:4px;">Peptides like BPC-157 and TB-500 are studied for their role in fibroblast proliferation, angiogenesis, and the upregulation of growth factors involved in tissue repair processes.</p>
+        <p style="font-size:13px;margin-top:4px;">Peptides Like BPC-157 And TB-500 Are Studied For Their Role In Fibroblast Proliferation, Angiogenesis, And The Upregulation Of Growth Factors Involved In Tissue Repair Processes.</p>
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">BPC-157</span>
           <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">TB-500</span>
@@ -864,7 +1315,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
       </div>
       <div>
         <strong style="font-size:15px;">Growth Hormone Axis Research</strong>
-        <p style="font-size:13px;margin-top:4px;">GH secretagogues like Sermorelin, CJC-1295, and Ipamorelin stimulate the pituitary to release growth hormone. Research explores their impact on IGF-1 levels, body composition, and metabolic parameters.</p>
+        <p style="font-size:13px;margin-top:4px;">GH Secretagogues Like Sermorelin, CJC-1295, And Ipamorelin Stimulate The Pituitary To Release Growth Hormone. Research Explores Their Impact On IGF-1 Levels, Body Composition, And Metabolic Parameters.</p>
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Sermorelin</span>
           <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">CJC-1295</span>
@@ -881,7 +1332,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
       </div>
       <div>
         <strong style="font-size:15px;">Metabolic And Fat Loss Research</strong>
-        <p style="font-size:13px;margin-top:4px;">AOD-9604 is a fragment of human growth hormone studied for fat metabolism regulation without the anabolic effects of full HGH. Researchers investigate lipolytic properties and adipogenesis inhibition.</p>
+        <p style="font-size:13px;margin-top:4px;">AOD-9604 Is A Fragment Of Human Growth Hormone Studied For Fat Metabolism Regulation Without The Anabolic Effects Of Full HGH. Researchers Investigate Lipolytic Properties And Adipogenesis Inhibition.</p>
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">AOD-9604</span>
           <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">CJC-1295</span>
@@ -897,7 +1348,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
       </div>
       <div>
         <strong style="font-size:15px;">Neurological And Sleep Research</strong>
-        <p style="font-size:13px;margin-top:4px;">Sermorelin and Ipamorelin are also studied in the context of sleep architecture, since most GH pulses occur during slow-wave sleep. Research examines whether GH secretagogues can modulate sleep quality markers.</p>
+        <p style="font-size:13px;margin-top:4px;">Sermorelin And Ipamorelin Are Also Studied In The Context Of Sleep Architecture, Since Most GH Pulses Occur During Slow-Wave Sleep. Research Examines Whether GH Secretagogues Can Modulate Sleep Quality Markers.</p>
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Sermorelin</span>
           <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Ipamorelin</span>
@@ -913,7 +1364,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
       </div>
       <div>
         <strong style="font-size:15px;">Melanocortin System Research</strong>
-        <p style="font-size:13px;margin-top:4px;">PT-141 (Bremelanotide) activates melanocortin receptors (MC1R and MC4R) in the central nervous system. Research explores its role in arousal pathways without direct vascular mechanisms.</p>
+        <p style="font-size:13px;margin-top:4px;">PT-141 (Bremelanotide) Activates Melanocortin Receptors (MC1R And MC4R) In The Central Nervous System. Research Explores Its Role In Arousal Pathways Without Direct Vascular Mechanisms.</p>
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">PT-141</span>
           <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Melanotan II</span>
@@ -924,7 +1375,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
 
   <div class="card">
     <strong style="font-size:15px;">Module 4 Quiz</strong>
-    <p style="font-size:14px;margin:10px 0;">Which peptide is primarily studied for its role in the growth hormone secretagogue pathway?</p>
+    <p style="font-size:14px;margin:10px 0;">Which Peptide Is Primarily Studied For Its Role In The Growth Hormone Secretagogue Pathway?</p>
     <div class="quiz-opts" role="group" aria-label="Quiz Options">
       <button class="quiz-opt" onclick="quiz('q4',this,false)" aria-label="Option: BPC-157">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
@@ -960,12 +1411,12 @@ tr:hover td{background:rgba(0,196,188,0.04);}
 <div class="screen" id="s5">
   <div class="badge badge-teal">Module 5 - Practical Basics</div>
   <h2 style="font-size:28px;margin-bottom:8px;">Handling And Storage</h2>
-  <p style="margin-bottom:20px;">Proper handling is critical for research integrity. Peptides degrade rapidly when exposed to heat, light, moisture, and repeated freeze-thaw cycles.</p>
+  <p style="margin-bottom:20px;">Proper Handling Is Critical For Research Integrity. Peptides Degrade Rapidly When Exposed To Heat, Light, Moisture, And Repeated Freeze-Thaw Cycles.</p>
 
   <!-- Half-life explorer -->
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:16px;">Half-Life Explorer</h3>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Select a peptide to see how fast it degrades in a biological environment:</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Select A Peptide To See How Fast It Degrades In A Biological Environment:</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
       <button class="btn btn-secondary" style="font-size:13px;padding:8px 14px;min-height:40px;" onclick="showHL('BPC-157',4,'#00C4BC')" aria-label="Show BPC-157 half-life">BPC-157</button>
       <button class="btn btn-secondary" style="font-size:13px;padding:8px 14px;min-height:40px;" onclick="showHL('TB-500',72,'#3B82F6')" aria-label="Show TB-500 half-life">TB-500</button>
@@ -997,47 +1448,47 @@ tr:hover td{background:rgba(0,196,188,0.04);}
       <div style="display:flex;flex-direction:column;gap:10px;">
         <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
-          <div><strong style="font-size:13px;">Temperature: 36-46 Degrees F (Refrigerator)</strong><p style="font-size:12px;margin-top:2px;">Most lyophilized peptides are stable for 3-6 months refrigerated. For long-term storage beyond 6 months, freeze at 0 Degrees F.</p></div>
+          <div><strong style="font-size:13px;">Temperature: 36-46 Degrees F (Refrigerator)</strong><p style="font-size:12px;margin-top:2px;">Most Lyophilized Peptides Are Stable For 3-6 Months Refrigerated. For Long-Term Storage Beyond 6 Months, Freeze At 0 Degrees F.</p></div>
         </div>
         <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
-          <div><strong style="font-size:13px;">Light: Keep In Original Dark Vial</strong><p style="font-size:12px;margin-top:2px;">UV exposure degrades peptide bonds. Always store in amber or opaque vials. Avoid leaving vials on the bench under lab lighting.</p></div>
+          <div><strong style="font-size:13px;">Light: Keep In Original Dark Vial</strong><p style="font-size:12px;margin-top:2px;">UV Exposure Degrades Peptide Bonds. Always Store In Amber Or Opaque Vials. Avoid Leaving Vials On The Bench Under Lab Lighting.</p></div>
         </div>
         <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-          <div><strong style="font-size:13px;">Moisture: Keep Dry Before Reconstitution</strong><p style="font-size:12px;margin-top:2px;">Lyophilized (freeze-dried) peptides are stable when dry. Do not open vials in humid conditions. Use desiccant storage boxes when possible.</p></div>
+          <div><strong style="font-size:13px;">Moisture: Keep Dry Before Reconstitution</strong><p style="font-size:12px;margin-top:2px;">Lyophilized (Freeze-Dried) Peptides Are Stable When Dry. Do Not Open Vials In Humid Conditions. Use Desiccant Storage Boxes When Possible.</p></div>
         </div>
         <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          <div><strong style="font-size:13px;">Freeze-Thaw: Minimize Cycles</strong><p style="font-size:12px;margin-top:2px;">Every freeze-thaw cycle causes minor structural damage. If using frozen stock, aliquot into single-use portions before freezing. Do not refreeze a thawed aliquot.</p></div>
+          <div><strong style="font-size:13px;">Freeze-Thaw: Minimize Cycles</strong><p style="font-size:12px;margin-top:2px;">Every Freeze-Thaw Cycle Causes Minor Structural Damage. If Using Frozen Stock, Aliquot Into Single-Use Portions Before Freezing. Do Not Refreeze A Thawed Aliquot.</p></div>
         </div>
       </div>
     </div>
 
     <div class="tab-panel" id="tab-recon" role="tabpanel" aria-labelledby="tab-btn-recon">
       <div class="callout callout-red" style="margin-bottom:16px;">
-        <strong style="color:var(--red);">Important:</strong> Once a peptide is reconstituted with BAC water or sterile water, the stability window changes significantly. Reconstituted peptides are far more sensitive than lyophilized powder.
+        <strong style="color:var(--red);">Important:</strong> Once A Peptide Is Reconstituted With BAC Water Or Sterile Water, The Stability Window Changes Significantly. Reconstituted Peptides Are Far More Sensitive Than Lyophilized Powder.
       </div>
       <div style="display:flex;flex-direction:column;gap:10px;">
         <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
-          <div><strong style="font-size:13px;">Temperature: 36-46 Degrees F Always</strong><p style="font-size:12px;margin-top:2px;">Reconstituted peptide solutions must be refrigerated at all times. Do not leave on a bench for more than 30 minutes. Use immediately or refrigerate.</p></div>
+          <div><strong style="font-size:13px;">Temperature: 36-46 Degrees F Always</strong><p style="font-size:12px;margin-top:2px;">Reconstituted Peptide Solutions Must Be Refrigerated At All Times. Do Not Leave On A Bench For More Than 30 Minutes. Use Immediately Or Refrigerate.</p></div>
         </div>
         <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <div><strong style="font-size:13px;">Use Window: 28-30 Days Maximum</strong><p style="font-size:12px;margin-top:2px;">Most reconstituted peptides are stable for 28-30 days when refrigerated with BAC water. Sterile water solutions should be used within 24-72 hours.</p></div>
+          <div><strong style="font-size:13px;">Use Window: 28-30 Days Maximum</strong><p style="font-size:12px;margin-top:2px;">Most Reconstituted Peptides Are Stable For 28-30 Days When Refrigerated With BAC Water. Sterile Water Solutions Should Be Used Within 24-72 Hours.</p></div>
         </div>
         <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-          <div><strong style="font-size:13px;">Do Not Freeze After Reconstitution</strong><p style="font-size:12px;margin-top:2px;">Freezing a reconstituted solution causes ice crystal formation which physically damages the peptide structure. If you need long-term storage, keep as lyophilized powder and reconstitute only what you need.</p></div>
+          <div><strong style="font-size:13px;">Do Not Freeze After Reconstitution</strong><p style="font-size:12px;margin-top:2px;">Freezing A Reconstituted Solution Causes Ice Crystal Formation Which Physically Damages The Peptide Structure. If You Need Long-Term Storage, Keep As Lyophilized Powder And Reconstitute Only What You Need.</p></div>
         </div>
         <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
-          <div><strong style="font-size:13px;">Light Sensitivity Increases After Reconstitution</strong><p style="font-size:12px;margin-top:2px;">Peptides in solution are more photosensitive than in powder form. Keep vials wrapped in foil or in a drawer when not in use. Work in dim lighting during reconstitution procedures.</p></div>
+          <div><strong style="font-size:13px;">Light Sensitivity Increases After Reconstitution</strong><p style="font-size:12px;margin-top:2px;">Peptides In Solution Are More Photosensitive Than In Powder Form. Keep Vials Wrapped In Foil Or In A Drawer When Not In Use. Work In Dim Lighting During Reconstitution Procedures.</p></div>
         </div>
       </div>
       <div class="callout" style="margin-top:16px;">
-        <strong>BAC Water vs. Sterile Water:</strong> Bacteriostatic water (BAC water) contains 0.9% benzyl alcohol which inhibits bacterial growth. This extends the use window to 28-30 days vs. 24-72 hours with sterile water. BAC water is the preferred diluent for research protocols.
+        <strong>BAC Water Vs. Sterile Water:</strong> Bacteriostatic Water (BAC Water) Contains 0.9% Benzyl Alcohol Which Inhibits Bacterial Growth. This Extends The Use Window To 28-30 Days Vs. 24-72 Hours With Sterile Water. BAC Water Is The Preferred Diluent For Research Protocols.
       </div>
     </div>
   </div>
@@ -1047,147 +1498,117 @@ tr:hover td{background:rgba(0,196,188,0.04);}
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
       Back
     </button>
-    <button class="btn btn-primary" onclick="goTo(6)" aria-label="Next: Research Peptides">
-      Next: Research Peptides
+    <button class="btn btn-primary" onclick="goTo(6)" aria-label="Next: Peptide Families">
+      Next: Peptide Families
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </button>
   </div>
 </div>
 
 <!-- =========================================================
-     SCREEN 6: RESEARCH PEPTIDES CATALOG
+     SCREEN 6: PEPTIDE FAMILIES AND CATEGORIES
      ========================================================= -->
 <div class="screen" id="s6">
-  <div class="badge badge-teal">Module 6 - Research Peptides</div>
-  <h2 style="font-size:28px;margin-bottom:8px;">The Research Catalog</h2>
-  <p style="margin-bottom:20px;">These are the six most widely researched peptides in preclinical and academic settings. Each has a distinct mechanism and research profile.</p>
+  <div class="badge badge-teal">Module 6 - Peptide Families</div>
+  <h2 style="font-size:28px;margin-bottom:8px;">Peptide Families And Categories</h2>
+  <p style="margin-bottom:20px;">Research Peptides Group Into Families By The Biological System They Target. Understanding These Categories Makes It Easier To See How Individual Compounds Relate To One Another.</p>
 
-  <div class="peptide-card">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-      <div class="peptide-icon" style="background:rgba(0,196,188,0.15);">
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(0,196,188,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
       </div>
       <div>
-        <strong style="font-size:17px;">BPC-157</strong>
-        <div style="font-size:12px;color:var(--muted);">Body Protection Compound</div>
+        <strong style="font-size:15px;">Tissue And Recovery Peptides</strong>
+        <p style="font-size:13px;margin-top:4px;">This Family Targets Tissue Repair And Healing. Compounds Here Are Studied For Their Role In Fibroblast Activity, Angiogenesis, And The Recovery Of Muscle, Tendon, And Connective Tissue.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">BPC-157</span>
+          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">TB-500</span>
+          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">GHK-Cu</span>
+        </div>
       </div>
-      <span class="badge badge-teal" style="margin-left:auto;font-size:11px;">15 Amino Acids</span>
-    </div>
-    <p style="font-size:13px;margin-bottom:10px;">A synthetic 15-amino acid sequence derived from a protective protein found in gastric juice. Research focuses on its ability to promote fibroblast proliferation, stimulate angiogenesis, and upregulate growth factor expression.</p>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-      <span style="font-size:11px;padding:3px 8px;background:rgba(0,196,188,0.1);border-radius:6px;color:var(--teal);">Tissue Research</span>
-      <span style="font-size:11px;padding:3px 8px;background:rgba(0,196,188,0.1);border-radius:6px;color:var(--teal);">GI Research</span>
-      <span style="font-size:11px;padding:3px 8px;background:rgba(0,196,188,0.1);border-radius:6px;color:var(--teal);">Tendon/Ligament</span>
-    </div>
-    <div style="font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;">
-      <strong style="color:var(--silver);">Mechanism:</strong> Activates VEGFR2 (vascular endothelial growth factor receptor 2) and upregulates nitric oxide (NO) synthesis. Modulates the FAK-paxillin pathway involved in cell migration and tissue remodeling.
     </div>
   </div>
 
-  <div class="peptide-card">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-      <div class="peptide-icon" style="background:rgba(59,130,246,0.15);">
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(59,130,246,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
       </div>
       <div>
-        <strong style="font-size:17px;">TB-500</strong>
-        <div style="font-size:12px;color:var(--muted);">Synthetic Thymosin Beta-4 Fragment</div>
+        <strong style="font-size:15px;">Growth Hormone Axis Peptides</strong>
+        <p style="font-size:13px;margin-top:4px;">This Family Targets GH Release And IGF-1 Production. These Secretagogues Are Studied For Their Effect On The Pituitary, Body Composition, And Sleep-Linked Growth Hormone Pulses.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Sermorelin</span>
+          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">CJC-1295</span>
+          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">Ipamorelin</span>
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">GHRP-6</span>
+        </div>
       </div>
-      <span class="badge badge-blue" style="margin-left:auto;font-size:11px;">43 Amino Acids</span>
-    </div>
-    <p style="font-size:13px;margin-bottom:10px;">TB-500 is a synthetic fragment of Thymosin Beta-4, a naturally occurring protein found in virtually all human and animal cells. Research investigates its role in actin regulation, cell migration, and endothelial cell differentiation.</p>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-      <span style="font-size:11px;padding:3px 8px;background:rgba(59,130,246,0.1);border-radius:6px;color:var(--blue-l);">Muscle Research</span>
-      <span style="font-size:11px;padding:3px 8px;background:rgba(59,130,246,0.1);border-radius:6px;color:var(--blue-l);">Cardiac Research</span>
-      <span style="font-size:11px;padding:3px 8px;background:rgba(59,130,246,0.1);border-radius:6px;color:var(--blue-l);">Flexibility</span>
-    </div>
-    <div style="font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;">
-      <strong style="color:var(--silver);">Mechanism:</strong> Sequesters actin monomers (G-actin) and regulates the ratio of free to polymerized actin. This modulates cell motility and survival signaling.
     </div>
   </div>
 
-  <div class="peptide-card">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-      <div class="peptide-icon" style="background:rgba(138,155,176,0.15);">
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(138,155,176,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--silver)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       </div>
       <div>
-        <strong style="font-size:17px;">PT-141</strong>
-        <div style="font-size:12px;color:var(--muted);">Bremelanotide</div>
+        <strong style="font-size:15px;">Melanocortin System Peptides</strong>
+        <p style="font-size:13px;margin-top:4px;">This Family Targets Pigmentation And Sexual Function Research. These Compounds Act On Melanocortin Receptors In The Central Nervous System And Skin.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">PT-141</span>
+          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Melanotan II</span>
+        </div>
       </div>
-      <span class="badge badge-silver" style="margin-left:auto;font-size:11px;">7 Amino Acids</span>
-    </div>
-    <p style="font-size:13px;margin-bottom:10px;">A cyclic heptapeptide and melanocortin receptor agonist. Unlike vasodilatory compounds, PT-141 acts centrally on the CNS. Research focuses on melanocortin receptor (MC1R, MC4R) signaling pathways in the hypothalamus.</p>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-      <span style="font-size:11px;padding:3px 8px;background:rgba(138,155,176,0.1);border-radius:6px;color:var(--silver);">CNS Research</span>
-      <span style="font-size:11px;padding:3px 8px;background:rgba(138,155,176,0.1);border-radius:6px;color:var(--silver);">Melanocortin System</span>
-    </div>
-    <div style="font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;">
-      <strong style="color:var(--silver);">Mechanism:</strong> Binds MC1R and MC4R receptors, activating downstream cAMP pathways. CNS activation is distinct from PDE5-inhibitor pathways, making it a unique research subject.
     </div>
   </div>
 
-  <div class="peptide-card">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-      <div class="peptide-icon" style="background:rgba(0,196,188,0.15);">
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(0,196,188,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
       </div>
       <div>
-        <strong style="font-size:17px;">Sermorelin</strong>
-        <div style="font-size:12px;color:var(--muted);">GHRH(1-29) Analogue</div>
+        <strong style="font-size:15px;">Metabolic And Fat Regulation Peptides</strong>
+        <p style="font-size:13px;margin-top:4px;">This Family Targets Lipolysis And Metabolism. These Fragments Are Studied For Fat Metabolism And Energy Regulation Without The Full Anabolic Profile Of Growth Hormone.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">AOD-9604</span>
+          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">Fragment 176-191</span>
+        </div>
       </div>
-      <span class="badge badge-teal" style="margin-left:auto;font-size:11px;">29 Amino Acids</span>
-    </div>
-    <p style="font-size:13px;margin-bottom:10px;">Sermorelin is a synthetic analogue of endogenous Growth Hormone Releasing Hormone (GHRH). It represents the first 29 amino acids of GHRH, which is the active binding domain. Research investigates its ability to stimulate pituitary somatotrophs to release GH in a physiological pulse pattern.</p>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-      <span style="font-size:11px;padding:3px 8px;background:rgba(0,196,188,0.1);border-radius:6px;color:var(--teal);">GH Axis Research</span>
-      <span style="font-size:11px;padding:3px 8px;background:rgba(0,196,188,0.1);border-radius:6px;color:var(--teal);">Sleep Architecture</span>
-      <span style="font-size:11px;padding:3px 8px;background:rgba(0,196,188,0.1);border-radius:6px;color:var(--teal);">IGF-1 Studies</span>
-    </div>
-    <div style="font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;">
-      <strong style="color:var(--silver);">Mechanism:</strong> Binds the GHRH receptor (GHRHR) on pituitary somatotrophs. This activates adenylyl cyclase, raising intracellular cAMP and triggering GH release. Half-life is approximately 10-20 minutes.
     </div>
   </div>
 
-  <div class="peptide-card">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-      <div class="peptide-icon" style="background:rgba(59,130,246,0.15);">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(59,130,246,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
       </div>
       <div>
-        <strong style="font-size:17px;">CJC-1295</strong>
-        <div style="font-size:12px;color:var(--muted);">GHRH Analogue With DAC</div>
+        <strong style="font-size:15px;">Skin, Collagen And Anti-Aging Peptides</strong>
+        <p style="font-size:13px;margin-top:4px;">This Family Targets Skin Elasticity And Cellular Longevity. Research Explores Collagen Synthesis, Copper Transport, And Cellular Aging Markers.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">GHK-Cu</span>
+          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">Epithalon</span>
+        </div>
       </div>
-      <span class="badge badge-blue" style="margin-left:auto;font-size:11px;">30 Amino Acids</span>
-    </div>
-    <p style="font-size:13px;margin-bottom:10px;">CJC-1295 is a modified GHRH analogue with a Drug Affinity Complex (DAC) technology. The DAC component allows it to bind to albumin in the bloodstream, dramatically extending its half-life from minutes (Sermorelin) to days. Research examines continuous vs. pulsatile GH release effects.</p>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-      <span style="font-size:11px;padding:3px 8px;background:rgba(59,130,246,0.1);border-radius:6px;color:var(--blue-l);">GH Axis Research</span>
-      <span style="font-size:11px;padding:3px 8px;background:rgba(59,130,246,0.1);border-radius:6px;color:var(--blue-l);">Long Half-Life Studies</span>
-    </div>
-    <div style="font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;">
-      <strong style="color:var(--silver);">Mechanism:</strong> Same GHRHR binding as Sermorelin, but DAC technology creates a reversible albumin bond that extends plasma half-life to 6-8 days. This creates a "GH bleed" rather than a pulse.
     </div>
   </div>
 
-  <div class="peptide-card">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-      <div class="peptide-icon" style="background:rgba(208,218,228,0.15);">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--silver)" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="min-width:44px;height:44px;background:rgba(138,155,176,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--silver)" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
       </div>
       <div>
-        <strong style="font-size:17px;">Ipamorelin</strong>
-        <div style="font-size:12px;color:var(--muted);">Selective GH Secretagogue</div>
+        <strong style="font-size:15px;">Cognitive And Nootropic Peptides</strong>
+        <p style="font-size:13px;margin-top:4px;">This Family Targets Anxiety, Memory, And Neuroprotection. These Compounds Are Studied For Their Effects On Neurotransmitter Systems And Cognitive Markers.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Selank</span>
+          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Semax</span>
+        </div>
       </div>
-      <span class="badge badge-silver" style="margin-left:auto;font-size:11px;">5 Amino Acids</span>
-    </div>
-    <p style="font-size:13px;margin-bottom:10px;">Ipamorelin is a pentapeptide ghrelin mimetic. Unlike other GH secretagogues, it is highly selective for the GH secretagogue receptor (GHS-R1a) with minimal effect on cortisol and prolactin secretion. Researchers study it for its clean GH release profile.</p>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-      <span style="font-size:11px;padding:3px 8px;background:rgba(138,155,176,0.1);border-radius:6px;color:var(--silver);">Selective GH Release</span>
-      <span style="font-size:11px;padding:3px 8px;background:rgba(138,155,176,0.1);border-radius:6px;color:var(--silver);">Ghrelin Pathway</span>
-    </div>
-    <div style="font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;">
-      <strong style="color:var(--silver);">Mechanism:</strong> Binds GHS-R1a (ghrelin receptor) on pituitary somatotrophs. Activates phospholipase C / IP3 pathway leading to intracellular calcium release and GH secretion. Often paired with CJC-1295 in research stacking protocols.
     </div>
   </div>
 
@@ -1209,22 +1630,22 @@ tr:hover td{background:rgba(0,196,188,0.04);}
 <div class="screen" id="s7">
   <div class="badge badge-teal">Module 7 - Stacking And Protocols</div>
   <h2 style="font-size:28px;margin-bottom:8px;">Stacking And Research Protocols</h2>
-  <p style="margin-bottom:20px;">Stacking means combining multiple peptides in a research protocol to target complementary pathways. The logic is synergy: each peptide hits a different receptor or step in a biological cascade.</p>
+  <p style="margin-bottom:20px;">Stacking Means Combining Multiple Peptides In A Research Protocol To Target Complementary Pathways. The Logic Is Synergy: Each Peptide Hits A Different Receptor Or Step In A Biological Cascade.</p>
 
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:16px;">Why Researchers Stack</h3>
     <div style="display:flex;flex-direction:column;gap:8px;">
       <div style="padding:10px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--teal);">
         <strong style="font-size:13px;">Complementary Pathways</strong>
-        <p style="font-size:12px;margin-top:4px;">CJC-1295 (GHRH pathway) + Ipamorelin (ghrelin pathway) both release GH but through different receptors. Combining them produces a greater GH pulse than either alone because both pathways are active simultaneously.</p>
+        <p style="font-size:12px;margin-top:4px;">CJC-1295 (GHRH Pathway) + Ipamorelin (Ghrelin Pathway) Both Release GH But Through Different Receptors. Combining Them Produces A Greater GH Pulse Than Either Alone Because Both Pathways Are Active Simultaneously.</p>
       </div>
       <div style="padding:10px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--blue-l);">
         <strong style="font-size:13px;">Sequential Mechanisms</strong>
-        <p style="font-size:12px;margin-top:4px;">BPC-157 (local tissue effects) + TB-500 (systemic actin regulation) address tissue events at different scales. BPC-157 acts near the administration site while TB-500 works systemically via bloodstream distribution.</p>
+        <p style="font-size:12px;margin-top:4px;">BPC-157 (Local Tissue Effects) + TB-500 (Systemic Actin Regulation) Address Tissue Events At Different Scales. BPC-157 Acts Near The Administration Site While TB-500 Works Systemically Via Bloodstream Distribution.</p>
       </div>
       <div style="padding:10px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--silver);">
         <strong style="font-size:13px;">Timing Optimization</strong>
-        <p style="font-size:12px;margin-top:4px;">Short half-life peptides (Sermorelin: 15 min) can be timed relative to sleep onset to align with natural GH pulses. Long half-life peptides (CJC-1295 DAC: 6-8 days) are dosed weekly for steady-state research.</p>
+        <p style="font-size:12px;margin-top:4px;">Short Half-Life Peptides (Sermorelin: 15 min) Can Be Timed Relative To Sleep Onset To Align With Natural GH Pulses. Long Half-Life Peptides (CJC-1295 DAC: 6-8 Days) Are Dosed Weekly For Steady-State Research.</p>
       </div>
     </div>
   </div>
@@ -1238,17 +1659,17 @@ tr:hover td{background:rgba(0,196,188,0.04);}
         <!-- GHRH receptor box -->
         <rect x="10" y="30" width="110" height="40" rx="8" fill="#162230" stroke="#00C4BC" stroke-width="1.5"/>
         <text x="65" y="46" fill="#00C4BC" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">GHRH Receptor</text>
-        <text x="65" y="59" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">CJC-1295 binds here</text>
+        <text x="65" y="59" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">CJC-1295 Binds Here</text>
 
         <!-- GHS-R1a box -->
         <rect x="10" y="130" width="110" height="40" rx="8" fill="#162230" stroke="#3B82F6" stroke-width="1.5"/>
         <text x="65" y="146" fill="#3B82F6" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">GHS-R1a Receptor</text>
-        <text x="65" y="159" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Ipamorelin binds here</text>
+        <text x="65" y="159" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Ipamorelin Binds Here</text>
 
         <!-- Pituitary box -->
         <rect x="140" y="75" width="100" height="50" rx="8" fill="#1D2D3E" stroke="rgba(0,196,188,0.3)" stroke-width="1.5"/>
         <text x="190" y="97" fill="#FFFFFF" font-size="10" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600">Pituitary</text>
-        <text x="190" y="112" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Somatotroph cells</text>
+        <text x="190" y="112" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Somatotroph Cells</text>
 
         <!-- Arrows from receptors to pituitary -->
         <path d="M120,50 Q130,50 140,100" fill="none" stroke="#00C4BC" stroke-width="1.5" stroke-dasharray="4,2"/>
@@ -1259,7 +1680,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
         <!-- GH release box -->
         <rect x="260" y="75" width="110" height="50" rx="8" fill="#162230" stroke="rgba(208,218,228,0.4)" stroke-width="1.5"/>
         <text x="315" y="97" fill="#D0DAE4" font-size="10" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600">GH Release</text>
-        <text x="315" y="112" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Synergistic pulse</text>
+        <text x="315" y="112" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Synergistic Pulse</text>
 
         <!-- Arrow pituitary to GH -->
         <line x1="240" y1="100" x2="258" y2="100" stroke="#D0DAE4" stroke-width="1.5"/>
@@ -1278,7 +1699,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
         <line x1="65" y1="170" x2="65" y2="180" stroke="rgba(59,130,246,0.5)" stroke-width="1"/>
       </svg>
     </div>
-    <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px;">Two different receptors, one amplified GH output.</p>
+    <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px;">Two Different Receptors, One Amplified GH Output.</p>
   </div>
 
   <div class="card">
@@ -1295,7 +1716,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
           <span style="font-size:14px;color:var(--muted);">+</span>
           <span style="font-size:12px;padding:4px 10px;background:rgba(59,130,246,0.12);border-radius:6px;color:var(--blue-l);">Ipamorelin</span>
         </div>
-        <p style="font-size:12px;color:var(--muted);">CJC-1295 is dosed 1-2x weekly. Ipamorelin is dosed nightly 30-60 min before sleep. Together they maximize the natural nocturnal GH pulse. Research duration is typically 12 weeks.</p>
+        <p style="font-size:12px;color:var(--muted);">CJC-1295 Is Dosed 1-2x Weekly. Ipamorelin Is Dosed Nightly 30-60 min Before Sleep. Together They Maximize The Natural Nocturnal GH Pulse. Research Duration Is Typically 12 Weeks.</p>
       </div>
 
       <div style="padding:12px;background:var(--surface2);border-radius:12px;">
@@ -1308,14 +1729,14 @@ tr:hover td{background:rgba(0,196,188,0.04);}
           <span style="font-size:14px;color:var(--muted);">+</span>
           <span style="font-size:12px;padding:4px 10px;background:rgba(59,130,246,0.12);border-radius:6px;color:var(--blue-l);">TB-500</span>
         </div>
-        <p style="font-size:12px;color:var(--muted);">BPC-157 targets local tissue via site injection for localized fibroblast activation. TB-500 is injected systemically (typically sub-Q abdomen) for broad actin regulation. Combined, they address both local and systemic tissue biology concurrently.</p>
+        <p style="font-size:12px;color:var(--muted);">BPC-157 Targets Local Tissue Via Site Injection For Localized Fibroblast Activation. TB-500 Is Injected Systemically (Typically Sub-Q Abdomen) For Broad Actin Regulation. Combined, They Address Both Local And Systemic Tissue Biology Concurrently.</p>
       </div>
 
     </div>
   </div>
 
   <div class="callout callout-red">
-    <strong style="color:var(--red);">Research Context Only:</strong> All stacking information on this page describes published preclinical and academic research frameworks. No peptide described here has FDA approval for human therapeutic use. This platform is for research use only.
+    <strong style="color:var(--red);">Research Context Only:</strong> All Stacking Information On This Page Describes Published Preclinical And Academic Research Frameworks. No Peptide Described Here Has FDA Approval For Human Therapeutic Use. This Platform Is For Research Use Only.
   </div>
 
   <div class="nav-ctrl">
@@ -1336,20 +1757,20 @@ tr:hover td{background:rgba(0,196,188,0.04);}
 <div class="screen" id="s8">
   <div class="badge badge-teal">Module 8 - Reconstitution Calculator</div>
   <h2 style="font-size:28px;margin-bottom:8px;">Reconstitution Calculator</h2>
-  <p style="margin-bottom:20px;">Reconstituting a peptide means adding a liquid diluent (usually BAC water) to the lyophilized powder to create a solution. Getting the concentration right is critical for accurate research dosing.</p>
+  <p style="margin-bottom:20px;">Reconstituting A Peptide Means Adding A Liquid Diluent (Usually BAC Water) To The Lyophilized Powder To Create A Solution. Getting The Concentration Right Is Critical For Accurate Research Dosing.</p>
 
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:4px;">What Is Reconstitution?</h3>
-    <p style="font-size:13px;margin-bottom:16px;">Lyophilized peptides come as dry powder in sealed vials. Before research use, you add BAC water to dissolve the powder into a liquid. The concentration of the resulting solution depends on how much water you add.</p>
+    <p style="font-size:13px;margin-bottom:16px;">Lyophilized Peptides Come As Dry Powder In Sealed Vials. Before Research Use, You Add BAC Water To Dissolve The Powder Into A Liquid. The Concentration Of The Resulting Solution Depends On How Much Water You Add.</p>
     <div style="display:flex;gap:8px;margin-bottom:12px;">
       <div style="flex:1;padding:10px;background:var(--surface2);border-radius:10px;text-align:center;">
         <div style="font-size:22px;font-weight:800;color:var(--teal);">5mg</div>
-        <div style="font-size:11px;color:var(--muted);">Vial powder</div>
+        <div style="font-size:11px;color:var(--muted);">Vial Powder</div>
       </div>
       <div style="display:flex;align-items:center;font-size:20px;color:var(--muted);">+</div>
       <div style="flex:1;padding:10px;background:var(--surface2);border-radius:10px;text-align:center;">
         <div style="font-size:22px;font-weight:800;color:var(--blue-l);">2mL</div>
-        <div style="font-size:11px;color:var(--muted);">BAC water</div>
+        <div style="font-size:11px;color:var(--muted);">BAC Water</div>
       </div>
       <div style="display:flex;align-items:center;font-size:20px;color:var(--muted);">=</div>
       <div style="flex:1;padding:10px;background:var(--surface2);border-radius:10px;text-align:center;">
@@ -1357,7 +1778,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
         <div style="font-size:11px;color:var(--muted);">mcg/mL</div>
       </div>
     </div>
-    <p style="font-size:12px;color:var(--muted);">Formula: (Vial mg * 1000) / Target concentration mcg/mL = mL of water to add.</p>
+    <p style="font-size:12px;color:var(--muted);">Formula: (Vial mg * 1000) / Target Concentration mcg/mL = mL Of Water To Add.</p>
   </div>
 
   <!-- Calculator -->
@@ -1392,7 +1813,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
       <div id="calcResult" style="padding:16px;background:linear-gradient(135deg,rgba(0,196,188,0.12),rgba(59,130,246,0.08));border:1px solid rgba(0,196,188,0.3);border-radius:12px;">
         <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Add This Much BAC Water:</div>
         <div style="font-size:36px;font-weight:800;color:var(--teal);" id="calcWater">5.00 mL</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:8px;" id="calcSummary">5 mg vial + 5.00 mL BAC water = 1000 mcg/mL solution</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px;" id="calcSummary">5 mg Vial + 5.00 mL BAC Water = 1000 mcg/mL Solution</div>
       </div>
 
       <div id="calcDoseTable" style="display:none;">
@@ -1418,23 +1839,23 @@ tr:hover td{background:rgba(0,196,188,0.04);}
     <div style="display:flex;flex-direction:column;gap:8px;">
       <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
         <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">1</div>
-        <p style="font-size:12px;margin:0;">Allow both the peptide vial and BAC water to reach room temperature before reconstitution.</p>
+        <p style="font-size:12px;margin:0;">Allow Both The Peptide Vial And BAC Water To Reach Room Temperature Before Reconstitution.</p>
       </div>
       <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
         <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">2</div>
-        <p style="font-size:12px;margin:0;">Wipe vial stoppers with 70% isopropyl alcohol. Allow to dry completely before inserting needles.</p>
+        <p style="font-size:12px;margin:0;">Wipe Vial Stoppers With 70% Isopropyl Alcohol. Allow To Dry Completely Before Inserting Needles.</p>
       </div>
       <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
         <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">3</div>
-        <p style="font-size:12px;margin:0;">Draw calculated BAC water volume into syringe. Insert into peptide vial, direct the stream down the glass wall - do not aim directly at the powder.</p>
+        <p style="font-size:12px;margin:0;">Draw Calculated BAC Water Volume Into Syringe. Insert Into Peptide Vial, Direct The Stream Down The Glass Wall - Do Not Aim Directly At The Powder.</p>
       </div>
       <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
         <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">4</div>
-        <p style="font-size:12px;margin:0;">Gently swirl. Do not shake vigorously. Vigorous agitation can cause aggregation and denaturation, reducing peptide bioactivity. Swirl until clear - this may take 30-60 seconds.</p>
+        <p style="font-size:12px;margin:0;">Gently Swirl. Do Not Shake Vigorously. Vigorous Agitation Can Cause Aggregation And Denaturation, Reducing Peptide Bioactivity. Swirl Until Clear - This May Take 30-60 Seconds.</p>
       </div>
       <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
         <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">5</div>
-        <p style="font-size:12px;margin:0;">Label the vial with peptide name, concentration, date, and initials. Refrigerate immediately. Use within 28-30 days.</p>
+        <p style="font-size:12px;margin:0;">Label The Vial With Peptide Name, Concentration, Date, And Initials. Refrigerate Immediately. Use Within 28-30 Days.</p>
       </div>
     </div>
   </div>
@@ -1457,10 +1878,10 @@ tr:hover td{background:rgba(0,196,188,0.04);}
 <div class="screen" id="s9">
   <div class="badge badge-teal">Module 9 - Dosing Reference</div>
   <h2 style="font-size:28px;margin-bottom:8px;">Dosing Reference Table</h2>
-  <p style="margin-bottom:20px;">This table summarizes published preclinical dose ranges, research frequencies, half-lives, and routes of administration from peer-reviewed studies. Click any column header to sort.</p>
+  <p style="margin-bottom:20px;">This Table Summarizes Published Preclinical Dose Ranges, Research Frequencies, Half-Lives, And Routes Of Administration From Peer-Reviewed Studies. Click Any Column Header To Sort.</p>
 
   <div class="callout callout-red" style="margin-bottom:16px;">
-    <strong style="color:var(--red);">Research Use Only:</strong> These ranges represent animal model and early-phase clinical study data. They are not therapeutic dosing guidelines. No peptide here has FDA approval.
+    <strong style="color:var(--red);">Research Use Only:</strong> These Ranges Represent Animal Model And Early-Phase Clinical Study Data. They Are Not Therapeutic Dosing Guidelines. No Peptide Here Has FDA Approval.
   </div>
 
   <div class="card" style="padding:0;overflow:hidden;">
@@ -1498,9 +1919,9 @@ tr:hover td{background:rgba(0,196,188,0.04);}
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:12px;">Route Abbreviations</h3>
     <div style="display:flex;flex-wrap:wrap;gap:8px;">
-      <div style="padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:12px;"><strong>Sub-Q:</strong> Subcutaneous (under the skin)</div>
-      <div style="padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:12px;"><strong>IM:</strong> Intramuscular (into muscle)</div>
-      <div style="padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:12px;"><strong>Intranasal:</strong> Via nasal spray</div>
+      <div style="padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:12px;"><strong>Sub-Q:</strong> Subcutaneous (Under The Skin)</div>
+      <div style="padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:12px;"><strong>IM:</strong> Intramuscular (Into Muscle)</div>
+      <div style="padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:12px;"><strong>Intranasal:</strong> Via Nasal Spray</div>
     </div>
   </div>
 
@@ -1525,7 +1946,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
     <h2 style="font-size:32px;margin-bottom:8px;">Course Complete</h2>
-    <p style="color:var(--muted);font-size:15px;">You have completed Peptide 101 - Foundations Of Peptide Research.</p>
+    <p style="color:var(--muted);font-size:15px;">You Have Completed Peptide 101 - Foundations Of Peptide Research.</p>
   </div>
 
   <div id="certBlock" class="card" style="text-align:center;">
@@ -1534,7 +1955,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
       <h3 style="font-size:22px;margin-bottom:4px;">Peptide 101</h3>
       <p style="font-size:14px;color:var(--muted);margin-bottom:4px;">Foundations Of Peptide Research</p>
       <div style="width:60px;height:2px;background:linear-gradient(90deg,var(--teal),var(--blue));margin:12px auto;"></div>
-      <p style="font-size:13px;color:var(--silver);">This certifies the completion of all 9 modules covering peptide biology, mechanisms of action, research peptide profiles, stacking frameworks, reconstitution techniques, and dosing reference.</p>
+      <p style="font-size:13px;color:var(--silver);">This Certifies The Completion Of All 10 Modules Covering Peptide Biology, Mechanisms Of Action, Peptide Family Categories, Stacking Frameworks, Reconstitution Techniques, And Dosing Reference.</p>
       <div style="margin-top:16px;font-size:12px;color:var(--muted);" id="certDate"></div>
       <div style="margin-top:4px;font-size:11px;color:rgba(168,180,192,0.6);">PepNationLab - Research Education Division</div>
     </div>
@@ -1547,7 +1968,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:12px;">Share Your Achievement</h3>
     <div style="background:var(--surface2);border-radius:10px;padding:14px;font-size:13px;color:var(--silver);font-family:monospace;line-height:1.6;user-select:all;" id="shareText">
-      I completed Peptide 101 - Foundations Of Peptide Research on PepNationLab. 9 modules covering peptide biology, mechanisms of action, the GH axis, reconstitution techniques, and the research peptide catalog. #PepNationLab #PeptideResearch #ResearchEducation
+      I Completed Peptide 101 - Foundations Of Peptide Research On PepNationLab. 10 Modules Covering Peptide Biology, Mechanisms Of Action, The GH Axis, Reconstitution Techniques, And Peptide Family Categories. #PepNationLab #PeptideResearch #ResearchEducation
     </div>
     <button class="btn btn-secondary" style="margin-top:12px;width:100%;" onclick="copyShare()" aria-label="Copy Share Text" id="copyBtn">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -1579,7 +2000,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);">
-        <span>Module 6: Research Peptides Catalog</span>
+        <span>Module 6: Peptide Families And Categories</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);">
@@ -1646,31 +2067,31 @@ const doseData = [
   ["TB-500",       "2.0-2.5 mg",   "2x Weekly",    "~72 hrs",    "Sub-Q"],
   ["PT-141",       "1-2 mg",       "As Needed",    "~2-3 hrs",   "Sub-Q Or Intranasal"],
   ["Sermorelin",   "100-300 mcg",  "Nightly",      "10-20 min",  "Sub-Q"],
-  ["CJC-1295 DAC", "1-2 mg",       "1-2x Weekly",  "6-8 days",   "Sub-Q"],
+  ["CJC-1295 DAC", "1-2 mg",       "1-2x Weekly",  "6-8 Days",   "Sub-Q"],
   ["Ipamorelin",   "100-300 mcg",  "Nightly",      "~2 hrs",     "Sub-Q"],
   ["AOD-9604",     "200-500 mcg",  "Daily",        "~30 min",    "Sub-Q"],
   ["GHK-Cu",       "1-2 mg",       "3-5x Weekly",  "~1 hr",      "Sub-Q Or Topical"],
 ];
 
 const glossaryTerms = [
-  { term: "Amino Acid", def: "The building blocks of peptides and proteins. There are 20 standard amino acids. Each has a unique side chain that determines its chemical properties." },
-  { term: "Angiogenesis", def: "The formation of new blood vessels from existing ones. Some peptides are studied for their ability to promote angiogenesis in tissue repair research." },
-  { term: "Bacteriostatic Water (BAC Water)", def: "Sterile water containing 0.9% benzyl alcohol. The preservative inhibits microbial growth, extending the shelf life of reconstituted peptides to 28-30 days." },
-  { term: "Conformation", def: "The 3D shape a peptide or protein folds into. Shape determines function - a peptide must have the right conformation to bind its receptor." },
-  { term: "Cyclical Peptide", def: "A peptide where the amino acid chain forms a ring rather than a linear sequence. Cyclic peptides are often more stable and bioavailable. PT-141 is an example." },
-  { term: "Fibroblast", def: "A type of cell that produces collagen and other connective tissue components. A key cell type in tissue repair research." },
-  { term: "GHRH", def: "Growth Hormone Releasing Hormone. An endogenous peptide produced in the hypothalamus that stimulates the pituitary to release growth hormone. Sermorelin and CJC-1295 are synthetic analogues." },
-  { term: "GHS-R1a", def: "Growth hormone secretagogue receptor 1a. The receptor for ghrelin and ghrelin mimetics like Ipamorelin. Located on pituitary somatotrophs." },
-  { term: "Half-Life", def: "The time it takes for the concentration of a substance in the body to reduce by 50%. Short half-life means more frequent dosing. Long half-life means less frequent dosing." },
-  { term: "IGF-1", def: "Insulin-like Growth Factor 1. A hormone produced mainly by the liver in response to GH stimulation. Most anabolic effects attributed to GH are actually mediated by IGF-1." },
-  { term: "Lyophilization", def: "Freeze-drying. The process of removing water from a peptide solution under vacuum, leaving behind a stable powder. Lyophilized peptides have a much longer shelf life than solutions." },
-  { term: "Melanocortin Receptor", def: "A family of receptors (MC1R-MC5R) that respond to melanocyte-stimulating hormone and related peptides like PT-141. MC4R is the primary target for appetite and sexual function research." },
-  { term: "Peptide Bond", def: "The covalent chemical bond formed between two amino acids. Created when the carboxyl group (-COOH) of one amino acid reacts with the amino group (-NH2) of another, releasing water." },
-  { term: "Pituitary Gland", def: "A small endocrine gland at the base of the brain. It produces and releases many hormones including growth hormone (GH), LH, FSH, TSH, and ACTH." },
-  { term: "Reconstitution", def: "The process of dissolving a lyophilized (freeze-dried) peptide powder in a liquid diluent - usually BAC water - to create an injectable solution." },
-  { term: "Somatotroph", def: "A specialized cell type in the anterior pituitary gland that produces and secretes growth hormone. GHRH analogues and ghrelin mimetics act directly on somatotrophs." },
-  { term: "Sub-Q (Subcutaneous)", def: "Injection into the fatty tissue just beneath the skin. The most common route of administration for research peptides. Typically performed at a 45-degree angle with a fine-gauge needle." },
-  { term: "Thymosin Beta-4 (TB4)", def: "A naturally occurring protein found in virtually all human and animal cells. TB-500 is a synthetic fragment of its active binding domain. Involved in actin regulation and cell migration." },
+  { term: "Amino Acid", def: "The Building Blocks Of Peptides And Proteins. There Are 20 Standard Amino Acids. Each Has A Unique Side Chain That Determines Its Chemical Properties." },
+  { term: "Angiogenesis", def: "The Formation Of New Blood Vessels From Existing Ones. Some Peptides Are Studied For Their Ability To Promote Angiogenesis In Tissue Repair Research." },
+  { term: "Bacteriostatic Water (BAC Water)", def: "Sterile Water Containing 0.9% Benzyl Alcohol. The Preservative Inhibits Microbial Growth, Extending The Shelf Life Of Reconstituted Peptides To 28-30 Days." },
+  { term: "Conformation", def: "The 3D Shape A Peptide Or Protein Folds Into. Shape Determines Function - A Peptide Must Have The Right Conformation To Bind Its Receptor." },
+  { term: "Cyclical Peptide", def: "A Peptide Where The Amino Acid Chain Forms A Ring Rather Than A Linear Sequence. Cyclic Peptides Are Often More Stable And Bioavailable. PT-141 Is An Example." },
+  { term: "Fibroblast", def: "A Type Of Cell That Produces Collagen And Other Connective Tissue Components. A Key Cell Type In Tissue Repair Research." },
+  { term: "GHRH", def: "Growth Hormone Releasing Hormone. An Endogenous Peptide Produced In The Hypothalamus That Stimulates The Pituitary To Release Growth Hormone. Sermorelin And CJC-1295 Are Synthetic Analogues." },
+  { term: "GHS-R1a", def: "Growth Hormone Secretagogue Receptor 1a. The Receptor For Ghrelin And Ghrelin Mimetics Like Ipamorelin. Located On Pituitary Somatotrophs." },
+  { term: "Half-Life", def: "The Time It Takes For The Concentration Of A Substance In The Body To Reduce By 50%. Short Half-Life Means More Frequent Dosing. Long Half-Life Means Less Frequent Dosing." },
+  { term: "IGF-1", def: "Insulin-Like Growth Factor 1. A Hormone Produced Mainly By The Liver In Response To GH Stimulation. Most Anabolic Effects Attributed To GH Are Actually Mediated By IGF-1." },
+  { term: "Lyophilization", def: "Freeze-Drying. The Process Of Removing Water From A Peptide Solution Under Vacuum, Leaving Behind A Stable Powder. Lyophilized Peptides Have A Much Longer Shelf Life Than Solutions." },
+  { term: "Melanocortin Receptor", def: "A Family Of Receptors (MC1R-MC5R) That Respond To Melanocyte-Stimulating Hormone And Related Peptides Like PT-141. MC4R Is The Primary Target For Appetite And Sexual Function Research." },
+  { term: "Peptide Bond", def: "The Covalent Chemical Bond Formed Between Two Amino Acids. Created When The Carboxyl Group (-COOH) Of One Amino Acid Reacts With The Amino Group (-NH2) Of Another, Releasing Water." },
+  { term: "Pituitary Gland", def: "A Small Endocrine Gland At The Base Of The Brain. It Produces And Releases Many Hormones Including Growth Hormone (GH), LH, FSH, TSH, And ACTH." },
+  { term: "Reconstitution", def: "The Process Of Dissolving A Lyophilized (Freeze-Dried) Peptide Powder In A Liquid Diluent - Usually BAC Water - To Create An Injectable Solution." },
+  { term: "Somatotroph", def: "A Specialized Cell Type In The Anterior Pituitary Gland That Produces And Secretes Growth Hormone. GHRH Analogues And Ghrelin Mimetics Act Directly On Somatotrophs." },
+  { term: "Sub-Q (Subcutaneous)", def: "Injection Into The Fatty Tissue Just Beneath The Skin. The Most Common Route Of Administration For Research Peptides. Typically Performed At A 45-Degree Angle With A Fine-Gauge Needle." },
+  { term: "Thymosin Beta-4 (TB4)", def: "A Naturally Occurring Protein Found In Virtually All Human And Animal Cells. TB-500 Is A Synthetic Fragment Of Its Active Binding Domain. Involved In Actin Regulation And Cell Migration." },
 ];
 
 // =====================================================
@@ -1732,7 +2153,7 @@ function quiz(qid, btn, correct) {
     if (fb) { fb.textContent = "Correct!"; fb.style.color = "var(--green)"; }
   } else {
     btn.classList.add("wrong");
-    if (fb) { fb.textContent = "Not quite. Review the highlighted answer."; fb.style.color = "var(--red)"; }
+    if (fb) { fb.textContent = "Not Quite. Review The Highlighted Answer."; fb.style.color = "var(--red)"; }
     parent.querySelectorAll(".quiz-opt").forEach(b => {
       if (b.getAttribute("onclick") && b.getAttribute("onclick").includes(",true)")) b.classList.add("correct");
     });
@@ -1763,7 +2184,7 @@ function renderChain() {
   if (!area) return;
 
   if (chainSeq.length === 0) {
-    area.innerHTML = '<span style="font-size:13px;color:var(--muted);">Add amino acids below to build your chain...</span>';
+    area.innerHTML = '<span style="font-size:13px;color:var(--muted);">Add Amino Acids Below To Build Your Chain...</span>';
     if (info) info.style.display = "none";
     return;
   }
@@ -1803,7 +2224,7 @@ function bindPeptide() {
   setTimeout(() => {
     if (r) { r.style.borderColor = "var(--teal)"; r.style.background = "rgba(0,196,188,0.2)"; }
     if (instr) instr.textContent = "Bound - Receptor Activated!";
-    if (effect) effect.innerHTML = '<strong style="color:var(--teal);">Receptor Activated</strong><br><span style="font-size:11px;">Signal cascade begins. Cells respond downstream.</span>';
+    if (effect) effect.innerHTML = '<strong style="color:var(--teal);">Receptor Activated</strong><br><span style="font-size:11px;">Signal Cascade Begins. Cells Respond Downstream.</span>';
   }, 500);
 }
 
@@ -1815,8 +2236,8 @@ function resetBinding() {
   const instr = document.getElementById("lkInstr");
   if (p) { p.style.transform = ""; p.style.transition = ""; }
   if (r) { r.style.borderColor = ""; r.style.background = ""; }
-  if (instr) instr.textContent = "Tap the peptide to try binding";
-  if (effect) effect.textContent = "Drag the peptide onto the receptor to see what happens";
+  if (instr) instr.textContent = "Tap The Peptide To Try Binding";
+  if (effect) effect.textContent = "Drag The Peptide Onto The Receptor To See What Happens";
 }
 
 // =====================================================
@@ -1833,7 +2254,7 @@ function showHL(name, hours, color) {
   const bar = document.getElementById("hlBar");
   const noteEl = document.getElementById("hlNote");
   if (nameEl) nameEl.textContent = name;
-  const label = hours < 1 ? (hours * 60).toFixed(0) + " minutes" : hours + " hours";
+  const label = hours < 1 ? (hours * 60).toFixed(0) + " Minutes" : hours + " Hours";
   if (timeEl) timeEl.textContent = "Half-Life: " + label;
   if (bar) {
     bar.style.background = color;
@@ -1841,11 +2262,11 @@ function showHL(name, hours, color) {
     setTimeout(() => { bar.style.width = Math.min(100, (hours / hlMax) * 100) + "%"; }, 50);
   }
   const notes = {
-    "BPC-157": "Short half-life. Multiple daily doses used in research protocols to maintain plasma levels.",
-    "TB-500": "Long half-life enables twice-weekly dosing in most research frameworks.",
-    "Sermorelin": "Very short. Must be timed precisely. Typically injected 30-60 min before sleep to align with the natural GH pulse.",
-    "Ipamorelin": "Moderate. Nightly dosing is standard in GH axis research protocols.",
-    "CJC-1295 DAC": "Extremely long due to albumin binding. Once or twice weekly dosing maintains steady plasma levels and creates continuous GH release."
+    "BPC-157": "Short Half-Life. Multiple Daily Doses Used In Research Protocols To Maintain Plasma Levels.",
+    "TB-500": "Long Half-Life Enables Twice-Weekly Dosing In Most Research Frameworks.",
+    "Sermorelin": "Very Short. Must Be Timed Precisely. Typically Injected 30-60 min Before Sleep To Align With The Natural GH Pulse.",
+    "Ipamorelin": "Moderate. Nightly Dosing Is Standard In GH Axis Research Protocols.",
+    "CJC-1295 DAC": "Extremely Long Due To Albumin Binding. Once Or Twice Weekly Dosing Maintains Steady Plasma Levels And Creates Continuous GH Release."
   };
   if (noteEl) noteEl.textContent = notes[name] || "";
 }
@@ -1875,7 +2296,7 @@ function calcRecon() {
   const waterEl = document.getElementById("calcWater");
   const summaryEl = document.getElementById("calcSummary");
   if (waterEl) waterEl.textContent = mL.toFixed(2) + " mL";
-  if (summaryEl) summaryEl.textContent = mg + " mg vial + " + mL.toFixed(2) + " mL BAC Water = " + conc + " mcg/mL Solution";
+  if (summaryEl) summaryEl.textContent = mg + " mg Vial + " + mL.toFixed(2) + " mL BAC Water = " + conc + " mcg/mL Solution";
   const doses = [50, 100, 150, 200, 250, 300, 500];
   const tbody = document.getElementById("calcTableBody");
   if (tbody) {

@@ -108,6 +108,11 @@ function ResearchersAdminPageInner() {
   // owning agent (parent_agent_id), which the API mandates for researchers.
   const [createRole, setCreateRole] = useState<'agent' | 'researcher'>('agent');
   const [newParentAgentId, setNewParentAgentId] = useState('');
+  // Tracks whether the operator has manually edited the Username field. Until
+  // they do, the username auto-mirrors the first name (sanitized) so the login
+  // handle can never silently diverge from the name via a typo. Once edited,
+  // we stop overwriting it. Mirrors the existing auto-slug-from-first-name.
+  const [usernameDirty, setUsernameDirty] = useState(false);
 
   // Live username availability - fires when the modal is mounted with a typed
   // username. Mirrors the storefront register form + the agent create-researcher
@@ -230,6 +235,7 @@ function ResearchersAdminPageInner() {
     setNewTier('tier_2'); setNewAccountType('prepaid');
     setNewCreditLimit(''); setNewPrepaidBalance('');
     setNewSlug(''); setNewDisplayName(''); setNewParentAgentId('');
+    setUsernameDirty(false);
   }
   function openCreateAgentModal() { openCreateModal('agent'); }
 
@@ -259,7 +265,11 @@ function ResearchersAdminPageInner() {
       });
       const json = await res.json();
       if (res.ok) {
-        toast.success(`Researcher Account Created - Username: ${json.username || newUsername}`);
+        const loginUser = json.username || newUsername;
+        toast.success(
+          `Researcher Created. They Log In With Username "${loginUser}" (Not Their Name).`,
+          { duration: 12000 },
+        );
         await fetchProfiles();
         setActiveTab('researchers');
         closeModal();
@@ -838,6 +848,13 @@ function ResearchersAdminPageInner() {
                       const combined = `${v} ${newLastName}`.trim();
                       setNewDisplayName(combined);
                       setNewSlug(v.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, ''));
+                      // Auto-mirror the login username from the first name until
+                      // the operator manually edits it. This is the root-cause
+                      // guard: it stops the login handle from silently diverging
+                      // from the name via a typo (e.g. "Danimal" -> "dainimal").
+                      if (!usernameDirty) {
+                        setNewUsername(v.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+                      }
                     }} required />
                 </div>
                 <div className="form-group" style={{ marginTop: 0 }}>
@@ -859,7 +876,7 @@ function ResearchersAdminPageInner() {
                     className="form-input"
                     placeholder="E.g. midway"
                     value={newUsername}
-                    onChange={e => setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                    onChange={e => { setUsernameDirty(true); setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); }}
                     required
                     autoCapitalize="none"
                     spellCheck={false}

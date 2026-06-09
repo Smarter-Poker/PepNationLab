@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import PageShell from '@/components/PageShell';
 import ReorderButton, { ViewLink } from './OrdersListClient';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
+import { getPopularName } from '@/lib/peptide-popular-names';
 
 export const dynamic = 'force-dynamic';
 
@@ -266,9 +267,16 @@ export default async function OrdersPage({
                           key={item.id}
                           style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}
                         >
-                          <span style={{ color: 'var(--silver)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                            {item.product_name}{' '}
-                            <span style={{ color: 'var(--teal)' }}>x{item.quantity}</span>
+                          <span style={{ color: 'var(--silver)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                            <span style={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {item.product_name}{' '}
+                              <span style={{ color: 'var(--teal)' }}>x{item.quantity}</span>
+                            </span>
+                            {getPopularName(item.product_name) && (
+                              <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--teal)', fontStyle: 'italic', fontWeight: 500 }}>
+                                {getPopularName(item.product_name)}
+                              </span>
+                            )}
                           </span>
                           <span style={{ color: 'var(--grey-300)' }}>
                             ${(Number(item.unit_retail_price) * item.quantity).toFixed(2)}

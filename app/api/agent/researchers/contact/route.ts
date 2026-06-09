@@ -36,21 +36,37 @@ export async function PATCH(req: NextRequest) {
     }
 
     const updates: { email?: string; phone?: string | null } = {};
-    if (typeof email === 'string' && email.trim()) updates.email = email.trim();
+    if (typeof email === 'string' && email.trim()) updates.email = email.trim().toLowerCase();
     if (phone !== undefined) updates.phone = typeof phone === 'string' ? phone.trim() : null;
 
+    // Validate the email BEFORE touching anything. An invalid address must not
+    // be written to profiles, otherwise profiles.email drifts away from the
+    // auth identity and breaks username login (resolve returns an address that
+    // no auth user owns).
+    if (updates.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) {
+      return NextResponse.json({ error: 'Please Enter A Valid Email Address' }, { status: 400 });
+    }
+
     if (Object.keys(updates).length > 0) {
+      // Update the AUTH identity FIRST. If this fails we abort before writing
+      // profiles.email, so the two can never diverge (the divergence is what
+      // silently broke login for accounts whose contact email was changed).
+      if (updates.email) {
+        const { error: authErr } = await admin.auth.admin.updateUserById(researcherId, {
+          email: updates.email,
+          email_confirm: true,
+        });
+        if (authErr) {
+          return NextResponse.json({ error: 'Could Not Update Login Email. Please Check The Address And Try Again.' }, { status: 400 });
+        }
+      }
+
       const { error } = await admin
         .from('profiles')
         .update(updates)
         .eq('id', researcherId);
 
       if (error) throw error;
-
-      // If email was updated, update auth user
-      if (updates.email) {
-        await admin.auth.admin.updateUserById(researcherId, { email: updates.email });
-      }
     }
 
     return NextResponse.json({ success: true });
