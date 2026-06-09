@@ -129,6 +129,14 @@ strong{color:#fff;}
   .no-print{display:none!important;}
   body{background:#fff;color:#000;}
 }
+.gloss-overlay{position:fixed;inset:0;z-index:9999;background:rgba(5,10,15,0.85);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px;}
+.gloss-overlay.show{display:flex;}
+.gloss-box{background:var(--surface);border:1px solid var(--border-h);border-radius:16px;padding:26px 24px 24px;max-width:440px;width:100%;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.6);animation:fadeIn .18s ease;}
+.gloss-close{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--muted);font-size:26px;line-height:1;cursor:pointer;width:38px;height:38px;border-radius:8px;}
+.gloss-close:hover{color:#fff;background:var(--surface2);}
+.gloss-tag{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--teal);font-weight:600;margin-bottom:6px;}
+.gloss-term{font-family:'Space Grotesk',sans-serif;color:var(--teal);font-size:21px;margin-bottom:10px;padding-right:30px;}
+.gloss-def{font-size:15px;line-height:1.6;color:var(--silver);}
 </style>
 </head>
 <body>
@@ -213,7 +221,7 @@ strong{color:#fff;}
         <div class="module-num">4</div>
         <div class="module-info">
           <div class="module-title">What Peptides Are Studied For</div>
-          <div class="module-time">Research Applications</div>
+          <div class="module-time">What Scientists Study</div>
         </div>
         <div class="module-right">
           <span class="time-badge">5 Min</span>
@@ -246,7 +254,7 @@ strong{color:#fff;}
         <div class="module-num">7</div>
         <div class="module-info">
           <div class="module-title">Stacking And Protocols</div>
-          <div class="module-time">Laboratory Methods</div>
+          <div class="module-time">Mixing Peptides Together</div>
         </div>
         <div class="module-right">
           <span class="time-badge">4 Min</span>
@@ -256,8 +264,8 @@ strong{color:#fff;}
       <div class="module-item" onclick="goTo(8)">
         <div class="module-num">8</div>
         <div class="module-info">
-          <div class="module-title">Reconstitution Calculator</div>
-          <div class="module-time">Making Solutions</div>
+          <div class="module-title">Making A Solution</div>
+          <div class="module-time">Turning Powder Into Liquid</div>
         </div>
         <div class="module-right">
           <span class="time-badge">4 Min</span>
@@ -268,7 +276,7 @@ strong{color:#fff;}
         <div class="module-num">9</div>
         <div class="module-info">
           <div class="module-title">Dosing Reference</div>
-          <div class="module-time">Quick Reference Guide</div>
+          <div class="module-time">Getting The Amount Right</div>
         </div>
         <div class="module-right">
           <span class="time-badge">3 Min</span>
@@ -301,7 +309,7 @@ strong{color:#fff;}
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:16px;">The Simple Rule</h3>
     <p style="font-size:14px;color:var(--teal);font-weight:600;">2 To 50 Building Blocks = Peptide</p>
-    <p style="font-size:13px;margin-top:12px;color:var(--muted);">51+ Building Blocks = Protein</p>
+    <p style="font-size:13px;margin-top:12px;color:var(--muted);">51+ Building Blocks = <span class="glossary-link" onclick="showDef('Protein')">Protein</span></p>
     <p style="font-size:13px;margin-top:16px;">That's It. Size Is The Only Difference. Your Body Makes Both All The Time.</p>
   </div>
   <div class="card">
@@ -414,7 +422,7 @@ strong{color:#fff;}
 <div class="screen" id="s3">
   <div class="badge badge-teal">Lesson 3 Of 10 - 4 Minutes</div>
   <h2 style="font-size:28px;margin-bottom:8px;">How Do Peptides Actually Work?</h2>
-  <p style="margin-bottom:20px;">Here's The Secret: Peptides Work Like Keys. Your Cells Have Special Doors With Locks. The Peptide Is The Key. When The Right Key Fits The Right Lock, The Door Opens And Something Happens Inside.</p>
+  <p style="margin-bottom:20px;">Here's The Secret: Peptides Work Like Keys. Your Cells Have Special Doors With Locks. The Peptide Is The Key. When The Right Key Fits The Right Lock, The Door Opens And Something Happens Inside. Scientists Have A Special Name For That Lock: A <span class="glossary-link" onclick="showDef('Receptor')">Receptor</span>.</p>
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:16px;text-align:center;">Key + Lock = Action</h3>
     <div style="background:var(--surface2);border-radius:10px;padding:24px;text-align:center;">
@@ -554,7 +562,7 @@ strong{color:#fff;}
     </div>
   </div>
   <div class="card">
-    <h3 style="font-size:15px;margin-bottom:12px;">The Big Problem: Freeze-Thaw</h3>
+    <h3 style="font-size:15px;margin-bottom:12px;">The Big Problem: <span class="glossary-link" onclick="showDef('Freeze-Thaw')">Freeze-Thaw</span></h3>
     <p style="font-size:13px;">If You Take A Peptide Out Of The Freezer And Thaw It, Then Freeze It Again, It Gets Damaged. It's Like Crumpling And Uncrimpling A Piece Of Paper Over And Over. Eventually It Tears.</p>
     <p style="font-size:13px;margin-top:8px;color:var(--teal);font-weight:600;">Fix: Use Small Portions So You Never Thaw A Big Batch Twice.</p>
   </div>
@@ -624,14 +632,14 @@ strong{color:#fff;}
 <div class="screen" id="s7">
   <div class="badge badge-teal">Lesson 7 Of 10 - 4 Minutes</div>
   <h2 style="font-size:28px;margin-bottom:8px;">Stacking And Lab Protocols</h2>
-  <p style="margin-bottom:20px;">Scientists Sometimes Use Multiple Peptides Together. This Is Called Stacking. Each One Does A Different Job, And Together They Work Better.</p>
+  <p style="margin-bottom:20px;">Scientists Sometimes Use Multiple Peptides Together. This Is Called <span class="glossary-link" onclick="showDef('Stacking')">Stacking</span>. Each One Does A Different Job, And Together They Work Better.</p>
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:12px;">What Is Stacking?</h3>
     <p style="font-size:13px;">Imagine Building A Tower With LEGO. You Don't Use Just One Color. You Mix Colors To Make It Stronger And Look Better. Stacking Is The Same Idea.</p>
   </div>
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:12px;">Lab Protocols</h3>
-    <p style="font-size:13px;">A Protocol Is A Recipe For Scientists. It Says: Do This First. Then Do That. Then Do This. Following The Recipe Exactly Makes Sure The Experiment Works Right.</p>
+    <p style="font-size:13px;">A <span class="glossary-link" onclick="showDef('Protocol')">Protocol</span> Is A Recipe For Scientists. It Says: Do This First. Then Do That. Then Do This. Following The Recipe Exactly Makes Sure The Experiment Works Right.</p>
   </div>
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:12px;">Key Rules For Lab Work</h3>
@@ -663,13 +671,13 @@ strong{color:#fff;}
       Back
     </button>
     <button class="btn btn-primary" onclick="goTo(8)">
-      Next: Reconstitution Calculator
+      Next: Making A Solution
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </button>
   </div>
 </div>
 
-<!-- LESSON 8: RECONSTITUTION CALCULATOR -->
+<!-- LESSON 8: MAKING A SOLUTION -->
 <div class="screen" id="s8">
   <div class="badge badge-teal">Lesson 8 Of 10 - 4 Minutes</div>
   <h2 style="font-size:28px;margin-bottom:8px;">Making A Solution: Reconstitution</h2>
@@ -679,7 +687,7 @@ strong{color:#fff;}
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
         <div style="width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">1</div>
-        <p style="font-size:13px;margin:0;">Get The Powder Vial And Special Water</p>
+        <p style="font-size:13px;margin:0;">Get The Powder <span class="glossary-link" onclick="showDef('Vial')">Vial</span> And Special Water</p>
       </div>
       <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
         <div style="width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">2</div>
@@ -691,17 +699,17 @@ strong{color:#fff;}
       </div>
       <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
         <div style="width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">4</div>
-        <p style="font-size:13px;margin:0;">Done! Now You Have A Solution</p>
+        <p style="font-size:13px;margin:0;">Done! Now You Have A <span class="glossary-link" onclick="showDef('Solution')">Solution</span></p>
       </div>
     </div>
   </div>
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:12px;">Why Not Shake Hard?</h3>
-    <p style="font-size:13px;">If You Shake It Really Hard, You Make Bubbles. Bubbles Can Damage The Peptide. Think Of It Like Shaking A Soda Can Too Much—The Foam Ruins It.</p>
+    <p style="font-size:13px;">If You Shake It Really Hard, You Make Bubbles. Bubbles Can Damage The Peptide. Think Of It Like Shaking A Soda Can Too Much - The Foam Ruins It.</p>
   </div>
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:12px;">After Reconstitution</h3>
-    <p style="font-size:13px;margin-bottom:8px;">Once You Add Water, Use The Peptide Soon. Keep It In The Fridge. It Doesn't Last Very Long As A Liquid. Think Of It Like Fresh Orange Juice—Use It Fast Before It Goes Bad.</p>
+    <p style="font-size:13px;margin-bottom:8px;">Once You Add Water, Use The Peptide Soon. Keep It In The Fridge. It Doesn't Last Very Long As A Liquid. Think Of It Like Fresh Orange Juice - Use It Fast Before It Goes Bad.</p>
   </div>
   <div class="nav-ctrl">
     <button class="btn btn-ghost" onclick="goTo(7)">
@@ -719,7 +727,7 @@ strong{color:#fff;}
 <div class="screen" id="s9">
   <div class="badge badge-teal">Lesson 9 Of 10 - 3 Minutes</div>
   <h2 style="font-size:28px;margin-bottom:8px;">Dosing Reference Guide</h2>
-  <p style="margin-bottom:20px;">When Scientists Use Peptides In Labs, They Need To Know The Right Amount To Use. This Is Called A Dose. Different Peptides Need Different Amounts.</p>
+  <p style="margin-bottom:20px;">When Scientists Use Peptides In Labs, They Need To Know The Right Amount To Use. This Is Called A <span class="glossary-link" onclick="showDef('Dose')">Dose</span>. Different Peptides Need Different Amounts.</p>
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:12px;">How Doses Work</h3>
     <p style="font-size:13px;">Just Like A Medicine Has Instructions ("Take Two Pills"), Peptides Have Doses. The Dose Depends On: What Peptide It Is. What You're Testing. How Big Your Sample Is.</p>
@@ -767,7 +775,7 @@ strong{color:#fff;}
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div style="display:flex;align-items:flex-start;gap:12px;padding:12px;background:var(--surface2);border-radius:10px;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="flex-shrink:0;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>
-        <p style="font-size:13px;margin:0;">Peptides Are Short Chains Of Amino Acids—Like LEGO Blocks Connected Together.</p>
+        <p style="font-size:13px;margin:0;">Peptides Are Short Chains Of Amino Acids - Like LEGO Blocks Connected Together.</p>
       </div>
       <div style="display:flex;align-items:flex-start;gap:12px;padding:12px;background:var(--surface2);border-radius:10px;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="flex-shrink:0;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>
@@ -815,6 +823,17 @@ strong{color:#fff;}
 
 </div>
 
+<!-- GLOSSARY POPUP -->
+<div class="gloss-overlay" id="glossModal" onclick="if(event.target===this)closeDef()" role="dialog" aria-modal="true" aria-labelledby="glossTerm">
+  <div class="gloss-box">
+    <button class="gloss-close" onclick="closeDef()" aria-label="Close">&times;</button>
+    <div class="gloss-tag">What Does This Word Mean?</div>
+    <h3 class="gloss-term" id="glossTerm"></h3>
+    <p class="gloss-def" id="glossDef"></p>
+    <button class="btn btn-primary" style="margin-top:18px;width:100%;" onclick="closeDef()">Got It</button>
+  </div>
+</div>
+
 <script>
 let currentScreen = 0;
 const TOTAL_SCREENS = 11;
@@ -852,17 +871,33 @@ function quiz(id, btn, isCorrect) {
 
 const defs = {
   'Amino Acid': 'The Building Block Of A Peptide. Like A Single LEGO Brick. Your Body Has About 20 Different Types. When You Connect 2 To 50 Of These Blocks, You Make A Peptide.',
-  'Peptide Bond': 'The Super Glue That Holds Two Amino Acids Together. When Two Amino Acids Hold Hands, They Make A Bond. It\'s Very Strong. Your Body Has To Work Hard To Break It.',
-  'Reconstitution': 'Adding Water To Dry Peptide Powder To Make It Liquid Again. Like Adding Water To Powdered Juice To Make It Drinkable. Slow And Gentle Is The Key.',
-  'Protein': 'A Long Chain Of 51+ Amino Acids. Bigger Than A Peptide. Your Body Makes These For Many Important Jobs.',
-  'Receptor': 'A Special Lock On A Cell. The Peptide Is The Key. When The Right Key Fits The Right Lock, The Door Opens And Something Happens Inside.'
+  'Peptide Bond': 'The Super Glue That Holds Two Amino Acids Together. When Two Amino Acids Hold Hands, They Make A Bond. It Is Very Strong. Your Body Has To Work Hard To Break It.',
+  'Protein': 'A Long Chain Of 51 Or More Amino Acids. It Is Just A Bigger Version Of A Peptide. Your Body Makes Proteins For Lots Of Important Jobs.',
+  'Receptor': 'A Tiny Lock On The Outside Of A Cell. The Peptide Is The Key. When The Right Key Fits The Right Lock, The Door Opens And The Cell Does Something.',
+  'Reconstitution': 'A Big Word That Just Means: Add Water To Dry Powder To Make It Liquid Again. Like Adding Water To Powdered Juice. Always Add The Water Slowly And Gently.',
+  'Solution': 'The Liquid You Make By Mixing Powder Into Water. Once The Powder Is Fully Mixed In, You Have A Solution.',
+  'Vial': 'A Small Glass Bottle. Peptides Usually Come In A Vial As Dry Powder, Sealed Up To Keep Them Safe.',
+  'Dose': 'The Amount Of Peptide You Use. Just Like A Medicine Says "Take Two Pills", A Dose Tells You How Much.',
+  'Protocol': 'A Recipe For Scientists. It Lists The Steps To Follow, In Order, So An Experiment Works The Same Way Every Time.',
+  'Stacking': 'Using More Than One Peptide Together. Like Mixing LEGO Colors To Build Something Better, Each Peptide Does A Different Job.',
+  'Freeze-Thaw': 'Freezing Something, Letting It Melt, Then Freezing It Again. Doing This Over And Over Slowly Damages A Peptide, So Scientists Try To Avoid It.'
 };
 
 function showDef(term) {
   const def = defs[term];
   if (!def) return;
-  alert(`${term}: ${def}`);
+  document.getElementById('glossTerm').textContent = term;
+  document.getElementById('glossDef').textContent = def;
+  document.getElementById('glossModal').classList.add('show');
 }
+
+function closeDef() {
+  document.getElementById('glossModal').classList.remove('show');
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeDef();
+});
 
 document.addEventListener('DOMContentLoaded', function() {
   updateProgress();
