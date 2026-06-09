@@ -182,6 +182,10 @@ export default function AgentDashboardClient({
   const [crFirstName, setCrFirstName] = useState('');
   const [crLastName, setCrLastName] = useState('');
   const [crUsername, setCrUsername] = useState('');
+  // Until the operator manually edits the username, it auto-mirrors the first
+  // name (sanitized) so the researcher's LOGIN handle can never silently
+  // diverge from their name via a typo (e.g. "Danimal" -> "dainimal").
+  const [crUsernameDirty, setCrUsernameDirty] = useState(false);
   const [crPassword, setCrPassword] = useState('');
   // R36: live username availability check for the Create Researcher modal.
   // Mirrors the pattern used by the public storefront register form.
@@ -260,6 +264,7 @@ export default function AgentDashboardClient({
         }]);
         setCrFirstName(''); setCrLastName('');
         setCrUsername('');
+        setCrUsernameDirty(false);
         setCrPassword('');
         setTimeout(() => { setShowCreateResearcher(false); setCrSuccess(''); }, 2000);
       }
@@ -876,7 +881,11 @@ export default function AgentDashboardClient({
                           <input
                             type="text"
                             value={crFirstName}
-                            onChange={e => setCrFirstName(e.target.value)}
+                            onChange={e => {
+                              const v = e.target.value;
+                              setCrFirstName(v);
+                              if (!crUsernameDirty) setCrUsername(v.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+                            }}
                             required
                             placeholder=""
                             style={{
@@ -933,7 +942,7 @@ export default function AgentDashboardClient({
                         <input
                           type="text"
                           value={crUsername}
-                          onChange={e => setCrUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
+                          onChange={e => { setCrUsernameDirty(true); setCrUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '')); }}
                           required
                           autoCapitalize="none"
                           spellCheck={false}
@@ -1123,7 +1132,7 @@ export default function AgentDashboardClient({
                   )}
 
                   <button
-                    onClick={() => { setShowCreateResearcher(true); setCrError(''); setCrSuccess(''); }}
+                    onClick={() => { setShowCreateResearcher(true); setCrError(''); setCrSuccess(''); setCrUsername(''); setCrFirstName(''); setCrLastName(''); setCrUsernameDirty(false); }}
                     style={{
                       padding: '10px 20px', borderRadius: 10, fontWeight: 700, fontSize: '0.84rem',
                       background: 'linear-gradient(135deg, #00C4BC 0%, #00a89f 100%)',
