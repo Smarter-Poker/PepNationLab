@@ -17,24 +17,24 @@ const doseData = [
 ];
 
 const glossaryTerms = [
-  { term: "Amino Acid", def: "The Building Blocks Of Peptides And Proteins. There Are 20 Standard Amino Acids. Each Has A Unique Side Chain That Determines Its Chemical Properties." },
-  { term: "Angiogenesis", def: "The Formation Of New Blood Vessels From Existing Ones. Some Peptides Are Studied For Their Ability To Promote Angiogenesis In Tissue Repair Research." },
-  { term: "Bacteriostatic Water (BAC Water)", def: "Sterile Water Containing 0.9% Benzyl Alcohol. The Preservative Inhibits Microbial Growth, Extending The Shelf Life Of Reconstituted Peptides To 28-30 Days." },
-  { term: "Conformation", def: "The 3D Shape A Peptide Or Protein Folds Into. Shape Determines Function - A Peptide Must Have The Right Conformation To Bind Its Receptor." },
-  { term: "Cyclical Peptide", def: "A Peptide Where The Amino Acid Chain Forms A Ring Rather Than A Linear Sequence. Cyclic Peptides Are Often More Stable And Bioavailable. PT-141 Is An Example." },
-  { term: "Fibroblast", def: "A Type Of Cell That Produces Collagen And Other Connective Tissue Components. A Key Cell Type In Tissue Repair Research." },
-  { term: "GHRH", def: "Growth Hormone Releasing Hormone. An Endogenous Peptide Produced In The Hypothalamus That Stimulates The Pituitary To Release Growth Hormone. Sermorelin And CJC-1295 Are Synthetic Analogues." },
-  { term: "GHS-R1a", def: "Growth Hormone Secretagogue Receptor 1a. The Receptor For Ghrelin And Ghrelin Mimetics Like Ipamorelin. Located On Pituitary Somatotrophs." },
-  { term: "Half-Life", def: "The Time It Takes For The Concentration Of A Substance In The Body To Reduce By 50%. Short Half-Life Means More Frequent Dosing. Long Half-Life Means Less Frequent Dosing." },
-  { term: "IGF-1", def: "Insulin-Like Growth Factor 1. A Hormone Produced Mainly By The Liver In Response To GH Stimulation. Most Anabolic Effects Attributed To GH Are Actually Mediated By IGF-1." },
-  { term: "Lyophilization", def: "Freeze-Drying. The Process Of Removing Water From A Peptide Solution Under Vacuum, Leaving Behind A Stable Powder. Lyophilized Peptides Have A Much Longer Shelf Life Than Solutions." },
-  { term: "Melanocortin Receptor", def: "A Family Of Receptors (MC1R-MC5R) That Respond To Melanocyte-Stimulating Hormone And Related Peptides Like PT-141. MC4R Is The Primary Target For Appetite And Sexual Function Research." },
-  { term: "Peptide Bond", def: "The Covalent Chemical Bond Formed Between Two Amino Acids. Created When The Carboxyl Group (-COOH) Of One Amino Acid Reacts With The Amino Group (-NH2) Of Another, Releasing Water." },
-  { term: "Pituitary Gland", def: "A Small Endocrine Gland At The Base Of The Brain. It Produces And Releases Many Hormones Including Growth Hormone (GH), LH, FSH, TSH, And ACTH." },
-  { term: "Reconstitution", def: "The Process Of Dissolving A Lyophilized (Freeze-Dried) Peptide Powder In A Liquid Diluent - Usually BAC Water - To Create An Injectable Solution." },
-  { term: "Somatotroph", def: "A Specialized Cell Type In The Anterior Pituitary Gland That Produces And Secretes Growth Hormone. GHRH Analogues And Ghrelin Mimetics Act Directly On Somatotrophs." },
-  { term: "Sub-Q (Subcutaneous)", def: "Injection Into The Fatty Tissue Just Beneath The Skin. The Most Common Route Of Administration For Research Peptides. Typically Performed At A 45-Degree Angle With A Fine-Gauge Needle." },
-  { term: "Thymosin Beta-4 (TB4)", def: "A Naturally Occurring Protein Found In Virtually All Human And Animal Cells. TB-500 Is A Synthetic Fragment Of Its Active Binding Domain. Involved In Actin Regulation And Cell Migration." },
+  { term: "Amino Acid", def: "The Tiny Building Blocks That Make Up Peptides, Like LEGO Bricks. There Are 20 Basic Kinds, And The Order You Snap Them Together Decides What The Peptide Does." },
+  { term: "Angiogenesis", def: "Growing New Tiny Blood Vessels. More Blood Vessels Can Help An Area Heal. Some Peptides Are Studied For This." },
+  { term: "Bacteriostatic Water (BAC Water)", def: "Clean Water With A Tiny Bit Of Alcohol In It. The Alcohol Stops Germs From Growing, So Liquid Peptides Stay Good For About 4 Weeks." },
+  { term: "Conformation", def: "The 3D Shape A Peptide Folds Into. Shape Is Everything. A Peptide Only Works If Its Shape Fits The Lock It Was Made For." },
+  { term: "Cyclical Peptide", def: "A Peptide Whose Chain Loops Around Into A Ring Instead Of A Straight Line. Rings Are Often Tougher And Last Longer. PT-141 Is One." },
+  { term: "Fibroblast", def: "A Repair Cell. It Makes Collagen, The Stuff That Holds Skin And Tissue Together. Important For Healing." },
+  { term: "GHRH", def: "A Natural Signal In Your Brain That Tells The Body To Make Growth Hormone. Some Peptides Copy This Signal." },
+  { term: "GHS-R1a", def: "One Of The Locks In The Body That Turns On Growth Hormone. Peptides Like Ipamorelin Are Keys That Fit It." },
+  { term: "Half-Life", def: "How Long Something Lasts In The Body Before Half Of It Is Gone. Short Half-Life Means You Use It More Often. Long Means Less Often." },
+  { term: "IGF-1", def: "A Growth Signal Your Liver Makes After Growth Hormone Shows Up. A Lot Of Growth Hormone's Effects Actually Come From IGF-1." },
+  { term: "Lyophilization", def: "A Fancy Word For Freeze-Drying. The Water Is Pulled Out, Leaving A Dry Powder That Lasts A Long Time. Same Idea As Freeze-Dried Fruit." },
+  { term: "Melanocortin Receptor", def: "A Group Of Locks In The Body Linked To Skin Color, Appetite, And Some Brain Signals. Peptides Like PT-141 Fit These Locks." },
+  { term: "Peptide Bond", def: "The Strong Connection That Holds Two Building Blocks Together, Like Super Glue Between LEGO Bricks. A Tiny Drop Of Water Pops Out When It Forms." },
+  { term: "Pituitary Gland", def: "A Tiny Gland At The Base Of Your Brain. It Acts Like A Control Center, Releasing Many Signals Including Growth Hormone." },
+  { term: "Reconstitution", def: "Adding Water To Dry Peptide Powder To Turn It Into A Liquid. It Just Means Make It Liquid Again." },
+  { term: "Somatotroph", def: "The Special Cells In Your Brain's Pituitary Gland That Make Growth Hormone." },
+  { term: "Sub-Q (Subcutaneous)", def: "Putting Something Into The Soft Fatty Layer Just Under The Skin. It Is The Most Common Way Peptides Are Used In Studies." },
+  { term: "Thymosin Beta-4 (TB4)", def: "A Natural Protein Found In Almost Every Cell In The Body. TB-500 Is A Lab-Made Piece Of It. It Helps Cells Move And Repair." },
 ];
 
 // =====================================================
@@ -214,11 +214,11 @@ function showHL(name, hours, color) {
     setTimeout(() => { bar.style.width = Math.min(100, (hours / hlMax) * 100) + "%"; }, 50);
   }
   const notes = {
-    "BPC-157": "Short Half-Life. Multiple Daily Doses Used In Research Protocols To Maintain Plasma Levels.",
-    "TB-500": "Long Half-Life Enables Twice-Weekly Dosing In Most Research Frameworks.",
-    "Sermorelin": "Very Short. Must Be Timed Precisely. Typically Injected 30-60 min Before Sleep To Align With The Natural GH Pulse.",
-    "Ipamorelin": "Moderate. Nightly Dosing Is Standard In GH Axis Research Protocols.",
-    "CJC-1295 DAC": "Extremely Long Due To Albumin Binding. Once Or Twice Weekly Dosing Maintains Steady Plasma Levels And Creates Continuous GH Release."
+    "BPC-157": "Does Not Last Long In The Body, So Studies Use Small Amounts More Than Once A Day.",
+    "TB-500": "Lasts A Long Time, So Studies Usually Use It About Twice A Week.",
+    "Sermorelin": "Very Quick. It Is Usually Used Right Before Sleep, To Match The Body's Natural Nighttime Growth Signal.",
+    "Ipamorelin": "Lasts A Medium Amount Of Time. Studies Usually Use It Once A Night.",
+    "CJC-1295 DAC": "Lasts A Very Long Time, So Just Once Or Twice A Week Keeps It Working Steadily."
   };
   if (noteEl) noteEl.textContent = notes[name] || "";
 }
