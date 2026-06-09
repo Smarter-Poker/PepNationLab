@@ -182,7 +182,7 @@ export default function ProductCatalogClient({
   const tierPrice = (productId: string, cost: number, tier: string) => {
     const overrideKey = `${productId}:${tier}`;
     const multiplier = overrides[overrideKey] ?? multipliers[tier] ?? 1;
-    // Prices in DB are per-10-vial pack. Show per-unit (÷10) in the catalog.
+    // Prices in DB are per-10-vial pack. Show per-unit (/ 10) in the catalog.
     return `$${((cost * multiplier) / 10).toFixed(2)}`;
   };
 
@@ -311,7 +311,7 @@ export default function ProductCatalogClient({
           id="product-search"
           type="text"
           className="form-input"
-          placeholder="Search products…"
+          placeholder="Search Products..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={inputStyle}
@@ -340,7 +340,7 @@ export default function ProductCatalogClient({
             onChange={(e) => setShowOutOfStockOnly(e.target.checked)}
             style={{ accentColor: 'var(--teal)', width: 16, height: 16, cursor: 'pointer' }}
           />
-          <span>Out of Stock Only</span>
+          <span>Out Of Stock Only</span>
         </label>
 
         <button
@@ -361,8 +361,8 @@ export default function ProductCatalogClient({
           marginBottom: "var(--space-4)",
         }}
       >
-        Showing {displayed.length} of {grouped.length} unique products
-        {search && ` matching "${search}"`}
+        Showing {displayed.length} Of {grouped.length} Unique Products
+        {search && ` Matching "${search}"`}
       </p>
 
       {/* Bulk Action Bar */}
@@ -521,7 +521,7 @@ export default function ProductCatalogClient({
                                     : "rotate(0)",
                                 }}
                               >
-                                &#9658;
+                                &rsaquo;
                               </span>
                             )}
                             <span
@@ -556,8 +556,8 @@ export default function ProductCatalogClient({
                             }}
                           >
                             {p.variantCount === 1
-                              ? "1 size"
-                              : `${p.variantCount} sizes`}
+                              ? "1 Size"
+                              : `${p.variantCount} Sizes`}
                           </span>
                         </td>
 
@@ -636,7 +636,7 @@ export default function ProductCatalogClient({
                           }}
                         >
                           {p.totalInventory === 0 ? (
-                            <span style={{ color: 'var(--red)', background: 'rgba(229,62,62,0.12)', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem' }}>Out of Stock</span>
+                            <span style={{ color: 'var(--red)', background: 'rgba(229,62,62,0.12)', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem' }}>Out Of Stock</span>
                           ) : (
                             `${p.totalInventory} Units`
                           )}
@@ -798,7 +798,7 @@ export default function ProductCatalogClient({
                                 }}
                               >
                                 {v.inventory_count === 0 ? (
-                                  <span style={{ color: 'var(--red)', fontSize: '0.75rem' }}>Out of Stock</span>
+                                  <span style={{ color: 'var(--red)', fontSize: '0.75rem' }}>Out Of Stock</span>
                                 ) : (
                                   `${v.inventory_count} Left`
                                 )}
@@ -850,7 +850,7 @@ export default function ProductCatalogClient({
                       }}
                     >
                       {search
-                        ? "No products match your search"
+                        ? "No Products Match Your Search"
                         : "No Products Added Yet"}
                     </p>
                     {!search && (
@@ -1001,7 +1001,7 @@ export default function ProductCatalogClient({
                   onClick={handleBulkSubmit}
                   disabled={bulkSubmitting || !bulkValue}
                 >
-                  {bulkSubmitting ? "Submitting" : "Apply Bulk Adjustment"}
+                  {bulkSubmitting ? "Submitting..." : "Apply Bulk Adjustment"}
                 </button>
               </div>
             </div>
