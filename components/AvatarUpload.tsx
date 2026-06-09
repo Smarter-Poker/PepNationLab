@@ -104,23 +104,44 @@ export default function AvatarUpload({ currentAvatarUrl, name, onUploadSuccess }
       </div>
       
       <div>
-        <button 
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          style={{
-            background: 'rgba(255,255,255,0.1)',
-            color: 'var(--white)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: 8,
-            padding: '6px 14px',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            cursor: uploading ? 'wait' : 'pointer',
-            opacity: uploading ? 0.5 : 1
-          }}
-        >
-          {uploading ? 'Uploading...' : 'Upload Picture'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            style={{
+              background: 'rgba(255,255,255,0.1)',
+              color: 'var(--white)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: 8,
+              padding: '6px 14px',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: uploading ? 'wait' : 'pointer',
+              opacity: uploading ? 0.5 : 1
+            }}
+          >
+            {uploading ? 'Uploading...' : 'Upload Picture'}
+          </button>
+          {onUploadSuccess && (
+            <button 
+              onClick={() => onUploadSuccess('default')}
+              disabled={uploading}
+              style={{
+                background: 'transparent',
+                color: 'var(--silver, rgba(192,184,168,0.65))',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 8,
+                padding: '6px 14px',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: uploading ? 'wait' : 'pointer',
+                opacity: uploading ? 0.5 : 1
+              }}
+            >
+              Use Default
+            </button>
+          )}
+        </div>
         <div style={{ color: 'var(--silver, rgba(192,184,168,0.65))', fontSize: '0.7rem', marginTop: 6 }}>
           JPG, PNG, WEBP, or GIF. Max 5MB.
         </div>

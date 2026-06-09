@@ -14,7 +14,7 @@ export default function Avatar({ name, size = 40, avatarUrl }: AvatarProps) {
     .map((w) => w[0]?.toUpperCase())
     .join('');
 
-  if (avatarUrl) {
+  if (avatarUrl && avatarUrl !== 'default') {
     return (
       <Image
         src={avatarUrl}

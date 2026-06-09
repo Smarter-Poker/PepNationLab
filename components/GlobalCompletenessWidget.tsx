@@ -59,11 +59,14 @@ export default function GlobalCompletenessWidget() {
       'timezone': 'timezone',
     };
     try {
+      const dbKey = keyMap[t.id] || t.id;
       await fetch('/api/agent/profile', { 
         method: 'PATCH', 
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [keyMap[t.id] || t.id]: inputValue }) 
+        body: JSON.stringify({ [dbKey]: inputValue }) 
       });
+      // Optimistically remove the task to feel instant
+      setMissingTasks(prev => prev.filter(x => x.id !== t.id));
       await fetchCompleteness();
     } catch(err) {}
     setSavingTask(false);
@@ -148,6 +151,7 @@ export default function GlobalCompletenessWidget() {
                             onUploadSuccess={async (url) => {
                               try {
                                 await fetch('/api/agent/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatar_url: url }) });
+                                setMissingTasks(prev => prev.filter(x => x.id !== 'avatar'));
                                 await fetchCompleteness();
                               } catch(err) {}
                               setExpandedTask(null);
@@ -157,12 +161,23 @@ export default function GlobalCompletenessWidget() {
                       ) : (
                         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
                           <input 
-                            type="text" 
+                            type={t.id === 'phone' ? 'tel' : t.id === 'email' ? 'email' : 'text'}
+                            inputMode={t.id === 'phone' ? 'numeric' : undefined}
                             className="form-input" 
                             style={{ flex: 1, margin: 0 }} 
                             placeholder={`Enter ${t.label}`}
                             value={inputValue}
-                            onChange={e => setInputValue(e.target.value)}
+                            onChange={e => {
+                              if (t.id === 'phone') {
+                                const digits = e.target.value.replace(/\D/g, '');
+                                let formatted = digits;
+                                if (digits.length > 3 && digits.length <= 6) formatted = `${digits.slice(0, 3)}-${digits.slice(3)}`;
+                                else if (digits.length > 6) formatted = `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+                                setInputValue(formatted);
+                              } else {
+                                setInputValue(e.target.value);
+                              }
+                            }}
                             autoFocus
                           />
                           <button 

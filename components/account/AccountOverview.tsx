@@ -270,13 +270,18 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
             <input
               id="phone"
               type="tel"
+              inputMode="numeric"
               className="form-input"
               value={draft.phone}
-              onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))}
-              placeholder=""
-              maxLength={40}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '');
+                let formatted = digits;
+                if (digits.length > 3 && digits.length <= 6) formatted = `${digits.slice(0, 3)}-${digits.slice(3)}`;
+                else if (digits.length > 6) formatted = `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+                setDraft((d) => ({ ...d, phone: formatted }));
+              }}
+              maxLength={12}
               autoComplete="tel"
-              inputMode="tel"
             />
           </div>
 
@@ -407,12 +412,23 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
                       ) : (
                         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
                           <input 
-                            type="text" 
+                            type={t.id === 'phone' ? 'tel' : t.id === 'email' ? 'email' : 'text'}
+                            inputMode={t.id === 'phone' ? 'numeric' : undefined}
                             className="form-input" 
                             style={{ flex: 1, margin: 0 }} 
                             placeholder={`Enter ${t.label}`}
                             value={inputValue}
-                            onChange={e => setInputValue(e.target.value)}
+                            onChange={e => {
+                              if (t.id === 'phone') {
+                                const digits = e.target.value.replace(/\D/g, '');
+                                let formatted = digits;
+                                if (digits.length > 3 && digits.length <= 6) formatted = `${digits.slice(0, 3)}-${digits.slice(3)}`;
+                                else if (digits.length > 6) formatted = `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+                                setInputValue(formatted);
+                              } else {
+                                setInputValue(e.target.value);
+                              }
+                            }}
                             autoFocus
                           />
                           <button 
