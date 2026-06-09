@@ -63,10 +63,10 @@ function getCompletenessData(p: AccountProfile | null, ap?: any) {
 
   filled += check(!!p.first_name?.trim(), 'first-name', 'First Name', 'Add Now', 'focus:first-name');
   filled += check(!!p.last_name?.trim(), 'last-name', 'Last Name', 'Add Now', 'focus:last-name');
-  filled += check(!!p.email?.trim() && !p.email.includes('@internal.auth') && !p.email.includes('@pepnationlab.com'), 'email', 'Real Email Address', 'Add Now', 'focus:email');
+  filled += check(!!p.email?.trim() && !p.email.includes('@internal.auth') && !p.email.includes('@pepnationlab.com'), 'email', 'Email Address', 'Add Now', 'focus:email');
   filled += check(!!p.phone?.trim(), 'phone', 'Phone Number', 'Add Now', 'focus:phone');
   filled += check(!!p.timezone?.trim(), 'timezone', 'Timezone', 'Select Now', 'focus:timezone');
-  filled += check(!!p.avatar_url, 'avatar', 'Profile Picture', 'Upload Now', 'focus:avatar');
+  filled += check(!!p.avatar_url, 'avatar', 'Profile Picture', 'Upload', 'focus:avatar');
 
   if (ap) {
     requiredCount += 4; // slug, warehouse, payment, active
@@ -320,7 +320,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
           <div
             className="glass-panel"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: 500, width: '100%', padding: 'var(--space-6)', maxHeight: '90vh', overflowY: 'auto' }}
+            style={{ maxWidth: 500, width: '100%', padding: 'var(--space-6)', maxHeight: '90vh', overflowY: 'auto', border: '3px solid #88929C', boxShadow: 'inset 0 0 15px rgba(0,0,0,0.7), 0 10px 30px rgba(0,0,0,0.5)' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
               <h3 style={{ margin: 0, color: 'var(--white)' }}>Complete Your Profile</h3>
@@ -338,6 +338,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
                   <button
                     type="button"
                     className="btn btn-primary btn-sm"
+                    style={{ minWidth: 100 }}
                     onClick={() => {
                       setMissingTasksModalOpen(false);
                       if (t.target.startsWith('focus:')) {

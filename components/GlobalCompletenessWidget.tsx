@@ -74,7 +74,7 @@ export default function GlobalCompletenessWidget() {
           <div
             className="glass-panel"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: 500, width: '100%', padding: 'var(--space-6)', maxHeight: '90vh', overflowY: 'auto', position: 'relative', zIndex: 1 }}
+            style={{ maxWidth: 500, width: '100%', padding: 'var(--space-6)', maxHeight: '90vh', overflowY: 'auto', position: 'relative', zIndex: 1, border: '3px solid #88929C', boxShadow: 'inset 0 0 15px rgba(0,0,0,0.7), 0 10px 30px rgba(0,0,0,0.5)' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
               <h3 style={{ margin: 0, color: 'var(--white)' }}>Complete Your Profile</h3>
@@ -92,6 +92,7 @@ export default function GlobalCompletenessWidget() {
                   <button
                     type="button"
                     className="btn btn-primary btn-sm"
+                    style={{ minWidth: 100 }}
                     onClick={() => {
                       setModalOpen(false);
                       if (t.target.startsWith('nav:')) {

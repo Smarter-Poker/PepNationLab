@@ -22,10 +22,10 @@ export function getCompletenessData(p: any, ap?: any) {
 
   filled += check(!!p.first_name?.trim(), 'first-name', 'First Name', 'Add Now', 'nav:/account#first-name');
   filled += check(!!p.last_name?.trim(), 'last-name', 'Last Name', 'Add Now', 'nav:/account#last-name');
-  filled += check(!!p.email?.trim() && !p.email.includes('@internal.auth') && !p.email.includes('@pepnationlab.com'), 'email', 'Real Email Address', 'Add Now', 'nav:/account#email');
+  filled += check(!!p.email?.trim() && !p.email.includes('@internal.auth') && !p.email.includes('@pepnationlab.com'), 'email', 'Email Address', 'Add Now', 'nav:/account#email');
   filled += check(!!p.phone?.trim(), 'phone', 'Phone Number', 'Add Now', 'nav:/account#phone');
   filled += check(!!p.timezone?.trim(), 'timezone', 'Timezone', 'Select Now', 'nav:/account#timezone');
-  filled += check(!!p.avatar_url, 'avatar', 'Profile Picture', 'Upload Now', 'nav:/account#avatar');
+  filled += check(!!p.avatar_url, 'avatar', 'Profile Picture', 'Upload', 'nav:/account#avatar');
 
   if (ap) {
     requiredCount += 4; // slug, warehouse, payment, active

@@ -76,8 +76,8 @@ export default function AdminAnalytics() {
       });
       const topProducts = Array.from(productMap.entries())
         .map(([name, v]) => ({ name: name.length > 20 ? name.slice(0, 18) + '…' : name, ...v }))
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 6);
+        .sort((a, b) => b.sales - a.sales)
+        .slice(0, 10);
 
       // Orders by status (pie chart)
       const statusCounts: Record<string, number> = {};

@@ -239,7 +239,7 @@ function ResearchersAdminPageInner() {
     setModalError('');
     setModalSuccess('');
     if (!newParentAgentId) {
-      setModalError('Please Select The Agent This Researcher Belongs To');
+      setModalError('Please Select The Account Owner For This Researcher');
       setSubmitting(false);
       return;
     }
@@ -929,15 +929,15 @@ function ResearchersAdminPageInner() {
                   <div style={{ marginBottom: 'var(--space-6)' }}></div>
                   <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Account Owner</h4>
                   <div className="form-group" style={{ marginBottom: 'var(--space-5)' }}>
-                    <label className="form-label">Assign To Agent</label>
+                    <label className="form-label">Assign To Account Owner</label>
                     <select className="form-input" value={newParentAgentId} onChange={e => setNewParentAgentId(e.target.value)} required>
-                      <option value="">Select The Agent This Researcher Belongs To</option>
+                      <option value="">Select The Account Owner For This Researcher</option>
                       {profiles
-                        .filter(p => p.role === 'agent' || p.role === 'super_agent')
+                        .filter(p => p.role === 'agent' || p.role === 'super_agent' || p.role === 'admin')
                         .sort((a, b) => (a.full_name || a.username || '').localeCompare(b.full_name || b.username || ''))
                         .map(a => (
                           <option key={a.id} value={a.id}>
-                            {(a.full_name || a.username || 'Agent')}{a.username ? ` (@${a.username})` : ''}
+                            {(a.full_name || a.username || (a.role === 'admin' ? 'Admin' : 'Agent'))}{a.username ? ` (@${a.username})` : ''}
                           </option>
                         ))}
                     </select>

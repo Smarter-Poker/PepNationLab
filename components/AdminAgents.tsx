@@ -821,6 +821,7 @@ export default function AdminAgents() {
                     style={{ width: '100%' }}
                   >
                     <option value="">Select An Agent...</option>
+                    <option value="__ADMIN__">Admin (Direct Assign)</option>
                     {agents.map(a => (
                       <option key={a.id} value={a.id}>{a.full_name}</option>
                     ))}

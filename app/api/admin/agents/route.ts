@@ -92,6 +92,11 @@ export async function POST(req: NextRequest) {
   if (isResearcher && !parent_agent_id) {
     return NextResponse.json({ error: 'Researcher Accounts Must Be Assigned To An Agent' }, { status: 400 });
   }
+  // Resolve the admin sentinel: when the admin assigns a researcher directly to
+  // themselves, use the requesting admin's own profile ID as the parent.
+  const resolvedParentAgentId = isResearcher
+    ? (parent_agent_id === '__ADMIN__' ? gate.userId : parent_agent_id)
+    : parent_agent_id;
   if (password.length < 8) {
     return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
   }
@@ -217,8 +222,8 @@ export async function POST(req: NextRequest) {
   };
 
   if (isResearcher) {
-    profileData.parent_agent_id = parent_agent_id;
-    profileData.referring_agent_id = parent_agent_id;
+    profileData.parent_agent_id = resolvedParentAgentId;
+    profileData.referring_agent_id = resolvedParentAgentId;
   } else {
     profileData.tier = tier;
     // Both Agents and Super Agents get their initial tier locked so the dropdown
