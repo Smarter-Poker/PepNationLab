@@ -244,7 +244,13 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     }
     
     if (typeof body.email === 'string' && body.email.trim()) {
-      updates.email = body.email.trim();
+      const normalizedEmail = body.email.trim().toLowerCase();
+      // Validate before any write so profiles.email cannot drift from the auth
+      // login identity (a divergence silently breaks username login).
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+        return NextResponse.json({ error: 'Please Enter A Valid Email Address' }, { status: 400 });
+      }
+      updates.email = normalizedEmail;
       changes.email = updates.email;
     }
 
@@ -414,12 +420,25 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     if (Object.keys(updates).length > 0) {
       updates.updated_at = new Date().toISOString();
+
+      // Keep the auth login identity in lockstep with profiles.email. Update
+      // AUTH FIRST and abort before the profile write on failure, so the two
+      // can never diverge (a drift silently breaks username login - resolve
+      // would return an email no auth user owns). See app/api/auth/resolve.
+      if (updates.email) {
+        const { error: authErr } = await supabase.auth.admin.updateUserById(id, { email: updates.email });
+        if (authErr) {
+          console.error('[PATCH agent] auth update error:', authErr);
+          return NextResponse.json({ error: 'Could Not Update Login Email. Please Check The Address And Try Again.' }, { status: 400 });
+        }
+      }
+
       const { error: upErr } = await supabase.from('profiles').update(updates).eq('id', id);
       if (upErr) {
         console.error('[PATCH agent] profile update error:', upErr);
         return NextResponse.json({ error: 'Failed To Update Agent.' }, { status: 500 });
       }
-      
+
       if (Array.isArray(body.custom_commission_scale)) {
         await supabase.from('sub_agent_commission_plan').upsert({
           sub_agent_id: id,
@@ -429,11 +448,6 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
         });
       } else if (body.custom_commission_scale === null) {
         await supabase.from('sub_agent_commission_plan').delete().eq('sub_agent_id', id);
-      }
-      
-      if (updates.email) {
-        const { error: authErr } = await supabase.auth.admin.updateUserById(id, { email: updates.email });
-        if (authErr) console.error('[PATCH agent] auth update error:', authErr);
       }
     }
 
