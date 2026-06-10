@@ -219,18 +219,32 @@ function saveProgress() {
 }
 function loadProgress() {
   try {
+    // Check if this is a review-mode navigation (user clicked a completed module
+    // from the landing page roadmap). In review mode we navigate to the module
+    // but do NOT update the "real" progress pointer so "Continue Learning" stays correct.
+    const params = new URLSearchParams(window.location.search);
+    const isReview = params.get('review') === '1';
+
+    // Snapshot the real progress BEFORE goTo() can overwrite it
+    const realProgressScreen = localStorage.getItem("p101_screen");
+
     const hash = window.location.hash;
     if (hash && hash.startsWith('#s')) {
       const hashScreen = parseInt(hash.substring(2));
       if (!isNaN(hashScreen) && document.getElementById("s" + hashScreen)) {
         goTo(hashScreen);
+        if (isReview && realProgressScreen !== null) {
+          // Restore real progress — the user is just reviewing, not advancing
+          localStorage.setItem("p101_screen", realProgressScreen);
+        }
         return;
       }
     }
-    const s = parseInt(localStorage.getItem("p101_screen") || "0");
+    const s = parseInt(realProgressScreen || "0");
     if (s > 0 && document.getElementById("s" + s)) goTo(s);
   } catch(e) {}
 }
+
 
 window.addEventListener('hashchange', function() {
   const hash = window.location.hash;
