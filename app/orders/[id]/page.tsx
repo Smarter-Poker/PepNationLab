@@ -7,7 +7,6 @@ import PageShell from '@/components/PageShell';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
 import RecommendationStrip, { type RecommendationItem } from '@/components/RecommendationStrip';
 import ReceiptButton from './ReceiptButton';
-import SubscribeReplenishButton from './SubscribeReplenishButton';
 import ReorderOrderButton from './ReorderOrderButton';
 import ReorderStackButton from './ReorderStackButton';
 import ChangePaymentMethod from '@/components/ChangePaymentMethod';
@@ -377,29 +376,6 @@ export default async function OrderDetailPage(
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-                {order.buyer_id === user.id && order.status !== 'cancelled' && (
-                  <SubscribeReplenishButton
-                    agentId={order.agent_id}
-                    paymentMethod={order.payment_method}
-                    fulfillmentMethod={order.fulfillment_method}
-                    shippingAddress={
-                      order.fulfillment_method === 'ship' && addr?.street
-                        ? {
-                            fullName: addr.fullName,
-                            street: addr.street,
-                            suite: addr.suite,
-                            city: addr.city,
-                            state: addr.state,
-                            zip: addr.zip,
-                          }
-                        : null
-                    }
-                    items={order.order_items.map((it) => ({
-                      agent_product_id: it.agent_product_id,
-                      quantity: it.quantity,
-                    }))}
-                  />
-                )}
                 <ReorderOrderButton orderId={order.id} />
                 <ReceiptButton
                   orderId={order.id}

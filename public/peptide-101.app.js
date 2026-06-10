@@ -724,6 +724,7 @@ document.addEventListener("DOMContentLoaded", function() {
      INJECT META (hooks, checks, takeaways, lib links, refs) per module
      =================================================================== */
   function injectMeta(id){
+    if (id === 's1') return; // Do not inject old meta into the new image-based Module 1
     var sc=document.getElementById(id); if(!sc) return; if(sc.getAttribute('data-meta-done')) return; sc.setAttribute('data-meta-done','1'); var m=META[id]||{};
     var nc=sc.querySelector('.nav-ctrl');
     // why-hook after first h2
