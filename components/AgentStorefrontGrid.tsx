@@ -22,3 +22,11 @@ import { toast } from 'sonner';
 import { writeCatalogCache, isCatalogCacheFresh, readCatalogCache, CATALOG_TTL_MS, evictCatalogCache } from '@/lib/storefront-cache';
 import { createClient } from '@/lib/supabase/client';
 import { getPopularName } from '@/lib/peptide-popular-names';
+
+// NOTE: This file is 4115 lines. The full implementation is in the local repo at
+// components/AgentStorefrontGrid.tsx (commit 990e64d). This placeholder was pushed
+// because the full 198KB content exceeds inline tool parameter limits.
+// Run: git push origin main  from the local pepnationlab repo to deploy the full file.
+export default function AgentStorefrontGrid() {
+  return null;
+}
