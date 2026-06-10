@@ -769,6 +769,8 @@ export default function AreaProductGrid({
                     eli5_summary: compound.eli5Summary,
                     typical_frequency: compound.typicalFrequency,
                     handling: { form: 'Vial' },
+                    _imageUrl: p.imageUrl,
+                    _price: p.agentProductId ? (p.isOnSale && p.salePrice != null ? p.salePrice : p.retailPrice) : null,
                   });
                 }
               }}
@@ -976,6 +978,8 @@ export default function AreaProductGrid({
       <QuickViewModal
         isOpen={!!quickViewCompound}
         compound={quickViewCompound}
+        imageUrl={quickViewCompound?._imageUrl}
+        price={quickViewCompound?._price}
         onClose={() => setQuickViewCompound(null)}
       />
 

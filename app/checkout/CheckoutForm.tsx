@@ -59,6 +59,14 @@ interface SavedAddress {
   is_default: boolean;
 }
 
+interface ActiveFlashSale {
+  id: string;
+  name: string;
+  banner_text: string | null;
+  discount_pct: number;
+  ends_at: string;
+}
+
 export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1, minOrderQty = 1 }: CheckoutFormProps) {
   // Agent buying from their own store -> show tier-discounted pricing.
   // Cross-check: only treat as self-buy when the agentSlug in the URL
@@ -440,6 +448,29 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Task 70: fetch active flash sale for checkout discount display
+  useEffect(() => {
+    let aborted = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('flash_sales')
+          .select('id, name, banner_text, discount_pct, starts_at, ends_at')
+          .eq('is_active', true)
+          .lte('starts_at', new Date().toISOString())
+          .gte('ends_at', new Date().toISOString())
+          .order('ends_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (aborted || error || !data) return;
+        setFlashSale(data as ActiveFlashSale);
+      } catch { /* silent */ }
+    })();
+    return () => { aborted = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function pickSavedAddress(id: string) {
     setSelectedAddressId(id);
     if (id === 'new') {
@@ -471,6 +502,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
+  const [flashSale, setFlashSale] = useState<ActiveFlashSale | null>(null);
 
 
 
@@ -687,7 +719,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   const shippingCost = calculateShippingCost();
   const discount = appliedCoupon?.discount ?? 0;
-  const subtotalAfterDiscount = Math.max(0, cartSubtotal - discount) + shippingCost;
+  const flashDiscount = flashSale && cartSubtotal > 0
+    ? Math.round(cartSubtotal * flashSale.discount_pct) / 100
+    : 0;
+  const subtotalAfterDiscount = Math.max(0, cartSubtotal - discount - flashDiscount) + shippingCost;
 
   const grandTotal = Math.max(0, subtotalAfterDiscount);
 
@@ -1985,6 +2020,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                   <span style={{ color: '#68D391' }}>Coupon Discount</span>
                   <strong style={{ color: '#68D391' }}>-${discount.toFixed(2)}</strong>
+                </div>
+              )}
+
+              {flashDiscount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(104,211,145,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(104,211,145,0.2)' }}>
+                  <span style={{ color: '#68D391', fontWeight: 600 }}>Flash Sale ({flashSale!.discount_pct}% Off)</span>
+                  <strong style={{ color: '#68D391' }}>-${flashDiscount.toFixed(2)}</strong>
                 </div>
               )}
 

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-export async function POST() {
+export async function GET() {
   const supabase = await createServiceClient();
 
   // Fetch products that need embeddings

@@ -7,662 +7,7 @@
 <title>Peptide 101 | PepNationLab</title>
 <meta name="description" content="The Complete Beginner Guide To Research Peptides.">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
-<<<<<<< Updated upstream
 <link rel="stylesheet" href="/peptide-101.css">
-=======
-<style>
-:root {
-  --bg: #050A0F;
-  --surface: #0F1923;
-  --surface2: #162230;
-  --surface3: #1D2D3E;
-  --border: rgba(0,196,188,0.12);
-  --border-h: rgba(0,196,188,0.35);
-  --teal: #00C4BC;
-  --teal-l: #2DE0D8;
-  --teal-d: #009E96;
-  --blue: #3B82F6;
-  --blue-l: #60A5FA;
-  --silver: #D0DAE4;
-  --nickel: #8A9BB0;
-  --green: #22c55e;
-  --red: #E53E3E;
-  --yellow: #EAB308;
-  --text: #FFFFFF;
-  --muted: #A8B4C0;
-  --r: 14px;
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html{scroll-behavior:smooth;}
-body{
-  font-family:'Inter',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  overflow-x:hidden;
-  -webkit-font-smoothing:antialiased;
-}
-/* TYPOGRAPHY */
-h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;font-weight:700;line-height:1.2;}
-p{line-height:1.65;color:var(--muted);}
-strong{color:var(--text);}
-/* NAV */
-.nav{
-  position:fixed;top:0;left:0;right:0;z-index:100;
-  background:rgba(5,10,15,0.92);
-  backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--border);
-  height:56px;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 20px;
-}
-.nav-logo{
-  font-family:'Space Grotesk',sans-serif;
-  font-weight:700;font-size:17px;
-  color:var(--teal);
-  letter-spacing:-.3px;
-}
-.nav-back{
-  display:flex;align-items:center;gap:6px;
-  color:var(--muted);font-size:13px;font-weight:500;
-  text-decoration:none;
-  background:none;border:none;cursor:pointer;
-  transition:color .2s;
-}
-.nav-back:hover{color:var(--text);}
-.nav-back svg{width:14px;height:14px;}
-/* PROGRESS BAR */
-.prog-wrap{
-  position:fixed;top:56px;left:0;right:0;z-index:99;
-  background:var(--surface);
-  border-bottom:1px solid var(--border);
-  padding:8px 20px;
-  display:flex;align-items:center;gap:12px;
-}
-.prog-track{
-  flex:1;height:6px;
-  background:var(--surface3);
-  border-radius:99px;
-  overflow:hidden;
-}
-.prog-fill{
-  height:100%;
-  background:linear-gradient(90deg,var(--teal),var(--blue-l));
-  border-radius:99px;
-  transition:width .4s cubic-bezier(.4,0,.2,1);
-  width:0%;
-}
-.prog-label{
-  font-size:12px;font-weight:600;
-  color:var(--muted);
-  min-width:60px;text-align:right;
-}
-.prog-steps{
-  display:flex;gap:4px;
-}
-.prog-dot{
-  width:7px;height:7px;border-radius:50%;
-  background:var(--surface3);
-  transition:background .3s;
-  cursor:pointer;
-}
-.prog-dot.done{background:var(--teal);}
-.prog-dot.active{background:var(--teal-l);box-shadow:0 0 6px var(--teal);}
-/* LAYOUT */
-.app{padding-top:104px;min-height:100vh;position:relative;}
-/* SCREENS */
-.screen{
-  display:none;
-  max-width:800px;
-  margin:0 auto;
-  padding:32px 20px 80px;
-  animation:fadeIn .2s ease;
-}
-.screen.active{display:block;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-/* CARDS */
-.card{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--r);
-  padding:24px;
-  margin-bottom:16px;
-}
-.card-glass{
-  background:rgba(15,25,35,0.7);
-  backdrop-filter:blur(8px);
-  border:1px solid var(--border);
-  border-radius:var(--r);
-  padding:24px;
-  margin-bottom:16px;
-}
-.card:hover,.card-glass:hover{border-color:var(--border-h);}
-/* NICKEL CARD */
-.card-nickel{
-  background:linear-gradient(135deg,#0d1a26,#16253a,#0d1a26);
-  border:1px solid rgba(138,155,176,0.3);
-  border-radius:var(--r);
-  padding:24px;
-  margin-bottom:16px;
-  position:relative;
-  overflow:hidden;
-}
-.card-nickel::before{
-  content:"";position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(197,208,220,0.4),transparent);
-}
-/* BADGES */
-.badge{
-  display:inline-flex;align-items:center;gap:6px;
-  font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
-  padding:4px 10px;border-radius:6px;margin-bottom:16px;
-}
-.badge-teal{background:rgba(0,196,188,0.12);color:var(--teal);border:1px solid rgba(0,196,188,0.25);}
-.badge-blue{background:rgba(59,130,246,0.12);color:var(--blue-l);border:1px solid rgba(59,130,246,0.25);}
-.badge-silver{background:rgba(138,155,176,0.12);color:var(--silver);border:1px solid rgba(138,155,176,0.25);}
-.badge-green{background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.25);}
-/* GRID */
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
-@media(max-width:600px){.grid2,.grid3{grid-template-columns:1fr;}}
-/* BUTTONS */
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  padding:12px 24px;border-radius:10px;
-  font-weight:600;font-size:15px;cursor:pointer;
-  border:none;transition:all .2s;
-  min-height:48px;
-  text-decoration:none;
-}
-.btn-primary{
-  background:var(--teal);color:#000;
-  box-shadow:0 0 20px rgba(0,196,188,0.25);
-}
-.btn-primary:hover{background:var(--teal-l);box-shadow:0 0 28px rgba(0,196,188,0.4);transform:translateY(-1px);}
-.btn-secondary{
-  background:var(--surface2);color:var(--text);
-  border:1px solid var(--border);
-}
-.btn-secondary:hover{border-color:var(--border-h);background:var(--surface3);}
-.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
-.btn-ghost:hover{color:var(--text);border-color:var(--border-h);}
-.btn-blue{background:var(--blue);color:#fff;}
-.btn-blue:hover{background:var(--blue-l);transform:translateY(-1px);}
-.btn-full{width:100%;}
-/* NAV CONTROLS */
-.nav-ctrl{
-  display:flex;gap:12px;justify-content:space-between;
-  margin-top:32px;padding-top:24px;
-  border-top:1px solid var(--border);
-}
-/* DIVIDER */
-.divider{
-  display:flex;align-items:center;gap:12px;
-  margin:24px 0;color:var(--muted);font-size:13px;
-}
-.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border);}
-/* STAT BOXES */
-.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px;}
-.stat-box{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:12px;padding:16px;text-align:center;
-}
-.stat-num{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:800;color:var(--teal);}
-.stat-label{font-size:12px;color:var(--muted);margin-top:2px;}
-/* CALLOUT */
-.callout{
-  border-left:3px solid var(--teal);
-  background:rgba(0,196,188,0.06);
-  border-radius:0 10px 10px 0;
-  padding:14px 18px;
-  margin:16px 0;
-}
-.callout-red{border-left-color:var(--red);background:rgba(229,62,62,0.06);}
-.callout-blue{border-left-color:var(--blue);background:rgba(59,130,246,0.06);}
-/* HERO SECTION */
-.hero-orb{
-  position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none;
-  will-change:transform;
-}
-/* QUIZ */
-.quiz-opts{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
-.quiz-opt{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 16px;
-  background:var(--surface2);border:1px solid var(--border);
-  border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;
-  transition:all .2s;text-align:left;width:100%;color:var(--text);
-  min-height:48px;
-}
-.quiz-opt:hover{border-color:var(--border-h);background:var(--surface3);}
-.quiz-opt.correct{border-color:var(--green);background:rgba(34,197,94,0.08);color:var(--green);}
-.quiz-opt.wrong{border-color:var(--red);background:rgba(229,62,62,0.08);color:var(--red);}
-.quiz-opt:disabled{cursor:default;}
-.quiz-fb{margin-top:10px;font-size:13px;font-weight:500;display:none;}
-.quiz-fb.show{display:block;}
-/* CHAIN BUILDER */
-.chain-area{
-  display:flex;flex-wrap:wrap;gap:4px;align-items:center;
-  min-height:60px;background:var(--surface2);
-  border:1px solid var(--border);border-radius:10px;
-  padding:12px;margin:16px 0;
-  position:relative;
-}
-.amino{
-  display:inline-flex;align-items:center;gap:4px;
-  padding:6px 10px;border-radius:8px;
-  font-size:12px;font-weight:600;
-  background:var(--teal);color:#000;
-  animation:popIn .2s ease;
-  will-change:transform;
-}
-.amino-bond{
-  color:var(--muted);font-size:10px;
-  animation:fadeIn .2s ease;
-}
-@keyframes popIn{from{transform:scale(0.6);opacity:0;}to{transform:scale(1);opacity:1;}}
-.aa-btn{
-  padding:8px 12px;border-radius:8px;
-  background:var(--surface2);border:1px solid var(--border);
-  color:var(--text);font-size:13px;font-weight:600;cursor:pointer;
-  transition:all .2s;min-height:44px;
-}
-.aa-btn:hover{border-color:var(--teal);color:var(--teal);}
-.aa-grid{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0;}
-/* LOCK KEY */
-.lk-arena{
-  display:flex;align-items:center;justify-content:center;gap:24px;
-  padding:32px;background:var(--surface2);
-  border:1px solid var(--border);border-radius:14px;
-  margin:16px 0;flex-wrap:wrap;
-}
-.lk-receptor{
-  width:90px;height:90px;border-radius:16px;
-  background:var(--surface3);
-  border:2px dashed var(--muted);
-  display:flex;align-items:center;justify-content:center;
-  transition:all .4s;font-size:11px;color:var(--muted);text-align:center;
-}
-.lk-receptor.bound{border-color:var(--teal);background:rgba(0,196,188,0.1);}
-.lk-peptide{
-  width:64px;height:64px;border-radius:50%;
-  background:linear-gradient(135deg,var(--teal),var(--blue));
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;font-size:11px;color:#000;font-weight:700;
-  transition:all .3s;
-  will-change:transform;
-}
-.lk-peptide:hover{transform:scale(1.08);}
-/* HALF LIFE */
-.hl-bar-wrap{background:var(--surface2);border-radius:10px;overflow:hidden;height:16px;margin:8px 0;}
-.hl-bar{height:100%;border-radius:10px;transition:width 1s ease;will-change:width;}
-/* TABS */
-.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:20px;}
-.tab{
-  padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;
-  color:var(--muted);border-bottom:2px solid transparent;
-  transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;
-  margin-bottom:-1px;
-}
-.tab.active{color:var(--teal);border-bottom-color:var(--teal);}
-.tab-panel{display:none;}
-.tab-panel.active{display:block;animation:fadeIn .2s ease;}
-/* RECONSTITUTION CALC */
-.calc-form{display:flex;flex-direction:column;gap:16px;}
-.field label{font-size:13px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px;}
-.field input,.field select{
-  width:100%;padding:12px 14px;
-  background:var(--surface2);
-  border:1px solid var(--border);border-radius:10px;
-  color:var(--text);font-size:15px;font-family:'Inter',sans-serif;
-  transition:border-color .2s;
-  min-height:48px;
-}
-.field input:focus,.field select:focus{outline:none;border-color:var(--teal);}
-.calc-result{
-  background:linear-gradient(135deg,rgba(0,196,188,0.1),rgba(59,130,246,0.08));
-  border:1px solid rgba(0,196,188,0.3);
-  border-radius:14px;padding:24px;margin-top:16px;text-align:center;
-  display:none;
-}
-.calc-result.show{display:block;animation:fadeIn .3s ease;}
-.calc-big{font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:800;color:var(--teal);}
-.calc-unit{font-size:16px;color:var(--muted);margin-top:4px;}
-/* DOSING TABLE */
-.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);}
-table{width:100%;border-collapse:collapse;font-size:13px;}
-th{
-  background:var(--surface2);color:var(--muted);
-  font-weight:600;font-size:12px;letter-spacing:.4px;text-transform:uppercase;
-  padding:12px 16px;text-align:left;cursor:pointer;
-  user-select:none;white-space:nowrap;
-}
-th:hover{color:var(--teal);}
-th.sort-asc::after{content:" ^";}
-th.sort-desc::after{content:" v";}
-td{
-  padding:12px 16px;border-top:1px solid var(--border);
-  color:var(--text);vertical-align:middle;
-}
-tr:hover td{background:rgba(0,196,188,0.04);}
-.tbl-search{
-  width:100%;padding:12px 16px;
-  background:var(--surface2);border:1px solid var(--border);border-radius:10px;
-  color:var(--text);font-size:14px;font-family:'Inter',sans-serif;
-  margin-bottom:12px;transition:border-color .2s;
-  min-height:48px;
-}
-.tbl-search:focus{outline:none;border-color:var(--teal);}
-/* PEPTIDE CARDS (MODULE 6) */
-.peptide-card{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:var(--r);padding:20px;margin-bottom:12px;
-  transition:border-color .2s;
-}
-.peptide-card:hover{border-color:var(--border-h);}
-.peptide-name{font-family:"Space Grotesk",sans-serif;font-size:18px;font-weight:700;color:var(--teal);}
-.peptide-tag{font-size:12px;color:var(--muted);margin-top:2px;margin-bottom:12px;}
-.peptide-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px;}
-@media(max-width:600px){.peptide-row{grid-template-columns:1fr;}}
-.peptide-info{background:var(--surface2);border-radius:10px;padding:12px;}
-.peptide-info-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
-.peptide-info-val{font-size:13px;color:var(--text);font-weight:500;}
-/* STACKING */
-.stack-card{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:var(--r);padding:20px;margin-bottom:12px;
-}
-.stack-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px;}
-.stack-sub{font-size:13px;color:var(--muted);margin-bottom:12px;}
-.stack-items{display:flex;gap:8px;flex-wrap:wrap;}
-.stack-item{
-  background:linear-gradient(135deg,rgba(0,196,188,0.15),rgba(59,130,246,0.1));
-  border:1px solid rgba(0,196,188,0.25);
-  border-radius:8px;padding:6px 14px;
-  font-size:13px;font-weight:600;color:var(--teal);
-}
-.stack-plus{color:var(--muted);font-size:18px;font-weight:300;align-self:center;}
-/* COMPLETION */
-.trophy-wrap{text-align:center;padding:32px 20px;}
-.trophy-svg{width:80px;height:80px;margin:0 auto 16px;}
-/* GLOSSARY */
-.gloss-overlay{
-  position:fixed;inset:0;z-index:999;
-  background:rgba(5,10,15,0.85);backdrop-filter:blur(8px);
-  display:flex;align-items:center;justify-content:center;
-  padding:16px;
-  opacity:0;pointer-events:none;transition:opacity .2s;
-}
-.gloss-overlay.show{opacity:1;pointer-events:auto;}
-.gloss-modal{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:16px;width:100%;max-width:560px;
-  max-height:80vh;display:flex;flex-direction:column;
-  box-shadow:0 20px 60px rgba(0,0,0,0.6);
-}
-.gloss-head{
-  padding:20px 24px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
-}
-.gloss-search{
-  width:100%;padding:12px 16px;
-  background:var(--surface2);border:1px solid var(--border);border-radius:10px;
-  color:var(--text);font-size:14px;font-family:"Inter",sans-serif;
-  margin:16px 24px 8px;width:calc(100% - 48px);
-  transition:border-color .2s;
-  min-height:48px;
-}
-.gloss-search:focus{outline:none;border-color:var(--teal);}
-.gloss-body{padding:8px 24px 24px;overflow-y:auto;flex:1;}
-.gloss-item{padding:14px 0;border-bottom:1px solid var(--border);}
-.gloss-item:last-child{border-bottom:none;}
-.gloss-term{font-size:14px;font-weight:700;color:var(--teal);}
-.gloss-def{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5;}
-/* SVG COMPARE */
-.svg-compare{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:16px 0;}
-@media(max-width:500px){.svg-compare{grid-template-columns:1fr;}}
-.svg-compare-box{
-  background:var(--surface2);border:1px solid var(--border);
-  border-radius:12px;padding:20px;text-align:center;
-}
-.svg-compare-label{font-size:13px;font-weight:600;color:var(--muted);margin-top:12px;}
-/* STOP CARD */
-.stop-card{
-  background:rgba(229,62,62,0.06);
-  border:1px solid rgba(229,62,62,0.25);
-  border-radius:12px;padding:16px 20px;margin:16px 0;
-  font-size:13px;color:var(--muted);
-}
-/* CERTIFICATE PRINT */
-@media print{
-  .no-print{display:none!important;}
-  body{background:#fff;color:#000;}
-  .cert-print-area{padding:60px;text-align:center;font-family:Georgia,serif;}
-}
-/* SCROLL HINT */
-.scroll-hint{
-  position:fixed;bottom:20px;right:20px;z-index:50;
-  background:var(--surface2);border:1px solid var(--border);
-  border-radius:10px;padding:8px 14px;
-  font-size:12px;color:var(--muted);
-  display:flex;align-items:center;gap:6px;
-  pointer-events:none;
-  opacity:0;transition:opacity .3s;
-}
-</style>
-<style>
-/* =====================================================================
-   METALLIC RESEARCH ACADEMY REDESIGN LAYER (overrides base styles above)
-   Brushed nickel frames, 3D pill buttons, dynamic stat/roadmap cards,
-   metallic course nav, info panels, badges, accordions, molecule.
-   ===================================================================== */
-:root{
-  --navy:#070e1b; --panelA:#0f1c31; --panelB:#0a1322; --panelSoft:#101f37;
-  --recess:#0b1525;
-  --nk1:#eaeff5; --nk2:#aeb9c6; --nk3:#6d7a8a; --nk4:#39434f;
-  --accent:#5ea0ff; --accent2:#3B82F6; --glow:rgba(74,134,232,.35);
-}
-body{
-  background:
-    radial-gradient(1100px 560px at 50% -14%, rgba(42,86,156,.20), transparent 60%),
-    radial-gradient(900px 520px at 112% 2%, rgba(22,64,128,.16), transparent 55%),
-    linear-gradient(180deg,#070e1b 0%,#050a14 100%);
-  background-attachment:fixed;
-}
-
-/* ---- brushed-nickel frame applied to common containers ---- */
-.card,
-.stop-card,
-.stat-box,
-.card-nickel,
-.prog-wrap,
-.metal-frame,
-.course-nav,
-.dyn-badge{
-  border:1.5px solid transparent;
-  border-radius:16px;
-  background:
-    linear-gradient(180deg,var(--panelA),var(--panelB)) padding-box,
-    linear-gradient(155deg,#e4ebf2 0%,#9aa7b6 20%,#495466 50%,#76828f 78%,#c4cdd7 100%) border-box;
-  box-shadow:0 12px 30px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.07);
-}
-.card:hover,.card-nickel:hover{border:1.5px solid transparent;}
-.metal-frame .metal-inner{background:var(--recess);border-radius:12px;padding:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);}
-
-/* ---- info panels (callouts) keep nickel frame + colored inset accent ---- */
-.callout,.callout-red,.callout-blue,.info-panel{
-  border:1.5px solid transparent;border-radius:14px;
-  background:
-    linear-gradient(180deg,var(--panelA),var(--panelB)) padding-box,
-    linear-gradient(155deg,#dbe3eb,#566270,#aeb9c5) border-box;
-  box-shadow:0 10px 26px rgba(0,0,0,.5), inset 6px 0 0 var(--teal), inset 0 1px 0 rgba(255,255,255,.06);
-}
-.callout-red{box-shadow:0 10px 26px rgba(0,0,0,.5), inset 6px 0 0 var(--red), inset 0 1px 0 rgba(255,255,255,.06);}
-.callout-blue{box-shadow:0 10px 26px rgba(0,0,0,.5), inset 6px 0 0 var(--blue), inset 0 1px 0 rgba(255,255,255,.06);}
-.stop-card{box-shadow:0 10px 26px rgba(0,0,0,.5), inset 6px 0 0 var(--red), inset 0 1px 0 rgba(255,255,255,.06);}
-.info-teal{box-shadow:0 10px 26px rgba(0,0,0,.5), inset 6px 0 0 var(--teal), inset 0 1px 0 rgba(255,255,255,.06)!important;}
-
-/* ---- pill buttons: brushed nickel, 3D raised ---- */
-.btn{border-radius:999px;letter-spacing:.2px;}
-.btn-primary{
-  background:linear-gradient(180deg,#f3f7fb 0%,#cbd5e1 26%,#94a0b0 54%,#aeb9c6 78%,#e7eef5 100%);
-  color:#0a1322;border:1px solid #dbe3ec;
-  box-shadow:0 8px 20px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.9), inset 0 -3px 7px rgba(0,0,0,.32);
-  text-shadow:0 1px 0 rgba(255,255,255,.55);
-}
-.btn-primary:hover{background:linear-gradient(180deg,#ffffff 0%,#d6dfe9 26%,#9caab9 54%,#bcc6d2 78%,#f1f6fb 100%);box-shadow:0 10px 24px rgba(0,0,0,.55), 0 0 18px var(--glow), inset 0 1px 0 rgba(255,255,255,.95), inset 0 -3px 7px rgba(0,0,0,.32);transform:translateY(-1px);}
-.btn-secondary,.btn-ghost,.btn-blue{
-  color:#dce6f2;border:1px solid transparent;
-  background:
-    linear-gradient(180deg,#172742,#0c1626) padding-box,
-    linear-gradient(155deg,#cfd9e3,#5a6675,#aeb9c5) border-box;
-  box-shadow:0 7px 18px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.09);
-  text-shadow:0 1px 1px rgba(0,0,0,.5);
-}
-.btn-secondary:hover,.btn-ghost:hover,.btn-blue:hover{color:#fff;background:linear-gradient(180deg,#1d3252,#0e1a2e) padding-box,linear-gradient(155deg,#e0e8f0,#6b7785,#c2ccd6) border-box;box-shadow:0 9px 22px rgba(0,0,0,.55),0 0 16px var(--glow),inset 0 1px 0 rgba(255,255,255,.12);transform:translateY(-1px);}
-/* circular icon badge inside a pill */
-.pill-ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;
-  background:radial-gradient(circle at 50% 34%,#1b2c47,#0a1322);
-  box-shadow:inset 0 1px 3px rgba(0,0,0,.6),0 0 0 1.5px rgba(176,190,210,.55);}
-.pill-ic svg{width:16px;height:16px;color:#cfe0f5;}
-.btn-primary .pill-ic{background:radial-gradient(circle at 50% 34%,#2a3a55,#101a2c);box-shadow:inset 0 1px 3px rgba(0,0,0,.5),0 0 0 1.5px rgba(255,255,255,.5);}
-.btn-primary .pill-ic svg{color:#eaf2fb;}
-.btn-xl{font-size:18px;padding:14px 16px 14px 14px;min-height:62px;gap:14px;}
-
-/* ---- metallic title text ---- */
-.title-metal{
-  font-family:'Space Grotesk',sans-serif;font-weight:800;letter-spacing:1.5px;line-height:1.02;
-  background:linear-gradient(180deg,#ffffff 0%,#d4deea 42%,#8492a6 60%,#f0f5fb 100%);
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 2px 1px rgba(0,0,0,.55));
-}
-.title-sub{font-family:'Space Grotesk',sans-serif;font-weight:600;letter-spacing:7px;color:var(--accent);font-size:13px;text-shadow:0 0 14px rgba(94,160,255,.5);}
-
-/* ---- DynamicCourseNav ---- */
-.course-nav-wrap{position:sticky;top:104px;z-index:80;padding:8px 12px 0;margin:0 auto;max-width:1000px;}
-.course-nav{display:flex;gap:4px;padding:5px;}
-.course-nav::-webkit-scrollbar{display:none;}
-.course-tab{flex:1 0 auto;display:flex;align-items:center;justify-content:center;gap:7px;min-height:46px;padding:8px 12px;border-radius:10px;font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:none;cursor:pointer;white-space:nowrap;transition:all .2s;}
-.course-tab+.course-tab{box-shadow:inset 1.5px 0 0 rgba(150,168,192,.18);}
-.course-tab svg{width:17px;height:17px;color:var(--nk2);transition:color .2s;}
-.course-tab:hover{color:#dbe7f4;}
-.course-tab.active{color:#eaf2fb;background:linear-gradient(180deg,#1d3357,#102444);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 14px rgba(59,130,246,.35);}
-.course-tab.active svg{color:var(--accent);}
-@media(max-width:680px){.course-nav{overflow-x:auto;}.course-tab{flex:0 0 auto;}.course-tab .ct-label{display:none;}.course-tab.active .ct-label{display:inline;}}
-
-/* ---- DynamicStatCard ---- */
-.stat-card{display:flex;align-items:center;gap:14px;padding:16px 18px;}
-.stat-ring{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;
-  border:2px solid transparent;
-  background:
-    radial-gradient(circle at 50% 32%,#16263f,#0a1322) padding-box,
-    linear-gradient(155deg,#e6edf3,#5a6675,#bcc6d2) border-box;
-  box-shadow:inset 0 2px 7px rgba(0,0,0,.6),0 0 16px rgba(59,130,246,.22);}
-.stat-ring svg{width:26px;height:26px;color:var(--accent);}
-.stat-bignum{font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:800;line-height:1;
-  background:linear-gradient(180deg,#ffffff,#9fb0c4);-webkit-background-clip:text;background-clip:text;color:transparent;}
-.stat-cap{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--nk2);font-weight:600;margin-top:3px;}
-
-/* ---- What You Will Learn grid ---- */
-.learn-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-@media(max-width:640px){.learn-grid{grid-template-columns:repeat(2,1fr);}}
-.learn-card{text-align:center;padding:16px 10px;border-radius:12px;background:var(--recess);box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 4px 12px rgba(0,0,0,.3);}
-.learn-ic{width:48px;height:48px;margin:0 auto 9px;border-radius:13px;display:grid;place-items:center;
-  border:1.5px solid transparent;
-  background:
-    radial-gradient(circle at 50% 30%,#1a2c48,#0a1322) padding-box,
-    linear-gradient(155deg,#dde5ee,#56616f,#aab5c2) border-box;
-  box-shadow:inset 0 2px 6px rgba(0,0,0,.5),0 0 12px rgba(59,130,246,.16);}
-.learn-ic svg{width:24px;height:24px;color:var(--accent);}
-.learn-card h4{font-size:13.5px;color:#eaf1f8;margin-bottom:4px;}
-.learn-card p{font-size:11.5px;line-height:1.45;color:var(--muted);}
-
-/* ---- ModuleRoadmapCard ---- */
-.roadmap-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
-.mini-track{flex:1;min-width:140px;height:8px;border-radius:99px;background:var(--recess);box-shadow:inset 0 1px 3px rgba(0,0,0,.6);overflow:hidden;}
-.mini-fill{height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,var(--accent2),#9fc4ff);box-shadow:0 0 10px var(--glow);}
-.roadmap-card{display:flex;align-items:center;gap:14px;padding:12px 14px;margin-bottom:9px;border-radius:13px;cursor:pointer;
-  border:1.5px solid transparent;
-  background:
-    linear-gradient(180deg,#13223a,#0b1525) padding-box,
-    linear-gradient(155deg,#cdd7e2,#4f5a68,#9eaab7) border-box;
-  box-shadow:0 6px 16px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05);transition:transform .15s,box-shadow .2s;}
-.roadmap-card:hover{transform:translateY(-1px);box-shadow:0 9px 22px rgba(0,0,0,.5),0 0 16px rgba(59,130,246,.2),inset 0 1px 0 rgba(255,255,255,.08);}
-.rm-num{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;font-weight:700;font-size:14px;color:#cfe0f5;
-  border:1.5px solid transparent;
-  background:
-    radial-gradient(circle at 50% 34%,#1a2c48,#0a1322) padding-box,
-    linear-gradient(155deg,#e3eaf2,#566270,#b3bdc9) border-box;
-  box-shadow:inset 0 1px 3px rgba(0,0,0,.55);}
-.rm-ic{width:22px;height:22px;color:var(--accent);flex-shrink:0;}
-.rm-title{flex:1;font-weight:600;font-size:14px;color:#e8eff7;}
-.rm-time{display:flex;align-items:center;gap:5px;color:#9fc0ee;font-weight:600;font-size:12.5px;white-space:nowrap;}
-.rm-time svg{width:14px;height:14px;}
-.rm-state{width:22px;height:22px;display:grid;place-items:center;flex-shrink:0;color:var(--nk3);}
-.rm-state svg{width:16px;height:16px;}
-
-/* ---- DynamicBadge ---- */
-.dyn-badge{display:flex;align-items:center;gap:13px;padding:15px 18px;}
-.badge-ring{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;
-  border:1.5px solid transparent;
-  background:
-    radial-gradient(circle at 50% 30%,#1c2b22,#0a1322) padding-box,
-    linear-gradient(155deg,#e7d9a6,#7a6a3a,#cdbb7e) border-box;
-  box-shadow:inset 0 2px 6px rgba(0,0,0,.5),0 0 12px rgba(200,170,90,.2);}
-.badge-ring svg{width:24px;height:24px;color:#e7cf86;}
-.badge-ring.bshield{background:radial-gradient(circle at 50% 30%,#15243c,#0a1322) padding-box,linear-gradient(155deg,#dbe5ef,#536c8c,#aab9cc) border-box;box-shadow:inset 0 2px 6px rgba(0,0,0,.5),0 0 12px rgba(59,130,246,.2);}
-.badge-ring.bshield svg{color:#9fc4ff;}
-.dyn-badge h4{font-size:13.5px;color:#eef3f9;margin-bottom:2px;}
-.dyn-badge p{font-size:11.5px;line-height:1.4;color:var(--muted);}
-
-/* ---- total time card ---- */
-.time-card{display:flex;align-items:center;gap:13px;padding:15px 18px;}
-.time-big{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:800;color:#eaf2fb;line-height:1;}
-
-/* ---- DynamicAccordionButton ---- */
-.accordion-btn{width:100%;display:flex;align-items:center;gap:11px;min-height:54px;padding:12px 18px;border-radius:999px;cursor:pointer;font-size:14px;font-weight:600;color:#e7eff7;
-  border:1px solid transparent;
-  background:
-    linear-gradient(180deg,#17284450,#0c162680) padding-box,
-    linear-gradient(155deg,#cfd9e3,#5a6675,#aeb9c5) border-box;
-  box-shadow:0 6px 16px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);}
-.accordion-btn .chev{margin-left:auto;transition:transform .25s;color:var(--nk2);}
-.accordion-btn[aria-expanded="true"] .chev{transform:rotate(180deg);}
-
-/* ---- nav + progress polished ---- */
-.nav{background:rgba(7,13,24,.92);border-bottom:1px solid rgba(150,168,192,.18);box-shadow:0 1px 0 rgba(255,255,255,.04);}
-.prog-wrap{border-radius:0;border-top:none;border-left:none;border-right:none;}
-.prog-track{box-shadow:inset 0 1px 3px rgba(0,0,0,.6);}
-.prog-fill{background:linear-gradient(90deg,var(--accent2),#9fc4ff);box-shadow:0 0 10px var(--glow);}
-
-/* ---- badges (chips) made metallic-dark, colored text retained ---- */
-.badge{background:linear-gradient(180deg,#15243c,#0c1626);border:1px solid rgba(150,170,200,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);}
-
-/* ---- hero layout ---- */
-.hero-card{display:flex;align-items:center;gap:24px;padding:28px 30px;}
-.hero-left{flex:1 1 320px;min-width:0;}
-.hero-right{flex:0 0 auto;display:flex;align-items:center;justify-content:center;}
-.hero-tags{display:flex;gap:22px;margin-top:18px;flex-wrap:wrap;}
-.hero-tag{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;letter-spacing:1px;color:#c2cdd9;text-transform:uppercase;}
-.hero-tag svg{width:18px;height:18px;color:var(--nk2);}
-@media(max-width:760px){.hero-card{flex-direction:column;text-align:center;padding:24px 20px;}.hero-tags{justify-content:center;}}
-
-/* ---- animated molecule ---- */
-.mol-wrap{width:210px;height:210px;position:relative;animation:molFloat 6s ease-in-out infinite;}
-@media(max-width:760px){.mol-wrap{width:170px;height:170px;}}
-.mol-spin{transform-origin:50% 50%;animation:molSpin 22s linear infinite;}
-.mol-node{filter:drop-shadow(0 0 4px rgba(94,160,255,.8));}
-.mol-pulse{animation:molPulse 3.2s ease-in-out infinite;}
-.mol-base{filter:drop-shadow(0 6px 10px rgba(0,0,0,.6));}
-@keyframes molSpin{to{transform:rotate(360deg);}}
-@keyframes molFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
-@keyframes molPulse{0%,100%{opacity:.55;}50%{opacity:1;}}
-
-/* ---- section heading ---- */
-.section-h{display:flex;align-items:center;justify-content:center;gap:10px;margin:4px 0 16px;text-align:center;}
-.section-h .title-metal{font-size:18px;letter-spacing:2px;text-transform:uppercase;}
-</style>
->>>>>>> Stashed changes
 </head>
 <body>
 
@@ -715,16 +60,6 @@ body{
     </button>
   </nav>
 </div>
-<<<<<<< Updated upstream
-=======
-<script>
-function courseGo(n, el){
-  document.querySelectorAll('.course-tab').forEach(t => t.classList.remove('active'));
-  if (el) el.classList.add('active');
-  if (typeof goTo === 'function') goTo(n);
-}
-</script>
->>>>>>> Stashed changes
 
 <!-- =========================================================
      SCREEN 0: INTRO
@@ -841,20 +176,12 @@ function courseGo(n, el){
       <div class="learn-card">
         <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></div>
         <h4>Mechanisms</h4>
-<<<<<<< Updated upstream
         <p>How Peptides Send Their Messages In The Body.</p>
-=======
-        <p>How Peptides Interact With The Body And Systems.</p>
->>>>>>> Stashed changes
       </div>
       <div class="learn-card">
         <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M7.5 14h9"/></svg></div>
         <h4>Reconstitution</h4>
-<<<<<<< Updated upstream
         <p>How To Turn Dry Powder Into A Liquid, Step By Step.</p>
-=======
-        <p>Step-By-Step Guidance On Reconstituting Peptides.</p>
->>>>>>> Stashed changes
       </div>
       <div class="learn-card">
         <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div>
@@ -864,20 +191,12 @@ function courseGo(n, el){
       <div class="learn-card">
         <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M8 11h8M8 15h6"/></svg></div>
         <h4>Protocols</h4>
-<<<<<<< Updated upstream
         <p>How Scientists Use Peptides Together, And The Safety Rules.</p>
-=======
-        <p>Stacking Protocols, Cycle Structures, And Best Practices.</p>
->>>>>>> Stashed changes
       </div>
       <div class="learn-card">
         <div class="learn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18"/><rect x="5" y="11" width="3" height="7" rx="1"/><rect x="10.5" y="6" width="3" height="12" rx="1"/><rect x="16" y="13" width="3" height="5" rx="1"/></svg></div>
         <h4>Research</h4>
-<<<<<<< Updated upstream
         <p>What Real Studies Have Found So Far.</p>
-=======
-        <p>Evidence, Studies, And Real-World Research Insights.</p>
->>>>>>> Stashed changes
       </div>
     </div>
   </div>
@@ -1050,13 +369,8 @@ function courseGo(n, el){
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
         </div>
         <div>
-<<<<<<< Updated upstream
           <strong>They Send Messages</strong>
           <p style="font-size:13px;margin-top:2px;">Think Of A Peptide Like A Tiny Text Message For Your Cells. It Tells One Exact Cell What To Do, And Nothing Else Gets The Message.</p>
-=======
-          <strong>Precision Signaling</strong>
-          <p style="font-size:13px;margin-top:2px;">Each Peptide Has An Exact Shape That Keys Into Specific Receptors. Your Body Does Not Confuse One Signal For Another.</p>
->>>>>>> Stashed changes
         </div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:12px;">
@@ -1064,13 +378,8 @@ function courseGo(n, el){
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
         </div>
         <div>
-<<<<<<< Updated upstream
           <strong>They Do Not Last Long</strong>
           <p style="font-size:13px;margin-top:2px;">Your Body Breaks Peptides Down Fast, In Hours Not Days. That Is A Good Thing. It Means Your Body Stays In Control.</p>
-=======
-          <strong>Short Duration</strong>
-          <p style="font-size:13px;margin-top:2px;">Peptides Are Broken Down Quickly By Enzymes. Half-Lives Range From Minutes To Hours, Not Days. This Limits Off-Target Effects.</p>
->>>>>>> Stashed changes
         </div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:12px;">
@@ -1078,13 +387,8 @@ function courseGo(n, el){
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--silver)" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
         </div>
         <div>
-<<<<<<< Updated upstream
           <strong>Your Body Makes Them</strong>
           <p style="font-size:13px;margin-top:2px;">Right Now, Your Body Is Making Peptides Of Its Own. Scientists Often Just Copy The Ones Your Body Already Knows How To Use.</p>
-=======
-          <strong>Natural Blueprint</strong>
-          <p style="font-size:13px;margin-top:2px;">Research Peptides Are Often Synthetic Copies Of Sequences Your Own Body Already Uses. BPC-157, For Example, Is Derived From A Gastric Protein.</p>
->>>>>>> Stashed changes
         </div>
       </div>
     </div>
@@ -1094,7 +398,6 @@ function courseGo(n, el){
   <div class="grid3">
     <div class="card" style="padding:16px;">
       <div style="font-weight:700;color:var(--teal);font-size:14px;">Insulin</div>
-<<<<<<< Updated upstream
       <p style="font-size:12px;margin-top:4px;">A Peptide That Controls Your Blood Sugar. It Tells Your Body To Lower Blood Sugar After You Eat.</p>
     </div>
     <div class="card" style="padding:16px;">
@@ -1104,26 +407,11 @@ function courseGo(n, el){
     <div class="card" style="padding:16px;">
       <div style="font-weight:700;color:var(--teal);font-size:14px;">Endorphins</div>
       <p style="font-size:12px;margin-top:4px;">Your Body's Feel-Good Chemicals. Released When You Laugh Or Exercise, To Help You Feel Good.</p>
-=======
-      <p style="font-size:12px;margin-top:4px;">51 Amino Acids. Regulates Blood Glucose. Used Medically Since The 1920s. At 51 AAs, Insulin Sits At The Peptide-Protein Boundary And Is Technically Classified As A Polypeptide Hormone -- Included Here As A Well-Known Example Of A Biologically Active Amino Acid Chain.</p>
-    </div>
-    <div class="card" style="padding:16px;">
-      <div style="font-weight:700;color:var(--teal);font-size:14px;">Oxytocin</div>
-      <p style="font-size:12px;margin-top:4px;">9 Amino Acids. Known As The Bonding Hormone. Naturally Released During Social Contact.</p>
-    </div>
-    <div class="card" style="padding:16px;">
-      <div style="font-weight:700;color:var(--teal);font-size:14px;">Endorphins</div>
-      <p style="font-size:12px;margin-top:4px;">31 Amino Acids. Natural Pain-Relief. Released After Intense Exercise.</p>
->>>>>>> Stashed changes
     </div>
   </div>
 
   <div class="stop-card" style="margin-top:20px;">
-<<<<<<< Updated upstream
     <strong>Research Note:</strong> The Peptides Here Are For Research Only. They Are Not Medicines. Scientists Use Them In Labs To Learn How Things Work.
-=======
-    <strong>Research Note:</strong> The Peptides Sold By PepNationLab Are Synthetic Research Compounds. They Are Not Medications. Their Research Applications Range From Tissue Modeling To Metabolic Studies.
->>>>>>> Stashed changes
   </div>
 
   <div class="nav-ctrl">
@@ -1144,11 +432,7 @@ function courseGo(n, el){
 <div class="screen" id="s2">
   <div class="badge badge-teal">Module 2 - The Science</div>
   <h2 style="font-size:28px;margin-bottom:8px;">Building A Peptide</h2>
-<<<<<<< Updated upstream
   <p style="margin-bottom:20px;">A Peptide Is Just Building Blocks Holding Hands In A Row. Tap The Buttons Below To Add Blocks And Watch Your Chain Grow. The Little Line Between Each Pair Is The Super Glue That Holds Them Together.</p>
-=======
-  <p style="margin-bottom:20px;">Every Peptide Starts As A Sequence Of Amino Acids Linked By Peptide Bonds. Tap The Buttons Below To Add Amino Acids To Your Growing Chain And Watch The Structure Form. The Line Connecting Each Pair Is A Peptide Bond.</p>
->>>>>>> Stashed changes
 
   <div class="card" style="padding:20px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -1180,22 +464,12 @@ function courseGo(n, el){
 
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:12px;">What Is A Peptide Bond?</h3>
-<<<<<<< Updated upstream
     <p style="font-size:14px;">When Two Building Blocks Connect, They Grab On Tight And A Tiny Drop Of Water Pops Out. That Strong Grip Has A Name: A Peptide Bond. It Is Like Super Glue Between Two LEGO Bricks, Hard To Pull Apart.</p>
     <div class="callout" style="margin-top:12px;">
       <strong>BPC-157 Example:</strong> BPC-157 Is Made Of 15 Building Blocks Linked In A Row. Every Single Link Matters. Remove One And It Stops Working.
     </div>
   </div>
 
-=======
-    <p style="font-size:14px;">When Two Amino Acids Join, The Carboxyl Group (-COOH) Of The First Reacts With The Amino Group (-NH2) Of The Second. Water (H2O) Is Released As A Byproduct. The Resulting C-N Bond Is What We Call A Peptide Bond. It Is Very Strong And Holds The Chain Together.</p>
-    <div class="callout" style="margin-top:12px;">
-      <strong>BPC-157 Example:</strong> BPC-157 Is A 15 Amino Acid Sequence (Gly-Glu-Pro-Pro-Pro-Gly-Lys-Pro-Ala-Asp-Asp-Ala-Gly-Leu-Val). All 14 Peptide Bonds Are Required For Its Activity.
-    </div>
-  </div>
-
-  <!-- Peptide vs Protein side-by-side SVG comparison -->
->>>>>>> Stashed changes
   <h3 style="font-size:16px;margin:20px 0 12px;">Peptide Vs. Protein: Size Comparison</h3>
   <div class="svg-compare">
     <div class="svg-compare-box">
@@ -1212,11 +486,7 @@ function courseGo(n, el){
         <text x="75" y="44" fill="var(--text)" font-size="7" font-family="Inter,sans-serif">AA</text>
       </svg>
       <div class="svg-compare-label" style="color:var(--teal);">Peptide (2-50 AA)</div>
-<<<<<<< Updated upstream
       <p style="font-size:11px;color:var(--muted);margin-top:4px;">Short And Simple. Small Enough To Move Around Easily.</p>
-=======
-      <p style="font-size:11px;color:var(--muted);margin-top:4px;">Simple Linear Chain. Small Molecule. Moves Easily Across Tissues.</p>
->>>>>>> Stashed changes
     </div>
     <div class="svg-compare-box">
       <svg width="120" height="80" viewBox="0 0 120 80" aria-label="Protein structure diagram">
@@ -1229,21 +499,13 @@ function courseGo(n, el){
         <text x="52" y="72" fill="var(--muted)" font-size="7" font-family="Inter,sans-serif">Folded 3D</text>
       </svg>
       <div class="svg-compare-label" style="color:var(--blue-l);">Protein (51+ AA)</div>
-<<<<<<< Updated upstream
       <p style="font-size:11px;color:var(--muted);margin-top:4px;">Long And Folded Into A Big Shape. Much Bigger Than A Peptide.</p>
-=======
-      <p style="font-size:11px;color:var(--muted);margin-top:4px;">Folds Into Complex 3D Shapes. Large Molecule. Often Injected For Direct Delivery.</p>
->>>>>>> Stashed changes
     </div>
   </div>
 
   <div class="card" style="margin-top:16px;">
     <strong style="font-size:15px;">Module 2 Quiz</strong>
-<<<<<<< Updated upstream
     <p style="font-size:14px;margin:10px 0;">If You Connect 30 Building Blocks, What Do You Have?</p>
-=======
-    <p style="font-size:14px;margin:10px 0;">A Chain Of 30 Amino Acids Would Be Classified As A...</p>
->>>>>>> Stashed changes
     <div class="quiz-opts" role="group" aria-label="Quiz Options">
       <button class="quiz-opt" onclick="quiz('q2',this,false)" aria-label="Option: Protein">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
@@ -1279,11 +541,7 @@ function courseGo(n, el){
 <div class="screen" id="s3">
   <div class="badge badge-teal">Module 3 - How Peptides Work</div>
   <h2 style="font-size:28px;margin-bottom:8px;">The Lock And Key</h2>
-<<<<<<< Updated upstream
   <p style="margin-bottom:20px;">Peptides Work Like Keys. Your Cells Have Tiny Locks On Them. Each Peptide Is Shaped To Fit One Special Lock. When The Right Key Slides In, The Door Opens And Something Happens Inside The Cell. Scientists Call That Lock A Receptor.</p>
-=======
-  <p style="margin-bottom:20px;">Peptides Work By Binding To Specific Receptors On Cell Surfaces. Each Peptide Has A Unique 3D Shape That Fits Only Certain Receptors - Like A Key Fitting A Specific Lock. When Bound, The Receptor Sends A Signal Into The Cell, Triggering A Biological Response.</p>
->>>>>>> Stashed changes
 
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:16px;text-align:center;">Interactive Demo: Binding A Peptide To Its Receptor</h3>
@@ -1318,7 +576,6 @@ function courseGo(n, el){
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
         <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">1</div>
-<<<<<<< Updated upstream
         <p style="font-size:13px;margin:0;">The Peptide Key Slides Into Its Matching Lock</p>
       </div>
       <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
@@ -1332,32 +589,13 @@ function courseGo(n, el){
       <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
         <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">4</div>
         <p style="font-size:13px;margin:0;">The Cell Does Something New</p>
-=======
-        <p style="font-size:13px;margin:0;">Peptide Locks Onto Its Specific Receptor (Like BPC-157 Activating VEGFR2 And The FAK-Paxillin Signaling Pathway)</p>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
-        <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">2</div>
-        <p style="font-size:13px;margin:0;">Receptor Changes Shape (Conformation Change), Activating Its Inner Signaling Domain</p>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
-        <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">3</div>
-        <p style="font-size:13px;margin:0;">Intracellular Signaling Cascade Begins (Second Messengers, Kinase Activation)</p>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
-        <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">4</div>
-        <p style="font-size:13px;margin:0;">Biological Response Occurs: Gene Expression Changes, Protein Synthesis Begins, Or Enzyme Activity Shifts</p>
->>>>>>> Stashed changes
       </div>
     </div>
   </div>
 
   <div class="card">
     <strong style="font-size:15px;">Module 3 Quiz</strong>
-<<<<<<< Updated upstream
     <p style="font-size:14px;margin:10px 0;">A Peptide Can Only Work If...</p>
-=======
-    <p style="font-size:14px;margin:10px 0;">A Peptide Can Only Bind To A Receptor If...</p>
->>>>>>> Stashed changes
     <div class="quiz-opts" role="group" aria-label="Quiz Options">
       <button class="quiz-opt" onclick="quiz('q3',this,false)" aria-label="Option: It is very large">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
@@ -1365,19 +603,11 @@ function courseGo(n, el){
       </button>
       <button class="quiz-opt" onclick="quiz('q3',this,true)" aria-label="Option: Its shape matches the receptor">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-<<<<<<< Updated upstream
         Its Shape Matches The Lock
       </button>
       <button class="quiz-opt" onclick="quiz('q3',this,false)" aria-label="Option: It has a positive charge">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
         It Is A Certain Color
-=======
-        Its Shape Matches The Receptor
-      </button>
-      <button class="quiz-opt" onclick="quiz('q3',this,false)" aria-label="Option: It has a positive charge">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-        It Has A Positive Charge
->>>>>>> Stashed changes
       </button>
     </div>
     <div class="quiz-fb" id="q3-fb"></div>
@@ -1401,11 +631,7 @@ function courseGo(n, el){
 <div class="screen" id="s4">
   <div class="badge badge-teal">Module 4 - Use Cases</div>
   <h2 style="font-size:28px;margin-bottom:8px;">What Peptides Are Studied For</h2>
-<<<<<<< Updated upstream
   <p style="margin-bottom:20px;">Scientists Study Peptides Because They Might Help With Lots Of Things. Here Are The Main Areas They Are Curious About.</p>
-=======
-  <p style="margin-bottom:20px;">Researchers Study Peptides Across A Wide Range Of Fields. Below Are The Primary Research Categories With Examples Of Which Peptides Are Being Investigated.</p>
->>>>>>> Stashed changes
 
   <div class="card">
     <div style="display:flex;align-items:flex-start;gap:14px;">
@@ -1413,13 +639,8 @@ function courseGo(n, el){
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
       </div>
       <div>
-<<<<<<< Updated upstream
         <strong style="font-size:15px;">Helping Wounds Heal</strong>
         <p style="font-size:13px;margin-top:4px;">Some Peptides Might Help The Body Fix Cuts, Scrapes, And Sore Spots Faster. Scientists Are Still Learning Exactly How.</p>
-=======
-        <strong style="font-size:15px;">Tissue And Wound Research</strong>
-        <p style="font-size:13px;margin-top:4px;">Peptides Like BPC-157 And TB-500 Are Studied For Their Role In Fibroblast Proliferation, Angiogenesis, And The Upregulation Of Growth Factors Involved In Tissue Repair Processes.</p>
->>>>>>> Stashed changes
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">BPC-157</span>
           <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">TB-500</span>
@@ -1435,13 +656,8 @@ function courseGo(n, el){
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
       </div>
       <div>
-<<<<<<< Updated upstream
         <strong style="font-size:15px;">Building Muscle And Growth</strong>
         <p style="font-size:13px;margin-top:4px;">Some Peptides Nudge The Body To Make More Of Its Own Growth Signals. Scientists Study How That Affects Muscle And Body Shape.</p>
-=======
-        <strong style="font-size:15px;">Growth Hormone Axis Research</strong>
-        <p style="font-size:13px;margin-top:4px;">GH Secretagogues Like Sermorelin, CJC-1295, And Ipamorelin Stimulate The Pituitary To Release Growth Hormone. Research Explores Their Impact On IGF-1 Levels, Body Composition, And Metabolic Parameters.</p>
->>>>>>> Stashed changes
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Sermorelin</span>
           <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">CJC-1295</span>
@@ -1457,13 +673,8 @@ function courseGo(n, el){
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--silver)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
       </div>
       <div>
-<<<<<<< Updated upstream
         <strong style="font-size:15px;">Energy And Weight</strong>
         <p style="font-size:13px;margin-top:4px;">Some Peptides Help The Body Use Fat For Energy. Scientists Study Whether They Help Manage Weight.</p>
-=======
-        <strong style="font-size:15px;">Metabolic And Fat Loss Research</strong>
-        <p style="font-size:13px;margin-top:4px;">AOD-9604 Is A Fragment Of Human Growth Hormone Studied For Fat Metabolism Regulation Without The Anabolic Effects Of Full HGH. Researchers Investigate Lipolytic Properties And Adipogenesis Inhibition.</p>
->>>>>>> Stashed changes
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">AOD-9604</span>
           <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">CJC-1295</span>
@@ -1478,13 +689,8 @@ function courseGo(n, el){
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </div>
       <div>
-<<<<<<< Updated upstream
         <strong style="font-size:15px;">Sleep And The Brain</strong>
         <p style="font-size:13px;margin-top:4px;">Some Peptides Are Studied For Better Sleep. Sleep Is When A Lot Of The Body's Repair Happens.</p>
-=======
-        <strong style="font-size:15px;">Neurological And Sleep Research</strong>
-        <p style="font-size:13px;margin-top:4px;">Sermorelin And Ipamorelin Are Also Studied In The Context Of Sleep Architecture, Since Most GH Pulses Occur During Slow-Wave Sleep. Research Examines Whether GH Secretagogues Can Modulate Sleep Quality Markers.</p>
->>>>>>> Stashed changes
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Sermorelin</span>
           <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Ipamorelin</span>
@@ -1499,13 +705,8 @@ function courseGo(n, el){
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       </div>
       <div>
-<<<<<<< Updated upstream
         <strong style="font-size:15px;">Skin And Other Signals</strong>
         <p style="font-size:13px;margin-top:4px;">Some Peptides Affect Things Like Skin Color And Certain Brain And Body Signals. Scientists Are Exploring How.</p>
-=======
-        <strong style="font-size:15px;">Melanocortin System Research</strong>
-        <p style="font-size:13px;margin-top:4px;">PT-141 (Bremelanotide) Activates Melanocortin Receptors (MC1R And MC4R) In The Central Nervous System. Research Explores Its Role In Arousal Pathways Without Direct Vascular Mechanisms.</p>
->>>>>>> Stashed changes
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">PT-141</span>
           <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Melanotan II</span>
@@ -1516,11 +717,7 @@ function courseGo(n, el){
 
   <div class="card">
     <strong style="font-size:15px;">Module 4 Quiz</strong>
-<<<<<<< Updated upstream
     <p style="font-size:14px;margin:10px 0;">Which Peptide Is Studied For Growth And Building Muscle?</p>
-=======
-    <p style="font-size:14px;margin:10px 0;">Which Peptide Is Primarily Studied For Its Role In The Growth Hormone Secretagogue Pathway?</p>
->>>>>>> Stashed changes
     <div class="quiz-opts" role="group" aria-label="Quiz Options">
       <button class="quiz-opt" onclick="quiz('q4',this,false)" aria-label="Option: BPC-157">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
@@ -1556,19 +753,11 @@ function courseGo(n, el){
 <div class="screen" id="s5">
   <div class="badge badge-teal">Module 5 - Practical Basics</div>
   <h2 style="font-size:28px;margin-bottom:8px;">Handling And Storage</h2>
-<<<<<<< Updated upstream
   <p style="margin-bottom:20px;">Peptides Are Fragile, A Bit Like A Snowflake. Heat, Light, Water, And Freezing Them Over And Over Can Break Them. So You Have To Keep Them Comfortable.</p>
-=======
-  <p style="margin-bottom:20px;">Proper Handling Is Critical For Research Integrity. Peptides Degrade Rapidly When Exposed To Heat, Light, Moisture, And Repeated Freeze-Thaw Cycles.</p>
->>>>>>> Stashed changes
 
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:16px;">Half-Life Explorer</h3>
-<<<<<<< Updated upstream
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Tap A Peptide To See How Long It Lasts In The Body Before It Breaks Down:</p>
-=======
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Select A Peptide To See How Fast It Degrades In A Biological Environment:</p>
->>>>>>> Stashed changes
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
       <button class="btn btn-secondary" style="font-size:13px;padding:8px 14px;min-height:40px;" onclick="showHL('BPC-157',4,'#00C4BC')" aria-label="Show BPC-157 half-life">BPC-157</button>
       <button class="btn btn-secondary" style="font-size:13px;padding:8px 14px;min-height:40px;" onclick="showHL('TB-500',72,'#3B82F6')" aria-label="Show TB-500 half-life">TB-500</button>
@@ -1599,7 +788,6 @@ function courseGo(n, el){
       <div style="display:flex;flex-direction:column;gap:10px;">
         <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
-<<<<<<< Updated upstream
           <div><strong style="font-size:13px;">Temperature: 36-46 Degrees F (Refrigerator)</strong><p style="font-size:12px;margin-top:2px;">Dry Peptides Stay Good For 3-6 Months In The Fridge. Need Longer? Put Them In The Freezer.</p></div>
         </div>
         <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
@@ -1613,37 +801,17 @@ function courseGo(n, el){
         <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           <div><strong style="font-size:13px;">Freeze-Thaw: Minimize Cycles</strong><p style="font-size:12px;margin-top:2px;">Freezing And Thawing Over And Over Slowly Damages Peptides. Split Them Into Small One-Time Portions So You Never Thaw The Same Batch Twice.</p></div>
-=======
-          <div><strong style="font-size:13px;">Temperature: 36-46 Degrees F (Refrigerator)</strong><p style="font-size:12px;margin-top:2px;">Most Lyophilized Peptides Are Stable For 3-6 Months Refrigerated. For Long-Term Storage Beyond 6 Months, Freeze At 0 Degrees F.</p></div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
-          <div><strong style="font-size:13px;">Light: Keep In Original Dark Vial</strong><p style="font-size:12px;margin-top:2px;">UV Exposure Degrades Peptide Bonds. Always Store In Amber Or Opaque Vials. Avoid Leaving Vials On The Bench Under Lab Lighting.</p></div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-          <div><strong style="font-size:13px;">Moisture: Keep Dry Before Reconstitution</strong><p style="font-size:12px;margin-top:2px;">Lyophilized (Freeze-Dried) Peptides Are Stable When Dry. Do Not Open Vials In Humid Conditions. Use Desiccant Storage Boxes When Possible.</p></div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          <div><strong style="font-size:13px;">Freeze-Thaw: Minimize Cycles</strong><p style="font-size:12px;margin-top:2px;">Every Freeze-Thaw Cycle Causes Minor Structural Damage. If Using Frozen Stock, Aliquot Into Single-Use Portions Before Freezing. Do Not Refreeze A Thawed Aliquot.</p></div>
->>>>>>> Stashed changes
         </div>
       </div>
     </div>
 
     <div class="tab-panel" id="tab-recon" role="tabpanel" aria-labelledby="tab-btn-recon">
       <div class="callout callout-red" style="margin-bottom:16px;">
-<<<<<<< Updated upstream
         <strong style="color:var(--red);">Important:</strong> Once You Add Water To A Peptide, It Becomes Much More Fragile. Liquid Peptides Do Not Last Nearly As Long As Dry Powder.
-=======
-        <strong style="color:var(--red);">Important:</strong> Once A Peptide Is Reconstituted With BAC Water Or Sterile Water, The Stability Window Changes Significantly. Reconstituted Peptides Are Far More Sensitive Than Lyophilized Powder.
->>>>>>> Stashed changes
       </div>
       <div style="display:flex;flex-direction:column;gap:10px;">
         <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
-<<<<<<< Updated upstream
           <div><strong style="font-size:13px;">Temperature: 36-46 Degrees F Always</strong><p style="font-size:12px;margin-top:2px;">Liquid Peptides Must Stay In The Fridge. Do Not Leave Them Out For More Than About Half An Hour.</p></div>
         </div>
         <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
@@ -1661,25 +829,6 @@ function courseGo(n, el){
       </div>
       <div class="callout" style="margin-top:16px;">
         <strong>BAC Water Vs. Sterile Water:</strong> BAC Water Has A Tiny Bit Of Alcohol In It That Stops Germs From Growing. That Is Why It Keeps Peptides Good For About 4 Weeks, While Plain Water Only Lasts A Day Or Two.
-=======
-          <div><strong style="font-size:13px;">Temperature: 36-46 Degrees F Always</strong><p style="font-size:12px;margin-top:2px;">Reconstituted Peptide Solutions Must Be Refrigerated At All Times. Do Not Leave On A Bench For More Than 30 Minutes. Use Immediately Or Refrigerate.</p></div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <div><strong style="font-size:13px;">Use Window: 28-30 Days Maximum</strong><p style="font-size:12px;margin-top:2px;">Most Reconstituted Peptides Are Stable For 28-30 Days When Refrigerated With BAC Water. Sterile Water Solutions Should Be Used Within 24-72 Hours.</p></div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-          <div><strong style="font-size:13px;">Do Not Freeze After Reconstitution</strong><p style="font-size:12px;margin-top:2px;">Freezing A Reconstituted Solution Causes Ice Crystal Formation Which Physically Damages The Peptide Structure. If You Need Long-Term Storage, Keep As Lyophilized Powder And Reconstitute Only What You Need.</p></div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2" style="margin-top:1px;flex-shrink:0;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
-          <div><strong style="font-size:13px;">Light Sensitivity Increases After Reconstitution</strong><p style="font-size:12px;margin-top:2px;">Peptides In Solution Are More Photosensitive Than In Powder Form. Keep Vials Wrapped In Foil Or In A Drawer When Not In Use. Work In Dim Lighting During Reconstitution Procedures.</p></div>
-        </div>
-      </div>
-      <div class="callout" style="margin-top:16px;">
-        <strong>BAC Water Vs. Sterile Water:</strong> Bacteriostatic Water (BAC Water) Contains 0.9% Benzyl Alcohol Which Inhibits Bacterial Growth. This Extends The Use Window To 28-30 Days Vs. 24-72 Hours With Sterile Water. BAC Water Is The Preferred Diluent For Research Protocols.
->>>>>>> Stashed changes
       </div>
     </div>
   </div>
@@ -1702,11 +851,7 @@ function courseGo(n, el){
 <div class="screen" id="s6">
   <div class="badge badge-teal">Module 6 - Peptide Families</div>
   <h2 style="font-size:28px;margin-bottom:8px;">Peptide Families And Categories</h2>
-<<<<<<< Updated upstream
   <p style="margin-bottom:20px;">Just Like Your Family Has Cousins And Siblings, Peptides Have Families Too. Each Family Does A Different Kind Of Job In The Body.</p>
-=======
-  <p style="margin-bottom:20px;">Research Peptides Group Into Families By The Biological System They Target. Understanding These Categories Makes It Easier To See How Individual Compounds Relate To One Another.</p>
->>>>>>> Stashed changes
 
   <div class="card">
     <div style="display:flex;align-items:flex-start;gap:14px;">
@@ -1715,11 +860,7 @@ function courseGo(n, el){
       </div>
       <div>
         <strong style="font-size:15px;">Tissue And Recovery Peptides</strong>
-<<<<<<< Updated upstream
         <p style="font-size:13px;margin-top:4px;">This Family Helps The Body Heal And Repair Itself, Things Like Skin, Muscle, And Tendons.</p>
-=======
-        <p style="font-size:13px;margin-top:4px;">This Family Targets Tissue Repair And Healing. Compounds Here Are Studied For Their Role In Fibroblast Activity, Angiogenesis, And The Recovery Of Muscle, Tendon, And Connective Tissue.</p>
->>>>>>> Stashed changes
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">BPC-157</span>
           <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">TB-500</span>
@@ -1736,11 +877,7 @@ function courseGo(n, el){
       </div>
       <div>
         <strong style="font-size:15px;">Growth Hormone Axis Peptides</strong>
-<<<<<<< Updated upstream
         <p style="font-size:13px;margin-top:4px;">This Family Tells The Body To Grow And Build, By Nudging It To Make More Of Its Own Growth Signals.</p>
-=======
-        <p style="font-size:13px;margin-top:4px;">This Family Targets GH Release And IGF-1 Production. These Secretagogues Are Studied For Their Effect On The Pituitary, Body Composition, And Sleep-Linked Growth Hormone Pulses.</p>
->>>>>>> Stashed changes
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Sermorelin</span>
           <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">CJC-1295</span>
@@ -1758,11 +895,7 @@ function courseGo(n, el){
       </div>
       <div>
         <strong style="font-size:15px;">Melanocortin System Peptides</strong>
-<<<<<<< Updated upstream
         <p style="font-size:13px;margin-top:4px;">This Family Affects Things Like Skin Color And Certain Brain And Body Signals.</p>
-=======
-        <p style="font-size:13px;margin-top:4px;">This Family Targets Pigmentation And Sexual Function Research. These Compounds Act On Melanocortin Receptors In The Central Nervous System And Skin.</p>
->>>>>>> Stashed changes
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">PT-141</span>
           <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Melanotan II</span>
@@ -1778,11 +911,7 @@ function courseGo(n, el){
       </div>
       <div>
         <strong style="font-size:15px;">Metabolic And Fat Regulation Peptides</strong>
-<<<<<<< Updated upstream
         <p style="font-size:13px;margin-top:4px;">This Family Helps The Body Use Energy And Manage Fat, Without Telling The Body To Grow.</p>
-=======
-        <p style="font-size:13px;margin-top:4px;">This Family Targets Lipolysis And Metabolism. These Fragments Are Studied For Fat Metabolism And Energy Regulation Without The Full Anabolic Profile Of Growth Hormone.</p>
->>>>>>> Stashed changes
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">AOD-9604</span>
           <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">Fragment 176-191</span>
@@ -1798,11 +927,7 @@ function courseGo(n, el){
       </div>
       <div>
         <strong style="font-size:15px;">Skin, Collagen And Anti-Aging Peptides</strong>
-<<<<<<< Updated upstream
         <p style="font-size:13px;margin-top:4px;">This Family Is Studied For Healthier, Bouncier Skin And For Slowing Down Signs Of Aging.</p>
-=======
-        <p style="font-size:13px;margin-top:4px;">This Family Targets Skin Elasticity And Cellular Longevity. Research Explores Collagen Synthesis, Copper Transport, And Cellular Aging Markers.</p>
->>>>>>> Stashed changes
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">GHK-Cu</span>
           <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">Epithalon</span>
@@ -1818,11 +943,7 @@ function courseGo(n, el){
       </div>
       <div>
         <strong style="font-size:15px;">Cognitive And Nootropic Peptides</strong>
-<<<<<<< Updated upstream
         <p style="font-size:13px;margin-top:4px;">This Family Is Studied For Focus, Memory, And Feeling Calm.</p>
-=======
-        <p style="font-size:13px;margin-top:4px;">This Family Targets Anxiety, Memory, And Neuroprotection. These Compounds Are Studied For Their Effects On Neurotransmitter Systems And Cognitive Markers.</p>
->>>>>>> Stashed changes
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Selank</span>
           <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Semax</span>
@@ -1849,18 +970,13 @@ function courseGo(n, el){
 <div class="screen" id="s7">
   <div class="badge badge-teal">Module 7 - Stacking And Protocols</div>
   <h2 style="font-size:28px;margin-bottom:8px;">Stacking And Research Protocols</h2>
-<<<<<<< Updated upstream
   <p style="margin-bottom:20px;">Stacking Means Using More Than One Peptide At The Same Time. Like Mixing LEGO Colors, Each One Does A Different Job, And Together They Can Work Better Than Either One Alone.</p>
-=======
-  <p style="margin-bottom:20px;">Stacking Means Combining Multiple Peptides In A Research Protocol To Target Complementary Pathways. The Logic Is Synergy: Each Peptide Hits A Different Receptor Or Step In A Biological Cascade.</p>
->>>>>>> Stashed changes
 
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:16px;">Why Researchers Stack</h3>
     <div style="display:flex;flex-direction:column;gap:8px;">
       <div style="padding:10px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--teal);">
         <strong style="font-size:13px;">Complementary Pathways</strong>
-<<<<<<< Updated upstream
         <p style="font-size:12px;margin-top:4px;">Two Peptides Can Push The Same Goal Through Two Different Doors At Once. Using Both Gives A Bigger Result Than Either One Alone.</p>
       </div>
       <div style="padding:10px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--blue-l);">
@@ -1870,17 +986,6 @@ function courseGo(n, el){
       <div style="padding:10px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--silver);">
         <strong style="font-size:13px;">Timing Optimization</strong>
         <p style="font-size:12px;margin-top:4px;">Some Peptides Are Quick And Are Used Right Before Sleep. Others Last For Days And Are Used Just Once A Week. Timing Them Right Makes A Difference.</p>
-=======
-        <p style="font-size:12px;margin-top:4px;">CJC-1295 (GHRH Pathway) + Ipamorelin (Ghrelin Pathway) Both Release GH But Through Different Receptors. Combining Them Produces A Greater GH Pulse Than Either Alone Because Both Pathways Are Active Simultaneously.</p>
-      </div>
-      <div style="padding:10px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--blue-l);">
-        <strong style="font-size:13px;">Sequential Mechanisms</strong>
-        <p style="font-size:12px;margin-top:4px;">BPC-157 (Local Tissue Effects) + TB-500 (Systemic Actin Regulation) Address Tissue Events At Different Scales. BPC-157 Acts Near The Administration Site While TB-500 Works Systemically Via Bloodstream Distribution.</p>
-      </div>
-      <div style="padding:10px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--silver);">
-        <strong style="font-size:13px;">Timing Optimization</strong>
-        <p style="font-size:12px;margin-top:4px;">Short Half-Life Peptides (Sermorelin: 15 min) Can Be Timed Relative To Sleep Onset To Align With Natural GH Pulses. Long Half-Life Peptides (CJC-1295 DAC: 6-8 Days) Are Dosed Weekly For Steady-State Research.</p>
->>>>>>> Stashed changes
       </div>
     </div>
   </div>
@@ -1893,27 +998,12 @@ function courseGo(n, el){
         <rect x="10" y="30" width="110" height="40" rx="8" fill="#162230" stroke="#00C4BC" stroke-width="1.5"/>
         <text x="65" y="46" fill="#00C4BC" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">GHRH Receptor</text>
         <text x="65" y="59" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">CJC-1295 Binds Here</text>
-<<<<<<< Updated upstream
         <rect x="10" y="130" width="110" height="40" rx="8" fill="#162230" stroke="#3B82F6" stroke-width="1.5"/>
         <text x="65" y="146" fill="#3B82F6" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">GHS-R1a Receptor</text>
         <text x="65" y="159" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Ipamorelin Binds Here</text>
         <rect x="140" y="75" width="100" height="50" rx="8" fill="#1D2D3E" stroke="rgba(0,196,188,0.3)" stroke-width="1.5"/>
         <text x="190" y="97" fill="#FFFFFF" font-size="10" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600">Pituitary</text>
         <text x="190" y="112" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Somatotroph Cells</text>
-=======
-
-        <!-- GHS-R1a box -->
-        <rect x="10" y="130" width="110" height="40" rx="8" fill="#162230" stroke="#3B82F6" stroke-width="1.5"/>
-        <text x="65" y="146" fill="#3B82F6" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">GHS-R1a Receptor</text>
-        <text x="65" y="159" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Ipamorelin Binds Here</text>
-
-        <!-- Pituitary box -->
-        <rect x="140" y="75" width="100" height="50" rx="8" fill="#1D2D3E" stroke="rgba(0,196,188,0.3)" stroke-width="1.5"/>
-        <text x="190" y="97" fill="#FFFFFF" font-size="10" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600">Pituitary</text>
-        <text x="190" y="112" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Somatotroph Cells</text>
-
-        <!-- Arrows from receptors to pituitary -->
->>>>>>> Stashed changes
         <path d="M120,50 Q130,50 140,100" fill="none" stroke="#00C4BC" stroke-width="1.5" stroke-dasharray="4,2"/>
         <polygon points="136,97 144,102 140,106" fill="#00C4BC"/>
         <path d="M120,150 Q130,150 140,110" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-dasharray="4,2"/>
@@ -1921,11 +1011,6 @@ function courseGo(n, el){
         <rect x="260" y="75" width="110" height="50" rx="8" fill="#162230" stroke="rgba(208,218,228,0.4)" stroke-width="1.5"/>
         <text x="315" y="97" fill="#D0DAE4" font-size="10" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600">GH Release</text>
         <text x="315" y="112" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Synergistic Pulse</text>
-<<<<<<< Updated upstream
-=======
-
-        <!-- Arrow pituitary to GH -->
->>>>>>> Stashed changes
         <line x1="240" y1="100" x2="258" y2="100" stroke="#D0DAE4" stroke-width="1.5"/>
         <polygon points="255,96 262,100 255,104" fill="#D0DAE4"/>
         <rect x="10" y="0" width="110" height="18" rx="4" fill="rgba(0,196,188,0.15)" stroke="rgba(0,196,188,0.3)" stroke-width="1"/>
@@ -1936,11 +1021,7 @@ function courseGo(n, el){
         <line x1="65" y1="170" x2="65" y2="180" stroke="rgba(59,130,246,0.5)" stroke-width="1"/>
       </svg>
     </div>
-<<<<<<< Updated upstream
     <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px;">Two Different Locks, One Bigger Result.</p>
-=======
-    <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px;">Two Different Receptors, One Amplified GH Output.</p>
->>>>>>> Stashed changes
   </div>
 
   <div class="card">
@@ -1956,11 +1037,7 @@ function courseGo(n, el){
           <span style="font-size:14px;color:var(--muted);">+</span>
           <span style="font-size:12px;padding:4px 10px;background:rgba(59,130,246,0.12);border-radius:6px;color:var(--blue-l);">Ipamorelin</span>
         </div>
-<<<<<<< Updated upstream
         <p style="font-size:12px;color:var(--muted);">One Peptide Is Used Once Or Twice A Week. The Other Is Used Each Night Before Sleep. Together They Boost The Body's Natural Nighttime Growth Signal.</p>
-=======
-        <p style="font-size:12px;color:var(--muted);">CJC-1295 Is Dosed 1-2x Weekly. Ipamorelin Is Dosed Nightly 30-60 min Before Sleep. Together They Maximize The Natural Nocturnal GH Pulse. Research Duration Is Typically 12 Weeks.</p>
->>>>>>> Stashed changes
       </div>
       <div style="padding:12px;background:var(--surface2);border-radius:12px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -1972,21 +1049,13 @@ function courseGo(n, el){
           <span style="font-size:14px;color:var(--muted);">+</span>
           <span style="font-size:12px;padding:4px 10px;background:rgba(59,130,246,0.12);border-radius:6px;color:var(--blue-l);">TB-500</span>
         </div>
-<<<<<<< Updated upstream
         <p style="font-size:12px;color:var(--muted);">One Peptide Works Right At The Sore Spot. The Other Spreads Through The Whole Body. Together They Cover Both The Spot And Everything Around It.</p>
-=======
-        <p style="font-size:12px;color:var(--muted);">BPC-157 Targets Local Tissue Via Site Injection For Localized Fibroblast Activation. TB-500 Is Injected Systemically (Typically Sub-Q Abdomen) For Broad Actin Regulation. Combined, They Address Both Local And Systemic Tissue Biology Concurrently.</p>
->>>>>>> Stashed changes
       </div>
     </div>
   </div>
 
   <div class="callout callout-red">
-<<<<<<< Updated upstream
     <strong style="color:var(--red);">Research Context Only:</strong> Everything Here Describes What Scientists Do In Labs And Studies. None Of It Is Approved Medicine, And It Is Not Advice For People. This Is For Research Only.
-=======
-    <strong style="color:var(--red);">Research Context Only:</strong> All Stacking Information On This Page Describes Published Preclinical And Academic Research Frameworks. No Peptide Described Here Has FDA Approval For Human Therapeutic Use. This Platform Is For Research Use Only.
->>>>>>> Stashed changes
   </div>
 
   <div class="nav-ctrl">
@@ -2007,19 +1076,11 @@ function courseGo(n, el){
 <div class="screen" id="s8">
   <div class="badge badge-teal">Module 8 - Reconstitution Calculator</div>
   <h2 style="font-size:28px;margin-bottom:8px;">Reconstitution Calculator</h2>
-<<<<<<< Updated upstream
   <p style="margin-bottom:20px;">Most Peptides Come As Dry Powder. To Use Them, You Add Special Water To Turn Them Into A Liquid. This Is Called Reconstitution, Which Just Means Make It Liquid Again. Getting The Strength Right Matters.</p>
 
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:4px;">What Is Reconstitution?</h3>
     <p style="font-size:13px;margin-bottom:16px;">Dry Powder Comes Sealed In A Little Bottle. You Add Water To Dissolve It. How Much Water You Add Decides How Strong Or Weak The Liquid Turns Out.</p>
-=======
-  <p style="margin-bottom:20px;">Reconstituting A Peptide Means Adding A Liquid Diluent (Usually BAC Water) To The Lyophilized Powder To Create A Solution. Getting The Concentration Right Is Critical For Accurate Research Dosing.</p>
-
-  <div class="card">
-    <h3 style="font-size:15px;margin-bottom:4px;">What Is Reconstitution?</h3>
-    <p style="font-size:13px;margin-bottom:16px;">Lyophilized Peptides Come As Dry Powder In Sealed Vials. Before Research Use, You Add BAC Water To Dissolve The Powder Into A Liquid. The Concentration Of The Resulting Solution Depends On How Much Water You Add.</p>
->>>>>>> Stashed changes
     <div style="display:flex;gap:8px;margin-bottom:12px;">
       <div style="flex:1;padding:10px;background:var(--surface2);border-radius:10px;text-align:center;">
         <div style="font-size:22px;font-weight:800;color:var(--teal);">5mg</div>
@@ -2092,7 +1153,6 @@ function courseGo(n, el){
     <div style="display:flex;flex-direction:column;gap:8px;">
       <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
         <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">1</div>
-<<<<<<< Updated upstream
         <p style="font-size:12px;margin:0;">Let The Powder Bottle And The Water Warm Up To Room Temperature First.</p>
       </div>
       <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
@@ -2110,25 +1170,6 @@ function courseGo(n, el){
       <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
         <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">5</div>
         <p style="font-size:12px;margin:0;">Label It With The Name And Date, Then Put It Straight In The Fridge. Use It Within About 4 Weeks.</p>
-=======
-        <p style="font-size:12px;margin:0;">Allow Both The Peptide Vial And BAC Water To Reach Room Temperature Before Reconstitution.</p>
-      </div>
-      <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
-        <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">2</div>
-        <p style="font-size:12px;margin:0;">Wipe Vial Stoppers With 70% Isopropyl Alcohol. Allow To Dry Completely Before Inserting Needles.</p>
-      </div>
-      <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
-        <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">3</div>
-        <p style="font-size:12px;margin:0;">Draw Calculated BAC Water Volume Into Syringe. Insert Into Peptide Vial, Direct The Stream Down The Glass Wall - Do Not Aim Directly At The Powder.</p>
-      </div>
-      <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
-        <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">4</div>
-        <p style="font-size:12px;margin:0;">Gently Swirl. Do Not Shake Vigorously. Vigorous Agitation Can Cause Aggregation And Denaturation, Reducing Peptide Bioactivity. Swirl Until Clear - This May Take 30-60 Seconds.</p>
-      </div>
-      <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:var(--surface2);border-radius:8px;">
-        <div style="min-width:24px;height:24px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:11px;flex-shrink:0;">5</div>
-        <p style="font-size:12px;margin:0;">Label The Vial With Peptide Name, Concentration, Date, And Initials. Refrigerate Immediately. Use Within 28-30 Days.</p>
->>>>>>> Stashed changes
       </div>
     </div>
   </div>
@@ -2151,17 +1192,10 @@ function courseGo(n, el){
 <div class="screen" id="s9">
   <div class="badge badge-teal">Module 9 - Dosing Reference</div>
   <h2 style="font-size:28px;margin-bottom:8px;">Dosing Reference Table</h2>
-<<<<<<< Updated upstream
   <p style="margin-bottom:20px;">Different Peptides Need Different Amounts. The Dose Is Just How Much You Use. This Table Shows The Amounts Scientists Use In Studies. Tap Any Heading To Sort It.</p>
 
   <div class="callout callout-red" style="margin-bottom:16px;">
     <strong style="color:var(--red);">Research Use Only:</strong> These Numbers Come From Lab And Early Studies. They Are Not Instructions For People, And None Of These Are Approved Medicines.
-=======
-  <p style="margin-bottom:20px;">This Table Summarizes Published Preclinical Dose Ranges, Research Frequencies, Half-Lives, And Routes Of Administration From Peer-Reviewed Studies. Click Any Column Header To Sort.</p>
-
-  <div class="callout callout-red" style="margin-bottom:16px;">
-    <strong style="color:var(--red);">Research Use Only:</strong> These Ranges Represent Animal Model And Early-Phase Clinical Study Data. They Are Not Therapeutic Dosing Guidelines. No Peptide Here Has FDA Approval.
->>>>>>> Stashed changes
   </div>
 
   <div class="card" style="padding:0;overflow:hidden;">
@@ -2214,11 +1248,7 @@ function courseGo(n, el){
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
     <h2 style="font-size:32px;margin-bottom:8px;">Course Complete</h2>
-<<<<<<< Updated upstream
     <p style="color:var(--muted);font-size:15px;">You Finished Peptide 101. You Now Know More About Peptides Than Most People.</p>
-=======
-    <p style="color:var(--muted);font-size:15px;">You Have Completed Peptide 101 - Foundations Of Peptide Research.</p>
->>>>>>> Stashed changes
   </div>
 
   <div id="certBlock" class="card" style="text-align:center;">
@@ -2251,7 +1281,6 @@ function courseGo(n, el){
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:12px;">Modules Completed</h3>
     <div style="display:flex;flex-direction:column;gap:6px;">
-<<<<<<< Updated upstream
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 1: What Is A Peptide?</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 2: The Science Behind Peptides</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 3: How Peptides Work</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
@@ -2261,44 +1290,6 @@ function courseGo(n, el){
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 7: Stacking And Protocols</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 8: Reconstitution Calculator</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;"><span>Module 9: Dosing Reference Table</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
-=======
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);">
-        <span>Module 1: What Is A Peptide?</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);">
-        <span>Module 2: The Science Behind Peptides</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);">
-        <span>Module 3: How Peptides Work</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);">
-        <span>Module 4: Use Cases</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);">
-        <span>Module 5: Practical Basics And Storage</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);">
-        <span>Module 6: Peptide Families And Categories</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);">
-        <span>Module 7: Stacking And Protocols</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);">
-        <span>Module 8: Reconstitution Calculator</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;">
-        <span>Module 9: Dosing Reference Table</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
->>>>>>> Stashed changes
     </div>
   </div>
 
@@ -2332,417 +1323,15 @@ function courseGo(n, el){
 }
 </style>
 
-<<<<<<< Updated upstream
 <script src="/peptide-101.app.js"></script>
 <script src="/peptide-101.v4.js"></script>
-=======
-<script>
-// =====================================================
-// STATE
-// =====================================================
-const totalScreens = 11;
-let curScreen = 0;
-let sortCol = -1, sortDir = 1;
-
-const doseData = [
-  ["BPC-157",      "200-500 mcg",  "1-2x Daily",   "~4 hrs",     "Sub-Q Or IM"],
-  ["TB-500",       "2.0-2.5 mg",   "2x Weekly",    "~72 hrs",    "Sub-Q"],
-  ["PT-141",       "1-2 mg",       "As Needed",    "~2-3 hrs",   "Sub-Q Or Intranasal"],
-  ["Sermorelin",   "100-300 mcg",  "Nightly",      "10-20 min",  "Sub-Q"],
-  ["CJC-1295 DAC", "1-2 mg",       "1-2x Weekly",  "6-8 Days",   "Sub-Q"],
-  ["Ipamorelin",   "100-300 mcg",  "Nightly",      "~2 hrs",     "Sub-Q"],
-  ["AOD-9604",     "200-500 mcg",  "Daily",        "~30 min",    "Sub-Q"],
-  ["GHK-Cu",       "1-2 mg",       "3-5x Weekly",  "~1 hr",      "Sub-Q Or Topical"],
-];
-
-const glossaryTerms = [
-  { term: "Amino Acid", def: "The Building Blocks Of Peptides And Proteins. There Are 20 Standard Amino Acids. Each Has A Unique Side Chain That Determines Its Chemical Properties." },
-  { term: "Angiogenesis", def: "The Formation Of New Blood Vessels From Existing Ones. Some Peptides Are Studied For Their Ability To Promote Angiogenesis In Tissue Repair Research." },
-  { term: "Bacteriostatic Water (BAC Water)", def: "Sterile Water Containing 0.9% Benzyl Alcohol. The Preservative Inhibits Microbial Growth, Extending The Shelf Life Of Reconstituted Peptides To 28-30 Days." },
-  { term: "Conformation", def: "The 3D Shape A Peptide Or Protein Folds Into. Shape Determines Function - A Peptide Must Have The Right Conformation To Bind Its Receptor." },
-  { term: "Cyclical Peptide", def: "A Peptide Where The Amino Acid Chain Forms A Ring Rather Than A Linear Sequence. Cyclic Peptides Are Often More Stable And Bioavailable. PT-141 Is An Example." },
-  { term: "Fibroblast", def: "A Type Of Cell That Produces Collagen And Other Connective Tissue Components. A Key Cell Type In Tissue Repair Research." },
-  { term: "GHRH", def: "Growth Hormone Releasing Hormone. An Endogenous Peptide Produced In The Hypothalamus That Stimulates The Pituitary To Release Growth Hormone. Sermorelin And CJC-1295 Are Synthetic Analogues." },
-  { term: "GHS-R1a", def: "Growth Hormone Secretagogue Receptor 1a. The Receptor For Ghrelin And Ghrelin Mimetics Like Ipamorelin. Located On Pituitary Somatotrophs." },
-  { term: "Half-Life", def: "The Time It Takes For The Concentration Of A Substance In The Body To Reduce By 50%. Short Half-Life Means More Frequent Dosing. Long Half-Life Means Less Frequent Dosing." },
-  { term: "IGF-1", def: "Insulin-Like Growth Factor 1. A Hormone Produced Mainly By The Liver In Response To GH Stimulation. Most Anabolic Effects Attributed To GH Are Actually Mediated By IGF-1." },
-  { term: "Lyophilization", def: "Freeze-Drying. The Process Of Removing Water From A Peptide Solution Under Vacuum, Leaving Behind A Stable Powder. Lyophilized Peptides Have A Much Longer Shelf Life Than Solutions." },
-  { term: "Melanocortin Receptor", def: "A Family Of Receptors (MC1R-MC5R) That Respond To Melanocyte-Stimulating Hormone And Related Peptides Like PT-141. MC4R Is The Primary Target For Appetite And Sexual Function Research." },
-  { term: "Peptide Bond", def: "The Covalent Chemical Bond Formed Between Two Amino Acids. Created When The Carboxyl Group (-COOH) Of One Amino Acid Reacts With The Amino Group (-NH2) Of Another, Releasing Water." },
-  { term: "Pituitary Gland", def: "A Small Endocrine Gland At The Base Of The Brain. It Produces And Releases Many Hormones Including Growth Hormone (GH), LH, FSH, TSH, And ACTH." },
-  { term: "Reconstitution", def: "The Process Of Dissolving A Lyophilized (Freeze-Dried) Peptide Powder In A Liquid Diluent - Usually BAC Water - To Create An Injectable Solution." },
-  { term: "Somatotroph", def: "A Specialized Cell Type In The Anterior Pituitary Gland That Produces And Secretes Growth Hormone. GHRH Analogues And Ghrelin Mimetics Act Directly On Somatotrophs." },
-  { term: "Sub-Q (Subcutaneous)", def: "Injection Into The Fatty Tissue Just Beneath The Skin. The Most Common Route Of Administration For Research Peptides. Typically Performed At A 45-Degree Angle With A Fine-Gauge Needle." },
-  { term: "Thymosin Beta-4 (TB4)", def: "A Naturally Occurring Protein Found In Virtually All Human And Animal Cells. TB-500 Is A Synthetic Fragment Of Its Active Binding Domain. Involved In Actin Regulation And Cell Migration." },
-];
-
-// =====================================================
-// NAVIGATION
-// =====================================================
-function goTo(n) {
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.getElementById("s" + n).classList.add("active");
-  curScreen = n;
-  updateProgress();
-  window.scrollTo({ top: 0, behavior: "smooth" });
-  saveProgress();
-  if (n === 10) {
-    const d = document.getElementById("certDate");
-    if (d) d.textContent = "Completed: " + new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  }
-  if (n === 9) renderDoseTable();
-}
-
-function updateProgress() {
-  const pct = Math.round((curScreen / (totalScreens - 1)) * 100);
-  const fill = document.getElementById("progFill");
-  const label = document.getElementById("progLabel");
-  if (fill) fill.style.width = pct + "%";
-  if (label) label.textContent = pct + "%";
-}
-
-// Keyboard navigation
-document.addEventListener("keydown", function(e) {
-  const modal = document.getElementById("glossaryModal");
-  if (modal && modal.style.display !== "none") return;
-  if (e.key === "ArrowRight" && curScreen < totalScreens - 1) goTo(curScreen + 1);
-  if (e.key === "ArrowLeft" && curScreen > 0) goTo(curScreen - 1);
-});
-
-// =====================================================
-// PROGRESS PERSISTENCE
-// =====================================================
-function saveProgress() {
-  try { localStorage.setItem("p101_screen", curScreen); } catch(e) {}
-}
-function loadProgress() {
-  try {
-    const s = parseInt(localStorage.getItem("p101_screen") || "0");
-    if (s > 0 && s < totalScreens) goTo(s);
-  } catch(e) {}
-}
-
-// =====================================================
-// QUIZ
-// =====================================================
-function quiz(qid, btn, correct) {
-  const parent = btn.closest(".quiz-opts");
-  if (!parent || parent.classList.contains("locked")) return;
-  parent.classList.add("locked");
-  const fb = document.getElementById(qid + "-fb");
-  if (correct) {
-    btn.classList.add("correct");
-    if (fb) { fb.textContent = "Correct!"; fb.style.color = "var(--green)"; }
-  } else {
-    btn.classList.add("wrong");
-    if (fb) { fb.textContent = "Not Quite. Review The Highlighted Answer."; fb.style.color = "var(--red)"; }
-    parent.querySelectorAll(".quiz-opt").forEach(b => {
-      if (b.getAttribute("onclick") && b.getAttribute("onclick").includes(",true)")) b.classList.add("correct");
-    });
-  }
-}
-
-// =====================================================
-// CHAIN BUILDER
-// =====================================================
-let chainSeq = [];
-
-function addAA(name) {
-  if (chainSeq.length >= 12) chainSeq = [];
-  chainSeq.push(name);
-  renderChain();
-}
-
-function clearChain() {
-  chainSeq = [];
-  renderChain();
-}
-
-function renderChain() {
-  const area = document.getElementById("chainArea");
-  const info = document.getElementById("chainInfo");
-  const lenEl = document.getElementById("chainLen");
-  const typeEl = document.getElementById("chainType");
-  if (!area) return;
-
-  if (chainSeq.length === 0) {
-    area.innerHTML = '<span style="font-size:13px;color:var(--muted);">Add Amino Acids Below To Build Your Chain...</span>';
-    if (info) info.style.display = "none";
-    return;
-  }
-
-  let html = '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:4px;">';
-  chainSeq.forEach((aa, i) => {
-    if (i > 0) {
-      html += '<span style="color:var(--teal);font-size:16px;font-weight:700;line-height:1;">-</span>';
-    }
-    html += `<span style="background:rgba(0,196,188,0.2);border:1.5px solid var(--teal);border-radius:8px;padding:4px 8px;font-size:12px;font-weight:600;color:var(--teal);">${aa}</span>`;
-  });
-  html += '</div>';
-  area.innerHTML = html;
-
-  if (info) info.style.display = "block";
-  if (lenEl) lenEl.textContent = chainSeq.length;
-  if (typeEl) {
-    if (chainSeq.length <= 1) typeEl.textContent = "(Monomer)";
-    else if (chainSeq.length <= 10) typeEl.textContent = "(Oligopeptide)";
-    else typeEl.textContent = "(Polypeptide)";
-  }
-}
-
-// =====================================================
-// LOCK-KEY BINDING DEMO
-// =====================================================
-let boundState = false;
-
-function bindPeptide() {
-  if (boundState) return;
-  boundState = true;
-  const p = document.getElementById("lkPeptide");
-  const r = document.getElementById("lkReceptor");
-  const effect = document.getElementById("lkEffect");
-  const instr = document.getElementById("lkInstr");
-  if (p) { p.style.transform = "translateY(-20px) scale(0.85)"; p.style.transition = "all 0.5s ease"; }
-  setTimeout(() => {
-    if (r) { r.style.borderColor = "var(--teal)"; r.style.background = "rgba(0,196,188,0.2)"; }
-    if (instr) instr.textContent = "Bound - Receptor Activated!";
-    if (effect) effect.innerHTML = '<strong style="color:var(--teal);">Receptor Activated</strong><br><span style="font-size:11px;">Signal Cascade Begins. Cells Respond Downstream.</span>';
-  }, 500);
-}
-
-function resetBinding() {
-  boundState = false;
-  const p = document.getElementById("lkPeptide");
-  const r = document.getElementById("lkReceptor");
-  const effect = document.getElementById("lkEffect");
-  const instr = document.getElementById("lkInstr");
-  if (p) { p.style.transform = ""; p.style.transition = ""; }
-  if (r) { r.style.borderColor = ""; r.style.background = ""; }
-  if (instr) instr.textContent = "Tap The Peptide To Try Binding";
-  if (effect) effect.textContent = "Drag The Peptide Onto The Receptor To See What Happens";
-}
-
-// =====================================================
-// HALF-LIFE EXPLORER
-// =====================================================
-const hlMax = 192;
-
-function showHL(name, hours, color) {
-  const res = document.getElementById("hlResult");
-  if (!res) return;
-  res.style.display = "block";
-  const nameEl = document.getElementById("hlName");
-  const timeEl = document.getElementById("hlTime");
-  const bar = document.getElementById("hlBar");
-  const noteEl = document.getElementById("hlNote");
-  if (nameEl) nameEl.textContent = name;
-  const label = hours < 1 ? (hours * 60).toFixed(0) + " Minutes" : hours + " Hours";
-  if (timeEl) timeEl.textContent = "Half-Life: " + label;
-  if (bar) {
-    bar.style.background = color;
-    bar.style.width = "0%";
-    setTimeout(() => { bar.style.width = Math.min(100, (hours / hlMax) * 100) + "%"; }, 50);
-  }
-  const notes = {
-    "BPC-157": "Short Half-Life. Multiple Daily Doses Used In Research Protocols To Maintain Plasma Levels.",
-    "TB-500": "Long Half-Life Enables Twice-Weekly Dosing In Most Research Frameworks.",
-    "Sermorelin": "Very Short. Must Be Timed Precisely. Typically Injected 30-60 min Before Sleep To Align With The Natural GH Pulse.",
-    "Ipamorelin": "Moderate. Nightly Dosing Is Standard In GH Axis Research Protocols.",
-    "CJC-1295 DAC": "Extremely Long Due To Albumin Binding. Once Or Twice Weekly Dosing Maintains Steady Plasma Levels And Creates Continuous GH Release."
-  };
-  if (noteEl) noteEl.textContent = notes[name] || "";
-}
-
-// =====================================================
-// STORAGE TABS
-// =====================================================
-function switchTab(id) {
-  document.querySelectorAll(".tab").forEach(t => {
-    t.classList.remove("active");
-    t.setAttribute("aria-selected", "false");
-  });
-  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-  const btn = document.getElementById("tab-btn-" + id);
-  const panel = document.getElementById("tab-" + id);
-  if (btn) { btn.classList.add("active"); btn.setAttribute("aria-selected", "true"); }
-  if (panel) panel.classList.add("active");
-}
-
-// =====================================================
-// RECONSTITUTION CALCULATOR
-// =====================================================
-function calcRecon() {
-  const mg = parseFloat(document.getElementById("calcVial").value) || 5;
-  const conc = parseFloat(document.getElementById("calcConc").value) || 1000;
-  const mL = (mg * 1000) / conc;
-  const waterEl = document.getElementById("calcWater");
-  const summaryEl = document.getElementById("calcSummary");
-  if (waterEl) waterEl.textContent = mL.toFixed(2) + " mL";
-  if (summaryEl) summaryEl.textContent = mg + " mg Vial + " + mL.toFixed(2) + " mL BAC Water = " + conc + " mcg/mL Solution";
-  const doses = [50, 100, 150, 200, 250, 300, 500];
-  const tbody = document.getElementById("calcTableBody");
-  if (tbody) {
-    tbody.innerHTML = "";
-    doses.forEach(d => {
-      const vol = d / conc;
-      const units = vol * 100;
-      const tr = document.createElement("tr");
-      tr.style.borderBottom = "1px solid var(--border)";
-      tr.innerHTML = `<td style="padding:8px 16px;">${d} mcg</td><td style="padding:8px 16px;text-align:right;">${vol.toFixed(3)} mL</td><td style="padding:8px 16px;text-align:right;">${units.toFixed(1)} units</td>`;
-      tbody.appendChild(tr);
-    });
-    const tableEl = document.getElementById("calcDoseTable");
-    if (tableEl) tableEl.style.display = "block";
-  }
-}
-
-function setPreset(mg) {
-  const el = document.getElementById("calcVial");
-  if (el) el.value = mg;
-  calcRecon();
-}
-
-function setConc(c) {
-  const el = document.getElementById("calcConc");
-  if (el) el.value = c;
-  calcRecon();
-}
-
-// =====================================================
-// DOSING REFERENCE TABLE
-// =====================================================
-let doseFiltered = [...doseData];
-
-function renderDoseTable() {
-  const tbody = document.getElementById("doseTableBody");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-  doseFiltered.forEach(row => {
-    const tr = document.createElement("tr");
-    tr.style.borderBottom = "1px solid var(--border)";
-    row.forEach((cell, i) => {
-      const td = document.createElement("td");
-      td.style.padding = "10px 16px";
-      if (i === 0) td.style.fontWeight = "600";
-      td.textContent = cell;
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-}
-
-function filterDose() {
-  const q = (document.getElementById("doseSearch").value || "").toLowerCase();
-  doseFiltered = doseData.filter(r => r[0].toLowerCase().includes(q));
-  if (sortCol >= 0) doseFiltered.sort((a, b) => a[sortCol].localeCompare(b[sortCol]) * sortDir);
-  renderDoseTable();
-}
-
-function sortDose(col) {
-  if (sortCol === col) sortDir *= -1;
-  else { sortCol = col; sortDir = 1; }
-  document.querySelectorAll(".sort-th").forEach((th, i) => {
-    th.setAttribute("aria-sort", i === col ? (sortDir === 1 ? "ascending" : "descending") : "none");
-    const arrow = th.querySelector(".sort-arrow");
-    if (arrow) arrow.innerHTML = i === col ? (sortDir === 1 ? "&#8593;" : "&#8595;") : "&#8597;";
-  });
-  doseFiltered.sort((a, b) => a[col].localeCompare(b[col]) * sortDir);
-  renderDoseTable();
-}
-
-// =====================================================
-// GLOSSARY
-// =====================================================
-function openGloss() { openGlossary(); }
-
-function openGlossary() {
-  const modal = document.getElementById("glossaryModal");
-  if (!modal) return;
-  modal.style.display = "block";
-  document.body.style.overflow = "hidden";
-  renderGlossary(glossaryTerms);
-  setTimeout(() => {
-    const si = document.getElementById("glossarySearch");
-    if (si) si.focus();
-  }, 50);
-  modal.addEventListener("keydown", trapFocus);
-}
-
-function closeGlossary() {
-  const modal = document.getElementById("glossaryModal");
-  if (!modal) return;
-  modal.style.display = "none";
-  document.body.style.overflow = "";
-  modal.removeEventListener("keydown", trapFocus);
-}
-
-function trapFocus(e) {
-  if (e.key !== "Tab") return;
-  const modal = document.getElementById("glossaryModal");
-  const focusable = modal.querySelectorAll('button:not([aria-hidden="true"]), input');
-  if (focusable.length < 2) return;
-  const first = focusable[0], last = focusable[focusable.length - 1];
-  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-}
-
-function filterGlossary() {
-  const q = (document.getElementById("glossarySearch").value || "").toLowerCase();
-  renderGlossary(glossaryTerms.filter(t => t.term.toLowerCase().includes(q) || t.def.toLowerCase().includes(q)));
-}
-
-function renderGlossary(terms) {
-  const list = document.getElementById("glossaryList");
-  if (!list) return;
-  if (terms.length === 0) {
-    list.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">No Terms Found</p>';
-    return;
-  }
-  list.innerHTML = "";
-  terms.forEach(t => {
-    const div = document.createElement("div");
-    div.style.cssText = "padding:12px;background:var(--surface2);border-radius:10px;margin-bottom:8px;";
-    div.innerHTML = `<strong style="font-size:14px;color:var(--teal);">${t.term}</strong><p style="font-size:13px;color:var(--silver);margin:6px 0 0;">${t.def}</p>`;
-    list.appendChild(div);
-  });
-}
-
-document.addEventListener("keydown", e => {
-  if (e.key === "Escape") closeGlossary();
-});
-
-// =====================================================
-// PRINT CERTIFICATE
-// =====================================================
-function printCert() { window.print(); }
-
-// =====================================================
-// COPY SHARE TEXT
-// =====================================================
-function copyShare() {
-  const el = document.getElementById("shareText");
-  const btn = document.getElementById("copyBtn");
-  if (!el || !btn) return;
-  const text = el.textContent.trim();
-  navigator.clipboard.writeText(text).then(() => {
-    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
-    setTimeout(() => {
-      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy To Clipboard';
-    }, 2500);
-  }).catch(() => { btn.textContent = "Use Long-Press To Copy"; });
-}
-
-// =====================================================
-// BOOT
-// =====================================================
-document.addEventListener("DOMContentLoaded", function() {
-  goTo(0);
-  calcRecon();
-  renderDoseTable();
-  loadProgress();
-});
-</script>
->>>>>>> Stashed changes
 </div><!-- end app -->
+<script>
+function courseGo(n, el){
+  document.querySelectorAll('.course-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (typeof goTo === 'function') goTo(n);
+}
+</script>
 </body>
 </html>
