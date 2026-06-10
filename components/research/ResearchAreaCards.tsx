@@ -9,11 +9,21 @@ export default function ResearchAreaCards() {
   const router = useRouter();
 
   const areas = [
-    { id: 'weight_management', label: 'Weight Management', count: 127, image: '/images/redesign/research_weight.png', filter: 'weight_management' },
-    { id: 'healing', label: 'Tissue Repair & Healing', count: 83, image: '/images/redesign/research_tissue.png', filter: 'healing' },
-    { id: 'longevity', label: 'Longevity & Anti-Aging', count: 62, image: '/images/redesign/hero_molecule.png', filter: 'longevity' }, // Fallback to hero_molecule if needed, or unique image
-    { id: 'cognitive', label: 'Cognitive Health', count: 49, fallbackGradient: 'linear-gradient(135deg, #4c1d95, #6b21a8)', filter: 'cognitive' },
-    { id: 'performance', label: 'Performance & Strength', count: 73, fallbackGradient: 'linear-gradient(135deg, #064e3b, #047857)', filter: 'performance' },
+    { id: 'weight_management', label: 'Weight Management', count: 127, image: '/images/research/icon_weight_management.png', filter: 'weight_management' },
+    { id: 'tissue_repair', label: 'Tissue Repair', count: 83, image: '/images/research/icon_tissue_repair.png', filter: 'tissue_repair' },
+    { id: 'healing', label: 'Healing', count: 62, image: '/images/research/icon_healing.png', filter: 'healing' },
+    { id: 'performance', label: 'Performance', count: 73, image: '/images/research/icon_performance.png', filter: 'performance' },
+    { id: 'cosmetic', label: 'Cosmetic', count: 45, image: '/images/research/icon_cosmetic.png', filter: 'cosmetic' },
+    { id: 'cognitive', label: 'Cognitive', count: 49, image: '/images/research/icon_cognitive.png', filter: 'cognitive' },
+    { id: 'pain_inflammation', label: 'Pain & Inflam', count: 58, image: '/images/research/icon_pain_inflammation.png', filter: 'pain_inflammation' },
+    { id: 'gut_health', label: 'Gut Health', count: 32, image: '/images/research/icon_gut_health.png', filter: 'gut_health' },
+    { id: 'sexual_health', label: 'Sexual Health', count: 21, image: '/images/research/icon_sexual_health.png', filter: 'sexual_health' },
+    { id: 'sleep', label: 'Sleep', count: 38, image: '/images/research/icon_sleep.png', filter: 'sleep' },
+    { id: 'longevity', label: 'Longevity', count: 66, image: '/images/research/icon_longevity.png', filter: 'longevity' },
+    { id: 'bone_joint', label: 'Bone & Joint', count: 44, image: '/images/research/icon_bone_joint.png', filter: 'bone_joint' },
+    { id: 'immune', label: 'Immune', count: 52, image: '/images/research/icon_immune.png', filter: 'immune' },
+    { id: 'metabolic', label: 'Metabolic', count: 89, image: '/images/research/icon_metabolic.png', filter: 'metabolic' },
+    { id: 'mitochondrial', label: 'Mitochondrial', count: 31, image: '/images/research/icon_mitochondrial.png', filter: 'mitochondrial' },
   ];
 
   return (
@@ -22,9 +32,11 @@ export default function ResearchAreaCards() {
         <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>Explore Research Areas</h2>
         <button 
           onClick={() => router.push('/research/catalog')}
-          style={{ background: 'none', border: 'none', color: '#A8B4C0', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
         >
-          View all areas <ArrowRight size={14} />
+          <div style={{ position: 'relative', width: '180px', height: '48px' }}>
+            <Image src="/images/research/btn_view_all_areas.png" alt="View all areas" fill style={{ objectFit: 'contain' }} />
+          </div>
         </button>
       </div>
 

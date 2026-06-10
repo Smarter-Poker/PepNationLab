@@ -76,34 +76,15 @@ export default function ResearchDock() {
       })}
 
       <div style={{ marginTop: 'auto', paddingTop: '32px' }}>
-        <div style={{ 
-          background: 'rgba(255,255,255,0.03)', 
-          border: '1px solid rgba(255,255,255,0.1)', 
-          borderRadius: '16px', 
-          padding: '16px',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontSize: '0.85rem', color: '#FFF', fontWeight: 700, marginBottom: '8px' }}>New to Peptides?</div>
-          <div style={{ fontSize: '0.75rem', color: '#A8B4C0', marginBottom: '16px' }}>60-Second Guide & Dose Calculator</div>
-          <Link href="/research/calculators" style={{ textDecoration: 'none' }}>
-            <motion.div 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              style={{
-                background: 'transparent',
-                border: '1px solid #A8B4C0',
-                color: '#FFF',
-                padding: '8px 16px',
-                borderRadius: '8px',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              Get Started →
-            </motion.div>
-          </Link>
-        </div>
+        <Link href="/research/calculators" style={{ textDecoration: 'none' }}>
+          <motion.div 
+            whileHover={{ scale: 1.02, filter: 'drop-shadow(0 0 10px rgba(0, 229, 255, 0.4))' }}
+            whileTap={{ scale: 0.98 }}
+            style={{ position: 'relative', width: '100%', aspectRatio: '1/1', cursor: 'pointer' }}
+          >
+            <Image src="/images/research/box_new_to_peptides.png" alt="New to Peptides?" fill style={{ objectFit: 'contain' }} />
+          </motion.div>
+        </Link>
       </div>
     </nav>
   );
