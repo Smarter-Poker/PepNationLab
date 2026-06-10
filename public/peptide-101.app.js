@@ -17,24 +17,156 @@ const doseData = [
 ];
 
 const glossaryTerms = [
-  { term: "Amino Acid", def: "The Tiny Building Blocks That Make Up Peptides, Like LEGO Bricks. There Are 20 Basic Kinds, And The Order You Snap Them Together Decides What The Peptide Does." },
-  { term: "Angiogenesis", def: "Growing New Tiny Blood Vessels. More Blood Vessels Can Help An Area Heal. Some Peptides Are Studied For This." },
-  { term: "Bacteriostatic Water (BAC Water)", def: "Clean Water With A Tiny Bit Of Alcohol In It. The Alcohol Stops Germs From Growing, So Liquid Peptides Stay Good For About 4 Weeks." },
-  { term: "Conformation", def: "The 3D Shape A Peptide Folds Into. Shape Is Everything. A Peptide Only Works If Its Shape Fits The Lock It Was Made For." },
-  { term: "Cyclical Peptide", def: "A Peptide Whose Chain Loops Around Into A Ring Instead Of A Straight Line. Rings Are Often Tougher And Last Longer. PT-141 Is One." },
-  { term: "Fibroblast", def: "A Repair Cell. It Makes Collagen, The Stuff That Holds Skin And Tissue Together. Important For Healing." },
-  { term: "GHRH", def: "A Natural Signal In Your Brain That Tells The Body To Make Growth Hormone. Some Peptides Copy This Signal." },
-  { term: "GHS-R1a", def: "One Of The Locks In The Body That Turns On Growth Hormone. Peptides Like Ipamorelin Are Keys That Fit It." },
-  { term: "Half-Life", def: "How Long Something Lasts In The Body Before Half Of It Is Gone. Short Half-Life Means You Use It More Often. Long Means Less Often." },
-  { term: "IGF-1", def: "A Growth Signal Your Liver Makes After Growth Hormone Shows Up. A Lot Of Growth Hormone's Effects Actually Come From IGF-1." },
-  { term: "Lyophilization", def: "A Fancy Word For Freeze-Drying. The Water Is Pulled Out, Leaving A Dry Powder That Lasts A Long Time. Same Idea As Freeze-Dried Fruit." },
-  { term: "Melanocortin Receptor", def: "A Group Of Locks In The Body Linked To Skin Color, Appetite, And Some Brain Signals. Peptides Like PT-141 Fit These Locks." },
-  { term: "Peptide Bond", def: "The Strong Connection That Holds Two Building Blocks Together, Like Super Glue Between LEGO Bricks. A Tiny Drop Of Water Pops Out When It Forms." },
-  { term: "Pituitary Gland", def: "A Tiny Gland At The Base Of Your Brain. It Acts Like A Control Center, Releasing Many Signals Including Growth Hormone." },
-  { term: "Reconstitution", def: "Adding Water To Dry Peptide Powder To Turn It Into A Liquid. It Just Means Make It Liquid Again." },
-  { term: "Somatotroph", def: "The Special Cells In Your Brain's Pituitary Gland That Make Growth Hormone." },
-  { term: "Sub-Q (Subcutaneous)", def: "Putting Something Into The Soft Fatty Layer Just Under The Skin. It Is The Most Common Way Peptides Are Used In Studies." },
-  { term: "Thymosin Beta-4 (TB4)", def: "A Natural Protein Found In Almost Every Cell In The Body. TB-500 Is A Lab-Made Piece Of It. It Helps Cells Move And Repair." },
+  { 
+    term: "Amino Acid", cat: "BASIC BUILDING BLOCK", color: "var(--cyan)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="6" r="3"/><circle cx="5" cy="18" r="3"/><path d="M14.5 10.5l2.5-2.5M9.5 13.5l-2.5 2.5"/></svg>',
+    def: "The tiny building blocks that make up peptides, like LEGO bricks." 
+  },
+  { 
+    term: "Angiogenesis", cat: "MECHANISM", color: "var(--red)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22v-6c0-2-1-3-3-4-2-1-4-2-4-5V4m12 18v-8c0-3 2-4 4-5V4m-8 6c0-2-1-3-3-4V4"/></svg>',
+    def: "Growing new tiny blood vessels. More blood vessels can help an area heal." 
+  },
+  { 
+    term: "Bacteriostatic Water (BAC Water)", cat: "LAB TERM", color: "var(--blue-l)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="7" y="6" width="10" height="16" rx="2"/><path d="M9 3h6v3H9z"/><path d="M7 14h10"/><path d="M7 18h10"/></svg>',
+    def: "Clean water with a tiny bit of alcohol in it. The alcohol stops germs from growing." 
+  },
+  { 
+    term: "Conformation", cat: "STRUCTURE", color: "#A855F7", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+    def: "The 3D shape a peptide folds into. Shape is everything." 
+  },
+  { 
+    term: "Cyclical Peptide", cat: "STRUCTURE", color: "#A855F7", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12c0 4.97-4.03 9-9 9a9 9 0 0 1-9-9 9 9 0 0 1 9-9c4.97 0 9 4.03 9 9z"/><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z" stroke-dasharray="2 2"/></svg>',
+    def: "A peptide whose chain loops around into a ring instead of a straight line." 
+  },
+  { 
+    term: "Fibroblast", cat: "HEALING", color: "#10B981", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2a10 10 0 0 0 0 20z"/><path d="M12 6a6 6 0 1 0 0 12c3.31 0 6-2.69 6-6s-2.69-6-6-6z" stroke-dasharray="2 2"/></svg>',
+    def: "A repair cell. It makes collagen, the stuff that holds skin and tissue together." 
+  },
+  { 
+    term: "GHRH", cat: "HORMONE", color: "#EF4444", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.5 2C13.5 2 17 5 17 9c0 1.5-.5 3-1.2 4.2C17.5 14.5 19 16.5 19 19c0 .5-.5 1-1 1H6c-.5 0-1-.5-1-1 0-2.5 1.5-4.5 3.2-5.8C7.5 12 7 10.5 7 9c0-4 3.5-7 7.5-7z"/><path d="M12 9h.01M10 13h.01M14 13h.01"/></svg>',
+    def: "A natural signal in your brain that tells the body to make growth hormone." 
+  },
+  { 
+    term: "GHS-R1a", cat: "RECEPTOR", color: "#A855F7", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>',
+    def: "One of the locks in the body that turns on growth hormone. Peptides like Ipamorelin are keys." 
+  },
+  { 
+    term: "Half-Life", cat: "LAB TERM", color: "var(--blue-l)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    def: "How long something lasts in the body before half of it is gone. Short half-life means you use it more often. Long means less often." 
+  },
+  { 
+    term: "IGF-1", cat: "HORMONE", color: "#EF4444", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><path d="M14 10l3.5-2.5M10 14l-3.5 2.5M14 14l3.5 2.5"/></svg>',
+    def: "A growth signal your liver makes after growth hormone shows up. A lot of growth hormone's effects actually come from IGF-1." 
+  },
+  { 
+    term: "Lyophilization", cat: "LAB TERM", color: "var(--blue-l)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5l-10 14M7 5l10 14M12 2v2M12 20v2M17 5l-1-1M7 5l1-1M17 19l-1 1M7 19l1 1"/></svg>',
+    def: "A fancy word for freeze-drying. The water is pulled out, leaving a dry powder that lasts a long time. Same idea as freeze-dried fruit." 
+  },
+  { 
+    term: "Melanocortin Receptor", cat: "RECEPTOR", color: "#A855F7", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>',
+    def: "A group of locks in the body linked to skin color, appetite, and some brain signals. Peptides like PT-141 fit these locks." 
+  },
+  { 
+    term: "Peptide Bond", cat: "BASIC BUILDING BLOCK", color: "var(--cyan)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+    def: "The strong connection that holds two building blocks together, like super glue between LEGO bricks." 
+  },
+  { 
+    term: "Pituitary Gland", cat: "HORMONE", color: "#EF4444", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/><circle cx="12" cy="14" r="3"/></svg>',
+    def: "A tiny gland at the base of your brain. It acts like a control center, releasing many signals including growth hormone." 
+  },
+  { 
+    term: "Reconstitution", cat: "LAB TERM", color: "var(--blue-l)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>',
+    def: "Adding water to dry peptide powder to turn it into a liquid. It just means make it liquid again." 
+  },
+  { 
+    term: "Somatotroph", cat: "HORMONE", color: "#EF4444", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg>',
+    def: "The special cells in your brain's pituitary gland that make growth hormone." 
+  },
+  { 
+    term: "Sub-Q (Subcutaneous)", cat: "LAB TERM", color: "var(--blue-l)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 2l4 4M16.5 7.5l-2-2M3.5 20.5l6.5-6.5M13 5l6 6M7 13.5l-3.5 3.5"/></svg>',
+    def: "Putting something into the soft fatty layer just under the skin. It is the most common way peptides are studied." 
+  },
+  { 
+    term: "Thymosin Beta-4 (TB4)", cat: "LAB TERM", color: "var(--blue-l)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+    def: "A natural protein found in almost every cell in the body. TB-500 is a lab-made piece of it. It helps cells move and repair." 
+  },
+  { 
+    term: "Agonist", cat: "MECHANISM", color: "#EF4444", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="16" r="4"/><path d="M10.5 13.5l7-7M15 8l2 2M18 5l2 2"/></svg>',
+    def: "A molecule that switches a receptor on, like a key that turns the lock." 
+  },
+  { 
+    term: "Receptor", cat: "BASIC BUILDING BLOCK", color: "var(--cyan)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+    def: "A lock on a cell that a peptide key fits into to send a signal." 
+  },
+  { 
+    term: "Secretagogue", cat: "MECHANISM", color: "#EF4444", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5l-10 14M7 5l10 14"/><circle cx="12" cy="12" r="4"/></svg>',
+    def: "Something that tells the body to release (secrete) a hormone. GH secretagogues trigger growth hormone." 
+  },
+  { 
+    term: "Ghrelin", cat: "HORMONE", color: "#EF4444", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 12c0 4 3 8 6 8s6-4 6-8-3-8-6-8-6 4-6 8z"/><path d="M12 4v4"/></svg>',
+    def: "The hunger hormone. Some peptides copy it to trigger growth hormone release." 
+  },
+  { 
+    term: "Bioavailability", cat: "LAB TERM", color: "var(--blue-l)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/><circle cx="12" cy="15" r="2"/></svg>',
+    def: "How much of a dose actually reaches the bloodstream. Swallowed peptides have very low bioavailability." 
+  },
+  { 
+    term: "HPLC", cat: "LAB TERM", color: "var(--blue-l)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="4 20 8 20 12 8 16 16 20 16"/><line x1="12" y1="20" x2="12" y2="8" stroke-dasharray="2 2"/></svg>',
+    def: "High-performance liquid chromatography. A lab test that measures how pure a peptide is (shown as a percent)." 
+  },
+  { 
+    term: "Mass Spectrometry", cat: "LAB TERM", color: "var(--blue-l)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="4" y1="20" x2="4" y2="10"/><line x1="8" y1="20" x2="8" y2="4"/><line x1="12" y1="20" x2="12" y2="14"/><line x1="16" y1="20" x2="16" y2="8"/><line x1="20" y1="20" x2="20" y2="12"/></svg>',
+    def: "A lab test that weighs molecules to confirm a peptide is exactly what the label says." 
+  },
+  { 
+    term: "Endotoxin", cat: "LAB TERM", color: "var(--blue-l)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg>',
+    def: "A harmful byproduct of bacteria. A good COA confirms a batch is endotoxin-free." 
+  },
+  { 
+    term: "Anabolic", cat: "MECHANISM", color: "#EF4444", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10v4c0 3.3 2.7 6 6 6h6c3.3 0 6-2.7 6-6v-4M12 20v4M8 24h8M12 3v7M9 6l3-3 3 3"/></svg>',
+    def: "Building up tissue, like muscle. Steroids are strongly anabolic; peptides are gentler signals." 
+  },
+  { 
+    term: "Nootropic", cat: "MECHANISM", color: "#EF4444", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.5 2C13.5 2 17 5 17 9c0 1.5-.5 3-1.2 4.2C17.5 14.5 19 16.5 19 19c0 .5-.5 1-1 1H6c-.5 0-1-.5-1-1 0-2.5 1.5-4.5 3.2-5.8C7.5 12 7 10.5 7 9c0-4 3.5-7 7.5-7z"/><circle cx="12" cy="10" r="2"/></svg>',
+    def: "Something studied for focus, memory, or mental clarity." 
+  },
+  { 
+    term: "Collagen", cat: "BASIC BUILDING BLOCK", color: "var(--cyan)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 22c-5.5-2-8.5-8-6.5-13.5M9 2c5.5 2 8.5 8 6.5 13.5M10 8l4 2M9 14l4 2M11 4l4 2M10 18l4 2"/></svg>',
+    def: "The protein that holds skin, tendon, and connective tissue together." 
+  },
+  { 
+    term: "Intranasal", cat: "LAB TERM", color: "var(--blue-l)", 
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M15 15c0-1.7-1.3-3-3-3s-3 1.3-3 3M12 8c2.2 0 4 1.8 4 4v3H8v-3c0-2.2 1.8-4 4-4z"/></svg>',
+    def: "Given as a spray into the nose. Some peptides like Selank and Semax are used this way." 
+  }
 ];
 
 // =====================================================
@@ -323,6 +455,8 @@ function sortDose(col) {
 // =====================================================
 // GLOSSARY
 // =====================================================
+let currentGlossaryCategory = 'All';
+
 function openGloss() { openGlossary(); }
 
 function openGlossary() {
@@ -330,7 +464,10 @@ function openGlossary() {
   if (!modal) return;
   modal.style.display = "block";
   document.body.style.overflow = "hidden";
-  renderGlossary(glossaryTerms);
+  currentGlossaryCategory = 'All';
+  document.getElementById("glossarySearch").value = "";
+  updateGlossaryFilterChips();
+  filterGlossary();
   setTimeout(() => {
     const si = document.getElementById("glossarySearch");
     if (si) si.focus();
@@ -356,23 +493,68 @@ function trapFocus(e) {
   else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 }
 
+function setGlossaryCategory(cat) {
+  currentGlossaryCategory = cat;
+  updateGlossaryFilterChips();
+  filterGlossary();
+}
+
+function updateGlossaryFilterChips() {
+  document.querySelectorAll('.gloss-chip').forEach(chip => {
+    if (chip.getAttribute('data-cat') === currentGlossaryCategory) {
+      chip.classList.add('active');
+    } else {
+      chip.classList.remove('active');
+    }
+  });
+}
+
 function filterGlossary() {
   const q = (document.getElementById("glossarySearch").value || "").toLowerCase();
-  renderGlossary(glossaryTerms.filter(t => t.term.toLowerCase().includes(q) || t.def.toLowerCase().includes(q)));
+  let filtered = glossaryTerms;
+  
+  if (currentGlossaryCategory !== 'All') {
+    filtered = filtered.filter(t => t.cat === currentGlossaryCategory);
+  }
+  
+  if (q) {
+    filtered = filtered.filter(t => t.term.toLowerCase().includes(q) || t.def.toLowerCase().includes(q));
+  }
+  
+  renderGlossary(filtered);
 }
 
 function renderGlossary(terms) {
   const list = document.getElementById("glossaryList");
   if (!list) return;
   if (terms.length === 0) {
-    list.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">No Terms Found</p>';
+    list.innerHTML = `
+      <div style="text-align:center;padding:40px;color:var(--muted);background:rgba(255,255,255,0.02);border-radius:16px;border:1px solid rgba(255,255,255,0.05);margin-top:20px;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;opacity:0.5;">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <h3 style="font-size:16px;color:var(--silver);margin-bottom:8px;">No Terms Found</h3>
+        <p style="font-size:14px;">Try adjusting your search or category filter.</p>
+      </div>`;
     return;
   }
   list.innerHTML = "";
   terms.forEach(t => {
     const div = document.createElement("div");
-    div.style.cssText = "padding:12px;background:var(--surface2);border-radius:10px;margin-bottom:8px;";
-    div.innerHTML = `<strong style="font-size:14px;color:var(--teal);">${t.term}</strong><p style="font-size:13px;color:var(--silver);margin:6px 0 0;">${t.def}</p>`;
+    div.className = "gloss-card";
+    div.innerHTML = `
+      <div class="gloss-icon" style="color: ${t.color}; border-color: ${t.color}40; box-shadow: 0 0 15px ${t.color}20 inset, 0 0 10px ${t.color}20;">
+        ${t.icon}
+      </div>
+      <div class="gloss-content">
+        <div class="gloss-header">
+          <strong class="gloss-term">${t.term}</strong>
+          <span class="gloss-badge" style="color: ${t.color}; border-color: ${t.color}40; background: ${t.color}15;">${t.cat}</span>
+        </div>
+        <p class="gloss-def">${t.def}</p>
+      </div>
+    `;
     list.appendChild(div);
   });
 }
