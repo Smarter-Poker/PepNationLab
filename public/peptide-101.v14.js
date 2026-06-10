@@ -172,8 +172,10 @@
       }
       back.classList.toggle('hidden', cur===0 && prevModule==null);
       var last = cur===N-1;
-      var nlbl = (opts&&opts.nextLabel)?opts.nextLabel:('Module '+(nextModule!=null?nextModule:''));
-      next.innerHTML = (last?'Next: '+nlbl :'Next')+ARR_R;
+      if(last && nextModule==null){ next.style.display='none'; }
+      else { next.style.display='';
+        var nlbl = (opts&&opts.nextLabel)?opts.nextLabel:('Module '+(nextModule!=null?nextModule:''));
+        next.innerHTML = (last?'Next: '+nlbl :'Next')+ARR_R; }
       try{ window.scrollTo&&window.scrollTo({top:0,behavior:'smooth'}); }catch(e){}
     }
     next.addEventListener('click', function(){ if(cur<N-1){ cur++; paint(); } else if(nextModule!=null){ goModule(nextModule); } });
@@ -275,7 +277,7 @@
   window.P101V14 = API;
 
   function loadModules(){
-    var mods=['m2','m3','m4','m5','m6','m7','m8','m9','m10','m11','m12','m13'];
+    var mods=['m2','m3','m4','m5','m6','m7','m8','m9','m10','m11','m12','m13','m14'];
     mods.forEach(function(m){
       if(D.querySelector('script[data-v14m="'+m+'"]')) return;
       var sc=D.createElement('script'); sc.src='/peptide-101.'+m+'.js'; sc.async=false; sc.setAttribute('data-v14m',m);
