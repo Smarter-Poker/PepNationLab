@@ -1,3 +1,5 @@
+// v9: Cache-version bump to deliver Peptide 101 v14 paginated Modules 2-13
+//     (m2-m13 module files + updated v14 engine with nextLabel support).
 // Pep Nation Lab service worker - web push receiver, offline caching, and IndexedDB replication.
 // v7: Cache-version bump to evict poisoned v6 assets. The pepnationlab.com alias
 //     was serving an old build of the Peptide 101 course (pre-v5, with "The 20
@@ -12,11 +14,11 @@
 //     SWR fired on every repeat visit — faster repeat loads, less bandwidth.
 // v5: Cache-version bump to evict poisoned v4 static/_next chunks that caused the
 //     storefront to boot then crash on refresh (stale-chunk mismatch after deploys).
-const CACHE_VERSION = 'pnl-sw-v8';
-const STATIC_CACHE_NAME = 'pnl-static-cache-v8';
-const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v8';
-const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v8';
-const IMAGE_CACHE_NAME = 'pnl-image-cache-v8';
+const CACHE_VERSION = 'pnl-sw-v9';
+const STATIC_CACHE_NAME = 'pnl-static-cache-v9';
+const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v9';
+const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v9';
+const IMAGE_CACHE_NAME = 'pnl-image-cache-v9';
 
 // Catalog cache TTL in the service worker (5 min = 300,000 ms)
 // Matches the s-maxage set on the API route's Cache-Control header.
