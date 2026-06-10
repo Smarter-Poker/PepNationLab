@@ -368,12 +368,17 @@
 <!-- =========================================================
      SCREEN 1: OVERVIEW
      ========================================================= -->
-<div class="screen" id="s1" style="padding: 0; background: transparent; max-width: none; margin: 0; width: 100vw; position: relative; left: calc(-50vw + 50%);">
+<div class="screen" id="s1" style="padding: 0; background: transparent;">
   <style>
-    .m1-page { display: none; width: 100%; max-width: 1000px; margin: 0 auto; position: relative; }
+    /* Full bleed on mobile, centered max-width on desktop */
+    #s1 { margin: 0 auto; width: 100%; }
+    @media (max-width: 800px) {
+      #s1 { margin-left: -20px; width: calc(100% + 40px); }
+    }
+    .m1-page { display: none; width: 100%; max-width: 600px; margin: 0 auto; position: relative; }
     .m1-page.active { display: block; }
     .m1-img { width: 100%; height: auto; display: block; border-radius: 0; }
-    .m1-btn { position: absolute; cursor: pointer; z-index: 10; }
+    .m1-btn { position: absolute; cursor: pointer; z-index: 10; border: 2px solid transparent; }
     
     /* Top Progress Nav */
     .m1-nav-btn { position: absolute; top: 6%; height: 10%; width: 15%; cursor: pointer; z-index: 10; }
@@ -405,8 +410,8 @@
     <div class="m1-nav-btn" onclick="goM1(5)" style="left:80%;"></div>
     
     <!-- Bottom Nav -->
-    <div class="m1-btn" onclick="goTo(0)" style="left:5%; width:25%; top:93%; height:5%;"></div>
-    <div class="m1-btn" onclick="goM1(2)" style="left:70%; width:25%; top:93%; height:5%;"></div>
+    <div class="m1-btn" onclick="goTo(0)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <div class="m1-btn" onclick="goM1(2)" style="left:65%; width:35%; top:88%; height:12%;"></div>
   </div>
 
   <!-- PAGE 2 -->
@@ -418,8 +423,8 @@
     <div class="m1-nav-btn" onclick="goM1(4)" style="left:60%;"></div>
     <div class="m1-nav-btn" onclick="goM1(5)" style="left:80%;"></div>
     
-    <div class="m1-btn" onclick="goM1(1)" style="left:5%; width:25%; top:93%; height:5%;"></div>
-    <div class="m1-btn" onclick="goM1(3)" style="left:70%; width:25%; top:93%; height:5%;"></div>
+    <div class="m1-btn" onclick="goM1(1)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <div class="m1-btn" onclick="goM1(3)" style="left:65%; width:35%; top:88%; height:12%;"></div>
   </div>
 
   <!-- PAGE 3 -->
@@ -431,8 +436,8 @@
     <div class="m1-nav-btn" onclick="goM1(4)" style="left:60%;"></div>
     <div class="m1-nav-btn" onclick="goM1(5)" style="left:80%;"></div>
     
-    <div class="m1-btn" onclick="goM1(2)" style="left:5%; width:25%; top:93%; height:5%;"></div>
-    <div class="m1-btn" onclick="goM1(4)" style="left:70%; width:25%; top:93%; height:5%;"></div>
+    <div class="m1-btn" onclick="goM1(2)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <div class="m1-btn" onclick="goM1(4)" style="left:65%; width:35%; top:88%; height:12%;"></div>
   </div>
 
   <!-- PAGE 4 -->
@@ -444,8 +449,8 @@
     <div class="m1-nav-btn" onclick="goM1(4)" style="left:60%;"></div>
     <div class="m1-nav-btn" onclick="goM1(5)" style="left:80%;"></div>
     
-    <div class="m1-btn" onclick="goM1(3)" style="left:5%; width:25%; top:93%; height:5%;"></div>
-    <div class="m1-btn" onclick="goM1(5)" style="left:70%; width:25%; top:93%; height:5%;"></div>
+    <div class="m1-btn" onclick="goM1(3)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <div class="m1-btn" onclick="goM1(5)" style="left:65%; width:35%; top:88%; height:12%;"></div>
   </div>
 
   <!-- PAGE 5 -->
@@ -467,8 +472,8 @@
     <div class="m1-opt q2" onclick="checkM1('q2', true, this)" style="top:64%;"></div>
     <div class="m1-opt q2" onclick="checkM1('q2', false, this)" style="top:69%;"></div>
 
-    <div class="m1-btn" onclick="goM1(4)" style="left:5%; width:25%; top:93%; height:5%;"></div>
-    <div class="m1-btn" onclick="goTo(2)" style="left:62%; width:33%; top:93%; height:5%;"></div>
+    <div class="m1-btn" onclick="goM1(4)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <div class="m1-btn" onclick="goTo(2)" style="left:62%; width:38%; top:88%; height:12%;"></div>
   </div>
 
   <!-- TOAST -->
