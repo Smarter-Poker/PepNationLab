@@ -12,16 +12,44 @@
 <body>
 
 <!-- NAV -->
-<nav class="nav" role="navigation" aria-label="Peptide 101 Navigation">
-  <a href="/dashboard" class="nav-back" aria-label="Back To Dashboard">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    Dashboard
-  </a>
-  <div class="nav-logo">Peptide 101</div>
-  <button class="btn btn-ghost" style="padding:8px 14px;font-size:13px;min-height:40px;" onclick="openGloss()" aria-label="Open Glossary">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-    Glossary
+<nav class="nav pnl-navbar" role="navigation" aria-label="Peptide 101 Navigation" style="position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: calc(60px + env(safe-area-inset-top, 0px)); padding-top: env(safe-area-inset-top, 0px); background: rgba(7, 13, 24, 0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(150, 168, 192, 0.18); display: flex; align-items: center; padding-left: 12px; padding-right: 12px; gap: 8px;">
+  <!-- Hamburger Menu Placeholder -->
+  <button aria-label="Open Navigation Menu" style="background: none; border: none; cursor: pointer; color: var(--silver); padding: 4px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0; transition: background 0.15s;">
+    <img src="/images/hamburger-icon.png" alt="Menu" width="36" height="36" style="display: block;" />
   </button>
+
+  <!-- Back Button -->
+  <a href="/dashboard" aria-label="Go Back" style="background: none; border: none; cursor: pointer; color: var(--silver); padding: 4px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0;">
+    <div style="width: 36px; height: 36px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+      <svg class="hover-fade" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); display: block;">
+        <defs>
+          <linearGradient id="premium-metal-body" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#E2E8F0" />
+            <stop offset="40%" stop-color="#FFFFFF" />
+            <stop offset="60%" stop-color="#94A3B8" />
+            <stop offset="100%" stop-color="#64748B" />
+          </linearGradient>
+          <linearGradient id="premium-metal-edge" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#FFFFFF" />
+            <stop offset="100%" stop-color="#475569" />
+          </linearGradient>
+        </defs>
+        <path d="M11 5L3 12L11 19V15H21V9H11V5Z" fill="url(#premium-metal-body)" stroke="url(#premium-metal-edge)" stroke-width="1" stroke-linejoin="round" />
+      </svg>
+    </div>
+  </a>
+
+  <div style="width: 1px; height: 22px; background: #1D2D3E; flex-shrink: 0; margin-left: 4px;"></div>
+
+  <!-- Filler -->
+  <div style="flex: 1; min-width: 0;" aria-hidden="true"></div>
+
+  <!-- Right Icons: Only Glossary as requested -->
+  <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+    <button onclick="openGloss()" aria-label="Glossary" style="display: flex; align-items: center; padding: 4px; background: none; border: none; cursor: pointer; flex-shrink: 0; position: relative; left: -8px;">
+      <img src="/images/redesign/glossary_icon_3d.png" alt="Glossary" width="158" height="76" style="width: 158px; height: auto; max-width: 100%; object-fit: contain; display: block;" />
+    </button>
+  </div>
 </nav>
 
 <!-- PROGRESS -->
@@ -340,11 +368,11 @@
 <!-- =========================================================
      SCREEN 1: OVERVIEW
      ========================================================= -->
-<div class="screen" id="s1" style="padding: 0; background: transparent;">
+<div class="screen" id="s1" style="padding: 0; background: transparent; max-width: none; margin: 0; width: 100vw; position: relative; left: calc(-50vw + 50%);">
   <style>
-    .m1-page { display: none; width: 100%; max-width: 500px; margin: 0 auto; position: relative; }
+    .m1-page { display: none; width: 100%; max-width: 1000px; margin: 0 auto; position: relative; }
     .m1-page.active { display: block; }
-    .m1-img { width: 100%; height: auto; display: block; border-radius: 12px; }
+    .m1-img { width: 100%; height: auto; display: block; border-radius: 0; }
     .m1-btn { position: absolute; cursor: pointer; z-index: 10; }
     
     /* Top Progress Nav */

@@ -684,7 +684,7 @@ document.addEventListener("DOMContentLoaded", function() {
   }
   function standardizeNav(){
     ORDER.forEach(function(id){
-      if(id==='s10'||id==='s15') return;
+      if(id==='s10'||id==='s15'||id==='s1') return;
       var sc=document.getElementById(id); if(!sc) return;
       var nc=sc.querySelector('.nav-ctrl');
       if(!nc){ nc=el('<div class="nav-ctrl"></div>'); sc.appendChild(nc); }
