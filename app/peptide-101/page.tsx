@@ -117,11 +117,7 @@ export default function Peptide101LandingPage() {
           title="60+ Peptides (Glossary)"
         ></div>
 
-        {/* --- Roadmap Modules (1-14) --- */}
-        {/* We map 14 invisible rows over the roadmap section so users can click completed modules.
-            The user can only click them if they are already completed (or are the current next module). */}
         {CONTENT.concat(['s15']).map((modId, index) => {
-          const isCompletedOrNext = index <= completedModules;
           // Approximate vertical placement for the roadmap cards (starting around 45% down, spacing out by 3.5%)
           // Adjust these percentages depending on the exact height of the image!
           const topPosition = 45 + (index * 3.5); 
@@ -130,9 +126,13 @@ export default function Peptide101LandingPage() {
             <div 
               key={modId}
               onClick={() => {
-                if (isCompletedOrNext) {
-                  window.location.href = `/peptide-101/course#${modId}`;
-                }
+                // Clear the exact page progress so it starts from the beginning!
+                try {
+                  localStorage.removeItem(`p101_m${index + 1}_page`);
+                  localStorage.removeItem(`p101_v14_cur_${modId}`);
+                } catch(e) {}
+                
+                window.location.href = `/peptide-101/course#${modId}`;
               }}
               style={{
                 position: 'absolute',
@@ -140,12 +140,14 @@ export default function Peptide101LandingPage() {
                 left: '5%',
                 width: '90%',
                 height: '3%',
-                cursor: isCompletedOrNext ? 'pointer' : 'default',
+                cursor: 'pointer',
                 zIndex: 10,
-                // Uncomment the line below to see the hitboxes for debugging
-                // border: '1px solid rgba(255,0,0,0.5)',
+                // VISUAL DEBUG: showing hitboxes so you can see if they align with the image numbers!
+                backgroundColor: 'rgba(0, 196, 188, 0.15)',
+                border: '1px solid rgba(0, 196, 188, 0.4)',
+                borderRadius: '8px'
               }}
-              title={isCompletedOrNext ? `Go to Module ${index + 1}` : `Module ${index + 1} (Locked)`}
+              title={`Go to Module ${index + 1}`}
             ></div>
           );
         })}
