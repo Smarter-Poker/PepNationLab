@@ -374,7 +374,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
       </div>
 
       <HelpMeChooseWizard isOpen={isWizardOpen} onClose={() => setIsWizardOpen(false)} onComplete={handleWizardComplete} />
-      {quickViewCompound && <QuickViewModal compound={quickViewCompound} isOpen={true} onClose={() => setQuickViewCompound(null)} />}
+      {quickViewCompound && <QuickViewModal compound={quickViewCompound} storeProduct={productsMap[quickViewCompound.slug]} isOpen={true} onClose={() => setQuickViewCompound(null)} />}
     </div>
   );
 }

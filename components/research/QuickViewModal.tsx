@@ -15,9 +15,11 @@ interface QuickViewModalProps {
   onClose: () => void;
   imageUrl?: string;
   price?: number | null;
+  storeProduct?: any;
 }
 
-export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, price }: QuickViewModalProps) {
+export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, price, storeProduct }: QuickViewModalProps) {
+  const formatPrice = (p: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(p);
   return (
     <AnimatePresence>
       {isOpen && compound && (
@@ -25,18 +27,40 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
           <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
           <motion.div 
             initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', background: 'rgba(10, 15, 20, 0.95)', border: '2px solid rgba(255,255,255,0.15)', borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}
+            style={{ 
+              width: '100%', maxWidth: 640, maxHeight: '90vh', 
+              background: 'linear-gradient(145deg, rgba(20, 30, 45, 0.95) 0%, rgba(10, 15, 25, 0.98) 100%)', 
+              borderRadius: 24, 
+              boxShadow: '0 20px 60px rgba(0,0,0,0.8), inset 0 0 0 4px #8b939e, inset 0 0 0 6px #2a3138', 
+              overflowY: 'auto', 
+              position: 'relative', 
+              display: 'flex', 
+              flexDirection: 'column' 
+            }}
           >
             {/* Header */}
-            <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'sticky', top: 0, background: 'linear-gradient(to bottom, rgba(10,15,20,0.98) 0%, rgba(10,15,20,0.9) 100%)', zIndex: 10 }}>
+            <div style={{ padding: '24px 32px', borderBottom: '2px solid rgba(139, 147, 158, 0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'sticky', top: 0, background: 'linear-gradient(to bottom, rgba(10,15,20,0.98) 0%, rgba(10,15,20,0.9) 100%)', zIndex: 10 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '16px' }}>
-                  <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 900, color: '#C0C8D0' }}>{compound.display_name}</h2>
-                  {price != null && (
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#C0C8D0' }}>
+                  <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 900, color: '#C0C8D0' }}>
+                    {storeProduct?.productName || compound.display_name}
+                  </h2>
+                  {storeProduct && storeProduct.retailPrice != null ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.4rem', fontWeight: 800 }}>
+                      {storeProduct.isOnSale ? (
+                        <>
+                          <span style={{ color: '#FC8181', textDecoration: 'line-through', opacity: 0.6, fontSize: '1rem' }}>{formatPrice(storeProduct.retailPrice)}</span>
+                          <span style={{ color: '#68D391' }}>{formatPrice(storeProduct.salePrice)}</span>
+                        </>
+                      ) : (
+                        <span style={{ color: '#68D391' }}>{formatPrice(storeProduct.retailPrice)}</span>
+                      )}
+                    </div>
+                  ) : price != null ? (
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#68D391' }}>
                       ${price.toFixed(2)}
                     </div>
-                  )}
+                  ) : null}
                 </div>
                 
                 {/* Popular Name Only */}
@@ -59,14 +83,28 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
 
               {/* Banner Image Card */}
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
-                <div style={{ background: '#0F1318', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 16, padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 200, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
-                  {imageUrl ? (
-                    <Image src={imageUrl} alt={compound.display_name} width={180} height={180} style={{ objectFit: 'contain', filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }} unoptimized />
+                <div style={{ 
+                  background: 'rgba(10, 15, 20, 0.6)', 
+                  borderRadius: 16, 
+                  padding: '16px', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  minWidth: 200, 
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.5), inset 0 0 0 3px #8b939e, inset 0 0 0 5px #2a3138',
+                  position: 'relative'
+                }}>
+                  {(storeProduct?.imageUrl || imageUrl) ? (
+                    <div style={{ width: 180, height: 180, position: 'relative' }}>
+                      <Image src={storeProduct?.imageUrl || imageUrl || ""} alt={compound.display_name} fill style={{ objectFit: 'contain', filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }} unoptimized={!!imageUrl} />
+                    </div>
                   ) : (
-                    <div style={{ width: 180, height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A8B4C0' }}>No Image</div>
+                    <div style={{ width: 180, height: 180, position: 'relative', opacity: 0.5 }}>
+                      <Image src="/images/redesign/hero_molecule.png" alt="molecule" fill style={{ objectFit: 'contain' }} />
+                    </div>
                   )}
                   <div style={{ marginTop: 16, color: '#C0C8D0', fontSize: '1.1rem', fontWeight: 800, textAlign: 'center' }}>
-                    {compound.display_name}
+                    {storeProduct?.productName || compound.display_name}
                   </div>
                 </div>
               </div>
@@ -110,15 +148,35 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
             </div>
 
             {/* Bottom Actions Row */}
-            <div style={{ padding: '20px 32px', background: 'rgba(0,0,0,0.4)', borderTop: '2px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'center', gap: 16, alignItems: 'center' }}>
+            <div style={{ padding: '20px 32px', background: 'rgba(0,0,0,0.4)', borderTop: '2px solid rgba(139, 147, 158, 0.3)', display: 'flex', justifyContent: 'center', gap: 16, alignItems: 'center' }}>
               <Link
                 href={`/research/${compound.slug}`}
-                style={{ display: 'inline-flex', width: 180, transition: 'transform 0.15s' }}
-                onMouseOver={e => e.currentTarget.style.transform = 'scale(1.02)'}
-                onMouseOut={e => e.currentTarget.style.transform = 'none'}
+                style={{ 
+                  display: 'inline-flex', 
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  background: 'linear-gradient(180deg, #8b939e 0%, #4a5158 100%)',
+                  boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.4), 0 4px 10px rgba(0,0,0,0.5)',
+                  border: '1px solid #2a3138',
+                  borderRadius: '12px',
+                  padding: '10px 20px',
+                  color: '#FFF',
+                  textDecoration: 'none',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  transition: 'transform 0.15s, box-shadow 0.15s'
+                }}
+                onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = 'inset 0 1px 1px rgba(255,255,255,0.4), 0 6px 15px rgba(0,0,0,0.6)'; }}
+                onMouseOut={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'inset 0 1px 1px rgba(255,255,255,0.4), 0 4px 10px rgba(0,0,0,0.5)'; }}
                 onClick={onClose}
               >
-                <Image src="/images/view_full_profile_btn.png" alt="View Full Profile" width={200} height={200} unoptimized style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />
+                <div style={{ position: 'relative', width: '20px', height: '20px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>
+                  <Image src="/images/redesign/icon_profile_card_3d.png" alt="Profile" fill style={{ objectFit: 'contain' }} />
+                </div>
+                View Full Profile
               </Link>
               
               <PinToCompareButton
@@ -129,7 +187,7 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
                 size="md"
               />
               <ResearchCartButton 
-                productName={compound.display_name} 
+                productName={storeProduct?.productName || compound.display_name} 
                 size="md" 
               />
             </div>

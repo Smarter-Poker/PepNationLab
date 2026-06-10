@@ -56,9 +56,23 @@ export default function PremiumCompoundCard({ compound, isEli5 = false, onQuickV
         </div>
       )}
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1, paddingRight: '12px' }}>
-          <Link href={`/research/${compound.slug}`} style={{ textDecoration: 'none', color: '#FFF' }}>
+      <div 
+        onClick={() => onQuickView?.(compound)}
+        style={{ display: 'flex', gap: '16px', flexGrow: 1, cursor: 'pointer' }}
+      >
+        {/* Left Side: Massive Image */}
+        <div style={{ width: '120px', height: '120px', flexShrink: 0, borderRadius: '12px', background: storeProduct?.imageUrl ? 'none' : 'rgba(0,0,0,0.3)', border: storeProduct?.imageUrl ? 'none' : '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
+           <Image 
+             src={storeProduct?.imageUrl || "/images/redesign/hero_molecule.png"} 
+             alt="molecule" 
+             fill 
+             style={{ objectFit: storeProduct?.imageUrl ? 'cover' : 'contain', opacity: storeProduct?.imageUrl ? 1 : 0.5, mixBlendMode: storeProduct?.imageUrl ? 'normal' : 'screen' }} 
+           />
+        </div>
+        
+        {/* Right Side: Content */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Link href={`/research/${compound.slug}`} style={{ textDecoration: 'none', color: '#FFF' }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 4px 0', lineHeight: 1.2 }}>
               {storeProduct?.productName || compound.display_name}
             </h3>
@@ -88,35 +102,20 @@ export default function PremiumCompoundCard({ compound, isEli5 = false, onQuickV
               </span>
             )}
           </div>
-        </div>
 
-        {/* Top right molecule thumbnail placeholder or dynamic product image */}
-        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: storeProduct?.imageUrl ? 'none' : 'rgba(0,0,0,0.3)', border: storeProduct?.imageUrl ? 'none' : '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
-           <Image 
-             src={storeProduct?.imageUrl || "/images/redesign/hero_molecule.png"} 
-             alt="molecule" 
-             fill 
-             style={{ objectFit: storeProduct?.imageUrl ? 'cover' : 'contain', opacity: storeProduct?.imageUrl ? 1 : 0.5, mixBlendMode: storeProduct?.imageUrl ? 'normal' : 'screen' }} 
-           />
+          <div style={{ fontSize: '0.9rem', color: '#A8B4C0', margin: '4px 0', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {isEli5 ? <InteractiveGlossaryText text={compound.eli5_summary || compound.plain_summary || ''} /> : <InteractiveGlossaryText text={compound.mechanism || compound.plain_summary || ''} />}
+          </div>
         </div>
       </div>
       
-      <div style={{ fontSize: '0.9rem', color: '#A8B4C0', margin: '4px 0', lineHeight: 1.5, flexGrow: 1 }}>
-        {isEli5 ? <InteractiveGlossaryText text={compound.eli5_summary || compound.plain_summary || ''} /> : <InteractiveGlossaryText text={compound.mechanism || compound.plain_summary || ''} />}
-      </div>
-      
-      <div style={{ display: 'flex', gap: '8px', marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <button 
-          onClick={() => onQuickView?.(compound)} 
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
-          title="Quick View"
-        >
-          <Eye size={18} />
-        </button>
+      <div style={{ display: 'flex', gap: '8px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }} onClick={(e) => e.stopPropagation()}>
         <div style={{ flex: 1 }}>
           <PinToCompareButton compoundSlug={compound.slug} compoundName={compound.display_name} category={compound.category} evidenceTierKey={compound.evidence_tier} size="sm" />
         </div>
-        <ResearchCartButton productName={storeProduct?.productName || compound.display_name} size="sm" />
+        <div style={{ flex: 1 }}>
+          <ResearchCartButton productName={storeProduct?.productName || compound.display_name} size="sm" />
+        </div>
       </div>
     </motion.div>
   );
