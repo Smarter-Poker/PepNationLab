@@ -421,7 +421,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
                         }}>
                           <div style={{
-                            width: '100%', aspectRatio: '1 / 1.2',
+                            width: '100%', height: 150,
                             borderRadius: 16, 
                             background: '#0F1318',
                             border: '2px solid rgba(255,255,255,0.2)',

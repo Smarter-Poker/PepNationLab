@@ -1,22 +1,20 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { 
-  Flame, Dumbbell, ShieldPlus, Brain, Hourglass, Moon, Sparkles, Activity
-} from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 export default function MatchEngineCards() {
   const router = useRouter();
 
   const objectives = [
-    { id: 'fat_loss', label: 'Fat Loss', icon: <Flame size={32} />, color: '#00E5FF', filter: 'weight_management' },
-    { id: 'muscle_gain', label: 'Muscle Gain', icon: <Dumbbell size={32} />, color: '#68D391', filter: 'performance' },
-    { id: 'healing', label: 'Healing', icon: <ShieldPlus size={32} />, color: '#00E5FF', filter: 'healing' },
-    { id: 'cognitive', label: 'Cognitive', icon: <Brain size={32} />, color: '#B794F4', filter: 'cognitive' },
-    { id: 'longevity', label: 'Longevity', icon: <Hourglass size={32} />, color: '#00E5FF', filter: 'longevity' },
-    { id: 'sleep', label: 'Sleep', icon: <Moon size={32} />, color: '#90CDF4', filter: 'sleep' },
-    { id: 'hair_skin', label: 'Hair & Skin', icon: <Sparkles size={32} />, color: '#A8B4C0', filter: 'cosmetic' },
+    { id: 'fat_loss', label: 'Fat Loss', iconSrc: '/images/redesign/icon_fire_3d.png', color: '#00E5FF', filter: 'weight_management' },
+    { id: 'muscle_gain', label: 'Muscle Gain', iconSrc: '/images/redesign/icon_dumbbell_3d.png', color: '#68D391', filter: 'performance' },
+    { id: 'healing', label: 'Healing', iconSrc: '/images/redesign/icon_shield_3d.png', color: '#00E5FF', filter: 'healing' },
+    { id: 'cognitive', label: 'Cognitive', iconSrc: '/images/redesign/icon_brain_3d.png', color: '#B794F4', filter: 'cognitive' },
+    { id: 'longevity', label: 'Longevity', iconSrc: '/images/redesign/icon_hourglass_3d.png', color: '#00E5FF', filter: 'longevity' },
+    { id: 'sleep', label: 'Sleep', iconSrc: '/images/redesign/icon_moon_3d.png', color: '#90CDF4', filter: 'sleep' },
+    { id: 'hair_skin', label: 'Hair & Skin', iconSrc: '/images/redesign/icon_stars_3d.png', color: '#A8B4C0', filter: 'cosmetic' },
   ];
 
   const handleSelect = (filterValue: string) => {
@@ -65,8 +63,8 @@ export default function MatchEngineCards() {
               outline: 'none'
             }}
           >
-            <div style={{ color: obj.color, filter: `drop-shadow(0 0 8px ${obj.color}66)` }}>
-              {obj.icon}
+            <div style={{ position: 'relative', width: '48px', height: '48px', filter: `drop-shadow(0 0 8px ${obj.color}66)` }}>
+              <Image src={obj.iconSrc} alt={obj.label} fill style={{ objectFit: 'contain' }} />
             </div>
             <span style={{ fontSize: '0.8rem', fontWeight: 700, textAlign: 'center' }}>{obj.label}</span>
           </motion.button>

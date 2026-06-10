@@ -3,24 +3,21 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  Sparkles, GitCompare, Calculator, Table2, Layers, 
-  ShieldCheck, GraduationCap, BookOpen, HelpCircle, Library, Database
-} from 'lucide-react';
+import Image from 'next/image';
 
 export default function ResearchDock() {
   const pathname = usePathname();
 
   const links = [
-    { name: 'Research Library', href: '/research/catalog', icon: <Database size={20} /> },
-    { name: 'Match Me Engine', href: '/research/match', icon: <Sparkles size={20} /> },
-    { name: 'Compare', href: '/research/compare', icon: <GitCompare size={20} /> },
-    { name: 'Stacks', href: '/research/stacks', icon: <Layers size={20} /> },
-    { name: 'Safety', href: '/research/evidence', icon: <ShieldCheck size={20} /> },
-    { name: 'Learn', href: '/research/learn', icon: <GraduationCap size={20} /> },
-    { name: 'Glossary', href: '/research/glossary', icon: <BookOpen size={20} /> },
-    { name: 'References', href: '/research/references', icon: <Library size={20} /> },
-    { name: 'FAQ', href: '/research/faq', icon: <HelpCircle size={20} /> },
+    { name: 'Research Library', href: '/research/catalog', iconSrc: '/images/redesign/icon_database_3d.png' },
+    { name: 'Match Me Engine', href: '/research/match', iconSrc: '/images/redesign/icon_wand_3d.png' },
+    { name: 'Compare', href: '/research/compare', iconSrc: '/images/redesign/icon_compare_3d.png' },
+    { name: 'Stacks', href: '/research/stacks', iconSrc: '/images/redesign/icon_layers_3d.png' },
+    { name: 'Safety', href: '/research/evidence', iconSrc: '/images/redesign/icon_shield_check_3d.png' },
+    { name: 'Learn', href: '/research/learn', iconSrc: '/images/redesign/icon_cap_3d.png' },
+    { name: 'Glossary', href: '/research/glossary', iconSrc: '/images/redesign/icon_book_3d.png' },
+    { name: 'References', href: '/research/references', iconSrc: '/images/redesign/icon_library_3d.png' },
+    { name: 'FAQ', href: '/research/faq', iconSrc: '/images/redesign/icon_question_3d.png' },
   ];
 
   return (
@@ -67,10 +64,10 @@ export default function ResearchDock() {
               }}
             >
               <div style={{ 
-                color: isActive ? '#00E5FF' : '#88929C',
-                filter: isActive ? 'drop-shadow(0 0 8px rgba(0,229,255,0.6))' : 'none'
+                position: 'relative', width: '24px', height: '24px',
+                filter: isActive ? 'drop-shadow(0 0 8px rgba(0,229,255,0.6))' : 'grayscale(100%) opacity(0.7)'
               }}>
-                {link.icon}
+                <Image src={link.iconSrc} alt={link.name} fill style={{ objectFit: 'contain' }} />
               </div>
               {link.name}
             </motion.div>

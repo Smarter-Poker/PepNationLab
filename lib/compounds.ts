@@ -90,7 +90,7 @@ export const RISK_META: Record<Compound['risk_level'], { label: string; color: s
 export const WADA_LABEL: Record<string, string> = {};
 
 export const RESEARCH_AREAS: Record<string, { label: string; blurb: string }> = {
-  weight_management: { label: 'Weight Management & Fat Loss', blurb: 'ELI5 PROTOCOL' },
+  weight_management: { label: 'Weight Management & Fat Loss', blurb: 'GLP-1 / GIP / triple-agonist incretins, AOD9604, Tesamorelin, and related fat-axis compounds.' },
   tissue_repair: { label: 'Tissue Repair', blurb: 'Compounds studied for tendon, ligament, muscle, and wound repair.' },
   healing: { label: 'Healing & Recovery', blurb: 'Compounds studied for healing, cytoprotection, and recovery.' },
   performance: { label: 'Performance & Muscle', blurb: 'Growth hormone secretagogues and anabolic pathways (Ipamorelin, Tesamorelin, CJC-1295).' },

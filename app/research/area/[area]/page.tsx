@@ -172,7 +172,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
   // -- Compounds tab - full product grid with images, pricing, cart, compare --
   tabs.push({
     key: 'compounds',
-    label: `Compounds (${compounds.length})`,
+    label: `Compounds`,
     children: (
       <AreaProductGrid
         products={productCtx.products}
