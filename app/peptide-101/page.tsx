@@ -118,12 +118,9 @@ export default function Peptide101LandingPage() {
         ></div>
 
         {CONTENT.concat(['s15']).map((modId, index) => {
-          // Image is 853x1844px.
-          // Module 1 row center is at y≈888px → 888/1844 = 48.2%
-          // Row pitch is ≈42px → 42/1844 = 2.28%
-          // Row height is ≈38px → 38/1844 ≈ 2.06%
-          const ROADMAP_START = 48.2;
-          const ROADMAP_STEP = 2.28;
+          // User-calibrated values via /calibrate.html
+          const ROADMAP_START = 54.9;
+          const ROADMAP_STEP = 1.84;
 
           const topPosition = ROADMAP_START + (index * ROADMAP_STEP);
 
@@ -142,13 +139,9 @@ export default function Peptide101LandingPage() {
                 top: `${topPosition}%`,
                 left: '5%',
                 width: '90%',
-                height: '2.0%',
+                height: '2%',
                 cursor: 'pointer',
                 zIndex: 10,
-                // DEBUG: remove the 3 lines below once alignment is confirmed
-                backgroundColor: 'rgba(0, 196, 188, 0.2)',
-                border: '1px solid rgba(0, 196, 188, 0.6)',
-                borderRadius: '6px'
               }}
               title={`Go to Module ${index + 1}`}
             ></div>
