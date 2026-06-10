@@ -195,6 +195,12 @@ function goTo(n) {
   if (n === 9) renderDoseTable();
 }
 
+// Explicit back-to-landing navigation (called from "Back" on Module 1 and "Restart Course")
+function goHome() {
+  window.location.href = '/peptide-101';
+}
+
+
 function updateProgress() {
   const pct = Math.round((curScreen / (totalScreens - 1)) * 100);
   const fill = document.getElementById("progFill");
@@ -863,8 +869,8 @@ document.addEventListener("DOMContentLoaded", function() {
      =================================================================== */
   function setCertDate(){var d=qs('#certDate'); if(d) d.textContent='Completed: '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});}
   function showScreen(id){
-    if(!document.getElementById(id)) id='s0';
-    if(id === 's0') { window.location.href = '/peptide-101'; return; }
+    // If screen doesn't exist, fall back to s1 (never auto-redirect to landing page)
+    if(!document.getElementById(id) || id === 's0') id='s1';
     qsa('.screen').forEach(function(s){s.classList.remove('active');});
     var elx=document.getElementById(id); elx.classList.add('active');
     CUR=id;
@@ -1261,8 +1267,10 @@ document.addEventListener("DOMContentLoaded", function() {
       // No hash — restore saved progress or start at s1
       var saved = null;
       try { saved = localStorage.getItem('p101_screen'); } catch(e) {}
-      var savedId = saved ? 's' + saved : null;
-      if(savedId && document.getElementById(savedId)) {
+      var savedNum = parseInt(saved || '0');
+      // Never go to s0 on load — that causes redirect. Default to s1.
+      var savedId = savedNum > 0 ? 's' + savedNum : 's1';
+      if(savedId !== 's1' && document.getElementById(savedId)) {
         showScreen(savedId);
       } else {
         showScreen('s1');
