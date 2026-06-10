@@ -542,19 +542,10 @@ function renderGlossary(terms) {
   list.innerHTML = "";
   terms.forEach(t => {
     const div = document.createElement("div");
-    div.className = "gloss-card";
-    div.innerHTML = `
-      <div class="gloss-icon" style="color: ${t.color}; border-color: ${t.color}40; box-shadow: 0 0 15px ${t.color}20 inset, 0 0 10px ${t.color}20;">
-        ${t.icon}
-      </div>
-      <div class="gloss-content">
-        <div class="gloss-header">
-          <strong class="gloss-term">${t.term}</strong>
-          <span class="gloss-badge" style="color: ${t.color}; border-color: ${t.color}40; background: ${t.color}15;">${t.cat}</span>
-        </div>
-        <p class="gloss-def">${t.def}</p>
-      </div>
-    `;
+    // Calculate the index in the original array based on the term name
+    const originalIndex = glossaryTerms.findIndex(item => item.term === t.term);
+    
+    div.innerHTML = `<img src="/images/redesign/glossary_card_${originalIndex}.png" alt="${t.term}" style="width: 100%; display: block;" />`;
     list.appendChild(div);
   });
 }
