@@ -548,16 +548,7 @@ function MatchResultsDrawer({
                           >
                             {r.display_name}
                           </div>
-                          {r.evidence_tier && (
-                            <span style={{
-                              fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
-                              padding: '3px 7px', borderRadius: 6,
-                              background: 'rgba(192,197,206,0.14)', color: '#C0C5CE',
-                              border: '1px solid rgba(192,197,206,0.35)', flexShrink: 0,
-                            }}>
-                              {r.evidence_tier.replace(/_/g, ' ')}
-                            </span>
-                          )}
+
                           {r.isStackPartner && (
                             <span style={{
                               fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
