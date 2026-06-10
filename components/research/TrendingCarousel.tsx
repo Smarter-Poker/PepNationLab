@@ -7,10 +7,19 @@ import { type Compound } from '@/lib/compounds';
 import PremiumCompoundCard from './PremiumCompoundCard'; // We will create this next
 
 export default function TrendingCarousel({ compounds }: { compounds: Compound[] }) {
-  // Hardcode trending slugs for now, or use a prop
-  const trendingSlugs = ['bpc-157', 'tirzepatide', 'retatrutide', 'ss-31', 'tesamorelin'];
+  // Map trending slugs to their store product vial images
+  const trendingData = [
+    { slug: 'bpc-157', imageUrl: '/images/products/bpc-157.png' },
+    { slug: 'tirzepatide', imageUrl: '/images/products/tirzepatide.png' },
+    { slug: 'retatrutide', imageUrl: '/images/products/retatrutide.png' },
+    { slug: 'ss-31', imageUrl: '/images/products/epithalon.png' }, // from db
+    { slug: 'tesamorelin', imageUrl: '/images/products/tesamorelin.png' }
+  ];
   
-  const trendingCompounds = compounds.filter(c => trendingSlugs.includes(c.slug));
+  const trendingCompounds = trendingData.map(t => {
+    const compound = compounds.find(c => c.slug === t.slug);
+    return compound ? { compound, storeProduct: { imageUrl: t.imageUrl } } : null;
+  }).filter(Boolean) as { compound: Compound, storeProduct: any }[];
 
   if (trendingCompounds.length === 0) return null;
 
@@ -33,10 +42,9 @@ export default function TrendingCarousel({ compounds }: { compounds: Compound[] 
         scrollbarWidth: 'none',
         msOverflowStyle: 'none'
       }}>
-        {trendingCompounds.map((c) => (
-          <div key={c.slug} style={{ flex: '0 0 auto', width: '320px' }}>
-             {/* We will pass the compound to the new PremiumCompoundCard */}
-             <PremiumCompoundCard compound={c} showBadge="Trending" badgeColor="#F6AD55" />
+        {trendingCompounds.map(({ compound, storeProduct }) => (
+          <div key={compound.slug} style={{ flex: '0 0 auto', width: '320px' }}>
+             <PremiumCompoundCard compound={compound} storeProduct={storeProduct} />
           </div>
         ))}
       </div>

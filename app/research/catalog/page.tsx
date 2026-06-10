@@ -64,7 +64,8 @@ export default async function ResearchLibraryPage({
       </div>
       
       {/* Global Utilities */}
-      <BottomToolBar />
+      
+
       
       <style>{`
         @media (min-width: 1024px) {

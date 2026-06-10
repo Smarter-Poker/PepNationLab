@@ -66,7 +66,7 @@ export default function PremiumCompoundCard({ compound, isEli5 = false, onQuickV
              src={storeProduct?.imageUrl || "/images/redesign/hero_molecule.png"} 
              alt="molecule" 
              fill 
-             style={{ objectFit: storeProduct?.imageUrl ? 'cover' : 'contain', opacity: storeProduct?.imageUrl ? 1 : 0.5, mixBlendMode: storeProduct?.imageUrl ? 'normal' : 'screen' }} 
+             style={{ objectFit: 'contain', opacity: storeProduct?.imageUrl ? 1 : 0.5, mixBlendMode: storeProduct?.imageUrl ? 'normal' : 'screen' }} 
            />
         </div>
         
