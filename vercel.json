@@ -35,6 +35,7 @@
     { "path": "/api/cron/biorxiv-watch", "schedule": "0 9 * * *" },
     { "path": "/api/cron/retraction-watch", "schedule": "0 5 * * 3" },
     { "path": "/api/cron/companion-papers-compute", "schedule": "0 10 * * 0" },
-    { "path": "/api/cron/broken-link-crawler", "schedule": "0 12 * * 6" }
+    { "path": "/api/cron/broken-link-crawler", "schedule": "0 12 * * 6" },
+    { "path": "/api/cron/generate-embeddings", "schedule": "0 5 * * *" }
   ]
 }
