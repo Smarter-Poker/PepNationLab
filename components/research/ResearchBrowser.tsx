@@ -8,9 +8,7 @@
 import { useMemo, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { 
-  X, LayoutGrid, List, Filter, Sparkles, Database
-} from 'lucide-react';
+import Image from 'next/image';
 import {
   type Compound,
   EVIDENCE_TIER,
@@ -218,7 +216,9 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-        <Database size={24} color="#00E5FF" />
+        <div style={{ position: 'relative', width: '24px', height: '24px', filter: 'drop-shadow(0 0 8px rgba(0,229,255,0.6))' }}>
+          <Image src="/images/redesign/molecule_default.png" alt="Database" fill style={{ objectFit: 'contain' }} />
+        </div>
         <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#FFFFFF', margin: 0 }}>Full Intelligence Database</h2>
       </div>
 
@@ -227,7 +227,10 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
         {/* Intelligence Sidebar */}
         <aside style={{ flex: '0 0 280px', position: 'sticky', top: '100px', background: 'rgba(15, 25, 35, 0.4)', backdropFilter: 'blur(16px)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', borderLeft: '4px solid #00E5FF', padding: '24px', maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' }}>
           <button onClick={() => { setIsWizardOpen(true); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', background: 'linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(0, 100, 255, 0.2))', border: '1px solid rgba(0, 229, 255, 0.4)', color: '#FFF', fontWeight: 800, padding: '12px', borderRadius: '12px', cursor: 'pointer', marginBottom: '24px', boxShadow: '0 4px 15px rgba(0,229,255,0.15)' }}>
-            <Sparkles size={16} /> Need Guidance?
+            <div style={{ position: 'relative', width: '16px', height: '16px' }}>
+              <Image src="/images/redesign/icon_sparkles_3d.png" alt="Sparkles" fill style={{ objectFit: 'contain' }} />
+            </div>
+            Need Guidance?
           </button>
 
           <div style={{ marginBottom: '24px' }}>
@@ -251,7 +254,10 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
               <span style={{ fontSize: '0.85rem', color: '#A8B4C0', fontWeight: 600 }}>Active Filters:</span>
               {activePills.map(pill => (
                 <button key={`${pill.key}-${pill.val}`} onClick={() => toggleParam(pill.key, pill.val)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(0, 229, 255, 0.1)', border: '1px solid rgba(0, 229, 255, 0.3)', color: '#00E5FF', padding: '6px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,229,255,0.1)' }}>
-                  {pill.label} <X size={12} />
+                  {pill.label} 
+                  <div style={{ position: 'relative', width: '12px', height: '12px' }}>
+                    <Image src="/images/redesign/icon_close_3d.png" alt="Close" fill style={{ objectFit: 'contain' }} />
+                  </div>
                 </button>
               ))}
               <button onClick={clearAllFilters} style={{ background: 'none', border: 'none', color: '#FC8181', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline', marginLeft: '8px' }}>Clear All</button>
@@ -271,15 +277,25 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
               </select>
               
               <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '4px' }}>
-                <button onClick={() => setSingleParam('view', 'grid')} style={{ padding: '6px 12px', borderRadius: '8px', background: viewParam === 'grid' ? 'rgba(0, 229, 255, 0.2)' : 'transparent', border: 'none', color: viewParam === 'grid' ? '#00E5FF' : '#A8B4C0', cursor: 'pointer' }}><LayoutGrid size={16} /></button>
-                <button onClick={() => setSingleParam('view', 'list')} style={{ padding: '6px 12px', borderRadius: '8px', background: viewParam === 'list' ? 'rgba(0, 229, 255, 0.2)' : 'transparent', border: 'none', color: viewParam === 'list' ? '#00E5FF' : '#A8B4C0', cursor: 'pointer' }}><List size={16} /></button>
+                <button onClick={() => setSingleParam('view', 'grid')} style={{ padding: '6px 12px', borderRadius: '8px', background: viewParam === 'grid' ? 'rgba(0, 229, 255, 0.2)' : 'transparent', border: 'none', color: viewParam === 'grid' ? '#00E5FF' : '#A8B4C0', cursor: 'pointer' }}>
+                  <div style={{ position: 'relative', width: '16px', height: '16px', filter: viewParam === 'grid' ? 'drop-shadow(0 0 8px rgba(0,229,255,0.6))' : 'grayscale(1) opacity(0.6)' }}>
+                    <Image src="/images/redesign/icon_grid_3d.png" alt="Grid" fill style={{ objectFit: 'contain' }} />
+                  </div>
+                </button>
+                <button onClick={() => setSingleParam('view', 'list')} style={{ padding: '6px 12px', borderRadius: '8px', background: viewParam === 'list' ? 'rgba(0, 229, 255, 0.2)' : 'transparent', border: 'none', color: viewParam === 'list' ? '#00E5FF' : '#A8B4C0', cursor: 'pointer' }}>
+                  <div style={{ position: 'relative', width: '16px', height: '16px', filter: viewParam === 'list' ? 'drop-shadow(0 0 8px rgba(0,229,255,0.6))' : 'grayscale(1) opacity(0.6)' }}>
+                    <Image src="/images/redesign/icon_list_3d.png" alt="List" fill style={{ objectFit: 'contain' }} />
+                  </div>
+                </button>
               </div>
             </div>
           </div>
 
           {filtered.length === 0 ? (
             <div style={{ padding: '60px 24px', textAlign: 'center', background: 'rgba(15, 25, 35, 0.4)', borderRadius: '24px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-              <Database size={48} color="#A8B4C0" style={{ marginBottom: '16px', opacity: 0.5 }} />
+              <div style={{ position: 'relative', width: '48px', height: '48px', margin: '0 auto 16px auto', opacity: 0.5 }}>
+                <Image src="/images/redesign/molecule_default.png" alt="Database" fill style={{ objectFit: 'contain' }} />
+              </div>
               <div style={{ color: '#FFF', fontSize: '1.2rem', fontWeight: 800, marginBottom: '8px' }}>No matches found in the database.</div>
               <div style={{ color: '#A8B4C0', marginBottom: '24px' }}>Try broadening your search parameters or research area.</div>
               <button onClick={clearAllFilters} style={{ background: '#00E5FF', color: '#000', border: 'none', padding: '12px 32px', borderRadius: '12px', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,229,255,0.3)' }}>

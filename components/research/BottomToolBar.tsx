@@ -2,8 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Calculator, MessageSquare, ExternalLink } from 'lucide-react';
-
+import Image from 'next/image';
 export default function BottomToolBar() {
   return (
     <motion.div 
@@ -33,7 +32,9 @@ export default function BottomToolBar() {
           whileTap={{ scale: 0.95 }}
           style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', color: '#FFF', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
         >
-          <Calculator size={16} color="#00E5FF" /> Reconstitution Calculator
+          <div style={{ position: 'relative', width: '16px', height: '16px' }}>
+            <Image src="/images/redesign/icon_search_3d.png" alt="Calculator" fill style={{ objectFit: 'contain' }} />
+          </div> Reconstitution Calculator
         </motion.div>
       </Link>
       
@@ -45,7 +46,9 @@ export default function BottomToolBar() {
           whileTap={{ scale: 0.95 }}
           style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', color: '#FFF', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
         >
-          <MessageSquare size={16} color="#B794F4" /> Ask an Expert
+          <div style={{ position: 'relative', width: '16px', height: '16px' }}>
+            <Image src="/images/redesign/icon_sparkles_3d.png" alt="Message" fill style={{ objectFit: 'contain' }} />
+          </div> Ask an Expert
         </motion.div>
       </Link>
       
@@ -57,7 +60,10 @@ export default function BottomToolBar() {
           whileTap={{ scale: 0.95 }}
           style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', color: '#FFF', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
         >
-          Community <ExternalLink size={14} color="#A8B4C0" />
+          Community 
+          <div style={{ position: 'relative', width: '14px', height: '14px' }}>
+            <Image src="/images/redesign/icon_pin_3d.png" alt="Link" fill style={{ objectFit: 'contain' }} />
+          </div>
         </motion.div>
       </a>
     </motion.div>

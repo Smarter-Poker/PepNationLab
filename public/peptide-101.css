@@ -457,7 +457,7 @@ body{
   filter:drop-shadow(0 2px 1px rgba(0,0,0,.55));
 }
 .title-sub{font-family:'Space Grotesk',sans-serif;font-weight:600;letter-spacing:7px;color:var(--accent);font-size:13px;text-shadow:0 0 14px rgba(94,160,255,.5);}
-.course-nav-wrap{position:sticky;top:104px;z-index:80;padding:8px 12px 0;margin:0 auto;max-width:1000px;}
+.course-nav-wrap{position:relative;z-index:80;padding:8px 12px 0;margin:0 auto;max-width:1000px;}
 .course-nav{display:flex;gap:4px;padding:5px;}
 .course-nav::-webkit-scrollbar{display:none;}
 .course-tab{flex:1 0 auto;display:flex;align-items:center;justify-content:center;gap:7px;min-height:46px;padding:8px 12px;border-radius:10px;font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:none;cursor:pointer;white-space:nowrap;transition:all .2s;}
