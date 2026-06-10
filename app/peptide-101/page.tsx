@@ -95,6 +95,54 @@ export default function Peptide101LandingPage() {
           title={landingState === 1 ? "Start Learning" : "Continue Learning"}
         ></div>
 
+        {/* --- 60+ Peptides (Glossary) --- */}
+        <div 
+          onClick={() => window.location.href='/peptide-101/course#glossary'}
+          style={{
+            position: 'absolute',
+            top: '12%',
+            left: '5%',
+            width: '40%',
+            height: '8%',
+            cursor: 'pointer',
+            zIndex: 10
+          }}
+          title="60+ Peptides (Glossary)"
+        ></div>
+
+        {/* --- Roadmap Modules (1-14) --- */}
+        {/* We map 14 invisible rows over the roadmap section so users can click completed modules.
+            The user can only click them if they are already completed (or are the current next module). */}
+        {CONTENT.concat(['s15']).map((modId, index) => {
+          const isCompletedOrNext = index <= completedModules;
+          // Approximate vertical placement for the roadmap cards (starting around 45% down, spacing out by 3.5%)
+          // Adjust these percentages depending on the exact height of the image!
+          const topPosition = 45 + (index * 3.5); 
+          
+          return (
+            <div 
+              key={modId}
+              onClick={() => {
+                if (isCompletedOrNext) {
+                  window.location.href = `/peptide-101/course#${modId}`;
+                }
+              }}
+              style={{
+                position: 'absolute',
+                top: `${topPosition}%`,
+                left: '5%',
+                width: '90%',
+                height: '3%',
+                cursor: isCompletedOrNext ? 'pointer' : 'default',
+                zIndex: 10,
+                // Uncomment the line below to see the hitboxes for debugging
+                // border: '1px solid rgba(255,0,0,0.5)',
+              }}
+              title={isCompletedOrNext ? `Go to Module ${index + 1}` : `Module ${index + 1} (Locked)`}
+            ></div>
+          );
+        })}
+
         {/* --- View Roadmap Button --- */}
         <div 
           onClick={routeToRoadmap}

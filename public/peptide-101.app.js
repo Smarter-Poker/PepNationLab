@@ -1213,7 +1213,10 @@ document.addEventListener("DOMContentLoaded", function() {
     },true);
     // ensure we are showing a valid screen
     var hash = window.location.hash.substring(1);
-    if(hash && document.getElementById(hash)) {
+    if(hash === 'glossary') {
+      showScreen('s0'); // Load initial screen
+      if(typeof showGlossary === 'function') setTimeout(showGlossary, 100);
+    } else if(hash && document.getElementById(hash)) {
       showScreen(hash);
     } else {
       showScreen(document.querySelector('.screen.active')?document.querySelector('.screen.active').id:'s0');
