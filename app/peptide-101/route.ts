@@ -3,13 +3,13 @@ import { join } from 'path';
 
 // The Peptide 101 course is a large static page enhanced at runtime by a stack
 // of engine scripts: app.js (v3 core), v4 (depth/visuals), v5 (account-bound
-// progress), v6 (practical aids), v7 (locked header + rich Modules 1-5) and
-// v8 (rich Modules 6-9). To stop the course from ever silently regressing
-// again, this route is self-healing: it serves whichever course file still
-// contains the engine marker, preferring the primary file
-// (public/peptide-101.html) and falling back to the byte-identical canonical
-// backup (public/peptide-101.engine.html). It also guarantees every engine
-// script loads even if a future edit drops its tag.
+// progress), v6 (practical aids), v7 (locked header + rich Modules 1-5),
+// v8 (rich Modules 6-9) and v9 (rich Modules 10-13). To stop the course from
+// ever silently regressing again, this route is self-healing: it serves
+// whichever course file still contains the engine marker, preferring the
+// primary file (public/peptide-101.html) and falling back to the byte-identical
+// canonical backup (public/peptide-101.engine.html). It also guarantees every
+// engine script loads even if a future edit drops its tag.
 const MARKER = '/peptide-101.app.js';
 const ENGINE_SCRIPTS = [
   '/peptide-101.v4.js',
@@ -17,6 +17,7 @@ const ENGINE_SCRIPTS = [
   '/peptide-101.v6.js',
   '/peptide-101.v7.js',
   '/peptide-101.v8.js',
+  '/peptide-101.v9.js',
 ];
 
 function loadCourse(): string {
