@@ -1887,14 +1887,17 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
   const cartContext = useCart();
 
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>(() => {
-    let slugs = initialSlugs;
-    if (typeof window !== 'undefined') {
-      const sp = new URLSearchParams(window.location.search);
-      const urlCompare = sp.get('compare');
-      if (urlCompare) slugs = urlCompare.split(',').filter(Boolean);
-    }
-    return slugs.filter(s => compounds.some(c => c.slug === s)).slice(0, MAX_COLUMNS);
+    return initialSlugs.filter(s => compounds.some(c => c.slug === s)).slice(0, MAX_COLUMNS);
   });
+
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const urlCompare = sp.get('compare');
+    if (urlCompare) {
+      const slugs = urlCompare.split(',').filter(Boolean);
+      setSelectedSlugs(slugs.filter(s => compounds.some(c => c.slug === s)).slice(0, MAX_COLUMNS));
+    }
+  }, [compounds]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);

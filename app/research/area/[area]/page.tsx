@@ -290,10 +290,6 @@ export default async function ResearchAreaPage({ params }: PageProps) {
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
-        <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
-          Back To Research Library
-        </Link>
-        {' '}·{' '}
         <Link href="/research/areas" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
           All Areas
         </Link>

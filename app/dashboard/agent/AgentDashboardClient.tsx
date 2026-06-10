@@ -30,6 +30,7 @@ import AvatarUpload from '@/components/AvatarUpload';
 import { createPortal } from 'react-dom';
 import MyQRCodeModal from '@/components/MyQRCodeModal';
 import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
+import AgentTierLadder from '@/components/AgentTierLadder';
 
 
 interface Profile {
