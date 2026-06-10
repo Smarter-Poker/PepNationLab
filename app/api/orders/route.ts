@@ -864,9 +864,16 @@ export async function POST(request: NextRequest) {
           .eq('buyer_id', user.id)
           .maybeSingle();
         if (existing) {
+          // This duplicate (same idempotency_key) request lost the INSERT race
+          // but already re-ran reserve / redeem / prepaid-deduct above. Undo ALL
+          // of THIS attempt's side effects before returning the original order -
+          // including the prepaid deduction, otherwise a prepaid agent is
+          // double-charged for a single order (mirrors the failure path below).
           await releaseReservedInventory();
-
           if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
+          if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
+            await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
+          }
           return NextResponse.json({
             success: true,
             orderId: existing.id,

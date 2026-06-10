@@ -21,6 +21,19 @@
     var css = ''
     + '.v14{max-width:760px;margin:0 auto;}'
     + '.v14-stage{position:relative;}'
+    + '.course-nav-wrap{display:none!important;}'
+    + '.v14-track{display:flex;gap:6px;margin:2px 0 22px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}'
+    + '.v14-track::-webkit-scrollbar{display:none;}'
+    + '.v14-step{display:flex;align-items:center;gap:8px;flex:0 0 auto;padding:7px 14px 7px 7px;border-radius:999px;cursor:pointer;border:1px solid transparent;background:linear-gradient(180deg,#0e1b30,#0a1322);transition:all .2s;opacity:.55;}'
+    + '.v14-step .num{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:#9fb0c2;background:#16263f;box-shadow:inset 0 1px 2px rgba(0,0,0,.6);flex-shrink:0;}'
+    + '.v14-step .lbl{font-size:12.5px;font-weight:600;color:#aebccb;white-space:nowrap;}'
+    + '.v14-step.on{opacity:1;border-color:rgba(126,179,255,.45);background:linear-gradient(180deg,#16294a,#0e1d34);box-shadow:0 0 14px rgba(59,130,246,.28);}'
+    + '.v14-step.on .num{color:#eaf2fb;background:linear-gradient(180deg,#3b6ea8,#1d3357);box-shadow:0 0 8px rgba(94,160,255,.6);}'
+    + '.v14-step.on .lbl{color:#eaf2fb;}'
+    + '.v14-step.done{opacity:.95;}'
+    + '.v14-step.done .num{color:#0a1322;background:#2de0d8;}'
+    + '.v14-step:not(.on):hover{opacity:.85;}'
+    + '@media(max-width:640px){.v14-step .lbl{display:none;} .v14-step.on .lbl{display:inline;}}'
     + '.v14-page{display:none;animation:v14in .35s cubic-bezier(.22,.61,.36,1);}'
     + '.v14-page.on{display:block;}'
     + '@keyframes v14in{from{opacity:0;transform:translateY(14px) scale(.99);}to{opacity:1;transform:none;}}'
@@ -118,18 +131,31 @@
   }
 
   /* ---------------- STEPPER FRAMEWORK ---------------- */
-  function buildStepper(screen, steps, prevModule, nextModule){
+  var ARR_R='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+  var ARR_L='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>';
+  function buildStepper(screen, steps, prevModule, nextModule, labels){
     screen.innerHTML='';
     var wrap = E('div','v14');
+
+    var track=null;
+    if(labels && labels.length===steps.length){
+      track = E('div','v14-track');
+      labels.forEach(function(lb,i){
+        var st=E('div','v14-step'+(i===0?' on':''),'<span class="num">'+(i+1)+'</span><span class="lbl">'+lb+'</span>');
+        st.setAttribute('data-s',i); track.appendChild(st);
+      });
+      wrap.appendChild(track);
+    }
+
     var stage = E('div','v14-stage');
     wrap.appendChild(stage);
     steps.forEach(function(html,i){ var p=E('div','v14-page'+(i===0?' on':''),html); p.setAttribute('data-step',i); stage.appendChild(p); });
 
     var foot = E('div','v14-foot');
-    var back = E('button','v14-btn v14-back hidden','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back');
+    var back = E('button','v14-btn v14-back hidden', ARR_L+'Back');
     var dots = E('div','v14-dots');
     steps.forEach(function(_,i){ var d=E('i'); d.setAttribute('data-d',i); if(i===0)d.className='on'; dots.appendChild(d); });
-    var next = E('button','v14-btn v14-next','Next<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>');
+    var next = E('button','v14-btn v14-next','Next'+ARR_R);
     foot.appendChild(back); foot.appendChild(dots); foot.appendChild(next);
     wrap.appendChild(foot);
     screen.appendChild(wrap);
@@ -140,20 +166,19 @@
       for(var i=0;i<pages.length;i++) pages[i].classList.toggle('on', i===cur);
       var ds=dots.querySelectorAll('i');
       for(var k=0;k<ds.length;k++){ ds[k].className = k<cur?'done':(k===cur?'on':''); }
+      if(track){ var ts=track.querySelectorAll('.v14-step');
+        for(var a=0;a<ts.length;a++){ ts[a].className='v14-step'+(a<cur?' done':(a===cur?' on':'')); }
+        var act=track.querySelector('.v14-step.on'); if(act&&act.scrollIntoView){ try{act.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});}catch(e){} }
+      }
       back.classList.toggle('hidden', cur===0 && prevModule==null);
       var last = cur===N-1;
-      next.innerHTML = (last?'Next: Module '+ (nextModule!=null?nextModule:'') :'Next')+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
-      try{ var app=qs('#app'); (app||window).scrollTo?window.scrollTo({top:0,behavior:'smooth'}):0; }catch(e){}
+      next.innerHTML = (last?'Next: Module '+ (nextModule!=null?nextModule:'') :'Next')+ARR_R;
+      try{ window.scrollTo&&window.scrollTo({top:0,behavior:'smooth'}); }catch(e){}
     }
-    next.addEventListener('click', function(){
-      if(cur<N-1){ cur++; paint(); }
-      else if(nextModule!=null){ goModule(nextModule); }
-    });
-    back.addEventListener('click', function(){
-      if(cur>0){ cur--; paint(); }
-      else if(prevModule!=null){ goModule(prevModule); }
-    });
-    dots.addEventListener('click', function(e){ var t=e.target.closest('i'); if(!t)return; var i=+t.getAttribute('data-d'); if(i<=cur+0){ cur=i; paint(); } });
+    next.addEventListener('click', function(){ if(cur<N-1){ cur++; paint(); } else if(nextModule!=null){ goModule(nextModule); } });
+    back.addEventListener('click', function(){ if(cur>0){ cur--; paint(); } else if(prevModule!=null){ goModule(prevModule); } });
+    dots.addEventListener('click', function(e){ var t=e.target.closest('i'); if(!t)return; cur=+t.getAttribute('data-d'); paint(); });
+    if(track){ track.addEventListener('click', function(e){ var t=e.target.closest('.v14-step'); if(!t)return; cur=+t.getAttribute('data-s'); paint(); }); }
     paint();
     return { reset:function(){ cur=0; paint(); } };
   }
@@ -176,65 +201,8 @@
     var s1 = qs('#s1'); if(!s1) return false;
     if(s1.getAttribute('data-v14')) return true;
 
-    var P1 = ''
-      + '<span class="v14-eyebrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5l3 2"/></svg>Module 1 &middot; Page 1 Of 5</span>'
-      + '<h1 class="v14-h">What Exactly Is A Peptide?</h1>'
-      + '<p class="v14-lead">A peptide is a <b>short chain of amino acids</b>. Picture amino acids as Lego bricks. A peptide is what you get when you snap <b>2 to 50</b> of them together in a specific order.</p>'
-      + '<div class="v14-stage-frame">'+beadChain(6,false)+'</div>'
-      + '<div class="v14-bridge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg><p><b>Why you’re here:</b> Your body already makes peptides on its own. In this course you’ll learn about <b>research peptides</b>, lab-made versions scientists study to understand how the body’s signals work.</p></div>';
-
-    var P2 = ''
-      + '<span class="v14-eyebrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>Module 1 &middot; Page 2 Of 5</span>'
-      + '<h1 class="v14-h">Peptide Or Protein? It’s About Size</h1>'
-      + '<p class="v14-lead">Same building blocks. The only difference is <b>how long the chain is</b>.</p>'
-      + '<div class="v14-stage-frame" style="padding:20px;">'
-        + '<div class="v14-scale">'
-          + '<div class="pep"><div class="big">2-50</div><div class="cap">Amino Acids</div><div style="margin:12px 0 6px;">'+beadChain(4,true,330,150,20)+'</div><div class="nm" style="color:#2de0d8;">Peptide</div></div>'
-          + '<div class="pro"><div class="big">51+</div><div class="cap">Amino Acids</div><div style="margin:12px 0 6px;display:flex;justify-content:center;">'+proteinBlob()+'</div><div class="nm" style="color:#7fb3ff;">Protein</div></div>'
-        + '</div>'
-      + '</div>'
-      + '<p class="v14-lead" style="font-size:14px;color:#aebccb;margin:0;">A peptide is small and nimble, so it moves around the body easily. Cross 50 links and it folds into a big 3-D shape. Now it’s a protein (like the ones in muscle or egg whites).</p>';
-
-    var P3 = ''
-      + '<span class="v14-eyebrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Module 1 &middot; Page 3 Of 5</span>'
-      + '<h1 class="v14-h">Three Things That Make Peptides Special</h1>'
-      + '<p class="v14-lead">You don’t need the chemistry. Just these three ideas.</p>'
-      + '<div class="v14-cards c3">'
-        + '<div class="v14-card"><div class="v14-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h4>They Send Messages</h4><p>A peptide is like a tiny text message for your cells. It tells one exact cell what to do, and nothing else gets the memo.</p></div>'
-        + '<div class="v14-card"><div class="v14-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h4>They Don’t Last Long</h4><p>Your body clears them in hours, not days. That’s a good thing, it keeps your body firmly in control.</p>'+sparkDecay()+'</div>'
-        + '<div class="v14-card"><div class="v14-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 11.08V8l-6-4-6 4v3.08"/><path d="M4 11h16v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M12 4v17"/></svg></div><h4>Your Body Makes Them</h4><p>Right now your body is building peptides of its own. Scientists often just copy the ones it already knows how to use.</p></div>'
-      + '</div>';
-
-    var P4 = ''
-      + '<span class="v14-eyebrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>Module 1 &middot; Page 4 Of 5</span>'
-      + '<h1 class="v14-h">Peptides You Already Know</h1>'
-      + '<p class="v14-lead">These are all peptides your body uses every day. You’ve heard of them before.</p>'
-      + '<div class="v14-cards c3">'
-        + knownCard('Insulin','M12 2v6M12 22v-4M4.9 4.9l3 3M19.1 4.9l-3 3','Controls your blood sugar. It tells your body to lower blood sugar after you eat.')
-        + knownCard('Oxytocin','M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z','The bonding peptide. Your body releases it during hugs and time with people you love.')
-        + knownCard('Endorphins','M13 2 3 14h9l-1 8 10-12h-9l1-8z','Your feel-good chemicals. Released when you laugh or exercise, to help you feel good.')
-      + '</div>'
-      + '<div class="v14-bridge" style="box-shadow:0 8px 22px rgba(0,0,0,.45),inset 4px 0 0 #E53E3E;"><svg viewBox="0 0 24 24" fill="none" stroke="#E53E3E" stroke-width="2"><path d="M12 3 2 20h20z"/><path d="M12 9v5M12 17h.01"/></svg><p><b>Research note:</b> The peptides in this course are for laboratory research only. They are not medicines. Scientists use them to learn how things work.</p></div>';
-
-    var P5 = ''
-      + '<span class="v14-eyebrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Module 1 &middot; Page 5 Of 5</span>'
-      + '<h1 class="v14-h">Quick Check</h1>'
-      + '<p class="v14-lead">Two fast questions, then you’re ready for Module 2.</p>'
-      + '<div class="v14-q" id="v14q1"><div class="qn">Question 1 Of 2</div><div class="qt">A peptide is a short chain of what?</div>'
-        + opt('Amino Acids',1) + opt('Sugar Molecules',0) + opt('Strands Of DNA',0)
-        + '<div class="v14-fb">Correct. Amino acids are the building blocks, snapped together in a chain.</div></div>'
-      + '<div class="v14-q" id="v14q2"><div class="qn">Question 2 Of 2</div><div class="qt">What turns a peptide into a protein?</div>'
-        + opt('It changes color',0) + opt('The chain grows past 50 amino acids',1) + opt('It leaves the body',0)
-        + '<div class="v14-fb">Right. Past about 50 links the chain folds into a bigger 3-D shape and becomes a protein.</div></div>'
-      + '<div class="v14-recap"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg>Key Takeaways</h4><ul style="margin:0;padding:0;">'
-        + recap('A peptide is a short chain of amino acids (2 to 50).')
-        + recap('Past 50 links it becomes a protein.')
-        + recap('Peptides send precise messages, don’t last long, and your body already makes them.')
-        + recap('This course is about research peptides, lab-made versions, for study only.')
-      + '</ul></div>';
-
-    var stepper = buildStepper(s1, [P1,P2,P3,P4,P5], 0, 2);
-    wireQuiz(s1);
+    // The user explicitly requested to replace the module 1 code with 5 dynamic image pages.
+    // The HTML content is now hardcoded in peptide-101.html and should not be overwritten.
     s1.setAttribute('data-v14','1');
     return true;
   }
@@ -259,10 +227,65 @@
   function opt(label, correct){ return '<button class="v14-opt" data-correct="'+correct+'"><span class="dot"></span>'+label+'</button>'; }
   function recap(t){ return '<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>'+t+'</li>'; }
 
+  /* ---------------- PUBLIC API + MODULE LOADER ---------------- */
+  function eyebrow(mod, page, total){
+    return '<span class="v14-eyebrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Module '+mod+' &middot; Page '+page+' Of '+total+'</span>';
+  }
+  function ic(path, w){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||2)+'"><path d="'+path+'"/></svg>'; }
+  function iconCard(pathOrSvg, title, body, accent){
+    var inner = pathOrSvg.charAt(0)==='<' ? pathOrSvg : ic(pathOrSvg);
+    return '<div class="v14-card"><div class="v14-ic">'+inner+'</div><h4'+(accent?' style="color:'+accent+';"':'')+'>'+title+'</h4><p>'+body+'</p></div>';
+  }
+  // Horizontal bar chart. data: [{label, value, color}], maxValue optional, unit optional
+  function barChart(data, maxValue, unit){
+    var max = maxValue || Math.max.apply(null, data.map(function(d){return d.value;}));
+    var rows = data.map(function(d){
+      var pct = Math.max(2, Math.round(d.value/max*100));
+      return '<div style="margin-bottom:12px;">'
+        + '<div style="display:flex;justify-content:space-between;font-size:12.5px;color:#cdd9e6;margin-bottom:5px;"><span style="font-weight:600;color:#eaf2fb;">'+d.label+'</span><span style="color:#9fb0c2;">'+d.value+(unit?(' '+unit):'')+'</span></div>'
+        + '<div style="height:14px;border-radius:99px;background:#0b1525;box-shadow:inset 0 1px 3px rgba(0,0,0,.6);overflow:hidden;">'
+        + '<div style="height:100%;width:'+pct+'%;border-radius:99px;background:linear-gradient(90deg,'+(d.color||'#3B82F6')+',#9fc4ff);box-shadow:0 0 10px '+(d.color||'#3B82F6')+'66;"></div></div></div>';
+    }).join('');
+    return '<div class="v14-stage-frame" style="padding:20px;">'+rows+'</div>';
+  }
+  var API = {
+    E:E, qs:qs, go:go, goModule:goModule,
+    beadChain:beadChain, proteinBlob:proteinBlob, sparkDecay:sparkDecay,
+    knownCard:knownCard, opt:opt, recap:recap, eyebrow:eyebrow, ic:ic,
+    iconCard:iconCard, barChart:barChart,
+    buildStepper:buildStepper, wireQuiz:wireQuiz, injectDefs:injectDefs, injectCSS:injectCSS
+  };
+  // module(screenId, modNum, prevMod, nextMod, pagesFn) -> builds when ready; idempotent
+  API.module = function(sid, modNum, prev, next, labels, pagesFn){
+    function tryBuild(){
+      var sc = qs('#'+sid); if(!sc) return false;
+      if(sc.getAttribute('data-v14')) return true;
+      if(!(window.goTo || (window.P101 && P101.go))) return false;
+      injectCSS(); injectDefs();
+      var pages = pagesFn(API, eyebrow);
+      buildStepper(sc, pages, prev, next, labels);
+      wireQuiz(sc);
+      sc.setAttribute('data-v14','1');
+      return true;
+    }
+    if(tryBuild()) return;
+    var n=0, t=setInterval(function(){ if(tryBuild()||n++>200) clearInterval(t); },50);
+  };
+  window.P101V14 = API;
+
+  function loadModules(){
+    var mods=['m2','m3','m4','m5','m6','m7','m8','m9','m10','m11','m12','m13'];
+    mods.forEach(function(m){
+      if(D.querySelector('script[data-v14m="'+m+'"]')) return;
+      var sc=D.createElement('script'); sc.src='/peptide-101.'+m+'.js'; sc.async=false; sc.setAttribute('data-v14m',m);
+      D.body.appendChild(sc);
+    });
+  }
+
   /* ---------------- BOOT ---------------- */
   function ready(){ return !!(qs('#s1') && (window.goTo || (window.P101&&P101.go))); }
   function boot(){
-    injectCSS(); injectDefs();
+    injectCSS(); injectDefs(); loadModules();
     if(!module1()){
       var n=0, t=setInterval(function(){ if(module1()||n++>80) clearInterval(t); },50);
     }
