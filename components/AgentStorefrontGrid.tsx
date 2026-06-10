@@ -2812,6 +2812,19 @@ export default function AgentStorefrontGrid({
                         const _canonicalName = group.variants[0]?.products?.name || group.name;
                         const _nick = getPopularName(_canonicalName);
                         if (!_nick) return null;
+<<<<<<< Updated upstream
+=======
+                        return (
+                          <span style={{ fontSize: '0.72rem', color: 'var(--teal)', fontStyle: 'italic', fontWeight: 500, display: 'block', marginTop: 2 }}>
+                            {_nick}
+                          </span>
+                        );
+                      })()}
+                      {(() => {
+                        const etKey = group.compoundSlug ? compoundsBySlug[group.compoundSlug]?.evidence_tier : null;
+                        const ti = etKey ? EVIDENCE_TIER[etKey] : null;
+                        if (!ti) return null;
+>>>>>>> Stashed changes
                         return (
                           <span style={{ fontSize: '0.72rem', color: 'var(--teal)', fontStyle: 'italic', fontWeight: 500, display: 'block', marginTop: 2 }}>
                             {_nick}

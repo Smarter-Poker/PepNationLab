@@ -1,0 +1,32 @@
+
+> pepnationlab@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3002
+- Network:       http://10.1.10.29:3002
+- Environments: .env.local, .env
+✓ Ready in 162ms
+- Experiments (use with caution):
+  · clientTraceMetadata
+
+⨯ Error: Event handlers cannot be passed to Client Component props.
+  <... href=... style={{...}} onMouseOver={function onMouseOver} onMouseOut=... children=...>
+                                          ^^^^^^^^^^^^^^^^^^^^^^
+If you need interactivity, consider converting part of this to a Client Component.
+    at stringify (<anonymous>)
+    at stringify (<anonymous>) {
+  digest: '2061606629'
+}
+⨯ Error: Event handlers cannot be passed to Client Component props.
+  <... href=... style={{...}} onMouseOver=... onMouseOut={function onMouseOut} children=...>
+                                                         ^^^^^^^^^^^^^^^^^^^^^
+If you need interactivity, consider converting part of this to a Client Component.
+    at stringify (<anonymous>)
+    at stringify (<anonymous>) {
+  digest: '118921861'
+}
+ GET /research/compare 200 in 3.5s (next.js: 2.5s, proxy.ts: 104ms, application-code: 883ms)
+✓ Compiled in 8ms
+ GET /research/compare 200 in 55ms (next.js: 5ms, proxy.ts: 3ms, application-code: 47ms)
+✓ Compiled in 18ms
