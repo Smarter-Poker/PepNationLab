@@ -207,7 +207,7 @@
 
   /* ---------- EXPOSE ---------- */
   window.P101v4={
-    open:function(){ buildExplorer(); go('s16'); },
+    open:function(){ window.location.href = '/research/catalog'; },
     back:function(){ go('s0'); },
     pick:pexPick,
     fam:function(f){ pexF=f; pexRender(); },
