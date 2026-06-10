@@ -340,90 +340,169 @@
 <!-- =========================================================
      SCREEN 1: OVERVIEW
      ========================================================= -->
-<div class="screen" id="s1">
-  <div class="badge badge-teal">Module 1 - Complete Overview</div>
-  <h2 style="font-size:28px;margin-bottom:8px;">What Exactly Is A Peptide?</h2>
-  <p style="margin-bottom:24px;">A Peptide Is A Short Chain Of Amino Acids. Think Of Amino Acids As Individual Lego Bricks. A Peptide Is What You Get When You Connect 2 To 50 Of Those Bricks In A Specific Order. When Chains Grow Beyond 50, They Become Proteins.</p>
+<div class="screen" id="s1" style="padding: 0; background: transparent;">
+  <style>
+    .m1-page { display: none; width: 100%; max-width: 500px; margin: 0 auto; position: relative; }
+    .m1-page.active { display: block; }
+    .m1-img { width: 100%; height: auto; display: block; border-radius: 12px; }
+    .m1-btn { position: absolute; cursor: pointer; z-index: 10; }
+    
+    /* Top Progress Nav */
+    .m1-nav-btn { position: absolute; top: 6%; height: 10%; width: 15%; cursor: pointer; z-index: 10; }
+    
+    /* Option buttons for page 5 */
+    .m1-opt { position: absolute; left: 5%; width: 90%; height: 4.5%; cursor: pointer; border-radius: 8px; z-index: 10; border: 2px solid transparent; transition: all 0.2s; }
+    .m1-opt.selected { border-color: var(--teal); background: rgba(0, 196, 188, 0.15); }
+    .m1-opt.wrong-opt { border-color: var(--red); background: rgba(239, 68, 68, 0.15); }
+    
+    /* Toast popup for Module 1 */
+    #m1-toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(150px);
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px 24px; display: flex; align-items: center; gap: 12px; z-index: 99999;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      width: 90%; max-width: 400px;
+    }
+    #m1-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  </style>
 
-  <div class="card-nickel">
-    <div style="display:flex;align-items:center;gap:16px;">
-      <div style="text-align:center;min-width:80px;">
-        <div style="font-size:28px;font-weight:800;font-family:'Space Grotesk',sans-serif;color:var(--teal);">2-50</div>
-        <div style="font-size:11px;color:var(--muted);">Amino Acids</div>
-        <div style="font-size:12px;font-weight:700;color:var(--text);margin-top:4px;">Peptide</div>
-      </div>
-      <div style="flex:1;height:2px;background:linear-gradient(90deg,var(--teal),var(--blue));border-radius:99px;"></div>
-      <div style="text-align:center;min-width:80px;">
-        <div style="font-size:28px;font-weight:800;font-family:'Space Grotesk',sans-serif;color:var(--blue-l);">51+</div>
-        <div style="font-size:11px;color:var(--muted);">Amino Acids</div>
-        <div style="font-size:12px;font-weight:700;color:var(--text);margin-top:4px;">Protein</div>
-      </div>
+  <!-- PAGE 1 -->
+  <div id="m1p1" class="m1-page active">
+    <img src="/images/course/mod1_pg1.png" class="m1-img" alt="Module 1 Page 1" />
+    <!-- Top Nav -->
+    <div class="m1-nav-btn" onclick="goM1(1)" style="left:5%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(2)" style="left:23%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(3)" style="left:42%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(4)" style="left:60%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(5)" style="left:80%;"></div>
+    
+    <!-- Bottom Nav -->
+    <div class="m1-btn" onclick="goTo(0)" style="left:5%; width:25%; top:93%; height:5%;"></div>
+    <div class="m1-btn" onclick="goM1(2)" style="left:70%; width:25%; top:93%; height:5%;"></div>
+  </div>
+
+  <!-- PAGE 2 -->
+  <div id="m1p2" class="m1-page">
+    <img src="/images/course/mod1_pg2.png" class="m1-img" alt="Module 1 Page 2" />
+    <div class="m1-nav-btn" onclick="goM1(1)" style="left:5%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(2)" style="left:23%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(3)" style="left:42%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(4)" style="left:60%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(5)" style="left:80%;"></div>
+    
+    <div class="m1-btn" onclick="goM1(1)" style="left:5%; width:25%; top:93%; height:5%;"></div>
+    <div class="m1-btn" onclick="goM1(3)" style="left:70%; width:25%; top:93%; height:5%;"></div>
+  </div>
+
+  <!-- PAGE 3 -->
+  <div id="m1p3" class="m1-page">
+    <img src="/images/course/mod1_pg3.png" class="m1-img" alt="Module 1 Page 3" />
+    <div class="m1-nav-btn" onclick="goM1(1)" style="left:5%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(2)" style="left:23%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(3)" style="left:42%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(4)" style="left:60%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(5)" style="left:80%;"></div>
+    
+    <div class="m1-btn" onclick="goM1(2)" style="left:5%; width:25%; top:93%; height:5%;"></div>
+    <div class="m1-btn" onclick="goM1(4)" style="left:70%; width:25%; top:93%; height:5%;"></div>
+  </div>
+
+  <!-- PAGE 4 -->
+  <div id="m1p4" class="m1-page">
+    <img src="/images/course/mod1_pg4.png" class="m1-img" alt="Module 1 Page 4" />
+    <div class="m1-nav-btn" onclick="goM1(1)" style="left:5%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(2)" style="left:23%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(3)" style="left:42%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(4)" style="left:60%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(5)" style="left:80%;"></div>
+    
+    <div class="m1-btn" onclick="goM1(3)" style="left:5%; width:25%; top:93%; height:5%;"></div>
+    <div class="m1-btn" onclick="goM1(5)" style="left:70%; width:25%; top:93%; height:5%;"></div>
+  </div>
+
+  <!-- PAGE 5 -->
+  <div id="m1p5" class="m1-page">
+    <img src="/images/course/mod1_pg5.png" class="m1-img" alt="Module 1 Page 5" />
+    <div class="m1-nav-btn" onclick="goM1(1)" style="left:5%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(2)" style="left:23%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(3)" style="left:42%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(4)" style="left:60%;"></div>
+    <div class="m1-nav-btn" onclick="goM1(5)" style="left:80%;"></div>
+    
+    <!-- Question 1: Amino Acids (Correct) -->
+    <div class="m1-opt q1" onclick="checkM1('q1', true, this)" style="top:36.5%;"></div>
+    <div class="m1-opt q1" onclick="checkM1('q1', false, this)" style="top:41.5%;"></div>
+    <div class="m1-opt q1" onclick="checkM1('q1', false, this)" style="top:46.5%;"></div>
+
+    <!-- Question 2: Chain Grows Past 50 (Correct) -->
+    <div class="m1-opt q2" onclick="checkM1('q2', false, this)" style="top:59%;"></div>
+    <div class="m1-opt q2" onclick="checkM1('q2', true, this)" style="top:64%;"></div>
+    <div class="m1-opt q2" onclick="checkM1('q2', false, this)" style="top:69%;"></div>
+
+    <div class="m1-btn" onclick="goM1(4)" style="left:5%; width:25%; top:93%; height:5%;"></div>
+    <div class="m1-btn" onclick="goTo(2)" style="left:62%; width:33%; top:93%; height:5%;"></div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="m1-toast">
+    <div id="m1-toast-icon" style="min-width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;"></div>
+    <div>
+      <strong id="m1-toast-title" style="font-size:16px;"></strong>
+      <p id="m1-toast-msg" style="font-size:13px;color:var(--muted);margin:0;"></p>
     </div>
   </div>
 
-  <div class="card">
-    <h3 style="font-size:16px;margin-bottom:16px;color:var(--text);">The Three Key Properties Of Peptides</h3>
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="min-width:32px;height:32px;background:rgba(0,196,188,0.12);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-top:2px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-        </div>
-        <div>
-          <strong>They Send Messages</strong>
-          <p style="font-size:13px;margin-top:2px;">Think Of A Peptide Like A Tiny Text Message For Your Cells. It Tells One Exact Cell What To Do, And Nothing Else Gets The Message.</p>
-        </div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="min-width:32px;height:32px;background:rgba(59,130,246,0.12);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-top:2px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-        </div>
-        <div>
-          <strong>They Do Not Last Long</strong>
-          <p style="font-size:13px;margin-top:2px;">Your Body Breaks Peptides Down Fast, In Hours Not Days. That Is A Good Thing. It Means Your Body Stays In Control.</p>
-        </div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="min-width:32px;height:32px;background:rgba(138,155,176,0.12);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-top:2px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--silver)" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
-        </div>
-        <div>
-          <strong>Your Body Makes Them</strong>
-          <p style="font-size:13px;margin-top:2px;">Right Now, Your Body Is Making Peptides Of Its Own. Scientists Often Just Copy The Ones Your Body Already Knows How To Use.</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  <script>
+    function goM1(page) {
+      document.querySelectorAll('.m1-page').forEach(el => el.classList.remove('active'));
+      document.getElementById('m1p' + page).classList.add('active');
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
 
-  <h3 style="font-size:16px;margin:20px 0 12px;">Peptides You Already Know</h3>
-  <div class="grid3">
-    <div class="card" style="padding:16px;">
-      <div style="font-weight:700;color:var(--teal);font-size:14px;">Insulin</div>
-      <p style="font-size:12px;margin-top:4px;">A Peptide That Controls Your Blood Sugar. It Tells Your Body To Lower Blood Sugar After You Eat.</p>
-    </div>
-    <div class="card" style="padding:16px;">
-      <div style="font-weight:700;color:var(--teal);font-size:14px;">Oxytocin</div>
-      <p style="font-size:12px;margin-top:4px;">The Bonding Peptide. Your Body Releases It During Hugs And Time With People You Love.</p>
-    </div>
-    <div class="card" style="padding:16px;">
-      <div style="font-weight:700;color:var(--teal);font-size:14px;">Endorphins</div>
-      <p style="font-size:12px;margin-top:4px;">Your Body's Feel-Good Chemicals. Released When You Laugh Or Exercise, To Help You Feel Good.</p>
-    </div>
-  </div>
+    function checkM1(qClass, isCorrect, el) {
+      // Clear previous in this question
+      document.querySelectorAll('.' + qClass).forEach(opt => {
+        opt.classList.remove('selected', 'wrong-opt');
+      });
+      
+      if (isCorrect) {
+        el.classList.add('selected');
+        showM1Toast(true, 'Correct!', 'You selected the right answer.');
+      } else {
+        el.classList.add('wrong-opt');
+        showM1Toast(false, 'Incorrect', 'Review the material and try again.');
+      }
+    }
 
-  <div class="stop-card" style="margin-top:20px;">
-    <strong>Research Note:</strong> The Peptides Here Are For Research Only. They Are Not Medicines. Scientists Use Them In Labs To Learn How Things Work.
-  </div>
+    let toastTimer;
+    function showM1Toast(isCorrect, title, msg) {
+      const toast = document.getElementById('m1-toast');
+      const icon = document.getElementById('m1-toast-icon');
+      const titleEl = document.getElementById('m1-toast-title');
+      const msgEl = document.getElementById('m1-toast-msg');
 
-  <div class="nav-ctrl">
-    <button class="btn btn-ghost" onclick="goTo(0)" aria-label="Previous">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      Back
-    </button>
-    <button class="btn btn-primary" onclick="goTo(2)" aria-label="Next: The Science">
-      Next: The Science
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-    </button>
-  </div>
+      if (isCorrect) {
+        toast.style.borderColor = 'rgba(0, 196, 188, 0.5)';
+        icon.style.background = 'var(--teal)';
+        icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+        titleEl.style.color = 'var(--teal)';
+      } else {
+        toast.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+        icon.style.background = 'var(--red)';
+        icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        titleEl.style.color = 'var(--red)';
+      }
+
+      titleEl.textContent = title;
+      msgEl.textContent = msg;
+
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+  </script>
 </div>
 
 <!-- =========================================================
