@@ -1,20 +1,21 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-// The Peptide 101 course is a large static page enhanced at runtime by
-// /peptide-101.app.js (v3), /peptide-101.v4.js (depth/visuals),
-// /peptide-101.v5.js (account-bound progress) and /peptide-101.v6.js
-// (syringe visual, shelf-life link, cheat sheet). To stop the course from
-// ever silently regressing again, this route is self-healing: it serves
-// whichever course file still contains the engine marker, preferring the
-// primary file (public/peptide-101.html) and falling back to the byte-identical
-// canonical backup (public/peptide-101.engine.html). It also guarantees the
-// engine scripts load even if a future edit drops their tags.
+// The Peptide 101 course is a large static page enhanced at runtime by a stack
+// of engine scripts: app.js (v3 core), v4 (depth/visuals), v5 (account-bound
+// progress), v6 (practical aids) and v7 (rich plain-language module content +
+// locked header). To stop the course from ever silently regressing again, this
+// route is self-healing: it serves whichever course file still contains the
+// engine marker, preferring the primary file (public/peptide-101.html) and
+// falling back to the byte-identical canonical backup
+// (public/peptide-101.engine.html). It also guarantees every engine script
+// loads even if a future edit drops its tag.
 const MARKER = '/peptide-101.app.js';
 const ENGINE_SCRIPTS = [
   '/peptide-101.v4.js',
   '/peptide-101.v5.js',
   '/peptide-101.v6.js',
+  '/peptide-101.v7.js',
 ];
 
 function loadCourse(): string {
