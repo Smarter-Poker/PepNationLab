@@ -73,12 +73,24 @@ async function AgentStorefrontDataLoader({
   //   );
   // }
 
-  const userProfile = { role: 'admin', id: 'mock-id', tier: 'tier_1', referring_agent_id: null, parent_agent_id: null };
-  const isAdmin = true;
-  const isStorefrontOwner = false;
-  const isSubAgent = false;
-  const isDownlineResearcher = false;
-  const hasAccess = true;
+  // Storefronts are public (allowed in middleware). Resolve the REAL viewer
+  // profile when signed in so the storefront owner sees self-buy cost pricing
+  // and researchers get their wishlist + correct viewer context. Anonymous
+  // shoppers browse at retail. Previously this was stubbed to a mock admin
+  // profile, which silently disabled owner self-buy pricing and researcher
+  // wishlists on every storefront.
+  let userProfile:
+    | { role: string | null; id: string; tier: string | null; referring_agent_id: string | null; parent_agent_id: string | null }
+    | null = null;
+  if (user) {
+    const { data: viewerProfile } = await supabase
+      .from('profiles')
+      .select('role, id, tier, referring_agent_id, parent_agent_id')
+      .eq('id', user.id)
+      .single();
+    userProfile = viewerProfile as typeof userProfile;
+  }
+  const isStorefrontOwner = !!user && userProfile?.id === agent.id;
 
   // ── Run independent queries in parallel - saves ~2 sequential round-trips ──
   const productIds = (products ?? [])
