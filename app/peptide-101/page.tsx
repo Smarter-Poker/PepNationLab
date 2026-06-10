@@ -118,24 +118,23 @@ export default function Peptide101LandingPage() {
         ></div>
 
         {CONTENT.concat(['s15']).map((modId, index) => {
-          // --- EXACT CALCULATIONS BASED ON SCREENSHOT ---
-          // Module 1 is located at ~52.0% from the top of the image.
-          // The distance between each module is ~2.96%.
-          const ROADMAP_START = 52.0; 
-          const ROADMAP_STEP = 2.96;
-          
-          const topPosition = ROADMAP_START + (index * ROADMAP_STEP); 
-          
+          // Image is 853x1844px.
+          // Module 1 row center is at y≈888px → 888/1844 = 48.2%
+          // Row pitch is ≈42px → 42/1844 = 2.28%
+          // Row height is ≈38px → 38/1844 ≈ 2.06%
+          const ROADMAP_START = 48.2;
+          const ROADMAP_STEP = 2.28;
+
+          const topPosition = ROADMAP_START + (index * ROADMAP_STEP);
+
           return (
-            <div 
+            <div
               key={modId}
               onClick={() => {
-                // Clear the exact page progress so it starts from the beginning!
                 try {
                   localStorage.removeItem(`p101_m${index + 1}_page`);
                   localStorage.removeItem(`p101_v14_cur_${modId}`);
                 } catch(e) {}
-                
                 window.location.href = `/peptide-101/course#${modId}`;
               }}
               style={{
@@ -143,14 +142,13 @@ export default function Peptide101LandingPage() {
                 top: `${topPosition}%`,
                 left: '5%',
                 width: '90%',
-                height: '2.5%', 
+                height: '2.0%',
                 cursor: 'pointer',
                 zIndex: 10,
-                // VISUAL DEBUG: showing hitboxes so you can see if they align with the image numbers!
-                // Once they align perfectly, we will remove this visual debug styling.
-                backgroundColor: 'rgba(0, 196, 188, 0.25)',
-                border: '2px solid rgba(0, 196, 188, 0.8)',
-                borderRadius: '8px'
+                // DEBUG: remove the 3 lines below once alignment is confirmed
+                backgroundColor: 'rgba(0, 196, 188, 0.2)',
+                border: '1px solid rgba(0, 196, 188, 0.6)',
+                borderRadius: '6px'
               }}
               title={`Go to Module ${index + 1}`}
             ></div>
