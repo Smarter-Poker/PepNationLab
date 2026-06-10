@@ -179,36 +179,36 @@
     var P1 = ''
       + '<span class="v14-eyebrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5l3 2"/></svg>Module 1 &middot; Page 1 Of 5</span>'
       + '<h1 class="v14-h">What Exactly Is A Peptide?</h1>'
-      + '<p class="v14-lead">A peptide is a <b>short chain of amino acids</b>. Picture amino acids as Lego bricks &mdash; a peptide is what you get when you snap <b>2 to 50</b> of them together in a specific order.</p>'
+      + '<p class="v14-lead">A peptide is a <b>short chain of amino acids</b>. Picture amino acids as Lego bricks. A peptide is what you get when you snap <b>2 to 50</b> of them together in a specific order.</p>'
       + '<div class="v14-stage-frame">'+beadChain(6,false)+'</div>'
-      + '<div class="v14-bridge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg><p><b>Why you’re here:</b> Your body already makes peptides on its own. In this course you’ll learn about <b>research peptides</b> &mdash; lab-made versions scientists study to understand how the body’s signals work.</p></div>';
+      + '<div class="v14-bridge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg><p><b>Why you’re here:</b> Your body already makes peptides on its own. In this course you’ll learn about <b>research peptides</b>, lab-made versions scientists study to understand how the body’s signals work.</p></div>';
 
     var P2 = ''
       + '<span class="v14-eyebrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>Module 1 &middot; Page 2 Of 5</span>'
       + '<h1 class="v14-h">Peptide Or Protein? It’s About Size</h1>'
-      + '<p class="v14-lead">Same building blocks &mdash; the only difference is <b>how long the chain is</b>.</p>'
+      + '<p class="v14-lead">Same building blocks. The only difference is <b>how long the chain is</b>.</p>'
       + '<div class="v14-stage-frame" style="padding:20px;">'
         + '<div class="v14-scale">'
-          + '<div class="pep"><div class="big">2&ndash;50</div><div class="cap">Amino Acids</div><div style="margin:12px 0 6px;">'+beadChain(4,true,330,150,20)+'</div><div class="nm" style="color:#2de0d8;">Peptide</div></div>'
+          + '<div class="pep"><div class="big">2-50</div><div class="cap">Amino Acids</div><div style="margin:12px 0 6px;">'+beadChain(4,true,330,150,20)+'</div><div class="nm" style="color:#2de0d8;">Peptide</div></div>'
           + '<div class="pro"><div class="big">51+</div><div class="cap">Amino Acids</div><div style="margin:12px 0 6px;display:flex;justify-content:center;">'+proteinBlob()+'</div><div class="nm" style="color:#7fb3ff;">Protein</div></div>'
         + '</div>'
       + '</div>'
-      + '<p class="v14-lead" style="font-size:14px;color:#aebccb;margin:0;">A peptide is small and nimble, so it moves around the body easily. Cross 50 links and it folds into a big 3-D shape &mdash; now it’s a protein (like the ones in muscle or egg whites).</p>';
+      + '<p class="v14-lead" style="font-size:14px;color:#aebccb;margin:0;">A peptide is small and nimble, so it moves around the body easily. Cross 50 links and it folds into a big 3-D shape. Now it’s a protein (like the ones in muscle or egg whites).</p>';
 
     var P3 = ''
       + '<span class="v14-eyebrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Module 1 &middot; Page 3 Of 5</span>'
       + '<h1 class="v14-h">Three Things That Make Peptides Special</h1>'
-      + '<p class="v14-lead">You don’t need the chemistry &mdash; just these three ideas.</p>'
+      + '<p class="v14-lead">You don’t need the chemistry. Just these three ideas.</p>'
       + '<div class="v14-cards c3">'
-        + '<div class="v14-card"><div class="v14-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h4>They Send Messages</h4><p>A peptide is like a tiny text message for your cells. It tells one exact cell what to do &mdash; and nothing else gets the memo.</p></div>'
-        + '<div class="v14-card"><div class="v14-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h4>They Don’t Last Long</h4><p>Your body clears them in hours, not days. That’s a good thing &mdash; it keeps your body firmly in control.</p>'+sparkDecay()+'</div>'
+        + '<div class="v14-card"><div class="v14-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h4>They Send Messages</h4><p>A peptide is like a tiny text message for your cells. It tells one exact cell what to do, and nothing else gets the memo.</p></div>'
+        + '<div class="v14-card"><div class="v14-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h4>They Don’t Last Long</h4><p>Your body clears them in hours, not days. That’s a good thing, it keeps your body firmly in control.</p>'+sparkDecay()+'</div>'
         + '<div class="v14-card"><div class="v14-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 11.08V8l-6-4-6 4v3.08"/><path d="M4 11h16v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M12 4v17"/></svg></div><h4>Your Body Makes Them</h4><p>Right now your body is building peptides of its own. Scientists often just copy the ones it already knows how to use.</p></div>'
       + '</div>';
 
     var P4 = ''
       + '<span class="v14-eyebrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>Module 1 &middot; Page 4 Of 5</span>'
       + '<h1 class="v14-h">Peptides You Already Know</h1>'
-      + '<p class="v14-lead">These are all peptides your body uses every day &mdash; you’ve heard of them before.</p>'
+      + '<p class="v14-lead">These are all peptides your body uses every day. You’ve heard of them before.</p>'
       + '<div class="v14-cards c3">'
         + knownCard('Insulin','M12 2v6M12 22v-4M4.9 4.9l3 3M19.1 4.9l-3 3','Controls your blood sugar. It tells your body to lower blood sugar after you eat.')
         + knownCard('Oxytocin','M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z','The bonding peptide. Your body releases it during hugs and time with people you love.')
@@ -222,15 +222,15 @@
       + '<p class="v14-lead">Two fast questions, then you’re ready for Module 2.</p>'
       + '<div class="v14-q" id="v14q1"><div class="qn">Question 1 Of 2</div><div class="qt">A peptide is a short chain of what?</div>'
         + opt('Amino Acids',1) + opt('Sugar Molecules',0) + opt('Strands Of DNA',0)
-        + '<div class="v14-fb">Correct &mdash; amino acids are the building blocks, snapped together in a chain.</div></div>'
+        + '<div class="v14-fb">Correct. Amino acids are the building blocks, snapped together in a chain.</div></div>'
       + '<div class="v14-q" id="v14q2"><div class="qn">Question 2 Of 2</div><div class="qt">What turns a peptide into a protein?</div>'
         + opt('It changes color',0) + opt('The chain grows past 50 amino acids',1) + opt('It leaves the body',0)
-        + '<div class="v14-fb">Right &mdash; past about 50 links the chain folds into a bigger 3-D shape and becomes a protein.</div></div>'
+        + '<div class="v14-fb">Right. Past about 50 links the chain folds into a bigger 3-D shape and becomes a protein.</div></div>'
       + '<div class="v14-recap"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg>Key Takeaways</h4><ul style="margin:0;padding:0;">'
         + recap('A peptide is a short chain of amino acids (2 to 50).')
         + recap('Past 50 links it becomes a protein.')
         + recap('Peptides send precise messages, don’t last long, and your body already makes them.')
-        + recap('This course is about research peptides — lab-made versions, for study only.')
+        + recap('This course is about research peptides, lab-made versions, for study only.')
       + '</ul></div>';
 
     var stepper = buildStepper(s1, [P1,P2,P3,P4,P5], 0, 2);
