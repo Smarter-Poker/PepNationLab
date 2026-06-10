@@ -771,26 +771,68 @@ export default function AreaProductGrid({
                   }}
                 />
 
-                {/* Evidence tier badge */}
-                <span style={{
-                  position: 'absolute',
-                  top: 12,
-                  left: 12,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '4px 10px',
-                  borderRadius: 20,
-                  fontSize: '0.68rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.02em',
-                  background: `${ti.color}20`,
-                  color: ti.color,
-                  border: `1px solid ${ti.color}40`,
-                  backdropFilter: 'blur(6px)',
-                }}>
-                  {ti.label}
-                </span>
-
+                {/* Compare checkbox (top left) */}
+                <label
+                  style={{
+                    position: 'absolute',
+                    top: 12,
+                    left: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    cursor: 'pointer',
+                    padding: '4px 10px',
+                    borderRadius: 20,
+                    background: 'rgba(10,16,24,0.6)',
+                    border: isComparing ? '1px solid #00C4BC' : '1px solid rgba(255,255,255,0.2)',
+                    backdropFilter: 'blur(6px)',
+                    zIndex: 10,
+                    userSelect: 'none',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isComparing}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        if (pinnedNames.size >= 4) {
+                          showToast('You can compare up to 4 compounds at a time.');
+                          return;
+                        }
+                        try {
+                          const raw = window.localStorage.getItem('pnl:compare') || '[]';
+                          const list = JSON.parse(raw);
+                          if (Array.isArray(list) && list.length > 0) {
+                            const firstItem = list[0];
+                            const firstCategory = firstItem.category;
+                            if (firstCategory && firstCategory !== p.category) {
+                              showToast(`You can only compare peptides within the same category ("${firstCategory}").`);
+                              return;
+                            }
+                          }
+                        } catch {}
+                        pin(p);
+                      } else {
+                        unpin(p);
+                      }
+                    }}
+                    disabled={!isComparing && pinnedNames.size >= 4}
+                    style={{
+                      width: 14,
+                      height: 14,
+                      accentColor: '#00C4BC',
+                      cursor: 'pointer',
+                      margin: 0,
+                    }}
+                  />
+                  <span style={{
+                    color: isComparing ? '#00C4BC' : '#FFFFFF',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                  }}>
+                    Compare
+                  </span>
+                </label>
 
                 {/* On sale badge */}
                 {p.isOnSale && p.salePrice != null && (
@@ -810,60 +852,6 @@ export default function AreaProductGrid({
                   }}>
                     Sale
                   </span>
-                )}
-
-                {/* Purity & COA badge */}
-                {compound?.purityPercentage != null && (
-                  compound?.coaUrl && compound.coaUrl !== '#' ? (
-                    <a
-                      href={compound.coaUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setModalUrl(compound.coaUrl!);
-                      }}
-                      onMouseEnter={() => prewarmProxy(compound.coaUrl)}
-                      style={{
-                        position: 'absolute',
-                        bottom: 12,
-                        left: 12,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        padding: '3px 8px',
-                        borderRadius: 20,
-                        fontSize: '0.65rem',
-                        fontWeight: 700,
-                        background: 'rgba(56, 161, 105, 0.15)',
-                        color: '#68D391',
-                        border: '1px solid rgba(56, 161, 105, 0.3)',
-                        backdropFilter: 'blur(6px)',
-                        textDecoration: 'none',
-                        cursor: 'pointer'
-                      }}
-                      title="View Certificate of Analysis"
-                    >
-                      <FlaskConical size={12} style={{ marginRight: 4 }} /> {compound.purityPercentage}% Purity
-                    </a>
-                  ) : (
-                    <span style={{
-                      position: 'absolute',
-                      bottom: 12,
-                      left: 12,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      padding: '3px 8px',
-                      borderRadius: 20,
-                      fontSize: '0.65rem',
-                      fontWeight: 700,
-                      background: 'rgba(56, 161, 105, 0.15)',
-                      color: '#68D391',
-                      border: '1px solid rgba(56, 161, 105, 0.3)',
-                      backdropFilter: 'blur(6px)',
-                    }}>
-                      <FlaskConical size={12} style={{ marginRight: 4 }} /> {compound.purityPercentage}% Purity
-                    </span>
-                  )
                 )}
               </div>
 
@@ -1031,119 +1019,29 @@ export default function AreaProductGrid({
                     />
                   )}
 
-                  {/* Add to Stack Button */}
-                  {!outOfStock && p.agentProductId && (
-                    <button
-                      onClick={() => toggleStack(p.agentProductId!)}
-                      style={{
-                        width: 44,
-                        height: 44,
-                        background: stackItems.has(p.agentProductId) ? '#00C4BC' : 'rgba(255,255,255,0.06)',
-                        color: stackItems.has(p.agentProductId) ? '#000' : '#00C4BC',
-                        border: stackItems.has(p.agentProductId) ? 'none' : '1px solid rgba(0,196,188,0.3)',
-                        borderRadius: 10,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s',
-                        flexShrink: 0,
-                      }}
-                      title={stackItems.has(p.agentProductId) ? 'Remove from Stack' : 'Add to Stack'}
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        {stackItems.has(p.agentProductId) ? (
-                          <>
-                            <polyline points="20 6 9 17 4 12" />
-                          </>
-                        ) : (
-                          <>
-                            <line x1="12" y1="5" x2="12" y2="19" />
-                            <line x1="5" y1="12" x2="19" y2="12" />
-                          </>
-                        )}
-                      </svg>
-                    </button>
-                  )}
                 </div>
 
-                {/* Compare checkbox */}
-                <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    cursor: 'pointer',
-                    padding: '6px 0 4px',
-                    minHeight: 44,
-                    userSelect: 'none',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isComparing}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        if (pinnedNames.size >= 4) {
-                          showToast('You can compare up to 4 compounds at a time.');
-                          return;
-                        }
-                        try {
-                          const raw = window.localStorage.getItem('pnl:compare') || '[]';
-                          const list = JSON.parse(raw);
-                          if (Array.isArray(list) && list.length > 0) {
-                            const firstItem = list[0];
-                            const firstCategory = firstItem.category;
-                            if (firstCategory && firstCategory !== p.category) {
-                              showToast(`You can only compare peptides within the same category ("${firstCategory}").`);
-                              return;
-                            }
-                          }
-                        } catch {}
-                        pin(p);
-                      } else {
-                        unpin(p);
-                      }
-                    }}
-                    disabled={!isComparing && pinnedNames.size >= 4}
-                    style={{
-                      width: 18,
-                      height: 18,
-                      accentColor: '#00C4BC',
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span style={{
-                    color: isComparing ? '#00C4BC' : '#718096',
-                    fontSize: '0.78rem',
-                    fontWeight: 600,
-                    transition: 'color 0.15s',
-                  }}>
-                    Compare
-                  </span>
-                  {/* Cross-Over Discovery Tags */}
-                  {compound?.researchAreas && compound.researchAreas.length > 0 && (
-                    <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
-                      {compound.researchAreas.map(ra => (
-                        <span key={ra} style={{
-                          padding: '3px 8px',
-                          borderRadius: 12,
-                          background: 'rgba(255,255,255,0.05)',
-                          color: '#A8B4C0',
-                          fontSize: '0.65rem',
-                          fontWeight: 600,
-                          textTransform: 'capitalize',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4
-                        }}>
-                          <Dna size={10} /> {ra.replace(/_/g, ' ')}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </label>
+                {/* Cross-Over Discovery Tags */}
+                {compound?.researchAreas && compound.researchAreas.length > 0 && (
+                  <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {compound.researchAreas.map(ra => (
+                      <span key={ra} style={{
+                        padding: '3px 8px',
+                        borderRadius: 12,
+                        background: 'rgba(255,255,255,0.05)',
+                        color: '#A8B4C0',
+                        fontSize: '0.65rem',
+                        fontWeight: 600,
+                        textTransform: 'capitalize',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4
+                      }}>
+                        <Dna size={10} /> {ra.replace(/_/g, ' ')}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           );
