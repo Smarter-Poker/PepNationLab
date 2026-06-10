@@ -183,10 +183,17 @@ function courseGo(n, el){
 // =====================================================
 function goTo(n) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.getElementById("s" + n).classList.add("active");
+  const target = document.getElementById("s" + n);
+  if (!target) return;
+  target.classList.add("active");
   curScreen = n;
   updateProgress();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  // Scroll to the screen's actual position in the document.
+  // Screens s3+ live outside the .app div so scrollTo(0) would miss them.
+  requestAnimationFrame(() => {
+    const y = target.getBoundingClientRect().top + window.scrollY - 0;
+    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+  });
   saveProgress();
   if (n === 10) {
     const d = document.getElementById("certDate");
@@ -875,7 +882,7 @@ document.addEventListener("DOMContentLoaded", function() {
     var elx=document.getElementById(id); elx.classList.add('active');
     CUR=id;
     try{curScreen=parseInt(id.replace('s',''))||0;}catch(e){}
-    window.scrollTo({top:0,behavior:RM?'auto':'smooth'});
+    const _sy = elx.getBoundingClientRect().top + window.scrollY; window.scrollTo({top:Math.max(0,_sy),behavior:RM?'auto':'smooth'});
     if(id==='s9' && typeof renderDoseTable==='function') renderDoseTable();
     if(id==='s10'){ setCertDate(); refreshCertGate(); }
     if(id==='s15') resetExamView();
