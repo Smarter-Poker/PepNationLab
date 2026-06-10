@@ -30,6 +30,26 @@ export default function ResearchAreaCards() {
     <section style={{ marginBottom: '60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>Explore Research Areas</h2>
+        <motion.button 
+          onClick={() => router.push('/research/catalog')}
+          whileHover={{ scale: 1.05, filter: 'drop-shadow(0 0 10px rgba(0, 229, 255, 0.4))' }}
+          whileTap={{ scale: 0.95 }}
+          style={{ 
+            background: 'linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(0,0,0,0.5))', 
+            border: '1px solid rgba(0, 229, 255, 0.4)', 
+            padding: '8px 20px', 
+            borderRadius: '20px', 
+            color: '#00E5FF', 
+            fontSize: '0.85rem',
+            fontWeight: 800, 
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            outline: 'none'
+          }}
+        >
+          View All
+        </motion.button>
       </div>
 
       <div style={{ 

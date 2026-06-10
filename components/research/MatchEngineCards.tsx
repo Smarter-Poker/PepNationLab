@@ -45,45 +45,6 @@ export default function MatchEngineCards() {
         paddingBottom: '16px',
         scrollbarWidth: 'none',
         msOverflowStyle: 'none'
-      }}>
-        <motion.button
-          onClick={() => router.push('/peptide-101')}
-          whileHover={{ y: -6, boxShadow: `0 10px 30px rgba(0, 229, 255, 0.3)` }}
-          whileTap={{ scale: 0.95 }}
-          style={{
-            flex: '0 0 auto',
-            width: '120px',
-            height: '120px',
-            background: 'transparent',
-            border: 'none',
-            padding: 0,
-            cursor: 'pointer',
-            outline: 'none',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          <img src="/images/research/box_new_to_peptides.png" alt="New To Peptides?" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '16px' }} />
-        </motion.button>
-
-        <motion.button
-          onClick={() => router.push('/research/catalog')}
-          whileHover={{ y: -6, boxShadow: `0 10px 30px rgba(0, 229, 255, 0.3)` }}
-          whileTap={{ scale: 0.95 }}
-          style={{
-            flex: '0 0 auto',
-            width: '120px',
-            height: '120px',
-            background: 'transparent',
-            border: 'none',
-            padding: 0,
-            cursor: 'pointer',
-            outline: 'none',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          <img src="/images/research/btn_view_all_areas.png" alt="View All Areas" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '16px' }} />
-        </motion.button>
-
         {objectives.map((obj) => (
           <motion.button
             key={obj.id}

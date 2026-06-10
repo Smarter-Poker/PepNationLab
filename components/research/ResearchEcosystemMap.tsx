@@ -11,10 +11,24 @@ export default function ResearchEcosystemMap() {
   return (
     <section style={{ marginBottom: '60px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <div style={{ background: 'rgba(0, 229, 255, 0.1)', color: '#00E5FF', padding: '8px', borderRadius: '50%' }}>
-          <Network size={20} />
-        </div>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>Research Ecosystem Map</h2>
+        <motion.button 
+          whileHover={{ scale: 1.02, filter: 'drop-shadow(0 0 15px rgba(0, 229, 255, 0.4))' }}
+          whileTap={{ scale: 0.98 }}
+          style={{ 
+            display: 'flex', alignItems: 'center', gap: '12px', 
+            background: '#101820', 
+            padding: '6px 24px 6px 6px', 
+            borderRadius: '100px', 
+            border: '1px solid rgba(0, 229, 255, 0.2)',
+            cursor: 'pointer',
+            outline: 'none'
+          }}
+        >
+          <div style={{ background: 'rgba(0, 229, 255, 0.1)', color: '#00E5FF', padding: '8px', borderRadius: '50%' }}>
+            <Network size={20} />
+          </div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: 0, letterSpacing: '0.5px' }}>Research Ecosystem Map</h2>
+        </motion.button>
       </div>
 
       <div style={{ 

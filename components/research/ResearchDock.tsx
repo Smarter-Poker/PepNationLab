@@ -51,7 +51,6 @@ export default function ResearchDock() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
                 padding: '12px 16px',
                 borderRadius: '12px',
                 color: isActive ? '#00E5FF' : '#A8B4C0',
@@ -59,16 +58,11 @@ export default function ResearchDock() {
                 border: isActive ? '1px solid rgba(0, 229, 255, 0.3)' : '1px solid transparent',
                 boxShadow: isActive ? '0 0 20px rgba(0, 229, 255, 0.15)' : 'none',
                 transition: 'all 0.2s ease',
-                fontWeight: isActive ? 700 : 500,
-                fontSize: '0.95rem'
+                fontWeight: isActive ? 800 : 600,
+                fontSize: '0.95rem',
+                letterSpacing: '0.5px'
               }}
             >
-              <div style={{ 
-                position: 'relative', width: '24px', height: '24px',
-                filter: isActive ? 'drop-shadow(0 0 8px rgba(0,229,255,0.6))' : 'grayscale(100%) opacity(0.7)'
-              }}>
-                <Image src={link.iconSrc} alt={link.name} fill style={{ objectFit: 'contain' }} />
-              </div>
               {link.name}
             </motion.div>
           </Link>

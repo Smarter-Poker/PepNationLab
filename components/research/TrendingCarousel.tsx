@@ -26,12 +26,24 @@ export default function TrendingCarousel({ compounds }: { compounds: Compound[] 
   return (
     <section style={{ marginBottom: '60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <motion.button 
+          whileHover={{ scale: 1.02, filter: 'drop-shadow(0 0 15px rgba(246, 173, 85, 0.4))' }}
+          whileTap={{ scale: 0.98 }}
+          style={{ 
+            display: 'flex', alignItems: 'center', gap: '12px', 
+            background: '#1A1A1A', 
+            padding: '6px 24px 6px 6px', 
+            borderRadius: '100px', 
+            border: '1px solid rgba(246, 173, 85, 0.2)',
+            cursor: 'pointer',
+            outline: 'none'
+          }}
+        >
           <div style={{ background: 'rgba(246, 173, 85, 0.1)', color: '#F6AD55', padding: '8px', borderRadius: '50%' }}>
             <TrendingUp size={20} />
           </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>Trending Now</h2>
-        </div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: 0, letterSpacing: '0.5px' }}>Trending Now</h2>
+        </motion.button>
       </div>
 
       <div style={{ 
