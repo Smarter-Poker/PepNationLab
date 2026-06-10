@@ -554,110 +554,174 @@
 <!-- =========================================================
      SCREEN 2: SCIENCE - CHAIN BUILDER
      ========================================================= -->
-<div class="screen" id="s2">
-  <div class="badge badge-teal">Module 2 - The Science</div>
-  <h2 style="font-size:28px;margin-bottom:8px;">Building A Peptide</h2>
-  <p style="margin-bottom:20px;">A Peptide Is Just Building Blocks Holding Hands In A Row. Tap The Buttons Below To Add Blocks And Watch Your Chain Grow. The Little Line Between Each Pair Is The Super Glue That Holds Them Together.</p>
+<div class="screen" id="s2" style="padding: 0; background: transparent;">
+  <style>
+    /* Full bleed on mobile, centered max-width on desktop */
+    #s2 { margin: 0 auto; width: 100%; }
+    @media (max-width: 800px) {
+      #s2 { margin-left: -20px; width: calc(100% + 40px); }
+    }
+    .m2-page { display: none; width: 100%; max-width: 600px; margin: 0 auto; position: relative; }
+    .m2-page.active { display: block; }
+    .m2-img { width: 100%; height: auto; display: block; border-radius: 0; }
+    .m2-btn { position: absolute; cursor: pointer; z-index: 10; border: 2px solid transparent; }
+    
+    /* Top Progress Nav */
+    .m2-nav-btn { position: absolute; top: 6%; height: 10%; width: 15%; cursor: pointer; z-index: 10; }
+    
+    /* Option buttons for page 5 */
+    .m2-opt { position: absolute; left: 5%; width: 90%; height: 4.5%; cursor: pointer; border-radius: 8px; z-index: 10; border: 2px solid transparent; transition: all 0.2s; }
+    .m2-opt.selected { border-color: var(--teal); background: rgba(0, 196, 188, 0.15); }
+    .m2-opt.wrong-opt { border-color: var(--red); background: rgba(239, 68, 68, 0.15); }
+    
+    /* Toast popup for Module 2 */
+    #m2-toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(150px);
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px 24px; display: flex; align-items: center; gap: 12px; z-index: 99999;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      width: 90%; max-width: 400px;
+    }
+    #m2-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  </style>
 
-  <div class="card" style="padding:20px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <strong style="font-size:14px;">Your Peptide Chain</strong>
-      <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;min-height:36px;" onclick="clearChain()" aria-label="Clear Chain">Clear</button>
-    </div>
-    <div class="chain-area" id="chainArea" aria-live="polite" aria-label="Peptide Chain Builder">
-      <span style="font-size:13px;color:var(--muted);">Add Amino Acids Below To Build Your Chain...</span>
-    </div>
-    <div id="chainInfo" style="font-size:13px;color:var(--muted);margin-bottom:12px;display:none;">
-      Chain Length: <strong id="chainLen" style="color:var(--teal);">0</strong> Amino Acids
-      <span id="chainType" style="margin-left:8px;"></span>
-    </div>
-    <div class="aa-grid" role="group" aria-label="Amino Acid Selection">
-      <button class="aa-btn" onclick="addAA('Gly','G')" aria-label="Add Glycine">Gly</button>
-      <button class="aa-btn" onclick="addAA('Ala','A')" aria-label="Add Alanine">Ala</button>
-      <button class="aa-btn" onclick="addAA('Val','V')" aria-label="Add Valine">Val</button>
-      <button class="aa-btn" onclick="addAA('Leu','L')" aria-label="Add Leucine">Leu</button>
-      <button class="aa-btn" onclick="addAA('Pro','P')" aria-label="Add Proline">Pro</button>
-      <button class="aa-btn" onclick="addAA('Ser','S')" aria-label="Add Serine">Ser</button>
-      <button class="aa-btn" onclick="addAA('Thr','T')" aria-label="Add Threonine">Thr</button>
-      <button class="aa-btn" onclick="addAA('Cys','C')" aria-label="Add Cysteine">Cys</button>
-      <button class="aa-btn" onclick="addAA('Met','M')" aria-label="Add Methionine">Met</button>
-      <button class="aa-btn" onclick="addAA('Phe','F')" aria-label="Add Phenylalanine">Phe</button>
-      <button class="aa-btn" onclick="addAA('Trp','W')" aria-label="Add Tryptophan">Trp</button>
-      <button class="aa-btn" onclick="addAA('His','H')" aria-label="Add Histidine">His</button>
+  <!-- PAGE 1 -->
+  <div id="m2p1" class="m2-page active">
+    <img src="/images/course/mod2_pg1.png" class="m2-img" alt="Module 2 Page 1" />
+    <div class="m2-nav-btn" onclick="goM2(1)" style="left:5%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(2)" style="left:23%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(3)" style="left:42%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(4)" style="left:60%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(5)" style="left:80%;"></div>
+    
+    <!-- Bottom Nav -->
+    <div class="m2-btn" onclick="goTo(1)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <div class="m2-btn" onclick="goM2(2)" style="left:65%; width:35%; top:88%; height:12%;"></div>
+  </div>
+
+  <!-- PAGE 2 -->
+  <div id="m2p2" class="m2-page">
+    <img src="/images/course/mod2_pg2.png" class="m2-img" alt="Module 2 Page 2" />
+    <div class="m2-nav-btn" onclick="goM2(1)" style="left:5%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(2)" style="left:23%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(3)" style="left:42%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(4)" style="left:60%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(5)" style="left:80%;"></div>
+    
+    <div class="m2-btn" onclick="goM2(1)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <div class="m2-btn" onclick="goM2(3)" style="left:65%; width:35%; top:88%; height:12%;"></div>
+  </div>
+
+  <!-- PAGE 3 -->
+  <div id="m2p3" class="m2-page">
+    <img src="/images/course/mod2_pg3.png" class="m2-img" alt="Module 2 Page 3" />
+    <div class="m2-nav-btn" onclick="goM2(1)" style="left:5%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(2)" style="left:23%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(3)" style="left:42%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(4)" style="left:60%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(5)" style="left:80%;"></div>
+    
+    <div class="m2-btn" onclick="goM2(2)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <div class="m2-btn" onclick="goM2(4)" style="left:65%; width:35%; top:88%; height:12%;"></div>
+  </div>
+
+  <!-- PAGE 4 -->
+  <div id="m2p4" class="m2-page">
+    <img src="/images/course/mod2_pg4.png" class="m2-img" alt="Module 2 Page 4" />
+    <div class="m2-nav-btn" onclick="goM2(1)" style="left:5%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(2)" style="left:23%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(3)" style="left:42%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(4)" style="left:60%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(5)" style="left:80%;"></div>
+    
+    <div class="m2-btn" onclick="goM2(3)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <div class="m2-btn" onclick="goM2(5)" style="left:65%; width:35%; top:88%; height:12%;"></div>
+  </div>
+
+  <!-- PAGE 5 -->
+  <div id="m2p5" class="m2-page">
+    <img src="/images/course/mod2_pg5.png" class="m2-img" alt="Module 2 Page 5" />
+    <div class="m2-nav-btn" onclick="goM2(1)" style="left:5%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(2)" style="left:23%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(3)" style="left:42%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(4)" style="left:60%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(5)" style="left:80%;"></div>
+    
+    <!-- Question 1: Water Leaves -->
+    <div class="m2-opt q1" onclick="checkM2('q1', false, this)" style="top:27.5%;"></div>
+    <div class="m2-opt q1" onclick="checkM2('q1', true, this)" style="top:32.5%;"></div>
+    <div class="m2-opt q1" onclick="checkM2('q1', false, this)" style="top:37.5%;"></div>
+    
+    <!-- Question 2: Different Peptides -->
+    <div class="m2-opt q2" onclick="checkM2('q2', false, this)" style="top:54.5%;"></div>
+    <div class="m2-opt q2" onclick="checkM2('q2', true, this)" style="top:59.5%;"></div>
+    <div class="m2-opt q2" onclick="checkM2('q2', false, this)" style="top:64.5%;"></div>
+    
+    <!-- Next Module Button -->
+    <div class="m2-btn" onclick="goM2(4)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <!-- Mark module 2 complete and go to module 3 (s3) -->
+    <div class="m2-btn" onclick="completeModule('s2'); goTo(3)" style="left:60%; width:40%; top:88%; height:12%;"></div>
+    
+    <!-- Toast Container -->
+    <div id="m2-toast">
+      <div id="m2-toast-icon" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"></div>
+      <div>
+        <div id="m2-toast-title" style="font-weight: bold; font-size: 16px; margin-bottom: 4px;"></div>
+        <div id="m2-toast-msg" style="font-size: 14px; color: var(--nk2);"></div>
+      </div>
     </div>
   </div>
 
-  <div class="card">
-    <h3 style="font-size:15px;margin-bottom:12px;">What Is A Peptide Bond?</h3>
-    <p style="font-size:14px;">When Two Building Blocks Connect, They Grab On Tight And A Tiny Drop Of Water Pops Out. That Strong Grip Has A Name: A Peptide Bond. It Is Like Super Glue Between Two LEGO Bricks, Hard To Pull Apart.</p>
-    <div class="callout" style="margin-top:12px;">
-      <strong>BPC-157 Example:</strong> BPC-157 Is Made Of 15 Building Blocks Linked In A Row. Every Single Link Matters. Remove One And It Stops Working.
-    </div>
-  </div>
+  <script>
+    function goM2(page) {
+      document.querySelectorAll('.m2-page').forEach(el => el.classList.remove('active'));
+      document.getElementById('m2p' + page).classList.add('active');
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
 
-  <h3 style="font-size:16px;margin:20px 0 12px;">Peptide Vs. Protein: Size Comparison</h3>
-  <div class="svg-compare">
-    <div class="svg-compare-box">
-      <svg width="120" height="80" viewBox="0 0 120 80" aria-label="Peptide structure diagram">
-        <circle cx="20" cy="40" r="10" fill="rgba(0,196,188,0.3)" stroke="var(--teal)" stroke-width="2"/>
-        <line x1="30" y1="40" x2="40" y2="40" stroke="var(--teal)" stroke-width="2"/>
-        <circle cx="50" cy="40" r="10" fill="rgba(0,196,188,0.3)" stroke="var(--teal)" stroke-width="2"/>
-        <line x1="60" y1="40" x2="70" y2="40" stroke="var(--teal)" stroke-width="2"/>
-        <circle cx="80" cy="40" r="10" fill="rgba(0,196,188,0.3)" stroke="var(--teal)" stroke-width="2"/>
-        <line x1="90" y1="40" x2="100" y2="40" stroke="var(--teal)" stroke-width="2"/>
-        <circle cx="110" cy="40" r="8" fill="rgba(0,196,188,0.2)" stroke="var(--teal)" stroke-width="1.5" stroke-dasharray="3,2"/>
-        <text x="15" y="44" fill="var(--text)" font-size="7" font-family="Inter,sans-serif">AA</text>
-        <text x="45" y="44" fill="var(--text)" font-size="7" font-family="Inter,sans-serif">AA</text>
-        <text x="75" y="44" fill="var(--text)" font-size="7" font-family="Inter,sans-serif">AA</text>
-      </svg>
-      <div class="svg-compare-label" style="color:var(--teal);">Peptide (2-50 AA)</div>
-      <p style="font-size:11px;color:var(--muted);margin-top:4px;">Short And Simple. Small Enough To Move Around Easily.</p>
-    </div>
-    <div class="svg-compare-box">
-      <svg width="120" height="80" viewBox="0 0 120 80" aria-label="Protein structure diagram">
-        <path d="M20,60 Q30,20 50,40 Q70,60 90,30 Q100,15 110,35" fill="none" stroke="var(--blue-l)" stroke-width="3"/>
-        <circle cx="20" cy="60" r="5" fill="var(--blue-l)" opacity="0.6"/>
-        <circle cx="50" cy="40" r="5" fill="var(--blue-l)" opacity="0.6"/>
-        <circle cx="90" cy="30" r="5" fill="var(--blue-l)" opacity="0.6"/>
-        <circle cx="110" cy="35" r="5" fill="var(--blue-l)" opacity="0.6"/>
-        <ellipse cx="65" cy="40" rx="35" ry="25" fill="none" stroke="rgba(96,165,250,0.25)" stroke-width="1.5" stroke-dasharray="4,3"/>
-        <text x="52" y="72" fill="var(--muted)" font-size="7" font-family="Inter,sans-serif">Folded 3D</text>
-      </svg>
-      <div class="svg-compare-label" style="color:var(--blue-l);">Protein (51+ AA)</div>
-      <p style="font-size:11px;color:var(--muted);margin-top:4px;">Long And Folded Into A Big Shape. Much Bigger Than A Peptide.</p>
-    </div>
-  </div>
+    function checkM2(qClass, isCorrect, el) {
+      document.querySelectorAll('.' + qClass).forEach(opt => {
+        opt.classList.remove('selected', 'wrong-opt');
+      });
+      
+      if (isCorrect) {
+        el.classList.add('selected');
+        showM2Toast(true, 'Correct!', 'You selected the right answer.');
+      } else {
+        el.classList.add('wrong-opt');
+        showM2Toast(false, 'Incorrect', 'Review the material and try again.');
+      }
+    }
 
-  <div class="card" style="margin-top:16px;">
-    <strong style="font-size:15px;">Module 2 Quiz</strong>
-    <p style="font-size:14px;margin:10px 0;">If You Connect 30 Building Blocks, What Do You Have?</p>
-    <div class="quiz-opts" role="group" aria-label="Quiz Options">
-      <button class="quiz-opt" onclick="quiz('q2',this,false)" aria-label="Option: Protein">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-        Protein
-      </button>
-      <button class="quiz-opt" onclick="quiz('q2',this,true)" aria-label="Option: Peptide">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-        Peptide
-      </button>
-      <button class="quiz-opt" onclick="quiz('q2',this,false)" aria-label="Option: Enzyme">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-        Enzyme
-      </button>
-    </div>
-    <div class="quiz-fb" id="q2-fb"></div>
-  </div>
+    let m2ToastTimer;
+    function showM2Toast(isCorrect, title, msg) {
+      const toast = document.getElementById('m2-toast');
+      const icon = document.getElementById('m2-toast-icon');
+      const titleEl = document.getElementById('m2-toast-title');
+      const msgEl = document.getElementById('m2-toast-msg');
 
-  <div class="nav-ctrl">
-    <button class="btn btn-ghost" onclick="goTo(1)" aria-label="Back">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      Back
-    </button>
-    <button class="btn btn-primary" onclick="goTo(3)" aria-label="Next: How They Work">
-      Next: How They Work
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-    </button>
-  </div>
+      if (isCorrect) {
+        toast.style.borderColor = 'rgba(0, 196, 188, 0.5)';
+        icon.style.background = 'var(--teal)';
+        icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+        titleEl.style.color = 'var(--teal)';
+      } else {
+        toast.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+        icon.style.background = 'var(--red)';
+        icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        titleEl.style.color = 'var(--red)';
+      }
+
+      titleEl.textContent = title;
+      msgEl.textContent = msg;
+
+      toast.classList.add('show');
+      clearTimeout(m2ToastTimer);
+      m2ToastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+  </script>
 </div>
 
 <!-- =========================================================
