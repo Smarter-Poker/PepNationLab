@@ -74,11 +74,11 @@ export default function Peptide101LandingPage() {
         />
 
         {/* --- Top Nav Hotspots --- */}
-        <div onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} style={{ position: 'absolute', top: '1%', left: '0%', width: '20%', height: '5%', cursor: 'pointer', zIndex: 10 }} title="Overview"></div>
-        <div onClick={routeToRoadmap} style={{ position: 'absolute', top: '1%', left: '20%', width: '20%', height: '5%', cursor: 'pointer', zIndex: 10 }} title="Roadmap"></div>
-        <div onClick={() => window.location.href='/peptide-101/course#s6'} style={{ position: 'absolute', top: '1%', left: '40%', width: '20%', height: '5%', cursor: 'pointer', zIndex: 10 }} title="Families"></div>
-        <div onClick={() => window.location.href='/peptide-101/course#s8'} style={{ position: 'absolute', top: '1%', left: '60%', width: '20%', height: '5%', cursor: 'pointer', zIndex: 10 }} title="Reconstitution"></div>
-        <div onClick={() => window.location.href='/peptide-101/course#s15'} style={{ position: 'absolute', top: '1%', left: '80%', width: '20%', height: '5%', cursor: 'pointer', zIndex: 10 }} title="Certificate"></div>
+        <div onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} style={{ position: 'absolute', top: '0%', left: '0%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Overview"></div>
+        <div onClick={() => window.location.href='/peptide-101/course#s1'} style={{ position: 'absolute', top: '0%', left: '20%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Roadmap"></div>
+        <div onClick={() => window.location.href='/peptide-101/course#s6'} style={{ position: 'absolute', top: '0%', left: '40%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Families"></div>
+        <div onClick={() => window.location.href='/peptide-101/course#s8'} style={{ position: 'absolute', top: '0%', left: '60%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Reconstitution"></div>
+        <div onClick={() => window.location.href='/peptide-101/course#s10'} style={{ position: 'absolute', top: '0%', left: '80%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Certificate"></div>
 
         {/* --- Main CTA Button (Top) --- */}
         <div 
