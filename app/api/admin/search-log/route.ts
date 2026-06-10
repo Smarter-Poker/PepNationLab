@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
+import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
@@ -16,6 +17,10 @@ export const dynamic = 'force-dynamic';
  * has to handle a failure.
  */
 export async function POST(req: NextRequest) {
+  // CSRF: state-changing route must be same-origin (platform rule).
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const admin = await requireAdmin();
   if (!admin.ok) {
     return new NextResponse(null, { status: 204 });
