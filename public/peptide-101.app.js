@@ -1244,14 +1244,29 @@ document.addEventListener("DOMContentLoaded", function() {
       else if(e.key==='ArrowLeft'){ e.preventDefault(); e.stopImmediatePropagation(); prev(); }
     },true);
     // ensure we are showing a valid screen
-    var hash = window.location.hash.substring(1);
+    // Strip any query params — hash is always after the #, independent of ?params
+    var hash = window.location.hash.replace('#','');
     if(hash === 'glossary') {
-      showScreen('s0'); // Load initial screen
+      showScreen('s0'); // Load initial screen, then open glossary
       if(typeof showGlossary === 'function') setTimeout(showGlossary, 100);
     } else if(hash && document.getElementById(hash)) {
+      // Valid screen hash — always navigate to it (works for both normal and ?review=1)
       showScreen(hash);
+    } else if(hash) {
+      // Hash exists but element not found yet — do NOT redirect to s0.
+      // Just stay on whatever is currently active, or the first screen.
+      var active = document.querySelector('.screen.active');
+      if(!active) showScreen('s1');
     } else {
-      showScreen(document.querySelector('.screen.active')?document.querySelector('.screen.active').id:'s0');
+      // No hash — restore saved progress or start at s1
+      var saved = null;
+      try { saved = localStorage.getItem('p101_screen'); } catch(e) {}
+      var savedId = saved ? 's' + saved : null;
+      if(savedId && document.getElementById(savedId)) {
+        showScreen(savedId);
+      } else {
+        showScreen('s1');
+      }
     }
   }
 
