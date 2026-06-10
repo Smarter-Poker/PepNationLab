@@ -130,7 +130,7 @@ export default function PinToCompareButton({
   }, [compoundSlug, compoundName, evidenceTierKey, productName, imageUrl, pricePerVialDollars, category, sync]);
 
   const isSmall = size === 'sm';
-  const buttonWidth = isSmall ? '120px' : '185px';
+  const buttonWidth = isSmall ? '120px' : '180px';
 
   if (pinned) {
     return (

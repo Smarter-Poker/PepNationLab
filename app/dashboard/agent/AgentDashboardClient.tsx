@@ -127,7 +127,7 @@ export default function AgentDashboardClient({
   // Whitelist of valid tabs. Any unknown / malformed ?tab= value (e.g. a link
   // whose "&" terminated the query string, leaving "Sales ") must fall back to
   // the default tab - otherwise the main panel renders blank and looks broken.
-  const VALID_TABS = ['Overview', 'Sales & Accounting', 'Orders', 'Researchers', 'My Sub-Agents', 'My Agent Accounts', 'Store Products', 'Research Bundles', 'Inventory', 'Coupons', 'Storefront Config', 'Settings'] as const;
+  const VALID_TABS = ['Overview', 'Sales & Accounting', 'Orders', 'Researchers', 'My Sub-Agents', 'My Agent Accounts', 'Store Products', 'Research Bundles', 'Inventory', 'Coupons', 'Tier Ladder', 'Storefront Config', 'Settings'] as const;
   type AgentTabName = typeof VALID_TABS[number];
   const resolveTab = (t: unknown): AgentTabName =>
     (typeof t === 'string' && (VALID_TABS as readonly string[]).includes(t)) ? (t as AgentTabName) : (defaultTab as AgentTabName);
@@ -1163,6 +1163,10 @@ export default function AgentDashboardClient({
 
         {/* TAB: Discount Coupons */}
         {activeTab === 'Coupons' && <AgentCoupons agentId={userProfile.id} />}
+
+
+        {/* TAB: Tier Ladder */}
+        {activeTab === 'Tier Ladder' && <div style={{ animation: 'fadeIn 0.3s ease-out' }}><AgentTierLadder agentId={userProfile.id} /></div>}
 
 
         {/* TAB: Storefront Configuration */}

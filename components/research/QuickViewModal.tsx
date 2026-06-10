@@ -25,7 +25,7 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
           <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
           <motion.div 
             initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', background: 'rgba(10, 15, 20, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}
+            style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', background: 'rgba(10, 15, 20, 0.95)', border: '2px solid rgba(255,255,255,0.15)', borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}
           >
             {/* Header */}
             <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'sticky', top: 0, background: 'linear-gradient(to bottom, rgba(10,15,20,0.98) 0%, rgba(10,15,20,0.9) 100%)', zIndex: 10 }}>
@@ -39,28 +39,12 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
                   )}
                 </div>
                 
-                {/* Badges & Popular Name */}
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  {compound.evidence_tier && (() => {
-                    const t = evidenceTier(compound.evidence_tier);
-                    return (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: t.color, border: `1px solid ${t.color}`, borderRadius: '999px', padding: '2px 10px' }}>
-                        {t.label}
-                      </span>
-                    );
-                  })()}
-                  {compound.category && (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--teal, #00C4BC)', fontWeight: 600 }}>
-                      {compound.category}
-                    </span>
-                  )}
-                  {compound.aliases && compound.aliases.length > 0 && (
-                    <span style={{ fontSize: '0.75rem', color: '#A8B4C0', marginLeft: compound.category || compound.evidence_tier ? '4px' : '0' }}>
-                      {compound.category || compound.evidence_tier ? '| ' : ''}
-                      <strong style={{ color: '#C0C8D0' }}>Popular Name:</strong> {compound.aliases.slice(0, 3).join(', ')}
-                    </span>
-                  )}
-                </div>
+                {/* Popular Name Only */}
+                {compound.aliases && compound.aliases.length > 0 && (
+                  <div style={{ fontSize: '0.85rem', color: '#A8B4C0' }}>
+                    <strong style={{ color: '#C0C8D0' }}>Popular Name:</strong> {compound.aliases.slice(0, 3).join(', ')}
+                  </div>
+                )}
               </div>
               <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}>
                 <X size={20} />
@@ -94,7 +78,7 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {compound.mechanism && (
-                    <div style={{ background: '#0F1318', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 16, padding: '16px 20px' }}>
+                    <div style={{ background: '#0F1318', border: '2px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '16px 20px' }}>
                       <div style={{ color: '#C0C8D0', fontSize: '1.1rem', fontWeight: 800, marginBottom: 8 }}>Mechanism Of Action</div>
                       <div style={{ color: '#A8B4C0', fontSize: '0.85rem', lineHeight: 1.5 }}>
                         <InteractiveGlossaryText text={compound.mechanism} />
@@ -103,7 +87,7 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
                   )}
                   
                   {compound.pk_summary && (
-                    <div style={{ background: '#0F1318', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 16, padding: '16px 20px' }}>
+                    <div style={{ background: '#0F1318', border: '2px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '16px 20px' }}>
                       <div style={{ color: '#C0C8D0', fontSize: '1.1rem', fontWeight: 800, marginBottom: 8 }}>Pharmacokinetics</div>
                       <div style={{ color: '#A8B4C0', fontSize: '0.85rem', lineHeight: 1.5 }}>
                         <InteractiveGlossaryText text={compound.pk_summary} />
@@ -111,7 +95,7 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
                     </div>
                   )}
 
-                  <div style={{ background: '#0F1318', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 16, padding: '16px 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ background: '#0F1318', border: '2px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '16px 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
                       <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--silver, #A8B4C0)', fontWeight: 600 }}>Form</div>
                       <div style={{ color: 'var(--white, #FFFFFF)', fontWeight: 500 }}>{compound.handling?.form || 'Vial'}</div>
@@ -126,29 +110,28 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
             </div>
 
             {/* Bottom Actions Row */}
-            <div style={{ padding: '20px 32px', background: 'rgba(0,0,0,0.4)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '20px 32px', background: 'rgba(0,0,0,0.4)', borderTop: '2px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'center', gap: 16, alignItems: 'center' }}>
               <Link
                 href={`/research/${compound.slug}`}
-                style={{ background: 'var(--teal, #00C4BC)', color: '#0C151D', padding: '12px 24px', borderRadius: 8, textDecoration: 'none', fontWeight: 800, flexShrink: 0 }}
+                style={{ display: 'inline-flex', width: 180, transition: 'transform 0.15s' }}
+                onMouseOver={e => e.currentTarget.style.transform = 'scale(1.02)'}
+                onMouseOut={e => e.currentTarget.style.transform = 'none'}
                 onClick={onClose}
               >
-                View Full Profile
+                <Image src="/images/view_full_profile_btn.png" alt="View Full Profile" width={200} height={200} unoptimized style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />
               </Link>
               
-              <div style={{ display: 'flex', gap: 12 }}>
-                <PinToCompareButton
-                  compoundSlug={compound.slug}
-                  compoundName={compound.display_name}
-                  evidenceTierKey={compound.evidence_tier}
-                  category={compound.category}
-                  size="md"
-                  style={{ height: '100%' }}
-                />
-                <ResearchCartButton 
-                  productName={compound.display_name} 
-                  size="md" 
-                />
-              </div>
+              <PinToCompareButton
+                compoundSlug={compound.slug}
+                compoundName={compound.display_name}
+                evidenceTierKey={compound.evidence_tier}
+                category={compound.category}
+                size="md"
+              />
+              <ResearchCartButton 
+                productName={compound.display_name} 
+                size="md" 
+              />
             </div>
           </motion.div>
         </div>
