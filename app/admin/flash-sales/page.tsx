@@ -67,11 +67,13 @@ export default function AdminFlashSalesPage() {
 
   const toggleActive = async (s: FlashSale) => {
     try {
-      await fetch(`/api/admin/flash-sales/${encodeURIComponent(s.id)}`, {
+      const res = await fetch(`/api/admin/flash-sales/${encodeURIComponent(s.id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: !s.is_active }),
       });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(json.error || 'Failed To Update Sale'); return; }
       toast.success(s.is_active ? 'Sale Deactivated' : 'Sale Activated - Banner Live Globally');
       load();
     } catch { toast.error('Network Error'); }
@@ -80,7 +82,13 @@ export default function AdminFlashSalesPage() {
   const remove = async (s: FlashSale) => {
     if (!confirm(`Delete "${s.name}"?`)) return;
     try {
-      await fetch(`/api/admin/flash-sales/${encodeURIComponent(s.id)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/flash-sales/${encodeURIComponent(s.id)}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        toast.error(json.error || 'Failed To Delete Sale');
+        return;
+      }
+      toast.success('Flash Sale Deleted');
       load();
     } catch { toast.error('Network Error'); }
   };

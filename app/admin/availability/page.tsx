@@ -6,6 +6,6 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminAvailabilityPage() {
   const gate = await requireAdmin();
-  if (!gate.ok) redirect('/');
+  if (!gate.ok) redirect('/login');
   return <AdminAvailabilityClient />;
 }
