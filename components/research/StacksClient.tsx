@@ -546,7 +546,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 
                             return (
                               <div key={compSlug} style={{
-                                flex: '1 1 0', minWidth: 60, maxWidth: 140, aspectRatio: '1 / 1.2',
+                                flex: '1 1 0', minWidth: 60, maxWidth: 140, height: 150,
                                 borderRadius: 12, 
                                 background: '#0F1318',
                                 border: '2px solid rgba(255,255,255,0.2)',
