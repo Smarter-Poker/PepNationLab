@@ -170,7 +170,7 @@ export default async function OrderDetailPage(
     }
   }
 
-  // ─── Recommendations ("You May Also Like") ───────────────────
+  // ─── Recommendations ("You May Also Like") ───────────────
   // Seed from the FIRST eligible order_item.product_id. Service client used
   // so the SECURITY DEFINER RPC + materialized view reads work regardless
   // of the researcher's row-level role. We intersect the candidate ids
