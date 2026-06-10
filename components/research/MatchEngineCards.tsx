@@ -45,6 +45,7 @@ export default function MatchEngineCards() {
         paddingBottom: '16px',
         scrollbarWidth: 'none',
         msOverflowStyle: 'none'
+      }}>
         {objectives.map((obj) => (
           <motion.button
             key={obj.id}
