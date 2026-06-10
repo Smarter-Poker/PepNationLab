@@ -832,6 +832,7 @@ document.addEventListener("DOMContentLoaded", function() {
   function setCertDate(){var d=qs('#certDate'); if(d) d.textContent='Completed: '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});}
   function showScreen(id){
     if(!document.getElementById(id)) id='s0';
+    if(id === 's0') { window.location.href = '/peptide-101'; return; }
     qsa('.screen').forEach(function(s){s.classList.remove('active');});
     var elx=document.getElementById(id); elx.classList.add('active');
     CUR=id;
@@ -1211,7 +1212,12 @@ document.addEventListener("DOMContentLoaded", function() {
       else if(e.key==='ArrowLeft'){ e.preventDefault(); e.stopImmediatePropagation(); prev(); }
     },true);
     // ensure we are showing a valid screen
-    showScreen(document.querySelector('.screen.active')?document.querySelector('.screen.active').id:'s0');
+    var hash = window.location.hash.substring(1);
+    if(hash && document.getElementById(hash)) {
+      showScreen(hash);
+    } else {
+      showScreen(document.querySelector('.screen.active')?document.querySelector('.screen.active').id:'s0');
+    }
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){setTimeout(init,0);});
