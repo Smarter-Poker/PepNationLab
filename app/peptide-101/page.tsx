@@ -118,9 +118,13 @@ export default function Peptide101LandingPage() {
         ></div>
 
         {CONTENT.concat(['s15']).map((modId, index) => {
-          // Approximate vertical placement for the roadmap cards (starting around 45% down, spacing out by 3.5%)
-          // Adjust these percentages depending on the exact height of the image!
-          const topPosition = 45 + (index * 3.5); 
+          // --- ADJUST THESE TWO NUMBERS TO PERFECTLY ALIGN THE HITBOXES WITH THE IMAGE ---
+          // ROADMAP_START: Where the FIRST hitbox (Module 1) should start (percentage from top)
+          // ROADMAP_STEP: The space between each hitbox (percentage)
+          const ROADMAP_START = 47.5; 
+          const ROADMAP_STEP = 2.4;
+          
+          const topPosition = ROADMAP_START + (index * ROADMAP_STEP); 
           
           return (
             <div 
@@ -139,12 +143,12 @@ export default function Peptide101LandingPage() {
                 top: `${topPosition}%`,
                 left: '5%',
                 width: '90%',
-                height: '3%',
+                height: '2.2%', // Slightly thinner boxes so they don't overlap
                 cursor: 'pointer',
                 zIndex: 10,
                 // VISUAL DEBUG: showing hitboxes so you can see if they align with the image numbers!
-                backgroundColor: 'rgba(0, 196, 188, 0.15)',
-                border: '1px solid rgba(0, 196, 188, 0.4)',
+                backgroundColor: 'rgba(0, 196, 188, 0.25)',
+                border: '2px solid rgba(0, 196, 188, 0.8)',
                 borderRadius: '8px'
               }}
               title={`Go to Module ${index + 1}`}
