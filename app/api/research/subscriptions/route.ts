@@ -6,6 +6,7 @@
  */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
   const { supabase, user } = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   let body: { compound_slug?: string; notify_new_evidence?: boolean; notify_wada_change?: boolean; notify_recall?: boolean; notify_trial_status?: boolean };
@@ -51,6 +54,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
   const { supabase, user } = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   let body: { compound_slug?: string; notify_new_evidence?: boolean; notify_wada_change?: boolean; notify_recall?: boolean; notify_trial_status?: boolean };
@@ -82,13 +87,20 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
   const { supabase, user } = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   let body: { compound_slug?: string };
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
   const compound_slug = (body.compound_slug ?? '').trim();
   if (!compound_slug) return NextResponse.json({ error: 'compound_slug required' }, { status: 400 });
-  const { error } = await supabase.from('user_compound_subscriptions').delete().eq('compound_slug', compound_slug);
+  // Scope the delete to the caller's own subscription (defense-in-depth beyond RLS).
+  const { error } = await supabase
+    .from('user_compound_subscriptions')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('compound_slug', compound_slug);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return new NextResponse(null, { status: 204 });
 }

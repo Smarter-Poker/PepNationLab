@@ -27,6 +27,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -34,7 +37,7 @@ export async function POST(req: NextRequest) {
   }
 
   const ua = req.headers.get('user-agent') || 'Unknown';
-  const ip = req.headers.get('x-forwarded-for') || req.ip || null;
+  const ip = req.headers.get('x-forwarded-for') || null;
 
   let deviceName = 'Unknown Device';
   if (ua.includes('Macintosh')) deviceName = 'Mac';

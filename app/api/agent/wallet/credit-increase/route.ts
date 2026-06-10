@@ -1,7 +1,8 @@
 // Round 24 Wallet - credit increase request
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notify } from '@/lib/notify';
 
@@ -14,9 +15,9 @@ const Body = z.object({
 });
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
+  const user = gate.user;
   const svc = await createServiceClient();
   const { data } = await svc
     .from('credit_increase_requests')
@@ -31,9 +32,9 @@ export async function POST(req: Request) {
   const csrf = assertSameOrigin(req as any);
   if (csrf) return csrf;
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
+  const user = gate.user;
 
   let body: z.infer<typeof Body>;
   try { body = Body.parse(await req.json()); }
