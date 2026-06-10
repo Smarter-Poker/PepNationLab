@@ -133,7 +133,7 @@
   /* ---------------- STEPPER FRAMEWORK ---------------- */
   var ARR_R='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
   var ARR_L='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>';
-  function buildStepper(screen, steps, prevModule, nextModule, labels){
+  function buildStepper(screen, steps, prevModule, nextModule, labels, opts){
     screen.innerHTML='';
     var wrap = E('div','v14');
 
@@ -172,7 +172,8 @@
       }
       back.classList.toggle('hidden', cur===0 && prevModule==null);
       var last = cur===N-1;
-      next.innerHTML = (last?'Next: Module '+ (nextModule!=null?nextModule:'') :'Next')+ARR_R;
+      var nlbl = (opts&&opts.nextLabel)?opts.nextLabel:('Module '+(nextModule!=null?nextModule:''));
+      next.innerHTML = (last?'Next: '+nlbl :'Next')+ARR_R;
       try{ window.scrollTo&&window.scrollTo({top:0,behavior:'smooth'}); }catch(e){}
     }
     next.addEventListener('click', function(){ if(cur<N-1){ cur++; paint(); } else if(nextModule!=null){ goModule(nextModule); } });
@@ -256,14 +257,14 @@
     buildStepper:buildStepper, wireQuiz:wireQuiz, injectDefs:injectDefs, injectCSS:injectCSS
   };
   // module(screenId, modNum, prevMod, nextMod, pagesFn) -> builds when ready; idempotent
-  API.module = function(sid, modNum, prev, next, labels, pagesFn){
+  API.module = function(sid, modNum, prev, next, labels, pagesFn, opts){
     function tryBuild(){
       var sc = qs('#'+sid); if(!sc) return false;
       if(sc.getAttribute('data-v14')) return true;
       if(!(window.goTo || (window.P101 && P101.go))) return false;
       injectCSS(); injectDefs();
       var pages = pagesFn(API, eyebrow);
-      buildStepper(sc, pages, prev, next, labels);
+      buildStepper(sc, pages, prev, next, labels, opts);
       wireQuiz(sc);
       sc.setAttribute('data-v14','1');
       return true;
