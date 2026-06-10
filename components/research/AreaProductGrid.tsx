@@ -10,6 +10,7 @@ import { prewarmProxy } from '@/lib/ArticleProxyUtils';
 import DynamicAddToCartButton from '../storefront/DynamicAddToCartButton';
 import IframeModal from '../ui/IframeModal';
 import Image from 'next/image';
+import QuickViewModal from './QuickViewModal';
 
 /* ─── Interfaces ─── */
 
@@ -131,6 +132,7 @@ export default function AreaProductGrid({
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
   const [toast, setToast] = useState<string | null>(null);
   const [modalUrl, setModalUrl] = useState<string | null>(null);
+  const [quickViewCompound, setQuickViewCompound] = useState<any | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstCartSave = useRef(true);
 
@@ -508,6 +510,26 @@ export default function AreaProductGrid({
 
   return (
     <div style={{ position: 'relative' }}>
+      <style dangerouslySetInnerHTML={{__html: `
+        .stack-card {
+          content-visibility: auto;
+          contain-intrinsic-size: 500px;
+        }
+        .stack-card::after {
+          content: '';
+          position: absolute;
+          top: 0; left: -150%;
+          width: 50%; height: 100%;
+          background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0) 100%);
+          transform: skewX(-25deg);
+          transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+          pointer-events: none;
+          z-index: 20;
+        }
+        .stack-card:hover::after {
+          left: 200%;
+        }
+      `}} />
       {modalUrl && (
         <IframeModal url={modalUrl} onClose={() => setModalUrl(null)} />
       )}
@@ -719,311 +741,142 @@ export default function AreaProductGrid({
             : p.retailPrice;
 
           return (
-            <div
+            <motion.article
               key={p.productId}
+              className="glass-panel stack-card"
+              whileHover={{ y: -6, scale: 1.02, boxShadow: '0 20px 40px rgba(0,0,0,0.6), inset 0 2px 10px rgba(255,255,255,0.4)' }}
               style={{
                 minWidth: isSwipeMode ? '85vw' : 'auto',
                 scrollSnapAlign: isSwipeMode ? 'center' : 'none',
-                background: 'rgba(10,16,24,0.85)',
-                border: isComparing
-                  ? '1px solid rgba(0,196,188,0.4)'
-                  : '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 16,
+                padding: 4,
                 overflow: 'hidden',
-                transition: 'transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
-                cursor: 'default',
-                display: 'flex',
-                flexDirection: 'column',
                 position: 'relative',
+                cursor: 'pointer',
+                background: isComparing ? '#00E5FF' : 'linear-gradient(135deg, #e0e5ec 0%, #88929c 25%, #e0e5ec 50%, #a3b1c6 75%, #f0f4f8 100%)',
+                borderRadius: 24,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                border: 'none',
+                contentVisibility: 'auto',
+                containIntrinsicSize: '500px'
               }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
-                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 40px rgba(0,0,0,0.4)';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-                (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+              onClick={() => {
+                if (compound) {
+                  setQuickViewCompound({
+                    ...compound,
+                    display_name: compound.displayName,
+                    evidence_tier: compound.evidenceTier,
+                    plain_summary: compound.plainSummary,
+                    eli5_summary: compound.eli5Summary,
+                    typical_frequency: compound.typicalFrequency,
+                    handling: { form: 'Vial' },
+                  });
+                }
               }}
             >
-              {/* Image area */}
-              <div style={{
-                position: 'relative',
-                height: 180,
-                background: 'radial-gradient(ellipse at 50% 40%, rgba(20,30,50,0.9) 0%, rgba(5,7,10,1) 80%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-              }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <Image
-                  src={p.imageUrl}
-                  alt={p.productName}
-                  width={140}
-                  height={140}
-                  unoptimized
-                  loading="lazy"
-                  style={{
-                    objectFit: 'contain',
-                    maxHeight: 140,
-                    maxWidth: 140,
-                    filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.5))',
-                  }}
-                />
-
-                {/* Compare checkbox (top left) */}
-                <label
-                  style={{
-                    position: 'absolute',
-                    top: 12,
-                    left: 12,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    cursor: 'pointer',
-                    padding: '4px 10px',
-                    borderRadius: 20,
-                    background: 'rgba(10,16,24,0.6)',
-                    border: isComparing ? '1px solid #00C4BC' : '1px solid rgba(255,255,255,0.2)',
-                    backdropFilter: 'blur(6px)',
-                    zIndex: 10,
-                    userSelect: 'none',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isComparing}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        if (pinnedNames.size >= 4) {
-                          showToast('You can compare up to 4 compounds at a time.');
-                          return;
-                        }
-                        try {
-                          const raw = window.localStorage.getItem('pnl:compare') || '[]';
-                          const list = JSON.parse(raw);
-                          if (Array.isArray(list) && list.length > 0) {
-                            const firstItem = list[0];
-                            const firstCategory = firstItem.category;
-                            if (firstCategory && firstCategory !== p.category) {
-                              showToast(`You can only compare peptides within the same category ("${firstCategory}").`);
-                              return;
-                            }
-                          }
-                        } catch {}
-                        pin(p);
-                      } else {
-                        unpin(p);
-                      }
-                    }}
-                    disabled={!isComparing && pinnedNames.size >= 4}
-                    style={{
-                      width: 14,
-                      height: 14,
-                      accentColor: '#00C4BC',
-                      cursor: 'pointer',
-                      margin: 0,
-                    }}
-                  />
-                  <span style={{
-                    color: isComparing ? '#00C4BC' : '#FFFFFF',
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                  }}>
-                    Compare
-                  </span>
-                </label>
-
-                {/* On sale badge */}
-                {p.isOnSale && p.salePrice != null && (
-                  <span style={{
-                    position: 'absolute',
-                    bottom: 12,
-                    right: 12,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    padding: '3px 8px',
-                    borderRadius: 20,
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    background: 'rgba(0,196,188,0.15)',
-                    color: '#00C4BC',
-                    border: '1px solid rgba(0,196,188,0.3)',
-                  }}>
-                    Sale
-                  </span>
-                )}
-              </div>
-
-              {/* Card body */}
-              <div style={{
-                padding: '16px 18px 10px',
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-              }}>
-                {/* Product name */}
-                <h3 style={{
-                  color: '#FFFFFF',
-                  fontSize: '1rem',
-                  fontWeight: 700,
-                  margin: '0 0 4px',
-                  lineHeight: 1.3,
-                }}>
-                  {toTitleCase(p.productName)}
-                </h3>
-
-                {/* Aliases */}
-                {compound?.aliases?.length ? (
-                  <p style={{
-                    color: '#A8B4C0',
-                    fontSize: '0.75rem',
-                    margin: '0 0 10px',
-                    lineHeight: 1.4,
-                    overflow: 'hidden',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                  }}>
-                    {compound.aliases.slice(0, 3).join(' · ')}
-                  </p>
-                ) : <div style={{ marginBottom: 10 }} />}
-
-                {/* Unit size + price line */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  gap: 6,
-                  marginBottom: 6,
-                }}>
-                  {p.unitSize && (
-                    <span style={{
-                      color: '#00C4BC',
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                    }}>
-                      {p.unitSize}{p.unitMeasure || ''}
-                    </span>
-                  )}
-                  <span style={{
-                    color: '#00C4BC',
-                    fontSize: '1.05rem',
-                    fontWeight: 800,
-                  }}>
-                    {p.agentProductId ? formatPrice(displayPrice) : '-'}
-                  </span>
-                  {p.agentProductId && p.isOnSale && p.salePrice != null && (
-                    <span style={{
-                      color: '#718096',
-                      fontSize: '0.8rem',
-                      textDecoration: 'line-through',
-                    }}>
-                      {formatPrice(p.retailPrice)}
-                    </span>
-                  )}
-                </div>
-
-                {/* Risk + citations row */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  marginBottom: 12,
-                  flexWrap: 'wrap',
-                }}>
-                  {compound?.riskLevel && (
-                    <span style={{
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      color: compound.riskLevel === 'low' ? '#68D391'
-                        : compound.riskLevel === 'moderate' ? '#F6E05E'
-                        : compound.riskLevel === 'high' ? '#FC8181'
-                        : '#FF6B6B',
-                      textTransform: 'capitalize',
-                    }}>
-                      {compound.riskLevel} Risk
-                    </span>
-                  )}
-                  {compound?.pubmedCitationCount != null && compound.pubmedCitationCount > 0 && (
-                    <span style={{
-                      fontSize: '0.7rem',
-                      color: '#A8B4C0',
-                      fontWeight: 500,
-                    }}>
-                      {compound.pubmedCitationCount.toLocaleString()} Citations
-                    </span>
-                  )}
-                </div>
-
-                {/* Stock indicator */}
+              <div style={{ background: 'linear-gradient(145deg, #1A1F26 0%, #0F1318 100%)', borderRadius: 20, height: '100%', position: 'relative', overflow: 'hidden', padding: 'var(--space-5)', display: 'flex', flexDirection: 'column' }}>
+                
+                {/* Out Of Stock Badge */}
                 {outOfStock && (
-                  <p style={{
-                    color: '#FC8181',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    margin: '0 0 8px',
-                  }}>
-                    Out Of Stock
-                  </p>
+                  <div style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255, 60, 60, 0.9)', color: '#fff', padding: '4px 10px', borderRadius: 6, fontSize: '0.7rem', fontWeight: 800, zIndex: 10, backdropFilter: 'blur(10px)', boxShadow: '0 4px 12px rgba(255, 60, 60, 0.4)' }}>
+                    OUT OF STOCK
+                  </div>
                 )}
 
-                <div style={{ flex: 1 }} />
-
-                {/* Actions Row */}
-                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-                  {outOfStock ? (
-                    <button
-                      disabled
-                      style={{
-                        flex: 1,
-                        height: 44,
-                        background: 'rgba(255,255,255,0.06)',
-                        color: '#718096',
-                        border: 'none',
-                        borderRadius: 10,
-                        fontWeight: 800,
-                        fontSize: '0.88rem',
-                        cursor: 'not-allowed',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      Out Of Stock
-                    </button>
-                  ) : !p.agentProductId ? (
-                    <button
-                      disabled
-                      style={{
-                        flex: 1,
-                        height: 44,
-                        background: 'rgba(255,255,255,0.06)',
-                        color: '#718096',
-                        border: 'none',
-                        borderRadius: 10,
-                        fontWeight: 800,
-                        fontSize: '0.88rem',
-                        cursor: 'not-allowed',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      Not Carried
-                    </button>
-                  ) : (
-                    <DynamicAddToCartButton
-                      onClick={() => addToCart(p)}
-                      pendingQty={inCart}
-                      style={{ flex: 1, height: 44, width: 'auto' }}
-                    />
-                  )}
-
+                {/* Compare Checkbox */}
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isComparing) unpin(p);
+                    else {
+                      if (pinnedNames.size >= 4) {
+                        showToast('You can compare up to 4 compounds at a time.');
+                        return;
+                      }
+                      try {
+                        const raw = window.localStorage.getItem('pnl:compare') || '[]';
+                        const list = JSON.parse(raw);
+                        if (Array.isArray(list) && list.length > 0) {
+                          const firstItem = list[0];
+                          const firstCategory = firstItem.category;
+                          if (firstCategory && firstCategory !== p.category) {
+                            showToast(`You can only compare peptides within the same category ("${firstCategory}").`);
+                            return;
+                          }
+                        }
+                      } catch {}
+                      pin(p);
+                    }
+                  }}
+                  style={{ position: 'absolute', top: 16, left: 16, zIndex: 10, width: 24, height: 24, borderRadius: 6, border: isComparing ? 'none' : '1px solid rgba(255,255,255,0.2)', background: isComparing ? '#00E5FF' : 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                >
+                  {isComparing && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
                 </div>
+
+                {/* Title Block */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20, paddingLeft: 36 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h2 style={{ margin: 0, color: '#E2E8F0', fontWeight: 800, fontSize: '1.25rem', letterSpacing: '-0.01em', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {toTitleCase(p.productName)}
+                    </h2>
+                    {compound?.aliases?.length ? (
+                      <div style={{ fontSize: '0.75rem', color: '#A8B4C0', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {compound.aliases.slice(0, 3).join(' · ')}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#E2E8F0', whiteSpace: 'nowrap' }}>
+                      {p.agentProductId ? formatPrice(displayPrice) : '-'}
+                    </div>
+                    {p.agentProductId && p.isOnSale && p.salePrice != null && (
+                      <div style={{ fontSize: '0.8rem', color: '#718096', textDecoration: 'line-through', marginTop: 2 }}>
+                        {formatPrice(p.retailPrice)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Image Cluster (Single Image) */}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 20, width: '100%' }}>
+                  <div style={{ 
+                    flex: '1 1 0', minWidth: 60, maxWidth: 140,
+                    position: 'relative',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+                  }}>
+                    <div style={{
+                      width: '100%', aspectRatio: '1 / 1.2',
+                      borderRadius: 16, 
+                      background: '#0F1318',
+                      border: '2px solid rgba(255,255,255,0.2)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      overflow: 'hidden', padding: 0,
+                      position: 'relative'
+                    }}>
+                      <Image src={p.imageUrl} alt={p.productName} width={200} height={200} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+                      <div style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        padding: '32px 4px 4px',
+                        background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 50%, #000 100%)',
+                        color: '#C0C8D0', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
+                        textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                      }}>
+                        {toTitleCase(p.productName)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description (ELI5) */}
+                {(compound?.eli5Summary || compound?.plainSummary) && (
+                  <p style={{ margin: 'var(--space-3) 0 0', color: '#D0DAE4', lineHeight: 1.55, fontSize: '0.9rem', flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {compound.eli5Summary || compound.plainSummary}
+                  </p>
+                )}
 
                 {/* Cross-Over Discovery Tags */}
                 {compound?.researchAreas && compound.researchAreas.length > 0 && (
-                  <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
                     {compound.researchAreas.map(ra => (
                       <span key={ra} style={{
                         padding: '3px 8px',
@@ -1042,8 +895,62 @@ export default function AreaProductGrid({
                     ))}
                   </div>
                 )}
+
+                {/* Add To Cart Button Centered */}
+                <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
+                  {outOfStock ? (
+                    <button
+                      disabled
+                      style={{
+                        height: 60,
+                        width: '100%',
+                        background: 'rgba(255,255,255,0.06)',
+                        color: '#718096',
+                        border: 'none',
+                        borderRadius: 10,
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        cursor: 'not-allowed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      Out Of Stock
+                    </button>
+                  ) : !p.agentProductId ? (
+                    <button
+                      disabled
+                      style={{
+                        height: 60,
+                        width: '100%',
+                        background: 'rgba(255,255,255,0.06)',
+                        color: '#718096',
+                        border: 'none',
+                        borderRadius: 10,
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        cursor: 'not-allowed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      Not Carried
+                    </button>
+                  ) : (
+                    <div onClick={e => e.stopPropagation()} style={{ width: '100%' }}>
+                      <DynamicAddToCartButton
+                        onClick={() => addToCart(p)}
+                        pendingQty={inCart}
+                        style={{ height: 60, width: '100%' }}
+                      />
+                    </div>
+                  )}
+                </div>
+
               </div>
-            </div>
+            </motion.article>
           );
         })}
       </div>
@@ -1065,6 +972,12 @@ export default function AreaProductGrid({
       )}
 
       {/* Comparison Drawer is rendered at the layout level via StorefrontCompareDrawer */}
+
+      <QuickViewModal
+        isOpen={!!quickViewCompound}
+        compound={quickViewCompound}
+        onClose={() => setQuickViewCompound(null)}
+      />
 
       {/* Stack Builder Sticky Banner */}
       {stackItems.size > 0 && (
