@@ -1,8 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
 
-export async function PATCH(request: Request) {
+export async function PATCH(request: NextRequest) {
   try {
+    // CSRF: state-changing admin route must be same-origin (platform rule).
+    const csrf = assertSameOrigin(request);
+    if (csrf) return csrf;
+
     const supabase = await createClient();
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -37,10 +42,12 @@ export async function PATCH(request: Request) {
       updates.auto_approve_orders = account_type === 'credit';
     }
     
-    // Convert to number or null, ensuring safe defaults
-    if (credit_limit !== undefined) updates.credit_limit = credit_limit === '' ? null : Number(credit_limit);
-    if (prepaid_balance !== undefined) updates.prepaid_balance = prepaid_balance === '' ? 0 : Number(prepaid_balance);
-    if (max_auto_approve_limit !== undefined) updates.max_auto_approve_limit = max_auto_approve_limit === '' ? null : Number(max_auto_approve_limit);
+    // Convert to number or null, ensuring safe defaults. Money fields are
+    // clamped to >= 0 so a stray negative can never persist a bad balance.
+    const nonNeg = (v: number) => (Number.isFinite(v) ? Math.max(0, v) : 0);
+    if (credit_limit !== undefined) updates.credit_limit = credit_limit === '' ? null : nonNeg(Number(credit_limit));
+    if (prepaid_balance !== undefined) updates.prepaid_balance = prepaid_balance === '' ? 0 : nonNeg(Number(prepaid_balance));
+    if (max_auto_approve_limit !== undefined) updates.max_auto_approve_limit = max_auto_approve_limit === '' ? null : nonNeg(Number(max_auto_approve_limit));
 
     const { error } = await supabase
       .from('profiles')

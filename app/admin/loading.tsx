@@ -24,7 +24,7 @@ export default function Loading() {
         fontWeight: 500,
         letterSpacing: '0.05em'
       }}>
-        LOADING ADMIN...
+        Loading Admin...
       </div>
     </div>
   );

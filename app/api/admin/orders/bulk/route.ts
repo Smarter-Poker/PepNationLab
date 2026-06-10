@@ -94,14 +94,30 @@ export async function POST(req: NextRequest) {
         failed.push({ id, reason: `Cannot Move From ${current} To ${target}.` });
         continue;
       }
-      const updates: Record<string, string | boolean> = {
-        status: target,
-        updated_at: new Date().toISOString(),
-      };
-      if (target === 'approved_ship' || target === 'approved_pickup') {
-        (updates as Record<string, string>).agent_approved_at = new Date().toISOString();
+      let upErr: { message: string } | null = null;
+      if (target === 'cancelled') {
+        // Mirror the single-order cancel route: route through cancel_order so
+        // agent commissions are voided and reserved inventory is released. A
+        // plain status UPDATE (the old behavior) left commission rows pending
+        // and local stock reserved on every bulk-cancelled order.
+        const { error } = await supabase.rpc('cancel_order', {
+          p_order_id: id,
+          p_reason: 'Bulk admin cancellation',
+          p_refund_type: 'none',
+          p_actor_id: gate.userId,
+        });
+        upErr = error ? { message: error.message } : null;
+      } else {
+        const updates: Record<string, string | boolean> = {
+          status: target,
+          updated_at: new Date().toISOString(),
+        };
+        if (target === 'approved_ship' || target === 'approved_pickup') {
+          (updates as Record<string, string>).agent_approved_at = new Date().toISOString();
+        }
+        const { error } = await supabase.from('orders').update(updates).eq('id', id);
+        upErr = error ? { message: error.message } : null;
       }
-      const { error: upErr } = await supabase.from('orders').update(updates).eq('id', id);
       if (upErr) {
         failed.push({ id, reason: upErr.message });
         continue;
