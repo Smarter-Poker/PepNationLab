@@ -24,11 +24,10 @@ export default function NewProductPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [multipliers, setMultipliers] = useState<Record<string, number>>({
-    tier_1: 5.0,
-    tier_2: 6.0,
-    tier_3: 7.0,
-  });
+  // Multipliers come from the DB (pricing_tiers) on mount - never hardcode a
+  // default ladder; an empty map keeps the preview hidden until the real
+  // multipliers load so it can never flash an incorrect price.
+  const [multipliers, setMultipliers] = useState<Record<string, number>>({});
   const [form, setForm] = useState({
     name: '',
     sku: '',
@@ -305,8 +304,10 @@ export default function NewProductPage() {
               </p>
             </div>
 
-            {/* Live tier price preview - reads REAL multipliers from DB */}
-            {validCost && (
+            {/* Live tier price preview - reads REAL multipliers from DB. Shown
+                PER UNIT (single vial), matching what researchers pay in the
+                storefront (retail_price / 10). */}
+            {validCost && multipliers.tier_1 != null && (
               <div style={{
                 marginTop: 'var(--space-4)',
                 padding: 'var(--space-4)',
@@ -315,25 +316,25 @@ export default function NewProductPage() {
                 border: '1px solid rgba(192,184,168,0.15)',
               }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  Agent Sell Prices (From DB Multipliers)
+                  Agent Sell Prices Per Unit (From DB Multipliers)
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-6)' }}>
                   <div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 1 ({multipliers.tier_1}×)</div>
                     <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
-                      ${(baseCost * multipliers.tier_1).toFixed(2)}
+                      ${(baseCost * multipliers.tier_1 / 10).toFixed(2)}
                     </div>
                   </div>
                   <div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 2 ({multipliers.tier_2}×)</div>
                     <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>
-                      ${(baseCost * multipliers.tier_2).toFixed(2)}
+                      ${(baseCost * multipliers.tier_2 / 10).toFixed(2)}
                     </div>
                   </div>
                   <div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 3 ({multipliers.tier_3}×)</div>
                     <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--grey-400)', fontFamily: 'var(--font-brand)' }}>
-                      ${(baseCost * multipliers.tier_3).toFixed(2)}
+                      ${(baseCost * multipliers.tier_3 / 10).toFixed(2)}
                     </div>
                   </div>
                 </div>
