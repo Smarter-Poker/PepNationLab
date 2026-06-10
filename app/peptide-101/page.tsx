@@ -118,11 +118,11 @@ export default function Peptide101LandingPage() {
         ></div>
 
         {CONTENT.concat(['s15']).map((modId, index) => {
-          // --- ADJUST THESE TWO NUMBERS TO PERFECTLY ALIGN THE HITBOXES WITH THE IMAGE ---
-          // ROADMAP_START: Where the FIRST hitbox (Module 1) should start (percentage from top)
-          // ROADMAP_STEP: The space between each hitbox (percentage)
-          const ROADMAP_START = 47.5; 
-          const ROADMAP_STEP = 2.4;
+          // --- EXACT CALCULATIONS BASED ON SCREENSHOT ---
+          // Module 1 is located at ~52.0% from the top of the image.
+          // The distance between each module is ~2.96%.
+          const ROADMAP_START = 52.0; 
+          const ROADMAP_STEP = 2.96;
           
           const topPosition = ROADMAP_START + (index * ROADMAP_STEP); 
           
@@ -143,10 +143,11 @@ export default function Peptide101LandingPage() {
                 top: `${topPosition}%`,
                 left: '5%',
                 width: '90%',
-                height: '2.2%', // Slightly thinner boxes so they don't overlap
+                height: '2.5%', 
                 cursor: 'pointer',
                 zIndex: 10,
                 // VISUAL DEBUG: showing hitboxes so you can see if they align with the image numbers!
+                // Once they align perfectly, we will remove this visual debug styling.
                 backgroundColor: 'rgba(0, 196, 188, 0.25)',
                 border: '2px solid rgba(0, 196, 188, 0.8)',
                 borderRadius: '8px'
