@@ -7,6 +7,8 @@ import { requireAdmin } from '@/lib/admin-auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { hashApiKey } from '@/lib/research/api-keys';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -25,9 +27,18 @@ async function generateKey(formData: FormData) {
     plaintext_preview: plaintext.slice(0, 12) + '...',
   });
   revalidatePath('/admin/api-keys');
-  // Return-by-redirect carrying the once-only plaintext in the URL.
-  const { redirect } = await import('next/navigation');
-  redirect(`/admin/api-keys?new=${encodeURIComponent(plaintext)}`);
+  // Hand the one-time plaintext back via a short-lived httpOnly cookie instead
+  // of a URL query param, so the full key never lands in browser history,
+  // server access logs, or a Referer header. It self-expires in 2 minutes.
+  const jar = await cookies();
+  jar.set('pnl_new_api_key', plaintext, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    maxAge: 120,
+    path: '/admin/api-keys',
+  });
+  redirect('/admin/api-keys');
 }
 
 async function revokeKey(formData: FormData) {
@@ -43,11 +54,7 @@ async function revokeKey(formData: FormData) {
   revalidatePath('/admin/api-keys');
 }
 
-export default async function ApiKeysPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ new?: string }>;
-}) {
+export default async function ApiKeysPage() {
   await requireAdmin();
   const supabase = createAdminClient();
   const { data } = await supabase
@@ -55,8 +62,10 @@ export default async function ApiKeysPage({
     .select('id, label, plaintext_preview, scopes, is_active, created_at, revoked_at, last_used_at')
     .order('created_at', { ascending: false })
     .limit(100);
-  const params = await searchParams;
-  const newKey = params.new ?? null;
+  // One-time plaintext is delivered via a short-lived httpOnly cookie set by
+  // generateKey (never the URL). Read it for this render; it self-expires.
+  const jar = await cookies();
+  const newKey = jar.get('pnl_new_api_key')?.value ?? null;
 
   return (
     <main style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>
