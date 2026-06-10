@@ -166,11 +166,7 @@ export async function POST(req: NextRequest) {
       try {
         await supabase.rpc('charge_order_credit_line', { p_order_id: newOrder.id, p_created_by: agentId });
       } catch {}
-      if (finalAutoStatus === 'approved_ship') {
-        try {
-          await supabase.rpc('shippo_enqueue_label_job', { p_order_id: newOrder.id });
-        } catch {}
-      }
+      // Shipping labels are created MANUALLY (on-demand) only - no auto-enqueue.
     }
 
     // Notify Admins that the manual order is approved and ready

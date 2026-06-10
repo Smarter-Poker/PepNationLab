@@ -152,12 +152,14 @@
     pexRender();
   }
   function addExplorerButtons(){
-    // Overview (s0): a secondary CTA after Start Learning
+    // Overview (s0): We removed the secondary CTA here because we moved it to the stat card.
+    /*
     var sl=qs('#s0 .btn-xl');
     if(sl && !qs('#pexOpenS0')){
       var wrap=el('<div style="text-align:center;margin:-14px 0 26px;"><button class="btn btn-secondary" id="pexOpenS0" onclick="P101v4.open()">'+ic('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>').replace('<svg','<svg width="18" height="18"')+'Explore All Peptides</button></div>');
       var par=sl.parentNode; if(par&&par.parentNode){ par.parentNode.insertBefore(wrap, par.nextSibling); }
     }
+    */
     // Completion (s10): inside the continue-learning card
     var cl=qs('#continueLearning');
     if(cl && !qs('#pexOpenS10')){
