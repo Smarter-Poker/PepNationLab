@@ -220,7 +220,6 @@
     extendData();
     buildExplorer();
     addExplorerButtons();
-    buildAminoGrid();
     buildComparison();
   }
   function boot(){
