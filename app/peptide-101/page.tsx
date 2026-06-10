@@ -68,30 +68,13 @@ export default function Peptide101LandingPage() {
   };
 
   const handleModuleClick = (modId: string, index: number) => {
-    const isCompleted = index < completedModules;      // already done — review mode
-    const isCurrent   = index === completedModules;    // next up — normal navigation
-    const isLocked    = index > completedModules;      // not yet unlocked
-
-    if (isLocked) {
-      showLockedPopup();
-      return;
-    }
-
+    // Always reset per-module page so it starts from page 1
     try {
-      // Always reset per-module page progress so it opens from page 1
       localStorage.removeItem(`p101_m${index + 1}_page`);
       localStorage.removeItem(`p101_v14_cur_${modId}`);
     } catch(e) {}
-
-    if (isCompleted) {
-      // REVIEW MODE — add ?review=1 so the course page knows NOT to
-      // overwrite p101_screen with this module's number.
-      // The "Continue Learning" CTA will still point to the real progress.
-      window.location.href = `/peptide-101/course?review=1#${modId}`;
-    } else {
-      // CURRENT MODULE — navigate normally, progress will update as expected
-      window.location.href = `/peptide-101/course#${modId}`;
-    }
+    // Navigate — always, no lock check for now
+    window.location.href = `/peptide-101/course#${modId}`;
   };
 
   return (
