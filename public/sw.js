@@ -12,11 +12,11 @@
 //     SWR fired on every repeat visit — faster repeat loads, less bandwidth.
 // v5: Cache-version bump to evict poisoned v4 static/_next chunks that caused the
 //     storefront to boot then crash on refresh (stale-chunk mismatch after deploys).
-const CACHE_VERSION = 'pnl-sw-v7';
-const STATIC_CACHE_NAME = 'pnl-static-cache-v7';
-const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v7';
-const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v7';
-const IMAGE_CACHE_NAME = 'pnl-image-cache-v7';
+const CACHE_VERSION = 'pnl-sw-v8';
+const STATIC_CACHE_NAME = 'pnl-static-cache-v8';
+const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v8';
+const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v8';
+const IMAGE_CACHE_NAME = 'pnl-image-cache-v8';
 
 // Catalog cache TTL in the service worker (5 min = 300,000 ms)
 // Matches the s-maxage set on the API route's Cache-Control header.
