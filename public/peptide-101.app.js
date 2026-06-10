@@ -892,6 +892,7 @@ document.addEventListener("DOMContentLoaded", function() {
   function next(){ var i=ORDER.indexOf(CUR); if(i<0)return; if(REG[CUR]) markComplete(CUR); if(i<ORDER.length-1) showScreen(ORDER[i+1]); }
   function prev(){ var i=ORDER.indexOf(CUR); if(i>0) showScreen(ORDER[i-1]); }
   window.goTo=function(n){ goId(typeof n==='number'?'s'+n:n); };
+  window.completeModule=function(sid){ try{ markComplete(sid); }catch(e){} };
 
   function navHTML(id){
     var i=ORDER.indexOf(id), p=i>0?ORDER[i-1]:null, nx=i<ORDER.length-1?ORDER[i+1]:null;
