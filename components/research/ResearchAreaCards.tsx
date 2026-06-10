@@ -30,14 +30,6 @@ export default function ResearchAreaCards() {
     <section style={{ marginBottom: '60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>Explore Research Areas</h2>
-        <button 
-          onClick={() => router.push('/research/catalog')}
-          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-        >
-          <div style={{ position: 'relative', width: '180px', height: '48px' }}>
-            <Image src="/images/research/btn_view_all_areas.png" alt="View all areas" fill style={{ objectFit: 'contain' }} />
-          </div>
-        </button>
       </div>
 
       <div style={{ 

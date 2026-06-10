@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search } from 'lucide-react';
+import { Search, Sparkles } from 'lucide-react';
 import AutocompleteDropdown, { type Suggestion } from './AutocompleteDropdown';
 import TrendingSearchesDropdown from './TrendingSearchesDropdown';
 import { useSearchHistory } from './useSearchHistory';
@@ -123,66 +123,79 @@ export default function CommandSearchBar({
 
   return (
     <div ref={wrapperRef} style={{ position: 'relative', width: '100%', maxWidth: '800px', margin: '0 auto 40px auto' }}>
-      <div 
-        style={{ 
-          position: 'relative',
-          background: 'rgba(15, 25, 35, 0.6)',
-          backdropFilter: 'blur(16px)',
-          borderRadius: '16px',
-          border: isFocused ? '1px solid rgba(0, 229, 255, 0.8)' : '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: isFocused ? '0 0 20px rgba(0, 229, 255, 0.2), inset 0 0 10px rgba(0, 229, 255, 0.1)' : '0 10px 30px rgba(0, 0, 0, 0.5)',
-          transition: 'all 0.3s ease',
-          display: 'flex',
-          alignItems: 'center',
-          overflow: 'hidden'
-        }}
-      >
-        <div style={{ padding: '0 20px', display: 'flex', alignItems: 'center' }}>
-          <Search size={24} color={isFocused ? '#00E5FF' : '#A8B4C0'} style={{ transition: 'color 0.3s ease' }} />
+      {/* Top Label */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '16px' }}>
+        <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.4)', flex: 1, maxWidth: '60px' }} />
+        <div style={{ color: '#E2E8F0', fontSize: '0.9rem', fontWeight: 600, textTransform: 'capitalize', letterSpacing: '0.5px' }}>
+          Type Any Peptide Name, Symptom, Or Research Keyword To Get Started
         </div>
-        
-        <input
-          ref={inputRef}
-          type="search"
-          value={q}
-          role="combobox"
-          aria-autocomplete="list"
-          aria-expanded={open}
-          aria-haspopup="listbox"
-          aria-controls="universal-search-autocomplete"
-          onChange={(e) => {
-            setQ(e.target.value);
-            setOpen(true);
-          }}
-          onFocus={() => { setOpen(true); setIsFocused(true); }}
-          onBlur={() => setIsFocused(false)}
-          onKeyDown={onKeyDown}
-          placeholder="Search any compound, mechanism, goal, or question..."
-          aria-label="Search The Research Library"
-          autoComplete="off"
-          style={{
-            flex: 1,
-            background: 'transparent',
-            border: 'none',
-            color: '#FFFFFF',
-            padding: '24px 0',
-            fontSize: '1.2rem',
-            outline: 'none',
-          }}
-        />
+        <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.4)', flex: 1, maxWidth: '60px' }} />
+      </div>
 
-        <div style={{ padding: '0 20px', display: 'flex', alignItems: 'center' }}>
+      {/* Metallic Container */}
+      <div style={{
+        padding: '3px',
+        borderRadius: '40px',
+        background: 'linear-gradient(180deg, #A8B4C0 0%, #4A5568 100%)',
+        boxShadow: isFocused ? '0 0 20px rgba(0, 229, 255, 0.3)' : '0 10px 30px rgba(0,0,0,0.6)',
+        transition: 'all 0.3s ease'
+      }}>
+        <div 
+          style={{ 
+            borderRadius: '37px',
+            background: '#0a0a0a',
+            display: 'flex',
+            alignItems: 'center',
+            height: '56px',
+            padding: '0 16px',
+            boxShadow: 'inset 0 4px 10px rgba(0,0,0,0.8)'
+          }}
+        >
+          {/* Left Search Icon */}
+          <Search size={22} color={isFocused ? '#00E5FF' : '#A8B4C0'} style={{ transition: 'color 0.3s ease' }} />
+          
+          {/* Vertical Separator */}
+          <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.2)', margin: '0 16px' }} />
+          
+          {/* Input */}
+          <input
+            ref={inputRef}
+            type="search"
+            value={q}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            aria-controls="universal-search-autocomplete"
+            onChange={(e) => {
+              setQ(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => { setOpen(true); setIsFocused(true); }}
+            onBlur={() => setIsFocused(false)}
+            onKeyDown={onKeyDown}
+            placeholder=""
+            aria-label="Search The Research Library"
+            autoComplete="off"
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              color: '#FFFFFF',
+              fontSize: '1.2rem',
+              outline: 'none',
+            }}
+          />
+
+          {/* Right Action Icon */}
           <div style={{ 
-            background: 'rgba(255,255,255,0.1)', 
-            border: '1px solid rgba(255,255,255,0.2)', 
-            borderRadius: '6px', 
-            padding: '4px 8px', 
-            color: '#A8B4C0', 
-            fontSize: '0.85rem', 
-            fontWeight: 800,
+            width: '36px', height: '36px', borderRadius: '50%', 
+            border: '2px solid rgba(255,255,255,0.4)', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.5))',
             cursor: 'pointer'
           }} onClick={() => inputRef.current?.focus()}>
-            ⌘K
+            <Sparkles size={18} color="#E2E8F0" />
           </div>
         </div>
       </div>
