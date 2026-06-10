@@ -91,24 +91,28 @@
     var st = D.createElement('style'); st.id='p101v14css'; st.textContent=css; D.head.appendChild(st);
   }
 
-  /* ---------------- SHARED SVG DEFS ---------------- */
-  var DEFS = '<defs>'
-    + '<radialGradient id="v14bead" cx="38%" cy="30%" r="75%"><stop offset="0%" stop-color="#d8ecff"/><stop offset="45%" stop-color="#4f93e6"/><stop offset="100%" stop-color="#13315e"/></radialGradient>'
-    + '<radialGradient id="v14beadT" cx="38%" cy="30%" r="75%"><stop offset="0%" stop-color="#c9fff6"/><stop offset="45%" stop-color="#15b8ad"/><stop offset="100%" stop-color="#06403c"/></radialGradient>'
-    + '<linearGradient id="v14bond" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#9fc4ff"/><stop offset="100%" stop-color="#2a4c7d"/></linearGradient>'
-    + '<filter id="v14sh" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000" flood-opacity="0.5"/></filter>'
-    + '<filter id="v14glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
-    + '</defs>';
+  /* ---------------- SHARED SVG DEFS (injected once) ---------------- */
+  function injectDefs(){
+    if (D.getElementById('p101v14defs')) return;
+    var svg = '<svg id="p101v14defs" width="0" height="0" style="position:absolute;overflow:hidden;" aria-hidden="true"><defs>'
+      + '<radialGradient id="v14bead" cx="38%" cy="30%" r="75%"><stop offset="0%" stop-color="#d8ecff"/><stop offset="45%" stop-color="#4f93e6"/><stop offset="100%" stop-color="#13315e"/></radialGradient>'
+      + '<radialGradient id="v14beadT" cx="38%" cy="30%" r="75%"><stop offset="0%" stop-color="#c9fff6"/><stop offset="45%" stop-color="#15b8ad"/><stop offset="100%" stop-color="#06403c"/></radialGradient>'
+      + '<linearGradient id="v14bond" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#9fc4ff"/><stop offset="100%" stop-color="#2a4c7d"/></linearGradient>'
+      + '<linearGradient id="v14dk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,196,188,.4)"/><stop offset="100%" stop-color="rgba(0,196,188,0)"/></linearGradient>'
+      + '<filter id="v14sh" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000" flood-opacity="0.5"/></filter>'
+      + '</defs></svg>';
+    var d = D.createElement('div'); d.innerHTML = svg; D.body.appendChild(d.firstChild);
+  }
 
-  function beadChain(n, teal){
-    // a glossy peptide chain of n beads with bonds, 3D depth
-    var W=620, H=200, cx=70, gap=(W-140)/(n-1), y=H/2, r=26;
-    var s='<svg class="v14-svg" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">'+DEFS;
-    s+='<ellipse cx="'+(W/2)+'" cy="'+(H-18)+'" rx="'+(W*0.38)+'" ry="13" fill="#05101f" opacity="0.55"/>';
+  function beadChain(n, teal, W, H, r){
+    W=W||620; H=H||200; r=r||26;
+    var cx=r+10, gap=(W-2*(r+10))/(n-1), y=H/2;
+    var s='<svg class="v14-svg" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+    s+='<ellipse cx="'+(W/2)+'" cy="'+(H-Math.max(10,r*0.6))+'" rx="'+(W*0.38)+'" ry="'+Math.max(7,r*0.45)+'" fill="#05101f" opacity="0.5"/>';
     var g = teal?'url(#v14beadT)':'url(#v14bead)';
-    for(var i=0;i<n-1;i++){ var x1=cx+gap*i, x2=cx+gap*(i+1); s+='<line x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'" stroke="url(#v14bond)" stroke-width="9" stroke-linecap="round" opacity="0.9"/>'; }
+    for(var i=0;i<n-1;i++){ var x1=cx+gap*i, x2=cx+gap*(i+1); s+='<line x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'" stroke="url(#v14bond)" stroke-width="'+Math.max(4,r*0.34)+'" stroke-linecap="round" opacity="0.95"/>'; }
     s+='<g class="v14-float">';
-    for(var j=0;j<n;j++){ var x=cx+gap*j; s+='<g filter="url(#v14sh)"><circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+g+'"/><ellipse cx="'+(x-7)+'" cy="'+(y-9)+'" rx="8" ry="5" fill="#ffffff" opacity="0.55"/></g>'; }
+    for(var j=0;j<n;j++){ var x=cx+gap*j; s+='<g filter="url(#v14sh)"><circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+g+'"/><ellipse cx="'+(x-r*0.28)+'" cy="'+(y-r*0.34)+'" rx="'+(r*0.32)+'" ry="'+(r*0.2)+'" fill="#ffffff" opacity="0.55"/></g>'; }
     s+='</g></svg>';
     return s;
   }
@@ -185,7 +189,7 @@
       + '<p class="v14-lead">Same building blocks &mdash; the only difference is <b>how long the chain is</b>.</p>'
       + '<div class="v14-stage-frame" style="padding:20px;">'
         + '<div class="v14-scale">'
-          + '<div class="pep"><div class="big">2&ndash;50</div><div class="cap">Amino Acids</div><div style="margin:12px 0 6px;">'+beadChain(4,true).replace('viewBox="0 0 620 200"','viewBox="0 0 360 120"').replace(/r="26"/g,'r="17"')+'</div><div class="nm" style="color:#2de0d8;">Peptide</div></div>'
+          + '<div class="pep"><div class="big">2&ndash;50</div><div class="cap">Amino Acids</div><div style="margin:12px 0 6px;">'+beadChain(4,true,330,150,20)+'</div><div class="nm" style="color:#2de0d8;">Peptide</div></div>'
           + '<div class="pro"><div class="big">51+</div><div class="cap">Amino Acids</div><div style="margin:12px 0 6px;display:flex;justify-content:center;">'+proteinBlob()+'</div><div class="nm" style="color:#7fb3ff;">Protein</div></div>'
         + '</div>'
       + '</div>'
@@ -236,16 +240,15 @@
   }
 
   function proteinBlob(){
-    return '<svg class="v14-svg v14-float" style="max-width:150px;" viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg">'+DEFS
-      + '<ellipse cx="80" cy="106" rx="46" ry="9" fill="#05101f" opacity="0.5"/>'
-      + '<path d="M30,70 Q40,28 64,52 Q92,80 110,40 Q124,18 138,46" fill="none" stroke="url(#v14bond)" stroke-width="7" stroke-linecap="round"/>'
-      + '<ellipse cx="78" cy="58" rx="44" ry="34" fill="none" stroke="rgba(127,179,255,.28)" stroke-width="2" stroke-dasharray="5,4"/>'
-      + ['30,70','64,52','110,40','138,46','86,66'].map(function(p){var xy=p.split(',');return '<circle cx="'+xy[0]+'" cy="'+xy[1]+'" r="8" fill="url(#v14bead)" filter="url(#v14sh)"/>';}).join('')
+    return '<svg class="v14-svg v14-float" style="max-width:160px;margin:0 auto;" viewBox="0 0 170 150" xmlns="http://www.w3.org/2000/svg">'
+      + '<ellipse cx="85" cy="134" rx="50" ry="9" fill="#05101f" opacity="0.5"/>'
+      + '<ellipse cx="84" cy="74" rx="52" ry="42" fill="rgba(59,130,246,.07)" stroke="rgba(127,179,255,.3)" stroke-width="2" stroke-dasharray="5,4"/>'
+      + '<path d="M30,86 Q44,34 70,62 Q100,96 118,46 Q132,22 146,54" fill="none" stroke="url(#v14bond)" stroke-width="6" stroke-linecap="round"/>'
+      + ['30,86','70,62','100,80','118,46','146,54','86,70'].map(function(p){var xy=p.split(',');return '<g filter="url(#v14sh)"><circle cx="'+xy[0]+'" cy="'+xy[1]+'" r="9" fill="url(#v14bead)"/><ellipse cx="'+(xy[0]-2.5)+'" cy="'+(xy[1]-3)+'" rx="3" ry="2" fill="#fff" opacity="0.55"/></g>';}).join('')
       + '</svg>';
   }
   function sparkDecay(){
     return '<svg viewBox="0 0 180 46" style="width:100%;height:auto;margin-top:11px;" xmlns="http://www.w3.org/2000/svg">'
-      + '<defs><linearGradient id="v14dk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,196,188,.4)"/><stop offset="100%" stop-color="rgba(0,196,188,0)"/></linearGradient></defs>'
       + '<path d="M2,6 C50,8 70,40 178,42 L178,44 L2,44 Z" fill="url(#v14dk)"/>'
       + '<path d="M2,6 C50,8 70,40 178,42" fill="none" stroke="#00C4BC" stroke-width="2.5" stroke-linecap="round"/>'
       + '<circle cx="2" cy="6" r="3" fill="#2de0d8"/><text x="150" y="20" fill="#9fb0c2" font-size="9" font-family="Inter,sans-serif">hours</text></svg>';
@@ -259,7 +262,7 @@
   /* ---------------- BOOT ---------------- */
   function ready(){ return !!(qs('#s1') && (window.goTo || (window.P101&&P101.go))); }
   function boot(){
-    injectCSS();
+    injectCSS(); injectDefs();
     if(!module1()){
       var n=0, t=setInterval(function(){ if(module1()||n++>80) clearInterval(t); },50);
     }
