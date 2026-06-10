@@ -83,6 +83,30 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
   const [quickViewCompound, setQuickViewCompound] = useState<Compound | null>(null);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [productsMap, setProductsMap] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    // Fetch products and pricing for all compounds to inject into cards
+    async function fetchProducts() {
+      try {
+        const slugs = compounds.map(c => c.slug).join(',');
+        const res = await fetch(`/api/research/products?slugs=${slugs}`);
+        if (res.ok) {
+          const data = await res.json();
+          const map: Record<string, any> = {};
+          if (data.products) {
+            data.products.forEach((p: any) => {
+              map[p.compoundSlug] = p;
+            });
+          }
+          setProductsMap(map);
+        }
+      } catch (err) {
+        console.error('Failed to fetch pricing', err);
+      }
+    }
+    fetchProducts();
+  }, [compounds]);
 
   const parseArrayParam = (key: string) => {
     const val = searchParams.get(key);
@@ -314,6 +338,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
                     onQuickView={setQuickViewCompound} 
                     showBadge={badge?.label} 
                     badgeColor={badge?.color} 
+                    storeProduct={productsMap[c.slug]}
                   />
                 );
               })}
@@ -330,6 +355,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
                         onQuickView={setQuickViewCompound} 
                         showBadge={badge?.label} 
                         badgeColor={badge?.color} 
+                        storeProduct={productsMap[c.slug]}
                       />
                   </div>
                 );
