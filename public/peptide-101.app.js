@@ -219,10 +219,28 @@ function saveProgress() {
 }
 function loadProgress() {
   try {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#s')) {
+      const hashScreen = parseInt(hash.substring(2));
+      if (!isNaN(hashScreen) && document.getElementById("s" + hashScreen)) {
+        goTo(hashScreen);
+        return;
+      }
+    }
     const s = parseInt(localStorage.getItem("p101_screen") || "0");
-    if (s > 0 && s < totalScreens) goTo(s);
+    if (s > 0 && document.getElementById("s" + s)) goTo(s);
   } catch(e) {}
 }
+
+window.addEventListener('hashchange', function() {
+  const hash = window.location.hash;
+  if (hash && hash.startsWith('#s')) {
+    const hashScreen = parseInt(hash.substring(2));
+    if (!isNaN(hashScreen) && document.getElementById("s" + hashScreen)) {
+      goTo(hashScreen);
+    }
+  }
+});
 
 // =====================================================
 // QUIZ

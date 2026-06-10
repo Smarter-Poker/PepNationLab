@@ -50,7 +50,14 @@ export default function Peptide101LandingPage() {
   const nextModuleId = completedModules < 13 ? CONTENT[completedModules] : 's15';
 
   const routeToNext = () => {
-    window.location.href = `/peptide-101/course#${nextModuleId}`;
+    let lastScreen = '';
+    try {
+      const s = localStorage.getItem("p101_screen");
+      if (s) {
+        lastScreen = '#s' + s;
+      }
+    } catch(e) {}
+    window.location.href = `/peptide-101/course${lastScreen || '#' + nextModuleId}`;
   };
 
   const routeToRoadmap = () => {

@@ -521,7 +521,20 @@
       document.querySelectorAll('.m1-page').forEach(el => el.classList.remove('active'));
       document.getElementById('m1p' + page).classList.add('active');
       window.scrollTo({ top: 0, behavior: "smooth" });
+      try { localStorage.setItem("p101_m1_page", page); } catch(e) {}
     }
+
+    // Try to restore the page on load
+    document.addEventListener("DOMContentLoaded", function() {
+      try {
+        const p = localStorage.getItem("p101_m1_page");
+        if (p) {
+          document.querySelectorAll('.m1-page').forEach(el => el.classList.remove('active'));
+          const el = document.getElementById('m1p' + p);
+          if (el) el.classList.add('active');
+        }
+      } catch(e) {}
+    });
 
     function checkM1(qClass, isCorrect, el) {
       // Clear previous in this question
@@ -714,7 +727,20 @@
       document.querySelectorAll('.m2-page').forEach(el => el.classList.remove('active'));
       document.getElementById('m2p' + page).classList.add('active');
       window.scrollTo({ top: 0, behavior: "smooth" });
+      try { localStorage.setItem("p101_m2_page", page); } catch(e) {}
     }
+
+    // Try to restore the page on load
+    document.addEventListener("DOMContentLoaded", function() {
+      try {
+        const p = localStorage.getItem("p101_m2_page");
+        if (p) {
+          document.querySelectorAll('.m2-page').forEach(el => el.classList.remove('active'));
+          const el = document.getElementById('m2p' + p);
+          if (el) el.classList.add('active');
+        }
+      } catch(e) {}
+    });
 
     function checkM2(qClass, isCorrect, el) {
       document.querySelectorAll('.' + qClass).forEach(opt => {

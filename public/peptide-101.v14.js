@@ -160,8 +160,16 @@
     wrap.appendChild(foot);
     screen.appendChild(wrap);
 
-    var cur=0, N=steps.length;
+    var sid = screen.id;
+    var savedCur = 0;
+    try {
+      var s = parseInt(localStorage.getItem("p101_v14_cur_" + sid));
+      if (!isNaN(s) && s >= 0 && s < steps.length) savedCur = s;
+    } catch(e) {}
+    
+    var cur = savedCur, N = steps.length;
     function paint(){
+      try { localStorage.setItem("p101_v14_cur_" + sid, cur); } catch(e) {}
       var pages=stage.querySelectorAll('.v14-page');
       for(var i=0;i<pages.length;i++) pages[i].classList.toggle('on', i===cur);
       var ds=dots.querySelectorAll('i');
