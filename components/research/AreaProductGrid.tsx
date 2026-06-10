@@ -447,7 +447,7 @@ export default function AreaProductGrid({
                 </p>
                 {p.compound?.aliases?.length ? (
                   <p style={{ color: '#A8B4C0', fontSize: '0.78rem', marginTop: 4 }}>
-                    {p.compound.aliases.slice(0, 2).join(', ')}
+                    <strong style={{ color: '#C0C8D0' }}>Popular Name:</strong> {p.compound.aliases.slice(0, 3).join(', ')}
                   </p>
                 ) : null}
                 <p style={{ color: '#718096', fontSize: '0.85rem', marginTop: 12 }}>$XX.XX</p>
@@ -822,7 +822,7 @@ export default function AreaProductGrid({
                     </h2>
                     {compound?.aliases?.length ? (
                       <div style={{ fontSize: '0.75rem', color: '#A8B4C0', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {compound.aliases.slice(0, 3).join(' · ')}
+                        <strong style={{ color: '#C0C8D0' }}>Popular Name:</strong> {compound.aliases.slice(0, 3).join(', ')}
                       </div>
                     ) : null}
                   </div>
