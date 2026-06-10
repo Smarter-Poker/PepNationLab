@@ -6,6 +6,8 @@
    s16), interactive 20-amino-acid grid (Module 1), Peptides-vs-others
    comparison table (Module 11), and deeper data (more dosing rows +
    more glossary terms). All idempotent; runs after v3 init.
+   Catalog mirrors the live Research Library compounds table; each card
+   deep-links to the canonical monograph at /research/{slug}.
    ===================================================================== */
 (function(){
   function qs(s,r){return (r||document).querySelector(s);}
@@ -14,28 +16,61 @@
   function ic(d,w){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||2)+'">'+d+'</svg>';}
   function go(id){ if(window.P101&&P101.go) P101.go(id); else if(window.goTo) window.goTo(id); }
 
-  /* ---------- PEPTIDE EXPLORER DATA ---------- */
+  /* ---------- PEPTIDE EXPLORER DATA (live Research Library catalog) ---------- */
   var PEPTIDES=[
-    {n:'BPC-157',s:'bpc-157',f:'Recovery',u:'Tissue, Tendon, And Gut Repair',h:'~4 Hrs',r:'Sub-Q Or IM',m:'A Stomach-Derived Peptide Studied For Tissue And Gut Repair.'},
-    {n:'TB-500',s:'tb-500',f:'Recovery',u:'Cell Migration And Recovery',h:'~2-3 Days',r:'Sub-Q',m:'A Fragment Of Thymosin Beta-4, Studied For Cell Repair And Movement.'},
-    {n:'GHK-Cu',s:'ghk-cu',f:'Recovery',u:'Skin, Collagen, And Wound Signaling',h:'~1 Hr',r:'Sub-Q Or Topical',m:'A Copper-Binding Peptide Studied For Skin And Collagen.'},
-    {n:'Sermorelin',s:'sermorelin',f:'Growth',u:'Growth Hormone Release',h:'~10-20 Min',r:'Sub-Q',m:'A GHRH Analogue That Signals The Pituitary To Release GH.'},
-    {n:'CJC-1295',s:'cjc-1295',f:'Growth',u:'Sustained GH And IGF-1',h:'~6-8 Days (DAC)',r:'Sub-Q',m:'A Long-Acting GHRH Analogue Studied For Steady GH And IGF-1.'},
-    {n:'Ipamorelin',s:'ipamorelin',f:'Growth',u:'Selective GH Release',h:'~2 Hrs',r:'Sub-Q',m:'A Selective Ghrelin Mimetic Studied For Clean GH Release.'},
-    {n:'GHRP-6',s:'ghrp-6',f:'Growth',u:'GH Release And Appetite',h:'~15-30 Min',r:'Sub-Q',m:'A Ghrelin Mimetic Studied For GH Release And Appetite.'},
-    {n:'Hexarelin',s:'hexarelin',f:'Growth',u:'Strong GH Release',h:'~30-60 Min',r:'Sub-Q',m:'A Strong Ghrelin Mimetic Studied For GH Release.'},
-    {n:'Tesamorelin',s:'tesamorelin',f:'Growth',u:'Visceral Fat And GH',h:'~26-38 Min',r:'Sub-Q',m:'A GHRH Analogue Studied For Visceral Fat And GH.'},
-    {n:'AOD-9604',s:'aod-9604',f:'Metabolic',u:'Fat Metabolism',h:'~30 Min',r:'Sub-Q',m:'A Fragment Of Growth Hormone Studied For Fat Metabolism.'},
-    {n:'Fragment 176-191',s:'fragment-176-191',f:'Metabolic',u:'Fat Loss (Lipolysis)',h:'~30 Min',r:'Sub-Q',m:'The Fat-Loss Region Of Growth Hormone, Studied For Lipolysis.'},
-    {n:'MOTS-c',s:'mots-c',f:'Metabolic',u:'Metabolic Regulation',h:'~Hours',r:'Sub-Q',m:'A Mitochondria-Derived Peptide Studied For Metabolism.'},
-    {n:'PT-141',s:'pt-141',f:'Melanocortin',u:'Arousal Pathways',h:'~2-3 Hrs',r:'Sub-Q Or Intranasal',m:'A Melanocortin Agonist Studied For Arousal Pathways.'},
-    {n:'Melanotan II',s:'melanotan-ii',f:'Melanocortin',u:'Pigmentation',h:'~Hours',r:'Sub-Q',m:'A Melanocortin Agonist Studied For Pigmentation.'},
-    {n:'Selank',s:'selank',f:'Cognitive',u:'Calm And Focus',h:'~Minutes',r:'Intranasal Or Sub-Q',m:'A Tuftsin-Based Peptide Studied For Calm And Focus.'},
-    {n:'Semax',s:'semax',f:'Cognitive',u:'Focus And Neuroprotection',h:'~Minutes',r:'Intranasal Or Sub-Q',m:'An ACTH-Fragment Peptide Studied For Focus And Neuroprotection.'},
-    {n:'Epithalon',s:'epithalon',f:'Anti-Aging',u:'Aging And Longevity Markers',h:'~Minutes',r:'Sub-Q',m:'A Pineal Tetrapeptide Studied For Aging Markers.'},
-    {n:'DSIP',s:'dsip',f:'Cognitive',u:'Sleep Regulation',h:'~Minutes',r:'Sub-Q',m:'Delta Sleep-Inducing Peptide, Studied For Sleep Regulation.'}
+    {n:'5-Amino-1MQ',s:'5-amino-1mq',f:'Metabolic',u:'Fat Loss And Metabolism',h:'~4 Hrs',r:'Oral',m:'A Small Molecule Studied For Releasing The Cellular Brake On Fat Burning (NNMT Inhibition).'},
+    {n:'Acetic Acid 0.6%',s:'acetic-acid',f:'Support',u:'Peptide Reconstitution',h:'~15-30 Min',r:'Diluent',m:'A Mild Acidic Diluent Used To Dissolve Hard-To-Reconstitute Peptides.'},
+    {n:'AHK-Cu',s:'ahk-cu',f:'Skin',u:'Hair And Scalp',h:'~5-10 Min',r:'Topical Or Sub-Q',m:'A Copper Tripeptide Studied For Waking Up Hair Follicles And Scalp Health.'},
+    {n:'AICAR',s:'aicar',f:'Metabolic',u:'Endurance And AMPK',h:'~2 Hrs',r:'Sub-Q',m:'An AMPK Activator Studied As An Exercise Mimetic For Endurance And Fat Oxidation.'},
+    {n:'AOD9604',s:'aod9604',f:'Metabolic',u:'Stubborn Fat Loss',h:'~3 Min',r:'Sub-Q',m:'A Growth-Hormone Fragment Studied Only For Burning Fat, Without Affecting Blood Sugar.'},
+    {n:'ARA-290',s:'ara-290',f:'Recovery',u:'Nerve Repair',h:'~2 Min',r:'Sub-Q',m:'An EPO-Derived Peptide Studied For Calming Nerve Inflammation And Repairing Small Nerve Fibers.'},
+    {n:'Bacteriostatic Water',s:'bac-water',f:'Support',u:'Peptide Reconstitution',h:'~1.5 Hrs',r:'Diluent',m:'Sterile Water With A Trace Of Alcohol That Keeps Reconstituted Peptides Germ-Free.'},
+    {n:'BPC-157',s:'bpc-157',f:'Recovery',u:'Tissue And Gut Repair',h:'~30 Min',r:'Sub-Q Or Oral',m:'A Gastric-Derived Peptide Studied For Fast Repair Of Muscle, Tendon, Joint, And Gut.'},
+    {n:'Cagrilintide',s:'cagrilintide',f:'Metabolic',u:'Appetite And Weight',h:'~1 Week',r:'Sub-Q',m:'A Long-Acting Amylin Analog Studied For Strong, Lasting Fullness And Weight Loss.'},
+    {n:'Cerebrolysin',s:'cerebrolysin',f:'Cognitive',u:'Brain Repair',h:'~20-30 Min',r:'Sub-Q Or IM',m:'A Neurotrophic Peptide Blend Studied For Healing Brain Cells After Stroke Or Injury.'},
+    {n:'CJC-1295 With DAC',s:'cjc-1295-dac',f:'Growth Hormone',u:'Sustained GH And IGF-1',h:'~6-8 Days',r:'Sub-Q',m:'A Long-Acting GHRH Analog Studied For Steady, Week-Long Growth Hormone Release.'},
+    {n:'CJC-1295 Without DAC',s:'cjc-1295-no-dac',f:'Growth Hormone',u:'Pulsed GH Release',h:'~30 Min',r:'Sub-Q',m:'A Short-Acting GHRH Analog Studied For Quick Pulses Of Growth Hormone.'},
+    {n:'DSIP',s:'dsip',f:'Cognitive',u:'Deep Sleep',h:'~15 Min',r:'Sub-Q',m:'Delta Sleep-Inducing Peptide, Studied For Deeper, More Restful Sleep.'},
+    {n:'Epithalon',s:'epithalon',f:'Longevity',u:'Telomeres And Aging',h:'~10-15 Min',r:'Sub-Q',m:'A Pineal Tetrapeptide Studied For Rebuilding Telomeres And Slowing Aging.'},
+    {n:'Follistatin',s:'follistatin',f:'Growth Hormone',u:'Muscle Growth',h:'~2 Hrs',r:'Sub-Q',m:'A Myostatin Blocker Studied For Releasing The Natural Brake On Muscle Growth.'},
+    {n:'FOXO4-DRI',s:'foxo4-dri',f:'Longevity',u:'Senescent Cell Clearing',h:'~24-36 Hrs',r:'Sub-Q',m:'A Senolytic Peptide Studied For Clearing Aged Zombie Cells While Sparing Healthy Ones.'},
+    {n:'GHK-Cu',s:'ghk-cu',f:'Skin',u:'Skin And Collagen',h:'~5-10 Min',r:'Topical Or Sub-Q',m:'A Copper Tripeptide Studied For Collagen, Skin Repair, And Hair.'},
+    {n:'GHRP-2',s:'ghrp-2',f:'Growth Hormone',u:'GH And Appetite',h:'~30 Min',r:'Sub-Q',m:'A Ghrelin-Mimetic Secretagogue Studied For Strong Growth Hormone Release.'},
+    {n:'GHRP-6',s:'ghrp-6',f:'Growth Hormone',u:'GH And Hunger',h:'~2.5 Hrs',r:'Sub-Q',m:'A First-Generation Secretagogue Studied For GH Release And Strong Appetite.'},
+    {n:'Glutathione',s:'glutathione',f:'Support',u:'Antioxidant And Detox',h:'~10-15 Min',r:'Sub-Q Or IV',m:'The Master Cellular Antioxidant, Studied For Detox And Cellular Protection.'},
+    {n:'HCG',s:'hcg',f:'Hormonal',u:'Testosterone And Fertility',h:'~24-36 Hrs',r:'Sub-Q',m:'An LH Analog Studied For Natural Testosterone Production And Fertility Support.'},
+    {n:'Hexarelin',s:'hexarelin',f:'Growth Hormone',u:'Strong GH Release',h:'~55 Min',r:'Sub-Q',m:'A Potent Secretagogue Studied For Large GH Pulses And Cardiac Protection.'},
+    {n:'HGH Fragment 176-191',s:'hgh-fragment-176-191',f:'Metabolic',u:'Fat Burning',h:'~3 Min',r:'Sub-Q',m:'The Fat-Burning Tail Of Growth Hormone, Studied For Lipolysis Without GH Side Effects.'},
+    {n:'HMG',s:'hmg',f:'Hormonal',u:'Fertility',h:'~11-23 Hrs',r:'Sub-Q Or IM',m:'A Combined FSH And LH Extract Studied For Fertility And Sperm Or Egg Production.'},
+    {n:'IGF-1 LR3',s:'igf-1-lr3',f:'Growth Hormone',u:'Muscle Building',h:'~20-30 Hrs',r:'Sub-Q',m:'A Long-Acting IGF-1 Analog Studied For Creating New Muscle Cells.'},
+    {n:'Ipamorelin',s:'ipamorelin',f:'Growth Hormone',u:'Clean GH Release',h:'~2 Hrs',r:'Sub-Q',m:'A Selective Secretagogue Studied For Gentle GH Release Without Hunger Or Cortisol.'},
+    {n:'Kisspeptin-10',s:'kisspeptin-10',f:'Hormonal',u:'Hormone Cascade',h:'~4 Min',r:'Sub-Q',m:'The First Domino In The Hormone Chain, Studied For Testosterone And Fertility.'},
+    {n:'KPV',s:'kpv',f:'Recovery',u:'Inflammation And Gut',h:'~1.5 Hrs',r:'Sub-Q Or Oral',m:'An Alpha-MSH Fragment Studied For Calming Gut And Skin Inflammation.'},
+    {n:'LL-37',s:'ll-37',f:'Immune',u:'Antimicrobial Defense',h:'~30 Min',r:'Sub-Q',m:'A Natural Host-Defense Peptide Studied For Attacking Bacteria And Biofilms.'},
+    {n:'Melatonin',s:'melatonin',f:'Cognitive',u:'Sleep And Rhythm',h:'~20-50 Min',r:'Oral',m:'A Natural Sleep Hormone Studied For Circadian Rhythm And Antioxidant Effects.'},
+    {n:'MOTS-c',s:'mots-c',f:'Metabolic',u:'Energy And Endurance',h:'~30 Min',r:'Sub-Q',m:'A Mitochondrial Peptide Studied As Exercise-In-A-Bottle For Metabolism And Stamina.'},
+    {n:'MT-1',s:'mt-1',f:'Skin',u:'Tanning And UV',h:'~30 Min',r:'Sub-Q',m:'A Melanocortin Analog Studied For Sunless Tanning And UV Protection.'},
+    {n:'NAD+',s:'nad-plus',f:'Longevity',u:'Cellular Energy',h:'~2-4 Hrs',r:'Oral Or IV',m:'A Core Cellular Coenzyme Studied For Energy, Repair, And Longevity.'},
+    {n:'Oxytocin',s:'oxytocin',f:'Hormonal',u:'Bonding And Mood',h:'~3-5 Min',r:'Intranasal',m:'The Bonding Hormone, Studied For Trust, Connection, And Lower Stress.'},
+    {n:'Pinealon',s:'pinealon',f:'Cognitive',u:'Brain Protection',h:'~5-10 Min',r:'Sub-Q',m:'A Peptide Bioregulator Studied For Protecting Brain Cells And Memory.'},
+    {n:'PT-141',s:'pt-141',f:'Hormonal',u:'Arousal',h:'~2.7 Hrs',r:'Sub-Q Or Intranasal',m:'A Melanocortin Agonist Studied For Sexual Desire Through The Brain.'},
+    {n:'Retatrutide',s:'retatrutide',f:'Metabolic',u:'Weight Loss',h:'~1 Week',r:'Sub-Q',m:'A Triple GIP/GLP-1/Glucagon Agonist Studied For Powerful Weight Loss.'},
+    {n:'Selank',s:'selank',f:'Cognitive',u:'Calm And Focus',h:'~2 Min',r:'Intranasal Or Sub-Q',m:'A Tuftsin-Based Peptide Studied For Anxiety Relief Without Sedation.'},
+    {n:'Semaglutide',s:'semaglutide',f:'Metabolic',u:'Weight And Blood Sugar',h:'~1 Week',r:'Sub-Q',m:'A GLP-1 Agonist Studied For Appetite Control, Weight Loss, And Blood Sugar.'},
+    {n:'Semax',s:'semax',f:'Cognitive',u:'Focus And Memory',h:'~5 Min',r:'Intranasal Or Sub-Q',m:'An ACTH-Fragment Peptide Studied For Focus, Memory, And Neuroprotection.'},
+    {n:'Sermorelin',s:'sermorelin',f:'Growth Hormone',u:'GH Support',h:'~10-20 Min',r:'Sub-Q',m:'A GHRH Fragment Studied As A Gentle Reminder For The Body To Make GH.'},
+    {n:'SNAP-8',s:'snap-8',f:'Skin',u:'Wrinkles',h:'~1-2 Hrs',r:'Topical',m:'A Peptide Studied As Topical Botox-Like Relaxation Of Expression Lines.'},
+    {n:'SS-31',s:'ss-31',f:'Longevity',u:'Mitochondrial Repair',h:'~4 Hrs',r:'Sub-Q',m:'A Mitochondria-Targeted Peptide Studied For Repairing Cellular Engines.'},
+    {n:'Survodutide',s:'survodutide',f:'Metabolic',u:'Weight And Liver',h:'~1 Week',r:'Sub-Q',m:'A Dual GLP-1/Glucagon Agonist Studied For Weight Loss And Liver Fat.'},
+    {n:'TB-500 / Thymosin Beta-4',s:'tb-500',f:'Recovery',u:'Tissue Regeneration',h:'~30 Hrs',r:'Sub-Q',m:'A Thymosin Beta-4 Peptide Studied For Stitching Torn Muscle And Tendon Back Together.'},
+    {n:'Tesamorelin',s:'tesamorelin',f:'Growth Hormone',u:'Visceral Fat',h:'~26-38 Min',r:'Sub-Q',m:'A GHRH Analog Studied And Approved For Melting Stubborn Belly Fat.'},
+    {n:'Thymalin',s:'thymalin',f:'Immune',u:'Immune Training',h:'~15 Min',r:'Sub-Q',m:'A Thymic Bioregulator Studied For Restoring A Youthful Immune System.'},
+    {n:'Thymosin Alpha-1',s:'thymosin-alpha-1',f:'Immune',u:'Immune Boost',h:'~2 Hrs',r:'Sub-Q',m:'A Thymic Peptide Studied For Switching The Immune System On Against Infection.'},
+    {n:'Tirzepatide',s:'tirzepatide',f:'Metabolic',u:'Weight And Diabetes',h:'~1 Week',r:'Sub-Q',m:'A Dual GIP/GLP-1 Agonist Studied For Strong Weight Loss And Blood Sugar Control.'},
+    {n:'VIP',s:'vip',f:'Recovery',u:'Lungs And Inflammation',h:'~1-2 Min',r:'Intranasal Or Sub-Q',m:'Vasoactive Intestinal Peptide, Studied For Relaxing Vessels And Calming Inflammation.'},
+    {n:'Vitamin B12',s:'b12',f:'Support',u:'Energy And Nerves',h:'~6 Days',r:'Sub-Q Or IM',m:'Cobalamin, Studied For Energy, Red Blood Cells, And Nerve Health.'}
   ];
-  var FAMS=['All','Recovery','Growth','Metabolic','Melanocortin','Cognitive','Anti-Aging'];
+  var FAMS=['All','Recovery','Growth Hormone','Metabolic','Hormonal','Cognitive','Longevity','Immune','Skin','Support'];
   var pexF='All', pexQ='', pexSel=null;
 
   /* ---------- AMINO ACID DATA ---------- */
@@ -121,7 +156,8 @@
     var p=PEPTIDES.filter(function(x){return x.s===slug;})[0]; if(!p) return; pexSel=slug;
     var d=qs('#pexDetail'); if(!d) return;
     d.innerHTML='<div class="pex-d-head"><div><div class="pex-d-name">'+p.n+'</div><span class="pex-chip pex-'+p.f.toLowerCase().replace(/[^a-z]/g,'')+'">'+p.f+'</span></div>'+
-      '<a class="lib-link" href="/research/compounds/'+p.s+'">'+ic('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>')+'Research Library</a></div>'+
+      '<div class="pex-d-links"><a class="lib-link" href="/research/'+p.s+'">'+ic('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>')+'Research Library</a>'+
+      '<a class="lib-link" href="/find-a-peptide">'+ic('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>')+'Find This Peptide</a></div></div>'+
       '<p class="pex-d-m">'+p.m+'</p>'+
       '<div class="pex-d-grid">'+
       '<div><div class="pex-d-lbl">Studied For</div><div class="pex-d-val">'+p.u+'</div></div>'+
@@ -140,9 +176,9 @@
     var sc=el('<div class="screen" id="s16"></div>');
     sc.innerHTML='<div class="badge badge-teal">Reference - Peptide Explorer</div>'+
       '<h2 style="font-size:28px;margin-bottom:8px;">Peptide Explorer</h2>'+
-      '<p style="margin-bottom:16px;">Browse The Research Peptides Covered In This Course. Search Or Filter By Family, Then Tap Any Peptide For The Details - And A Link To Its Full Research Library Page.</p>'+
+      '<p style="margin-bottom:16px;">Browse The Research Peptides In The Pep Nation Lab Library. Search Or Filter By Family, Then Tap Any Peptide For The Details - And A Link To Its Full Research Library Page.</p>'+
       '<input type="text" id="pexSearch" class="calc-input" placeholder="Search By Name, Family, Or Use..." oninput="P101v4.search(this.value)" aria-label="Search Peptides" style="margin-bottom:10px;"/>'+
-      '<div id="pexChips" class="pex-chips">'+chips+'</div>'+
+      '<div id="pexChips" class="pex-chips" role="group" aria-label="Filter By Family">'+chips+'</div>'+
       '<div style="font-size:12px;color:var(--muted);margin:4px 0 10px;">Showing <span id="pexCount"></span> Peptides</div>'+
       '<div class="pex-detail" id="pexDetail"></div>'+
       '<div class="pex-grid" id="pexGrid"></div>'+
@@ -152,13 +188,11 @@
     pexRender();
   }
   function addExplorerButtons(){
-    // Overview (s0): a secondary CTA after Start Learning
     var sl=qs('#s0 .btn-xl');
     if(sl && !qs('#pexOpenS0')){
       var wrap=el('<div style="text-align:center;margin:-14px 0 26px;"><button class="btn btn-secondary" id="pexOpenS0" onclick="P101v4.open()">'+ic('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>').replace('<svg','<svg width="18" height="18"')+'Explore All Peptides</button></div>');
       var par=sl.parentNode; if(par&&par.parentNode){ par.parentNode.insertBefore(wrap, par.nextSibling); }
     }
-    // Completion (s10): inside the continue-learning card
     var cl=qs('#continueLearning');
     if(cl && !qs('#pexOpenS10')){
       cl.appendChild(el('<div class="lib-links" style="margin-top:8px;"><button class="lib-link" id="pexOpenS10" onclick="P101v4.open()">'+ic('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>')+'Open The Peptide Explorer</button></div>'));
@@ -174,7 +208,6 @@
       '<div class="amino-wrap">'+tiles+'</div>'+
       '<div class="amino-info" id="aminoInfo">Tap A Block Above To Learn About It.</div>'+
       '<div class="amino-legend"><span><i class="amino-dot amino-np"></i>Water-Avoiding</span><span><i class="amino-dot amino-po"></i>Water-Loving</span><span><i class="amino-dot amino-ac"></i>Acidic</span><span><i class="amino-dot amino-ba"></i>Basic</span></div></div>');
-    // insert after the card-nickel (the 2-50 vs 51+ size card), else after the first h2
     var anchor=qs('#s1 .card-nickel');
     if(anchor && anchor.parentNode){ anchor.parentNode.insertBefore(card, anchor.nextSibling); }
     else { var h2=qs('#s1 h2'); if(h2&&h2.parentNode) h2.parentNode.insertBefore(card, h2.nextSibling); else s1.insertBefore(card, s1.firstChild); }
@@ -203,6 +236,18 @@
     var nc=s11.querySelector('.nav-ctrl'); if(nc) s11.insertBefore(card, nc); else s11.appendChild(card);
   }
 
+  /* ---------- LEGACY LINK FIX ----------
+     v3 + early v4 built Research Library links as /research/compounds/{slug},
+     but the canonical monograph route is /research/{slug}. Repair any such
+     link at click time so no module button 404s. */
+  function fixLegacyLinks(){
+    if(window.__p101linkfix) return; window.__p101linkfix=1;
+    document.addEventListener('click', function(e){
+      var t=e.target; var a=t && t.closest ? t.closest('a[href*="/research/compounds/"]') : null;
+      if(a){ a.href = a.getAttribute('href').replace('/research/compounds/','/research/'); }
+    }, true);
+  }
+
   /* ---------- EXPOSE ---------- */
   window.P101v4={
     open:function(){ buildExplorer(); go('s16'); },
@@ -217,6 +262,7 @@
   function ready(){ return !!(document.getElementById('s1') && document.getElementById('s11') && document.getElementById('app')); }
   function v4init(){
     if(window.__p101v4) return; window.__p101v4=1;
+    fixLegacyLinks();
     extendData();
     buildExplorer();
     addExplorerButtons();
