@@ -22,7 +22,7 @@ export default async function CompareCompoundsPage({
   searchParams: Promise<{ add?: string; compare?: string }>;
 }) {
   const params = await searchParams;
-  const rawCompare = params.compare ?? params.add ?? '';
+  const rawCompare = String(params.compare ?? params.add ?? '');
   const compounds = await getAllCompounds();
   const initialSlugs = rawCompare
     .split(',')
