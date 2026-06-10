@@ -155,12 +155,15 @@ export async function POST(req: NextRequest) {
         if (Number.isFinite(stored) && stored >= 0) {
           totalCogs += stored * qty;
         } else if (item.product_id) {
+          // computeSubAgentBaselineCost returns a per-10-vial-pack cost, but the
+          // stored unit_cost_price path above is per-vial and qty is in individual
+          // vials. Divide by 10 so the fallback matches (was a 10x over-bill).
           const recomputed = await computeSubAgentBaselineCost(
             supabase,
             item.product_id,
             superAgentId
           );
-          totalCogs += recomputed * qty;
+          totalCogs += (recomputed / 10) * qty;
         }
       }
     }

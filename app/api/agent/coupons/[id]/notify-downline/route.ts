@@ -64,6 +64,9 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   if (!coupon) return bad('Coupon Not Found.', 404);
   if (coupon.deleted_at) return bad('Coupon Has Been Deleted.', 410);
   if (!coupon.is_active) return bad('Activate The Coupon Before Broadcasting.', 422);
+  if (coupon.expires_at && new Date(coupon.expires_at).getTime() < Date.now()) {
+    return bad('This Coupon Has Expired And Cannot Be Broadcast.', 422);
+  }
 
   if (coupon.agent_id !== gate.user.id) {
     const { data: caller } = await svc.from('profiles').select('role').eq('id', gate.user.id).maybeSingle();
@@ -119,6 +122,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   return NextResponse.json({
     success: true,
     sent,
+    skipped: recipients.length - sent,
     total: recipients.length,
   });
 }
