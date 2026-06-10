@@ -151,15 +151,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
-  // Admin released the order to shipping - enqueue the Shippo label job now.
-  // This is deferred from agent approval (the agent now parks orders at
-  // admin_approval_pending) so labels are only ever created AFTER the admin
-  // gate, never for an order an agent approved but an admin has not released.
-  if (status === 'approved_ship') {
-    try {
-      await supabase.rpc('shippo_enqueue_label_job', { p_order_id: id });
-    } catch { /* label enqueue must not break the admin response */ }
-  }
+  // NOTE: Shipping labels are created MANUALLY (on-demand) only - never auto-
+  // generated here or by a background cron. After admin release, an admin or
+  // agent purchases the label explicitly (single-order Purchase Label, or the
+  // admin Orders bulk "Generate Labels" action, both synchronous via Shippo).
 
   // Credit-line agents: debit their running credit balance (credit_used) for this
   // order's COGS + shipping now that an admin has released it to fulfillment.

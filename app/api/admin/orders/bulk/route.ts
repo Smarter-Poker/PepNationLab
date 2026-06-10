@@ -10,8 +10,13 @@ import {
 } from '@/lib/order-states';
 import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
-import { notifyAdminOrderStatusChange } from '@/lib/notify';
+import { notifyAdminOrderStatusChange, notifyOrderShipped } from '@/lib/notify';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
+import { purchaseLabelForOrder } from '@/lib/shippo';
+
+// Labels are purchased synchronously from Shippo in this request (manual, on
+// admin click) - never via a background cron - so allow extra wall-clock time.
+export const maxDuration = 60;
 
 type BulkPushEvent = 'order_approved' | 'order_shipped' | 'order_delivered';
 
@@ -75,7 +80,6 @@ export async function POST(req: NextRequest) {
   const succeeded: string[] = [];
   const failed: Array<{ id: string; reason: string }> = [];
   const labels: Array<{ order_id: string; label_url: string }> = [];
-  const jobIds: string[] = [];
 
   if (action !== 'generate_labels') {
     const target = bulkActionToStatus(action);
@@ -173,10 +177,19 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // ---- generate_labels ---------------------------------------------------
-  // Bulk-insert label_jobs rows instead of calling Shippo synchronously.
-  // The label-jobs cron (every 5 min) will drain and process them.
-  // Returns job_ids so the UI can poll /api/cron/label-jobs status.
+  // ---- generate_labels (SYNCHRONOUS / MANUAL) ----------------------------
+  // Labels are purchased on-demand right here, the moment the admin clicks
+  // "Generate Labels" - never queued for a background cron. Each label is
+  // bought from Shippo synchronously and its URL returned in this response.
+  // Capped per request so the synchronous Shippo calls stay within the
+  // function timeout; the admin runs another batch for more.
+  if (ids.length > 30) {
+    return NextResponse.json(
+      { error: 'Generate Labels In Batches Of 30 Or Fewer.' },
+      { status: 400 },
+    );
+  }
+
   for (const id of ids) {
     const order = orderMap.get(id);
     if (!order) {
@@ -196,22 +209,44 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    // Idempotent: call the server-side RPC which checks for an existing active job.
-    const { data: job, error: enqueueErr } = await supabase
-      .rpc('shippo_enqueue_label_job', {
-        p_order_id: id,
-        p_preferred_service_level: null,
-        p_origin_id: null,
-      })
-      .single();
+    // Purchase the label NOW (manual, synchronous) via the platform Shippo
+    // account. purchaseLabelForOrder is idempotent per order_id, so a repeat
+    // click returns the existing label instead of double-buying.
+    const result = await purchaseLabelForOrder(supabase, {
+      orderId: id,
+      agentId: order.agent_id as string,
+      preferredServiceLevel: null,
+    });
 
-    if (enqueueErr || !job) {
-      failed.push({ id, reason: enqueueErr?.message ?? 'Enqueue Failed.' });
+    if (!result.ok) {
+      failed.push({ id, reason: result.error });
       continue;
     }
 
     succeeded.push(id);
-    jobIds.push((job as { id: string }).id);
+    labels.push({ order_id: id, label_url: result.labelUrl });
+
+    // Buyer notifications + order.shipped webhook (mirrors the single-order
+    // manual purchase route). Never block the label response.
+    try {
+      const buyerId = typeof order.buyer_id === 'string' ? order.buyer_id : null;
+      if (buyerId) {
+        await notifyOrderShipped(supabase, buyerId, id, shortOrderId(id), result.trackingNumber ?? undefined);
+        await enqueueOrderPush(supabase, { userId: buyerId, orderId: id, event: 'order_shipped', tracking: result.trackingNumber });
+      }
+    } catch { /* notifications must not block the label response */ }
+
+    try {
+      const orderPayload = await fetchOrderForWebhook(supabase, id);
+      if (orderPayload) {
+        await enqueueWebhook(supabase, {
+          event: 'order.shipped',
+          agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
+          payload: { order: orderPayload },
+          relatedOrderId: id,
+        });
+      }
+    } catch { /* webhook must not block the label response */ }
   }
 
   await supabase.from('admin_audit_log').insert({
@@ -219,16 +254,15 @@ export async function POST(req: NextRequest) {
     action: 'bulk_generate_labels',
     entity_type: 'orders',
     entity_id: null,
-    changes: { order_ids: succeeded, job_ids: jobIds, failed_count: failed.length },
+    changes: { order_ids: succeeded, failed_count: failed.length },
   });
 
   return NextResponse.json({
     processed: ids.length,
-    queued: succeeded.length,
-    queued_ids: succeeded,
-    job_ids: jobIds,
+    succeeded: succeeded.length,
+    succeeded_ids: succeeded,
+    labels,
     failed,
-    note: 'Label Jobs Queued. Labels Will Be Generated Within 5 Minutes By The Background Processor.',
   });
     },
   });

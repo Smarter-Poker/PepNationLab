@@ -5,7 +5,6 @@
     { "path": "/api/cron/coupons-expire", "schedule": "15 4 * * *" },
     { "path": "/api/cron/idempotency-sweep", "schedule": "30 3 * * *" },
     { "path": "/api/cron/invoices", "schedule": "59 5 * * 1" },
-    { "path": "/api/cron/label-jobs", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/push-dispatch", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/recommendations-refresh", "schedule": "0 4 * * *" },
     { "path": "/api/cron/refill-reminders", "schedule": "0 15 * * *" },
