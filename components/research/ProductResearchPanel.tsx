@@ -22,6 +22,7 @@ import {
   type Compound,
   evidenceTier,
   researchAreaLabel,
+  intranasalDisplay,
   RISK_META,
 } from '@/lib/compounds';
 import ReconstitutionCalculator from '@/components/research/ReconstitutionCalculator';
@@ -145,6 +146,7 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
   const isHighRisk = compound.risk_level === 'critical' || compound.risk_level === 'high';
   const id = compound.identity ?? {};
   const h = compound.handling ?? {};
+  const nasal = intranasalDisplay(compound);
   const full = view === 'full';
   const show = (k: ResearchSection) => view === k || full;
 
@@ -175,6 +177,7 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
   if (compound.side_effects) faqsRaw.push({ q: 'What Side Effects Have Been Reported?', a: compound.side_effects });
   if (compound.warnings) faqsRaw.push({ q: 'What Are The Warnings And Limitations?', a: compound.warnings });
   if (prepBits.length > 0) faqsRaw.push({ q: 'How Should It Be Stored And Prepared?', a: prepBits.join('; ') + '.' });
+  faqsRaw.push({ q: 'Can It Be Used As A Nasal Spray Instead Of An Injection?', a: nasal.nasal ? (nasal.status === 'established' ? `${nasal.routesLabel}. This compound has documented intranasal use as an alternative to injection. ${nasal.caveat ?? ''}`.trim() : `${nasal.routesLabel}. Intranasal use is supported by early research only. ${nasal.caveat ?? ''}`.trim()) : 'No. The established route for this compound is injection. There is no credible evidence supporting a nasal spray alternative.' });
   if (tier.blurb) faqsRaw.push({ q: `What Does The ${tier.label} Evidence Tier Mean?`, a: tier.blurb });
   if (compound.regulatory) {
     faqsRaw.push({ q: 'What Is Its Regulatory Status?', a: `${compound.regulatory}.` });
@@ -324,6 +327,7 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
               <div style={{ marginBottom: full ? 'var(--space-6)' : 0 }}>
                 {full ? <SectionHeading>Preparation</SectionHeading> : <Label>Handling, Storage & Reconstitution</Label>}
                 <div style={{ marginBottom: 'var(--space-5)' }}>
+                  <Fact label="Administration Route" value={nasal.routesLabel} />
                   <Fact label="Form" value={h.form} />
                   <Fact label="Diluent" value={h.diluent} />
                   <Fact label="Storage Temperature" value={toFahrenheit(h.storage_temp)} />
@@ -334,6 +338,9 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
                     value={shelfDays != null ? `${shelfDays} Days Refrigerated` : null}
                   />
                 </div>
+                {nasal.nasal && nasal.caveat && (
+                  <p style={{ fontSize: '0.8rem', color: '#9FB0BD', lineHeight: 1.55, margin: '0 0 var(--space-4)' }}>{nasal.caveat}</p>
+                )}
                 {h.notes && <Para>{h.notes}</Para>}
                 <ReconstitutionCalculator
                   onAddDiluent={() => {
@@ -351,6 +358,7 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
                 <div style={{ marginBottom: 'var(--space-5)' }}>
                   <Fact label="Evidence Tier" value={tier.label} />
                   <Fact label="Category" value={compound.category} />
+                  <Fact label="Administration Route" value={nasal.routesLabel} />
                   <Fact label="Class" value={compound.compound_class} />
                   <Fact label="Molecular Target" value={compound.molecular_target} />
                   <Fact label="Sequence" value={id.sequence} />

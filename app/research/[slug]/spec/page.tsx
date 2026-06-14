@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { getCompound } from '@/lib/compounds-server';
-import { evidenceTier } from '@/lib/compounds';
+import { evidenceTier, intranasalDisplay } from '@/lib/compounds';
 import { generateQrDataUrl } from '@/lib/qr';
 import Image from 'next/image';
 import PrintButton from '@/components/research/PrintButton';
@@ -83,6 +83,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const id = compound.identity ?? {};
   const h = compound.handling ?? {};
   const tier = evidenceTier(compound.evidence_tier);
+  const nasal = intranasalDisplay(compound);
 
   const profileUrl = `https://pepnationlab.com/research/${compound.slug}`;
   let qr: string | null = null;
@@ -165,6 +166,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
               label="Studied For"
               value={compound.studied_for.length > 0 ? compound.studied_for.join(', ') : null}
             />
+            <Row label="Administration Route" value={nasal.routesLabel} />
+            {nasal.caveat ? <Row cap={false} label="Route Note" value={nasal.caveat} /> : null}
             <Row label="Form" value={h.form} />
             <Row label="Diluent" value={h.diluent} />
             <Row label="Storage Temperature" value={toFahrenheit(h.storage_temp)} />
