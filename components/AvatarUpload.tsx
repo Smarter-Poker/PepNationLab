@@ -84,6 +84,27 @@ export default function AvatarUpload({ currentAvatarUrl, name, onUploadSuccess }
     }
   };
 
+  // Reset to the default avatar (initials). Persists the reset server-side so it
+  // survives a reload, then updates parent state.
+  const handleUseDefault = async () => {
+    setError(null);
+    setUploading(true);
+    try {
+      const res = await fetch('/api/account/avatar', { method: 'DELETE' });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || 'Failed To Reset Photo.');
+      }
+      setPreview(null);
+      if (onUploadSuccess) onUploadSuccess('default');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Failed To Reset Photo.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
       <div
@@ -144,7 +165,7 @@ export default function AvatarUpload({ currentAvatarUrl, name, onUploadSuccess }
           </button>
           {onUploadSuccess && (
             <button
-              onClick={() => onUploadSuccess('default')}
+              onClick={handleUseDefault}
               disabled={uploading}
               style={{
                 background: 'transparent',
