@@ -24,11 +24,13 @@ export default function AgentTierLadder({ agentId }: { agentId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/agent/tier')
-      .then(r => r.json())
+    const ctrl = new AbortController();
+    fetch('/api/agent/tier', { signal: ctrl.signal })
+      .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
       .then(setData)
-      .catch(() => setData({ enabled: false }))
-      .finally(() => setLoading(false));
+      .catch(() => { if (!ctrl.signal.aborted) setData({ enabled: false }); })
+      .finally(() => { if (!ctrl.signal.aborted) setLoading(false); });
+    return () => ctrl.abort();
   }, [agentId]);
 
   if (loading) {
