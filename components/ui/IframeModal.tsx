@@ -180,7 +180,12 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
             onLoad={() => setLoading(false)}
             onError={() => { setLoading(false); setError(true); }}
             title="External Link Viewer"
-            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            /* SECURITY: NO allow-same-origin. The iframe src is our own
+               /api/proxy origin, so allow-same-origin would let proxied
+               third-party HTML read our storage and call our APIs with the
+               user's cookies. An opaque origin still runs scripts + the injected
+               navigation interceptor but cannot ride the user's session. */
+            sandbox="allow-scripts allow-popups allow-forms allow-popups-to-escape-sandbox"
           />
         </div>
       </motion.div>
