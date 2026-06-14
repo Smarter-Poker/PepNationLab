@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { analyzeCartWarnings, type Compound } from '@/lib/compounds';
+import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,10 +40,14 @@ export async function POST(req: NextRequest) {
   // Callers (e.g. checkout) may pass product IDs instead of compound slugs.
   // Resolve them to canonical compound slugs via products.compound_slug.
   if (slugs.length === 0 && productIds.length > 0) {
+    // Cart ids may be agent_product ids (mobile by-name path) or product ids.
+    // Resolve to product ids first so safety warnings still render for items
+    // added through the mobile path (otherwise the slug lookup matches nothing).
+    const { productIds: resolvedProductIds } = await resolveCartIdsToProductIds(supabase, productIds);
     const { data: prods } = await supabase
       .from('products')
       .select('compound_slug')
-      .in('id', productIds);
+      .in('id', resolvedProductIds);
     slugs = Array.from(
       new Set(
         (prods ?? [])
