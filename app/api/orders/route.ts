@@ -6,6 +6,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 import { calculateShippingCost, getCarrierName } from '@/lib/shipping';
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
+import { computeLineSplit, type ItemFulfillmentSplit } from '@/lib/order-line-splits';
 
 
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
@@ -181,11 +182,14 @@ export async function POST(request: NextRequest) {
       localStock?.forEach(s => { agentStockMap[s.product_id] = Number(s.stock_count); });
     }
 
-    interface ItemFulfillmentSplit { localQty: number; chinaQty: number; }
-    const itemSplits: Record<string, ItemFulfillmentSplit> = {};
+    // Keyed by cart-line INDEX, never by product id: the same product can
+    // appear on two lines (e.g. standalone + as a bundle component), and keying
+    // by product id collapsed them onto one split and mis-charged the duplicate.
+    const itemSplits: ItemFulfillmentSplit[] = [];
 
     // Check for banned or deactivated products and inventory limits
-    for (const cartItem of items) {
+    for (let idx = 0; idx < items.length; idx++) {
+      const cartItem = items[idx];
       const dbProduct = dbProducts.find(p => p.id === cartItem.id);
       if (!dbProduct) {
         return NextResponse.json(
@@ -207,35 +211,24 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      let availableStock = Number(dbProduct.inventory_count);
       // China/global ships infinitely, so a checkout never blocks on stock
       // availability. Agent LOCAL stock is the only finite inventory and is
       // still enforced precisely by reserve_inventory() below (it caps localQty
       // at the agent's on-hand and backfills the remainder from China).
-      let bypassInventoryCheck = true;
-      let localQty = 0;
-      let chinaQty = qty;
+      const useLocal = Boolean(agentProfile && !isAgentSelfBuy && fulfillmentMethod === 'ship');
+      const localAgentStock = useLocal ? (agentStockMap[cartItem.id] || 0) : 0;
+      const { localQty, chinaQty } = computeLineSplit(qty, localAgentStock, useLocal);
 
-      if (agentProfile && !isAgentSelfBuy && fulfillmentMethod === 'ship') {
-         const localAgentStock = agentStockMap[cartItem.id] || 0;
-         if (localAgentStock >= qty) {
-           localQty = qty;
-           chinaQty = 0;
-           availableStock = localAgentStock;
-         } else if (localAgentStock > 0) {
-           localQty = localAgentStock;
-           chinaQty = qty - localAgentStock;
-           availableStock = localAgentStock + Number(dbProduct.inventory_count);
-         } else {
-           localQty = 0;
-           chinaQty = qty;
-           availableStock = Number(dbProduct.inventory_count);
-         }
-      } else if (fulfillmentMethod === 'agent_pickup') {
-         bypassInventoryCheck = true;
-      }
+      // availableStock only gates the (currently always-bypassed) inventory check.
+      const availableStock =
+        useLocal && localAgentStock > 0 && localAgentStock < qty
+          ? localAgentStock + Number(dbProduct.inventory_count)
+          : useLocal && localAgentStock >= qty
+            ? localAgentStock
+            : Number(dbProduct.inventory_count);
+      const bypassInventoryCheck = true;
 
-      itemSplits[cartItem.id] = { localQty, chinaQty };
+      itemSplits[idx] = { localQty, chinaQty };
 
       if (!bypassInventoryCheck && availableStock < qty) {
         return NextResponse.json(
@@ -379,7 +372,8 @@ export async function POST(request: NextRequest) {
     let totalWeightOz = 0;
     const computedItems = [];
 
-    for (const cartItem of items) {
+    for (let idx = 0; idx < items.length; idx++) {
+      const cartItem = items[idx];
       const dbProduct = dbProducts.find(p => p.id === cartItem.id);
       if (!dbProduct) {
         return NextResponse.json(
@@ -492,7 +486,7 @@ export async function POST(request: NextRequest) {
 
       const finalProductName = cartItem.bundleName ? `${dbProduct.name} [Part of: ${cartItem.bundleName}]` : dbProduct.name;
 
-      const split = itemSplits[dbProduct.id];
+      const split = itemSplits[idx];
 
       if (split && split.localQty > 0) {
         subtotal += retailPrice * split.localQty;
