@@ -27,8 +27,14 @@ export default function MatchEngineCards() {
   ];
 
   const handleSelect = (filterValue: string) => {
-    // Navigate and set the area filter
-    router.push(`/research/catalog?area=${filterValue}`);
+    // Set the area filter on the in-page Intelligence Database, then scroll the
+    // results into view. Without the scroll the click only mutated the query
+    // string far above the fold, so the button felt unresponsive ("not
+    // clickable") on both desktop and mobile.
+    router.push(`/research/catalog?area=${filterValue}`, { scroll: false });
+    setTimeout(() => {
+      document.getElementById('intelligence-database')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
   };
 
   return (
