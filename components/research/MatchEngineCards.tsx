@@ -30,11 +30,16 @@ export default function MatchEngineCards() {
     // Set the area filter on the in-page Intelligence Database, then scroll the
     // results into view. Without the scroll the click only mutated the query
     // string far above the fold, so the button felt unresponsive ("not
-    // clickable") on both desktop and mobile.
+    // clickable") on both desktop and mobile. Re-target across several delays:
+    // sections below (trending carousel, ecosystem map, filtered grid + lazy
+    // images) finish laying out after the first frame and push the anchor down,
+    // so a single early scroll lands short.
     router.push(`/research/catalog?area=${filterValue}`, { scroll: false });
-    setTimeout(() => {
-      document.getElementById('intelligence-database')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 120);
+    [120, 450, 900, 1400].forEach((d, i) => {
+      setTimeout(() => {
+        document.getElementById('intelligence-database')?.scrollIntoView({ behavior: i === 0 ? 'smooth' : 'auto', block: 'start' });
+      }, d);
+    });
   };
 
   return (

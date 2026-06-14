@@ -14,9 +14,14 @@ export default function ResearchAreaCards() {
   // clickable") on both desktop and mobile.
   const go = (filterValue?: string) => {
     router.push(filterValue ? `/research/catalog?area=${filterValue}` : '/research/catalog', { scroll: false });
-    setTimeout(() => {
-      document.getElementById('intelligence-database')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 120);
+    // Re-target across several delays: sections below (trending carousel,
+    // ecosystem map, filtered grid + lazy images) finish laying out after the
+    // first frame and push the anchor down, so a single early scroll lands short.
+    [120, 450, 900, 1400].forEach((d, i) => {
+      setTimeout(() => {
+        document.getElementById('intelligence-database')?.scrollIntoView({ behavior: i === 0 ? 'smooth' : 'auto', block: 'start' });
+      }, d);
+    });
   };
 
   const areas = [
