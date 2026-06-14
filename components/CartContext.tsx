@@ -22,6 +22,12 @@ import DynamicCartButton from '@/components/storefront/DynamicCartButton';
 
 export interface CartItem {
   id: string;
+  /**
+   * The underlying products.id, when known. `id` itself may be an agent_product
+   * id (by-name / mobile path) OR a product id (storefront / reorder), so this
+   * is the stable cross-path key used for dedup and line merging.
+   */
+  productId?: string | null;
   name: string;
   sku: string;
   quantity: number;
@@ -128,6 +134,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           if (!fresh.available) { removed.push(fresh.name ?? item.name); continue; }
           next.push({
             ...item,
+            productId: fresh.productId ?? item.productId,
             costPrice: fresh.retailPrice,
             retailPrice: fresh.retailPrice,
             bulkCostPrice: fresh.bulkCostPrice,
@@ -231,11 +238,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
 
+  // Two cart entries are the same line when they share a bundle and resolve to
+  // the same product - either the same raw id, or the same underlying productId
+  // (so an item added by-name [agent_product id] merges with the same product
+  // added via product id instead of forming a duplicate split line).
+  const sameLine = (
+    item: CartItem,
+    id: string,
+    productId: string | null | undefined,
+    bundleName: string | undefined,
+  ) =>
+    item.bundleName === bundleName &&
+    (item.id === id || (!!productId && !!item.productId && item.productId === productId));
+
   const commitAddition = (product: Omit<CartItem, 'quantity'>, quantity: number) => {
     setCart(prev => {
-      const existing = prev.find(item => item.id === product.id && item.bundleName === product.bundleName);
+      const existing = prev.find(item => sameLine(item, product.id, product.productId, product.bundleName));
       const next = existing
-        ? prev.map(item => (item.id === product.id && item.bundleName === product.bundleName) ? { ...item, quantity: item.quantity + quantity } : item)
+        ? prev.map(item => sameLine(item, product.id, product.productId, product.bundleName) ? { ...item, quantity: item.quantity + quantity } : item)
         : [...prev, { ...product, quantity }];
       refreshCartPricing(next, true).then(updated => {
         if (updated.length !== next.length || updated.some((u, i) => u.id !== next[i]?.id)) setCart(updated);
@@ -249,7 +269,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       let next = [...prev];
       for (const { product, quantity } of items) {
         const itemBundleName = product.bundleName || bundleName;
-        const existingIndex = next.findIndex(item => item.id === product.id && item.bundleName === itemBundleName);
+        const existingIndex = next.findIndex(item => sameLine(item, product.id, product.productId, itemBundleName));
         if (existingIndex >= 0) {
           next[existingIndex] = { ...next[existingIndex], quantity: next[existingIndex].quantity + quantity };
         } else {
@@ -647,7 +667,10 @@ function SmartRecommendationStrip({
     abortRef.current = ctrl;
     setLoading(true);
 
-    const cartIdSet = new Set(cart.map(i => i.id));
+    // Recommendations are keyed by product id; cart items may be keyed by
+    // agent_product id, so compare against both id and productId to avoid
+    // re-recommending something already in the cart.
+    const cartIdSet = new Set(cart.flatMap(i => [i.id, i.productId].filter(Boolean) as string[]));
 
     fetch('/api/cart/recommendations', {
       method: 'POST',
@@ -852,7 +875,7 @@ function CartDrawer() {
     addToCart,
   } = useCart();
 
-  const cartIds = new Set(cart.map(i => i.id));
+  const cartIds = new Set(cart.flatMap(i => [i.id, i.productId].filter(Boolean) as string[]));
 
   const handleQuickAdd = useCallback(async (rec: SmartRec) => {
     try {
@@ -869,6 +892,7 @@ function CartDrawer() {
       }
       addToCart({
         id: rec.id,
+        productId: item.productId ?? rec.id,
         name: rec.name,
         sku: '',
         retailPrice: item.retailPrice ?? (rec.retail_price || 0),
@@ -898,6 +922,7 @@ function CartDrawer() {
       addToCart(
         {
           id: product.id,
+          productId: item.productId ?? product.id,
           name: product.name,
           sku: '',
           retailPrice: item.retailPrice ?? (product.retail_price || 0),
