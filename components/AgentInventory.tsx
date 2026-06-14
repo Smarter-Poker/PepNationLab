@@ -138,7 +138,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
     const { data: profile, error: profileErr } = await supabase
       .from('agent_profiles')
       .select('warehouse_address, display_name')
-      .eq('user_id', agentId)
+      .eq('id', agentId)
       .maybeSingle();
     if (profileErr) {
       toast.error('Failed To Verify Warehouse Address');
