@@ -68,7 +68,13 @@ export default function LandingSearchOverlay({
     const target = (override ?? q).trim();
     if (target) {
       addHistory(target);
-      router.push(`/research/catalog?q=${encodeURIComponent(target)}`);
+      // Route a real query to the dedicated results page (results render at the
+      // top), matching CommandSearchBar / UniversalSearch / GlobalSearchBar.
+      // Previously this went to /research/catalog?q=, landing the user on the
+      // Intelligence Center hero with their results far below the fold - the
+      // search felt like it did nothing. An empty submit still goes to the
+      // catalog to "browse all".
+      router.push(`/research/search?q=${encodeURIComponent(target)}`);
     } else {
       router.push(`/research/catalog`);
     }
