@@ -90,6 +90,7 @@ export default function WalletPage({
   const [sendOpen, setSendOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [detailType, setDetailType] = useState<'statement' | 'agent_invoice'>('statement');
   const [creditOpen, setCreditOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -312,7 +313,7 @@ export default function WalletPage({
                       const billsFromLabel = s.target_type === 'agent_invoice' ? 'Super Agent' : 'Admin';
                       return (
                         <li key={`${s.target_type}-${s.id}`}>
-                          <button onClick={() => setDetailId(s.id)} style={{
+                          <button onClick={() => { setDetailId(s.id); setDetailType(s.target_type); }} style={{
                             width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                             padding: '10px 14px', background: 'rgba(255,255,255,0.03)',
                             border: `1px solid ${isOverdue ? 'rgba(229,62,62,0.4)' : 'rgba(255,255,255,0.05)'}`, borderRadius: 10,
@@ -404,7 +405,7 @@ export default function WalletPage({
                         return (
                           <tr key={`${s.target_type}-${s.id}`}
                             style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                            <td onClick={() => setDetailId(s.id)} style={{ padding: '10px 8px', color: 'var(--white)', cursor: 'pointer' }}>{fmtDate(s.week_start)}</td>
+                            <td onClick={() => { setDetailId(s.id); setDetailType(s.target_type); }} style={{ padding: '10px 8px', color: 'var(--white)', cursor: 'pointer' }}>{fmtDate(s.week_start)}</td>
                             <td style={{ padding: '10px 8px', color: 'var(--grey-400)' }}>{billsFromLabel}</td>
                             <td style={{ padding: '10px 8px', color: 'var(--white)', textAlign: 'right' }}>{money(Number(s.total_cogs || 0))}</td>
                             <td style={{ padding: '10px 8px', color: 'var(--white)', textAlign: 'right' }}>{money(Number(s.total_shipping || 0))}</td>
@@ -447,7 +448,7 @@ export default function WalletPage({
           onPaid={() => { setPayOpen(false); refresh(); }}
         />
       )}
-      {detailId && <StatementDetailModal statementId={detailId} onClose={() => setDetailId(null)} />}
+      {detailId && <StatementDetailModal statementId={detailId} targetType={detailType} onClose={() => setDetailId(null)} />}
       {creditOpen && (
         <CreditIncreaseForm
           currentLimit={summary?.creditLimit ?? 0}

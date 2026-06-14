@@ -6,8 +6,8 @@ import { money, fmtDate, statusLabel } from './format';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
 
 export default function StatementDetailModal({
-  statementId, onClose,
-}: { statementId: string; onClose: () => void }) {
+  statementId, onClose, targetType = 'statement',
+}: { statementId: string; onClose: () => void; targetType?: 'statement' | 'agent_invoice' }) {
   const [data, setData] = useState<any>(null);
   const [err, setErr] = useState<string | null>(null);
   const [disputeOpen, setDisputeOpen] = useState(false);
@@ -16,6 +16,41 @@ export default function StatementDetailModal({
 
   async function load() {
     try {
+      if (targetType === 'agent_invoice') {
+        // Sub-agent invoices live in a different table + endpoint than weekly
+        // statements. Fetch the invoice detail and normalize it into the same
+        // shape the render below expects ({ statement, orders[].line_items }).
+        const res = await fetch(`/api/agent/super-agent/invoices/${statementId}`, { cache: 'no-store' });
+        const j = await res.json();
+        if (!res.ok) throw new Error();
+        const inv = j.invoice || {};
+        setData({
+          statement: {
+            week_start: inv.week_start,
+            total_cogs: inv.total_cogs,
+            total_shipping: inv.total_shipping,
+            total_owed: inv.total_owed,
+            status: inv.status,
+            due_date: inv.due_date,
+            paid_at: inv.paid_at,
+            payment_method: inv.payment_method,
+          },
+          orders: (j.lineItems ?? []).length
+            ? [{
+                order_id: 'invoice-lines',
+                buyer_name: 'Invoice Line Items',
+                order_created_at: inv.week_start,
+                total: inv.total_owed,
+                line_items: (j.lineItems ?? []).map((li: any) => ({
+                  product_name: li.product,
+                  quantity: li.qty,
+                  line_total: li.lineTotal,
+                })),
+              }]
+            : [],
+        });
+        return;
+      }
       const res = await fetch(`/api/agent/wallet/statements/${statementId}`, { cache: 'no-store' });
       const j = await res.json();
       if (!res.ok) throw new Error();
@@ -72,7 +107,7 @@ export default function StatementDetailModal({
         border: '1px solid rgba(255,255,255,0.1)',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h2 style={{ color: 'var(--white)', fontSize: '1.2rem', margin: 0 }}>Statement Detail</h2>
+          <h2 style={{ color: 'var(--white)', fontSize: '1.2rem', margin: 0 }}>{targetType === 'agent_invoice' ? 'Invoice Detail' : 'Statement Detail'}</h2>
           <button onClick={onClose} aria-label="Close" style={{
             background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--white)',
             width: 44, height: 44, borderRadius: 22, cursor: 'pointer', fontSize: '1rem',
@@ -172,7 +207,7 @@ export default function StatementDetailModal({
             )}
 
             <div style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-              {!disputed && !paid && !disputeOpen ? (
+              {targetType === 'statement' && !disputed && !paid && !disputeOpen ? (
                 <button onClick={() => setDisputeOpen(true)} style={{
                   padding: '10px 16px', minHeight: 44, borderRadius: 8,
                   background: 'rgba(229,62,62,0.12)', color: '#ff6b6b',

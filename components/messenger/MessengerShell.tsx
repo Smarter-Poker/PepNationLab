@@ -222,7 +222,7 @@ export default function MessengerShell({ userId }: Props) {
     let cancelled = false;
     const ping = async () => {
       try {
-        await fetch('/api/messenger/presence-ping', {
+        await fetch('/api/messenger/update-presence', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: '{}',
