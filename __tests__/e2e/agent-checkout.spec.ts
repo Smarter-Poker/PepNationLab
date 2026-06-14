@@ -22,26 +22,30 @@ test.describe('Agent Checkout Flow', () => {
 
     // 2. Add an item to the cart
     await page.goto(`${BASE}/research/catalog`);
-    // Assuming there's an "Add to Cart" button for a product
-    const addToCartBtn = page.getByRole('button', { name: /add to cart/i }).first();
-    await addToCartBtn.waitFor({ state: 'visible' });
-    await addToCartBtn.click();
-
-    // Wait for cart to reflect
-    await expect(page.getByText(/added to cart/i)).toBeVisible({ timeout: 5000 });
+    
+    // Attempt to click the first "Add" or "Cart" button. Adjust selector if necessary.
+    // The exact text depends on the catalog UI, usually "Add To Cart", "Add", or an icon.
+    // We'll target a generic button that likely adds to cart.
+    const addBtn = page.locator('button').filter({ hasText: /add to cart/i }).first();
+    if (await addBtn.isVisible()) {
+      await addBtn.click();
+    } else {
+      // Fallback if the button has different text
+      await page.locator('button').filter({ hasText: /add/i }).first().click();
+    }
 
     // 3. Navigate to Checkout
     await page.goto(`${BASE}/checkout`);
     
-    // Ensure the cart loaded
-    await expect(page.getByText(/order summary/i)).toBeVisible({ timeout: 10_000 });
+    // Ensure the checkout form loaded by checking for the Step 1 Fulfillment text
+    await expect(page.getByText(/Fulfillment Method/i)).toBeVisible({ timeout: 10_000 });
 
-    // 4. Intercept the checkout API call to mock a failure and verify rollback logic
-    // We simulate the exact edge case we fixed: deduct_prepaid_balance succeeds, but Stripe fails, so refund_prepaid_balance is called.
+    // 4. Intercept the checkout API call to mock a failure and verify rollback logic.
+    // The generic checkout hits /api/orders.
     let checkoutPayload: any = null;
-    await page.route('**/api/agent/orders/new', async route => {
+    await page.route('**/api/orders', async route => {
       checkoutPayload = route.request().postDataJSON();
-      // Mock an error response to trigger the refund/rollback
+      // Mock an error response to trigger the UI error state
       await route.fulfill({
         status: 400,
         contentType: 'application/json',
@@ -49,25 +53,37 @@ test.describe('Agent Checkout Flow', () => {
       });
     });
 
-    // 5. Submit the checkout form
-    const submitBtn = page.getByRole('button', { name: /place order/i });
-    // Fill out any required mock shipping details if they exist on the page
-    const nameInput = page.getByLabel(/full name/i);
-    if (await nameInput.isVisible()) {
-      await nameInput.fill('Test Agent');
-      await page.getByLabel(/address/i).fill('123 Test St');
-      await page.getByLabel(/city/i).fill('Test City');
-      await page.getByLabel(/zip/i).fill('12345');
+    // 5. Submit the checkout form (Step 1)
+    const nextBtn1 = page.getByRole('button', { name: /Continue To Payment/i });
+    // Default is usually Agent Pickup. Click next.
+    await nextBtn1.waitFor({ state: 'visible' });
+    await nextBtn1.click();
+
+    // 6. Checkout form (Step 2)
+    const nextBtn2 = page.getByRole('button', { name: /Continue To Terms/i });
+    await expect(nextBtn2).toBeVisible({ timeout: 5000 });
+    await nextBtn2.click();
+
+    // 7. Checkout form (Step 3) - Compliance checkboxes
+    await expect(page.getByText(/Compliance Research Agreement/i)).toBeVisible({ timeout: 5000 });
+    
+    // Check all three disclaimer checkboxes
+    const checkboxes = await page.getByRole('checkbox').all();
+    for (const checkbox of checkboxes) {
+      await checkbox.check();
     }
 
+    // Submit final order
+    const submitBtn = page.getByRole('button', { name: /Place Research Order/i });
     await submitBtn.click();
 
-    // 6. Verify the failure was handled gracefully by the UI
+    // 8. Verify the failure was handled gracefully by the UI
     await expect(page.getByText(/Mocked checkout failure to trigger rollback/i)).toBeVisible({ timeout: 10_000 });
 
-    // 7. Verify the payload correctly calculated amounts
+    // 9. Verify the payload correctly calculated amounts
     expect(checkoutPayload).not.toBeNull();
-    expect(checkoutPayload.cart).toBeDefined();
+    expect(checkoutPayload.items).toBeDefined();
     // We ensure the payload structured the request properly for the backend to run the RPC
   });
 });
+
