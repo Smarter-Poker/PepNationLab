@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     // Get all label purchases in the window, grouped by agent.
     const { data: purchases, error: pErr } = await supabase
       .from('shipping_label_purchases')
-      .select('agent_id, agent_charged_cents, order_id')
+      .select('agent_id, agent_charged_cents, label_amount_cents, order_id')
       .gte('created_at', windowStart)
       .eq('refunded', false);
 
@@ -61,7 +61,10 @@ export async function GET(req: NextRequest) {
       for (const row of (purchases ?? [])) {
         const agentId = String(row.agent_id || 'platform');
         const existing = byAgent.get(agentId) ?? { chargedCents: 0, orderIds: new Set() };
-        existing.chargedCents += Number(row.agent_charged_cents) || 0;
+        // Prefer the real Shippo-charged amount (backfilled by the webhook on
+        // transaction_updated) over the quote-time agent_charged_cents.
+        const paidCents = row.label_amount_cents ?? row.agent_charged_cents;
+        existing.chargedCents += Number(paidCents) || 0;
         if (row.order_id) existing.orderIds.add(String(row.order_id));
         byAgent.set(agentId, existing);
       }
