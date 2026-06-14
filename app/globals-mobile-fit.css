@@ -1,0 +1,65 @@
+/* ==============================================================
+   MOBILE PORTRAIT FIT  (Added 2026-06-14)
+   Goal: every page and sub-page renders fully in portrait mode
+   with nothing cut off on the right edge (no forced landscape)
+   and the bottom action area clearing the fixed mobile nav.
+   Loaded last (after globals.css and globals-round2.css) so these
+   guards win where they need to.
+   ============================================================== */
+
+/* 1. Page-level horizontal overflow guard.
+   A single stray wide child (a non-wrapping button row, a two-column
+   grid whose fixed minimums exceed the screen, a long unbroken string)
+   was widening the whole layout and forcing users to rotate to
+   landscape to see the page. overflow-x: clip stops that.
+   clip is "sticky-safe": unlike overflow-x: hidden it does NOT turn the
+   element into a scroll container, so position: sticky headers, table
+   heads and the research sidebar keep working. Browsers without clip
+   support simply ignore this line, so there is no regression for them -
+   and the source-level rules below mean content still fits without it. */
+html {
+  overflow-x: clip;
+}
+.page-container {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+/* 2. Phones (<=600px): explicit multi-column inline grids collapse to a
+   single column. Grids built with repeat(auto-fill | auto-fit, ...) already
+   collapse on their own, so they are excluded; this only rewrites the
+   EXPLICIT grids - e.g. "minmax(280px,1fr) minmax(280px,360px)", "1fr 1fr",
+   "300px 1fr" - whose fixed minimums or content blow-out push past a phone
+   screen. Single column is the expected mobile layout and guarantees fit. */
+@media (max-width: 600px) {
+  [style*="grid-template-columns"]:not([style*="auto-fill"]):not([style*="auto-fit"]) {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Grid/flex children must be allowed to shrink below their content width,
+     otherwise a long input or label re-introduces overflow. An explicit
+     inline min-width still wins (higher specificity), so intentional
+     minimums are preserved. */
+  [style*="grid-template-columns"] > *,
+  [style*="display: flex"] > * {
+    min-width: 0;
+  }
+
+  /* Long unbroken tokens (hashes, URLs, IDs) wrap instead of stretching
+     the page. Inputs/textareas excluded so typing is unaffected. */
+  p, span, td, th, li, h1, h2, h3, h4, dd, dt, a, label {
+    overflow-wrap: anywhere;
+  }
+}
+
+/* 3. Bottom action clearance. The fixed MobileBottomNav is
+   calc(65px + safe-area). Reserve a touch more so the last control on a
+   page (Add To Cart, Submit, Save) always sits above it, never under it. */
+@media (max-width: 768px) {
+  body {
+    padding-bottom: calc(82px + env(safe-area-inset-bottom)) !important;
+  }
+  .page-container {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
