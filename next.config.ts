@@ -51,6 +51,14 @@ const nextConfig = {
             // camera=() remains blocked — no video calling in-browser (calls use LiveKit server-side).
             value: "camera=(), microphone=(self), geolocation=()",
           },
+          // Cross-origin isolation / XS-Leak hardening. same-origin-allow-popups
+          // keeps any future OAuth/popup flow working while severing the
+          // window.opener reference for cross-origin popups.
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+          // Block Adobe/Flash-era cross-domain policy file abuse.
+          { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
+          // Do not leak browsing intent via speculative DNS prefetch.
+          { key: "X-DNS-Prefetch-Control", value: "off" },
           {
             key: "Content-Security-Policy",
             value:

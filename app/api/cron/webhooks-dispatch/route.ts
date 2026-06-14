@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { assertCronAuth } from '@/lib/cron';
 import { createAdminClient } from '@/lib/supabase/server';
+import { isSsrfTarget } from '@/lib/ssrf-guard';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -78,6 +79,19 @@ async function deliverOne(
     !endpoint.event_types.includes(delivery.event_type)
   ) {
     return { ok: false, statusCode: null, bodyPreview: '', reason: 'event_type_not_subscribed' };
+  }
+
+  // SSRF guard: refuse to deliver to a host that is (or DNS-resolves to) an
+  // internal / loopback / cloud-metadata address, even if an admin registered
+  // it. Fails the delivery rather than letting the platform attack itself.
+  let epHost: string;
+  try {
+    epHost = new URL(endpoint.url).hostname;
+  } catch {
+    return { ok: false, statusCode: null, bodyPreview: '', reason: 'invalid_url' };
+  }
+  if (await isSsrfTarget(epHost)) {
+    return { ok: false, statusCode: null, bodyPreview: '', reason: 'ssrf_blocked' };
   }
 
   const body = JSON.stringify({
