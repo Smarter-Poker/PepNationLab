@@ -34,6 +34,25 @@ interface ShippoStatus {
   credentials_id?: string;
 }
 
+interface WebhookActivityEvent {
+  event_type: string;
+  processing_error: string | null;
+  processed_at: string | null;
+  received_at: string;
+  rejected: boolean;
+}
+
+interface WebhookActivity {
+  counts: {
+    total_7d: number;
+    processed_7d: number;
+    failed_open: number;
+    rejected_7d: number;
+    last_received_at: string | null;
+  };
+  recent: WebhookActivityEvent[];
+}
+
 interface ShippingOrigin {
   id: string;
   label: string;
@@ -105,6 +124,7 @@ export default function AdminShippingSettingsClient() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
   const [agentAssignLoading, setAgentAssignLoading] = useState<string | null>(null);
+  const [webhookActivity, setWebhookActivity] = useState<WebhookActivity | null>(null);
 
   // Connect form state
   const [connectKey, setConnectKey] = useState('');
@@ -159,6 +179,15 @@ export default function AdminShippingSettingsClient() {
     }
   }, []);
 
+  const fetchWebhookActivity = useCallback(async () => {
+    try {
+      const r = await fetch('/api/admin/shippo/webhook-events');
+      if (r.ok) setWebhookActivity(await r.json());
+    } catch {
+      /* no-op */
+    }
+  }, []);
+
   const fetchAgentWarehouses = useCallback(async () => {
     try {
       const r = await fetch('/api/admin/agents/warehouse-origins');
@@ -174,11 +203,11 @@ export default function AdminShippingSettingsClient() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      await Promise.all([fetchStatus(), fetchOrigins(), fetchAgentWarehouses()]);
+      await Promise.all([fetchStatus(), fetchOrigins(), fetchAgentWarehouses(), fetchWebhookActivity()]);
       if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [fetchStatus, fetchOrigins, fetchAgentWarehouses]);
+  }, [fetchStatus, fetchOrigins, fetchAgentWarehouses, fetchWebhookActivity]);
 
   // ---------------------------------------------------------------------------
   // Connect / Disconnect / Rotate
@@ -1005,6 +1034,53 @@ export default function AdminShippingSettingsClient() {
             </p>
           )}
         </div>
+
+        {/* Inbound Webhook Activity (last 7 days) */}
+        {webhookActivity && (
+          <div style={{ marginTop: 'var(--space-4)', borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 'var(--space-4)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+              <h3 style={{ color: 'var(--white)', fontSize: '0.92rem', fontWeight: 700 }}>Inbound Activity (7 Days)</h3>
+              <span style={{ color: 'var(--silver)', fontSize: '0.75rem' }}>
+                Last Received: {webhookActivity.counts.last_received_at ? new Date(webhookActivity.counts.last_received_at).toLocaleString() : 'None Yet'}
+              </span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+              {[
+                { label: 'Received', value: webhookActivity.counts.total_7d, color: 'var(--white)' },
+                { label: 'Processed', value: webhookActivity.counts.processed_7d, color: 'var(--teal)' },
+                { label: 'Needs Attention', value: webhookActivity.counts.failed_open, color: webhookActivity.counts.failed_open > 0 ? '#f59e0b' : 'var(--silver)' },
+                { label: 'Rejected', value: webhookActivity.counts.rejected_7d, color: webhookActivity.counts.rejected_7d > 0 ? '#e53e3e' : 'var(--silver)' },
+              ].map((stat) => (
+                <div key={stat.label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>
+                  <div style={{ color: stat.color, fontSize: '1.3rem', fontWeight: 800, lineHeight: 1 }}>{stat.value}</div>
+                  <div style={{ color: 'var(--silver)', fontSize: '0.72rem', textTransform: 'uppercase', marginTop: 4 }}>{stat.label}</div>
+                </div>
+              ))}
+            </div>
+            {webhookActivity.recent.length === 0 ? (
+              <p style={{ color: 'var(--silver)', fontSize: '0.82rem', margin: 0 }}>
+                No Webhook Events Recorded Yet. They Will Appear Here Once Shippo Starts Sending Tracking Updates.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {webhookActivity.recent.slice(0, 8).map((ev, i) => {
+                  const ok = !ev.rejected && !ev.processing_error && !!ev.processed_at;
+                  const tone = ev.rejected ? '#e53e3e' : ev.processing_error ? '#f59e0b' : 'var(--teal)';
+                  return (
+                    <div key={`${ev.received_at}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.78rem', color: 'var(--silver)' }}>
+                      {ok ? <Check size={13} color={tone} /> : <AlertTriangle size={13} color={tone} />}
+                      <span style={{ color: 'var(--white)', fontFamily: 'monospace' }}>{ev.event_type}</span>
+                      <span style={{ color: tone }}>
+                        {ev.rejected ? 'Rejected' : ev.processing_error ? `Error: ${ev.processing_error}` : 'Processed'}
+                      </span>
+                      <span style={{ marginLeft: 'auto', color: 'var(--grey-500)' }}>{new Date(ev.received_at).toLocaleString()}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* ------------------------------------------------------------------ */}
