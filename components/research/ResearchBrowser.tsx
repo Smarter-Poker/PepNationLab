@@ -238,7 +238,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
   preps.forEach(v => activePills.push({ key: 'prep', val: v, label: v === 'reconstitution' ? 'Lyophilized' : 'Ready-To-Use' }));
 
   return (
-    <div>
+    <div id="intelligence-database" style={{ scrollMarginTop: '90px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
         <div style={{ position: 'relative', width: '24px', height: '24px', filter: 'drop-shadow(0 0 8px rgba(0,229,255,0.6))' }}>
           <Image src="/images/redesign/molecule_default.png" alt="Database" fill style={{ objectFit: 'contain' }} />

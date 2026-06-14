@@ -25,13 +25,21 @@ function labelOf(c: Contact): string {
   return c.full_name?.trim() || c.username?.trim() || c.email?.trim() || 'Unknown';
 }
 
+// A super agent can be represented two ways in the DB: the canonical
+// role='agent' + is_super_agent=true, OR a legacy role='super_agent' row left
+// by the researcher-promotion path. Treat BOTH as super agents so a promoted
+// account never falls through the role chips or shows a lowercase label.
+function isSuperAgentContact(c: Contact): boolean {
+  return c.role === 'super_agent' || (c.role === 'agent' && c.is_super_agent === true);
+}
+
 function roleLabel(c: Contact): string {
   if (c.role === 'admin') return 'Admin';
-  if (c.role === 'agent' && c.is_super_agent === true) return 'Super Agent';
+  if (isSuperAgentContact(c)) return 'Super Agent';
   if (c.role === 'agent') return 'Agent';
   if (c.role === 'researcher') return 'Researcher';
   if (c.role === 'shipping') return 'Shipping';
-  return c.role.replace('_', ' ');
+  return c.role.replace('_', ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
 }
 
 type RoleFilter = 'all' | 'admin' | 'super_agent' | 'agent' | 'researcher' | 'shipping';
@@ -68,7 +76,7 @@ export default function ContactPicker({ contacts, multi, selectedIds, onChange, 
       if (excludeIds?.has(c.id)) continue;
       out.all++;
       if (c.role === 'admin') out.admin++;
-      else if (c.role === 'agent' && c.is_super_agent === true) out.super_agent++;
+      else if (isSuperAgentContact(c)) out.super_agent++;
       else if (c.role === 'agent') out.agent++;
       else if (c.role === 'researcher') out.researcher++;
       else if (c.role === 'shipping') out.shipping++;
@@ -82,9 +90,9 @@ export default function ContactPicker({ contacts, multi, selectedIds, onChange, 
       if (excludeIds?.has(c.id)) return false;
       if (roleFilter !== 'all') {
         if (roleFilter === 'super_agent') {
-          if (!(c.role === 'agent' && c.is_super_agent === true)) return false;
+          if (!isSuperAgentContact(c)) return false;
         } else if (roleFilter === 'agent') {
-          if (!(c.role === 'agent' && c.is_super_agent !== true)) return false;
+          if (!(c.role === 'agent' && !isSuperAgentContact(c))) return false;
         } else if (c.role !== roleFilter) {
           return false;
         }

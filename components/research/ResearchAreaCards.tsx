@@ -8,7 +8,27 @@ import { useRouter } from 'next/navigation';
 export default function ResearchAreaCards() {
   const router = useRouter();
 
-  const areas = [
+  // Set the area filter on the in-page Intelligence Database then scroll the
+  // results into view. Without the scroll, clicking a card only changed the
+  // query string far above the fold, so the cards felt unresponsive ("not
+  // clickable") on both desktop and mobile.
+  const go = (filterValue?: string) => {
+    router.push(filterValue ? `/research/catalog?area=${filterValue}` : '/research/catalog', { scroll: false });
+    // Re-target across several delays: sections below (trending carousel,
+    // ecosystem map, filtered grid + lazy images) finish laying out after the
+    // first frame and push the anchor down, so a single early scroll lands short.
+    // html { scroll-behavior: smooth } is set globally, which makes scrollIntoView
+    // animate and get interrupted by those layout shifts (it never lands). Use
+    // behavior:'instant' + live offset recompute so the final pass snaps exactly.
+    [120, 450, 900, 1400].forEach((d) => {
+      setTimeout(() => {
+        const el = document.getElementById('intelligence-database');
+        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'instant' as ScrollBehavior });
+      }, d);
+    });
+  };
+
+  const areas: Array<{ id: string; label: string; count: number; image: string; filter: string; fallbackGradient?: string }> = [
     { id: 'weight_management', label: 'Weight Management', count: 127, image: '/images/research/icon_weight_management.png', filter: 'weight_management' },
     { id: 'tissue_repair', label: 'Tissue Repair', count: 83, image: '/images/research/icon_tissue_repair.png', filter: 'tissue_repair' },
     { id: 'healing', label: 'Healing', count: 62, image: '/images/research/icon_healing.png', filter: 'healing' },
@@ -30,8 +50,8 @@ export default function ResearchAreaCards() {
     <section style={{ marginBottom: '60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>Explore Research Areas</h2>
-        <motion.button 
-          onClick={() => router.push('/research/catalog')}
+        <motion.button
+          onClick={() => go()}
           whileHover={{ scale: 1.05, filter: 'drop-shadow(0 0 10px rgba(0, 229, 255, 0.4))' }}
           whileTap={{ scale: 0.95 }}
           style={{ 
@@ -63,7 +83,7 @@ export default function ResearchAreaCards() {
         {areas.map((area) => (
           <motion.div
             key={area.id}
-            onClick={() => router.push(`/research/catalog?area=${area.filter}`)}
+            onClick={() => go(area.filter)}
             whileHover={{ y: -8, boxShadow: '0 20px 40px rgba(0,0,0,0.6), inset 0 0 20px rgba(0, 229, 255, 0.2)' }}
             style={{
               flex: '0 0 auto',

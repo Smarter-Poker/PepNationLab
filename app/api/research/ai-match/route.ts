@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { safeError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,8 +81,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       result: { goal, goals, evidenceComfort, riskTolerance, excludeInjectables, requireLongHalfLife, preference, budget },
     });
-  } catch (error: any) {
-    console.error('AI Match Error:', error);
-    return NextResponse.json({ error: error.message || 'Match request failed' }, { status: 500 });
+  } catch (error) {
+    return safeError('research.ai_match', error, 500, 'Match Request Failed. Please Try Again.');
   }
 }

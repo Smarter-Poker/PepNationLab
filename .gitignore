@@ -47,3 +47,8 @@ CLAUDE.md
 AUDIT-2026-05-28.md
 pepnationrx
 .gcp-sa-key.json
+
+# Local junk artifacts that were accidentally tracked (no secrets). Ignored so
+# they are not re-staged; remove from history with `git rm --cached <file>`.
+cookies.txt
+.r8-push.json

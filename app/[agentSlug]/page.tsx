@@ -79,16 +79,15 @@ async function AgentStorefrontDataLoader({
   // shoppers browse at retail. Previously this was stubbed to a mock admin
   // profile, which silently disabled owner self-buy pricing and researcher
   // wishlists on every storefront.
-  let userProfile:
-    | { role: string | null; id: string; tier: string | null; referring_agent_id: string | null; parent_agent_id: string | null }
-    | null = null;
+  type ViewerProfile = { role: string | null; id: string; tier: string | null; referring_agent_id: string | null; parent_agent_id: string | null };
+  let userProfile: ViewerProfile | null = null;
   if (user) {
     const { data: viewerProfile } = await supabase
       .from('profiles')
       .select('role, id, tier, referring_agent_id, parent_agent_id')
       .eq('id', user.id)
       .single();
-    userProfile = viewerProfile as typeof userProfile;
+    userProfile = (viewerProfile as ViewerProfile | null) ?? null;
   }
   const isStorefrontOwner = !!user && userProfile?.id === agent.id;
 
@@ -119,7 +118,7 @@ async function AgentStorefrontDataLoader({
       ? supabase
           .from('researcher_favorites')
           .select('product_id')
-          .eq('user_id', user.id)
+          .eq('user_id', user!.id)
       : Promise.resolve({ data: null }),
   ]);
 

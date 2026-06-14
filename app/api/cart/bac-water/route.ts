@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { assertSameOrigin } from '@/lib/csrf';
+import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 
 /**
  * POST /api/cart/bac-water
@@ -95,11 +96,22 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createServiceClient();
 
+  // Cart ids may be agent_product ids (mobile by-name path) or product ids.
+  // Resolve to product ids and remap the quantities map (keyed by the original
+  // cart id) so peptide-vial counting works regardless of which id the cart used.
+  const { productIds: resolvedProductIds, inputToProduct } =
+    await resolveCartIdsToProductIds(supabase, productIds);
+  const productQuantities: Record<string, number> = {};
+  for (const [inId, q] of Object.entries(quantities)) {
+    const pid = inputToProduct.get(inId) ?? inId;
+    productQuantities[pid] = (productQuantities[pid] ?? 0) + q;
+  }
+
   // ── Fetch products ──────────────────────────────────────────────────────────
   const { data: products } = await supabase
     .from('products')
     .select('id, name, category, compound_slug, is_active, is_banned, unit_size, unit_measure')
-    .in('id', productIds);
+    .in('id', resolvedProductIds);
 
   // ── Resolve compound evidence tiers for compound-linked products ────────────
   const compoundSlugsToCheck = (products ?? [])
@@ -138,7 +150,7 @@ export async function POST(req: NextRequest) {
 
     if (isBacWater) {
       alreadyInCart = true;
-      alreadyInCartQty = quantities[p.id] ?? 1;
+      alreadyInCartQty = productQuantities[p.id] ?? 1;
       continue;
     }
 
@@ -146,7 +158,7 @@ export async function POST(req: NextRequest) {
     if (isAceticAcid || isSupplyCategory || isSupplyCompound) continue;
 
     // Count as a peptide vial
-    const qty = quantities[p.id] ?? 1;
+    const qty = productQuantities[p.id] ?? 1;
     peptideCount += 1;
     totalPeptideVials += qty;
   }

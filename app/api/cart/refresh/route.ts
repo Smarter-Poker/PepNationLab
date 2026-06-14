@@ -50,23 +50,50 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createServiceClient();
 
-    const query = supabase
-      .from('agent_products')
-      .select(`
+    const SELECT = `
         id,
         retail_price,
         is_visible,
         product_id,
         products:product_id ( id, name, is_banned, is_active, admin_bulk_price, admin_bulk_threshold )
-      `);
+      `;
 
-    const { data: rows, error } = agentProductIds.length > 0
-      ? await query.in('id', requestedIds)
-      : await query.in('product_id', requestedIds);
-
-    if (error) {
-      console.error('Cart Refresh Error:', error);
-      return NextResponse.json({ error: 'Failed To Refresh Cart.' }, { status: 500 });
+    // Cart items can be keyed by EITHER the agent_product id (by-name / quick-add
+    // paths via /api/cart/resolve-name) OR the underlying product_id (reorder /
+    // research catalog paths). The client cannot know which convention a given
+    // item uses, so it sends the raw ids and we resolve against BOTH columns.
+    // Matching only one column was the root cause of "Item Removed" wiping
+    // freshly-added items - most visibly on mobile, where the storefront grid
+    // (which keeps its own internal cart) is not mounted and the global
+    // CartContext add path keys items by agent_product id.
+    let rows: any[] | null = null;
+    if (agentProductIds.length > 0) {
+      const { data, error } = await supabase
+        .from('agent_products')
+        .select(SELECT)
+        .in('id', requestedIds);
+      if (error) {
+        console.error('Cart Refresh Error:', error);
+        return NextResponse.json({ error: 'Failed To Refresh Cart.' }, { status: 500 });
+      }
+      rows = data;
+    } else {
+      // Two parameterized .in() queries (one per column) merged + de-duped by
+      // agent_product id. Avoids building a raw PostgREST .or() filter string
+      // from caller-supplied ids (injection-safe).
+      const [byId, byProduct] = await Promise.all([
+        supabase.from('agent_products').select(SELECT).in('id', requestedIds),
+        supabase.from('agent_products').select(SELECT).in('product_id', requestedIds),
+      ]);
+      if (byId.error || byProduct.error) {
+        console.error('Cart Refresh Error:', byId.error || byProduct.error);
+        return NextResponse.json({ error: 'Failed To Refresh Cart.' }, { status: 500 });
+      }
+      const merged = new Map<string, any>();
+      for (const r of [...(byId.data ?? []), ...(byProduct.data ?? [])]) {
+        if (!merged.has(r.id)) merged.set(r.id, r);
+      }
+      rows = Array.from(merged.values());
     }
 
     const items = (rows ?? []).map((row: any) => {
@@ -90,7 +117,13 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    const presentIds = new Set(items.map(i => i.id));
+    // An id is "present" if it matches a returned agent_product id OR its
+    // underlying product_id, since the cart may reference either.
+    const presentIds = new Set<string>();
+    for (const i of items) {
+      presentIds.add(i.id);
+      if (i.productId) presentIds.add(i.productId);
+    }
     const missing = requestedIds.filter(id => !presentIds.has(id));
 
     return NextResponse.json({ items, missing });

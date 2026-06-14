@@ -26,8 +26,8 @@ export async function GET(req: NextRequest) {
     .eq('id', agentId)
     .maybeSingle();
 
-  const { data: caller } = await svc.from('profiles').select('role').eq('id', gate.user.id).maybeSingle();
-  if (caller?.role !== 'admin' && data?.parent_agent_id !== gate.user.id) {
+  const { data: caller } = await svc.from('profiles').select('role').eq('id', gate.userId).maybeSingle();
+  if (caller?.role !== 'admin' && data?.parent_agent_id !== gate.userId) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -88,9 +88,9 @@ export async function POST(req: NextRequest) {
   }
 
   // If the user isn't an admin, they must be the super-agent who owns this sub-agent
-  const { data: caller } = await svc.from('profiles').select('role').eq('id', gate.user.id).maybeSingle();
+  const { data: caller } = await svc.from('profiles').select('role').eq('id', gate.userId).maybeSingle();
   if (caller?.role !== 'admin') {
-    if (target.parent_agent_id !== gate.user.id) {
+    if (target.parent_agent_id !== gate.userId) {
       return NextResponse.json({ error: 'Forbidden. You do not own this agent.' }, { status: 403 });
     }
   }

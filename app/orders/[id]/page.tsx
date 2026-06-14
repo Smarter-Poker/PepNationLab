@@ -7,6 +7,7 @@ import PageShell from '@/components/PageShell';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
 import RecommendationStrip, { type RecommendationItem } from '@/components/RecommendationStrip';
 import ReceiptButton from './ReceiptButton';
+import OrderTrackingTimeline, { type TrackingEvent } from '@/components/OrderTrackingTimeline';
 import ReorderOrderButton from './ReorderOrderButton';
 import ReorderStackButton from './ReorderStackButton';
 import ChangePaymentMethod from '@/components/ChangePaymentMethod';
@@ -152,6 +153,22 @@ export default async function OrderDetailPage(
   }
 
   const order = orderData as unknown as Order;
+
+  // Carrier tracking history (Shippo webhook -> shipping_tracking_events).
+  // RLS-scoped to this buyer/agent/admin and fully best-effort: any failure
+  // leaves the timeline empty and never breaks the order page.
+  let trackingEvents: TrackingEvent[] = [];
+  try {
+    const { data: te } = await supabase
+      .from('shipping_tracking_events')
+      .select('status, substatus, status_details, location, occurred_at, carrier')
+      .eq('order_id', order.id)
+      .order('occurred_at', { ascending: false })
+      .limit(50);
+    if (Array.isArray(te)) trackingEvents = te as unknown as TrackingEvent[];
+  } catch {
+    trackingEvents = [];
+  }
 
   // Resolve seller payment handles if order has an agent
   let paymentHandles: Record<string, string> = {};
@@ -723,6 +740,10 @@ export default async function OrderDetailPage(
               )}
             </div>
           )}
+
+          {/* Carrier tracking history from the Shippo webhook. Renders nothing
+              until tracking events arrive, so it is safe to mount always. */}
+          <OrderTrackingTimeline events={trackingEvents} />
 
           {/* Lot Numbers & COA (R26 placeholder - wired to order_items.lot_number / coa_url;
               real values are stamped at fulfillment time. Until then, each line item

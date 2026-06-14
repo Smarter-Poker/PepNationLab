@@ -7,6 +7,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { safeError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,7 @@ export async function GET() {
     .select('id, compound_slug, reference_id, position, read_at, created_at')
     .order('position', { ascending: true })
     .limit(100);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return safeError('research.reading_queue', error);
   return NextResponse.json({ queue: data ?? [] });
 }
 
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
     .insert({ user_id: user.id, compound_slug, reference_id, position: nextPosition })
     .select('id, compound_slug, reference_id, position')
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return safeError('research.reading_queue', error);
   return NextResponse.json({ queued: data });
 }
 
@@ -64,7 +65,7 @@ export async function PATCH(req: NextRequest) {
   if ('read_at' in body) patch.read_at = body.read_at;
   if (typeof body.position === 'number') patch.position = body.position;
   const { error } = await supabase.from('user_reading_queue').update(patch).eq('id', body.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return safeError('research.reading_queue', error);
   return new NextResponse(null, { status: 204 });
 }
 
@@ -76,6 +77,6 @@ export async function DELETE(req: NextRequest) {
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
   if (!body.id) return NextResponse.json({ error: 'id required' }, { status: 400 });
   const { error } = await supabase.from('user_reading_queue').delete().eq('id', body.id).eq('user_id', user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return safeError('research.reading_queue', error);
   return new NextResponse(null, { status: 204 });
 }

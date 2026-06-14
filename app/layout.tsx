@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
 import "./globals-round2.css";
+import "./globals-admin-aliases.css";
+import "./globals-mobile-fit.css";
 import { CartProvider } from "@/components/CartContext";
 import { InAppBrowserProvider } from "@/components/InAppBrowser";
 import ImpersonationBanner from "@/components/ImpersonationBanner";

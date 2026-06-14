@@ -34,6 +34,45 @@ function nameless(name: { full_name?: string | null; username?: string | null } 
 }
 
 /**
+ * Inbox ordering: most recent conversation first.
+ *
+ * Users expect the thread they last chatted or called on to sit at the top,
+ * not an alphabetical roster. We order by last_message_at descending (newest
+ * first), with never-messaged rows (the `new:` downline stubs and any thread
+ * with no activity) falling to the bottom. Within the no-activity bucket we
+ * keep a deterministic, tidy order: admins first, then alphabetical by name.
+ * Pinned conversations stay on top regardless, preserving the pin feature.
+ */
+function lastActivityMs(c: RawConv): number {
+  const t = c.last_message_at;
+  if (!t) return 0;
+  const ms = new Date(t as string).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function sortByRecency(a: RawConv, b: RawConv): number {
+  const aPin = (a as { is_pinned?: boolean }).is_pinned === true ? 1 : 0;
+  const bPin = (b as { is_pinned?: boolean }).is_pinned === true ? 1 : 0;
+  if (aPin !== bPin) return bPin - aPin;
+
+  const at = lastActivityMs(a);
+  const bt = lastActivityMs(b);
+  if (at !== bt) return bt - at;
+
+  const aAdmin = a.counterparty_role === 'admin' ? 0 : 1;
+  const bAdmin = b.counterparty_role === 'admin' ? 0 : 1;
+  if (aAdmin !== bAdmin) return aAdmin - bAdmin;
+
+  const aName = (a.counterparty_full_name || a.counterparty_username || (a as { title?: string | null }).title || '')
+    .toString()
+    .toLowerCase();
+  const bName = (b.counterparty_full_name || b.counterparty_username || (b as { title?: string | null }).title || '')
+    .toString()
+    .toLowerCase();
+  return aName.localeCompare(bName);
+}
+
+/**
  * round-22 / round-23 / round-24: hierarchical view of the downline tree
  * with always-connected drill-down. Drops orphan and nameless rows.
  */
@@ -297,6 +336,10 @@ export async function POST(req: NextRequest) {
       }
     }
   }
+
+  // Final canonical ordering for every viewer type (hierarchical, flat, and
+  // researcher-appended stubs): most recent conversation at the top.
+  conversations.sort(sortByRecency);
 
   const res = NextResponse.json({ conversations });
   res.headers.set('Cache-Control', 'private, no-store, max-age=0');

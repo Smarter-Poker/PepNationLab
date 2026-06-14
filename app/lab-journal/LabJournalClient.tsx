@@ -802,7 +802,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       </div>
 
       {activeTab === 'bundles' && (
-        <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           <button 
             className={`btn ${!showBuilder ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setShowBuilder(false)}

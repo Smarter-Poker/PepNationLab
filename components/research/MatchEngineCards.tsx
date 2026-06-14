@@ -27,8 +27,25 @@ export default function MatchEngineCards() {
   ];
 
   const handleSelect = (filterValue: string) => {
-    // Navigate and set the area filter
-    router.push(`/research/catalog?area=${filterValue}`);
+    // Set the area filter on the in-page Intelligence Database, then scroll the
+    // results into view. Without the scroll the click only mutated the query
+    // string far above the fold, so the button felt unresponsive ("not
+    // clickable") on both desktop and mobile. Re-target across several delays:
+    // sections below (trending carousel, ecosystem map, filtered grid + lazy
+    // images) finish laying out after the first frame and push the anchor down,
+    // so a single early scroll lands short.
+    router.push(`/research/catalog?area=${filterValue}`, { scroll: false });
+    // The page sets html { scroll-behavior: smooth } globally, so scrollIntoView
+    // and scrollTo without an explicit behavior animate smoothly - and on this
+    // lazy-loading page the animation gets interrupted by layout shifts and never
+    // lands. Use behavior:'instant' and recompute the live offset each pass so the
+    // final pass snaps exactly onto the results once layout settles.
+    [120, 450, 900, 1400].forEach((d) => {
+      setTimeout(() => {
+        const el = document.getElementById('intelligence-database');
+        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'instant' as ScrollBehavior });
+      }, d);
+    });
   };
 
   return (

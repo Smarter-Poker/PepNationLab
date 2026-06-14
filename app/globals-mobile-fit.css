@@ -1,0 +1,131 @@
+/* ==============================================================
+   MOBILE PORTRAIT FIT  (Added 2026-06-14; deep pass 2026-06-14)
+   Goal: every page and sub-page renders fully in portrait mode
+   with nothing cut off on the right edge (no forced landscape),
+   no element clipped, and the bottom action area clearing the
+   fixed mobile nav. Loaded last so these guards win.
+   ============================================================== */
+
+/* 1. Page-level horizontal overflow guard.
+   A single stray wide child (a non-wrapping button row, a two-column
+   grid whose fixed minimums exceed the screen, a long unbroken string)
+   would widen the whole layout and force users to rotate to landscape.
+   overflow-x: clip stops that. clip is "sticky-safe": unlike hidden it
+   does NOT create a scroll container, so position: sticky headers, table
+   heads and the research sidebar keep working. The source-level rules in
+   section 2 make content actually FIT, so nothing important is clipped. */
+html {
+  overflow-x: clip;
+}
+.page-container {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+@media (max-width: 600px) {
+  /* 2a. Explicit multi-column inline grids collapse to one column.
+     repeat(auto-fill | auto-fit, ...) grids already self-collapse and are
+     excluded; this rewrites EXPLICIT grids ("1fr 1fr", "300px 1fr",
+     "minmax(280px,1fr) minmax(...)") whose fixed minimums overflow a phone. */
+  [style*="grid-template-columns"]:not([style*="auto-fill"]):not([style*="auto-fit"]) {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 2b. Grid/flex children may shrink below their content width so a long
+     label, input, or button cannot re-introduce overflow. Both inline-style
+     spellings are matched - React serializes style objects as "display:flex"
+     (no space), so the earlier "display: flex"-only rule missed most rows.
+     An explicit inline min-width still wins (higher specificity). */
+  [style*="grid-template-columns"] > *,
+  [style*="display:flex"] > *,
+  [style*="display: flex"] > * {
+    min-width: 0;
+  }
+
+  /* 2c. Inline flex ROWS wrap rather than overflow. Excluded: column
+     direction, and strips that are explicitly horizontal-scroll (those are
+     meant to scroll - e.g. research filter chip bars). Paired with the
+     min-width:0 above, rows that already fit are visually unchanged; only
+     rows that would otherwise clip wrap to a second line. */
+  [style*="display:flex"]:not([style*="column"]):not([style*="overflow-x:auto"]):not([style*="overflow-x: auto"]):not([style*="overflow-x:scroll"]):not([style*="overflow-x: scroll"]):not([style*="overflow:auto"]),
+  [style*="display: flex"]:not([style*="column"]):not([style*="overflow-x:auto"]):not([style*="overflow-x: auto"]):not([style*="overflow-x:scroll"]):not([style*="overflow-x: scroll"]):not([style*="overflow:auto"]) {
+    flex-wrap: wrap;
+  }
+
+  /* 2d. Form controls and media never exceed the screen width. */
+  select, input, textarea, img, video, canvas, iframe {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* The admin shipping origin <select> sits in a non-shrinking flex wrapper
+     (flex: 0 0 auto) and grows to its longest option ("No Assignment
+     (Platform Default)"), pushing the row off-screen. Cap it so the row fits;
+     the dropdown still opens full-width and shows every option. */
+  select[id^="agent-origin-select-"] {
+    max-width: 150px;
+  }
+
+  /* 2e. Long unbroken tokens (URLs, hashes, IDs, long labels) wrap instead
+     of stretching the page. Inputs/textarea excluded so typing is unaffected. */
+  p, span, td, th, li, h1, h2, h3, h4, h5, dd, dt, a, label, div, button {
+    overflow-wrap: anywhere;
+  }
+
+  /* 2f. Fixed-width flex sidebars/panels (flex: 0 0 240/280/300px) cannot
+     shrink and squeeze their sibling main column to zero width (the sibling
+     then overflows). On phones make them full-width so the row stacks. Only
+     the exact large bases present in the app are targeted, so small fixed
+     items (e.g. flex: 0 0 24px icons) are untouched. */
+  [style*="flex: 0 0 240px"], [style*="flex:0 0 240px"],
+  [style*="flex: 0 0 260px"], [style*="flex:0 0 260px"],
+  [style*="flex: 0 0 280px"], [style*="flex:0 0 280px"],
+  [style*="flex: 0 0 300px"], [style*="flex:0 0 300px"],
+  [style*="flex: 0 0 320px"], [style*="flex:0 0 320px"] {
+    flex: 1 1 100% !important;
+    position: static !important;
+    max-height: none !important;
+  }
+}
+
+/* 3. Bottom action clearance. This MUST live on the content container, not
+   on body: .page-container has min-height:100dvh, which anchors the last
+   element (footer, final card, action button) to the viewport bottom on
+   short pages. Padding on body sits OUTSIDE that 100dvh box and cannot lift
+   the content above the fixed MobileBottomNav (calc(65px + safe-area)). */
+@media (max-width: 768px) {
+  .page-container {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+  body {
+    padding-bottom: 0 !important;
+  }
+}
+
+/* 4. Small mobile polish (touch comfort / readability). The app already has
+   tap-highlight, touch-action, momentum scroll, 44px controls and :active
+   feedback; these fill the remaining gaps the audit surfaced. */
+@media (max-width: 768px) {
+  /* Footer nav links were ~22px tall (font-size only, no padding) - below a
+     comfortable tap target. Add vertical padding without changing type size. */
+  footer a {
+    display: inline-block;
+    padding-block: 6px;
+  }
+
+  /* In-page anchor jumps (legal "On This Page", research sections) land below
+     the sticky header instead of hiding under it. */
+  :target {
+    scroll-margin-top: 84px;
+  }
+
+  /* Icon-only buttons (e.g. the admin "Edit" pencil) were as narrow as ~23px -
+     a thin tap target. Give them a comfortable minimum width. Scoped to
+     buttons whose ONLY child is an icon, and the storefront's intentionally
+     tiny, densely-packed overlay toggles (compare / wishlist) are excluded so
+     the product cards are untouched. :has is ignored by older browsers (no
+     regression). */
+  button:has(> svg:only-child):not([aria-label^="Compare"]):not(.sf-wishlist-btn):not(.sf-compare-btn) {
+    min-width: 36px;
+  }
+}

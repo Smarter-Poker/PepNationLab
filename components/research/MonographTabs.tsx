@@ -25,6 +25,7 @@ import {
   type RelatedCompoundRef,
   evidenceTier,
   researchAreaLabel,
+  intranasalDisplay,
   RISK_META,
 } from '@/lib/compounds';
 import ReconstitutionCalculator from '@/components/research/ReconstitutionCalculator';
@@ -650,6 +651,35 @@ export default function MonographTabs({ compound, related = [] }: Props) {
         {/* HANDLING */}
         {active === 'handling' && (
           <div>
+            {(() => {
+              const nasal = intranasalDisplay(compound);
+              return (
+                <div style={{
+                  marginBottom: 'var(--space-4)', padding: '12px 14px', borderRadius: 12,
+                  background: nasal.bg, border: `1px solid ${nasal.border}`,
+                }}>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>
+                    Administration Route
+                  </div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: nasal.color }}>
+                    {nasal.routesLabel}
+                  </div>
+                  {nasal.nasal && (
+                    <p style={{ margin: '6px 0 0', fontSize: '0.84rem', color: '#C2CEDA', lineHeight: 1.6 }}>
+                      {nasal.status === 'established'
+                        ? 'In addition to injection, this compound has documented intranasal (nasal spray) use as a delivery route.'
+                        : 'Beyond injection, intranasal delivery has been explored in early research only.'}
+                      {nasal.caveat ? ' ' + nasal.caveat : ''}
+                    </p>
+                  )}
+                  {!nasal.nasal && (
+                    <p style={{ margin: '6px 0 0', fontSize: '0.84rem', color: '#9FB0BD', lineHeight: 1.6 }}>
+                      Injection is the established route for this compound. There is no credible evidence supporting a nasal spray alternative.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
             <div style={{ marginBottom: 'var(--space-4)' }}>
               <Fact label="Form" value={h.form} />
               <Fact label="Diluent" value={h.diluent} />

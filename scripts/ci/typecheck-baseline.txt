@@ -1,0 +1,1 @@
+components/research/AreaProductGrid.tsx: error TS2339: Property 'eli5Summary' does not exist on type 'CompoundInfo'.

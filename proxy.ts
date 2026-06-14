@@ -79,6 +79,7 @@ const PUBLIC_ROUTES = [
   '/api/cron/broken-link-crawler',
   '/api/cron/label-jobs',
   '/api/cron/shippo-reconcile',
+  '/api/cron/shippo-webhook-retry',
   '/api/messenger/cron',
   '/api/webhooks/shippo',
   '/manifest.webmanifest',

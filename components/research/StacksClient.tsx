@@ -10,6 +10,7 @@ import { analyzeStack, getCategoryFromName, type StackAnalysis } from '@/lib/sta
 import StackBuilder from './StackBuilder';
 import { FlaskConical, Beaker, CheckCircle2, X, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import IframeModal from '@/components/ui/IframeModal';
+import { toast } from 'sonner';
 
 function sortStackProducts(a: AreaProduct, b: AreaProduct) {
   const a10 = (a.productName || '').includes('10mg') || (a.unitSize || '').includes('10mg');
@@ -131,14 +132,19 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
 
   const handleAddToCart = (stack: Compound) => {
     const itemsToAdd = [];
-    
+
+    // Only purchasable products (those carried on this storefront, i.e. with a
+    // real agent_product id) may be added. Falling back to the compound slug as
+    // the cart id injects a non-UUID third id type that resolves to neither a
+    // product nor an agent_product, so the item is rejected/removed downstream.
     // Check if there is a premixed blend product for this stack
-    const premadeProducts = products.filter(p => p.compoundSlug === stack.slug);
+    const premadeProducts = products.filter(p => p.compoundSlug === stack.slug && p.agentProductId);
     if (premadeProducts.length > 0) {
       premadeProducts.sort(sortStackProducts);
       const p = premadeProducts[0];
       addToCart({
-        id: p.agentProductId || p.compoundSlug,
+        id: p.agentProductId as string,
+        productId: p.productId,
         name: p.productName,
         sku: p.productName,
         retailPrice: p.retailPrice,
@@ -153,13 +159,14 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
     // Otherwise, add individual components
     for (const compSlug of stack.stack_components) {
       // Find the lowest price product for this compound
-      const compProducts = products.filter(p => p.compoundSlug === compSlug);
+      const compProducts = products.filter(p => p.compoundSlug === compSlug && p.agentProductId);
       if (compProducts.length > 0) {
         compProducts.sort(sortStackProducts);
         const p = compProducts[0];
         itemsToAdd.push({
           product: {
-            id: p.agentProductId || p.compoundSlug,
+            id: p.agentProductId as string,
+            productId: p.productId,
             name: p.productName,
             sku: p.productName,
             retailPrice: p.retailPrice,
@@ -174,6 +181,8 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
     }
     if (itemsToAdd.length > 0) {
       addMultipleToCart(itemsToAdd, stack.display_name);
+    } else {
+      toast.error('This Stack Is Not Available On This Storefront.');
     }
   };
 

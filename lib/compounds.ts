@@ -69,6 +69,17 @@ export interface Compound {
   typical_frequency?: string | null;
   purity_percentage?: number | null;
   coa_url?: string | null;
+  /** Routes the compound is studied/used with (e.g. 'subcutaneous', 'intranasal'). */
+  route_of_admin?: string[] | null;
+  /**
+   * Intranasal (nasal spray) suitability, graded by strength of evidence:
+   *  - 'established'  : approved/registered nasal product or solid human clinical use
+   *  - 'emerging'     : real published intranasal research, not yet a standard route
+   *  - 'not_suitable' : injection-only in practice; nasal route not viable / no evidence
+   */
+  intranasal_status?: 'established' | 'emerging' | 'not_suitable' | null;
+  intranasal_bioavailability_pct?: number | null;
+  intranasal_note?: string | null;
 }
 
 export const EVIDENCE_TIER: Record<string, { label: string; color: string; blurb: string; badgeUrl: string }> = {
@@ -109,6 +120,82 @@ export const RESEARCH_AREAS: Record<string, { label: string; blurb: string }> = 
 
 export function evidenceTier(tier: string) {
   return EVIDENCE_TIER[tier] ?? { label: tier, color: '#A8B4C0', blurb: '' };
+}
+
+/**
+ * Intranasal (nasal spray) display model. Single source of truth for the
+ * nasal-route badges, labels, colors, and caveat copy used across the store
+ * grid, product modal, and research monograph. Keeps wording consistent and
+ * avoids overclaiming on a research-use-only platform.
+ */
+export interface IntranasalDisplay {
+  /** True when the compound is studied/usable nasally (established OR emerging). */
+  nasal: boolean;
+  status: 'established' | 'emerging' | 'not_suitable' | null;
+  /** Full badge label, e.g. 'Nasal Available' or 'Nasal - Emerging Research'. */
+  badgeLabel: string;
+  /** Compact label for tight spaces, e.g. 'Nasal' or 'Nasal - Emerging'. */
+  shortLabel: string;
+  /** Route summary line, e.g. 'Injection + Nasal Spray' or 'Injection Only'. */
+  routesLabel: string;
+  /** Optional caveat shown for the emerging tier (and any compound note). */
+  caveat: string | null;
+  color: string;
+  bg: string;
+  border: string;
+}
+
+export function intranasalDisplay(
+  compound?: {
+    intranasal_status?: 'established' | 'emerging' | 'not_suitable' | null;
+    intranasal_bioavailability_pct?: number | null;
+    intranasal_note?: string | null;
+  } | null
+): IntranasalDisplay {
+  const status = compound?.intranasal_status ?? null;
+  const note = compound?.intranasal_note ?? null;
+
+  if (status === 'established') {
+    return {
+      nasal: true,
+      status,
+      badgeLabel: 'Nasal Available',
+      shortLabel: 'Nasal',
+      routesLabel: 'Injection + Nasal Spray',
+      caveat: note,
+      color: '#68D391',
+      bg: 'rgba(104,211,145,0.12)',
+      border: 'rgba(104,211,145,0.4)',
+    };
+  }
+
+  if (status === 'emerging') {
+    const base = 'Early research only - nasal absorption is plausible but not clinically established. Injection remains the standard route.';
+    return {
+      nasal: true,
+      status,
+      badgeLabel: 'Nasal - Emerging Research',
+      shortLabel: 'Nasal - Emerging',
+      routesLabel: 'Injection + Nasal (Emerging)',
+      caveat: note ? `${note} ${base}` : base,
+      color: '#00E5FF',
+      bg: 'rgba(0,229,255,0.10)',
+      border: 'rgba(0,229,255,0.32)',
+    };
+  }
+
+  // not_suitable, null, or unknown -> injection-only, no nasal badge
+  return {
+    nasal: false,
+    status,
+    badgeLabel: 'Injection Only',
+    shortLabel: 'Injection',
+    routesLabel: 'Injection Only',
+    caveat: note,
+    color: '#A8B4C0',
+    bg: 'rgba(168,180,192,0.10)',
+    border: 'rgba(168,180,192,0.28)',
+  };
 }
 
 export function wadaLabel(_status: string): string {

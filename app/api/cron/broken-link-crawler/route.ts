@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
+import { isSsrfTarget } from '@/lib/ssrf-guard';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -36,8 +37,19 @@ export async function GET(req: Request) {
       if (!row.url) continue;
       let ok = false;
       try {
-        const resp = await fetch(row.url, { method: 'HEAD', redirect: 'follow' });
-        ok = resp.status < 400;
+        // SSRF guard: never probe a reference URL that resolves to an internal
+        // host, and never hang on a slow/unresponsive endpoint.
+        const host = new URL(row.url).hostname;
+        if (await isSsrfTarget(host)) {
+          ok = true; // skip internal/unresolvable hosts -- do not probe or alert
+        } else {
+          const resp = await fetch(row.url, {
+            method: 'HEAD',
+            redirect: 'follow',
+            signal: AbortSignal.timeout(5000),
+          });
+          ok = resp.status < 400;
+        }
       } catch {
         ok = false;
       }

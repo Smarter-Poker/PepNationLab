@@ -7,6 +7,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { safeError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,7 @@ export async function GET() {
     .from('user_compound_subscriptions')
     .select('compound_slug, notify_new_evidence, notify_wada_change, notify_recall, notify_trial_status, created_at')
     .order('created_at', { ascending: false });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return safeError('research.subscriptions', error);
   return NextResponse.json({ subscriptions: data ?? [] });
 }
 
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
     .upsert(row, { onConflict: 'user_id,compound_slug' })
     .select('compound_slug, notify_new_evidence, notify_wada_change, notify_recall, notify_trial_status')
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return safeError('research.subscriptions', error);
   return NextResponse.json({ subscription: data });
 }
 
@@ -82,7 +83,7 @@ export async function PATCH(req: NextRequest) {
     .upsert(merged, { onConflict: 'user_id,compound_slug' })
     .select('compound_slug, notify_new_evidence, notify_wada_change, notify_recall, notify_trial_status')
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return safeError('research.subscriptions', error);
   return NextResponse.json({ subscription: data });
 }
 
@@ -101,6 +102,6 @@ export async function DELETE(req: NextRequest) {
     .delete()
     .eq('user_id', user.id)
     .eq('compound_slug', compound_slug);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return safeError('research.subscriptions', error);
   return new NextResponse(null, { status: 204 });
 }

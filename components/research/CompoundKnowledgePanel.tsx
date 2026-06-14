@@ -8,7 +8,7 @@
 
 import Link from 'next/link';
 import type { Compound } from '@/lib/compounds';
-import { evidenceTier } from '@/lib/compounds';
+import { evidenceTier, intranasalDisplay } from '@/lib/compounds';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
 
@@ -20,6 +20,7 @@ export default function CompoundKnowledgePanel({
   dense?: boolean;
 }) {
   const tier = evidenceTier(compound.evidence_tier);
+  const nasal = intranasalDisplay(compound);
 
   return (
     <aside
@@ -74,7 +75,30 @@ export default function CompoundKnowledgePanel({
         <KV label="Clinical Trials" value={(compound.active_trial_count || compound.completed_trial_count) ? String((compound.active_trial_count ?? 0) + (compound.completed_trial_count ?? 0)) : 'None'} />
         <KV label="Half-Life" value={compound.half_life ?? 'See Monograph'} />
         <KV label="Storage" value={compound.handling?.storage_temp ?? 'See Monograph'} />
+        <KV label="Administration" value={nasal.routesLabel} />
       </div>
+
+      {nasal.nasal && (
+        <div style={{
+          padding: '10px 12px', borderRadius: 10,
+          background: nasal.bg, border: `1px solid ${nasal.border}`,
+          display: 'flex', flexDirection: 'column', gap: 4,
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: nasal.color, letterSpacing: '0.02em' }}>
+            {nasal.badgeLabel}
+          </div>
+          <div style={{ fontSize: 11.5, color: '#C2CEDA', lineHeight: 1.5 }}>
+            {nasal.status === 'established'
+              ? 'This Compound Can Be Studied Via Nasal Spray As An Alternative To Injection.'
+              : 'Nasal Use Is Supported By Early Research Only - See Caveats Below.'}
+          </div>
+          {nasal.caveat && (
+            <div style={{ fontSize: 11, color: '#9FB0BD', lineHeight: 1.5 }}>
+              {nasal.caveat}
+            </div>
+          )}
+        </div>
+      )}
 
       {compound.is_stack && compound.stack_components && compound.stack_components.length > 0 && (
         <div>

@@ -1,0 +1,36 @@
+# Dependabot keeps dependencies patched and surfaces security advisories as PRs.
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates
+version: 2
+updates:
+  # Application npm dependencies (Next.js, Supabase, etc.)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "security"
+    groups:
+      # Batch low-risk patch/minor bumps into one PR to cut noise; majors stay
+      # individual so breaking changes get reviewed on their own.
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  # GitHub Actions used by the CI workflows in .github/workflows/.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "ci"
+      - "security"
+    commit-message:
+      prefix: "ci"
