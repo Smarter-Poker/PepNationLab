@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       action: 'agent_reparented',
       entity_type: 'profile',
       entity_id: agentId,
-      details: {
+      changes: {
         from_parent_id: agent.parent_agent_id ?? null,
         to_parent_id: parentAgentId,
       },
