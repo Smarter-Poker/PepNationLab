@@ -144,6 +144,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
       const p = premadeProducts[0];
       addToCart({
         id: p.agentProductId as string,
+        productId: p.productId,
         name: p.productName,
         sku: p.productName,
         retailPrice: p.retailPrice,
@@ -165,6 +166,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
         itemsToAdd.push({
           product: {
             id: p.agentProductId as string,
+            productId: p.productId,
             name: p.productName,
             sku: p.productName,
             retailPrice: p.retailPrice,
