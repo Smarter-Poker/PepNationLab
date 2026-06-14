@@ -159,7 +159,7 @@ export async function GET(req: NextRequest) {
   if (wants('coupons') && tokens.length > 0) {
     let builder = svc
       .from('coupons')
-      .select('id, code, type, value, agent_id, uses_count, expires_at, is_active');
+      .select('id, code, type:discount_type, value:discount_value, agent_id, uses_count, expires_at, is_active');
     builder = applyTokenAndOr(builder, ['code'], tokens);
     couponsP = builder.limit(limitPer);
   } else {
@@ -171,7 +171,7 @@ export async function GET(req: NextRequest) {
   if (wants('transactions') && tokens.length > 0) {
     let builder = svc
       .from('balance_transactions')
-      .select('id, agent_id, amount, type, description, created_at, order_id');
+      .select('id, agent_id, amount, type, description, created_at, order_id:reference_id');
     builder = applyTokenAndOr(builder, ['description'], tokens);
     transactionsP = builder.order('created_at', { ascending: false }).limit(limitPer);
   } else {
