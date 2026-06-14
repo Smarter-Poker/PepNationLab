@@ -1,0 +1,3 @@
+components/research/AreaProductGrid.tsx: error TS2339: Property 'eli5Summary' does not exist on type 'CompoundInfo'.
+components/research/ResearchAreaCards.tsx: error TS2339: Property 'fallbackGradient' does not exist on type '{ id: string; label: string; count: number; image: string; filter: string; }'.
+test-sessions.ts: error TS2339: Property 'listUserSessions' does not exist on type 'GoTrueAdminApi'.
