@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Avatar from '@/components/messenger/Avatar';
 
 interface Props {
@@ -209,6 +210,7 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
   const [zoom, setZoom] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 }); // Top-left of image within viewport
   const [rendering, setRendering] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const imgRef = useRef<HTMLImageElement | null>(null);
   const surfaceRef = useRef<HTMLDivElement | null>(null);
@@ -233,10 +235,27 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
     [nat, baseScale, viewport]
   );
 
-  // Decide viewport size once on mount (client only)
+  // Portal only after mount so document.body exists (avoids SSR mismatch)
+  useEffect(() => setMounted(true), []);
+
+  // Decide viewport size once on mount, sized to BOTH screen width and height
+  // so the circle, header, and controls always fit on small mobile screens
   useEffect(() => {
-    const w = typeof window !== 'undefined' ? window.innerWidth : 360;
-    setViewport(Math.max(220, Math.min(320, w - 48)));
+    if (typeof window === 'undefined') return;
+    const compute = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      // Reserve vertical space for header (~70px) and controls (~150px)
+      const byHeight = h - 220;
+      setViewport(Math.max(200, Math.min(340, w - 40, byHeight)));
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    window.addEventListener('orientationchange', compute);
+    return () => {
+      window.removeEventListener('resize', compute);
+      window.removeEventListener('orientationchange', compute);
+    };
   }, []);
 
   // Load the image and center it in the frame
@@ -374,26 +393,39 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
   const dispH = nat ? nat.h * baseScale * zoom : 0;
   const working = busy || rendering;
 
-  return (
+  if (!mounted || typeof document === 'undefined') return null;
+
+  const overlay = (
     <div
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 999999,
-        background: 'rgba(5,10,15,0.92)',
+        width: '100vw',
+        height: '100dvh',
+        zIndex: 2147483600,
+        background: 'rgba(5,10,15,0.96)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 24,
-        height: '100dvh',
+        gap: 14,
+        overflowY: 'auto',
+        boxSizing: 'border-box',
+        paddingTop: 'max(20px, env(safe-area-inset-top))',
+        paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
+        paddingLeft: 'max(16px, env(safe-area-inset-left))',
+        paddingRight: 'max(16px, env(safe-area-inset-right))',
+        WebkitTapHighlightColor: 'transparent',
+        overscrollBehavior: 'contain',
       }}
     >
-      <div style={{ color: 'var(--white, #fff)', fontSize: '1.05rem', fontWeight: 700, marginBottom: 4 }}>
-        Frame Your Photo
-      </div>
-      <div style={{ color: 'var(--silver, rgba(192,184,168,0.7))', fontSize: '0.78rem', marginBottom: 18, textAlign: 'center' }}>
-        Drag To Reposition. Pinch Or Scroll To Zoom.
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ color: 'var(--white, #fff)', fontSize: '1.05rem', fontWeight: 700, marginBottom: 4 }}>
+          Frame Your Photo
+        </div>
+        <div style={{ color: 'var(--silver, rgba(192,184,168,0.7))', fontSize: '0.78rem', textAlign: 'center', maxWidth: 320 }}>
+          Drag To Move. Pinch Or Use The Slider To Zoom.
+        </div>
       </div>
 
       <div
@@ -407,6 +439,7 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
           position: 'relative',
           width: viewport,
           height: viewport,
+          flexShrink: 0,
           borderRadius: '50%',
           overflow: 'hidden',
           touchAction: 'none',
@@ -428,6 +461,7 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
               width: dispW,
               height: dispH,
               maxWidth: 'none',
+              maxHeight: 'none',
               pointerEvents: 'none',
             }}
           />
@@ -439,14 +473,14 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
             inset: 0,
             borderRadius: '50%',
             border: '2px solid rgba(255,255,255,0.85)',
-            boxShadow: '0 0 0 9999px rgba(5,10,15,0.55)',
+            boxShadow: '0 0 0 9999px rgba(5,10,15,0.6)',
             pointerEvents: 'none',
           }}
         />
       </div>
 
       {/* Zoom control */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 20, width: viewport, maxWidth: 320 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: viewport, maxWidth: 340, flexShrink: 0 }}>
         <span style={{ color: 'var(--silver, rgba(192,184,168,0.7))', fontSize: '0.7rem', fontWeight: 600 }}>Zoom</span>
         <input
           type="range"
@@ -456,23 +490,24 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
           value={zoom}
           onChange={(e) => applyZoomAtPoint(parseFloat(e.target.value), viewport / 2, viewport / 2)}
           disabled={!nat || working}
-          style={{ flex: 1, accentColor: 'var(--teal, #00C4BC)' }}
+          style={{ flex: 1, height: 28, accentColor: 'var(--teal, #00C4BC)' }}
           aria-label="Zoom"
         />
       </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+      <div style={{ display: 'flex', gap: 12, flexShrink: 0, width: viewport, maxWidth: 340 }}>
         <button
           onClick={onCancel}
           disabled={working}
           style={{
+            flex: 1,
+            minHeight: 48,
             background: 'transparent',
-            color: 'var(--silver, rgba(192,184,168,0.8))',
-            border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: 10,
-            padding: '10px 22px',
-            fontSize: '0.85rem',
+            color: 'var(--silver, rgba(192,184,168,0.85))',
+            border: '1px solid rgba(255,255,255,0.25)',
+            borderRadius: 12,
+            fontSize: '0.9rem',
             fontWeight: 700,
             cursor: working ? 'wait' : 'pointer',
             opacity: working ? 0.5 : 1,
@@ -484,12 +519,13 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
           onClick={handleSave}
           disabled={!nat || working}
           style={{
+            flex: 1,
+            minHeight: 48,
             background: 'var(--teal, #00C4BC)',
             color: '#04201F',
             border: 'none',
-            borderRadius: 10,
-            padding: '10px 26px',
-            fontSize: '0.85rem',
+            borderRadius: 12,
+            fontSize: '0.9rem',
             fontWeight: 800,
             cursor: !nat || working ? 'wait' : 'pointer',
             opacity: !nat || working ? 0.6 : 1,
@@ -500,4 +536,6 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
       </div>
     </div>
   );
+
+  return createPortal(overlay, document.body);
 }
