@@ -57,6 +57,7 @@ import {
   reconstitutionVolumeMl,
   drawVolumeMl,
   researchAreaLabel,
+  intranasalDisplay,
   type Compound,
 } from '@/lib/compounds';
 
@@ -457,7 +458,8 @@ function IsThisRightForMe({
   const studied = (compound.studied_for || []).slice(0, 6);
   const areas = (compound.research_areas || []).slice(0, 6);
   const isTempSensitive = compound.is_temp_sensitive;
-  if (studied.length === 0 && areas.length === 0 && !isTempSensitive) return null;
+  const nasal = intranasalDisplay(compound);
+  if (studied.length === 0 && areas.length === 0 && !isTempSensitive && !nasal.nasal) return null;
 
   return (
     <section aria-label="Is This Right For My Research" style={{
@@ -531,6 +533,28 @@ function IsThisRightForMe({
               </div>
             </div>
           )}
+          <div>
+            <div style={{ fontSize: '0.74rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
+              Administration Route
+            </div>
+            <div style={{
+              padding: '8px 12px', borderRadius: 10,
+              background: nasal.bg, border: `1px solid ${nasal.border}`,
+              display: 'flex', flexDirection: 'column', gap: 4,
+            }}>
+              <span style={{ color: nasal.color, fontSize: '0.84rem', fontWeight: 800 }}>
+                {nasal.routesLabel}
+              </span>
+              {nasal.nasal && (
+                <span style={{ color: '#C2CEDA', fontSize: '0.76rem', lineHeight: 1.5 }}>
+                  {nasal.status === 'established'
+                    ? 'Can Be Studied Via Nasal Spray As An Alternative To Injection.'
+                    : 'Nasal Use Is Supported By Early Research Only.'}
+                  {nasal.caveat ? ' ' + nasal.caveat : ''}
+                </span>
+              )}
+            </div>
+          </div>
           {isTempSensitive && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {isTempSensitive && (
