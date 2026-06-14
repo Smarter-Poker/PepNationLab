@@ -56,8 +56,8 @@ export async function GET(req: Request) {
           compound_slug: row.slug,
           alert_type: 'faers_spike',
           summary: `FAERS Event Count Rose To ${faers.total} (Previous ${previousCount})`,
-          source_url: `https://api.fda.gov/drug/event.json?search=patient.drug.openfda.generic_name:%22${encodeURIComponent(row.display_name)}%22`,
-          alerted_at: now,
+          url: `https://api.fda.gov/drug/event.json?search=patient.drug.openfda.generic_name:%22${encodeURIComponent(row.display_name)}%22`,
+          alert_date: now,
         });
         if (error) errored += 1;
       }
