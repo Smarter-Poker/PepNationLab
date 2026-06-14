@@ -140,6 +140,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed To Add Items To Order.' }, { status: 500 });
     }
 
+    // Prepaid agents owe the platform COGS up front. The storefront flow debits
+    // prepaid at agent approval, but manual orders skip that route - without this
+    // a prepaid agent's manual order was never billed. Charge COGS (item cost +
+    // shipping) now and roll the order back if the balance is short or the debit
+    // fails. Credit agents are billed via charge_order_credit_line on release.
+    let prepaidCharged = false;
+    const manualCogs = Math.round(
+      (orderItems.reduce((s, it) => s + (Number(it.unit_cost_price) || 0) * it.quantity, 0) + safeShipping) * 100
+    ) / 100;
+    if (agentProfile.account_type === 'prepaid' && manualCogs > 0) {
+      const { data: balRow } = await supabase.from('profiles').select('prepaid_balance').eq('id', agentId).single();
+      const balance = Number(balRow?.prepaid_balance) || 0;
+      if (balance < manualCogs) {
+        await supabase.from('order_items').delete().eq('order_id', newOrder.id);
+        await supabase.from('orders').delete().eq('id', newOrder.id);
+        return NextResponse.json({ error: `Insufficient Prepaid Balance. Requires $${manualCogs.toFixed(2)}, But Balance Is $${balance.toFixed(2)}. Please Recharge Your Account.` }, { status: 402 });
+      }
+      const { data: deductOk, error: deductErr } = await supabase.rpc('deduct_prepaid_balance', { agent_id: agentId, amount: manualCogs });
+      if (deductErr || !deductOk) {
+        await supabase.from('order_items').delete().eq('order_id', newOrder.id);
+        await supabase.from('orders').delete().eq('id', newOrder.id);
+        return NextResponse.json({ error: 'Failed To Deduct Prepaid Balance. Please Try Again.' }, { status: 500 });
+      }
+      prepaidCharged = true;
+      await supabase.from('balance_transactions').insert({
+        agent_id: agentId, type: 'order_charge', amount: manualCogs,
+        balance_before: balance, balance_after: Math.round((balance - manualCogs) * 100) / 100,
+        description: `Charge For Manual Order ${newOrder.id}`, reference_id: newOrder.id, reference_type: 'order', created_by: agentId,
+      });
+    }
+
     const limit = agentProfile.max_auto_approve_limit !== undefined && agentProfile.max_auto_approve_limit !== null ? Number(agentProfile.max_auto_approve_limit) : Infinity;
     const isUnderLimit = computedTotal <= limit;
     const finalAutoStatus = (agentProfile.account_type === 'credit' && isUnderLimit)
@@ -156,6 +187,15 @@ export async function POST(req: NextRequest) {
 
     if (approvalError) {
       console.error('Manual Order Approval Error:', approvalError);
+      // Refund the prepaid debit before deleting the order, otherwise a prepaid
+      // agent is charged for an order that never reached approval.
+      if (prepaidCharged) {
+        try {
+          await supabase.rpc('refund_prepaid_balance', { p_agent_id: agentId, p_amount: manualCogs });
+        } catch (refundErr) {
+          console.error('[CRITICAL] prepaid refund failed after manual order approval failure', newOrder.id, refundErr);
+        }
+      }
       await supabase.from('order_items').delete().eq('order_id', newOrder.id);
       await supabase.from('orders').delete().eq('id', newOrder.id);
       const message = approvalError.code === '23514' || /insufficient/i.test(approvalError.message) ? approvalError.message : 'Insufficient Inventory To Approve Manual Order.';
