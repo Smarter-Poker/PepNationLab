@@ -12,23 +12,36 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Fetch user's past orders to determine what they've purchased and when
+    // Fetch user's past orders. Line items live in the order_items table -
+    // `orders` has no `items` column, so select it here caused a 500.
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
-      .select('id, items, created_at')
+      .select('id, created_at')
       .eq('buyer_id', session.user.id)
       .neq('status', 'cancelled')
       .order('created_at', { ascending: false });
 
     if (ordersError) throw ordersError;
 
-    // Collect all unique product IDs from orders and their most recent purchase date
+    // Map each purchased product to the most recent order date it appears in.
     const purchasedProducts = new Map<string, string>();
-    for (const order of (orders || [])) {
-      const items = (order.items as Array<{ product_id?: string }>) || [];
-      for (const item of items) {
-        if (item.product_id && !purchasedProducts.has(item.product_id)) {
-          purchasedProducts.set(item.product_id, order.created_at);
+    const orderList = (orders || []) as Array<{ id: string; created_at: string }>;
+    if (orderList.length > 0) {
+      const orderDate = new Map(orderList.map((o) => [o.id, o.created_at]));
+      const { data: lineItems, error: liError } = await supabase
+        .from('order_items')
+        .select('order_id, product_id')
+        .in('order_id', orderList.map((o) => o.id));
+
+      if (liError) throw liError;
+
+      for (const li of (lineItems || []) as Array<{ order_id: string; product_id: string | null }>) {
+        if (!li.product_id) continue;
+        const d = orderDate.get(li.order_id);
+        if (!d) continue;
+        const existing = purchasedProducts.get(li.product_id);
+        if (!existing || new Date(d) > new Date(existing)) {
+          purchasedProducts.set(li.product_id, d);
         }
       }
     }
