@@ -142,10 +142,25 @@ export async function POST(req: NextRequest) {
     updates.agent_approved_at = new Date().toISOString();
   }
 
-  const { error: updateError } = await supabase
-    .from('orders')
-    .update(updates)
-    .eq('id', id);
+  let updateError;
+  if (status === 'cancelled') {
+    // Route cancellations through cancel_order so the coupon redemption slot is
+    // restored and sub-agent commission is voided. A raw status update only
+    // fires the inventory/commission triggers and leaves the coupon use burned.
+    const { error } = await supabase.rpc('cancel_order', {
+      p_order_id: id,
+      p_reason: (typeof agent_approval_notes === 'string' && agent_approval_notes) || 'Cancelled By Admin',
+      p_refund_type: 'none',
+      p_actor_id: gate.userId,
+    });
+    updateError = error;
+  } else {
+    const { error } = await supabase
+      .from('orders')
+      .update(updates)
+      .eq('id', id);
+    updateError = error;
+  }
 
   if (updateError) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });

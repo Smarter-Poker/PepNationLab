@@ -56,12 +56,26 @@ export async function GET(req: Request) {
         // Compute current utilization
         const { data: orders, error: ordersErr } = await service
           .from('orders')
-          .select('total, status, is_invoiced')
+          .select('id, total, status')
           .eq('agent_id', p.id);
 
         if (ordersErr) {
           console.error(`Failed to fetch orders for ${p.id}:`, ordersErr);
           continue;
+        }
+
+        // An order is "invoiced" once it is attached to a weekly statement
+        // (statement_orders). orders has no is_invoiced column.
+        const orderIds = (orders ?? []).map((o) => o.id);
+        const invoicedSet = new Set<string>();
+        if (orderIds.length > 0) {
+          const { data: stmtRows } = await service
+            .from('statement_orders')
+            .select('order_id')
+            .in('order_id', orderIds);
+          for (const r of (stmtRows ?? []) as Array<{ order_id: string }>) {
+            invoicedSet.add(r.order_id);
+          }
         }
 
         let currentUnbilled = 0;
@@ -71,7 +85,7 @@ export async function GET(req: Request) {
           if (o.status === 'cancelled') continue;
           const total = Number(o.total) || 0;
           if (['delivered', 'shipped', 'approved_ship', 'approved_pickup'].includes(o.status)) {
-            if (!o.is_invoiced) {
+            if (!invoicedSet.has(o.id)) {
               currentUnbilled += total;
             }
           } else {

@@ -27,10 +27,10 @@ export async function GET(req: Request) {
     const supabase = await createServiceClient();
     const { data } = await supabase
       .from('compound_references')
-      .select('id, compound_slug, url, source_type')
+      .select('id, compound_slug, url, source')
       .not('url', 'is', null)
       .limit(BATCH);
-    const rows = (data ?? []) as Array<{ id: string; compound_slug: string; url: string | null; source_type: string }>;
+    const rows = (data ?? []) as Array<{ id: string; compound_slug: string; url: string | null; source: string }>;
     const now = new Date().toISOString();
     for (const row of rows) {
       processed += 1;
@@ -58,9 +58,9 @@ export async function GET(req: Request) {
         const { error } = await supabase.from('compound_recall_alerts').insert({
           compound_slug: row.compound_slug,
           alert_type: 'label_change',
-          summary: `Broken External Link (${row.source_type})`,
-          source_url: row.url,
-          alerted_at: now,
+          summary: `Broken External Link (${row.source})`,
+          url: row.url,
+          alert_date: now,
         });
         if (error) errored += 1;
       }

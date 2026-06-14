@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Compound, evidenceTier } from '@/lib/compounds';
+import { Compound, evidenceTier, intranasalDisplay } from '@/lib/compounds';
 import InteractiveGlossaryText from '@/components/research/InteractiveGlossaryText';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
@@ -20,6 +20,7 @@ interface QuickViewModalProps {
 
 export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, price, storeProduct }: QuickViewModalProps) {
   const formatPrice = (p: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(p);
+  const nasal = intranasalDisplay(compound);
   return (
     <AnimatePresence>
       {isOpen && compound && (
@@ -141,6 +142,13 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
                     <div>
                       <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--silver, #A8B4C0)', fontWeight: 600 }}>Frequency</div>
                       <div style={{ color: 'var(--white, #FFFFFF)', fontWeight: 500 }}>{compound.typical_frequency || 'N/A'}</div>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--silver, #A8B4C0)', fontWeight: 600 }}>Administration Route</div>
+                      <div style={{ color: nasal.color, fontWeight: 700 }}>{nasal.routesLabel}</div>
+                      {nasal.nasal && nasal.caveat && (
+                        <div style={{ color: '#9FB0BD', fontSize: '0.72rem', lineHeight: 1.45, marginTop: 4 }}>{nasal.caveat}</div>
+                      )}
                     </div>
                   </div>
                 </div>

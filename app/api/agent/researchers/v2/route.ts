@@ -157,7 +157,7 @@ export async function GET() {
     const lastContactedByResearcher = new Map<string, string>();
     try {
       const { data: convoRows } = await svc
-        .from('messenger_conversation_participants')
+        .from('messenger_participants')
         .select('conversation_id, user_id')
         .in('user_id', researcherIds);
       const convoToResearcher = new Map<string, string>();

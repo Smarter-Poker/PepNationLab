@@ -54,9 +54,17 @@ export async function POST(req: NextRequest) {
     }
 
     if (newStatus === 'cancelled') {
-      const { error: cancelError } = await supabase.from('orders').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', orderId);
+      // Route through cancel_order so the coupon redemption slot is restored.
+      // A raw status update only fires the inventory + commission triggers and
+      // would permanently burn the researcher's coupon use on an agent reject.
+      const { error: cancelError } = await supabase.rpc('cancel_order', {
+        p_order_id: orderId,
+        p_reason: 'Cancelled By Agent',
+        p_refund_type: 'none',
+        p_actor_id: callerId,
+      });
       if (cancelError) {
-        console.error('Cancel order update failed:', cancelError.message);
+        console.error('Cancel order RPC failed:', cancelError.message);
         return NextResponse.json({ error: 'Failed to cancel order. Please try again.' }, { status: 500 });
       }
       try {
