@@ -152,12 +152,12 @@ export default function AvatarUpload({ currentAvatarUrl, name, onUploadSuccess }
         )}
       </div>
 
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleFileChange} 
-        accept="image/jpeg, image/png, image/webp, image/gif" 
-        style={{ display: 'none' }} 
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        style={{ display: 'none' }}
       />
     </div>
   );
