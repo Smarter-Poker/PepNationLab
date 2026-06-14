@@ -4,10 +4,6 @@
     {
       "table": "test_realtime_dummy",
       "reason": "Throwaway scratch table for verifying realtime broadcast wiring. Holds no real data. Migration 20260604000013_test_dummy.sql."
-    },
-    {
-      "table": "test_realtime_rls",
-      "reason": "Sibling scratch table used by the realtime RLS smoke test (migration 20260604000014_test_rls.sql). Contains no real data; CI does not need to defend it."
     }
   ],
   "permissive_policies": [

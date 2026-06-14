@@ -626,7 +626,7 @@ export async function POST(request: NextRequest) {
     const rollbackPreOrder = async () => {
       await releaseReservedInventory();
       if (appliedCouponId) {
-        await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
+        await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
         appliedCouponId = null;
       }
     };
@@ -884,7 +884,7 @@ export async function POST(request: NextRequest) {
           // including the prepaid deduction, otherwise a prepaid agent is
           // double-charged for a single order (mirrors the failure path below).
           await releaseReservedInventory();
-          if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
+          if (appliedCouponId) await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
           if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
             await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
           }
@@ -897,7 +897,7 @@ export async function POST(request: NextRequest) {
         }
       }
       await releaseReservedInventory();
-      if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
+      if (appliedCouponId) await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
       if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
         await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
       }
@@ -936,7 +936,7 @@ export async function POST(request: NextRequest) {
       console.error('Database Order Items Write Error:', JSON.stringify(itemsError));
       await serviceSupabase.from('orders').delete().eq('id', order.id);
       await releaseReservedInventory();
-      if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
+      if (appliedCouponId) await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
       if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
         await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
       }
