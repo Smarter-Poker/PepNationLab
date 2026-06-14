@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { safeError } from '@/lib/api-error';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 
@@ -18,6 +19,6 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
     .delete()
     .eq('id', id)
     .eq('agent_id', user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return safeError('storefront.domains.id', error, 400);
   return NextResponse.json({ ok: true });
 }

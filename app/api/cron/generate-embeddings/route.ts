@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 import { createServiceClient } from '@/lib/supabase/server';
+import { assertCronAuth } from '@/lib/cron';
 
 export const dynamic = 'force-dynamic';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-export async function GET() {
+export async function GET(req: Request) {
+  const unauth = assertCronAuth(req);
+  if (unauth) return unauth;
   const supabase = await createServiceClient();
 
   // Fetch products that need embeddings

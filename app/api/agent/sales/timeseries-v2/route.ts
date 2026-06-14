@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { safeError } from '@/lib/api-error';
 import { createClient } from '@/lib/supabase/server';
 import { parseRange } from '@/lib/sales-range';
 
@@ -16,6 +17,6 @@ export async function GET(req: Request) {
     p_start: start.toISOString(),
     p_end: end.toISOString(),
   });
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return safeError('sales.timeseries-v2', error, 400);
   return NextResponse.json({ points: data ?? [] });
 }

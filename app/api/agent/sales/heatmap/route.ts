@@ -1,5 +1,6 @@
 // R24 phase 6 - Sales heatmap. Buckets orders by (day_of_week, hour) over a range.
 import { NextResponse } from 'next/server';
+import { safeError } from '@/lib/api-error';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { parseRange } from '@/lib/sales-range';
 
@@ -21,7 +22,7 @@ export async function GET(req: Request) {
     .lt('created_at', end.toISOString())
     .neq('status', 'cancelled')
     .limit(50000);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return safeError('sales.heatmap', error, 400);
 
   // 7 dows x 24 hours = 168 buckets
   const grid = Array.from({ length: 7 }, () => Array(24).fill(0));

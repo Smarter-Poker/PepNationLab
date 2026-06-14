@@ -1,6 +1,7 @@
 // R24 phase 6 - Auto-Pay toggle. When enabled and prepaid balance covers the
 // statement, the late-fees cron auto-pays. Otherwise no-op.
 import { NextResponse } from 'next/server';
+import { safeError } from '@/lib/api-error';
 import { z } from 'zod';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -42,6 +43,6 @@ export async function PATCH(req: Request) {
   const updates: any = { auto_pay_enabled: body.enabled };
   if (body.handle) updates.preferred_payout_handle = body.handle;
   const { error } = await svc.from('profiles').update(updates).eq('id', user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return safeError('wallet.auto-pay', error, 400);
   return NextResponse.json({ ok: true });
 }

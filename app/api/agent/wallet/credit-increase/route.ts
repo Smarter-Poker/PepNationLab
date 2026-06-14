@@ -1,5 +1,6 @@
 // Round 24 Wallet - credit increase request
 import { NextResponse } from 'next/server';
+import { safeError } from '@/lib/api-error';
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
@@ -72,7 +73,7 @@ export async function POST(req: Request) {
     })
     .select()
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return safeError('wallet.credit-increase', error, 400);
 
   // Notify the reviewers: every admin (who approve/deny on /admin/credit-increases)
   // plus the requester's parent super-agent (FYI), with an in-app bell entry AND a

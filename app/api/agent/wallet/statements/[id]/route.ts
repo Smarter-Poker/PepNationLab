@@ -1,5 +1,6 @@
 // Round 24 Wallet - statement detail
 import { NextResponse } from 'next/server';
+import { safeError } from '@/lib/api-error';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 
   // R24 hotfix: get_statement_detail requires auth.uid(); call via user-authed client.
   const { data: orders, error } = await supabase.rpc('get_statement_detail', { p_statement_id: id });
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return safeError('wallet.statement', error, 400);
 
   return NextResponse.json({ statement: stmt, orders: orders ?? [] });
 }

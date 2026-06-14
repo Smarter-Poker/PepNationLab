@@ -105,3 +105,52 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+// Reset the avatar back to the default (initials). Clears profiles.avatar_url
+// and best-effort removes the user's stored avatar files so the bucket does not
+// keep orphans. Used by the "Use Default" control.
+export async function DELETE(request: NextRequest) {
+  const csrf = assertSameOrigin(request);
+  if (csrf) return csrf;
+
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: null })
+      .eq('id', user.id);
+
+    if (profileError) {
+      console.error('Avatar reset profile update error:', profileError);
+      return NextResponse.json({ error: 'Failed to reset avatar' }, { status: 500 });
+    }
+
+    // Best-effort: remove all of the user's stored avatar files.
+    try {
+      const { data: existing } = await supabase.storage
+        .from('avatars')
+        .list(user.id, { limit: 100 });
+
+      if (existing && existing.length > 0) {
+        const all = existing.map((f) => `${user.id}/${f.name}`);
+        if (all.length > 0) {
+          await supabase.storage.from('avatars').remove(all);
+        }
+      }
+    } catch (cleanupErr) {
+      console.error('Avatar reset cleanup (non-fatal):', cleanupErr);
+    }
+
+    return NextResponse.json({ avatar_url: null });
+
+  } catch (err: unknown) {
+    console.error('Avatar DELETE error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

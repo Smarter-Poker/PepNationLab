@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { assertCronAuth } from '@/lib/cron';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const unauth = assertCronAuth(req);
+  if (unauth) return unauth;
   try {
     const supabase = await createServiceClient();
 

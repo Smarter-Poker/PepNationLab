@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeError } from '@/lib/api-error';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
       .eq('user_id', user.id)
       .is('read_at', null);
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return safeError('notifications.mark-read.all', error, 500);
     return NextResponse.json({ ok: true });
   }
 
@@ -42,6 +43,6 @@ export async function POST(req: NextRequest) {
     .in('id', ids)
     .is('read_at', null);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return safeError('notifications.mark-read.ids', error, 500);
   return NextResponse.json({ ok: true });
 }

@@ -54,7 +54,7 @@ export async function GET(req: Request) {
       if (faers.total > 0 && faers.total - previousCount >= 25) {
         const { error } = await supabase.from('compound_recall_alerts').insert({
           compound_slug: row.slug,
-          alert_type: 'faers_spike',
+          alert_type: 'safety_signal',
           summary: `FAERS Event Count Rose To ${faers.total} (Previous ${previousCount})`,
           url: `https://api.fda.gov/drug/event.json?search=patient.drug.openfda.generic_name:%22${encodeURIComponent(row.display_name)}%22`,
           alert_date: now,

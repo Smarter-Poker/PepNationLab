@@ -1,5 +1,6 @@
 // Round 24 Wallet - Receipt Vault
 import { NextResponse } from 'next/server';
+import { safeError } from '@/lib/api-error';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -27,6 +28,6 @@ export async function GET(req: Request) {
     .order('uploaded_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return safeError('wallet.receipts', error, 400);
   return NextResponse.json({ receipts: data ?? [], count: count ?? 0 });
 }

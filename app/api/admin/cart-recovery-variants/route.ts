@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeError } from '@/lib/api-error';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
 
   const svc = await createServiceClient();
   const { error } = await svc.from('cart_recovery_variants').insert({ name, steps, enabled: body.enabled !== false });
-  if (error) return NextResponse.json({ error: error.message || 'Failed To Create' }, { status: 500 });
+  if (error) return safeError('cart-recovery-variants.create', error, 500);
   return NextResponse.json({ success: true });
 }
 

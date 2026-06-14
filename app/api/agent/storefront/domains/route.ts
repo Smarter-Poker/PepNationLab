@@ -1,5 +1,6 @@
 // R24 phase 6 - Custom domains.
 import { NextResponse } from 'next/server';
+import { safeError } from '@/lib/api-error';
 import { z } from 'zod';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
     .single();
   if (error) {
     if (error.code === '23505') return NextResponse.json({ error: 'hostname_taken' }, { status: 409 });
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return safeError('storefront.domains', error, 400);
   }
   return NextResponse.json({ ok: true, domain: data });
 }

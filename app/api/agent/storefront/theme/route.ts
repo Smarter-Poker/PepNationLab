@@ -1,5 +1,6 @@
 // R24 phase 6 - Storefront theme builder API.
 import { NextResponse } from 'next/server';
+import { safeError } from '@/lib/api-error';
 import { z } from 'zod';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -43,6 +44,6 @@ export async function PATCH(req: Request) {
     .from('agent_profiles')
     .update(body)
     .eq('id', user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return safeError('storefront.theme', error, 400);
   return NextResponse.json({ ok: true });
 }

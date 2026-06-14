@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   const year = parseInt(url.searchParams.get('year') ?? String(new Date().getFullYear()), 10);
   const svc = await createServiceClient();
   const { data, error } = await svc.rpc('agent_sales_tax_summary', { p_agent_id: user.id, p_year: year });
-  if (error) return new Response(error.message, { status: 400 });
+  if (error) return safeError('sales.export.tax', error, 400);
   const header = 'State,Orders,Gross Revenue USD\n';
   const rows = (data ?? []).map((r: any) =>
     `${r.state},${r.orders_count},${(Number(r.gross_revenue_cents) / 100).toFixed(2)}`

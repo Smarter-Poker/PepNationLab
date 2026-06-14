@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { safeError } from '@/lib/api-error';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 
@@ -58,7 +59,7 @@ export async function GET() {
 
   if (error) {
     return NextResponse.json(
-      { error: 'Failed To Load Cron Runs.', details: error.message },
+      { error: 'Failed To Load Cron Runs.' },
       { status: 500 }
     );
   }
