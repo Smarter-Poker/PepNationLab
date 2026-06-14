@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check, ShoppingCart, ArrowRight, Sparkles, Flame, Zap, Brain, Shield, Hourglass, Moon, Activity, Syringe } from 'lucide-react';
+import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check, ShoppingCart, ArrowRight, Sparkles, Flame, Zap, Brain, Shield, Hourglass, Moon, Activity, Syringe, Wind } from 'lucide-react';
 import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
 import ProductMonograph from './research/ProductMonograph';
 import IframeLink from '@/components/ui/IframeLink';
@@ -15,7 +15,7 @@ import StorefrontCompareDrawer from './storefront/StorefrontCompareDrawer';
 import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
 import DynamicCartButton from './storefront/DynamicCartButton';
 import DynamicDetailButton from './storefront/DynamicDetailButton';
-import { evidenceTier, EVIDENCE_TIER, RISK_META, type Compound } from '@/lib/compounds';
+import { evidenceTier, EVIDENCE_TIER, RISK_META, intranasalDisplay, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
 import { toast } from 'sonner';
@@ -2818,6 +2818,22 @@ export default function AgentStorefrontGrid({
                           </span>
                         );
                       })()}
+                      {(() => {
+  const _c = group.compoundSlug ? compoundsBySlug?.[group.compoundSlug] : undefined;
+  const _nasal = intranasalDisplay(_c);
+  if (!_nasal.nasal) return null;
+  return (
+    <span title={_nasal.caveat ?? undefined} style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6,
+      padding: '3px 9px', borderRadius: 'var(--radius-full)',
+      background: _nasal.bg, border: `1px solid ${_nasal.border}`,
+      color: _nasal.color, fontSize: '0.62rem', fontWeight: 800,
+      textTransform: 'uppercase', letterSpacing: '0.04em',
+    }}>
+      <Wind size={9} aria-hidden="true" />{_nasal.badgeLabel}
+    </span>
+  );
+})()}
 
                     </div>
                   );

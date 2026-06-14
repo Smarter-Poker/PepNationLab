@@ -13,7 +13,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import { X, Scale, ChevronDown, ChevronRight, GripHorizontal, ChevronLeft, ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info, Zap, BookOpen, Clock, Thermometer, Check, Shield } from 'lucide-react';
-import { evidenceTier, type Compound, RISK_META, researchAreaLabel } from '@/lib/compounds';
+import { evidenceTier, type Compound, RISK_META, researchAreaLabel, intranasalDisplay } from '@/lib/compounds';
 import InCellGlossaryTooltip from '../research/InCellGlossaryTooltip';
 import { scoreCompound, type CompoundScore } from '../research/CompareTool';
 import DynamicAddToCartButton from './DynamicAddToCartButton';
@@ -847,6 +847,11 @@ export default function StorefrontCompareDrawer({
         kind: 'data', label: 'Typical Frequency',
         getValue: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return txt(c?.typical_frequency); },
         render: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return txt(c?.typical_frequency); }
+      },
+      {
+        kind: 'data', label: 'Administration Route',
+        getValue: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return intranasalDisplay(c).routesLabel; },
+        render: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; const n = intranasalDisplay(c); return <span style={{ color: n.color, fontWeight: 700 }}>{n.routesLabel}</span>; }
       },
       {
         kind: 'data', label: 'Mechanism / PK', glossaryTerm: 'Mechanism',

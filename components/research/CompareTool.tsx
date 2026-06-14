@@ -33,7 +33,7 @@ import {
   Scale, Syringe, Wrench, Hourglass, Filter, List, Smartphone, LayoutList, MoveUp, MoveDown,
   Sparkles, Moon, Heart, Brain, FileText, Mic, ShoppingCart, Crosshair, Target, ImageIcon, ShieldAlert
 } from 'lucide-react';
-import { type Compound, evidenceTier, researchAreaLabel, RISK_META, calculateStackSynergy } from '@/lib/compounds';
+import { type Compound, evidenceTier, researchAreaLabel, RISK_META, calculateStackSynergy, intranasalDisplay } from '@/lib/compounds';
 import AttributeRadarChart, { type RadarDataPoint } from './AttributeRadarChart';
 import InCellGlossaryTooltip from './InCellGlossaryTooltip';
 import type { AreaProduct } from '@/lib/area-products-server';
@@ -1036,6 +1036,7 @@ const ROWS: Row[] = [
     },
   },
   { kind: 'data', label: 'Typical Frequency', getValue: c => c.typical_frequency, render: c => txt(c.typical_frequency) },
+  { kind: 'data', label: 'Administration Route', getValue: c => intranasalDisplay(c).routesLabel, render: c => { const n = intranasalDisplay(c); return <span style={{ color: n.color, fontWeight: 700 }}>{n.routesLabel}</span>; } },
   {
     kind: 'data', label: 'Mechanism / PK',
     getValue: c => c.pk_summary,
