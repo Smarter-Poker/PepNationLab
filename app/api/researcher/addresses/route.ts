@@ -119,9 +119,10 @@ export async function PATCH(req: NextRequest) {
   const auth = await getAuthedClient();
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const body = (await req.json().catch(() => ({}))) as AddressBody & { id?: string };
-  if (!body.id || typeof body.id !== 'string') {
-    return NextResponse.json({ error: 'Address ID Is Required.' }, { status: 400 });
+  if (!body.id || typeof body.id !== 'string' || !UUID_REGEX.test(body.id)) {
+    return NextResponse.json({ error: 'A Valid Address ID Is Required.' }, { status: 400 });
   }
 
   if (body.state !== undefined && body.state !== null) {
@@ -178,9 +179,10 @@ export async function DELETE(req: NextRequest) {
   const auth = await getAuthedClient();
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const body = await req.json().catch(() => ({} as { id?: string }));
-  if (!body.id || typeof body.id !== 'string') {
-    return NextResponse.json({ error: 'Address ID Is Required.' }, { status: 400 });
+  if (!body.id || typeof body.id !== 'string' || !UUID_REGEX.test(body.id)) {
+    return NextResponse.json({ error: 'A Valid Address ID Is Required.' }, { status: 400 });
   }
 
   const { error } = await auth.supabase

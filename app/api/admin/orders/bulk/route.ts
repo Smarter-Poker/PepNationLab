@@ -42,8 +42,9 @@ export async function POST(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   const body = (await req.json().catch(() => ({}))) as BulkBody;
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const ids = Array.isArray(body.ids)
-    ? body.ids.filter((x): x is string => typeof x === 'string' && x.length > 0)
+    ? body.ids.filter((x): x is string => typeof x === 'string' && UUID_REGEX.test(x))
     : [];
   const action = body.action as BulkAction;
 

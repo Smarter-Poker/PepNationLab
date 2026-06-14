@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "app/api/cron/**/*": {
+      "maxDuration": 300
+    }
+  },
   "crons": [
     { "path": "/api/cron/abandoned-cart-recovery", "schedule": "0 */6 * * *" },
     { "path": "/api/cron/cancel-stale-pending", "schedule": "45 3 * * *" },

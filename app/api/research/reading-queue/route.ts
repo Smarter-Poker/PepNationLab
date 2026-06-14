@@ -63,7 +63,9 @@ export async function PATCH(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   let body: { id?: string; read_at?: string | null; position?: number };
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
-  if (!body.id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!body.id || typeof body.id !== 'string' || !UUID_REGEX.test(body.id)) return NextResponse.json({ error: 'A valid id is required' }, { status: 400 });
+
   const patch: Record<string, unknown> = {};
   if ('read_at' in body) patch.read_at = body.read_at;
   if (typeof body.position === 'number') patch.position = body.position;
@@ -79,7 +81,9 @@ export async function DELETE(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   let body: { id?: string };
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
-  if (!body.id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!body.id || typeof body.id !== 'string' || !UUID_REGEX.test(body.id)) return NextResponse.json({ error: 'A valid id is required' }, { status: 400 });
+
   const { error } = await supabase.from('user_reading_queue').delete().eq('id', body.id).eq('user_id', user.id);
   if (error) return safeError('research.reading_queue', error);
   return new NextResponse(null, { status: 204 });
