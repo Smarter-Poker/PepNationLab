@@ -7,12 +7,16 @@
  * would otherwise be lost. This cron closes that gap by re-running the stored
  * payload through the SAME lib/shippo-webhook.processShippoEvent path.
  *
- * Selection: rows in shippo_webhook_events that are
- *   - not signature-rejected (event_id NOT LIKE 'rejected:%', error not
- *     'signature_invalid'), and
- *   - still carry a processing_error,
- *   - and are at least 2 minutes old (so we never race the live handler),
- *   - within the trailing 7 days, capped per run.
+ * Selection: rows in shippo_webhook_events that are NOT yet successfully
+ * processed - i.e. they still carry a processing_error OR were never marked
+ * processed_at (the receiver Lambda was killed mid-processing). Both cases are
+ * caught by `processed_at IS NULL OR processing_error IS NOT NULL`. We then
+ *   - exclude signature rejections (event_id NOT LIKE 'rejected:%' - every
+ *     rejected row carries that prefix, so this is the single reliable filter;
+ *     a NULL-safe one, unlike neq on the nullable processing_error column),
+ *   - require they are at least 2 minutes old (so we never race the live
+ *     handler that may still be finalizing them),
+ *   - and fall within the trailing 7 days, capped per run.
  *
  * On success the row's processing_error is cleared and processed_at stamped.
  * On repeat failure the new error is recorded for the next pass / admin view.
@@ -64,8 +68,7 @@ export async function GET(req: NextRequest) {
     const { data: rows, error: selErr } = await supabase
       .from('shippo_webhook_events')
       .select('id, event_id, event_type, payload, processing_error, received_at')
-      .not('processing_error', 'is', null)
-      .neq('processing_error', 'signature_invalid')
+      .or('processed_at.is.null,processing_error.not.is.null')
       .not('event_id', 'like', 'rejected:%')
       .gte('received_at', windowStart)
       .lte('received_at', cutoff)
