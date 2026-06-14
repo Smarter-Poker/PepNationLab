@@ -88,7 +88,7 @@ export default function BrowseFilterShell({
                 boxShadow: isActive ? '0 0 10px rgba(0,196,188,0.18)' : 'none',
               }}
             >
-              {g.label}
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px', display: 'inline-block', verticalAlign: 'bottom' }}>{g.label}</span>
               {g.count > 0 && (
                 <span
                   style={{
