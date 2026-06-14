@@ -122,8 +122,19 @@ export async function POST(req: NextRequest) {
     locked_tier_level = parseInt(tier.replace('tier_', ''), 10);
   }
 
+  // Canonical super-agent representation (must match /api/admin/agents): a super
+  // agent is stored as role='agent' with is_super_agent=true as the source of
+  // truth, NOT role='super_agent'. Writing the literal 'super_agent' enum left
+  // is_super_agent=false, which hid the account from the messenger super-agent
+  // filter, mislabeled it, and -- combined with leftover referral linkage --
+  // dropped it from admin invoicing and top-level agent queries.
+  const isSuperPromotion = role === 'super_agent';
+  const isAgentRole = role === 'agent' || role === 'super_agent';
+  const canonicalRole = isSuperPromotion ? 'agent' : role;
+
   const profileUpdates: Record<string, unknown> = {
-    role,
+    role: canonicalRole,
+    is_super_agent: isSuperPromotion,
     tier: role === 'researcher' ? null : tier,
     locked_tier_level: role === 'researcher' ? null : locked_tier_level,
     fixed_scale_override: role === 'researcher' ? false : true,
@@ -133,6 +144,17 @@ export async function POST(req: NextRequest) {
     is_active: is_active !== undefined ? is_active : true,
     updated_at: new Date().toISOString(),
   };
+
+  // Promoting a researcher to a top-level agent/super agent must detach the
+  // researcher-era referral linkage; otherwise the new agent looks like a
+  // sub-agent of their former referring agent and is excluded from admin
+  // invoicing, top-level agent queries, and the messenger super-agent filter.
+  if (isAgentRole) {
+    profileUpdates.parent_agent_id = null;
+    profileUpdates.referring_agent_id = null;
+    profileUpdates.referring_sub_agent_id = null;
+    profileUpdates.is_sub_agent = false;
+  }
 
   const { error: profileError } = await supabase.from('profiles').update(profileUpdates).eq('id', id);
   if (profileError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
