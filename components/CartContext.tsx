@@ -107,6 +107,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const data = (await res.json()) as {
           items: Array<{
             id: string;
+            productId?: string | null;
             name: string | null;
             retailPrice: number;
             bulkCostPrice: number | null;
@@ -119,9 +120,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const next: CartItem[] = [];
         const removed: string[] = [];
         for (const item of items) {
-          if (data.missing?.includes(item.id)) { removed.push(item.name); continue; }
-          const fresh = data.items.find(d => d.id === item.id);
-          if (!fresh) { removed.push(item.name); continue; }
+          // Cart items may be keyed by agent_product id (by-name / quick-add)
+          // or product_id (reorder / research catalog). The refresh API resolves
+          // both, so match on either identifier to avoid false "Item Removed".
+          const fresh = data.items.find(d => d.id === item.id || d.productId === item.id);
+          if (!fresh) { if (data.missing?.includes(item.id)) removed.push(item.name); continue; }
           if (!fresh.available) { removed.push(fresh.name ?? item.name); continue; }
           next.push({
             ...item,
