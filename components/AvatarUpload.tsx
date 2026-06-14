@@ -12,12 +12,16 @@ interface Props {
 
 const OUTPUT_SIZE = 512; // Final square avatar resolution in pixels
 const MAX_ZOOM = 4;
+const TAP_MOVE_TOLERANCE = 8; // px of movement still counted as a tap
+const TAP_MAX_MS = 300; // max press duration counted as a tap
+const DOUBLE_TAP_MS = 300; // max gap between taps for a double tap
+const DOUBLE_TAP_ZOOM = 2.2;
 
 export default function AvatarUpload({ currentAvatarUrl, name, onUploadSuccess }: Props) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentAvatarUrl);
   const [error, setError] = useState<string | null>(null);
-  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,8 +40,7 @@ export default function AvatarUpload({ currentAvatarUrl, name, onUploadSuccess }
 
     setError(null);
     // Open the framing tool instead of uploading the raw file immediately
-    const objectUrl = URL.createObjectURL(file);
-    setCropSrc(objectUrl);
+    setCropFile(file);
 
     // Allow re-selecting the same file later
     if (fileInputRef.current) {
@@ -45,14 +48,7 @@ export default function AvatarUpload({ currentAvatarUrl, name, onUploadSuccess }
     }
   };
 
-  const closeCropper = useCallback(() => {
-    setCropSrc((prev) => {
-      if (prev) {
-        setTimeout(() => URL.revokeObjectURL(prev), 1000);
-      }
-      return null;
-    });
-  }, []);
+  const closeCropper = useCallback(() => setCropFile(null), []);
 
   const handleCropConfirm = async (blob: Blob) => {
     setError(null);
@@ -184,9 +180,9 @@ export default function AvatarUpload({ currentAvatarUrl, name, onUploadSuccess }
         style={{ display: 'none' }}
       />
 
-      {cropSrc && (
+      {cropFile && (
         <AvatarCropper
-          src={cropSrc}
+          file={cropFile}
           busy={uploading}
           onCancel={closeCropper}
           onConfirm={handleCropConfirm}
@@ -197,25 +193,42 @@ export default function AvatarUpload({ currentAvatarUrl, name, onUploadSuccess }
 }
 
 interface CropperProps {
-  src: string;
+  file: File;
   busy: boolean;
   onCancel: () => void;
   onConfirm: (blob: Blob) => void;
 }
 
-function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
-  // Square framing viewport size in CSS pixels (responsive to small screens)
+type ImageSource = ImageBitmap | HTMLImageElement;
+
+function sourceDims(src: ImageSource): { w: number; h: number } {
+  const w = (src as HTMLImageElement).naturalWidth || (src as ImageBitmap).width;
+  const h = (src as HTMLImageElement).naturalHeight || (src as ImageBitmap).height;
+  return { w, h };
+}
+
+function AvatarCropper({ file, busy, onCancel, onConfirm }: CropperProps) {
   const [viewport, setViewport] = useState(300);
-  const [nat, setNat] = useState<{ w: number; h: number } | null>(null);
+  const [nat, setNat] = useState<{ w: number; h: number } | null>(null); // rotated logical dims
   const [zoom, setZoom] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 }); // Top-left of image within viewport
+  const [rotation, setRotation] = useState(0); // 0 / 90 / 180 / 270
   const [rendering, setRendering] = useState(false);
+  const [decoding, setDecoding] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const imgRef = useRef<HTMLImageElement | null>(null);
+  const baseRef = useRef<ImageSource | null>(null); // orientation-corrected original
+  const workCanvasRef = useRef<HTMLCanvasElement | null>(null); // rotated source for output
+  const previewUrlRef = useRef<string | null>(null);
+  const fallbackUrlRef = useRef<string | null>(null);
   const surfaceRef = useRef<HTMLDivElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
   const pointers = useRef<Map<number, { x: number; y: number }>>(new Map());
   const pinch = useRef<{ dist: number; zoom: number; midX: number; midY: number } | null>(null);
+  const tap = useRef<{ x: number; y: number; t: number; moved: boolean } | null>(null);
+  const lastTapAt = useRef(0);
 
   // Scale at which the image just covers the viewport (zoom = 1)
   const baseScale = nat ? Math.max(viewport / nat.w, viewport / nat.h) : 1;
@@ -238,15 +251,13 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
   // Portal only after mount so document.body exists (avoids SSR mismatch)
   useEffect(() => setMounted(true), []);
 
-  // Decide viewport size once on mount, sized to BOTH screen width and height
-  // so the circle, header, and controls always fit on small mobile screens
+  // Size the frame to BOTH screen width and height so it always fits
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const compute = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      // Reserve vertical space for header (~70px) and controls (~150px)
-      const byHeight = h - 220;
+      const byHeight = h - 260; // reserve space for header + zoom + button rows
       setViewport(Math.max(200, Math.min(340, w - 40, byHeight)));
     };
     compute();
@@ -258,16 +269,105 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
     };
   }, []);
 
-  // Load the image and center it in the frame
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => {
-      imgRef.current = img;
-      setNat({ w: img.naturalWidth, h: img.naturalHeight });
-    };
-    img.src = src;
-  }, [src]);
+  // Build the rotated working canvas + preview image for a given rotation
+  const renderWork = useCallback((rot: number) => {
+    const base = baseRef.current;
+    if (!base) return;
+    const { w: ow, h: oh } = sourceDims(base);
+    const r = ((rot % 360) + 360) % 360;
+    const swap = r === 90 || r === 270;
+    const cw = swap ? oh : ow;
+    const ch = swap ? ow : oh;
 
+    const canvas = document.createElement('canvas');
+    canvas.width = cw;
+    canvas.height = ch;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.translate(cw / 2, ch / 2);
+    ctx.rotate((r * Math.PI) / 180);
+    ctx.drawImage(base, -ow / 2, -oh / 2, ow, oh);
+    workCanvasRef.current = canvas;
+
+    setNat({ w: cw, h: ch });
+
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return;
+        if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+        const url = URL.createObjectURL(blob);
+        previewUrlRef.current = url;
+        setPreviewUrl(url);
+      },
+      'image/jpeg',
+      0.9
+    );
+  }, []);
+
+  // Decode the file with EXIF orientation applied, with an <img> fallback
+  useEffect(() => {
+    let cancelled = false;
+    setDecoding(true);
+    setLoadError(null);
+
+    const finish = (base: ImageSource) => {
+      if (cancelled) {
+        if ('close' in base) (base as ImageBitmap).close();
+        return;
+      }
+      baseRef.current = base;
+      setRotation(0);
+      renderWork(0);
+      setDecoding(false);
+    };
+
+    const useImgFallback = () => {
+      try {
+        const url = URL.createObjectURL(file);
+        fallbackUrlRef.current = url;
+        const img = new Image();
+        img.onload = () => finish(img);
+        img.onerror = () => {
+          if (!cancelled) {
+            setLoadError("Couldn't Read This Photo. Please Choose A JPG Or PNG.");
+            setDecoding(false);
+          }
+        };
+        img.src = url;
+      } catch {
+        if (!cancelled) {
+          setLoadError("Couldn't Read This Photo. Please Choose A JPG Or PNG.");
+          setDecoding(false);
+        }
+      }
+    };
+
+    if (typeof createImageBitmap === 'function') {
+      createImageBitmap(file, { imageOrientation: 'from-image' } as ImageBitmapOptions)
+        .then((bmp) => finish(bmp))
+        .catch(() => useImgFallback());
+    } else {
+      useImgFallback();
+    }
+
+    return () => {
+      cancelled = true;
+      const base = baseRef.current;
+      if (base && 'close' in base) (base as ImageBitmap).close();
+      baseRef.current = null;
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+      }
+      if (fallbackUrlRef.current) {
+        URL.revokeObjectURL(fallbackUrlRef.current);
+        fallbackUrlRef.current = null;
+      }
+    };
+  }, [file, renderWork]);
+
+  // Recenter and reset zoom whenever the logical dimensions change
   useEffect(() => {
     if (!nat) return;
     const dispW = nat.w * baseScale;
@@ -284,6 +384,11 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
       document.body.style.overflow = prev;
     };
   }, []);
+
+  // Move initial focus into the dialog for keyboard users
+  useEffect(() => {
+    if (mounted) dialogRef.current?.focus();
+  }, [mounted]);
 
   const applyZoomAtPoint = useCallback(
     (newZoom: number, anchorX: number, anchorY: number) => {
@@ -303,9 +408,13 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
   );
 
   const onPointerDown = (e: React.PointerEvent) => {
+    if (!nat) return;
     (e.target as Element).setPointerCapture?.(e.pointerId);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.current.size === 2) {
+    if (pointers.current.size === 1) {
+      tap.current = { x: e.clientX, y: e.clientY, t: Date.now(), moved: false };
+    } else if (pointers.current.size === 2) {
+      tap.current = null;
       const pts = Array.from(pointers.current.values());
       const dx = pts[0].x - pts[1].x;
       const dy = pts[0].y - pts[1].y;
@@ -320,7 +429,7 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!pointers.current.has(e.pointerId)) return;
+    if (!nat || !pointers.current.has(e.pointerId)) return;
     const prev = pointers.current.get(e.pointerId)!;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
@@ -335,6 +444,10 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
     }
 
     if (pointers.current.size === 1) {
+      if (tap.current) {
+        const movedBy = Math.hypot(e.clientX - tap.current.x, e.clientY - tap.current.y);
+        if (movedBy > TAP_MOVE_TOLERANCE) tap.current.moved = true;
+      }
       const dx = e.clientX - prev.x;
       const dy = e.clientY - prev.y;
       setPos((p) => clampPos(p.x + dx, p.y + dy, zoom));
@@ -342,11 +455,28 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
   };
 
   const endPointer = (e: React.PointerEvent) => {
+    const wasLast = pointers.current.size === 1;
     pointers.current.delete(e.pointerId);
     if (pointers.current.size < 2) pinch.current = null;
+
+    // Double-tap to zoom toggle
+    if (wasLast && tap.current && !tap.current.moved && Date.now() - tap.current.t < TAP_MAX_MS) {
+      const now = Date.now();
+      if (now - lastTapAt.current < DOUBLE_TAP_MS) {
+        const rect = surfaceRef.current?.getBoundingClientRect();
+        const ax = e.clientX - (rect?.left ?? 0);
+        const ay = e.clientY - (rect?.top ?? 0);
+        applyZoomAtPoint(zoom > 1.05 ? 1 : DOUBLE_TAP_ZOOM, ax, ay);
+        lastTapAt.current = 0;
+      } else {
+        lastTapAt.current = now;
+      }
+    }
+    tap.current = null;
   };
 
   const onWheel = (e: React.WheelEvent) => {
+    if (!nat) return;
     const rect = surfaceRef.current?.getBoundingClientRect();
     const ax = e.clientX - (rect?.left ?? 0);
     const ay = e.clientY - (rect?.top ?? 0);
@@ -354,9 +484,24 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
     applyZoomAtPoint(zoom * factor, ax, ay);
   };
 
+  const handleRotate = () => {
+    if (!baseRef.current) return;
+    const next = (rotation + 90) % 360;
+    setRotation(next);
+    renderWork(next);
+  };
+
+  const handleReset = () => {
+    if (!nat) return;
+    const dispW = nat.w * baseScale;
+    const dispH = nat.h * baseScale;
+    setZoom(1);
+    setPos({ x: (viewport - dispW) / 2, y: (viewport - dispH) / 2 });
+  };
+
   const handleSave = () => {
-    const img = imgRef.current;
-    if (!img || !nat) return;
+    const src = workCanvasRef.current;
+    if (!src || !nat) return;
     setRendering(true);
     try {
       const scaleTotal = baseScale * zoom;
@@ -373,7 +518,7 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
         return;
       }
       ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(img, sx, sy, sSize, sSize, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+      ctx.drawImage(src, sx, sy, sSize, sSize, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
 
       canvas.toBlob(
         (blob) => {
@@ -389,14 +534,65 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
     }
   };
 
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      if (!working) onCancel();
+      return;
+    }
+    if (e.key !== 'Tab') return;
+    const root = dialogRef.current;
+    if (!root) return;
+    const focusables = Array.from(
+      root.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')
+    ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
   const dispW = nat ? nat.w * baseScale * zoom : 0;
   const dispH = nat ? nat.h * baseScale * zoom : 0;
   const working = busy || rendering;
+  const ready = !!nat && !!previewUrl && !decoding && !loadError;
 
   if (!mounted || typeof document === 'undefined') return null;
 
+  const secondaryBtn = (label: string, onClick: () => void, disabled: boolean) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        flex: 1,
+        minHeight: 44,
+        background: 'rgba(255,255,255,0.08)',
+        color: 'var(--white, #fff)',
+        border: '1px solid rgba(255,255,255,0.18)',
+        borderRadius: 10,
+        fontSize: '0.82rem',
+        fontWeight: 700,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.45 : 1,
+      }}
+    >
+      {label}
+    </button>
+  );
+
   const overlay = (
     <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Frame Your Photo"
+      tabIndex={-1}
+      onKeyDown={onKeyDown}
       style={{
         position: 'fixed',
         inset: 0,
@@ -411,6 +607,7 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
         gap: 14,
         overflowY: 'auto',
         boxSizing: 'border-box',
+        outline: 'none',
         paddingTop: 'max(20px, env(safe-area-inset-top))',
         paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
         paddingLeft: 'max(16px, env(safe-area-inset-left))',
@@ -424,7 +621,7 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
           Frame Your Photo
         </div>
         <div style={{ color: 'var(--silver, rgba(192,184,168,0.7))', fontSize: '0.78rem', textAlign: 'center', maxWidth: 320 }}>
-          Drag To Move. Pinch Or Use The Slider To Zoom.
+          Drag To Move. Pinch, Scroll, Or Double Tap To Zoom.
         </div>
       </div>
 
@@ -443,15 +640,15 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
           borderRadius: '50%',
           overflow: 'hidden',
           touchAction: 'none',
-          cursor: 'grab',
+          cursor: ready ? 'grab' : 'default',
           background: '#0F1923',
           userSelect: 'none',
         }}
       >
-        {nat && (
+        {previewUrl && !loadError && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={src}
+            src={previewUrl}
             alt="Crop Preview"
             draggable={false}
             style={{
@@ -466,6 +663,21 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
             }}
           />
         )}
+
+        {/* Loading spinner while the photo decodes */}
+        {!ready && !loadError && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg className="animate-spin" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          </div>
+        )}
+
+        {/* Unreadable photo message */}
+        {loadError && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center', color: 'var(--silver, rgba(192,184,168,0.85))', fontSize: '0.8rem' }}>
+            {loadError}
+          </div>
+        )}
+
         {/* Circular framing ring */}
         <div
           style={{
@@ -489,13 +701,19 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
           step={0.01}
           value={zoom}
           onChange={(e) => applyZoomAtPoint(parseFloat(e.target.value), viewport / 2, viewport / 2)}
-          disabled={!nat || working}
+          disabled={!ready || working}
           style={{ flex: 1, height: 28, accentColor: 'var(--teal, #00C4BC)' }}
           aria-label="Zoom"
         />
       </div>
 
-      {/* Actions */}
+      {/* Rotate / Reset */}
+      <div style={{ display: 'flex', gap: 12, flexShrink: 0, width: viewport, maxWidth: 340 }}>
+        {secondaryBtn('Rotate', handleRotate, !ready || working)}
+        {secondaryBtn('Reset', handleReset, !ready || working)}
+      </div>
+
+      {/* Cancel / Save */}
       <div style={{ display: 'flex', gap: 12, flexShrink: 0, width: viewport, maxWidth: 340 }}>
         <button
           onClick={onCancel}
@@ -517,7 +735,7 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
         </button>
         <button
           onClick={handleSave}
-          disabled={!nat || working}
+          disabled={!ready || working}
           style={{
             flex: 1,
             minHeight: 48,
@@ -527,8 +745,8 @@ function AvatarCropper({ src, busy, onCancel, onConfirm }: CropperProps) {
             borderRadius: 12,
             fontSize: '0.9rem',
             fontWeight: 800,
-            cursor: !nat || working ? 'wait' : 'pointer',
-            opacity: !nat || working ? 0.6 : 1,
+            cursor: !ready || working ? 'not-allowed' : 'pointer',
+            opacity: !ready || working ? 0.6 : 1,
           }}
         >
           {working ? 'Saving...' : 'Save Photo'}
