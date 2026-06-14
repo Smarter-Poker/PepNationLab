@@ -28,7 +28,7 @@ export default function ResearchAreaCards() {
     });
   };
 
-  const areas = [
+  const areas: Array<{ id: string; label: string; count: number; image: string; filter: string; fallbackGradient?: string }> = [
     { id: 'weight_management', label: 'Weight Management', count: 127, image: '/images/research/icon_weight_management.png', filter: 'weight_management' },
     { id: 'tissue_repair', label: 'Tissue Repair', count: 83, image: '/images/research/icon_tissue_repair.png', filter: 'tissue_repair' },
     { id: 'healing', label: 'Healing', count: 62, image: '/images/research/icon_healing.png', filter: 'healing' },

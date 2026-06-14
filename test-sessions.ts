@@ -10,7 +10,9 @@ const supabase = createClient(
 async function main() {
   const { data: { users } } = await supabase.auth.admin.listUsers();
   if (!users || users.length === 0) return;
-  const { data, error } = await supabase.auth.admin.listUserSessions(users[0].id);
+  // listUserSessions is not part of the typed GoTrueAdminApi surface; this is a
+  // local scratch script, so cast to reach it without a type error.
+  const { data, error } = await (supabase.auth.admin as any).listUserSessions(users[0].id);
   console.log("Sessions:", data);
 }
 main();
