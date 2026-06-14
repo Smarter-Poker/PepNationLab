@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isSsrfTarget, safeFetch } from '@/lib/ssrf-guard';
 
 export const maxDuration = 10;
 export const dynamic = 'force-dynamic';
@@ -32,30 +33,6 @@ function checkRateLimit(ip: string): boolean {
   if (count >= 30) return false;
   rateLimitMap.set(ip, count + 1);
   return true;
-}
-
-function isPrivateOrReservedHost(hostname: string): boolean {
-  if (hostname === 'localhost') return true;
-  if (hostname.includes('.internal')) return true;
-  
-  // Parse IPv4
-  const ipv4Match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (ipv4Match) {
-    const [, a, b] = ipv4Match.map(Number);
-    if (a === 127) return true; // Loopback
-    if (a === 10) return true; // Private 10.x.x.x
-    if (a === 172 && b >= 16 && b <= 31) return true; // Private 172.16-31.x.x
-    if (a === 192 && b === 168) return true; // Private 192.168.x.x
-    if (a === 169 && b === 254) return true; // AWS/GCP Metadata
-    if (a === 0) return true; // 0.0.0.0
-  }
-  
-  // Parse IPv6 basic
-  if (hostname.includes('[::1]') || hostname === '::1') return true;
-  if (hostname.toLowerCase().startsWith('fe80:')) return true;
-  if (hostname.toLowerCase().startsWith('[fe80:')) return true;
-
-  return false;
 }
 
 function rewriteHtml(html: string, originalUrl: string): string {
@@ -133,14 +110,21 @@ export async function GET(request: NextRequest) {
     return new NextResponse('Missing url parameter', { status: 400 });
   }
 
-  // Anti-SSRF check
+  // Anti-SSRF check: reject non-http(s) schemes and any host that is (or
+  // DNS-resolves to) a private / loopback / cloud-metadata address. safeFetch
+  // below additionally re-validates every redirect hop, so a public host
+  // cannot 3xx us into the internal network or the metadata endpoint.
+  let targetUrl: URL;
   try {
-    const targetUrl = new URL(url);
-    if (isPrivateOrReservedHost(targetUrl.hostname)) {
-      return new NextResponse('Forbidden Host', { status: 403 });
-    }
+    targetUrl = new URL(url);
   } catch {
     return new NextResponse('Invalid URL', { status: 400 });
+  }
+  if (targetUrl.protocol !== 'http:' && targetUrl.protocol !== 'https:') {
+    return new NextResponse('Forbidden Protocol', { status: 403 });
+  }
+  if (await isSsrfTarget(targetUrl.hostname)) {
+    return new NextResponse('Forbidden Host', { status: 403 });
   }
 
   // Rate Limiting
@@ -170,7 +154,10 @@ export async function GET(request: NextRequest) {
       
       const userAgent = USER_AGENTS[attempt % USER_AGENTS.length];
       
-      const res = await fetch(url, {
+      // safeFetch validates the target and re-validates each redirect hop
+      // against the SSRF guard (follows redirects manually). An attempt that
+      // resolves to an internal host throws and is treated as a fetch failure.
+      const res = await safeFetch(url, {
         signal: controller.signal,
         headers: {
           'User-Agent': userAgent,
