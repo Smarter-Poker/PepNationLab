@@ -1222,7 +1222,7 @@ function ResearchersAdminPageInner() {
               <p style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 'var(--space-6)' }}>No QR Code Generated Yet</p>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              <a href={resolvedAgentProfile.qr_code_url || '#'} download={`${resolvedAgentProfile.slug}-qr.png`} target="_blank" rel="noreferrer" className="btn-neon-cyan" style={{ width: '100%', justifyContent: 'center' }}>
+              <a href={resolvedAgentProfile.qr_code_url || '#'} download={`${resolvedAgentProfile.slug}-qr.png`} target="_blank" rel="noopener noreferrer" className="btn-neon-cyan" style={{ width: '100%', justifyContent: 'center' }}>
                 Download QR Code
               </a>
               <a href={`/${resolvedAgentProfile.slug}`} rel="noreferrer" className="btn-silver" style={{ width: '100%', justifyContent: 'center' }}>
