@@ -1,22 +1,19 @@
 /* ==============================================================
-   MOBILE PORTRAIT FIT  (Added 2026-06-14)
+   MOBILE PORTRAIT FIT  (Added 2026-06-14; deep pass 2026-06-14)
    Goal: every page and sub-page renders fully in portrait mode
-   with nothing cut off on the right edge (no forced landscape)
-   and the bottom action area clearing the fixed mobile nav.
-   Loaded last (after globals.css and globals-round2.css) so these
-   guards win where they need to.
+   with nothing cut off on the right edge (no forced landscape),
+   no element clipped, and the bottom action area clearing the
+   fixed mobile nav. Loaded last so these guards win.
    ============================================================== */
 
 /* 1. Page-level horizontal overflow guard.
    A single stray wide child (a non-wrapping button row, a two-column
    grid whose fixed minimums exceed the screen, a long unbroken string)
-   was widening the whole layout and forcing users to rotate to
-   landscape to see the page. overflow-x: clip stops that.
-   clip is "sticky-safe": unlike overflow-x: hidden it does NOT turn the
-   element into a scroll container, so position: sticky headers, table
-   heads and the research sidebar keep working. Browsers without clip
-   support simply ignore this line, so there is no regression for them -
-   and the source-level rules below mean content still fits without it. */
+   would widen the whole layout and force users to rotate to landscape.
+   overflow-x: clip stops that. clip is "sticky-safe": unlike hidden it
+   does NOT create a scroll container, so position: sticky headers, table
+   heads and the research sidebar keep working. The source-level rules in
+   section 2 make content actually FIT, so nothing important is clipped. */
 html {
   overflow-x: clip;
 }
@@ -25,41 +22,82 @@ html {
   overflow-x: clip;
 }
 
-/* 2. Phones (<=600px): explicit multi-column inline grids collapse to a
-   single column. Grids built with repeat(auto-fill | auto-fit, ...) already
-   collapse on their own, so they are excluded; this only rewrites the
-   EXPLICIT grids - e.g. "minmax(280px,1fr) minmax(280px,360px)", "1fr 1fr",
-   "300px 1fr" - whose fixed minimums or content blow-out push past a phone
-   screen. Single column is the expected mobile layout and guarantees fit. */
 @media (max-width: 600px) {
+  /* 2a. Explicit multi-column inline grids collapse to one column.
+     repeat(auto-fill | auto-fit, ...) grids already self-collapse and are
+     excluded; this rewrites EXPLICIT grids ("1fr 1fr", "300px 1fr",
+     "minmax(280px,1fr) minmax(...)") whose fixed minimums overflow a phone. */
   [style*="grid-template-columns"]:not([style*="auto-fill"]):not([style*="auto-fit"]) {
     grid-template-columns: 1fr !important;
   }
 
-  /* Grid/flex children must be allowed to shrink below their content width,
-     otherwise a long input or label re-introduces overflow. An explicit
-     inline min-width still wins (higher specificity), so intentional
-     minimums are preserved. */
+  /* 2b. Grid/flex children may shrink below their content width so a long
+     label, input, or button cannot re-introduce overflow. Both inline-style
+     spellings are matched - React serializes style objects as "display:flex"
+     (no space), so the earlier "display: flex"-only rule missed most rows.
+     An explicit inline min-width still wins (higher specificity). */
   [style*="grid-template-columns"] > *,
+  [style*="display:flex"] > *,
   [style*="display: flex"] > * {
     min-width: 0;
   }
 
-  /* Long unbroken tokens (hashes, URLs, IDs) wrap instead of stretching
-     the page. Inputs/textareas excluded so typing is unaffected. */
-  p, span, td, th, li, h1, h2, h3, h4, dd, dt, a, label {
+  /* 2c. Inline flex ROWS wrap rather than overflow. Excluded: column
+     direction, and strips that are explicitly horizontal-scroll (those are
+     meant to scroll - e.g. research filter chip bars). Paired with the
+     min-width:0 above, rows that already fit are visually unchanged; only
+     rows that would otherwise clip wrap to a second line. */
+  [style*="display:flex"]:not([style*="column"]):not([style*="overflow-x:auto"]):not([style*="overflow-x: auto"]):not([style*="overflow-x:scroll"]):not([style*="overflow-x: scroll"]):not([style*="overflow:auto"]),
+  [style*="display: flex"]:not([style*="column"]):not([style*="overflow-x:auto"]):not([style*="overflow-x: auto"]):not([style*="overflow-x:scroll"]):not([style*="overflow-x: scroll"]):not([style*="overflow:auto"]) {
+    flex-wrap: wrap;
+  }
+
+  /* 2d. Form controls and media never exceed the screen width. */
+  select, input, textarea, img, video, canvas, iframe {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* The admin shipping origin <select> sits in a non-shrinking flex wrapper
+     (flex: 0 0 auto) and grows to its longest option ("No Assignment
+     (Platform Default)"), pushing the row off-screen. Cap it so the row fits;
+     the dropdown still opens full-width and shows every option. */
+  select[id^="agent-origin-select-"] {
+    max-width: 150px;
+  }
+
+  /* 2e. Long unbroken tokens (URLs, hashes, IDs, long labels) wrap instead
+     of stretching the page. Inputs/textarea excluded so typing is unaffected. */
+  p, span, td, th, li, h1, h2, h3, h4, h5, dd, dt, a, label, div, button {
     overflow-wrap: anywhere;
+  }
+
+  /* 2f. Fixed-width flex sidebars/panels (flex: 0 0 240/280/300px) cannot
+     shrink and squeeze their sibling main column to zero width (the sibling
+     then overflows). On phones make them full-width so the row stacks. Only
+     the exact large bases present in the app are targeted, so small fixed
+     items (e.g. flex: 0 0 24px icons) are untouched. */
+  [style*="flex: 0 0 240px"], [style*="flex:0 0 240px"],
+  [style*="flex: 0 0 260px"], [style*="flex:0 0 260px"],
+  [style*="flex: 0 0 280px"], [style*="flex:0 0 280px"],
+  [style*="flex: 0 0 300px"], [style*="flex:0 0 300px"],
+  [style*="flex: 0 0 320px"], [style*="flex:0 0 320px"] {
+    flex: 1 1 100% !important;
+    position: static !important;
+    max-height: none !important;
   }
 }
 
-/* 3. Bottom action clearance. The fixed MobileBottomNav is
-   calc(65px + safe-area). Reserve a touch more so the last control on a
-   page (Add To Cart, Submit, Save) always sits above it, never under it. */
+/* 3. Bottom action clearance. This MUST live on the content container, not
+   on body: .page-container has min-height:100dvh, which anchors the last
+   element (footer, final card, action button) to the viewport bottom on
+   short pages. Padding on body sits OUTSIDE that 100dvh box and cannot lift
+   the content above the fixed MobileBottomNav (calc(65px + safe-area)). */
 @media (max-width: 768px) {
-  body {
-    padding-bottom: calc(82px + env(safe-area-inset-bottom)) !important;
-  }
   .page-container {
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+  body {
+    padding-bottom: 0 !important;
   }
 }
