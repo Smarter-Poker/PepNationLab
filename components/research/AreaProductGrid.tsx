@@ -46,6 +46,7 @@ export interface CompoundInfo {
   studiedFor: string[];
   pubmedCitationCount: number | null;
   plainSummary: string | null;
+  eli5Summary?: string | null;
   benefits: string | null;
   sideEffects: string | null;
   efficacyScores: Record<string, number>;
