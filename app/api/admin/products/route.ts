@@ -11,6 +11,11 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
 
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (id && !UUID_REGEX.test(id)) {
+    return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 });
+  }
+
   // List mode: no `id` supplied - return the catalog summary used by the
   // tier-override editor and admin dashboards. Preserves the historical
   // detail-by-id behavior below when `id` IS present.

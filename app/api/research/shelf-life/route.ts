@@ -101,7 +101,8 @@ export async function DELETE(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const id = req.nextUrl.searchParams.get('id');
-  if (!id) return NextResponse.json({ error: 'Log Id Is Required' }, { status: 400 });
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!id || !UUID_REGEX.test(id)) return NextResponse.json({ error: 'Valid Log Id Is Required' }, { status: 400 });
 
   // Owner RLS already restricts this; the explicit user_id filter is
   // defense-in-depth so a row can never be deleted by id alone.

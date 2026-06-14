@@ -229,8 +229,9 @@ export async function DELETE(req: NextRequest) {
 
   const id = req.nextUrl.searchParams.get('id');
 
-  if (!id) {
-    return NextResponse.json({ error: 'Missing Coupon Id Parameter' }, { status: 400 });
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!id || !UUID_REGEX.test(id)) {
+    return NextResponse.json({ error: 'Missing or Invalid Coupon Id Parameter' }, { status: 400 });
   }
 
   return withIdempotency({
