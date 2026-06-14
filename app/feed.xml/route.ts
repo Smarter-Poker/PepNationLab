@@ -51,8 +51,8 @@ export async function GET() {
   try {
     const { data: refs } = await supabase
       .from('compound_references')
-      .select('compound_slug, title, source_type, url, added_at')
-      .order('added_at', { ascending: false })
+      .select('compound_slug, title, source_type:source, url, added_at:created_at')
+      .order('created_at', { ascending: false })
       .limit(50);
     for (const r of ((refs ?? []) as Array<{ compound_slug: string; title: string | null; source_type: string; url: string | null; added_at: string | null }>)) {
       items.push({

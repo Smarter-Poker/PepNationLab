@@ -40,7 +40,7 @@ export async function GET(
   const supabase = await createServiceClient();
   const [compoundResp, refsResp, trialsResp, orthologsResp] = await Promise.all([
     supabase.from('compounds').select('*').eq('slug', cleaned).maybeSingle(),
-    supabase.from('compound_references').select('*').eq('compound_slug', cleaned).order('added_at', { ascending: false }).limit(100),
+    supabase.from('compound_references').select('*').eq('compound_slug', cleaned).order('created_at', { ascending: false }).limit(100),
     supabase.from('compound_clinical_trials').select('*').eq('compound_slug', cleaned).limit(50),
     supabase.from('compound_orthologs').select('*').eq('compound_slug', cleaned).limit(50),
   ]);
