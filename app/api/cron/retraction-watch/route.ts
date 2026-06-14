@@ -46,8 +46,8 @@ export async function GET(req: Request) {
             compound_slug: row.compound_slug,
             alert_type: 'retraction',
             summary: `PubMed PMID ${pmid} Has Been Retracted`,
-            source_url: status.notice_url ?? `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
-            alerted_at: status.retraction_date ?? now,
+            url: status.notice_url ?? `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
+            alert_date: status.retraction_date ?? now,
           });
           if (error) errored += 1;
         }
