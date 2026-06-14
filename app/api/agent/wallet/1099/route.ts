@@ -1,5 +1,9 @@
-// R24 hotfix - 1099-NEC summary. Reads agent_commissions (NUMERIC dollars,
-// status enum: pending/approved/paid/void). Sums settled (status='paid').
+// R24 hotfix - 1099-NEC summary. Reads sub_agent_commission_ledger (the canonical
+// commission-earnings ledger, same source as /api/agent/wallet/commissions):
+// commission_amount NUMERIC dollars, status text in (pending|settled|voided),
+// keyed by sub_agent_id, settled_at timestamptz. Sums SETTLED rows by settled_at.
+// (Previously queried a nonexistent `agent_commissions` table, so the swallowed
+// error made every 1099 report $0.)
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 
@@ -21,12 +25,12 @@ export async function GET(req: Request) {
 
   const svc = await createServiceClient();
   const { data: rows } = await svc
-    .from('agent_commissions')
-    .select('commission_amount, status, created_at')
-    .eq('agent_id', user.id)
-    .eq('status', 'paid')
-    .gte('created_at', start)
-    .lt('created_at', end);
+    .from('sub_agent_commission_ledger')
+    .select('commission_amount, status, settled_at')
+    .eq('sub_agent_id', user.id)
+    .eq('status', 'settled')
+    .gte('settled_at', start)
+    .lt('settled_at', end);
 
   const total = (rows ?? []).reduce((s: number, r: any) => s + Number(r.commission_amount ?? 0), 0);
   const totalCents = Math.round(total * 100);
