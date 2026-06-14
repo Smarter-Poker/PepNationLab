@@ -261,8 +261,6 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                   });
               }
             }
-          })
-          .finally(() => {
             setLoading(false);
           });
       } else {

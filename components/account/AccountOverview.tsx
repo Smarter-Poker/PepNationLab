@@ -7,6 +7,7 @@ import AvatarUpload from '@/components/AvatarUpload';
 import ProfileCompletenessRing from './ProfileCompletenessRing';
 import UsernameChangeModal from './UsernameChangeModal';
 import type { AccountProfile } from './AccountClient';
+import { User, Mail, Phone, Clock, Image as ImageIcon, AtSign, AlertCircle } from 'lucide-react';
 
 interface Props {
   userId: string;
@@ -47,6 +48,31 @@ const REQUIRED_FIELDS: Array<keyof AccountProfile> = [
   'timezone',
   'avatar_url',
 ];
+
+// Renders the leading icon for a missing-profile task row. Previously this
+// helper was referenced in the "Complete Your Profile" modal but never
+// defined, throwing a ReferenceError that crashed the modal for any user with
+// an incomplete profile.
+function getIcon(id: string) {
+  const common = { size: 18, 'aria-hidden': true as const, style: { color: 'var(--silver)', flexShrink: 0 } };
+  switch (id) {
+    case 'first-name':
+    case 'last-name':
+      return <User {...common} />;
+    case 'email':
+      return <Mail {...common} />;
+    case 'phone':
+      return <Phone {...common} />;
+    case 'timezone':
+      return <Clock {...common} />;
+    case 'avatar':
+      return <ImageIcon {...common} />;
+    case 'username':
+      return <AtSign {...common} />;
+    default:
+      return <AlertCircle {...common} />;
+  }
+}
 
 function getCompletenessData(p: AccountProfile | null, ap?: any) {
   if (!p) return { percent: 0, missingTasks: [] };
@@ -440,7 +466,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
                             onUploadSuccess={async (url) => {
                               try {
                                 await fetch('/api/agent/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatar_url: url }) });
-                                onProfileChange({ ...profile, avatar_url: url });
+                                onProfileChange({ ...profile, avatar_url: url } as AccountProfile);
                               } catch(err) {}
                               setExpandedTask(null);
                             }}
