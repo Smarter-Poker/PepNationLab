@@ -6,16 +6,16 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { data, error } = await supabase
     .from('researcher_doses')
     .select('*')
-    .eq('user_id', session.user.id)
+    .eq('user_id', user!.id)
     .order('dosed_at', { ascending: false });
 
   if (error) {
@@ -31,9 +31,9 @@ export async function POST(req: NextRequest) {
   if (csrf) return csrf;
 
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase
       .from('researcher_doses')
       .insert({
-        user_id: session.user.id,
+        user_id: user!.id,
         compound_slug,
         dose_amount,
         unit,
@@ -71,9 +71,9 @@ export async function DELETE(req: NextRequest) {
   if (csrf) return csrf;
 
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -88,7 +88,7 @@ export async function DELETE(req: NextRequest) {
       .from('researcher_doses')
       .delete()
       .eq('id', id)
-      .eq('user_id', session.user.id);
+      .eq('user_id', user!.id);
 
     if (error) throw error;
 

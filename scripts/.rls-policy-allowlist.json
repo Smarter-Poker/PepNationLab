@@ -1,11 +1,6 @@
 {
   "_doc": "Allowlist for the RLS policy guard at scripts/check_rls_policies.js. Every entry MUST include a real reason that survives review. The guard fails CI if anything outside this file goes permissive or RLS-off.",
-  "rls_disabled_tables": [
-    {
-      "table": "test_realtime_dummy",
-      "reason": "Throwaway scratch table for verifying realtime broadcast wiring. Holds no real data. Migration 20260604000013_test_dummy.sql."
-    }
-  ],
+  "rls_disabled_tables": [],
   "permissive_policies": [
     {
       "table": "agent_storefront_events",

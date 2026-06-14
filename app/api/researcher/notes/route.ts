@@ -6,9 +6,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from('researcher_notes')
     .select('*')
-    .eq('user_id', session.user.id)
+    .eq('user_id', user!.id)
     .order('updated_at', { ascending: false });
 
   if (compoundSlug) {
@@ -39,9 +39,9 @@ export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase
       .from('researcher_notes')
       .insert({
-        user_id: session.user.id,
+        user_id: user!.id,
         compound_slug,
         title,
         note_text
@@ -76,9 +76,9 @@ export async function PATCH(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -93,7 +93,7 @@ export async function PATCH(req: NextRequest) {
       .from('researcher_notes')
       .update({ title, note_text, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .eq('user_id', session.user.id)
+      .eq('user_id', user!.id)
       .select()
       .single();
 
@@ -110,9 +110,9 @@ export async function DELETE(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -127,7 +127,7 @@ export async function DELETE(req: NextRequest) {
       .from('researcher_notes')
       .delete()
       .eq('id', id)
-      .eq('user_id', session.user.id);
+      .eq('user_id', user!.id);
 
     if (error) throw error;
 

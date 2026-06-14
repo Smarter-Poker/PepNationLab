@@ -10,9 +10,9 @@ export async function POST(req: NextRequest) {
   if (csrf) return csrf;
 
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -69,7 +69,7 @@ Keep it highly professional, structured, and easy to read. Do not use generic AI
     const { data: noteData, error: noteError } = await supabase
       .from('researcher_notes')
       .insert({
-        user_id: session.user.id,
+        user_id: user!.id,
         title: `AI Protocol: ${goal}`,
         note_text: protocolMarkdown
       })

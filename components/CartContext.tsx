@@ -678,7 +678,7 @@ function SmartRecommendationStrip({
       signal: ctrl.signal,
       body: JSON.stringify({ productIds: cart.map(i => i.id) }),
     })
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
       .then((data: { recommendations?: SmartRec[] }) => {
         const filtered = (data.recommendations ?? []).filter(r => !cartIdSet.has(r.id));
         setRecs(filtered.slice(0, 6));

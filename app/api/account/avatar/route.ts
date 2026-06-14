@@ -8,9 +8,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const supabase = await createClient();
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { user } } = await supabase.auth.getUser();
     
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     // Generate unique filename
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-    const filename = `${session.user.id}/avatar-${Date.now()}.${ext}`;
+    const filename = `${user!.id}/avatar-${Date.now()}.${ext}`;
 
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const { error: profileError } = await supabase
       .from('profiles')
       .update({ avatar_url: publicUrl })
-      .eq('id', session.user.id);
+      .eq('id', user!.id);
 
     if (profileError) {
       console.error('Profile update error:', profileError);

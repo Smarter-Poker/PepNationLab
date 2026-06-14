@@ -3,7 +3,8 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export async function POST(req: NextRequest) {
-  assertSameOrigin(req);
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
   try {
     const payload = await req.json();
     if (!payload || !payload.results) {

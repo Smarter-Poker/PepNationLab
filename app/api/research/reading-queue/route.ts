@@ -30,7 +30,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  assertSameOrigin(req);
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
   const { supabase, user } = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   let body: { compound_slug?: string; reference_id?: string };
@@ -56,6 +57,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
   const { supabase, user } = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   let body: { id?: string; read_at?: string | null; position?: number };
@@ -64,13 +67,14 @@ export async function PATCH(req: NextRequest) {
   const patch: Record<string, unknown> = {};
   if ('read_at' in body) patch.read_at = body.read_at;
   if (typeof body.position === 'number') patch.position = body.position;
-  const { error } = await supabase.from('user_reading_queue').update(patch).eq('id', body.id);
+  const { error } = await supabase.from('user_reading_queue').update(patch).eq('id', body.id).eq('user_id', user.id);
   if (error) return safeError('research.reading_queue', error);
   return new NextResponse(null, { status: 204 });
 }
 
 export async function DELETE(req: NextRequest) {
-  assertSameOrigin(req);
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
   const { supabase, user } = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   let body: { id?: string };
