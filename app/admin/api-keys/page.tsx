@@ -15,16 +15,17 @@ export const dynamic = 'force-dynamic';
 
 async function generateKey(formData: FormData) {
   'use server';
-  await requireAdmin();
+  const gate = await requireAdmin();
   const label = String(formData.get('label') ?? '').slice(0, 120).trim() || 'Unnamed Key';
   const plaintext = `pnl_${crypto.randomBytes(24).toString('hex')}`;
   const supabase = createAdminClient();
   await supabase.from('api_keys').insert({
-    label,
+    user_id: gate.userId,
+    name: label,
     key_hash: hashApiKey(plaintext),
     scopes: ['research:read'],
     is_active: true,
-    plaintext_preview: plaintext.slice(0, 12) + '...',
+    key_prefix: plaintext.slice(0, 12) + '...',
   });
   revalidatePath('/admin/api-keys');
   // Hand the one-time plaintext back via a short-lived httpOnly cookie instead
@@ -59,7 +60,7 @@ export default async function ApiKeysPage() {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from('api_keys')
-    .select('id, label, plaintext_preview, scopes, is_active, created_at, revoked_at, last_used_at')
+    .select('id, name, key_prefix, scopes, is_active, created_at, revoked_at, last_used_at')
     .order('created_at', { ascending: false })
     .limit(100);
   // One-time plaintext is delivered via a short-lived httpOnly cookie set by
@@ -112,8 +113,8 @@ export default async function ApiKeysPage() {
           <tbody>
             {(data ?? []).map((k: Record<string, unknown>) => (
               <tr key={String(k.id)} style={{ borderTop: '1px solid #1D2D3E' }}>
-                <td style={{ padding: 12 }}>{String(k.label ?? '')}</td>
-                <td style={{ padding: 12, fontFamily: 'monospace', fontSize: 12 }}>{String(k.plaintext_preview ?? '')}</td>
+                <td style={{ padding: 12 }}>{String(k.name ?? '')}</td>
+                <td style={{ padding: 12, fontFamily: 'monospace', fontSize: 12 }}>{String(k.key_prefix ?? '')}</td>
                 <td style={{ padding: 12, fontSize: 12 }}>{String(k.created_at ?? '').slice(0, 10)}</td>
                 <td style={{ padding: 12, fontSize: 12 }}>{k.last_used_at ? String(k.last_used_at).slice(0, 10) : 'Never'}</td>
                 <td style={{ padding: 12 }}>{k.is_active ? 'Active' : 'Revoked'}</td>
