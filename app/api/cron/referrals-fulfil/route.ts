@@ -19,7 +19,7 @@ export async function GET(req: Request) {
 
     if (error) {
       console.error('[referrals-fulfil] fetch error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to fetch pending referrals' }, { status: 500 });
     }
 
     if (!pendingReferrals || pendingReferrals.length === 0) {
@@ -69,6 +69,6 @@ export async function GET(req: Request) {
     });
   } catch (err) {
     console.error('[referrals-fulfil] unexpected error:', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Unexpected cron error' }, { status: 500 });
   }
 }
