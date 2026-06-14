@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
+import { assertSameOrigin } from '@/lib/csrf';
 
 /**
  * GET /api/agent/agents
@@ -67,6 +68,8 @@ const MAX_CAP_LIMIT = 40;
  */
 export async function POST(req: NextRequest) {
   try {
+    const csrf = assertSameOrigin(req);
+    if (csrf) return csrf;
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
