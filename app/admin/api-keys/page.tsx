@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic';
 async function generateKey(formData: FormData) {
   'use server';
   const gate = await requireAdmin();
+  if (!gate.ok) throw new Error('Unauthorized');
   const label = String(formData.get('label') ?? '').slice(0, 120).trim() || 'Unnamed Key';
   const plaintext = `pnl_${crypto.randomBytes(24).toString('hex')}`;
   const supabase = createAdminClient();

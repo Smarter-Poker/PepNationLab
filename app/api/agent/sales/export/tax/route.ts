@@ -1,10 +1,12 @@
 // Round 24 Sales - Tax-Ready CSV per state.
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { NextRequest } from 'next/server';
+import { safeError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response('unauthorized', { status: 401 });
