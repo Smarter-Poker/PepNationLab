@@ -5,6 +5,7 @@ import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 import { calculateShippingCost, getCarrierName } from '@/lib/shipping';
+import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 
 
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     const {
-      items,
+      items: rawItems,
       shippingAddress,
       fulfillmentMethod,
       shippingOption,
@@ -138,6 +139,25 @@ export async function POST(request: NextRequest) {
         const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders').eq('id', ap.parent_agent_id).single();
         superAgentProfile = sap;
       }
+    }
+
+    // Cart item ids may be agent_product ids (mobile by-name / quick-add path via
+    // CartContext, where the storefront grid is not mounted) or master product ids
+    // (storefront / reorder paths). Every downstream lookup here resolves against
+    // products.id / agent_inventory.product_id / agent_products.product_id, so
+    // translate any agent_product ids to their underlying product_id up front.
+    // Without this, a cart built through the mobile by-name path hard-fails checkout
+    // with "Product ID ... Is No Longer Available".
+    let items = rawItems;
+    {
+      const { inputToProduct } = await resolveCartIdsToProductIds(
+        serviceSupabase,
+        rawItems.map(i => i.id),
+      );
+      items = rawItems.map(i => {
+        const mapped = inputToProduct.get(i.id);
+        return mapped && mapped !== i.id ? { ...i, id: mapped } : i;
+      });
     }
 
     // Retrieve active product definitions matching requested cart item IDs
