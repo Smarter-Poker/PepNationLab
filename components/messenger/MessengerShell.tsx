@@ -5,6 +5,7 @@ import ConversationList from './ConversationList';
 import MessagePane from './MessagePane';
 import SearchBar from './SearchBar';
 import NewConversationDialog from './NewConversationDialog';
+import { SquarePen } from 'lucide-react';
 import { useMessengerStore } from '@/stores/messengerStore';
 import {
   subscribeMyIncomingMessages,
@@ -299,7 +300,41 @@ export default function MessengerShell({ userId }: Props) {
         }}
         className={`messenger-sidebar${activeId ? ' has-active' : ''}`}
       >
-        <SearchBar />
+        <header
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 10px',
+            flexShrink: 0,
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <SearchBar />
+          </div>
+          <button
+            type="button"
+            onClick={handleNewConversation}
+            aria-label="New Message"
+            title="New Message"
+            className="hover-lift"
+            style={{
+              flexShrink: 0,
+              width: 44,
+              height: 44,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 12,
+              border: '1px solid var(--surface-3, #1D2D3E)',
+              background: 'var(--teal, #00C4BC)',
+              color: '#000',
+              cursor: 'pointer',
+            }}
+          >
+            <SquarePen size={20} aria-hidden="true" />
+          </button>
+        </header>
         <ConversationList selfId={userId} />
       </aside>
       <section
