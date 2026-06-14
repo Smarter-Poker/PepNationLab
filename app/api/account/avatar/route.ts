@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { sniffImageMime, ALLOWED_IMAGE_MIME, EXT_BY_MIME } from '@/lib/image-sniff';
+
+const ALLOWED_MIME: readonly string[] = ALLOWED_IMAGE_MIME;
 
 export async function POST(request: NextRequest) {
   const csrf = assertSameOrigin(request);
@@ -9,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { session } } = await supabase.auth.getSession();
-    
+
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -26,21 +29,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File exceeds 5MB limit' }, { status: 400 });
     }
 
-    // Validate mime
-    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+    // Read the bytes once so we can validate by content and reuse for upload.
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+
+    // Validate the declared MIME...
+    if (!ALLOWED_MIME.includes(file.type)) {
       return NextResponse.json({ error: 'Invalid file type. Only JPG, PNG, WEBP, and GIF are allowed.' }, { status: 400 });
     }
 
-    // Generate unique filename
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    // ...and confirm the actual file content matches a supported image format.
+    const sniffed = sniffImageMime(bytes);
+    if (!sniffed) {
+      return NextResponse.json({ error: 'File content is not a valid image.' }, { status: 400 });
+    }
+
+    // Use the sniffed type for the stored extension (source of truth).
+    const ext = EXT_BY_MIME[sniffed] || 'jpg';
     const filename = `${session.user.id}/avatar-${Date.now()}.${ext}`;
 
     // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('avatars')
-      .upload(filename, file, {
+      .upload(filename, bytes, {
         cacheControl: '3600',
-        upsert: true
+        upsert: true,
+        contentType: sniffed,
       });
 
     if (error) {
@@ -62,6 +76,26 @@ export async function POST(request: NextRequest) {
     if (profileError) {
       console.error('Profile update error:', profileError);
       return NextResponse.json({ error: 'Failed to link avatar to profile' }, { status: 500 });
+    }
+
+    // Best-effort cleanup: remove the user's previous avatar files so the
+    // bucket does not accumulate orphans. Never let this fail the request.
+    try {
+      const { data: existing } = await supabase.storage
+        .from('avatars')
+        .list(session.user.id, { limit: 100 });
+
+      if (existing && existing.length > 0) {
+        const newBasename = filename.split('/').pop();
+        const stale = existing
+          .filter((f) => f.name !== newBasename)
+          .map((f) => `${session.user.id}/${f.name}`);
+        if (stale.length > 0) {
+          await supabase.storage.from('avatars').remove(stale);
+        }
+      }
+    } catch (cleanupErr) {
+      console.error('Avatar cleanup (non-fatal):', cleanupErr);
     }
 
     return NextResponse.json({ avatar_url: publicUrl });
