@@ -235,10 +235,10 @@ export async function POST(req: NextRequest) {
         ];
 
         // If the agent has a parent (super agent), notify them too so they can oversee it
-        const { data: agentProf } = await service.from('profiles').select('parent_id').eq('id', order.agent_id).maybeSingle();
-        if (agentProf?.parent_id) {
+        const { data: agentProf } = await service.from('profiles').select('parent_agent_id').eq('id', order.agent_id).maybeSingle();
+        if (agentProf?.parent_agent_id) {
           notificationsToInsert.push({
-            user_id: agentProf.parent_id,
+            user_id: agentProf.parent_agent_id,
             title: 'Sub-Agent Payment Proof Received',
             body: `A researcher for your sub-agent submitted a payment proof for Order #${shortId}.`,
             type: 'system',
