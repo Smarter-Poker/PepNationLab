@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { assertSameOrigin } from '@/lib/csrf';
+import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 
 /**
  * POST /api/cart/recommendations
@@ -93,6 +94,11 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createServiceClient();
 
+  // Cart ids may be agent_product ids (mobile by-name path) or product ids.
+  // Resolve to product ids so compound-stack and co-purchase signals work
+  // regardless of which id convention the cart used.
+  const { productIds: cartProductIds } = await resolveCartIdsToProductIds(supabase, productIds);
+
   // ── 0. Resolve agent_id if provided ─────────────────────────────────────────
   let agentId: string | null = null;
   if (agentSlug) {
@@ -105,14 +111,14 @@ export async function POST(req: NextRequest) {
   const { data: cartProducts } = await supabase
     .from('products')
     .select('id, name, slug, compound_slug, category, is_active, is_banned')
-    .in('id', productIds);
+    .in('id', cartProductIds);
 
   const cartProductMap = new Map<string, { name: string; slug: string | null; compound_slug: string | null; category: string | null }>();
   for (const p of cartProducts ?? []) {
     cartProductMap.set(p.id, p);
   }
 
-  const cartIds = new Set(productIds);
+  const cartIds = new Set(cartProductIds);
   const cartNames = new Set((cartProducts ?? []).map(p => p.name.toLowerCase()));
 
   // Gather compound slugs from cart for stack lookup
@@ -160,7 +166,7 @@ export async function POST(req: NextRequest) {
   // ── 3. Co-purchase matrix (real order history) ────────────────────────────────
   const copurchaseScores = new Map<string, number>(); // product_id → score
 
-  for (const pid of productIds) {
+  for (const pid of cartProductIds) {
     try {
       const { data: pairs } = await supabase.rpc('get_copurchase_recommendations', {
         p_product_id: pid,
