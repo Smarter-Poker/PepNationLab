@@ -118,4 +118,14 @@ html {
   :target {
     scroll-margin-top: 84px;
   }
+
+  /* Icon-only buttons (e.g. the admin "Edit" pencil) were as narrow as ~23px -
+     a thin tap target. Give them a comfortable minimum width. Scoped to
+     buttons whose ONLY child is an icon, and the storefront's intentionally
+     tiny, densely-packed overlay toggles (compare / wishlist) are excluded so
+     the product cards are untouched. :has is ignored by older browsers (no
+     regression). */
+  button:has(> svg:only-child):not([aria-label^="Compare"]):not(.sf-wishlist-btn):not(.sf-compare-btn) {
+    min-width: 36px;
+  }
 }
