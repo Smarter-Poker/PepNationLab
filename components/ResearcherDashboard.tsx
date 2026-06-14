@@ -369,6 +369,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
       if (!item.product_id) return;
       addToCart({
         id: item.product_id,
+        productId: item.product_id,
         name: item.product_name,
         sku: '',
         retailPrice: Number(item.unit_retail_price),
