@@ -17,9 +17,13 @@ export default function ResearchAreaCards() {
     // Re-target across several delays: sections below (trending carousel,
     // ecosystem map, filtered grid + lazy images) finish laying out after the
     // first frame and push the anchor down, so a single early scroll lands short.
-    [120, 450, 900, 1400].forEach((d, i) => {
+    // html { scroll-behavior: smooth } is set globally, which makes scrollIntoView
+    // animate and get interrupted by those layout shifts (it never lands). Use
+    // behavior:'instant' + live offset recompute so the final pass snaps exactly.
+    [120, 450, 900, 1400].forEach((d) => {
       setTimeout(() => {
-        document.getElementById('intelligence-database')?.scrollIntoView({ behavior: i === 0 ? 'smooth' : 'auto', block: 'start' });
+        const el = document.getElementById('intelligence-database');
+        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'instant' as ScrollBehavior });
       }, d);
     });
   };

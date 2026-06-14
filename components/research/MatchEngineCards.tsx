@@ -35,9 +35,15 @@ export default function MatchEngineCards() {
     // images) finish laying out after the first frame and push the anchor down,
     // so a single early scroll lands short.
     router.push(`/research/catalog?area=${filterValue}`, { scroll: false });
-    [120, 450, 900, 1400].forEach((d, i) => {
+    // The page sets html { scroll-behavior: smooth } globally, so scrollIntoView
+    // and scrollTo without an explicit behavior animate smoothly - and on this
+    // lazy-loading page the animation gets interrupted by layout shifts and never
+    // lands. Use behavior:'instant' and recompute the live offset each pass so the
+    // final pass snaps exactly onto the results once layout settles.
+    [120, 450, 900, 1400].forEach((d) => {
       setTimeout(() => {
-        document.getElementById('intelligence-database')?.scrollIntoView({ behavior: i === 0 ? 'smooth' : 'auto', block: 'start' });
+        const el = document.getElementById('intelligence-database');
+        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'instant' as ScrollBehavior });
       }, d);
     });
   };
