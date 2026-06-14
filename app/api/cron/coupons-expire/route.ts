@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { assertCronAuth } from '@/lib/cron';
 import { createServiceClient } from '@/lib/supabase/server';
+import { safeError } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,7 @@ export async function GET(req: Request) {
   const { data, error } = await supabase.rpc('coupons_daily_expiry_sweep');
   if (error) {
     console.error('[cron/coupons-expire] rpc error:', error.message);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return safeError('cron.coupons_expire', error);
   }
   return NextResponse.json({ ok: true, expired: Number(data) || 0 });
 }

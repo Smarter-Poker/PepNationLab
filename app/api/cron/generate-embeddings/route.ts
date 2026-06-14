@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 import { createServiceClient } from '@/lib/supabase/server';
+import { safeError } from '@/lib/api-error';
 import { assertCronAuth } from '@/lib/cron';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,7 @@ export async function GET(req: Request) {
     .limit(100);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeError('cron.embeddings', error);
   }
 
   if (!products || products.length === 0) {

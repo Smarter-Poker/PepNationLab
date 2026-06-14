@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { safeError } from '@/lib/api-error';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -50,6 +51,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Update Payment Method Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return safeError('researcher.update_payment', error);
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { safeError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -35,10 +36,9 @@ export async function POST(req: Request) {
     p_reason: body.reason ?? '',
   });
   if (error) {
-    const status = error.message === 'forbidden' ? 403
-      : error.message === 'unauthorized' ? 401
-      : 400;
-    return NextResponse.json({ error: error.message }, { status });
+    if (error.message === 'forbidden') return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    if (error.message === 'unauthorized') return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    return safeError('agent.freeze', error);
   }
   return NextResponse.json({ ok: true, result: data });
 }
@@ -60,10 +60,9 @@ export async function DELETE(req: Request) {
     p_target_id: body.target_id,
   });
   if (error) {
-    const status = error.message === 'forbidden' ? 403
-      : error.message === 'unauthorized' ? 401
-      : 400;
-    return NextResponse.json({ error: error.message }, { status });
+    if (error.message === 'forbidden') return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    if (error.message === 'unauthorized') return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    return safeError('agent.unfreeze', error);
   }
   return NextResponse.json({ ok: true, result: data });
 }

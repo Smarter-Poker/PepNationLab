@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { safeError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error('[Missed Searches Analytics] Failed to insert', error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      return safeError('analytics.missed_search', error);
     }
 
     return NextResponse.json({ success: true });
