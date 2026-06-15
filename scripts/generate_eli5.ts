@@ -1,20 +1,43 @@
 import * as dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenAI } from '@google/genai';
 
 dotenv.config({ path: '.env.local' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const geminiKey = process.env.GEMINI_API_KEY;
+const grokKey = process.env.GROK_API_KEY;
 
-if (!supabaseUrl || !supabaseKey || !geminiKey) {
-  console.error('Missing required environment variables.');
+if (!supabaseUrl || !supabaseKey || !grokKey) {
+  console.error('Missing required environment variables: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GROK_API_KEY');
   process.exit(1);
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
-const ai = new GoogleGenAI({ apiKey: geminiKey });
+
+async function grokGenerate(prompt: string): Promise<string> {
+  const response = await fetch('https://api.x.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${grokKey}`,
+    },
+    body: JSON.stringify({
+      model: 'grok-3-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.5,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(`Grok API error: ${JSON.stringify(err)}`);
+  }
+
+  const data = await response.json();
+  const text = data.choices?.[0]?.message?.content ?? '';
+  if (!text) throw new Error('Empty response from Grok');
+  return text;
+}
 
 async function run() {
   console.log('Fetching compounds...');
@@ -49,13 +72,7 @@ Keep the bullet points concise but highly educational. Format as a clean markdow
 `;
 
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-      });
-
-      const summary = response.text;
-      if (!summary) throw new Error('Empty response');
+      const summary = await grokGenerate(prompt);
 
       await supabase
         .from('compounds')
@@ -68,7 +85,7 @@ Keep the bullet points concise but highly educational. Format as a clean markdow
     }
     
     // Slight delay to avoid rate limits
-    await new Promise(r => setTimeout(r, 4500));
+    await new Promise(r => setTimeout(r, 1000));
   }
   
   console.log('Done!');

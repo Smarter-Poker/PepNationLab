@@ -1,7 +1,10 @@
 /**
  * Script to generate and populate vector embeddings for all products.
- * Uses Google Gemini gemini-embedding-001 (768-dim) model.
- * Run: node scripts/populate-embeddings.mjs
+ * DEPRECATED: This script requires a Gemini embedding API key (gemini-embedding-001).
+ * The production app now uses keyword search (ts_rank_cd + ILIKE) as the active search backend.
+ * If you re-enable vector search, you'll need a valid GEMINI_API_KEY with billing enabled
+ * or replace this with a different 768-dim embedding provider.
+ * Run: GEMINI_API_KEY=... node scripts/populate-embeddings.mjs
  */
 
 const SUPABASE_URL = 'https://ydsaqnnuwyvtyxgvrnys.supabase.co';

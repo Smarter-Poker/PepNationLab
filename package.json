@@ -16,7 +16,6 @@
     "test-pipeline": "node scratch/simulate-pipeline.js"
   },
   "dependencies": {
-    "@google/genai": "^2.7.0",
     "@livekit/components-react": "^2.6.0",
     "@livekit/components-styles": "^1.1.0",
     "@sentry/nextjs": "^10.0.0",

@@ -24,8 +24,10 @@ export async function POST(req: NextRequest) {
     // Convert Gemini-style request body to OpenAI-compatible format for Grok
     const messages: Array<{ role: string; content: string }> = [];
 
-    if (body.system_instruction?.parts?.[0]?.text) {
-      messages.push({ role: 'system', content: body.system_instruction.parts[0].text });
+    // Handle both camelCase (client sends) and snake_case field names
+    const sysInstruction = body.systemInstruction ?? body.system_instruction;
+    if (sysInstruction?.parts?.[0]?.text) {
+      messages.push({ role: 'system', content: sysInstruction.parts[0].text });
     }
 
     if (Array.isArray(body.contents)) {
