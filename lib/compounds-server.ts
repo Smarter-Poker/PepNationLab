@@ -7,6 +7,21 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { unstable_cache } from 'next/cache';
 import type { Compound } from '@/lib/compounds';
 
+// These research pages are statically prerendered at build. In production the
+// Supabase env vars are present, so they bake in real compound data. On Vercel
+// Preview deployments the env vars (incl. the service-role key, which must NOT
+// be exposed to preview URLs) are absent, so constructing the service client
+// throws "Your project's URL and Key are required" and fails the whole build.
+// This guard lets those pages prerender to an empty index on env-less builds
+// instead of crashing. It NEVER changes production behavior: when the env vars
+// exist (always, in prod build + runtime) the real fetch path runs unchanged.
+function supabaseEnvReady(): boolean {
+  return Boolean(
+    (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim() &&
+      (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
+  );
+}
+
 function coerceCompound(row: Record<string, unknown>): Compound {
   return {
     ...(row as unknown as Compound),
@@ -26,6 +41,7 @@ function coerceCompound(row: Record<string, unknown>): Compound {
 
 export const getAllCompounds = unstable_cache(
   async (): Promise<Compound[]> => {
+    if (!supabaseEnvReady()) return [];
     const supabase = await createServiceClient();
     const { data, error } = await supabase
       .from('compounds')
@@ -50,6 +66,7 @@ export async function getCompoundsBySlugs(
     new Set(slugs.filter((s): s is string => typeof s === 'string' && s.length > 0))
   ).sort(); // sort for stable cache key
   if (unique.length === 0) return {};
+  if (!supabaseEnvReady()) return {};
 
   // Build a per-slug-set cache key so different storefronts with different
   // product lists never share the same cached entry.
@@ -79,6 +96,7 @@ export async function getCompoundsBySlugs(
 
 export const getCompound = unstable_cache(
   async (slug: string): Promise<Compound | null> => {
+    if (!supabaseEnvReady()) return null;
     const supabase = await createServiceClient();
     const { data, error } = await supabase
       .from('compounds')
@@ -94,6 +112,7 @@ export const getCompound = unstable_cache(
 
 export const getCompoundBindings = unstable_cache(
   async (slug: string) => {
+    if (!supabaseEnvReady()) return [];
     const supabase = await createServiceClient();
     const { data } = await supabase
       .from('compound_chembl_bindings')
@@ -108,6 +127,7 @@ export const getCompoundBindings = unstable_cache(
 
 export const getCompoundStructures = unstable_cache(
   async (slug: string) => {
+    if (!supabaseEnvReady()) return [];
     const supabase = await createServiceClient();
     const { data } = await supabase
       .from('compound_pdb_structures')
