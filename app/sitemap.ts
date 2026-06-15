@@ -8,7 +8,6 @@ import { createServiceClient } from '@/lib/supabase/server';
 const BASE = 'https://pepnationlab.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const supabase = await createServiceClient();
   const now = new Date();
 
   const staticPaths: MetadataRoute.Sitemap = [
@@ -41,6 +40,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let compounds: MetadataRoute.Sitemap = [];
   try {
+    // Create the client inside the try so that on Vercel Preview builds (no
+    // Supabase env vars) createServiceClient's throw is caught and we fall back
+    // to the static paths below, instead of crashing the prerender of
+    // /sitemap.xml and failing the whole build. Production always has env, so
+    // the full DB-backed sitemap is generated unchanged.
+    const supabase = await createServiceClient();
     const { data } = await supabase
       .from('compounds')
       .select('slug, updated_at, research_areas')
