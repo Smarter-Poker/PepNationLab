@@ -16,7 +16,7 @@ import { NextResponse, type NextRequest, after } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { parseQuery, buildAutoWildcardTsquery, type ParsedQuery } from '@/lib/research/search-parser';
 import { classifyIntent, type IntentMatch } from '@/lib/research/intent';
-import { GoogleGenAI } from '@google/genai';
+
 
 export const dynamic = 'force-dynamic';
 
@@ -212,38 +212,9 @@ async function performSearch(
     }
   }
 
-  let vectorRows: SearchResultRow[] = [];
-  if (process.env.GEMINI_API_KEY) {
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.embedContent({
-        model: 'gemini-embedding-001',
-        contents: [queryStr],
-      });
-      const queryEmbedding = response.embeddings?.[0]?.values;
-      if (queryEmbedding) {
-        const { data: vectorMatches, error: vecErr } = await supabase.rpc('match_compounds_vector', {
-          query_embedding: queryEmbedding,
-          match_threshold: 0.3,
-          match_limit: limit,
-        });
-        if (!vecErr && vectorMatches && vectorMatches.length > 0) {
-          vectorRows = (vectorMatches as Array<Record<string, unknown>>).map((r) => ({
-            slug: String(r.slug ?? ''),
-            display_name: String(r.display_name ?? ''),
-            evidence_tier: String(r.evidence_tier ?? ''),
-            snippet:
-              String(r.plain_summary ?? '').slice(0, 160) +
-              (String(r.plain_summary ?? '').length > 160 ? '...' : ''),
-            score: typeof r.similarity === 'number' ? r.similarity : Number(r.similarity ?? 0),
-            knowledge_panel_url: `/research/compounds/${String(r.slug ?? '')}`,
-          }));
-        }
-      }
-    } catch (e) {
-      console.error('Semantic search embedding failed:', e);
-    }
-  }
+  // Vector/semantic search is disabled (no embedding provider configured).
+  // Full-text keyword search (ts_rank_cd + trigram fallback) handles all queries.
+  const vectorRows: SearchResultRow[] = [];
 
   let finalRows = rows;
   if (vectorRows.length > 0) {
