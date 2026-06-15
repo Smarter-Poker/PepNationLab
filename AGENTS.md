@@ -54,8 +54,8 @@ calling `buildStepper()` and skips the overwrite automatically. No changes neede
 | `#s1`  | Module 1 — What Is A Peptide? | ✅ Dynamic images (`mod1_pg1–6.png`) |
 | `#s2`  | Module 2 — Building A Peptide | ✅ Dynamic images (`mod2_pg1–6.png`) |
 | `#s3`  | Module 3 | ✅ Dynamic images (`mod3_pg1–6.png`) |
-| `#s4`  | Module 4 | 🔄 JS-SVG |
-| `#s5`  | Module 5 | 🔄 JS-SVG |
+| `#s4`  | Module 4 | ✅ Dynamic images (`mod4_pg1–6.png`) |
+| `#s5`  | Module 5 | ✅ Dynamic images (`mod5_pg1–6.png`) |
 | `#s6`  | Module 6 | 🔄 JS-SVG |
 | `#s7`  | Module 7 | 🔄 JS-SVG |
 | `#s8`  | Module 8 | 🔄 JS-SVG |
