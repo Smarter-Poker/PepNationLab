@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import Head from "next/head";
 
 export default function Peptide101LandingPage() {
   const [completedModules, setCompletedModules] = useState(0);
@@ -79,9 +78,6 @@ export default function Peptide101LandingPage() {
 
   return (
     <div style={{ backgroundColor: '#020617', minHeight: '100vh', display: 'flex', justifyContent: 'center' }}>
-      <Head>
-        <title>Peptide 101 - Research Academy</title>
-      </Head>
       <div style={{ position: 'relative', width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
         <img
           src={`/images/landing-states/state-${landingState}.png`}

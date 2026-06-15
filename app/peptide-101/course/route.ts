@@ -2,12 +2,18 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 export async function GET() {
-  let html = readFileSync(join(process.cwd(), 'public', 'peptide-101.html'), 'utf-8');
+  let html: string;
+  try {
+    html = readFileSync(join(process.cwd(), 'public', 'peptide-101.html'), 'utf-8');
+  } catch (err) {
+    console.error('Failed to read peptide-101.html:', err);
+    return new Response('Course content unavailable', { status: 503 });
+  }
 
   // Cache-bust ALL static course scripts so users always get the latest version.
   const v = Date.now();
-  html = html.replace('peptide-101.app.js', `peptide-101.app.js?v=${v}`);
-  html = html.replace('peptide-101.v4.js',  `peptide-101.v4.js?v=${v}`);
+  html = html.replace(/\/peptide-101\.app\.js/g, `/peptide-101.app.js?v=${v}`);
+  html = html.replace(/\/peptide-101\.v4\.js/g,  `/peptide-101.v4.js?v=${v}`);
 
   // Inject v14 engine (with cache-bust) if not already present in the HTML.
   if (!html.includes('peptide-101.v14.js')) {
@@ -15,7 +21,7 @@ export async function GET() {
     html = html.includes('</body>') ? html.replace('</body>', `${tag}\n</body>`) : html + tag;
   } else {
     // Already present — still bust its cache.
-    html = html.replace(/peptide-101\.v14\.js(\?v=\d+)?/, `peptide-101.v14.js?v=${v}`);
+    html = html.replace(/\/peptide-101\.v14\.js(\?v=\d+)?/g, `/peptide-101.v14.js?v=${v}`);
   }
 
   return new Response(html, {
