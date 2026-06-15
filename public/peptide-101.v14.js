@@ -284,14 +284,20 @@
   };
   window.P101V14 = API;
 
+  // Build stamp baked when v14.js first runs — all mN.js get the same bust token,
+  // ensuring the SW stale-while-revalidate cache never serves a stale module file
+  // after a new deploy (v14.js itself is cache-busted by route.ts on every deploy).
+  var V14_BUILD = Date.now();
+
   function loadModules(){
     var mods=['m2','m3','m4','m5','m6','m7','m8','m9','m10','m11','m12','m13','m14'];
     mods.forEach(function(m){
       if(D.querySelector('script[data-v14m="'+m+'"]')) return;
-      var sc=D.createElement('script'); sc.src='/peptide-101.'+m+'.js'; sc.async=false; sc.setAttribute('data-v14m',m);
+      var sc=D.createElement('script'); sc.src='/peptide-101.'+m+'.js?v='+V14_BUILD; sc.async=false; sc.setAttribute('data-v14m',m);
       D.body.appendChild(sc);
     });
   }
+
 
   /* ---------------- BOOT ---------------- */
   function ready(){ return !!(qs('#s1') && (window.goTo || (window.P101&&P101.go))); }
