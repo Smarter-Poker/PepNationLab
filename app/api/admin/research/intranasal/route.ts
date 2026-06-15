@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 const VALID = new Set(['established', 'emerging', 'not_suitable']);
 
@@ -72,7 +72,17 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   if (!updated || updated.length === 0) return NextResponse.json({ error: 'Compound Not Found' }, { status: 404 });
 
-  try { revalidatePath(`/research/compounds/${slug}`); } catch { /* best-effort cache refresh */ }
+  // Immediately expire the shared 'compounds' cache tag so every public surface
+  // (storefront grid, monograph, compare tools, the intranasal collection page)
+  // reflects the new classification on the next request instead of waiting for
+  // the 60s unstable_cache window. In Next 16 revalidateTag requires a profile
+  // arg; { expire: 0 } is the documented immediate-expiration form for route
+  // handlers. Also refresh the monograph render paths.
+  try {
+    revalidateTag('compounds', { expire: 0 });
+    revalidatePath(`/research/${slug}`);
+    revalidatePath(`/research/compounds/${slug}`);
+  } catch { /* best-effort cache refresh */ }
 
   return NextResponse.json({ success: true });
 }
