@@ -1,9 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { GoogleGenAI } from '@google/genai';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
+
+async function grokGenerate(prompt: string, temperature = 0.7): Promise<string> {
+  const response = await fetch('https://api.x.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.GROK_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'grok-3-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(`Grok API error: ${JSON.stringify(err)}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content ?? '';
+}
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -26,12 +48,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'A research goal is required' }, { status: 400 });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY is missing' }, { status: 500 });
+    if (!process.env.GROK_API_KEY) {
+      return NextResponse.json({ error: 'GROK_API_KEY is missing' }, { status: 500 });
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    
     const prompt = `
 You are an advanced expert in peptide and research compound protocols. 
 The researcher wants a protocol for the following goal: "${goal}"
@@ -58,12 +78,7 @@ Structure the response STRICTLY into two phases:
 Keep it highly professional, structured, and easy to read. Do not use generic AI disclaimers, act as a strict scientific assistant.
 `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
-
-    const protocolMarkdown = response.text || 'Error generating protocol.';
+    const protocolMarkdown = await grokGenerate(prompt) || 'Error generating protocol.';
 
     // Automatically save this as a note
     const { data: noteData, error: noteError } = await supabase

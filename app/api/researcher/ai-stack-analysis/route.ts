@@ -1,34 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { GoogleGenAI, Type } from '@google/genai';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
-
-const RESPONSE_SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    synergyScore: {
-      type: Type.INTEGER,
-      description: "A score from 0 to 100 representing how well these compounds synergize for common research goals. 100 is perfect synergy, 0 is dangerous/counterproductive.",
-    },
-    verdict: {
-      type: Type.STRING,
-      description: "A short 1-3 word verdict. e.g. 'Highly Synergistic', 'Counterproductive', 'Redundant', 'Dangerous'.",
-    },
-    analysis: {
-      type: Type.STRING,
-      description: "A 2-3 sentence pharmacological analysis explaining why these compounds do or do not work well together.",
-    },
-    warnings: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: "List of specific contraindications or safety warnings. Empty array if none.",
-    }
-  },
-  required: ['synergyScore', 'verdict', 'analysis', 'warnings'],
-};
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -47,8 +22,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY is not configured' }, { status: 501 });
+    if (!process.env.GROK_API_KEY) {
+      return NextResponse.json({ error: 'GROK_API_KEY is not configured' }, { status: 501 });
     }
 
     const { slugs } = await req.json();
@@ -71,36 +46,50 @@ export async function POST(req: NextRequest) {
       `Name: ${c.display_name}\nTarget: ${c.molecular_target}\nMechanism: ${c.mechanism}\nSide Effects: ${c.side_effects}`
     ).join('\n---\n');
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    
-    const systemPrompt = `
-You are an expert peptide research pharmacologist. 
-Please analyze the synergy and safety of the following custom compound stack:
+    const systemPrompt = `You are an expert peptide research pharmacologist. 
+Analyze the synergy and safety of the following custom compound stack:
 
 ${compoundContext}
 
 Evaluate whether these compounds act on the same receptors (redundancy), opposing receptors (counterproductive), or complementary pathways (synergy).
-Return your analysis strictly in the requested JSON schema.
-`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: systemPrompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: RESPONSE_SCHEMA,
+Respond with a JSON object with EXACTLY these fields:
+{
+  "synergyScore": <integer 0-100, where 100 is perfect synergy and 0 is dangerous/counterproductive>,
+  "verdict": <short 1-3 word verdict, e.g. "Highly Synergistic", "Counterproductive", "Redundant", "Dangerous">,
+  "analysis": <2-3 sentence pharmacological analysis explaining why these compounds do or do not work well together>,
+  "warnings": <array of strings listing specific contraindications or safety warnings, empty array if none>
+}`;
+
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.GROK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'grok-3-mini',
+        messages: [{ role: 'user', content: systemPrompt }],
         temperature: 0.2,
-      }
+        response_format: { type: 'json_object' },
+      }),
     });
 
-    const text = response.text || '';
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      console.error('Grok API error:', errData);
+      return NextResponse.json({ error: 'Failed to generate stack analysis' }, { status: 500 });
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content ?? '';
     
     try {
       const cleanText = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
       const result = JSON.parse(cleanText);
       return NextResponse.json(result);
     } catch (e) {
-      console.error('Failed to parse JSON', e);
+      console.error('Failed to parse JSON', e, text);
       return NextResponse.json({ error: 'Failed to generate stack analysis' }, { status: 500 });
     }
   } catch (error) {

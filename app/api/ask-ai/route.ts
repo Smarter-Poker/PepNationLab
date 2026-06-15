@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GROK_API_KEY = process.env.GROK_API_KEY;
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -14,23 +14,54 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
-  if (!GEMINI_API_KEY) {
+  if (!GROK_API_KEY) {
     return NextResponse.json({ error: 'AI service not configured' }, { status: 503 });
   }
 
   try {
     const body = await req.json();
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+
+    // Convert Gemini-style request body to OpenAI-compatible format for Grok
+    const messages: Array<{ role: string; content: string }> = [];
+
+    if (body.system_instruction?.parts?.[0]?.text) {
+      messages.push({ role: 'system', content: body.system_instruction.parts[0].text });
+    }
+
+    if (Array.isArray(body.contents)) {
+      for (const turn of body.contents) {
+        const role = turn.role === 'model' ? 'assistant' : (turn.role ?? 'user');
+        const text = Array.isArray(turn.parts) ? turn.parts.map((p: { text?: string }) => p.text ?? '').join('') : '';
+        if (text) messages.push({ role, content: text });
       }
-    );
+    } else if (typeof body.contents === 'string') {
+      messages.push({ role: 'user', content: body.contents });
+    }
+
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${GROK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'grok-3-mini',
+        messages,
+        temperature: 0.7,
+      }),
+    });
 
     const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
+
+    // Return in Gemini-compatible shape so the client doesn't need changes
+    if (!response.ok) {
+      return NextResponse.json(data, { status: response.status });
+    }
+
+    const text = data.choices?.[0]?.message?.content ?? '';
+    return NextResponse.json({
+      candidates: [{ content: { parts: [{ text }], role: 'model' } }],
+    });
   } catch (err) {
     console.error('ask-ai proxy error:', err);
     return NextResponse.json({ error: 'AI request failed' }, { status: 500 });

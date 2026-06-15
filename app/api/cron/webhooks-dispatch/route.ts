@@ -155,7 +155,7 @@ export async function GET(req: Request) {
   await admin.from('cron_runs').insert({
     id: runId,
     job_name: 'webhooks-dispatch',
-    partition_key: startedAt.toISOString().slice(0, 13),
+    partition_key: startedAt.toISOString().slice(0, 16),
     started_at: startedAt.toISOString(),
     status: 'running',
   });
@@ -185,7 +185,7 @@ export async function GET(req: Request) {
         .from('cron_runs')
         .update({
           finished_at: new Date().toISOString(),
-          status: 'ok',
+          status: 'succeeded',
           summary: 'no deliveries due',
         })
         .eq('id', runId);
@@ -280,7 +280,7 @@ export async function GET(req: Request) {
       .from('cron_runs')
       .update({
         finished_at: new Date().toISOString(),
-        status: 'ok',
+        status: 'succeeded',
         summary: `attempted=${attempted} delivered=${delivered} retried=${retried} failed_final=${failedFinal}`,
         notes: errors.length > 0 ? errors.join('; ') : null,
       })

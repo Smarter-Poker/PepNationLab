@@ -1,10 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { GoogleGenAI } from '@google/genai';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
+
+async function grokGenerate(prompt: string): Promise<string> {
+  const response = await fetch('https://api.x.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.GROK_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'grok-3-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.5,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(`Grok API error: ${JSON.stringify(err)}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content ?? '';
+}
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -17,8 +39,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY is not configured' }, { status: 501 });
+    if (!process.env.GROK_API_KEY) {
+      return NextResponse.json({ error: 'GROK_API_KEY is not configured' }, { status: 501 });
     }
 
     const { slug } = await req.json();
@@ -37,8 +59,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Compound not found' }, { status: 404 });
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    
     const prompt = `
 You are an expert scientific communicator tasked with explaining a complex research peptide/compound to a beginner researcher in simple "Explain Like I'm 5" (ELI5) terms.
 
@@ -55,13 +75,7 @@ Please generate exactly 3 bullet points that summarize:
 Keep the bullet points concise but highly educational. Format as a clean markdown list. Do not use generic AI disclaimers.
 `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
-
-    const summary = response.text || 'Failed to generate summary.';
-
+    const summary = await grokGenerate(prompt) || 'Failed to generate summary.';
     return NextResponse.json({ summary });
   } catch (error) {
     console.error('Error generating AI summary:', error);
