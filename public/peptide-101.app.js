@@ -908,6 +908,7 @@ function copyShare() {
     ORDER.forEach(function(id){
       if(id==='s10'||id==='s15'||id==='s1') return;
       var sc=document.getElementById(id); if(!sc) return;
+      if(sc.getAttribute('data-v14')) return;
       var nc=sc.querySelector('.nav-ctrl');
       if(!nc){ nc=el('<div class="nav-ctrl"></div>'); sc.appendChild(nc); }
       nc.innerHTML=navHTML(id);
@@ -946,8 +947,9 @@ function copyShare() {
      INJECT META (hooks, checks, takeaways, lib links, refs) per module
      =================================================================== */
   function injectMeta(id){
-    if (id === 's1') return; // Do not inject old meta into the new image-based Module 1
-    var sc=document.getElementById(id); if(!sc) return; if(sc.getAttribute('data-meta-done')) return; sc.setAttribute('data-meta-done','1'); var m=META[id]||{};
+    var sc=document.getElementById(id); if(!sc) return; 
+    if(sc.getAttribute('data-meta-done') || sc.getAttribute('data-v14')) return; 
+    sc.setAttribute('data-meta-done','1'); var m=META[id]||{};
     var nc=sc.querySelector('.nav-ctrl');
     // why-hook after first h2
     if(m.why){ var h2=sc.querySelector('h2'); var hk=el('<div class="why-hook">'+ic('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')+'<p><strong>Why This Matters:</strong> '+m.why+'</p></div>'); if(h2&&h2.nextSibling) h2.parentNode.insertBefore(hk,h2.nextSibling); else sc.insertBefore(hk,sc.firstChild); }
