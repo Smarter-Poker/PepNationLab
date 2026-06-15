@@ -1753,107 +1753,217 @@
 <!-- =========================================================
      SCREEN 7: STACKING AND PROTOCOLS
      ========================================================= -->
-<div class="screen" id="s7">
-  <div class="badge badge-teal">Module 7 - Stacking And Protocols</div>
-  <h2 style="font-size:28px;margin-bottom:8px;">Stacking And Research Protocols</h2>
-  <p style="margin-bottom:20px;">Stacking Means Using More Than One Peptide At The Same Time. Like Mixing LEGO Colors, Each One Does A Different Job, And Together They Can Work Better Than Either One Alone.</p>
+<div class="screen" id="s7" data-v14="1" style="padding: 0; background: transparent;">
+  <style>
+    #s7 { margin: 0 auto; width: 100%; }
+    @media (max-width: 800px) {
+      #s7 { margin-left: -20px; width: calc(100% + 40px); }
+    }
+    .m7-page { display: none; width: 100%; max-width: 600px; margin: 0 auto; position: relative; }
+    .m7-page.active { display: block; }
+    .m7-img { width: 100%; height: auto; display: block; border-radius: 0; }
+    .m7-btn { position: absolute; cursor: pointer; z-index: 10; border: 2px solid transparent; }
+    
+    .m7-nav-btn { position: absolute; top: 1%; height: 6%; width: 15%; cursor: pointer; z-index: 10; }
+    
+    .m7-opt { position: absolute; left: 5%; width: 90%; height: 4.0%; cursor: pointer; border-radius: 8px; z-index: 10; border: 2px solid transparent; transition: all 0.2s; }
+    .m7-opt.selected { border-color: var(--teal); background: rgba(0, 196, 188, 0.15); }
+    .m7-opt.wrong-opt { border-color: var(--red); background: rgba(239, 68, 68, 0.15); }
+    .m7-opt::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 4.5%;
+      transform: translateY(-50%);
+      height: 38%;
+      aspect-ratio: 1/1;
+      border-radius: 50%;
+      background-color: transparent;
+      transition: background-color 0.2s;
+    }
+    .m7-opt.selected::before { background-color: var(--teal); }
+    .m7-opt.wrong-opt::before { background-color: var(--red); }
+    
+    #m7-toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(150px);
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px 24px; display: flex; align-items: center; gap: 12px; z-index: 99999;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      width: 90%; max-width: 400px;
+    }
+    #m7-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  </style>
 
-  <div class="card">
-    <h3 style="font-size:15px;margin-bottom:16px;">Why Researchers Stack</h3>
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <div style="padding:10px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--teal);">
-        <strong style="font-size:13px;">Complementary Pathways</strong>
-        <p style="font-size:12px;margin-top:4px;">Two Peptides Can Push The Same Goal Through Two Different Doors At Once. Using Both Gives A Bigger Result Than Either One Alone.</p>
-      </div>
-      <div style="padding:10px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--blue-l);">
-        <strong style="font-size:13px;">Sequential Mechanisms</strong>
-        <p style="font-size:12px;margin-top:4px;">One Peptide Works Right Where You Put It, While Another Travels All Over The Body. Together They Cover Both The Spot And The Whole System.</p>
-      </div>
-      <div style="padding:10px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--silver);">
-        <strong style="font-size:13px;">Timing Optimization</strong>
-        <p style="font-size:12px;margin-top:4px;">Some Peptides Are Quick And Are Used Right Before Sleep. Others Last For Days And Are Used Just Once A Week. Timing Them Right Makes A Difference.</p>
-      </div>
+  <!-- PAGE 1 -->
+  <div id="m7p1" class="m7-page active">
+    <img src="/images/course/mod7_pg1.png" class="m7-img" alt="Module 7 Page 1" />
+    <div class="m7-nav-btn" onclick="goM7(1)" style="left:3%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(2)" style="left:21%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(3)" style="left:40%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(4)" style="left:59%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(5)" style="left:78%;"></div>
+    
+    <div class="m7-btn" onclick="goTo(6)" style="left:3%; width:25%; top:94.0%; height:4.5%;"></div>
+    <div class="m7-btn" onclick="goM7(2)" style="left:65%; width:30%; top:94.0%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 2 -->
+  <div id="m7p2" class="m7-page">
+    <img src="/images/course/mod7_pg2.png" class="m7-img" alt="Module 7 Page 2" />
+    <div class="m7-nav-btn" onclick="goM7(1)" style="left:3%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(2)" style="left:21%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(3)" style="left:40%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(4)" style="left:59%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(5)" style="left:78%;"></div>
+    
+    <div class="m7-btn" onclick="goM7(1)" style="left:3%; width:25%; top:94.0%; height:4.5%;"></div>
+    <div class="m7-btn" onclick="goM7(3)" style="left:66%; width:30%; top:94.0%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 3 -->
+  <div id="m7p3" class="m7-page">
+    <img src="/images/course/mod7_pg3.png" class="m7-img" alt="Module 7 Page 3" />
+    <div class="m7-nav-btn" onclick="goM7(1)" style="left:3%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(2)" style="left:21%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(3)" style="left:40%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(4)" style="left:59%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(5)" style="left:78%;"></div>
+    
+    <div class="m7-btn" onclick="goM7(2)" style="left:3%; width:25%; top:94.0%; height:4.5%;"></div>
+    <div class="m7-btn" onclick="goM7(4)" style="left:61%; width:35%; top:94.0%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 4 -->
+  <div id="m7p4" class="m7-page">
+    <img src="/images/course/mod7_pg4.png" class="m7-img" alt="Module 7 Page 4" />
+    <div class="m7-nav-btn" onclick="goM7(1)" style="left:3%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(2)" style="left:21%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(3)" style="left:40%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(4)" style="left:59%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(5)" style="left:78%;"></div>
+    
+    <div class="m7-btn" onclick="goM7(3)" style="left:3%; width:25%; top:94.0%; height:4.5%;"></div>
+    <div class="m7-btn" onclick="goM7(5)" style="left:61%; width:35%; top:94.0%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 5 -->
+  <div id="m7p5" class="m7-page">
+    <img src="/images/course/mod7_pg5.png" class="m7-img" alt="Module 7 Page 5" />
+    <div class="m7-nav-btn" onclick="goM7(1)" style="left:3%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(2)" style="left:21%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(3)" style="left:40%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(4)" style="left:59%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(5)" style="left:78%;"></div>
+    
+    <!-- Question 1: What Does Stacking Mean? (Option 2) -->
+    <div class="m7-opt q1" onclick="checkM7('q1', false, this)" style="top:27.6%;"></div>
+    <div class="m7-opt q1" onclick="checkM7('q1', true, this)" style="top:32.4%;"></div>
+    <div class="m7-opt q1" onclick="checkM7('q1', false, this)" style="top:37.2%;"></div>
+    
+    <!-- Question 2: The Most Common Research Stack Pairs... (Option 2) -->
+    <div class="m7-opt q2" onclick="checkM7('q2', false, this)" style="top:54.4%;"></div>
+    <div class="m7-opt q2" onclick="checkM7('q2', true, this)" style="top:59.2%;"></div>
+    <div class="m7-opt q2" onclick="checkM7('q2', false, this)" style="top:64.0%;"></div>
+    
+    <div class="m7-btn" onclick="goM7(4)" style="left:3%; width:25%; top:93.5%; height:4.5%;"></div>
+    <div class="m7-btn" onclick="tryGoM7Recap()" style="left:57%; width:40%; top:93.5%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 6 -->
+  <div id="m7p6" class="m7-page">
+    <img src="/images/course/mod7_pg6.png" class="m7-img" alt="Module 7 Recap" />
+    <div class="m7-nav-btn" onclick="goM7(1)" style="left:3%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(2)" style="left:21%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(3)" style="left:40%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(4)" style="left:59%;"></div>
+    <div class="m7-nav-btn" onclick="goM7(5)" style="left:78%;"></div>
+    
+    <div class="m7-btn" onclick="openAskAI('Module 7')" style="left:67%; width:30%; top:86.5%; height:5.0%;"></div>
+    
+    <div class="m7-btn" onclick="goM7(5)" style="left:3%; width:25%; top:94.5%; height:4.0%;"></div>
+    <div class="m7-btn" onclick="completeModule('s7'); goTo(8)" style="left:60%; width:37%; top:94.5%; height:4.0%;"></div>
+  </div>
+  
+  <div id="m7-toast">
+    <div id="m7-toast-icon" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"></div>
+    <div>
+      <div id="m7-toast-title" style="font-weight: bold; font-size: 16px; margin-bottom: 4px;"></div>
+      <div id="m7-toast-msg" style="font-size: 14px; color: var(--nk2);"></div>
     </div>
   </div>
 
-  <div class="card">
-    <h3 style="font-size:15px;margin-bottom:16px;text-align:center;">Visual Protocol Diagram</h3>
-    <p style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:16px;">GH Axis Stack: CJC-1295 + Ipamorelin</p>
-    <div style="overflow-x:auto;">
-      <svg width="100%" viewBox="0 0 380 200" xmlns="http://www.w3.org/2000/svg" aria-label="Stacking protocol diagram showing CJC-1295 and Ipamorelin pathways converging on the pituitary to release GH">
-        <rect x="10" y="30" width="110" height="40" rx="8" fill="#162230" stroke="#00C4BC" stroke-width="1.5"/>
-        <text x="65" y="46" fill="#00C4BC" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">GHRH Receptor</text>
-        <text x="65" y="59" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">CJC-1295 Binds Here</text>
-        <rect x="10" y="130" width="110" height="40" rx="8" fill="#162230" stroke="#3B82F6" stroke-width="1.5"/>
-        <text x="65" y="146" fill="#3B82F6" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">GHS-R1a Receptor</text>
-        <text x="65" y="159" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Ipamorelin Binds Here</text>
-        <rect x="140" y="75" width="100" height="50" rx="8" fill="#1D2D3E" stroke="rgba(0,196,188,0.3)" stroke-width="1.5"/>
-        <text x="190" y="97" fill="#FFFFFF" font-size="10" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600">Pituitary</text>
-        <text x="190" y="112" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Somatotroph Cells</text>
-        <path d="M120,50 Q130,50 140,100" fill="none" stroke="#00C4BC" stroke-width="1.5" stroke-dasharray="4,2"/>
-        <polygon points="136,97 144,102 140,106" fill="#00C4BC"/>
-        <path d="M120,150 Q130,150 140,110" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-dasharray="4,2"/>
-        <polygon points="136,113 144,108 140,104" fill="#3B82F6"/>
-        <rect x="260" y="75" width="110" height="50" rx="8" fill="#162230" stroke="rgba(208,218,228,0.4)" stroke-width="1.5"/>
-        <text x="315" y="97" fill="#D0DAE4" font-size="10" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600">GH Release</text>
-        <text x="315" y="112" fill="#A8B4C0" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">Synergistic Pulse</text>
-        <line x1="240" y1="100" x2="258" y2="100" stroke="#D0DAE4" stroke-width="1.5"/>
-        <polygon points="255,96 262,100 255,104" fill="#D0DAE4"/>
-        <rect x="10" y="0" width="110" height="18" rx="4" fill="rgba(0,196,188,0.15)" stroke="rgba(0,196,188,0.3)" stroke-width="1"/>
-        <text x="65" y="13" fill="#00C4BC" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">CJC-1295 (GHRH Analogue)</text>
-        <rect x="10" y="180" width="110" height="18" rx="4" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.3)" stroke-width="1"/>
-        <text x="65" y="193" fill="#60A5FA" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">Ipamorelin (Ghrelin Mimetic)</text>
-        <line x1="65" y1="18" x2="65" y2="30" stroke="rgba(0,196,188,0.5)" stroke-width="1"/>
-        <line x1="65" y1="170" x2="65" y2="180" stroke="rgba(59,130,246,0.5)" stroke-width="1"/>
-      </svg>
-    </div>
-    <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px;">Two Different Locks, One Bigger Result.</p>
-  </div>
+  <script>
+    var m7Correct = { q1: false, q2: false };
 
-  <div class="card">
-    <h3 style="font-size:15px;margin-bottom:16px;">Common Research Protocol Frameworks</h3>
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <div style="padding:12px;background:var(--surface2);border-radius:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <strong style="font-size:14px;">GH Axis Protocol</strong>
-          <span style="font-size:11px;padding:3px 8px;background:rgba(0,196,188,0.1);border-radius:6px;color:var(--teal);">Most Common Stack</span>
-        </div>
-        <div style="display:flex;gap:6px;margin-bottom:8px;">
-          <span style="font-size:12px;padding:4px 10px;background:rgba(0,196,188,0.12);border-radius:6px;color:var(--teal);">CJC-1295 DAC</span>
-          <span style="font-size:14px;color:var(--muted);">+</span>
-          <span style="font-size:12px;padding:4px 10px;background:rgba(59,130,246,0.12);border-radius:6px;color:var(--blue-l);">Ipamorelin</span>
-        </div>
-        <p style="font-size:12px;color:var(--muted);">One Peptide Is Used Once Or Twice A Week. The Other Is Used Each Night Before Sleep. Together They Boost The Body's Natural Nighttime Growth Signal.</p>
-      </div>
-      <div style="padding:12px;background:var(--surface2);border-radius:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <strong style="font-size:14px;">Tissue Research Protocol</strong>
-          <span style="font-size:11px;padding:3px 8px;background:rgba(59,130,246,0.1);border-radius:6px;color:var(--blue-l);">Targeted Stack</span>
-        </div>
-        <div style="display:flex;gap:6px;margin-bottom:8px;">
-          <span style="font-size:12px;padding:4px 10px;background:rgba(0,196,188,0.12);border-radius:6px;color:var(--teal);">BPC-157</span>
-          <span style="font-size:14px;color:var(--muted);">+</span>
-          <span style="font-size:12px;padding:4px 10px;background:rgba(59,130,246,0.12);border-radius:6px;color:var(--blue-l);">TB-500</span>
-        </div>
-        <p style="font-size:12px;color:var(--muted);">One Peptide Works Right At The Sore Spot. The Other Spreads Through The Whole Body. Together They Cover Both The Spot And Everything Around It.</p>
-      </div>
-    </div>
-  </div>
+    function goM7(page) {
+      document.querySelectorAll('.m7-page').forEach(el => el.classList.remove('active'));
+      document.getElementById('m7p' + page).classList.add('active');
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      try { localStorage.setItem("p101_m7_page", page); } catch(e) {}
+    }
 
-  <div class="callout callout-red">
-    <strong style="color:var(--red);">Research Context Only:</strong> Everything Here Describes What Scientists Do In Labs And Studies. None Of It Is Approved Medicine, And It Is Not Advice For People. This Is For Research Only.
-  </div>
+    function tryGoM7Recap() {
+      if (m7Correct.q1 && m7Correct.q2) {
+        goM7(6);
+      } else {
+        showM7Toast(false, 'Answer Both Questions First', 'You must answer both questions correctly to unlock the Recap.');
+      }
+    }
 
-  <div class="nav-ctrl">
-    <button class="btn btn-ghost" onclick="goTo(6)" aria-label="Back">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      Back
-    </button>
-    <button class="btn btn-primary" onclick="goTo(8)" aria-label="Next: Reconstitution Calculator">
-      Next: Reconstitution Calculator
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-    </button>
-  </div>
+    document.addEventListener("DOMContentLoaded", function() {
+      try {
+        var p = localStorage.getItem("p101_m7_page");
+        if (p && p !== '6') {
+          document.querySelectorAll('.m7-page').forEach(el => el.classList.remove('active'));
+          var el = document.getElementById('m7p' + p);
+          if (el) el.classList.add('active');
+        }
+      } catch(e) {}
+    });
+
+    function checkM7(qClass, isCorrect, el) {
+      if (isCorrect) {
+        m7Correct[qClass] = true;
+        document.querySelectorAll('.' + qClass).forEach(btn => {
+          btn.classList.remove('selected', 'wrong-opt');
+        });
+        el.classList.add('selected');
+        
+        if (m7Correct.q1 && m7Correct.q2) {
+          showM7Toast(true, 'Great Job!', 'You got both questions right! You can now move to the recap.');
+        } else {
+          showM7Toast(true, 'Correct!', 'Good job, keep going.');
+        }
+      } else {
+        document.querySelectorAll('.' + qClass).forEach(btn => {
+          btn.classList.remove('selected', 'wrong-opt');
+        });
+        el.classList.add('wrong-opt');
+        showM7Toast(false, 'Not Quite', 'That is incorrect. Try again!');
+        m7Correct[qClass] = false;
+      }
+    }
+
+    function showM7Toast(isSuccess, title, msg) {
+      var toast = document.getElementById('m7-toast');
+      var icon = document.getElementById('m7-toast-icon');
+      document.getElementById('m7-toast-title').innerText = title;
+      document.getElementById('m7-toast-msg').innerText = msg;
+      
+      if (isSuccess) {
+        icon.style.background = 'rgba(16, 185, 129, 0.2)';
+        icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        toast.style.border = '1px solid #10b981';
+      } else {
+        icon.style.background = 'rgba(239, 68, 68, 0.2)';
+        icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+        toast.style.border = '1px solid #ef4444';
+      }
+      
+      toast.classList.add('show');
+      setTimeout(function() { toast.classList.remove('show'); }, 3000);
+    }
+  </script>
 </div>
 
 <!-- =========================================================
