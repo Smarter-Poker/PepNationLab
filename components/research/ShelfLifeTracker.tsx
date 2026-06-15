@@ -46,7 +46,7 @@ export default function ShelfLifeTracker({ compounds }: ShelfLifeTrackerProps) {
     setLoading(true);
     try {
       const res = await fetch('/api/research/shelf-life');
-      const data = (await res.json()) as { logs?: ReconstitutionLog[] };
+      const data = res.ok ? ((await res.json()) as { logs?: ReconstitutionLog[] }) : {};
       setLogs(data.logs ?? []);
     } catch {
       setLogs([]);
