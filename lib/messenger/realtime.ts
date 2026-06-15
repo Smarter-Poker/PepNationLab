@@ -19,6 +19,24 @@ function sb(): ReturnType<typeof createClient> {
   return _client;
 }
 
+// Backward-compatible lazy export. Some client components (e.g. MessagePane)
+// import `supabase` and use it directly (`supabase.channel(...)`). This Proxy
+// preserves that API but defers real client creation to the first property
+// access -- which only happens client-side at runtime -- so simply importing
+// this module (as Navbar -> MessageBell does, even on statically prerendered
+// pages) never constructs a client and never throws when env vars are absent.
+// `new Proxy(...)` itself does NOT call sb(); only a property get does.
+export const supabase: ReturnType<typeof createClient> = new Proxy(
+  {} as ReturnType<typeof createClient>,
+  {
+    get(_target, prop) {
+      const client = sb() as unknown as Record<string | symbol, unknown>;
+      const value = client[prop];
+      return typeof value === 'function' ? (value as (...a: unknown[]) => unknown).bind(client) : value;
+    },
+  },
+);
+
 interface MessageHandlers {
   onInsert?: (m: Message) => void;
   onUpdate?: (m: Message) => void;
