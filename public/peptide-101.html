@@ -381,7 +381,14 @@
 <!-- =========================================================
      SCREEN 1: OVERVIEW
      ========================================================= -->
-<div class="screen" id="s1" style="padding: 0; background: transparent;">
+<!-- =========================================================
+     SCREEN 1: MODULE 1 — WHAT IS A PEPTIDE? (dynamic images)
+     data-v14="1" → same convention as #s2: content is managed
+     HERE in HTML (mod1_pg1–6.png). module1() in v14.js also
+     sets this attribute at runtime as a belt-and-suspenders guard.
+     ========================================================= -->
+<div class="screen" id="s1" data-v14="1" style="padding: 0; background: transparent;">
+
   <style>
     /* Full bleed on mobile, centered max-width on desktop */
     #s1 { margin: 0 auto; width: 100%; }
@@ -486,7 +493,8 @@
     <div class="m1-opt q2" onclick="checkM1('q2', false, this)" style="top:69%;"></div>
 
     <div class="m1-btn" onclick="goM1(4)" style="left:0%; width:35%; top:88%; height:12%;"></div>
-    <div class="m1-btn" onclick="goM1(6)" style="left:62%; width:38%; top:88%; height:12%;"></div>
+    <!-- Gated: only goes to Recap if both quiz questions answered correctly -->
+    <div class="m1-btn" onclick="tryGoM1Recap()" style="left:62%; width:38%; top:88%; height:12%;"></div>
   </div>
 
   <!-- PAGE 6 -->
@@ -499,7 +507,7 @@
     <div class="m1-nav-btn" onclick="goM1(5)" style="left:80%;"></div>
     
     <!-- Ask AI Button -->
-    <div class="m1-btn" onclick="openAskAI()" style="left:62%; width:34%; top:85%; height:6%;"></div>
+    <div class="m1-btn" onclick="openAskAI('Module 1')" style="left:62%; width:34%; top:85%; height:6%;"></div>
     
     <!-- Bottom Nav -->
     <div class="m1-btn" onclick="goM1(5)" style="left:0%; width:35%; top:94%; height:6%;"></div>
@@ -517,6 +525,9 @@
   </div>
 
   <script>
+    // Track which questions were answered correctly
+    var m1Correct = { q1: false, q2: false };
+
     function goM1(page) {
       document.querySelectorAll('.m1-page').forEach(el => el.classList.remove('active'));
       document.getElementById('m1p' + page).classList.add('active');
@@ -524,29 +535,46 @@
       try { localStorage.setItem("p101_m1_page", page); } catch(e) {}
     }
 
-    // Try to restore the page on load
+    // Gated Recap access — both quiz questions must be correct
+    function tryGoM1Recap() {
+      if (m1Correct.q1 && m1Correct.q2) {
+        goM1(6);
+      } else {
+        showM1Toast(false, 'Answer Both Questions First', 'You must answer both questions correctly to unlock the Recap.');
+      }
+    }
+
+    // Try to restore the page on load (never restore directly to Recap — quiz must be re-taken)
     document.addEventListener("DOMContentLoaded", function() {
       try {
-        const p = localStorage.getItem("p101_m1_page");
-        if (p) {
+        var p = localStorage.getItem("p101_m1_page");
+        // Page 6 (Recap) requires passing the quiz — restore to page 5 instead
+        if (p && p !== '6') {
           document.querySelectorAll('.m1-page').forEach(el => el.classList.remove('active'));
-          const el = document.getElementById('m1p' + p);
+          var el = document.getElementById('m1p' + p);
           if (el) el.classList.add('active');
         }
       } catch(e) {}
     });
 
     function checkM1(qClass, isCorrect, el) {
-      // Clear previous in this question
+      // Clear previous selection in this question
       document.querySelectorAll('.' + qClass).forEach(opt => {
         opt.classList.remove('selected', 'wrong-opt');
       });
-      
+
       if (isCorrect) {
         el.classList.add('selected');
-        showM1Toast(true, 'Correct!', 'You selected the right answer.');
+        m1Correct[qClass] = true;
+        // If both now correct, celebrate
+        if (m1Correct.q1 && m1Correct.q2) {
+          showM1Toast(true, 'All Correct! Recap Unlocked', 'Tap Next: Recap to continue.');
+        } else {
+          showM1Toast(true, 'Correct!', 'One more question to go.');
+        }
       } else {
         el.classList.add('wrong-opt');
+        m1Correct[qClass] = false;
         showM1Toast(false, 'Incorrect', 'Review the material and try again.');
       }
     }
@@ -711,7 +739,7 @@
     <div class="m2-nav-btn" onclick="goM2(5)" style="left:80%;"></div>
     
     <!-- Ask AI Button -->
-    <div class="m2-btn" onclick="openAskAI()" style="left:62%; width:34%; top:86%; height:5.5%;"></div>
+    <div class="m2-btn" onclick="openAskAI('Module 2')" style="left:62%; width:34%; top:86%; height:5.5%;"></div>
     
     <!-- Bottom Nav -->
     <div class="m2-btn" onclick="goM2(5)" style="left:0%; width:35%; top:94%; height:6%;"></div>
@@ -1938,12 +1966,41 @@ function courseGo(n, el){
   </style>
 
   <script>
-    let chatHistory = [
-      { role: "user", parts: [{ text: "Hello! I just finished the module. Can you help me review?" }] },
-      { role: "model", parts: [{ text: "Great work completing the module! What questions do you still have about what we just learned?" }] }
-    ];
+    // Initialised fresh each time the modal opens — see openAskAI()
+    let chatHistory = [];
 
-    function openAskAI() {
+    function openAskAI(moduleContext) {
+      // Reset history so Module 1 and Module 2 sessions never bleed together
+      var greeting = moduleContext
+        ? 'Great work on ' + moduleContext + '! What questions do you still have about what we just learned?'
+        : 'Great work completing the module! What questions do you still have about what we just learned?';
+
+      chatHistory = [
+        { role: "user",  parts: [{ text: "Hello! I just finished " + (moduleContext || 'the module') + ". Can you help me review?" }] },
+        { role: "model", parts: [{ text: greeting }] }
+      ];
+
+      // Clear the visible chat history UI and restore the greeting bubble
+      var historyEl = document.getElementById('ai-chat-history');
+      if (historyEl) {
+        historyEl.innerHTML = '';
+        var greetDiv = document.createElement('div');
+        greetDiv.style.cssText = 'display:flex; gap:12px;';
+        greetDiv.innerHTML = [
+          '<div style="width:32px;height:32px;border-radius:50%;background:#0a84ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">',
+          '  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>',
+          '</div>',
+          '<div style="background:rgba(10,132,255,0.15);border:1px solid rgba(10,132,255,0.3);padding:12px 16px;border-radius:12px;border-top-left-radius:2px;font-size:15px;color:#fff;max-width:85%;line-height:1.5;">',
+          greeting,
+          '</div>'
+        ].join('');
+        historyEl.appendChild(greetDiv);
+      }
+
+      // Clear the input
+      var inputEl = document.getElementById('ai-chat-input');
+      if (inputEl) inputEl.value = '';
+
       document.getElementById('ask-ai-modal').style.display = 'flex';
     }
 
