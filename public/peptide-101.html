@@ -846,91 +846,214 @@
 <!-- =========================================================
      SCREEN 3: MECHANISM
      ========================================================= -->
-<div class="screen" id="s3">
-  <div class="badge badge-teal">Module 3 - How Peptides Work</div>
-  <h2 style="font-size:28px;margin-bottom:8px;">The Lock And Key</h2>
-  <p style="margin-bottom:20px;">Peptides Work Like Keys. Your Cells Have Tiny Locks On Them. Each Peptide Is Shaped To Fit One Special Lock. When The Right Key Slides In, The Door Opens And Something Happens Inside The Cell. Scientists Call That Lock A Receptor.</p>
+<div class="screen" id="s3" data-v14="1" style="padding: 0; background: transparent;">
+  <style>
+    /* Full bleed on mobile, centered max-width on desktop */
+    #s3 { margin: 0 auto; width: 100%; }
+    @media (max-width: 800px) {
+      #s3 { margin-left: -20px; width: calc(100% + 40px); }
+    }
+    .m3-page { display: none; width: 100%; max-width: 600px; margin: 0 auto; position: relative; }
+    .m3-page.active { display: block; }
+    .m3-img { width: 100%; height: auto; display: block; border-radius: 0; }
+    .m3-btn { position: absolute; cursor: pointer; z-index: 10; border: 2px solid transparent; }
+    
+    /* Top Progress Nav */
+    .m3-nav-btn { position: absolute; top: 1%; height: 6%; width: 15%; cursor: pointer; z-index: 10; }
+    
+    /* Option buttons for page 5 */
+    .m3-opt { position: absolute; left: 5%; width: 44%; height: 4.5%; cursor: pointer; border-radius: 8px; z-index: 10; border: 2px solid transparent; transition: all 0.2s; }
+    .m3-opt.selected { border-color: var(--teal); background: rgba(0, 196, 188, 0.15); }
+    .m3-opt.wrong-opt { border-color: var(--red); background: rgba(239, 68, 68, 0.15); }
+    
+    /* Toast popup for Module 3 */
+    #m3-toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(150px);
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px 24px; display: flex; align-items: center; gap: 12px; z-index: 99999;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      width: 90%; max-width: 400px;
+    }
+    #m3-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  </style>
 
-  <div class="card">
-    <h3 style="font-size:15px;margin-bottom:16px;text-align:center;">Interactive Demo: Binding A Peptide To Its Receptor</h3>
-    <div class="lk-arena" id="lkArena">
-      <div>
-        <div class="lk-receptor" id="lkReceptor" aria-label="Receptor Site">
-          <div style="text-align:center;padding:8px;">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <div style="font-size:10px;margin-top:4px;">Receptor</div>
-          </div>
-        </div>
-        <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px;">Cell Surface</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;" id="lkInstr">Tap The Peptide To Try Binding</div>
-        <div class="lk-peptide" id="lkPeptide" onclick="bindPeptide()" role="button" tabindex="0" aria-label="Peptide - tap to bind" onkeydown="if(event.key==='Enter'||event.key===' ')bindPeptide()">
-          <div style="text-align:center;font-size:9px;line-height:1.3;">BPC<br>157</div>
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Peptide</div>
-      </div>
-      <div style="text-align:center;max-width:140px;">
-        <div style="font-size:13px;color:var(--muted);" id="lkEffect">Drag The Peptide Onto The Receptor To See What Happens</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;">
-      <button class="btn btn-secondary" style="font-size:13px;padding:8px 16px;min-height:40px;" onclick="resetBinding()" aria-label="Reset Demo">Reset</button>
+  <!-- PAGE 1 -->
+  <div id="m3p1" class="m3-page active">
+    <img src="/images/course/mod3_pg1.png" class="m3-img" alt="Module 3 Page 1" />
+    <div class="m3-nav-btn" onclick="goM3(1)" style="left:3%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(2)" style="left:21%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(3)" style="left:40%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(4)" style="left:59%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(5)" style="left:78%;"></div>
+    
+    <!-- Bottom Nav -->
+    <div class="m3-btn" onclick="goTo(2)" style="left:3%; width:25%; top:93%; height:6%;"></div>
+    <div class="m3-btn" onclick="goM3(2)" style="left:65%; width:30%; top:93%; height:6%;"></div>
+  </div>
+
+  <!-- PAGE 2 -->
+  <div id="m3p2" class="m3-page">
+    <img src="/images/course/mod3_pg2.png" class="m3-img" alt="Module 3 Page 2" />
+    <div class="m3-nav-btn" onclick="goM3(1)" style="left:3%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(2)" style="left:21%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(3)" style="left:40%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(4)" style="left:59%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(5)" style="left:78%;"></div>
+    
+    <div class="m3-btn" onclick="goM3(1)" style="left:3%; width:25%; top:93%; height:6%;"></div>
+    <div class="m3-btn" onclick="goM3(3)" style="left:65%; width:30%; top:93%; height:6%;"></div>
+  </div>
+
+  <!-- PAGE 3 -->
+  <div id="m3p3" class="m3-page">
+    <img src="/images/course/mod3_pg3.png" class="m3-img" alt="Module 3 Page 3" />
+    <div class="m3-nav-btn" onclick="goM3(1)" style="left:3%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(2)" style="left:21%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(3)" style="left:40%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(4)" style="left:59%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(5)" style="left:78%;"></div>
+    
+    <div class="m3-btn" onclick="goM3(2)" style="left:3%; width:25%; top:94.5%; height:4.5%;"></div>
+    <div class="m3-btn" onclick="goM3(4)" style="left:65%; width:30%; top:94.5%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 4 -->
+  <div id="m3p4" class="m3-page">
+    <img src="/images/course/mod3_pg4.png" class="m3-img" alt="Module 3 Page 4" />
+    <div class="m3-nav-btn" onclick="goM3(1)" style="left:3%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(2)" style="left:21%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(3)" style="left:40%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(4)" style="left:59%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(5)" style="left:78%;"></div>
+    
+    <div class="m3-btn" onclick="goM3(3)" style="left:3%; width:25%; top:93%; height:6%;"></div>
+    <div class="m3-btn" onclick="goM3(5)" style="left:65%; width:30%; top:93%; height:6%;"></div>
+  </div>
+
+  <!-- PAGE 5 -->
+  <div id="m3p5" class="m3-page">
+    <img src="/images/course/mod3_pg5.png" class="m3-img" alt="Module 3 Page 5" />
+    <div class="m3-nav-btn" onclick="goM3(1)" style="left:3%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(2)" style="left:21%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(3)" style="left:40%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(4)" style="left:59%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(5)" style="left:78%;"></div>
+    
+    <!-- Question 1 -->
+    <div class="m3-opt q1" onclick="checkM3('q1', false, this)" style="top:28%;"></div>
+    <div class="m3-opt q1" onclick="checkM3('q1', true, this)" style="top:33.5%;"></div>
+    <div class="m3-opt q1" onclick="checkM3('q1', false, this)" style="top:39%;"></div>
+    
+    <!-- Question 2 -->
+    <div class="m3-opt q2" onclick="checkM3('q2', true, this)" style="top:52.5%;"></div>
+    <div class="m3-opt q2" onclick="checkM3('q2', false, this)" style="top:58%;"></div>
+    <div class="m3-opt q2" onclick="checkM3('q2', false, this)" style="top:63.5%;"></div>
+    
+    <div class="m3-btn" onclick="goM3(4)" style="left:3%; width:25%; top:94.5%; height:4.5%;"></div>
+    <div class="m3-btn" onclick="tryGoM3Recap()" style="left:65%; width:30%; top:94.5%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 6 -->
+  <div id="m3p6" class="m3-page">
+    <img src="/images/course/mod3_pg6.png" class="m3-img" alt="Module 3 Recap" />
+    <div class="m3-nav-btn" onclick="goM3(1)" style="left:3%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(2)" style="left:21%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(3)" style="left:40%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(4)" style="left:59%;"></div>
+    <div class="m3-nav-btn" onclick="goM3(5)" style="left:78%;"></div>
+    
+    <div class="m3-btn" onclick="openAskAI('Module 3')" style="left:63%; width:33%; top:89%; height:5.5%;"></div>
+    
+    <div class="m3-btn" onclick="goM3(5)" style="left:3%; width:25%; top:96%; height:4%;"></div>
+    <div class="m3-btn" onclick="completeModule('s3'); goTo(4)" style="left:63%; width:33%; top:96%; height:4%;"></div>
+  </div>
+  
+  <div id="m3-toast">
+    <div id="m3-toast-icon" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"></div>
+    <div>
+      <div id="m3-toast-title" style="font-weight: bold; font-size: 16px; margin-bottom: 4px;"></div>
+      <div id="m3-toast-msg" style="font-size: 14px; color: var(--nk2);"></div>
     </div>
   </div>
 
-  <div class="card">
-    <h3 style="font-size:15px;margin-bottom:12px;">What Happens After Binding?</h3>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
-        <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">1</div>
-        <p style="font-size:13px;margin:0;">The Peptide Key Slides Into Its Matching Lock</p>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
-        <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">2</div>
-        <p style="font-size:13px;margin:0;">The Lock Changes Shape And Opens</p>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
-        <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">3</div>
-        <p style="font-size:13px;margin:0;">A Signal Travels Inside The Cell</p>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px;">
-        <div style="width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:12px;flex-shrink:0;">4</div>
-        <p style="font-size:13px;margin:0;">The Cell Does Something New</p>
-      </div>
-    </div>
-  </div>
+  <script>
+    var m3Correct = { q1: false, q2: false };
 
-  <div class="card">
-    <strong style="font-size:15px;">Module 3 Quiz</strong>
-    <p style="font-size:14px;margin:10px 0;">A Peptide Can Only Work If...</p>
-    <div class="quiz-opts" role="group" aria-label="Quiz Options">
-      <button class="quiz-opt" onclick="quiz('q3',this,false)" aria-label="Option: It is very large">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-        It Is Very Large
-      </button>
-      <button class="quiz-opt" onclick="quiz('q3',this,true)" aria-label="Option: Its shape matches the receptor">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-        Its Shape Matches The Lock
-      </button>
-      <button class="quiz-opt" onclick="quiz('q3',this,false)" aria-label="Option: It has a positive charge">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-        It Is A Certain Color
-      </button>
-    </div>
-    <div class="quiz-fb" id="q3-fb"></div>
-  </div>
+    function goM3(page) {
+      document.querySelectorAll('.m3-page').forEach(el => el.classList.remove('active'));
+      document.getElementById('m3p' + page).classList.add('active');
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      try { localStorage.setItem("p101_m3_page", page); } catch(e) {}
+    }
 
-  <div class="nav-ctrl">
-    <button class="btn btn-ghost" onclick="goTo(2)" aria-label="Back">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      Back
-    </button>
-    <button class="btn btn-primary" onclick="goTo(4)" aria-label="Next: Use Cases">
-      Next: Use Cases
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-    </button>
-  </div>
+    function tryGoM3Recap() {
+      if (m3Correct.q1 && m3Correct.q2) {
+        goM3(6);
+      } else {
+        showM3Toast(false, 'Answer Both Questions First', 'You must answer both questions correctly to unlock the Recap.');
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      try {
+        var p = localStorage.getItem("p101_m3_page");
+        if (p && p !== '6') {
+          document.querySelectorAll('.m3-page').forEach(el => el.classList.remove('active'));
+          var el = document.getElementById('m3p' + p);
+          if (el) el.classList.add('active');
+        }
+      } catch(e) {}
+    });
+
+    function checkM3(qClass, isCorrect, el) {
+      document.querySelectorAll('#m3p5 .' + qClass).forEach(opt => {
+        opt.classList.remove('selected', 'wrong-opt');
+      });
+
+      if (isCorrect) {
+        el.classList.add('selected');
+        m3Correct[qClass] = true;
+        if (m3Correct.q1 && m3Correct.q2) {
+          showM3Toast(true, 'All Correct! Recap Unlocked', 'Tap Next: Recap to continue.');
+        } else {
+          showM3Toast(true, 'Correct!', 'One more question to go.');
+        }
+      } else {
+        el.classList.add('wrong-opt');
+        m3Correct[qClass] = false;
+        showM3Toast(false, 'Incorrect', 'Review the material and try again.');
+      }
+    }
+
+    let m3ToastTimer;
+    function showM3Toast(isCorrect, title, msg) {
+      const toast = document.getElementById('m3-toast');
+      const icon = document.getElementById('m3-toast-icon');
+      const titleEl = document.getElementById('m3-toast-title');
+      const msgEl = document.getElementById('m3-toast-msg');
+
+      if (isCorrect) {
+        toast.style.borderColor = 'rgba(0, 196, 188, 0.5)';
+        icon.style.background = 'var(--teal)';
+        icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+        titleEl.style.color = 'var(--teal)';
+      } else {
+        toast.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+        icon.style.background = 'var(--red)';
+        icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        titleEl.style.color = 'var(--red)';
+      }
+
+      titleEl.textContent = title;
+      msgEl.textContent = msg;
+
+      toast.classList.add('show');
+      clearTimeout(m3ToastTimer);
+      m3ToastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+  </script>
 </div>
 
 <!-- =========================================================

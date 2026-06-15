@@ -590,7 +590,14 @@ function renderGlossary(terms) {
     // Calculate the index in the original array based on the term name
     const originalIndex = glossaryTerms.findIndex(item => item.term === t.term);
     
-    div.innerHTML = `<img src="/images/redesign/glossary_card_${originalIndex}.png" alt="${t.term}" style="width: 100%; display: block;" />`;
+    if (originalIndex < 27) {
+      div.innerHTML = `<img src="/images/redesign/glossary_card_${originalIndex}.png" alt="${t.term}" style="width: 100%; display: block;" />`;
+    } else {
+      div.innerHTML = `<div style="padding: 16px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; margin-bottom: 12px; text-align: left;">
+        <div style="font-size: 16px; font-weight: 700; color: #2de0d8; margin-bottom: 6px;">${t.term}</div>
+        <div style="font-size: 14px; color: #cdd9e6; line-height: 1.5;">${t.def}</div>
+      </div>`;
+    }
     list.appendChild(div);
   });
 }
@@ -623,12 +630,7 @@ function copyShare() {
 // =====================================================
 // BOOT
 // =====================================================
-document.addEventListener("DOMContentLoaded", function() {
-  goTo(0);
-  calcRecon();
-  renderDoseTable();
-  loadProgress();
-});
+// Old DOMContentLoaded boot removed (v3 init handles routing and state restoration safely)
 
 
 /* =====================================================================
