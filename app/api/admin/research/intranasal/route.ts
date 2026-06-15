@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 
 const VALID = new Set(['established', 'emerging', 'not_suitable']);
 
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   if (!updated || updated.length === 0) return NextResponse.json({ error: 'Compound Not Found' }, { status: 404 });
 
-  try { revalidateTag('compound-' + slug); } catch { /* best-effort cache refresh */ }
+  try { revalidatePath(`/research/compounds/${slug}`); } catch { /* best-effort cache refresh */ }
 
   return NextResponse.json({ success: true });
 }

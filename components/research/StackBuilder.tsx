@@ -263,8 +263,8 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
     toast.success('Generated Empty 12-Week Protocol Grid');
   };
 
-  // Refine protocol via Gemini AI API
-  const handleRefineWithGemini = async () => {
+  // Refine protocol via AI API
+  const handleRefineWithAI = async () => {
     if (selectedCompounds.length === 0) return;
     setGeneratingProtocol(true);
     
@@ -291,7 +291,7 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
       if (protocol.length === 0) {
         handleGenerateDefaultProtocol();
       }
-      toast.success('Gemini AI Protocol Schedule Appended Below');
+      toast.success('AI Protocol Schedule Appended Below');
     } catch {
       toast.error('Connection issue with AI endpoint.');
       if (protocol.length === 0) handleGenerateDefaultProtocol();
@@ -803,12 +803,12 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
                   <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                     <button 
                       type="button" 
-                      onClick={handleRefineWithGemini}
+                      onClick={handleRefineWithAI}
                       disabled={generatingProtocol}
                       style={{ background: 'linear-gradient(135deg, #00E5FF 0%, #0088ff 100%)', color: '#000', border: 'none', padding: '14px 24px', borderRadius: 12, fontSize: '0.9rem', fontWeight: 800, cursor: generatingProtocol ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 24px rgba(0,229,255,0.4)', transition: 'all 0.2s ease-in-out' }}
                     >
                       <RefreshCw size={18} className={generatingProtocol ? 'animate-spin' : ''} />
-                      {generatingProtocol ? 'Analyzing via AI...' : 'Generate Protocol with Gemini AI'}
+                      {generatingProtocol ? 'Analyzing via AI...' : 'Generate AI Protocol'}
                     </button>
                     <button 
                       type="button" 
@@ -1014,13 +1014,13 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
                 </div>
               )}
 
-              {/* Gemini AI raw schedule text box */}
+              {/* AI clinical evaluation raw schedule text box */}
               {aiProtocolText && (
                 <div className="glass-panel" style={{ marginTop: 24, padding: 24, border: '1px solid rgba(0,229,255,0.3)', background: 'linear-gradient(135deg, rgba(0,229,255,0.05) 0%, rgba(0,0,0,0.4) 100%)', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg, #00E5FF, #68D391)' }} />
                   <h4 style={{ margin: '0 0 16px', color: '#00E5FF', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 800 }}>
                     <Info size={18} />
-                    Gemini AI Clinical Evaluation & Protocol Synergy Review
+                    AI Clinical Evaluation & Protocol Synergy Review
                   </h4>
                   <div style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '0.85rem', color: '#D0DAE4', background: 'rgba(0,0,0,0.4)', padding: 16, borderRadius: 8, border: '1px inset rgba(255,255,255,0.05)' }}>
                     {aiProtocolText}

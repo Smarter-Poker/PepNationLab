@@ -9,6 +9,8 @@ import { NextResponse } from 'next/server';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { buildResearchSearchDocs } from '@/lib/research-search-docs';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const compounds = await getAllCompounds();

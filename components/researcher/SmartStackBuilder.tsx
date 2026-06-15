@@ -182,7 +182,7 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
                         opacity: (isAnalyzing || selectedItems.length < 2) ? 0.5 : 1
                       }}
                     >
-                      {isAnalyzing ? 'Analyzing Synergy...' : selectedItems.length < 2 ? 'Add 2+ items to analyze' : 'Analyze with Gemini AI'}
+                      {isAnalyzing ? 'Analyzing Synergy...' : selectedItems.length < 2 ? 'Add 2+ items to analyze' : 'Analyze with AI'}
                     </button>
                   ) : (
                     <>
