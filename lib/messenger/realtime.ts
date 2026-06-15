@@ -4,7 +4,20 @@ import type { Message, Reaction, Participant } from './types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { playPopSound, vibrateMedium } from '@/lib/messenger/haptics';
 
-export const supabase = createClient();
+// Lazy singleton. Previously this module created the Supabase browser client at
+// module-eval time (`export const supabase = createClient()`). Because Navbar ->
+// MessageBell imports this module, that top-level call executed during the SSR
+// prerender of EVERY page that renders the Navbar (e.g. the static /compliance
+// legal page). With the public Supabase env vars absent -- exactly the case on
+// Vercel Preview deployments -- createBrowserClient throws "URL and API key are
+// required", failing the whole build. Deferring creation to first actual use
+// (always client-side, where the env vars exist) keeps realtime working while
+// letting the page prerender cleanly without the env vars.
+let _client: ReturnType<typeof createClient> | null = null;
+function sb(): ReturnType<typeof createClient> {
+  if (!_client) _client = createClient();
+  return _client;
+}
 
 interface MessageHandlers {
   onInsert?: (m: Message) => void;
@@ -21,7 +34,7 @@ export function subscribeMessages(
   selfId: string,
 ): { channel: RealtimeChannel; broadcastNewMessage: (m: Message) => void } {
   console.log('[REALTIME] subscribeMessages called for conv:', conversationId);
-  const ch = supabase.channel(`conversation:${conversationId}`);
+  const ch = sb().channel(`conversation:${conversationId}`);
 
   ch.on(
     'postgres_changes',
@@ -131,7 +144,7 @@ export function subscribeTyping(
   selfId: string,
   onEvent: (e: TypingEvent) => void,
 ): { channel: RealtimeChannel; broadcast: (isTyping: boolean) => void } {
-  const ch = supabase.channel(`typing:${conversationId}`, {
+  const ch = sb().channel(`typing:${conversationId}`, {
     config: { broadcast: { ack: false, self: false } },
   });
   ch.on('broadcast', { event: 'typing' }, (payload) => {
@@ -158,7 +171,7 @@ export function subscribePresence(
   selfId: string,
   onSync: (states: PresenceState[]) => void,
 ): RealtimeChannel {
-  const ch = supabase.channel(`mp_pres:${conversationId}`, {
+  const ch = sb().channel(`mp_pres:${conversationId}`, {
     config: { presence: { key: selfId } },
   });
   ch.on('presence', { event: 'sync' }, () => {
@@ -205,7 +218,7 @@ export function subscribeCallSignals(userId: string, handlers: CallSignalHandler
   // HOTFIX fix-38: public channel (reverted from `private: true`).
   // The B8 realtime.messages policies have been dropped; a private
   // channel would now fail subscribe because no policy matches.
-  const ch = supabase.channel(`call-signal:${userId}`);
+  const ch = sb().channel(`call-signal:${userId}`);
 
   ch.on('broadcast', { event: 'incoming_call' }, (payload) => {
     console.log('[REALTIME] received incoming_call broadcast:', payload);
@@ -292,7 +305,7 @@ function scheduleSweep() {
     const now = Date.now();
     for (const [key, entry] of channelPool.entries()) {
       if (now - entry.lastUsed > CHANNEL_POOL_IDLE_MS) {
-        try { void supabase.removeChannel(entry.channel); } catch {}
+        try { void sb().removeChannel(entry.channel); } catch {}
         channelPool.delete(key);
       }
     }
@@ -313,7 +326,7 @@ function evictIfFull() {
   if (oldestKey) {
     const e = channelPool.get(oldestKey);
     if (e) {
-      try { void supabase.removeChannel(e.channel); } catch {}
+      try { void sb().removeChannel(e.channel); } catch {}
       channelPool.delete(oldestKey);
     }
   }
@@ -327,7 +340,7 @@ function getOrCreateChannel(targetUserId: string): PoolEntry {
   }
   evictIfFull();
   // HOTFIX fix-38: public channel.
-  const channel = supabase.channel(`call-signal:${targetUserId}`);
+  const channel = sb().channel(`call-signal:${targetUserId}`);
   const subscribed = new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error('Channel subscription timeout')), 5000);
     channel.subscribe((status) => {
@@ -357,7 +370,7 @@ export async function broadcastCallSignal(
     try {
       await entry.subscribed;
     } catch (subErr) {
-      try { void supabase.removeChannel(entry.channel); } catch {}
+      try { void sb().removeChannel(entry.channel); } catch {}
       channelPool.delete(targetUserId);
       throw subErr;
     }
@@ -388,7 +401,7 @@ export function subscribeMyParticipants(
   userId: string,
   onChange: MyParticipantsHandler,
 ): RealtimeChannel {
-  const ch = supabase.channel(`user_unread:${userId}`);
+  const ch = sb().channel(`user_unread:${userId}`);
   ch.on(
     'postgres_changes',
     {
@@ -436,7 +449,7 @@ export function subscribeMyIncomingMessages(
   onInsert: (m: IncomingMessageNotification) => void,
   allowConversationIds?: Set<string>,
 ): RealtimeChannel {
-  const ch = supabase.channel(`user_notify:${userId}`);
+  const ch = sb().channel(`user_notify:${userId}`);
   ch.on('broadcast', { event: 'new_message_notify' }, (payload) => {
     const m = payload.payload?.message as IncomingMessageNotification & { sender_id: string };
     if (!m) return;
@@ -454,5 +467,5 @@ export function subscribeMyIncomingMessages(
 
 export function unsubscribe(ch: RealtimeChannel | null) {
   if (!ch) return;
-  void supabase.removeChannel(ch);
+  void sb().removeChannel(ch);
 }
