@@ -1360,13 +1360,7 @@ export default function DiscoveryHero({
       const data = await res.json().catch(() => null);
       
       if (data?.result) {
-        if (data.result.followUpQuestion) {
-          setFollowUp({ question: data.result.followUpQuestion, originalGoal: g });
-          setLoading(false);
-          // Wait for user to answer
-        } else {
-          await runMatch(data.result, g);
-        }
+        await runMatch(data.result, g);
       } else {
         setDrawerOpen(false);
         setLoading(false);
