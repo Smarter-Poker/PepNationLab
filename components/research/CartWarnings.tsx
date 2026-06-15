@@ -46,7 +46,7 @@ export default function CartWarnings({ slugs, productIds }: CartWarningsProps) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ slugs: uniqueSlugs, productIds: uniqueProductIds }),
         });
-        const data = (await res.json()) as { warnings?: CartWarning[] };
+        const data = res.ok ? ((await res.json()) as { warnings?: CartWarning[] }) : {};
         if (!cancelled) setWarnings(data.warnings ?? []);
       } catch {
         if (!cancelled) setWarnings([]);

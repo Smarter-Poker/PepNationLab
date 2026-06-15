@@ -43,7 +43,10 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     year,
-    payer: { name: 'Pep Nation Lab', tin: 'XX-XXXXXXX' },
+    payer: {
+      name: process.env.PAYER_LEGAL_NAME ?? 'Pep Nation Lab',
+      tin: process.env.PAYER_EIN ?? 'XX-XXXXXXX',
+    },
     recipient: {
       name: profile?.full_name ?? profile?.username ?? '',
       email: profile?.email ?? '',

@@ -1,6 +1,6 @@
 // R24 phase 6 - AI Weekly Summary.
 // Compares this week vs last and produces a 2-sentence narrative.
-// Uses Anthropic Claude API if ANTHROPIC_API_KEY is set; otherwise returns a
+// Uses Grok (xAI) if GROK_API_KEY is set; otherwise returns a
 // deterministic rule-based summary so the feature still ships without keys.
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -41,19 +41,18 @@ export async function GET() {
     summary = `Revenue is down ${Math.abs(revDelta).toFixed(1)}% week-over-week (${money(Number(c.revenue_cents))} vs ${money(Number(p.revenue_cents))}). Orders ${c.orders_count} vs ${p.orders_count} - worth investigating which products softened.`;
   }
 
-  // If ANTHROPIC_API_KEY is set, upgrade to a real narrative.
-  const key = process.env.ANTHROPIC_API_KEY;
+  // If GROK_API_KEY is set, upgrade to a real AI narrative.
+  const key = process.env.GROK_API_KEY;
   if (key) {
     try {
-      const ai = await fetch('https://api.anthropic.com/v1/messages', {
+      const ai = await fetch('https://api.x.ai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'x-api-key': key,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-3-5-haiku-20241022',
+          model: 'grok-3-mini',
           max_tokens: 200,
           messages: [{
             role: 'user',
@@ -63,7 +62,7 @@ export async function GET() {
       });
       if (ai.ok) {
         const j = await ai.json();
-        const text = j?.content?.[0]?.text;
+        const text = j?.choices?.[0]?.message?.content;
         if (typeof text === 'string' && text.trim()) summary = text.trim();
       }
     } catch { /* fall back to deterministic */ }
