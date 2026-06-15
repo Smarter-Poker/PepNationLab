@@ -1101,123 +1101,222 @@
 <!-- =========================================================
      SCREEN 4: USE CASES
      ========================================================= -->
-<div class="screen" id="s4">
-  <div class="badge badge-teal">Module 4 - Use Cases</div>
-  <h2 style="font-size:28px;margin-bottom:8px;">What Peptides Are Studied For</h2>
-  <p style="margin-bottom:20px;">Scientists Study Peptides Because They Might Help With Lots Of Things. Here Are The Main Areas They Are Curious About.</p>
+<div class="screen" id="s4" data-v14="1" style="padding: 0; background: transparent;">
+  <style>
+    /* Full bleed on mobile, centered max-width on desktop */
+    #s4 { margin: 0 auto; width: 100%; }
+    @media (max-width: 800px) {
+      #s4 { margin-left: -20px; width: calc(100% + 40px); }
+    }
+    .m4-page { display: none; width: 100%; max-width: 600px; margin: 0 auto; position: relative; }
+    .m4-page.active { display: block; }
+    .m4-img { width: 100%; height: auto; display: block; border-radius: 0; }
+    .m4-btn { position: absolute; cursor: pointer; z-index: 10; border: 2px solid transparent; }
+    
+    /* Top Progress Nav */
+    .m4-nav-btn { position: absolute; top: 1%; height: 6%; width: 15%; cursor: pointer; z-index: 10; }
+    
+    /* Option buttons for page 5 */
+    .m4-opt { position: absolute; left: 5%; width: 90%; height: 4.0%; cursor: pointer; border-radius: 8px; z-index: 10; border: 2px solid transparent; transition: all 0.2s; }
+    .m4-opt.selected { border-color: var(--teal); background: rgba(0, 196, 188, 0.15); }
+    .m4-opt.wrong-opt { border-color: var(--red); background: rgba(239, 68, 68, 0.15); }
+    .m4-opt::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 4.5%;
+      transform: translateY(-50%);
+      height: 38%;
+      aspect-ratio: 1/1;
+      border-radius: 50%;
+      background-color: transparent;
+      transition: background-color 0.2s;
+    }
+    .m4-opt.selected::before { background-color: var(--teal); }
+    .m4-opt.wrong-opt::before { background-color: var(--red); }
+    
+    /* Toast popup for Module 4 */
+    #m4-toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(150px);
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px 24px; display: flex; align-items: center; gap: 12px; z-index: 99999;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      width: 90%; max-width: 400px;
+    }
+    #m4-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  </style>
 
-  <div class="card">
-    <div style="display:flex;align-items:flex-start;gap:14px;">
-      <div style="min-width:44px;height:44px;background:rgba(0,196,188,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-      </div>
-      <div>
-        <strong style="font-size:15px;">Helping Wounds Heal</strong>
-        <p style="font-size:13px;margin-top:4px;">Some Peptides Might Help The Body Fix Cuts, Scrapes, And Sore Spots Faster. Scientists Are Still Learning Exactly How.</p>
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">BPC-157</span>
-          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">TB-500</span>
-          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">GHK-Cu</span>
-        </div>
-      </div>
+  <!-- PAGE 1 -->
+  <div id="m4p1" class="m4-page active">
+    <img src="/images/course/mod4_pg1.png" class="m4-img" alt="Module 4 Page 1" />
+    <div class="m4-nav-btn" onclick="goM4(1)" style="left:3%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(2)" style="left:21%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(3)" style="left:40%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(4)" style="left:59%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(5)" style="left:78%;"></div>
+    
+    <!-- Bottom Nav -->
+    <div class="m4-btn" onclick="goTo(3)" style="left:3%; width:25%; top:94.5%; height:4.5%;"></div>
+    <div class="m4-btn" onclick="goM4(2)" style="left:65%; width:30%; top:94.5%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 2 -->
+  <div id="m4p2" class="m4-page">
+    <img src="/images/course/mod4_pg2.png" class="m4-img" alt="Module 4 Page 2" />
+    <div class="m4-nav-btn" onclick="goM4(1)" style="left:3%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(2)" style="left:21%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(3)" style="left:40%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(4)" style="left:59%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(5)" style="left:78%;"></div>
+    
+    <div class="m4-btn" onclick="goM4(1)" style="left:3%; width:25%; top:95.5%; height:4%;"></div>
+    <div class="m4-btn" onclick="goM4(3)" style="left:65%; width:30%; top:95.5%; height:4%;"></div>
+  </div>
+
+  <!-- PAGE 3 -->
+  <div id="m4p3" class="m4-page">
+    <img src="/images/course/mod4_pg3.png" class="m4-img" alt="Module 4 Page 3" />
+    <div class="m4-nav-btn" onclick="goM4(1)" style="left:3%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(2)" style="left:21%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(3)" style="left:40%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(4)" style="left:59%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(5)" style="left:78%;"></div>
+    
+    <div class="m4-btn" onclick="goM4(2)" style="left:3%; width:25%; top:95.5%; height:4%;"></div>
+    <div class="m4-btn" onclick="goM4(4)" style="left:65%; width:30%; top:95.5%; height:4%;"></div>
+  </div>
+
+  <!-- PAGE 4 -->
+  <div id="m4p4" class="m4-page">
+    <img src="/images/course/mod4_pg4.png" class="m4-img" alt="Module 4 Page 4" />
+    <div class="m4-nav-btn" onclick="goM4(1)" style="left:3%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(2)" style="left:21%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(3)" style="left:40%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(4)" style="left:59%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(5)" style="left:78%;"></div>
+    
+    <div class="m4-btn" onclick="goM4(3)" style="left:3%; width:25%; top:95%; height:4.5%;"></div>
+    <div class="m4-btn" onclick="goM4(5)" style="left:65%; width:30%; top:95%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 5 -->
+  <div id="m4p5" class="m4-page">
+    <img src="/images/course/mod4_pg5.png" class="m4-img" alt="Module 4 Page 5" />
+    <div class="m4-nav-btn" onclick="goM4(1)" style="left:3%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(2)" style="left:21%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(3)" style="left:40%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(4)" style="left:59%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(5)" style="left:78%;"></div>
+    
+    <!-- Question 1 -->
+    <div class="m4-opt q1" onclick="checkM4('q1', false, this)" style="top:29.5%;"></div>
+    <div class="m4-opt q1" onclick="checkM4('q1', true, this)" style="top:34.0%;"></div>
+    <div class="m4-opt q1" onclick="checkM4('q1', false, this)" style="top:38.5%;"></div>
+    
+    <!-- Question 2 -->
+    <div class="m4-opt q2" onclick="checkM4('q2', false, this)" style="top:52.5%;"></div>
+    <div class="m4-opt q2" onclick="checkM4('q2', true, this)" style="top:57.0%;"></div>
+    <div class="m4-opt q2" onclick="checkM4('q2', false, this)" style="top:61.5%;"></div>
+    
+    <div class="m4-btn" onclick="goM4(4)" style="left:3%; width:25%; top:93.5%; height:4.5%;"></div>
+    <div class="m4-btn" onclick="tryGoM4Recap()" style="left:65%; width:30%; top:93.5%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 6 -->
+  <div id="m4p6" class="m4-page">
+    <img src="/images/course/mod4_pg6.png" class="m4-img" alt="Module 4 Recap" />
+    <div class="m4-nav-btn" onclick="goM4(1)" style="left:3%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(2)" style="left:21%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(3)" style="left:40%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(4)" style="left:59%;"></div>
+    <div class="m4-nav-btn" onclick="goM4(5)" style="left:78%;"></div>
+    
+    <div class="m4-btn" onclick="openAskAI('Module 4')" style="left:63%; width:33%; top:89.5%; height:4.5%;"></div>
+    
+    <div class="m4-btn" onclick="goM4(5)" style="left:3%; width:25%; top:96%; height:3.5%;"></div>
+    <div class="m4-btn" onclick="completeModule('s4'); goTo(5)" style="left:63%; width:33%; top:96%; height:3.5%;"></div>
+  </div>
+  
+  <div id="m4-toast">
+    <div id="m4-toast-icon" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"></div>
+    <div>
+      <div id="m4-toast-title" style="font-weight: bold; font-size: 16px; margin-bottom: 4px;"></div>
+      <div id="m4-toast-msg" style="font-size: 14px; color: var(--nk2);"></div>
     </div>
   </div>
 
-  <div class="card">
-    <div style="display:flex;align-items:flex-start;gap:14px;">
-      <div style="min-width:44px;height:44px;background:rgba(59,130,246,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-      </div>
-      <div>
-        <strong style="font-size:15px;">Building Muscle And Growth</strong>
-        <p style="font-size:13px;margin-top:4px;">Some Peptides Nudge The Body To Make More Of Its Own Growth Signals. Scientists Study How That Affects Muscle And Body Shape.</p>
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Sermorelin</span>
-          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">CJC-1295</span>
-          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">Ipamorelin</span>
-        </div>
-      </div>
-    </div>
-  </div>
+  <script>
+    var m4Correct = { q1: false, q2: false };
 
-  <div class="card">
-    <div style="display:flex;align-items:flex-start;gap:14px;">
-      <div style="min-width:44px;height:44px;background:rgba(138,155,176,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--silver)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-      </div>
-      <div>
-        <strong style="font-size:15px;">Energy And Weight</strong>
-        <p style="font-size:13px;margin-top:4px;">Some Peptides Help The Body Use Fat For Energy. Scientists Study Whether They Help Manage Weight.</p>
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">AOD-9604</span>
-          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">CJC-1295</span>
-        </div>
-      </div>
-    </div>
-  </div>
+    function goM4(page) {
+      document.querySelectorAll('.m4-page').forEach(el => el.classList.remove('active'));
+      document.getElementById('m4p' + page).classList.add('active');
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      try { localStorage.setItem("p101_m4_page", page); } catch(e) {}
+    }
 
-  <div class="card">
-    <div style="display:flex;align-items:flex-start;gap:14px;">
-      <div style="min-width:44px;height:44px;background:rgba(0,196,188,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </div>
-      <div>
-        <strong style="font-size:15px;">Sleep And The Brain</strong>
-        <p style="font-size:13px;margin-top:4px;">Some Peptides Are Studied For Better Sleep. Sleep Is When A Lot Of The Body's Repair Happens.</p>
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Sermorelin</span>
-          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Ipamorelin</span>
-        </div>
-      </div>
-    </div>
-  </div>
+    function tryGoM4Recap() {
+      if (m4Correct.q1 && m4Correct.q2) {
+        goM4(6);
+      } else {
+        showM4Toast(false, 'Answer Both Questions First', 'You must answer both questions correctly to unlock the Recap.');
+      }
+    }
 
-  <div class="card">
-    <div style="display:flex;align-items:flex-start;gap:14px;">
-      <div style="min-width:44px;height:44px;background:rgba(59,130,246,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      </div>
-      <div>
-        <strong style="font-size:15px;">Skin And Other Signals</strong>
-        <p style="font-size:13px;margin-top:4px;">Some Peptides Affect Things Like Skin Color And Certain Brain And Body Signals. Scientists Are Exploring How.</p>
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">PT-141</span>
-          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Melanotan II</span>
-        </div>
-      </div>
-    </div>
-  </div>
+    document.addEventListener("DOMContentLoaded", function() {
+      try {
+        var p = localStorage.getItem("p101_m4_page");
+        if (p && p !== '6') {
+          document.querySelectorAll('.m4-page').forEach(el => el.classList.remove('active'));
+          var el = document.getElementById('m4p' + p);
+          if (el) el.classList.add('active');
+        }
+      } catch(e) {}
+    });
 
-  <div class="card">
-    <strong style="font-size:15px;">Module 4 Quiz</strong>
-    <p style="font-size:14px;margin:10px 0;">Which Peptide Is Studied For Growth And Building Muscle?</p>
-    <div class="quiz-opts" role="group" aria-label="Quiz Options">
-      <button class="quiz-opt" onclick="quiz('q4',this,false)" aria-label="Option: BPC-157">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-        BPC-157
-      </button>
-      <button class="quiz-opt" onclick="quiz('q4',this,false)" aria-label="Option: TB-500">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-        TB-500
-      </button>
-      <button class="quiz-opt" onclick="quiz('q4',this,true)" aria-label="Option: Ipamorelin">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-        Ipamorelin
-      </button>
-    </div>
-    <div class="quiz-fb" id="q4-fb"></div>
-  </div>
+    function checkM4(qClass, isCorrect, el) {
+      if (isCorrect) {
+        m4Correct[qClass] = true;
+        document.querySelectorAll('.' + qClass).forEach(btn => {
+          btn.classList.remove('selected', 'wrong-opt');
+        });
+        el.classList.add('selected');
+        
+        if (m4Correct.q1 && m4Correct.q2) {
+          showM4Toast(true, 'Great Job!', 'You got both questions right! You can now move to the recap.');
+        } else {
+          showM4Toast(true, 'Correct!', 'Good job, keep going.');
+        }
+      } else {
+        document.querySelectorAll('.' + qClass).forEach(btn => {
+          btn.classList.remove('selected', 'wrong-opt');
+        });
+        el.classList.add('wrong-opt');
+        showM4Toast(false, 'Not Quite', 'That is incorrect. Try again!');
+        m4Correct[qClass] = false;
+      }
+    }
 
-  <div class="nav-ctrl">
-    <button class="btn btn-ghost" onclick="goTo(3)" aria-label="Back">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      Back
-    </button>
-    <button class="btn btn-primary" onclick="goTo(5)" aria-label="Next: Practical Basics">
-      Next: Practical Basics
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-    </button>
-  </div>
+    function showM4Toast(isSuccess, title, msg) {
+      var toast = document.getElementById('m4-toast');
+      var icon = document.getElementById('m4-toast-icon');
+      document.getElementById('m4-toast-title').innerText = title;
+      document.getElementById('m4-toast-msg').innerText = msg;
+      
+      if (isSuccess) {
+        icon.style.background = 'rgba(16, 185, 129, 0.2)';
+        icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        toast.style.border = '1px solid #10b981';
+      } else {
+        icon.style.background = 'rgba(239, 68, 68, 0.2)';
+        icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+        toast.style.border = '1px solid #ef4444';
+      }
+      
+      toast.classList.add('show');
+      setTimeout(function() { toast.classList.remove('show'); }, 3000);
+    }
+  </script>
 </div>
 
 <!-- =========================================================
