@@ -42,8 +42,10 @@ export async function GET(req: Request) {
         const toInsert = orthologs.map((o) => ({
           compound_slug: row.slug,
           uniprot_id: o.uniprot_id,
-          organism: o.organism,
-          taxon_id: o.taxon_id,
+          // Write the canonical species/species_taxon columns the orthologs
+          // table defines (species is NOT NULL); organism/taxon_id are aliases.
+          species: o.organism,
+          species_taxon: o.taxon_id,
           sequence_identity: o.sequence_identity,
           notes: o.notes,
           fetched_at: now,

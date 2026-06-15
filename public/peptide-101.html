@@ -697,8 +697,8 @@
     
     <!-- Next Module Button -->
     <div class="m2-btn" onclick="goM2(4)" style="left:0%; width:35%; top:88%; height:12%;"></div>
-    <!-- Mark module 2 complete and go to module 3 (s3) -->
-    <div class="m2-btn" onclick="goM2(6)" style="left:60%; width:40%; top:88%; height:12%;"></div>
+    <!-- Gated: only goes to Recap if both quiz questions answered correctly -->
+    <div class="m2-btn" onclick="tryGoRecap()" style="left:60%; width:40%; top:88%; height:12%;"></div>
   </div>
 
   <!-- PAGE 6 -->
@@ -730,6 +730,9 @@
   </div>
 
   <script>
+    // Track which questions were answered correctly
+    var m2Correct = { q1: false, q2: false };
+
     function goM2(page) {
       document.querySelectorAll('.m2-page').forEach(el => el.classList.remove('active'));
       document.getElementById('m2p' + page).classList.add('active');
@@ -737,13 +740,24 @@
       try { localStorage.setItem("p101_m2_page", page); } catch(e) {}
     }
 
-    // Try to restore the page on load
+    // Gated Recap access — both quiz questions must be correct
+    function tryGoRecap() {
+      if (m2Correct.q1 && m2Correct.q2) {
+        goM2(6);
+      } else {
+        // Shake the button area and show a toast explaining why
+        showM2Toast(false, 'Answer Both Questions First', 'You must answer both questions correctly to unlock the Recap.');
+      }
+    }
+
+    // Try to restore the page on load (never restore directly to Recap — quiz must be re-taken)
     document.addEventListener("DOMContentLoaded", function() {
       try {
-        const p = localStorage.getItem("p101_m2_page");
-        if (p) {
+        var p = localStorage.getItem("p101_m2_page");
+        // Page 6 (Recap) is only accessible after passing the quiz — restore to page 5 instead
+        if (p && p !== '6') {
           document.querySelectorAll('.m2-page').forEach(el => el.classList.remove('active'));
-          const el = document.getElementById('m2p' + p);
+          var el = document.getElementById('m2p' + p);
           if (el) el.classList.add('active');
         }
       } catch(e) {}
@@ -753,12 +767,19 @@
       document.querySelectorAll('.' + qClass).forEach(opt => {
         opt.classList.remove('selected', 'wrong-opt');
       });
-      
+
       if (isCorrect) {
         el.classList.add('selected');
-        showM2Toast(true, 'Correct!', 'You selected the right answer.');
+        m2Correct[qClass] = true;
+        // If both now correct, celebrate
+        if (m2Correct.q1 && m2Correct.q2) {
+          showM2Toast(true, 'All Correct! Recap Unlocked', 'Tap Next: Recap to continue.');
+        } else {
+          showM2Toast(true, 'Correct!', 'One more question to go.');
+        }
       } else {
         el.classList.add('wrong-opt');
+        m2Correct[qClass] = false;
         showM2Toast(false, 'Incorrect', 'Review the material and try again.');
       }
     }
