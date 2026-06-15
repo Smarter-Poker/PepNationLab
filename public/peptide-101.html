@@ -404,7 +404,7 @@
     .m1-nav-btn { position: absolute; top: 6%; height: 10%; width: 15%; cursor: pointer; z-index: 10; }
     
     /* Option buttons for page 5 */
-    .m1-opt { position: absolute; left: 5%; width: 90%; height: 4.5%; cursor: pointer; border-radius: 8px; z-index: 10; border: 2px solid transparent; transition: all 0.2s; }
+    .m1-opt { position: absolute; left: 5%; width: 90%; height: 4.0%; cursor: pointer; border-radius: 8px; z-index: 10; border: 2px solid transparent; transition: all 0.2s; }
     .m1-opt.selected { border-color: var(--teal); background: rgba(0, 196, 188, 0.15); }
     .m1-opt.wrong-opt { border-color: var(--red); background: rgba(239, 68, 68, 0.15); }
     .m1-opt::before {
@@ -497,14 +497,14 @@
     <div class="m1-nav-btn" onclick="goM1(5)" style="left:80%;"></div>
     
     <!-- Question 1: Amino Acids (Correct) -->
-    <div class="m1-opt q1" onclick="checkM1('q1', true, this)" style="top:35%;"></div>
-    <div class="m1-opt q1" onclick="checkM1('q1', false, this)" style="top:40%;"></div>
-    <div class="m1-opt q1" onclick="checkM1('q1', false, this)" style="top:45%;"></div>
+    <div class="m1-opt q1" onclick="checkM1('q1', true, this)" style="top:36.5%;"></div>
+    <div class="m1-opt q1" onclick="checkM1('q1', false, this)" style="top:41.5%;"></div>
+    <div class="m1-opt q1" onclick="checkM1('q1', false, this)" style="top:46.5%;"></div>
 
     <!-- Question 2: Chain Grows Past 50 (Correct) -->
-    <div class="m1-opt q2" onclick="checkM1('q2', false, this)" style="top:57.5%;"></div>
-    <div class="m1-opt q2" onclick="checkM1('q2', true, this)" style="top:62.5%;"></div>
-    <div class="m1-opt q2" onclick="checkM1('q2', false, this)" style="top:67.5%;"></div>
+    <div class="m1-opt q2" onclick="checkM1('q2', false, this)" style="top:59.0%;"></div>
+    <div class="m1-opt q2" onclick="checkM1('q2', true, this)" style="top:64.0%;"></div>
+    <div class="m1-opt q2" onclick="checkM1('q2', false, this)" style="top:69.0%;"></div>
 
     <div class="m1-btn" onclick="goM1(4)" style="left:0%; width:35%; top:88%; height:12%;"></div>
     <!-- Gated: only goes to Recap if both quiz questions answered correctly -->
@@ -650,7 +650,7 @@
     .m2-nav-btn { position: absolute; top: 6%; height: 10%; width: 15%; cursor: pointer; z-index: 10; }
     
     /* Option buttons for page 5 */
-    .m2-opt { position: absolute; left: 5%; width: 90%; height: 4.5%; cursor: pointer; border-radius: 8px; z-index: 10; border: 2px solid transparent; transition: all 0.2s; }
+    .m2-opt { position: absolute; left: 5%; width: 90%; height: 4.0%; cursor: pointer; border-radius: 8px; z-index: 10; border: 2px solid transparent; transition: all 0.2s; }
     .m2-opt.selected { border-color: var(--teal); background: rgba(0, 196, 188, 0.15); }
     .m2-opt.wrong-opt { border-color: var(--red); background: rgba(239, 68, 68, 0.15); }
     .m2-opt::before {
@@ -742,14 +742,14 @@
     <div class="m2-nav-btn" onclick="goM2(5)" style="left:80%;"></div>
     
     <!-- Question 1: Water Leaves -->
-    <div class="m2-opt q1" onclick="checkM2('q1', false, this)" style="top:25.5%;"></div>
-    <div class="m2-opt q1" onclick="checkM2('q1', true, this)" style="top:30.5%;"></div>
-    <div class="m2-opt q1" onclick="checkM2('q1', false, this)" style="top:35.5%;"></div>
+    <div class="m2-opt q1" onclick="checkM2('q1', false, this)" style="top:27.6%;"></div>
+    <div class="m2-opt q1" onclick="checkM2('q1', true, this)" style="top:32.4%;"></div>
+    <div class="m2-opt q1" onclick="checkM2('q1', false, this)" style="top:37.2%;"></div>
     
     <!-- Question 2: Different Peptides -->
-    <div class="m2-opt q2" onclick="checkM2('q2', false, this)" style="top:52.5%;"></div>
-    <div class="m2-opt q2" onclick="checkM2('q2', true, this)" style="top:57.5%;"></div>
-    <div class="m2-opt q2" onclick="checkM2('q2', false, this)" style="top:62.5%;"></div>
+    <div class="m2-opt q2" onclick="checkM2('q2', false, this)" style="top:54.4%;"></div>
+    <div class="m2-opt q2" onclick="checkM2('q2', true, this)" style="top:59.2%;"></div>
+    <div class="m2-opt q2" onclick="checkM2('q2', false, this)" style="top:64.0%;"></div>
     
     <!-- Next Module Button -->
     <div class="m2-btn" onclick="goM2(4)" style="left:0%; width:35%; top:88%; height:12%;"></div>
@@ -890,14 +890,14 @@
     .m3-nav-btn { position: absolute; top: 1%; height: 6%; width: 15%; cursor: pointer; z-index: 10; }
     
     /* Option buttons for page 5 */
-    .m3-opt { position: absolute; left: 5%; width: 44%; height: 4.5%; cursor: pointer; border-radius: 8px; z-index: 10; border: 2px solid transparent; transition: all 0.2s; }
+    .m3-opt { position: absolute; left: 5%; width: 44%; height: 4.0%; cursor: pointer; border-radius: 8px; z-index: 10; border: 2px solid transparent; transition: all 0.2s; }
     .m3-opt.selected { border-color: var(--teal); background: rgba(0, 196, 188, 0.15); }
     .m3-opt.wrong-opt { border-color: var(--red); background: rgba(239, 68, 68, 0.15); }
     .m3-opt::before {
       content: '';
       position: absolute;
       top: 50%;
-      left: 9%;
+      left: 4.5%;
       transform: translateY(-50%);
       height: 38%;
       aspect-ratio: 1/1;
@@ -982,14 +982,14 @@
     <div class="m3-nav-btn" onclick="goM3(5)" style="left:78%;"></div>
     
     <!-- Question 1 -->
-    <div class="m3-opt q1" onclick="checkM3('q1', false, this)" style="top:26.5%;"></div>
-    <div class="m3-opt q1" onclick="checkM3('q1', true, this)" style="top:32%;"></div>
-    <div class="m3-opt q1" onclick="checkM3('q1', false, this)" style="top:37.5%;"></div>
+    <div class="m3-opt q1" onclick="checkM3('q1', false, this)" style="top:28.0%;"></div>
+    <div class="m3-opt q1" onclick="checkM3('q1', true, this)" style="top:33.5%;"></div>
+    <div class="m3-opt q1" onclick="checkM3('q1', false, this)" style="top:39.0%;"></div>
     
     <!-- Question 2 -->
-    <div class="m3-opt q2" onclick="checkM3('q2', true, this)" style="top:51%;"></div>
-    <div class="m3-opt q2" onclick="checkM3('q2', false, this)" style="top:56.5%;"></div>
-    <div class="m3-opt q2" onclick="checkM3('q2', false, this)" style="top:62%;"></div>
+    <div class="m3-opt q2" onclick="checkM3('q2', true, this)" style="top:52.5%;"></div>
+    <div class="m3-opt q2" onclick="checkM3('q2', false, this)" style="top:58.0%;"></div>
+    <div class="m3-opt q2" onclick="checkM3('q2', false, this)" style="top:63.5%;"></div>
     
     <div class="m3-btn" onclick="goM3(4)" style="left:3%; width:25%; top:94.5%; height:4.5%;"></div>
     <div class="m3-btn" onclick="tryGoM3Recap()" style="left:65%; width:30%; top:94.5%; height:4.5%;"></div>
