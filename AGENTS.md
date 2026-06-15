@@ -60,7 +60,7 @@ calling `buildStepper()` and skips the overwrite automatically. No changes neede
 | `#s7`  | Module 7 | ✅ Dynamic images (`mod7_pg1–6.png`) |
 | `#s8`  | Module 8 | ✅ Dynamic images (`mod8_pg1–6.png`) |
 | `#s9`  | Module 9 | ✅ Dynamic images (`mod9_pg1–6.png`) |
-| `#s10` | Module 10 | 🔄 JS-SVG |
+| `#s10` | Module 10 | ✅ Dynamic images (`mod10_pg1–6.png`) |
 | `#s11` | Module 11 | 🔄 JS-SVG |
 | `#s12` | Module 12 | 🔄 JS-SVG |
 | `#s13` | Module 13 | 🔄 JS-SVG |
