@@ -583,9 +583,16 @@
 </div>
 
 <!-- =========================================================
-     SCREEN 2: SCIENCE - CHAIN BUILDER
+     SCREEN 2: MODULE 2 — BUILDING A PEPTIDE (dynamic images)
+     data-v14="1" → tells peptide-101.v14.js that this screen's
+     content is managed HERE in HTML (mod2_pg1–6.png) and must
+     NOT be rebuilt by the JS stepper in peptide-101.m2.js.
+     CONVENTION FOR ALL FUTURE MODULES:
+       When a module transitions from JS-SVG to dynamic images,
+       add data-v14="1" to its <div id="sN"> here and the JS
+       stepper will automatically skip it — no other changes needed.
      ========================================================= -->
-<div class="screen" id="s2" style="padding: 0; background: transparent;">
+<div class="screen" id="s2" data-v14="1" style="padding: 0; background: transparent;">
   <style>
     /* Full bleed on mobile, centered max-width on desktop */
     #s2 { margin: 0 auto; width: 100%; }
