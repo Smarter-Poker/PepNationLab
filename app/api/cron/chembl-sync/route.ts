@@ -42,7 +42,9 @@ export async function GET(req: Request) {
           compound_slug: row.slug,
           activity_id: a.activity_id,
           target_chembl_id: a.target_chembl_id,
-          target_pref_name: a.target_pref_name,
+          // Write the target's preferred name into the existing `target_name`
+          // column that the by-target page and lib/compounds-server read.
+          target_name: a.target_pref_name,
           target_organism: a.target_organism,
           standard_type: a.standard_type,
           standard_value: a.standard_value,
