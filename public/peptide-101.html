@@ -1537,120 +1537,217 @@
 <!-- =========================================================
      SCREEN 6: PEPTIDE FAMILIES AND CATEGORIES
      ========================================================= -->
-<div class="screen" id="s6">
-  <div class="badge badge-teal">Module 6 - Peptide Families</div>
-  <h2 style="font-size:28px;margin-bottom:8px;">Peptide Families And Categories</h2>
-  <p style="margin-bottom:20px;">Just Like Your Family Has Cousins And Siblings, Peptides Have Families Too. Each Family Does A Different Kind Of Job In The Body.</p>
+<div class="screen" id="s6" data-v14="1" style="padding: 0; background: transparent;">
+  <style>
+    #s6 { margin: 0 auto; width: 100%; }
+    @media (max-width: 800px) {
+      #s6 { margin-left: -20px; width: calc(100% + 40px); }
+    }
+    .m6-page { display: none; width: 100%; max-width: 600px; margin: 0 auto; position: relative; }
+    .m6-page.active { display: block; }
+    .m6-img { width: 100%; height: auto; display: block; border-radius: 0; }
+    .m6-btn { position: absolute; cursor: pointer; z-index: 10; border: 2px solid transparent; }
+    
+    .m6-nav-btn { position: absolute; top: 1%; height: 6%; width: 15%; cursor: pointer; z-index: 10; }
+    
+    .m6-opt { position: absolute; left: 5%; width: 90%; height: 4.0%; cursor: pointer; border-radius: 8px; z-index: 10; border: 2px solid transparent; transition: all 0.2s; }
+    .m6-opt.selected { border-color: var(--teal); background: rgba(0, 196, 188, 0.15); }
+    .m6-opt.wrong-opt { border-color: var(--red); background: rgba(239, 68, 68, 0.15); }
+    .m6-opt::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 4.5%;
+      transform: translateY(-50%);
+      height: 38%;
+      aspect-ratio: 1/1;
+      border-radius: 50%;
+      background-color: transparent;
+      transition: background-color 0.2s;
+    }
+    .m6-opt.selected::before { background-color: var(--teal); }
+    .m6-opt.wrong-opt::before { background-color: var(--red); }
+    
+    #m6-toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(150px);
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px 24px; display: flex; align-items: center; gap: 12px; z-index: 99999;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      width: 90%; max-width: 400px;
+    }
+    #m6-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  </style>
 
-  <div class="card">
-    <div style="display:flex;align-items:flex-start;gap:14px;">
-      <div style="min-width:44px;height:44px;background:rgba(0,196,188,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-      </div>
-      <div>
-        <strong style="font-size:15px;">Tissue And Recovery Peptides</strong>
-        <p style="font-size:13px;margin-top:4px;">This Family Helps The Body Heal And Repair Itself, Things Like Skin, Muscle, And Tendons.</p>
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">BPC-157</span>
-          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">TB-500</span>
-          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">GHK-Cu</span>
-        </div>
-      </div>
+  <!-- PAGE 1 -->
+  <div id="m6p1" class="m6-page active">
+    <img src="/images/course/mod6_pg1.png" class="m6-img" alt="Module 6 Page 1" />
+    <div class="m6-nav-btn" onclick="goM6(1)" style="left:3%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(2)" style="left:21%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(3)" style="left:40%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(4)" style="left:59%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(5)" style="left:78%;"></div>
+    
+    <div class="m6-btn" onclick="goTo(5)" style="left:3%; width:25%; top:94.0%; height:4.5%;"></div>
+    <div class="m6-btn" onclick="goM6(2)" style="left:65%; width:30%; top:94.0%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 2 -->
+  <div id="m6p2" class="m6-page">
+    <img src="/images/course/mod6_pg2.png" class="m6-img" alt="Module 6 Page 2" />
+    <div class="m6-nav-btn" onclick="goM6(1)" style="left:3%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(2)" style="left:21%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(3)" style="left:40%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(4)" style="left:59%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(5)" style="left:78%;"></div>
+    
+    <div class="m6-btn" onclick="goM6(1)" style="left:3%; width:25%; top:94.0%; height:4.5%;"></div>
+    <div class="m6-btn" onclick="goM6(3)" style="left:66%; width:30%; top:94.0%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 3 -->
+  <div id="m6p3" class="m6-page">
+    <img src="/images/course/mod6_pg3.png" class="m6-img" alt="Module 6 Page 3" />
+    <div class="m6-nav-btn" onclick="goM6(1)" style="left:3%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(2)" style="left:21%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(3)" style="left:40%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(4)" style="left:59%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(5)" style="left:78%;"></div>
+    
+    <div class="m6-btn" onclick="goM6(2)" style="left:3%; width:25%; top:94.0%; height:4.5%;"></div>
+    <div class="m6-btn" onclick="goM6(4)" style="left:61%; width:35%; top:94.0%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 4 -->
+  <div id="m6p4" class="m6-page">
+    <img src="/images/course/mod6_pg4.png" class="m6-img" alt="Module 6 Page 4" />
+    <div class="m6-nav-btn" onclick="goM6(1)" style="left:3%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(2)" style="left:21%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(3)" style="left:40%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(4)" style="left:59%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(5)" style="left:78%;"></div>
+    
+    <div class="m6-btn" onclick="goM6(3)" style="left:3%; width:25%; top:94.0%; height:4.5%;"></div>
+    <div class="m6-btn" onclick="goM6(5)" style="left:61%; width:35%; top:94.0%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 5 -->
+  <div id="m6p5" class="m6-page">
+    <img src="/images/course/mod6_pg5.png" class="m6-img" alt="Module 6 Page 5" />
+    <div class="m6-nav-btn" onclick="goM6(1)" style="left:3%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(2)" style="left:21%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(3)" style="left:40%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(4)" style="left:59%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(5)" style="left:78%;"></div>
+    
+    <!-- Question 1: Tissue And Recovery (Option 2) -->
+    <div class="m6-opt q1" onclick="checkM6('q1', false, this)" style="top:27.6%;"></div>
+    <div class="m6-opt q1" onclick="checkM6('q1', true, this)" style="top:32.4%;"></div>
+    <div class="m6-opt q1" onclick="checkM6('q1', false, this)" style="top:37.2%;"></div>
+    
+    <!-- Question 2: Growth Hormone Axis (Option 1) -->
+    <div class="m6-opt q2" onclick="checkM6('q2', true, this)" style="top:54.4%;"></div>
+    <div class="m6-opt q2" onclick="checkM6('q2', false, this)" style="top:59.2%;"></div>
+    <div class="m6-opt q2" onclick="checkM6('q2', false, this)" style="top:64.0%;"></div>
+    
+    <div class="m6-btn" onclick="goM6(4)" style="left:3%; width:25%; top:93.5%; height:4.5%;"></div>
+    <div class="m6-btn" onclick="tryGoM6Recap()" style="left:57%; width:40%; top:93.5%; height:4.5%;"></div>
+  </div>
+
+  <!-- PAGE 6 -->
+  <div id="m6p6" class="m6-page">
+    <img src="/images/course/mod6_pg6.png" class="m6-img" alt="Module 6 Recap" />
+    <div class="m6-nav-btn" onclick="goM6(1)" style="left:3%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(2)" style="left:21%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(3)" style="left:40%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(4)" style="left:59%;"></div>
+    <div class="m6-nav-btn" onclick="goM6(5)" style="left:78%;"></div>
+    
+    <div class="m6-btn" onclick="openAskAI('Module 6')" style="left:67%; width:30%; top:86.5%; height:5.0%;"></div>
+    
+    <div class="m6-btn" onclick="goM6(5)" style="left:3%; width:25%; top:94.5%; height:4.0%;"></div>
+    <div class="m6-btn" onclick="completeModule('s6'); goTo(7)" style="left:60%; width:37%; top:94.5%; height:4.0%;"></div>
+  </div>
+  
+  <div id="m6-toast">
+    <div id="m6-toast-icon" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"></div>
+    <div>
+      <div id="m6-toast-title" style="font-weight: bold; font-size: 16px; margin-bottom: 4px;"></div>
+      <div id="m6-toast-msg" style="font-size: 14px; color: var(--nk2);"></div>
     </div>
   </div>
 
-  <div class="card">
-    <div style="display:flex;align-items:flex-start;gap:14px;">
-      <div style="min-width:44px;height:44px;background:rgba(59,130,246,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-      </div>
-      <div>
-        <strong style="font-size:15px;">Growth Hormone Axis Peptides</strong>
-        <p style="font-size:13px;margin-top:4px;">This Family Tells The Body To Grow And Build, By Nudging It To Make More Of Its Own Growth Signals.</p>
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Sermorelin</span>
-          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">CJC-1295</span>
-          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">Ipamorelin</span>
-          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">GHRP-6</span>
-        </div>
-      </div>
-    </div>
-  </div>
+  <script>
+    var m6Correct = { q1: false, q2: false };
 
-  <div class="card">
-    <div style="display:flex;align-items:flex-start;gap:14px;">
-      <div style="min-width:44px;height:44px;background:rgba(138,155,176,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--silver)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      </div>
-      <div>
-        <strong style="font-size:15px;">Melanocortin System Peptides</strong>
-        <p style="font-size:13px;margin-top:4px;">This Family Affects Things Like Skin Color And Certain Brain And Body Signals.</p>
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">PT-141</span>
-          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Melanotan II</span>
-        </div>
-      </div>
-    </div>
-  </div>
+    function goM6(page) {
+      document.querySelectorAll('.m6-page').forEach(el => el.classList.remove('active'));
+      document.getElementById('m6p' + page).classList.add('active');
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      try { localStorage.setItem("p101_m6_page", page); } catch(e) {}
+    }
 
-  <div class="card">
-    <div style="display:flex;align-items:flex-start;gap:14px;">
-      <div style="min-width:44px;height:44px;background:rgba(0,196,188,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-      </div>
-      <div>
-        <strong style="font-size:15px;">Metabolic And Fat Regulation Peptides</strong>
-        <p style="font-size:13px;margin-top:4px;">This Family Helps The Body Use Energy And Manage Fat, Without Telling The Body To Grow.</p>
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">AOD-9604</span>
-          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">Fragment 176-191</span>
-        </div>
-      </div>
-    </div>
-  </div>
+    function tryGoM6Recap() {
+      if (m6Correct.q1 && m6Correct.q2) {
+        goM6(6);
+      } else {
+        showM6Toast(false, 'Answer Both Questions First', 'You must answer both questions correctly to unlock the Recap.');
+      }
+    }
 
-  <div class="card">
-    <div style="display:flex;align-items:flex-start;gap:14px;">
-      <div style="min-width:44px;height:44px;background:rgba(59,130,246,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue-l)" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-      </div>
-      <div>
-        <strong style="font-size:15px;">Skin, Collagen And Anti-Aging Peptides</strong>
-        <p style="font-size:13px;margin-top:4px;">This Family Is Studied For Healthier, Bouncier Skin And For Slowing Down Signs Of Aging.</p>
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">GHK-Cu</span>
-          <span class="badge badge-silver" style="font-size:11px;padding:3px 8px;">Epithalon</span>
-        </div>
-      </div>
-    </div>
-  </div>
+    document.addEventListener("DOMContentLoaded", function() {
+      try {
+        var p = localStorage.getItem("p101_m6_page");
+        if (p && p !== '6') {
+          document.querySelectorAll('.m6-page').forEach(el => el.classList.remove('active'));
+          var el = document.getElementById('m6p' + p);
+          if (el) el.classList.add('active');
+        }
+      } catch(e) {}
+    });
 
-  <div class="card">
-    <div style="display:flex;align-items:flex-start;gap:14px;">
-      <div style="min-width:44px;height:44px;background:rgba(138,155,176,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--silver)" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-      </div>
-      <div>
-        <strong style="font-size:15px;">Cognitive And Nootropic Peptides</strong>
-        <p style="font-size:13px;margin-top:4px;">This Family Is Studied For Focus, Memory, And Feeling Calm.</p>
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-          <span class="badge badge-teal" style="font-size:11px;padding:3px 8px;">Selank</span>
-          <span class="badge badge-blue" style="font-size:11px;padding:3px 8px;">Semax</span>
-        </div>
-      </div>
-    </div>
-  </div>
+    function checkM6(qClass, isCorrect, el) {
+      if (isCorrect) {
+        m6Correct[qClass] = true;
+        document.querySelectorAll('.' + qClass).forEach(btn => {
+          btn.classList.remove('selected', 'wrong-opt');
+        });
+        el.classList.add('selected');
+        
+        if (m6Correct.q1 && m6Correct.q2) {
+          showM6Toast(true, 'Great Job!', 'You got both questions right! You can now move to the recap.');
+        } else {
+          showM6Toast(true, 'Correct!', 'Good job, keep going.');
+        }
+      } else {
+        document.querySelectorAll('.' + qClass).forEach(btn => {
+          btn.classList.remove('selected', 'wrong-opt');
+        });
+        el.classList.add('wrong-opt');
+        showM6Toast(false, 'Not Quite', 'That is incorrect. Try again!');
+        m6Correct[qClass] = false;
+      }
+    }
 
-  <div class="nav-ctrl">
-    <button class="btn btn-ghost" onclick="goTo(5)" aria-label="Back">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      Back
-    </button>
-    <button class="btn btn-primary" onclick="goTo(7)" aria-label="Next: Stacking And Protocols">
-      Next: Stacking And Protocols
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-    </button>
-  </div>
+    function showM6Toast(isSuccess, title, msg) {
+      var toast = document.getElementById('m6-toast');
+      var icon = document.getElementById('m6-toast-icon');
+      document.getElementById('m6-toast-title').innerText = title;
+      document.getElementById('m6-toast-msg').innerText = msg;
+      
+      if (isSuccess) {
+        icon.style.background = 'rgba(16, 185, 129, 0.2)';
+        icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        toast.style.border = '1px solid #10b981';
+      } else {
+        icon.style.background = 'rgba(239, 68, 68, 0.2)';
+        icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+        toast.style.border = '1px solid #ef4444';
+      }
+      
+      toast.classList.add('show');
+      setTimeout(function() { toast.classList.remove('show'); }, 3000);
+    }
+  </script>
 </div>
 
 <!-- =========================================================
