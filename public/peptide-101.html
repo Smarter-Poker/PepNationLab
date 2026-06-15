@@ -1961,11 +1961,10 @@ function courseGo(n, el){
       // Add User Message to UI
       const userDiv = document.createElement('div');
       userDiv.style.cssText = 'display:flex; justify-content:flex-end; margin-top:8px;';
-      userDiv.innerHTML = `
-        <div style="background:#0a84ff; padding:12px 16px; border-radius:12px; border-bottom-right-radius:2px; font-size:15px; color:#fff; max-width:85%; line-height:1.4; word-wrap: break-word;">
-          ${text}
-        </div>
-      `;
+      const userBubble = document.createElement('div');
+      userBubble.style.cssText = 'background:#0a84ff; padding:12px 16px; border-radius:12px; border-bottom-right-radius:2px; font-size:15px; color:#fff; max-width:85%; line-height:1.4; word-wrap: break-word;';
+      userBubble.textContent = text;  // textContent prevents XSS — no HTML interpolation
+      userDiv.appendChild(userBubble);
       historyContainer.appendChild(userDiv);
       input.value = '';
       historyContainer.scrollTop = historyContainer.scrollHeight;
@@ -2009,7 +2008,7 @@ function courseGo(n, el){
 
         let replyText = "Sorry, I couldn't process that.";
         if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-          replyText = data.candidates[0].content.parts[0].text;
+          replyText = data.candidates[0].content.parts?.[0]?.text ?? "Sorry, I couldn't process that.";
           chatHistory.push({ role: "model", parts: [{ text: replyText }] });
         } else if (data.error) {
           // Server returns error as a plain string
@@ -2020,8 +2019,9 @@ function courseGo(n, el){
         const aiDiv = document.createElement('div');
         aiDiv.style.cssText = 'display:flex; gap:12px; margin-top:16px;';
         
-        // Render newlines and bold markdown from AI response
-        let formattedText = replyText
+        // Escape HTML from AI response first, then apply safe markdown substitutions
+        function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+        let formattedText = escapeHtml(replyText)
           .replace(/\n/g, '<br>')
           .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
           .replace(/\*(.*?)\*/g, '<em>$1</em>');

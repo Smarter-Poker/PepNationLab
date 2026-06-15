@@ -26,20 +26,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'GROK_API_KEY is not configured' }, { status: 501 });
     }
 
-    const { slugs } = await req.json();
-    if (!slugs || !Array.isArray(slugs) || slugs.length < 2) {
+    const { slugs, names } = await req.json();
+    const identifiers: string[] = slugs || names || [];
+    if (!identifiers || !Array.isArray(identifiers) || identifiers.length < 2) {
       return NextResponse.json({ error: 'At least 2 compounds are required for stack analysis' }, { status: 400 });
     }
 
     const supabase = await createServiceClient();
     
-    const { data: compounds, error } = await supabase
+    let query = supabase
       .from('compounds')
-      .select('slug, display_name, mechanism, molecular_target, warnings, side_effects')
-      .in('slug', slugs);
+      .select('slug, display_name, mechanism, molecular_target, warnings, side_effects');
 
-    if (error || !compounds || compounds.length !== slugs.length) {
-      return NextResponse.json({ error: 'Failed to load all compounds' }, { status: 404 });
+    // If slugs were passed use exact slug lookup; if names were passed use display_name lookup
+    if (slugs) {
+      query = query.in('slug', identifiers);
+    } else {
+      // Case-insensitive name match — storefront products use display_name directly
+      query = query.or(identifiers.map(n => `display_name.ilike.${n}`).join(','));
+    }
+
+    const { data: compounds, error } = await query;
+
+    if (error || !compounds || compounds.length < 2) {
+      return NextResponse.json({ error: 'Failed to load compounds for analysis' }, { status: 404 });
     }
 
     const compoundContext = compounds.map(c => 

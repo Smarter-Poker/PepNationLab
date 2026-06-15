@@ -54,10 +54,11 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
       const res = await fetch('/api/researcher/ai-stack-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slugs: selectedItems.map(item => item.name.toLowerCase().replace(/ /g, '-')) })
+        body: JSON.stringify({ names: selectedItems.map(item => item.name) })
       });
       const data = await res.json();
-      if (!data.error) setAiAnalysis(data);
+      if (res.ok && !data.error) setAiAnalysis(data);
+      else console.error('Stack analysis failed:', data.error);
     } catch (err) {
       console.error(err);
     } finally {
