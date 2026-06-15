@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Rate limit per user to prevent Grok API cost abuse
+  const ip = getClientIp(req);
+  const rl = await rateLimit({ key: 'ai_protocol', limit: 5, windowSeconds: 60, identifier: user.id || ip });
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   try {
     const { compounds, goal, experienceLevel, subjectMetrics } = await req.json();
 
@@ -49,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!process.env.GROK_API_KEY) {
-      return NextResponse.json({ error: 'GROK_API_KEY is missing' }, { status: 500 });
+      return NextResponse.json({ error: 'AI service not configured' }, { status: 503 });
     }
 
     const prompt = `
@@ -71,7 +79,7 @@ Structure the response STRICTLY into two phases:
 - A "Check-in" milestones section (e.g., what to measure at Week 4, 8, 12).
 
 # Phase 2: Washout & Receptor Reset
-- Calculate the necessary washout period based on the terminal half-lives of the compounds provided.
+- Calculate the necessary washout period based the terminal half-lives of the compounds provided.
 - Provide a clear timeline (e.g., 4 weeks) of complete abstinence to clear the system and prevent receptor downregulation.
 - Suggest any non-suppressive support protocols (like diet/training shifts) during this period.
 
@@ -84,7 +92,7 @@ Keep it highly professional, structured, and easy to read. Do not use generic AI
     const { data: noteData, error: noteError } = await supabase
       .from('researcher_notes')
       .insert({
-        user_id: user!.id,
+        user_id: user.id,
         title: `AI Protocol: ${goal}`,
         note_text: protocolMarkdown
       })

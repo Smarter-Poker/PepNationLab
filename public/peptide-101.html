@@ -2020,8 +2020,11 @@ function courseGo(n, el){
         const aiDiv = document.createElement('div');
         aiDiv.style.cssText = 'display:flex; gap:12px; margin-top:16px;';
         
-        // Very simple markdown-like formatting for bold text and line breaks
-        let formattedText = replyText.replace(/\\n/g, '<br>').replace(/\\*\\*(.*?)\\*\\*/g, '<b>$1</b>');
+        // Render newlines and bold markdown from AI response
+        let formattedText = replyText
+          .replace(/\n/g, '<br>')
+          .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>');
 
         aiDiv.innerHTML = `
           <div style="width:32px; height:32px; border-radius:50%; background:#0a84ff; display:flex; align-items:center; justify-content:center; flex-shrink:0;">

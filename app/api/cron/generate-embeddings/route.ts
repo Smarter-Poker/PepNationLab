@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
-import { safeError } from '@/lib/api-error';
 import { assertCronAuth } from '@/lib/cron';
 
 export const dynamic = 'force-dynamic';

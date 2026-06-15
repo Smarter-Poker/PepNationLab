@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   if (!updated || updated.length === 0) return NextResponse.json({ error: 'Compound Not Found' }, { status: 404 });
 
-  try { revalidateTag('compounds'); } catch { /* best-effort cache refresh */ }
+  try { revalidateTag('compound-' + slug); } catch { /* best-effort cache refresh */ }
 
   return NextResponse.json({ success: true });
 }
