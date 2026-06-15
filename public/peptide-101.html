@@ -1940,7 +1940,7 @@ function courseGo(n, el){
       
       <!-- Input Area -->
       <!-- Adjusted bottom percentages to match the visual layout in the provided image -->
-      <input type="text" id="ai-chat-input" placeholder="" style="position:absolute; bottom:14%; left:16%; width:66%; height:6%; background:transparent; border:none; outline:none; color:#fff; font-size:16px; font-family:sans-serif; z-index:10;" onkeypress="if(event.key==='Enter') sendAIMessage()" />
+      <input type="text" id="ai-chat-input" placeholder="" style="position:absolute; bottom:14%; left:16%; width:66%; height:6%; background:transparent; border:none; outline:none; color:#fff; font-size:16px; font-family:sans-serif; z-index:10;" onkeydown="if(event.key==='Enter') sendAIMessage()" />
       
       <!-- Microphone Button -->
       <div style="position:absolute; bottom:14%; left:6%; width:8%; height:6%; cursor:pointer; z-index:10;" onclick="alert('Microphone feature coming soon')"></div>
@@ -1968,6 +1968,16 @@ function courseGo(n, el){
   <script>
     // Initialised fresh each time the modal opens — see openAskAI()
     let chatHistory = [];
+    let isSending = false; // Guard against concurrent requests
+
+    // Escape HTML for safe innerHTML injection of AI text
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
 
     function openAskAI(moduleContext) {
       // Reset history so Module 1 and Module 2 sessions never bleed together
@@ -1986,14 +1996,15 @@ function courseGo(n, el){
         historyEl.innerHTML = '';
         var greetDiv = document.createElement('div');
         greetDiv.style.cssText = 'display:flex; gap:12px;';
-        greetDiv.innerHTML = [
-          '<div style="width:32px;height:32px;border-radius:50%;background:#0a84ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">',
-          '  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>',
-          '</div>',
-          '<div style="background:rgba(10,132,255,0.15);border:1px solid rgba(10,132,255,0.3);padding:12px 16px;border-radius:12px;border-top-left-radius:2px;font-size:15px;color:#fff;max-width:85%;line-height:1.5;">',
-          greeting,
-          '</div>'
-        ].join('');
+        // Build greeting bubble safely — icon via static HTML, text via textContent
+        var iconDiv = document.createElement('div');
+        iconDiv.style.cssText = 'width:32px;height:32px;border-radius:50%;background:#0a84ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+        iconDiv.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+        var greetBubble = document.createElement('div');
+        greetBubble.style.cssText = 'background:rgba(10,132,255,0.15);border:1px solid rgba(10,132,255,0.3);padding:12px 16px;border-radius:12px;border-top-left-radius:2px;font-size:15px;color:#fff;max-width:85%;line-height:1.5;';
+        greetBubble.textContent = greeting; // textContent prevents XSS
+        greetDiv.appendChild(iconDiv);
+        greetDiv.appendChild(greetBubble);
         historyEl.appendChild(greetDiv);
       }
 
@@ -2009,9 +2020,12 @@ function courseGo(n, el){
     }
 
     async function sendAIMessage() {
+      if (isSending) return; // Prevent concurrent requests
       const input = document.getElementById('ai-chat-input');
       const text = input.value.trim();
       if (!text) return;
+      isSending = true;
+      input.disabled = true;
       
       const historyContainer = document.getElementById('ai-chat-history');
       
@@ -2077,7 +2091,6 @@ function courseGo(n, el){
         aiDiv.style.cssText = 'display:flex; gap:12px; margin-top:16px;';
         
         // Escape HTML from AI response first, then apply safe markdown substitutions
-        function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
         let formattedText = escapeHtml(replyText)
           .replace(/\n/g, '<br>')
           .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
@@ -2110,6 +2123,10 @@ function courseGo(n, el){
         `;
         historyContainer.appendChild(aiDiv);
         historyContainer.scrollTop = historyContainer.scrollHeight;
+      } finally {
+        isSending = false;
+        input.disabled = false;
+        input.focus();
       }
     }
   </script>

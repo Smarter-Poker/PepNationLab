@@ -77,7 +77,9 @@ export default function AskTheLab() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ q: query }),
       });
-      const data = (await res.json()) as AskResponse;
+      const data = res.ok
+        ? ((await res.json()) as AskResponse)
+        : { matches: [], message: 'Search Temporarily Unavailable. Please Try Again.' };
       setResult(data);
     } catch {
       setResult({ matches: [], message: 'Something Went Wrong. Please Try Again.' });
