@@ -2614,7 +2614,153 @@
 <!-- =========================================================
      SCREEN 11: COMPLETION
      ========================================================= -->
-<div class="screen" id="s11">
+<div class="screen" id="s11" data-v14="1" style="padding: 0; background: transparent;">
+  <style>
+    #s11 { margin: 0 auto; width: 100%; }
+    @media (max-width: 800px) {
+      #s11 { margin-left: -20px; width: calc(100% + 40px); }
+    }
+    .m11-nav {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none;
+    }
+    .m11-nav .clickable { pointer-events: auto; cursor: pointer; }
+    
+    .m11-back { position: absolute; bottom: 3%; left: 8%; width: 25%; height: 6%; }
+    .m11-next { position: absolute; bottom: 3%; right: 8%; width: 25%; height: 6%; }
+
+    /* Single column test hitboxes for Page 5 */
+    .m11-q1-opt1 { position: absolute; top: 34%; left: 20%; width: 60%; height: 4.5%; }
+    .m11-q1-opt2 { position: absolute; top: 39%; left: 20%; width: 60%; height: 4.5%; }
+    .m11-q1-opt3 { position: absolute; top: 45.5%; left: 20%; width: 60%; height: 4.5%; }
+
+    .m11-q2-opt1 { position: absolute; top: 60%; left: 20%; width: 60%; height: 4.5%; }
+    .m11-q2-opt2 { position: absolute; top: 65.5%; left: 20%; width: 60%; height: 4.5%; }
+    .m11-q2-opt3 { position: absolute; top: 71.5%; left: 20%; width: 60%; height: 4.5%; }
+
+    .m11-pg6-next { position: absolute; bottom: 3%; right: 8%; width: 35%; height: 6%; }
+    .m11-ask-ai { position: absolute; bottom: 12%; right: 8%; width: 30%; height: 5%; }
+  </style>
+
+  <div id="m11-p1" style="position:relative; width:100%; height:100dvh; background: url('images/course/mod11_pg1.png') center/cover no-repeat;">
+    <div class="m11-nav">
+      <div class="clickable m11-back" onclick="prevScreen('s11', 's10')"></div>
+      <div class="clickable m11-next" onclick="showM11Page(2)"></div>
+    </div>
+  </div>
+
+  <div id="m11-p2" style="position:relative; width:100%; height:100dvh; background: url('images/course/mod11_pg2.png') center/cover no-repeat; display:none;">
+    <div class="m11-nav">
+      <div class="clickable m11-back" onclick="showM11Page(1)"></div>
+      <div class="clickable m11-next" onclick="showM11Page(3)"></div>
+    </div>
+  </div>
+
+  <div id="m11-p3" style="position:relative; width:100%; height:100dvh; background: url('images/course/mod11_pg3.png') center/cover no-repeat; display:none;">
+    <div class="m11-nav">
+      <div class="clickable m11-back" onclick="showM11Page(2)"></div>
+      <div class="clickable m11-next" onclick="showM11Page(4)"></div>
+    </div>
+  </div>
+
+  <div id="m11-p4" style="position:relative; width:100%; height:100dvh; background: url('images/course/mod11_pg4.png') center/cover no-repeat; display:none;">
+    <div class="m11-nav">
+      <div class="clickable m11-back" onclick="showM11Page(3)"></div>
+      <div class="clickable m11-next" onclick="showM11Page(5)"></div>
+    </div>
+  </div>
+
+  <!-- Page 5: Test -->
+  <div id="m11-p5" style="position:relative; width:100%; height:100dvh; background: url('images/course/mod11_pg5.png') center/cover no-repeat; display:none;">
+    <div class="m11-nav">
+      <div class="clickable m11-back" onclick="showM11Page(4)"></div>
+      <!-- Next button hidden until correct answers selected -->
+      <div id="m11-p5-next" class="clickable m11-next" onclick="showM11Page(6)" style="display:none;"></div>
+
+      <div id="m11-q1-h1" class="clickable m11-q1-opt1" onclick="checkM11(1,1)"></div>
+      <div id="m11-q1-h2" class="clickable m11-q1-opt2" onclick="checkM11(1,2)"></div>
+      <div id="m11-q1-h3" class="clickable m11-q1-opt3" onclick="checkM11(1,3)"></div>
+
+      <div id="m11-q2-h1" class="clickable m11-q2-opt1" onclick="checkM11(2,1)"></div>
+      <div id="m11-q2-h2" class="clickable m11-q2-opt2" onclick="checkM11(2,2)"></div>
+      <div id="m11-q2-h3" class="clickable m11-q2-opt3" onclick="checkM11(2,3)"></div>
+    </div>
+  </div>
+
+  <!-- Page 6: Recap -->
+  <div id="m11-p6" style="position:relative; width:100%; height:100dvh; background: url('images/course/mod11_pg6.png') center/cover no-repeat; display:none;">
+    <div class="m11-nav">
+      <div class="clickable m11-back" onclick="showM11Page(5)"></div>
+      <div class="clickable m11-ask-ai" onclick="openChat()"></div>
+      <div class="clickable m11-pg6-next" onclick="nextScreen('s11', 's12')"></div>
+    </div>
+  </div>
+
+  <script>
+    let m11Correct = { q1: false, q2: false };
+    function showM11Page(pageNum) {
+      for(let i=1; i<=6; i++) {
+        const el = document.getElementById('m11-p'+i);
+        if(el) el.style.display = 'none';
+      }
+      const target = document.getElementById('m11-p'+pageNum);
+      if(target) target.style.display = 'block';
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function checkM11(q, opt) {
+      const allHitboxes = [1, 2, 3].map(i => document.getElementById(`m11-q${q}-h${i}`));
+      allHitboxes.forEach(hb => { if(hb) hb.style.border = 'none'; });
+      
+      const selected = document.getElementById(`m11-q${q}-h${opt}`);
+      
+      if (q === 1) {
+        if (opt === 2) { // The Stomach Digests Them
+          if(selected) selected.style.border = '2px solid #00C4BC';
+          m11Correct.q1 = true;
+          showM11Toast("Correct! The stomach treats it like food.", true);
+        } else {
+          if(selected) selected.style.border = '2px solid #EF4444';
+          m11Correct.q1 = false;
+          showM11Toast("Not quite! Think about how the stomach breaks things down.", false);
+        }
+      } else if (q === 2) {
+        if (opt === 2) { // Puts The Peptide Past The Stomach
+          if(selected) selected.style.border = '2px solid #00C4BC';
+          m11Correct.q2 = true;
+          showM11Toast("Correct! Skipping the stomach keeps it intact.", true);
+        } else {
+          if(selected) selected.style.border = '2px solid #EF4444';
+          m11Correct.q2 = false;
+          showM11Toast("Incorrect. Re-read what Sub-Q injections avoid.", false);
+        }
+      }
+
+      const nextBtn = document.getElementById('m11-p5-next');
+      if (m11Correct.q1 && m11Correct.q2) {
+        if(nextBtn) nextBtn.style.display = 'block';
+      } else {
+        if(nextBtn) nextBtn.style.display = 'none';
+      }
+    }
+
+    function showM11Toast(msg, isSuccess) {
+      let toast = document.getElementById('m11-toast');
+      if(!toast) {
+        toast = document.createElement('div');
+        toast.id = 'm11-toast';
+        toast.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); padding:12px 24px; border-radius:8px; color:#fff; font-weight:bold; z-index:9999; transition:opacity 0.3s; opacity:0; text-align:center; max-width:80%;';
+        document.body.appendChild(toast);
+      }
+      toast.style.background = isSuccess ? 'rgba(0, 196, 188, 0.95)' : 'rgba(239, 68, 68, 0.95)';
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+    }
+  </script>
+</div>
+
+<!-- COURSE COMPLETE -->
+<div class="screen" id="s12">
   <div style="text-align:center;padding:20px 0;">
     <div style="width:80px;height:80px;background:linear-gradient(135deg,var(--teal),var(--blue));border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
@@ -2629,7 +2775,7 @@
       <h3 style="font-size:22px;margin-bottom:4px;">Peptide 101</h3>
       <p style="font-size:14px;color:var(--muted);margin-bottom:4px;">Foundations Of Peptide Research</p>
       <div style="width:60px;height:2px;background:linear-gradient(90deg,var(--teal),var(--blue));margin:12px auto;"></div>
-      <p style="font-size:13px;color:var(--silver);">This Certifies The Completion Of All 10 Modules Covering Peptide Biology, Mechanisms Of Action, Peptide Family Categories, Stacking Frameworks, Reconstitution Techniques, And Dosing Reference.</p>
+      <p style="font-size:13px;color:var(--silver);">This Certifies The Completion Of All 11 Modules Covering Peptide Biology, Mechanisms Of Action, Peptide Family Categories, Stacking Frameworks, Reconstitution Techniques, And Dosing Reference.</p>
       <div style="margin-top:16px;font-size:12px;color:var(--muted);" id="certDate"></div>
       <div style="margin-top:4px;font-size:11px;color:rgba(168,180,192,0.6);">PepNationLab - Research Education Division</div>
     </div>
@@ -2642,7 +2788,7 @@
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:12px;">Share Your Achievement</h3>
     <div style="background:var(--surface2);border-radius:10px;padding:14px;font-size:13px;color:var(--silver);font-family:monospace;line-height:1.6;user-select:all;" id="shareText">
-      I Completed Peptide 101 - Foundations Of Peptide Research On PepNationLab. 10 Modules Covering Peptide Biology, Mechanisms Of Action, The GH Axis, Reconstitution Techniques, And Peptide Family Categories. #PepNationLab #PeptideResearch #ResearchEducation
+      I Completed Peptide 101 - Foundations Of Peptide Research On PepNationLab. 11 Modules Covering Peptide Biology, Mechanisms Of Action, The GH Axis, Reconstitution Techniques, And Peptide Family Categories. #PepNationLab #PeptideResearch #ResearchEducation
     </div>
     <button class="btn btn-secondary" style="margin-top:12px;width:100%;" onclick="copyShare()" aria-label="Copy Share Text" id="copyBtn">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -2662,7 +2808,8 @@
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 7: Stacking And Protocols</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 8: Reconstitution Calculator</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 9: Dosing Reference Table</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;"><span>Module 10: What Peptides Are Not</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 10: What Peptides Are Not</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;"><span>Module 11: Injections vs Swallowed</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
     </div>
   </div>
 
