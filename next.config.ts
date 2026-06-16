@@ -36,7 +36,7 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: "/hub/MLB-ANALYTICS-ENGINE/:path*",
+        source: "/hub/MLB-ANALYTICS/:path*",
         destination: "https://mlb-analytics-engine.vercel.app/:path*",
       },
     ];
