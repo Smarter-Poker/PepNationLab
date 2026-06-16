@@ -3296,17 +3296,45 @@
   </div>
 
   <div id="certBlock" class="card" style="text-align:center;">
-    <div style="border:2px solid var(--teal);border-radius:14px;padding:24px;background:linear-gradient(135deg,rgba(0,196,188,0.06),rgba(59,130,246,0.06));">
-      <div style="font-size:11px;letter-spacing:3px;color:var(--muted);margin-bottom:8px;">CERTIFICATE OF COMPLETION</div>
-      <h3 style="font-size:22px;margin-bottom:4px;">Peptide 101</h3>
-      <p style="font-size:14px;color:var(--muted);margin-bottom:4px;">Foundations Of Peptide Research</p>
-      <div style="width:60px;height:2px;background:linear-gradient(90deg,var(--teal),var(--blue));margin:12px auto;"></div>
-      <p style="font-size:13px;color:var(--silver);">This Certifies The Completion Of All 14 Modules Covering Peptide Biology, Mechanisms Of Action, Peptide Family Categories, Stacking Frameworks, Reconstitution Techniques, And Dosing Reference.</p>
-      <div style="margin-top:16px;font-size:12px;color:var(--muted);" id="certDate"></div>
-      <div style="margin-top:4px;font-size:11px;color:rgba(168,180,192,0.6);">PepNationLab - Research Education Division</div>
+    
+    <!-- Input for dynamic name -->
+    <div id="certInputWrap" style="margin-bottom:24px; text-align:left;">
+      <label for="certNameInput" style="display:block; font-size:14px; font-weight:800; margin-bottom:8px; color:var(--text); text-transform:uppercase; letter-spacing:1px;">Enter Your Name For The Certificate:</label>
+      <input type="text" id="certNameInput" placeholder="e.g. Dr. Jane Doe" style="width:100%; padding:14px 16px; font-size:16px; font-weight:700; font-family:inherit; border: 3px solid #000; border-radius: 0px; background:var(--surface); color:var(--text); box-shadow: 4px 4px 0 #00C4BC; outline:none; transition:transform 0.1s, box-shadow 0.1s;" onkeyup="document.getElementById('certNameDisplay').innerText = this.value || '[ Your Name ]';" onfocus="this.style.transform='translate(2px, 2px)'; this.style.boxShadow='2px 2px 0 #00C4BC';" onblur="this.style.transform='none'; this.style.boxShadow='4px 4px 0 #00C4BC';" />
     </div>
-    <button class="btn btn-primary" style="margin-top:16px;width:100%;" onclick="printCert()" aria-label="Print Certificate">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+
+    <!-- The Neo-Brutalist Certificate -->
+    <div id="printableCert" style="border: 4px solid #000; border-radius: 0px; padding: 40px 24px; background: #fff; box-shadow: 8px 8px 0 #00C4BC; position: relative; overflow: hidden; margin-bottom: 24px;">
+      
+      <!-- Decorative corner elements -->
+      <div style="position:absolute; top:0; left:0; width:48px; height:48px; border-right:4px solid #000; border-bottom:4px solid #000; background:#00C4BC;"></div>
+      <div style="position:absolute; bottom:0; right:0; width:48px; height:48px; border-left:4px solid #000; border-top:4px solid #000; background:#3B82F6;"></div>
+      
+      <div style="font-size:12px; font-weight:900; letter-spacing:4px; color:#000; margin-bottom:16px; text-transform:uppercase;">Certificate of Completion</div>
+      <h3 style="font-size:36px; font-weight:900; color:#000; margin-bottom:8px; text-transform:uppercase; letter-spacing:-1px;">Peptide 101</h3>
+      <p style="font-size:16px; font-weight:800; color:#444; margin-bottom:24px; text-transform:uppercase; letter-spacing:1px;">Foundations Of Peptide Research</p>
+      
+      <div style="width:120px; height:5px; background:#000; margin:0 auto 32px;"></div>
+      
+      <p style="font-size:14px; font-weight:800; color:#666; text-transform:uppercase; letter-spacing:2px; margin-bottom:12px;">Proudly Presented To</p>
+      <h2 id="certNameDisplay" style="font-size:32px; font-weight:900; color:#000; margin-bottom:32px; min-height:40px; border-bottom: 3px dashed #000; display:inline-block; padding:0 24px; word-break:break-word;">[ Your Name ]</h2>
+      
+      <p style="font-size:14px; font-weight:700; color:#222; line-height:1.6; margin-bottom:32px; max-width:450px; margin-left:auto; margin-right:auto;">This certifies the completion of all 14 modules covering peptide biology, mechanisms of action, peptide family categories, stacking frameworks, reconstitution techniques, and dosing reference.</p>
+      
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:4px solid #000; padding-top:20px; text-align:left;">
+        <div>
+          <div style="font-size:12px; font-weight:900; color:#000; text-transform:uppercase; margin-bottom:4px; letter-spacing:1px;">Date Issued</div>
+          <div style="font-size:15px; font-weight:800; color:#00C4BC;" id="certDate"></div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:12px; font-weight:900; color:#000; text-transform:uppercase; margin-bottom:4px; letter-spacing:1px;">Authorized By</div>
+          <div style="font-size:15px; font-weight:800; color:#000;">PepNationLab</div>
+        </div>
+      </div>
+    </div>
+    
+    <button class="btn" style="width:100%; border:3px solid #000; border-radius:0; background:#00C4BC; color:#000; font-weight:900; font-size:16px; padding:16px; box-shadow:4px 4px 0 #000; text-transform:uppercase; transition:transform 0.1s, box-shadow 0.1s; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;" onmousedown="this.style.transform='translate(2px, 2px)'; this.style.boxShadow='2px 2px 0 #000';" onmouseup="this.style.transform='none'; this.style.boxShadow='4px 4px 0 #000';" onmouseleave="this.style.transform='none'; this.style.boxShadow='4px 4px 0 #000';" onclick="printCert()" aria-label="Print Certificate">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" style="flex-shrink:0;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       Print Certificate
     </button>
   </div>
@@ -3642,7 +3670,7 @@
   body * { visibility: hidden; }
   #certBlock, #certBlock * { visibility: visible; }
   #certBlock { position: fixed; top: 0; left: 0; width: 100%; padding: 40px; }
-  nav, .progress-wrap, .nav-ctrl, button { display: none !important; }
+  nav, .progress-wrap, .nav-ctrl, button, #certInputWrap { display: none !important; }
 }
 </style>
 
