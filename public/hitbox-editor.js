@@ -17,6 +17,8 @@ if (window.location.search.includes('edit=1')) {
       font-family: sans-serif;
       box-shadow: 0 10px 25px rgba(0,0,0,0.5);
       font-size: 13px;
+      max-height: 90vh;
+      overflow-y: auto;
     `;
 
     editorEl.innerHTML = `
@@ -41,7 +43,10 @@ if (window.location.search.includes('edit=1')) {
           <option value="11">Module 11 Quiz</option>
           <option value="12">Module 12 Quiz</option>
           <option value="13">Module 13 Quiz</option>
-          <option value="14">Module 14 Quiz</option>
+          <option value="14">Module 14 Quiz (Pg 2)</option>
+          <option value="14.3">Module 14 Quiz (Pg 3)</option>
+          <option value="14.4">Module 14 Quiz (Pg 4)</option>
+          <option value="14.5">Module 14 Quiz (Pg 5)</option>
         </select>
       </div>
 
@@ -51,6 +56,13 @@ if (window.location.search.includes('edit=1')) {
       </div>
       
       <div id="he-controls" style="display:none; gap:10px; flex-direction:column;">
+        
+        <div style="display:flex; gap:8px; margin-bottom:4px;">
+          <button id="he-sim-correct" style="flex:1; padding:6px; background:#10b981; color:#fff; border:none; border-radius:4px; cursor:pointer;">Show Correct</button>
+          <button id="he-sim-wrong" style="flex:1; padding:6px; background:#ef4444; color:#fff; border:none; border-radius:4px; cursor:pointer;">Show Incorrect</button>
+          <button id="he-sim-clear" style="flex:1; padding:6px; background:#64748b; color:#fff; border:none; border-radius:4px; cursor:pointer;">Clear</button>
+        </div>
+
         <div>
           <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:4px;"><span>Box Top (%)</span> <span id="he-top-val"></span></div>
           <input type="range" id="he-top" min="0" max="100" step="0.1" style="width:100%">
@@ -71,8 +83,8 @@ if (window.location.search.includes('edit=1')) {
         <div style="height:1px; background:#334155; margin:4px 0;"></div>
         
         <div>
-          <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:4px;"><span>Dot Left (px)</span> <span id="he-dotl-val"></span></div>
-          <input type="range" id="he-dotl" min="-50" max="100" step="1" style="width:100%">
+          <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:4px;"><span>Dot Left (%)</span> <span id="he-dotl-val"></span></div>
+          <input type="range" id="he-dotl" min="-10" max="50" step="0.1" style="width:100%">
         </div>
         <div>
           <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:4px;"><span>Dot Top (%)</span> <span id="he-dott-val"></span></div>
@@ -89,7 +101,6 @@ if (window.location.search.includes('edit=1')) {
 
     document.body.appendChild(editorEl);
 
-    // 2. State
     let activePage = null;
     let hitboxes = [];
     let selectedBox = null;
@@ -97,7 +108,6 @@ if (window.location.search.includes('edit=1')) {
     const selectEl = document.getElementById('he-select');
     const controlsEl = document.getElementById('he-controls');
     
-    // Sliders
     const sTop = document.getElementById('he-top');
     const sLeft = document.getElementById('he-left');
     const sWidth = document.getElementById('he-width');
@@ -105,7 +115,6 @@ if (window.location.search.includes('edit=1')) {
     const sDotL = document.getElementById('he-dotl');
     const sDotT = document.getElementById('he-dott');
 
-    // Values
     const vTop = document.getElementById('he-top-val');
     const vLeft = document.getElementById('he-left-val');
     const vWidth = document.getElementById('he-width-val');
@@ -113,7 +122,6 @@ if (window.location.search.includes('edit=1')) {
     const vDotL = document.getElementById('he-dotl-val');
     const vDotT = document.getElementById('he-dott-val');
 
-    // Add outline style globally for the active box
     const style = document.createElement('style');
     style.innerHTML = `
       .he-active-box {
@@ -124,29 +132,23 @@ if (window.location.search.includes('edit=1')) {
     `;
     document.head.appendChild(style);
 
-    // 3. Scanner to find active page and hitboxes
     setInterval(() => {
-      // Find the currently active page (modules 1-14)
       const newActive = document.querySelector('.m1-page.active, .m2-page.active, .m3-page.active, .m4-page.active, .m5-page.active, .m6-page.active, .m7-page.active, .m8-page.active, .m9-page.active, .m10-page.active, div[id^="m11-p"]:not([style*="display: none"]), div[id^="m12-p"]:not([style*="display: none"]), div[id^="m13-p"]:not([style*="display: none"]), .m14-page.active');
       
       if (newActive && newActive !== activePage) {
         activePage = newActive;
         document.getElementById('he-module-name').textContent = activePage.id;
         
-        // Find all hitboxes
         hitboxes = Array.from(activePage.querySelectorAll('[class*="-opt"]'));
         
-        // Populate select
         selectEl.innerHTML = '<option value="">-- Select Hitbox --</option>';
         hitboxes.forEach((box, i) => {
           const opt = document.createElement('option');
           opt.value = i;
-          // Clean up classname for display
           opt.textContent = `Box ${i+1}: ` + box.className.replace('selected','').replace('wrong-opt','').trim();
           selectEl.appendChild(opt);
         });
 
-        // Reset selection
         if (selectedBox) selectedBox.classList.remove('he-active-box');
         selectedBox = null;
         controlsEl.style.display = 'none';
@@ -154,28 +156,38 @@ if (window.location.search.includes('edit=1')) {
       }
     }, 500);
 
-    // 3.5 Quick Jump Logic
     document.getElementById('he-jump').addEventListener('change', (e) => {
-      const mod = e.target.value;
+      let mod = e.target.value;
       if (!mod) return;
       
-      // Hide everything
-      document.querySelectorAll('[class*="-page"]').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('div[id^="m11-p"], div[id^="m12-p"], div[id^="m13-p"]').forEach(el => el.style.display = 'none');
+      let pg = 5;
+      if(mod.includes('.')) {
+        let parts = mod.split('.');
+        mod = parts[0];
+        pg = parseInt(parts[1]);
+      }
+
+      // Hide all modals/overlays just in case
       document.getElementById('roadmap').classList.remove('active');
 
-      // Show requested quiz page
+      // 1. Force open the module's main #sX screen! This was missing and caused the blank screen.
+      if (window.goTo) window.goTo(parseInt(mod));
+
+      // 2. Hide all pages inside the course
+      document.querySelectorAll('[class*="-page"]').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('div[id^="m11-p"], div[id^="m12-p"], div[id^="m13-p"]').forEach(el => el.style.display = 'none');
+
+      // 3. Show requested quiz page
       let target;
       if (['11','12','13'].includes(mod)) {
-        target = document.getElementById(`m${mod}-p5`);
+        target = document.getElementById(`m${mod}-p${pg}`);
         if (target) target.style.display = 'block';
       } else {
-        target = document.getElementById(`m${mod}p5`);
+        target = document.getElementById(`m${mod}p${pg}`);
         if (target) target.classList.add('active');
       }
     });
 
-    // 4. Select a box
     selectEl.addEventListener('change', (e) => {
       if (selectedBox) selectedBox.classList.remove('he-active-box');
       
@@ -190,10 +202,7 @@ if (window.location.search.includes('edit=1')) {
       selectedBox.classList.add('he-active-box');
       controlsEl.style.display = 'flex';
 
-      // Read current values
       const comp = window.getComputedStyle(selectedBox);
-      
-      // We read inline styles first, fallback to computed percentages
       const parentW = selectedBox.parentElement.clientWidth;
       const parentH = selectedBox.parentElement.clientHeight;
 
@@ -213,14 +222,13 @@ if (window.location.search.includes('edit=1')) {
       sHeight.value = curHeight; vHeight.textContent = curHeight.toFixed(1) + '%';
 
       // Dot filler reads from CSS variables if present, else defaults
-      const dotL = selectedBox.style.getPropertyValue('--dot-left') || '10px';
+      const dotL = selectedBox.style.getPropertyValue('--dot-left') || '4.5%';
       const dotT = selectedBox.style.getPropertyValue('--dot-top') || '50%';
       
-      sDotL.value = parseFloat(dotL); vDotL.textContent = parseFloat(dotL) + 'px';
+      sDotL.value = parseFloat(dotL); vDotL.textContent = parseFloat(dotL) + '%';
       sDotT.value = parseFloat(dotT); vDotT.textContent = parseFloat(dotT) + '%';
     });
 
-    // 5. Update box on slider change
     const updateBox = () => {
       if (!selectedBox) return;
       
@@ -229,14 +237,14 @@ if (window.location.search.includes('edit=1')) {
       selectedBox.style.width = sWidth.value + '%';
       selectedBox.style.height = sHeight.value + '%';
       
-      selectedBox.style.setProperty('--dot-left', sDotL.value + 'px');
+      selectedBox.style.setProperty('--dot-left', sDotL.value + '%');
       selectedBox.style.setProperty('--dot-top', sDotT.value + '%');
 
       vTop.textContent = sTop.value + '%';
       vLeft.textContent = sLeft.value + '%';
       vWidth.textContent = sWidth.value + '%';
       vHeight.textContent = sHeight.value + '%';
-      vDotL.textContent = sDotL.value + 'px';
+      vDotL.textContent = sDotL.value + '%';
       vDotT.textContent = sDotT.value + '%';
     };
 
@@ -247,19 +255,35 @@ if (window.location.search.includes('edit=1')) {
     sDotL.addEventListener('input', updateBox);
     sDotT.addEventListener('input', updateBox);
 
-    // 6. Export HTML
+    // Color toggles
+    document.getElementById('he-sim-correct').addEventListener('click', () => {
+      if (!selectedBox) return;
+      selectedBox.classList.remove('wrong-opt');
+      selectedBox.classList.add('selected');
+    });
+    document.getElementById('he-sim-wrong').addEventListener('click', () => {
+      if (!selectedBox) return;
+      selectedBox.classList.remove('selected');
+      selectedBox.classList.add('wrong-opt');
+    });
+    document.getElementById('he-sim-clear').addEventListener('click', () => {
+      if (!selectedBox) return;
+      selectedBox.classList.remove('selected', 'wrong-opt');
+    });
+
     document.getElementById('he-export').addEventListener('click', () => {
       if (!activePage) return;
-      // Temporarily remove outline class so it doesn't get copied
       if (selectedBox) selectedBox.classList.remove('he-active-box');
       
+      // Clear simulations before export so it doesn't hardcode them
+      hitboxes.forEach(b => b.classList.remove('selected', 'wrong-opt'));
+
       const html = activePage.outerHTML;
       const out = document.getElementById('he-output');
       out.style.display = 'block';
       out.value = html;
       out.select();
       
-      // Restore outline
       if (selectedBox) selectedBox.classList.add('he-active-box');
       
       const btn = document.getElementById('he-export');
