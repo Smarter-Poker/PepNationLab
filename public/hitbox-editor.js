@@ -125,17 +125,20 @@ if (window.location.search.includes('edit=1')) {
     const style = document.createElement('style');
     style.innerHTML = `
       .he-active-box {
-        outline: 2px dashed #f87171 !important;
+        border: 2px dashed #f87171 !important;
         background: rgba(248, 113, 113, 0.2) !important;
+        border-radius: 8px !important;
         z-index: 9999 !important;
       }
       .selected {
         border: 2px solid #00C4BC !important;
         background: rgba(0, 196, 188, 0.15) !important;
+        border-radius: 8px !important;
       }
       .wrong-opt {
         border: 2px solid #ef4444 !important;
         background: rgba(239, 68, 68, 0.15) !important;
+        border-radius: 8px !important;
       }
       .selected::before, .wrong-opt::before {
         content: '';
