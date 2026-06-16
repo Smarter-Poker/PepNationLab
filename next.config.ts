@@ -33,6 +33,14 @@ const nextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      {
+        source: "/hub/MLB-ANALYTICS-ENGINE/:path*",
+        destination: "https://mlb-analytics-engine.vercel.app/:path*",
+      },
+    ];
+  },
   async headers() {
     return [
       {
