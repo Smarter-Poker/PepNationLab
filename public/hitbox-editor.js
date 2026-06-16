@@ -141,12 +141,21 @@ if (window.location.search.includes('edit=1')) {
       }
 
       // Hide all modals/overlays just in case
-      document.getElementById('roadmap').classList.remove('active');
+      const roadmap = document.getElementById('roadmap');
+      if (roadmap) roadmap.classList.remove('active');
 
-      // 1. Force open the module's main #sX screen! This was missing and caused the blank screen.
-      if (window.goTo) window.goTo(parseInt(mod));
+      // 1. Force open the module's main #sX screen (bypassing the goTo lock!)
+      document.querySelectorAll('.screen').forEach(el => {
+        el.classList.remove('active');
+        el.style.display = 'none';
+      });
+      const sScreen = document.getElementById('s' + mod);
+      if (sScreen) {
+        sScreen.classList.add('active');
+        sScreen.style.display = 'block';
+      }
 
-      // 2. Hide all pages inside the course
+      // 2. Hide all internal module pages
       document.querySelectorAll('[class*="-page"]').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('div[id^="m11-p"], div[id^="m12-p"], div[id^="m13-p"]').forEach(el => el.style.display = 'none');
 
