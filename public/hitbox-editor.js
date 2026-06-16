@@ -307,7 +307,14 @@ if (window.location.search.includes('edit=1')) {
       if (selectedBox) selectedBox.classList.remove('he-active-box');
       
       // Clear simulations before export so it doesn't hardcode them
-      hitboxes.forEach(b => b.classList.remove('selected', 'wrong-opt'));
+      hitboxes.forEach(b => {
+        b.classList.remove('selected', 'wrong-opt');
+        b.style.border = '';
+        b.style.borderWidth = '';
+        b.style.borderStyle = '';
+        b.style.borderColor = '';
+        b.style.borderImage = '';
+      });
 
       const html = activePage.outerHTML;
       const out = document.getElementById('he-output');
