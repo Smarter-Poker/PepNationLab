@@ -133,7 +133,7 @@ if (window.location.search.includes('edit=1')) {
     document.head.appendChild(style);
 
     setInterval(() => {
-      const newActive = document.querySelector('.m1-page.active, .m2-page.active, .m3-page.active, .m4-page.active, .m5-page.active, .m6-page.active, .m7-page.active, .m8-page.active, .m9-page.active, .m10-page.active, div[id^="m11-p"]:not([style*="display: none"]), div[id^="m12-p"]:not([style*="display: none"]), div[id^="m13-p"]:not([style*="display: none"]), .m14-page.active');
+      const newActive = document.querySelector('.m1-page.active, .m2-page.active, .m3-page.active, .m4-page.active, .m5-page.active, .m6-page.active, .m7-page.active, .m8-page.active, .m9-page.active, .m10-page.active, div[id^="m11-p"][style*="display: block"], div[id^="m12-p"][style*="display: block"], div[id^="m13-p"][style*="display: block"], .m14-page.active');
       
       if (newActive && newActive !== activePage) {
         activePage = newActive;
