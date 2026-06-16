@@ -129,6 +129,26 @@ if (window.location.search.includes('edit=1')) {
         background: rgba(248, 113, 113, 0.2) !important;
         z-index: 9999 !important;
       }
+      .selected {
+        border: 2px solid #00C4BC !important;
+        background: rgba(0, 196, 188, 0.15) !important;
+      }
+      .wrong-opt {
+        border: 2px solid #ef4444 !important;
+        background: rgba(239, 68, 68, 0.15) !important;
+      }
+      .selected::before, .wrong-opt::before {
+        content: '';
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        left: var(--dot-left, 50%);
+        top: var(--dot-top, 50%);
+        transform: translate(-50%, -50%);
+      }
+      .selected::before { background-color: #00C4BC !important; }
+      .wrong-opt::before { background-color: #ef4444 !important; }
     `;
     document.head.appendChild(style);
 
