@@ -162,7 +162,7 @@ if (window.location.search.includes('edit=1')) {
         activePage = newActive;
         document.getElementById('he-module-name').textContent = activePage.id;
         
-        hitboxes = Array.from(activePage.querySelectorAll('[class*="-opt"]'));
+        hitboxes = Array.from(activePage.querySelectorAll('[class*="-opt"], [class*="-grid"]'));
         
         selectEl.innerHTML = '<option value="">-- Select Hitbox --</option>';
         hitboxes.forEach((box, i) => {
