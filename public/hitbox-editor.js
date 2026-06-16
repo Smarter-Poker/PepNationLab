@@ -23,8 +23,30 @@ if (window.location.search.includes('edit=1')) {
       <div style="font-weight:bold; margin-bottom:12px; font-size:15px; border-bottom:1px solid #334155; padding-bottom:8px;">
         Hitbox Editor <span id="he-module-name" style="color:#38bdf8; float:right;">Loading...</span>
       </div>
+
       <div style="margin-bottom:12px;">
-        <label style="display:block; margin-bottom:4px; color:#94a3b8;">Select Hitbox:</label>
+        <label style="display:block; margin-bottom:4px; color:#94a3b8; font-weight:bold;">1. Quick Jump to Quiz:</label>
+        <select id="he-jump" style="width:100%; padding:6px; background:#0f172a; color:#f8fafc; border:1px solid #334155; border-radius:6px;">
+          <option value="">-- Jump to Module --</option>
+          <option value="1">Module 1 Quiz</option>
+          <option value="2">Module 2 Quiz</option>
+          <option value="3">Module 3 Quiz</option>
+          <option value="4">Module 4 Quiz</option>
+          <option value="5">Module 5 Quiz</option>
+          <option value="6">Module 6 Quiz</option>
+          <option value="7">Module 7 Quiz</option>
+          <option value="8">Module 8 Quiz</option>
+          <option value="9">Module 9 Quiz</option>
+          <option value="10">Module 10 Quiz</option>
+          <option value="11">Module 11 Quiz</option>
+          <option value="12">Module 12 Quiz</option>
+          <option value="13">Module 13 Quiz</option>
+          <option value="14">Module 14 Quiz</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label style="display:block; margin-bottom:4px; color:#94a3b8; font-weight:bold;">2. Select Hitbox to Edit:</label>
         <select id="he-select" style="width:100%; padding:6px; background:#0f172a; color:#f8fafc; border:1px solid #334155; border-radius:6px;"></select>
       </div>
       
@@ -120,7 +142,7 @@ if (window.location.search.includes('edit=1')) {
           const opt = document.createElement('option');
           opt.value = i;
           // Clean up classname for display
-          opt.textContent = \`Box \${i+1}: \` + box.className.replace('selected','').replace('wrong-opt','').trim();
+          opt.textContent = `Box ${i+1}: ` + box.className.replace('selected','').replace('wrong-opt','').trim();
           selectEl.appendChild(opt);
         });
 
@@ -131,6 +153,27 @@ if (window.location.search.includes('edit=1')) {
         document.getElementById('he-output').style.display = 'none';
       }
     }, 500);
+
+    // 3.5 Quick Jump Logic
+    document.getElementById('he-jump').addEventListener('change', (e) => {
+      const mod = e.target.value;
+      if (!mod) return;
+      
+      // Hide everything
+      document.querySelectorAll('[class*="-page"]').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('div[id^="m11-p"], div[id^="m12-p"], div[id^="m13-p"]').forEach(el => el.style.display = 'none');
+      document.getElementById('roadmap').classList.remove('active');
+
+      // Show requested quiz page
+      let target;
+      if (['11','12','13'].includes(mod)) {
+        target = document.getElementById(`m${mod}-p5`);
+        if (target) target.style.display = 'block';
+      } else {
+        target = document.getElementById(`m${mod}p5`);
+        if (target) target.classList.add('active');
+      }
+    });
 
     // 4. Select a box
     selectEl.addEventListener('change', (e) => {
