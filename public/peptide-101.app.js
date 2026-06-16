@@ -667,6 +667,7 @@ function copyShare() {
     s11:ic('<path d="M18 2l4 4M16.5 7.5l-2-2M3.5 20.5l6.5-6.5M13 5l6 6-8.5 8.5H7v-3.5z"/>'),
     s12:ic('<path d="M12 3l8 3v6c0 5-3.5 7.6-8 9-4.5-1.4-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>'),
     s13:ic('<path d="M12 3v18M6 21h12M4 8h16M7 8l-2.5 5.5h5zM17 8l-2.5 5.5h5z"/>'),
+    s14:ic('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'),
     cert:ic('<circle cx="12" cy="9" r="6"/><path d="M9 14.5 8 22l4-2.5L16 22l-1-7.5"/>')
   };
 
