@@ -652,7 +652,7 @@ function copyShare() {
 
   /* ---------- ORDER + REGISTRY ---------- */
   var ORDER = ['s0','s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15'];
-  var CONTENT = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13'];
+  var CONTENT = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14'];
   var REG = {
     s1:{n:1,t:'What Is A Peptide?',time:'4 Min'}, s2:{n:2,t:'Building A Peptide',time:'5 Min'},
     s3:{n:3,t:'The Lock And Key',time:'4 Min'}, s4:{n:4,t:'What Peptides Are Studied For',time:'5 Min'},
@@ -660,7 +660,7 @@ function copyShare() {
     s7:{n:7,t:'Stacking And Protocols',time:'4 Min'}, s8:{n:8,t:'Reconstitution Calculator',time:'4 Min'},
     s9:{n:9,t:'Dosing Reference',time:'3 Min'}, s10:{n:10,t:'What Peptides Are NOT',time:'4 Min'},
     s11:{n:11,t:'Why Peptides Are Injected',time:'3 Min'}, s12:{n:12,t:'Safety, Purity And Sourcing',time:'5 Min'},
-    s13:{n:13,t:'Legality And Research Use',time:'3 Min'}
+    s13:{n:13,t:'Legality And Research Use',time:'3 Min'}, s14:{n:14,t:'Module 14',time:'3 Min'}
   };
   var ICN = {
     s10:ic('<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>'),
