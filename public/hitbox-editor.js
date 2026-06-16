@@ -71,25 +71,6 @@ if (window.location.search.includes('edit=1')) {
           <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:4px;"><span>Box Left (%)</span> <span id="he-left-val"></span></div>
           <input type="range" id="he-left" min="0" max="100" step="0.1" style="width:100%">
         </div>
-        <div>
-          <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:4px;"><span>Box Width (%)</span> <span id="he-width-val"></span></div>
-          <input type="range" id="he-width" min="0" max="100" step="0.1" style="width:100%">
-        </div>
-        <div>
-          <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:4px;"><span>Box Height (%)</span> <span id="he-height-val"></span></div>
-          <input type="range" id="he-height" min="0" max="100" step="0.1" style="width:100%">
-        </div>
-        
-        <div style="height:1px; background:#334155; margin:4px 0;"></div>
-        
-        <div>
-          <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:4px;"><span>Dot Left (%)</span> <span id="he-dotl-val"></span></div>
-          <input type="range" id="he-dotl" min="-10" max="50" step="0.1" style="width:100%">
-        </div>
-        <div>
-          <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:4px;"><span>Dot Top (%)</span> <span id="he-dott-val"></span></div>
-          <input type="range" id="he-dott" min="0" max="100" step="1" style="width:100%">
-        </div>
       </div>
 
       <button id="he-export" style="margin-top:16px; width:100%; padding:8px; background:#0ea5e9; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">
@@ -110,17 +91,9 @@ if (window.location.search.includes('edit=1')) {
     
     const sTop = document.getElementById('he-top');
     const sLeft = document.getElementById('he-left');
-    const sWidth = document.getElementById('he-width');
-    const sHeight = document.getElementById('he-height');
-    const sDotL = document.getElementById('he-dotl');
-    const sDotT = document.getElementById('he-dott');
 
     const vTop = document.getElementById('he-top-val');
     const vLeft = document.getElementById('he-left-val');
-    const vWidth = document.getElementById('he-width-val');
-    const vHeight = document.getElementById('he-height-val');
-    const vDotL = document.getElementById('he-dotl-val');
-    const vDotT = document.getElementById('he-dott-val');
 
     const style = document.createElement('style');
     style.innerHTML = `
@@ -213,20 +186,9 @@ if (window.location.search.includes('edit=1')) {
 
       const curTop = parsePct(selectedBox.style.top, comp.top, parentH);
       const curLeft = parsePct(selectedBox.style.left, comp.left, parentW);
-      const curWidth = parsePct(selectedBox.style.width, comp.width, parentW);
-      const curHeight = parsePct(selectedBox.style.height, comp.height, parentH);
 
       sTop.value = curTop; vTop.textContent = curTop.toFixed(1) + '%';
       sLeft.value = curLeft; vLeft.textContent = curLeft.toFixed(1) + '%';
-      sWidth.value = curWidth; vWidth.textContent = curWidth.toFixed(1) + '%';
-      sHeight.value = curHeight; vHeight.textContent = curHeight.toFixed(1) + '%';
-
-      // Dot filler reads from CSS variables if present, else defaults
-      const dotL = selectedBox.style.getPropertyValue('--dot-left') || '4.5%';
-      const dotT = selectedBox.style.getPropertyValue('--dot-top') || '50%';
-      
-      sDotL.value = parseFloat(dotL); vDotL.textContent = parseFloat(dotL) + '%';
-      sDotT.value = parseFloat(dotT); vDotT.textContent = parseFloat(dotT) + '%';
     });
 
     const updateBox = () => {
@@ -234,26 +196,13 @@ if (window.location.search.includes('edit=1')) {
       
       selectedBox.style.top = sTop.value + '%';
       selectedBox.style.left = sLeft.value + '%';
-      selectedBox.style.width = sWidth.value + '%';
-      selectedBox.style.height = sHeight.value + '%';
-      
-      selectedBox.style.setProperty('--dot-left', sDotL.value + '%');
-      selectedBox.style.setProperty('--dot-top', sDotT.value + '%');
 
       vTop.textContent = sTop.value + '%';
       vLeft.textContent = sLeft.value + '%';
-      vWidth.textContent = sWidth.value + '%';
-      vHeight.textContent = sHeight.value + '%';
-      vDotL.textContent = sDotL.value + '%';
-      vDotT.textContent = sDotT.value + '%';
     };
 
     sTop.addEventListener('input', updateBox);
     sLeft.addEventListener('input', updateBox);
-    sWidth.addEventListener('input', updateBox);
-    sHeight.addEventListener('input', updateBox);
-    sDotL.addEventListener('input', updateBox);
-    sDotT.addEventListener('input', updateBox);
 
     // Color toggles
     document.getElementById('he-sim-correct').addEventListener('click', () => {
