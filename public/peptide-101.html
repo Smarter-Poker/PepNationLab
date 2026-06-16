@@ -2691,7 +2691,7 @@
     <div class="m11-nav">
       <div class="clickable m11-back" onclick="showM11Page(5)"></div>
       <div class="clickable m11-ask-ai" onclick="openChat()"></div>
-      <div class="clickable m11-pg6-next" onclick="nextScreen('s11', 's12')"></div>
+      <div class="clickable m11-pg6-next" onclick="completeModule('s11'); goTo(12)"></div>
     </div>
   </div>
 
@@ -2837,7 +2837,7 @@
     <div class="m12-nav">
       <div class="clickable m12-back" onclick="showM12Page(5)"></div>
       <div class="clickable m12-ask-ai" onclick="openChat()"></div>
-      <div class="clickable m12-pg6-next" onclick="nextScreen('s12', 's13')"></div>
+      <div class="clickable m12-pg6-next" onclick="completeModule('s12'); goTo(13)"></div>
     </div>
   </div>
 
@@ -2987,7 +2987,7 @@
     <div class="m13-nav">
       <div class="clickable m13-back" onclick="showM13Page(5)"></div>
       <div class="clickable m13-ask-ai" onclick="openChat()"></div>
-      <div class="clickable m13-pg6-next" onclick="nextScreen('s13', 's14')"></div>
+      <div class="clickable m13-pg6-next" onclick="completeModule('s13'); goTo(14)"></div>
     </div>
   </div>
 
@@ -3202,7 +3202,7 @@
   <div id="m14-p6" style="position:relative; width:100%; height:100dvh; background: url('images/course/mod14_pg6.png') center/cover no-repeat; display:none;">
     <div class="m14-nav">
       <div class="clickable m14-back" onclick="showM14Page(5)"></div>
-      <div class="clickable m14-pg6-next" onclick="nextScreen('s14', 's15')"></div>
+      <div class="clickable m14-pg6-next" onclick="goTo(15)"></div>
     </div>
   </div>
 
@@ -3262,6 +3262,11 @@
       }
 
       if (score >= 7) {
+        if(window.state && window.state.exam) {
+          window.state.exam.passed = true;
+          if(typeof window.save === 'function') window.save();
+          if(typeof window.updateProgressUI === 'function') window.updateProgressUI();
+        }
         showM14Toast(`You Passed! Score: ${score}/10`, true);
         setTimeout(() => { showM14Page(6); }, 1500);
       } else {

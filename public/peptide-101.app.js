@@ -651,22 +651,22 @@ function copyShare() {
   var __origShowHL=window.showHL, __origCalc=window.calcRecon;
 
   /* ---------- ORDER + REGISTRY ---------- */
-  var ORDER = ['s0','s1','s2','s3','s4','s5','s6','s7','s8','s9','s11','s12','s13','s14','s15','s10'];
-  var CONTENT = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s11','s12','s13','s14'];
+  var ORDER = ['s0','s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15'];
+  var CONTENT = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13'];
   var REG = {
     s1:{n:1,t:'What Is A Peptide?',time:'4 Min'}, s2:{n:2,t:'Building A Peptide',time:'5 Min'},
     s3:{n:3,t:'The Lock And Key',time:'4 Min'}, s4:{n:4,t:'What Peptides Are Studied For',time:'5 Min'},
     s5:{n:5,t:'Handling And Storage',time:'6 Min'}, s6:{n:6,t:'Peptide Families',time:'8 Min'},
     s7:{n:7,t:'Stacking And Protocols',time:'4 Min'}, s8:{n:8,t:'Reconstitution Calculator',time:'4 Min'},
-    s9:{n:9,t:'Dosing Reference',time:'3 Min'}, s11:{n:10,t:'What Peptides Are NOT',time:'4 Min'},
-    s12:{n:11,t:'Why Peptides Are Injected',time:'3 Min'}, s13:{n:12,t:'Safety, Purity And Sourcing',time:'5 Min'},
-    s14:{n:13,t:'Legality And Research Use',time:'3 Min'}
+    s9:{n:9,t:'Dosing Reference',time:'3 Min'}, s10:{n:10,t:'What Peptides Are NOT',time:'4 Min'},
+    s11:{n:11,t:'Why Peptides Are Injected',time:'3 Min'}, s12:{n:12,t:'Safety, Purity And Sourcing',time:'5 Min'},
+    s13:{n:13,t:'Legality And Research Use',time:'3 Min'}
   };
   var ICN = {
-    s11:ic('<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>'),
-    s12:ic('<path d="M18 2l4 4M16.5 7.5l-2-2M3.5 20.5l6.5-6.5M13 5l6 6-8.5 8.5H7v-3.5z"/>'),
-    s13:ic('<path d="M12 3l8 3v6c0 5-3.5 7.6-8 9-4.5-1.4-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>'),
-    s14:ic('<path d="M12 3v18M6 21h12M4 8h16M7 8l-2.5 5.5h5zM17 8l-2.5 5.5h5z"/>'),
+    s10:ic('<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>'),
+    s11:ic('<path d="M18 2l4 4M16.5 7.5l-2-2M3.5 20.5l6.5-6.5M13 5l6 6-8.5 8.5H7v-3.5z"/>'),
+    s12:ic('<path d="M12 3l8 3v6c0 5-3.5 7.6-8 9-4.5-1.4-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>'),
+    s13:ic('<path d="M12 3v18M6 21h12M4 8h16M7 8l-2.5 5.5h5zM17 8l-2.5 5.5h5z"/>'),
     cert:ic('<circle cx="12" cy="9" r="6"/><path d="M9 14.5 8 22l4-2.5L16 22l-1-7.5"/>')
   };
 
@@ -886,7 +886,6 @@ function copyShare() {
     try{curScreen=parseInt(id.replace('s',''))||0;}catch(e){}
     const _sy = elx.getBoundingClientRect().top + window.scrollY; window.scrollTo({top:Math.max(0,_sy),behavior:RM?'auto':'smooth'});
     if(id==='s9' && typeof renderDoseTable==='function') renderDoseTable();
-    if(id==='s10'){ setCertDate(); refreshCertGate(); }
     if(id==='s15') resetExamView();
     updateProgressUI(); save();
   }
@@ -1243,8 +1242,7 @@ function copyShare() {
   function init(){
     if(window.__p101init) return; window.__p101init=1;
     buildRefModal();
-    buildNewModules();
-    buildAssessment();
+    if(typeof buildBondViz==='function') buildBondViz();
     CONTENT.forEach(injectMeta);
     enhanceCert();
     buildRoadmap();

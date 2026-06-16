@@ -634,7 +634,7 @@ a:focus-visible, button:focus-visible, .quiz-opt:focus-visible, .roadmap-card:fo
 .rm-state.done{color:var(--teal);}
 .rm-state.open{color:var(--nk2);}
 .roadmap-card.is-complete{box-shadow:0 6px 16px rgba(0,0,0,.45),inset 0 0 0 1px rgba(0,196,188,.25),inset 0 1px 0 rgba(255,255,255,.05);}
-.roadmap-card.is-locked{opacity:.62;}
+.roadmap-card.is-locked{opacity:.62; pointer-events: none;}
 .roadmap-card.is-current .rm-num{background:radial-gradient(circle at 50% 34%,#1d3357,#0a1322) padding-box,linear-gradient(155deg,#bfe0ff,#3b6ea8,#8fc0ff) border-box;color:#eaf2fb;}
 
 /* --- Module-complete toast/stamp --- */
