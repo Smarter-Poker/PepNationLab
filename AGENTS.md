@@ -64,7 +64,7 @@ calling `buildStepper()` and skips the overwrite automatically. No changes neede
 | `#s11` | Module 11 | ✅ Dynamic images (`mod11_pg1–6.png`) |
 | `#s12` | Module 12 | ✅ Dynamic images (`mod12_pg1–6.png`) |
 | `#s13` | Module 13 | ✅ Dynamic images (`mod13_pg1–6.png`) |
-| `#s14` | Module 14 | 🔄 JS-SVG |
+| `#s14` | Module 14 | ✅ Dynamic images (`mod14_pg1–6.png`) |
 
 **Never re-generate or overwrite JS-SVG content for a module already marked ✅.**
 <!-- END:peptide-101-module-image-convention -->

@@ -3060,7 +3060,233 @@
 </div>
 
 <!-- COURSE COMPLETE -->
-<div class="screen" id="s14">
+<div class="screen" id="s14" data-v14="1" style="padding: 0; background: transparent;">
+  <style>
+    #s14 { margin: 0 auto; width: 100%; }
+    @media (max-width: 800px) {
+      #s14 { margin-left: -20px; width: calc(100% + 40px); }
+    }
+    .m14-nav {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none;
+    }
+    .m14-nav .clickable { pointer-events: auto; cursor: pointer; }
+    
+    .m14-back { position: absolute; bottom: 3%; left: 8%; width: 25%; height: 6%; }
+    .m14-next { position: absolute; bottom: 3%; right: 8%; width: 25%; height: 6%; }
+
+    /* Single column general */
+    .m14-opt { position: absolute; left: 8%; width: 84%; height: 4.5%; border-radius: 8px; }
+    
+    /* P2: Q1 & Q2 (1-col) */
+    .m14-q1-1 { top: 34.5%; } .m14-q1-2 { top: 40.5%; } .m14-q1-3 { top: 46%; } .m14-q1-4 { top: 51.5%; }
+    .m14-q2-1 { top: 69.5%; } .m14-q2-2 { top: 75%; } .m14-q2-3 { top: 80.5%; } .m14-q2-4 { top: 86.5%; }
+
+    /* P3: Q3, Q4, Q5 (1-col) */
+    .m14-q3-1 { top: 25%; } .m14-q3-2 { top: 29.5%; } .m14-q3-3 { top: 33.5%; } .m14-q3-4 { top: 38%; }
+    .m14-q4-1 { top: 51%; } .m14-q4-2 { top: 55.5%; } .m14-q4-3 { top: 59.5%; } .m14-q4-4 { top: 64%; }
+    .m14-q5-1 { top: 76.5%; } .m14-q5-2 { top: 81%; } .m14-q5-3 { top: 85%; } .m14-q5-4 { top: 89.5%; }
+
+    /* P4: Q6, Q7, Q8 (2-col grid) */
+    .m14-grid { position: absolute; width: 40%; height: 4.5%; border-radius: 8px; }
+    .col-1 { left: 8%; } .col-2 { left: 52%; }
+    
+    .m14-q6-1 { top: 38%; } .m14-q6-2 { top: 38%; }
+    .m14-q6-3 { top: 43.5%; } .m14-q6-4 { top: 43.5%; }
+    
+    .m14-q7-1 { top: 60%; } .m14-q7-2 { top: 60%; }
+    .m14-q7-3 { top: 65.5%; } .m14-q7-4 { top: 65.5%; }
+    
+    .m14-q8-1 { top: 81%; } .m14-q8-2 { top: 81%; }
+    .m14-q8-3 { top: 86.5%; } .m14-q8-4 { top: 86.5%; }
+
+    /* P5: Q9 & Q10 (1-col) */
+    .m14-q9-1 { top: 22%; } .m14-q9-2 { top: 27%; } .m14-q9-3 { top: 32%; } .m14-q9-4 { top: 36.5%; }
+    .m14-q10-1 { top: 50.5%; } .m14-q10-2 { top: 55.5%; } .m14-q10-3 { top: 60.5%; } .m14-q10-4 { top: 65%; }
+
+    .m14-submit { position: absolute; top: 72%; left: 8%; width: 84%; height: 5%; border-radius: 12px; }
+
+    .m14-pg6-next { position: absolute; bottom: 3%; right: 8%; width: 35%; height: 6%; }
+  </style>
+
+  <div id="m14-p1" style="position:relative; width:100%; height:100dvh; background: url('images/course/mod14_pg1.png') center/cover no-repeat;">
+    <div class="m14-nav">
+      <div class="clickable m14-back" onclick="prevScreen('s14', 's13')"></div>
+      <div class="clickable m14-next" onclick="showM14Page(2)"></div>
+    </div>
+  </div>
+
+  <!-- P2: Q1, Q2 -->
+  <div id="m14-p2" style="position:relative; width:100%; height:100dvh; background: url('images/course/mod14_pg2.png') center/cover no-repeat; display:none;">
+    <div class="m14-nav">
+      <div class="clickable m14-back" onclick="showM14Page(1)"></div>
+      <div class="clickable m14-next" onclick="showM14Page(3)"></div>
+
+      <div id="m14-q1-1" class="clickable m14-opt m14-q1-1" onclick="selectM14(1, 1)"></div>
+      <div id="m14-q1-2" class="clickable m14-opt m14-q1-2" onclick="selectM14(1, 2)"></div>
+      <div id="m14-q1-3" class="clickable m14-opt m14-q1-3" onclick="selectM14(1, 3)"></div>
+      <div id="m14-q1-4" class="clickable m14-opt m14-q1-4" onclick="selectM14(1, 4)"></div>
+
+      <div id="m14-q2-1" class="clickable m14-opt m14-q2-1" onclick="selectM14(2, 1)"></div>
+      <div id="m14-q2-2" class="clickable m14-opt m14-q2-2" onclick="selectM14(2, 2)"></div>
+      <div id="m14-q2-3" class="clickable m14-opt m14-q2-3" onclick="selectM14(2, 3)"></div>
+      <div id="m14-q2-4" class="clickable m14-opt m14-q2-4" onclick="selectM14(2, 4)"></div>
+    </div>
+  </div>
+
+  <!-- P3: Q3, Q4, Q5 -->
+  <div id="m14-p3" style="position:relative; width:100%; height:100dvh; background: url('images/course/mod14_pg3.png') center/cover no-repeat; display:none;">
+    <div class="m14-nav">
+      <div class="clickable m14-back" onclick="showM14Page(2)"></div>
+      <div class="clickable m14-next" onclick="showM14Page(4)"></div>
+
+      <div id="m14-q3-1" class="clickable m14-opt m14-q3-1" onclick="selectM14(3, 1)"></div>
+      <div id="m14-q3-2" class="clickable m14-opt m14-q3-2" onclick="selectM14(3, 2)"></div>
+      <div id="m14-q3-3" class="clickable m14-opt m14-q3-3" onclick="selectM14(3, 3)"></div>
+      <div id="m14-q3-4" class="clickable m14-opt m14-q3-4" onclick="selectM14(3, 4)"></div>
+
+      <div id="m14-q4-1" class="clickable m14-opt m14-q4-1" onclick="selectM14(4, 1)"></div>
+      <div id="m14-q4-2" class="clickable m14-opt m14-q4-2" onclick="selectM14(4, 2)"></div>
+      <div id="m14-q4-3" class="clickable m14-opt m14-q4-3" onclick="selectM14(4, 3)"></div>
+      <div id="m14-q4-4" class="clickable m14-opt m14-q4-4" onclick="selectM14(4, 4)"></div>
+
+      <div id="m14-q5-1" class="clickable m14-opt m14-q5-1" onclick="selectM14(5, 1)"></div>
+      <div id="m14-q5-2" class="clickable m14-opt m14-q5-2" onclick="selectM14(5, 2)"></div>
+      <div id="m14-q5-3" class="clickable m14-opt m14-q5-3" onclick="selectM14(5, 3)"></div>
+      <div id="m14-q5-4" class="clickable m14-opt m14-q5-4" onclick="selectM14(5, 4)"></div>
+    </div>
+  </div>
+
+  <!-- P4: Q6, Q7, Q8 -->
+  <div id="m14-p4" style="position:relative; width:100%; height:100dvh; background: url('images/course/mod14_pg4.png') center/cover no-repeat; display:none;">
+    <div class="m14-nav">
+      <div class="clickable m14-back" onclick="showM14Page(3)"></div>
+      <div class="clickable m14-next" onclick="showM14Page(5)"></div>
+
+      <div id="m14-q6-1" class="clickable m14-grid col-1 m14-q6-1" onclick="selectM14(6, 1)"></div>
+      <div id="m14-q6-2" class="clickable m14-grid col-2 m14-q6-2" onclick="selectM14(6, 2)"></div>
+      <div id="m14-q6-3" class="clickable m14-grid col-1 m14-q6-3" onclick="selectM14(6, 3)"></div>
+      <div id="m14-q6-4" class="clickable m14-grid col-2 m14-q6-4" onclick="selectM14(6, 4)"></div>
+
+      <div id="m14-q7-1" class="clickable m14-grid col-1 m14-q7-1" onclick="selectM14(7, 1)"></div>
+      <div id="m14-q7-2" class="clickable m14-grid col-2 m14-q7-2" onclick="selectM14(7, 2)"></div>
+      <div id="m14-q7-3" class="clickable m14-grid col-1 m14-q7-3" onclick="selectM14(7, 3)"></div>
+      <div id="m14-q7-4" class="clickable m14-grid col-2 m14-q7-4" onclick="selectM14(7, 4)"></div>
+
+      <div id="m14-q8-1" class="clickable m14-grid col-1 m14-q8-1" onclick="selectM14(8, 1)"></div>
+      <div id="m14-q8-2" class="clickable m14-grid col-2 m14-q8-2" onclick="selectM14(8, 2)"></div>
+      <div id="m14-q8-3" class="clickable m14-grid col-1 m14-q8-3" onclick="selectM14(8, 3)"></div>
+      <div id="m14-q8-4" class="clickable m14-grid col-2 m14-q8-4" onclick="selectM14(8, 4)"></div>
+    </div>
+  </div>
+
+  <!-- P5: Q9, Q10 -->
+  <div id="m14-p5" style="position:relative; width:100%; height:100dvh; background: url('images/course/mod14_pg5.png') center/cover no-repeat; display:none;">
+    <div class="m14-nav">
+      <div class="clickable m14-back" onclick="showM14Page(4)"></div>
+
+      <div id="m14-q9-1" class="clickable m14-opt m14-q9-1" onclick="selectM14(9, 1)"></div>
+      <div id="m14-q9-2" class="clickable m14-opt m14-q9-2" onclick="selectM14(9, 2)"></div>
+      <div id="m14-q9-3" class="clickable m14-opt m14-q9-3" onclick="selectM14(9, 3)"></div>
+      <div id="m14-q9-4" class="clickable m14-opt m14-q9-4" onclick="selectM14(9, 4)"></div>
+
+      <div id="m14-q10-1" class="clickable m14-opt m14-q10-1" onclick="selectM14(10, 1)"></div>
+      <div id="m14-q10-2" class="clickable m14-opt m14-q10-2" onclick="selectM14(10, 2)"></div>
+      <div id="m14-q10-3" class="clickable m14-opt m14-q10-3" onclick="selectM14(10, 3)"></div>
+      <div id="m14-q10-4" class="clickable m14-opt m14-q10-4" onclick="selectM14(10, 4)"></div>
+
+      <div class="clickable m14-submit" onclick="submitM14()"></div>
+    </div>
+  </div>
+
+  <!-- Page 6: Recap -->
+  <div id="m14-p6" style="position:relative; width:100%; height:100dvh; background: url('images/course/mod14_pg6.png') center/cover no-repeat; display:none;">
+    <div class="m14-nav">
+      <div class="clickable m14-back" onclick="showM14Page(5)"></div>
+      <div class="clickable m14-pg6-next" onclick="nextScreen('s14', 's15')"></div>
+    </div>
+  </div>
+
+  <script>
+    let m14Answers = {};
+    const m14Correct = {
+      1: 1, // 2 To 50
+      2: 2, // Shape
+      3: 3, // Water
+      4: 2, // The Stomach Digests Them
+      5: 2, // In The Fridge
+      6: 2, // Goes Down
+      7: 1, // Identity And Purity
+      8: 3, // They Are For Research Use Only
+      9: 2, // More Often
+      10: 2 // Hit Different Pathways
+    };
+
+    function showM14Page(pageNum) {
+      for(let i=1; i<=6; i++) {
+        const el = document.getElementById('m14-p'+i);
+        if(el) el.style.display = 'none';
+      }
+      const target = document.getElementById('m14-p'+pageNum);
+      if(target) target.style.display = 'block';
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function selectM14(q, opt) {
+      // Clear all highlights for this question
+      for (let i = 1; i <= 4; i++) {
+        const hb = document.getElementById(`m14-q${q}-${i}`);
+        if(hb) hb.style.border = 'none';
+      }
+      // Highlight selection
+      const selected = document.getElementById(`m14-q${q}-${opt}`);
+      if(selected) {
+        selected.style.border = '2px solid #00C4BC';
+      }
+      m14Answers[q] = opt;
+    }
+
+    function submitM14() {
+      let score = 0;
+      let unanswered = [];
+      for (let i = 1; i <= 10; i++) {
+        if (!m14Answers[i]) {
+          unanswered.push(i);
+        } else if (m14Answers[i] === m14Correct[i]) {
+          score++;
+        }
+      }
+
+      if (unanswered.length > 0) {
+        showM14Toast("Please answer all questions before submitting.", false);
+        return;
+      }
+
+      if (score >= 7) {
+        showM14Toast(`You Passed! Score: ${score}/10`, true);
+        setTimeout(() => { showM14Page(6); }, 1500);
+      } else {
+        showM14Toast(`Score: ${score}/10. You need 7 to pass. Try again!`, false);
+      }
+    }
+
+    function showM14Toast(msg, isSuccess) {
+      let toast = document.getElementById('m14-toast');
+      if(!toast) {
+        toast = document.createElement('div');
+        toast.id = 'm14-toast';
+        toast.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); padding:12px 24px; border-radius:8px; color:#fff; font-weight:bold; z-index:9999; transition:opacity 0.3s; opacity:0; text-align:center; max-width:80%;';
+        document.body.appendChild(toast);
+      }
+      toast.style.background = isSuccess ? 'rgba(0, 196, 188, 0.95)' : 'rgba(239, 68, 68, 0.95)';
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+    }
+  </script>
+</div>
+
+<!-- COURSE COMPLETE -->
+<div class="screen" id="s15">
   <div style="text-align:center;padding:20px 0;">
     <div style="width:80px;height:80px;background:linear-gradient(135deg,var(--teal),var(--blue));border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
@@ -3075,7 +3301,7 @@
       <h3 style="font-size:22px;margin-bottom:4px;">Peptide 101</h3>
       <p style="font-size:14px;color:var(--muted);margin-bottom:4px;">Foundations Of Peptide Research</p>
       <div style="width:60px;height:2px;background:linear-gradient(90deg,var(--teal),var(--blue));margin:12px auto;"></div>
-      <p style="font-size:13px;color:var(--silver);">This Certifies The Completion Of All 13 Modules Covering Peptide Biology, Mechanisms Of Action, Peptide Family Categories, Stacking Frameworks, Reconstitution Techniques, And Dosing Reference.</p>
+      <p style="font-size:13px;color:var(--silver);">This Certifies The Completion Of All 14 Modules Covering Peptide Biology, Mechanisms Of Action, Peptide Family Categories, Stacking Frameworks, Reconstitution Techniques, And Dosing Reference.</p>
       <div style="margin-top:16px;font-size:12px;color:var(--muted);" id="certDate"></div>
       <div style="margin-top:4px;font-size:11px;color:rgba(168,180,192,0.6);">PepNationLab - Research Education Division</div>
     </div>
@@ -3088,7 +3314,7 @@
   <div class="card">
     <h3 style="font-size:15px;margin-bottom:12px;">Share Your Achievement</h3>
     <div style="background:var(--surface2);border-radius:10px;padding:14px;font-size:13px;color:var(--silver);font-family:monospace;line-height:1.6;user-select:all;" id="shareText">
-      I Completed Peptide 101 - Foundations Of Peptide Research On PepNationLab. 13 Modules Covering Peptide Biology, Mechanisms Of Action, The GH Axis, Reconstitution Techniques, And Peptide Family Categories. #PepNationLab #PeptideResearch #ResearchEducation
+      I Completed Peptide 101 - Foundations Of Peptide Research On PepNationLab. 14 Modules Covering Peptide Biology, Mechanisms Of Action, The GH Axis, Reconstitution Techniques, And Peptide Family Categories. #PepNationLab #PeptideResearch #ResearchEducation
     </div>
     <button class="btn btn-secondary" style="margin-top:12px;width:100%;" onclick="copyShare()" aria-label="Copy Share Text" id="copyBtn">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -3111,7 +3337,8 @@
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 10: What Peptides Are Not</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 11: Injections vs Swallowed</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 12: Safety, Purity And Sourcing</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;"><span>Module 13: Legality And Research Use</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>Module 13: Legality And Research Use</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;"><span>Module 14: Final Assessment</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
     </div>
   </div>
 
