@@ -123,7 +123,7 @@ export default function BookmarksDrawer({ onClose, onJump }: Props) {
             <X size={18} aria-hidden="true" />
           </button>
         </header>
-        <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px calc(12px + env(safe-area-inset-bottom, 0px)) 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {loading ? (
             <div style={{ color: 'var(--grey-400, #A8B4C0)', padding: 12, fontSize: '0.85rem' }}>Loading Bookmarks</div>
           ) : rows.length === 0 ? (

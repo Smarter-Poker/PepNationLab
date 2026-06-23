@@ -3482,7 +3482,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
         <button
           className="no-print"
           onClick={() => setHideIdentical(!hideIdentical)}
-          style={{ position: 'fixed', bottom: selected.length >= 2 ? 106 : 70, left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: hideIdentical ? '#00C4BC' : 'rgba(22,34,48,0.95)', color: hideIdentical ? '#04221F' : '#fff', border: `1px solid ${hideIdentical ? '#00C4BC' : 'rgba(255,255,255,0.2)'}`, padding: '9px 18px', borderRadius: 999, fontSize: '0.83rem', fontWeight: 800, boxShadow: '0 8px 32px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(12px)', cursor: 'pointer' }}
+          style={{ position: 'fixed', bottom: selected.length >= 2 ? 'calc(106px + env(safe-area-inset-bottom, 0px))' : 'calc(70px + env(safe-area-inset-bottom, 0px))', left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: hideIdentical ? '#00C4BC' : 'rgba(22,34,48,0.95)', color: hideIdentical ? '#04221F' : '#fff', border: `1px solid ${hideIdentical ? '#00C4BC' : 'rgba(255,255,255,0.2)'}`, padding: '9px 18px', borderRadius: 999, fontSize: '0.83rem', fontWeight: 800, boxShadow: '0 8px 32px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(12px)', cursor: 'pointer' }}
         >
           {hideIdentical ? <Check size={16} /> : <Filter size={16} />}
           {hideIdentical ? 'Showing Differences' : 'Differences Only'}
@@ -3493,7 +3493,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
         <button
           className="no-print"
           onClick={() => setJumpMenuOpen(true)}
-          style={{ position: 'fixed', bottom: selected.length >= 2 ? 148 : 88, left: 20, zIndex: 100, background: 'rgba(22,34,48,0.95)', color: '#fff', border: `1px solid rgba(255,255,255,0.2)`, padding: '10px', borderRadius: '50%', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)', cursor: 'pointer' }}
+          style={{ position: 'fixed', bottom: selected.length >= 2 ? 'calc(148px + env(safe-area-inset-bottom, 0px))' : 'calc(88px + env(safe-area-inset-bottom, 0px))', left: 20, zIndex: 100, background: 'rgba(22,34,48,0.95)', color: '#fff', border: `1px solid rgba(255,255,255,0.2)`, padding: '10px', borderRadius: '50%', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)', cursor: 'pointer' }}
         >
           <List size={20} />
         </button>
@@ -3502,7 +3502,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
       {/* Reorder Modal */}
       {reorderModalOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setReorderModalOpen(false)}>
-          <div style={{ background: '#162230', width: '100%', maxWidth: 400, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, boxShadow: '0 -10px 40px rgba(0,0,0,0.5)', animation: 'slideUp 0.3s ease-out' }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: '#162230', width: '100%', maxWidth: 400, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)', animation: 'slideUp 0.3s ease-out' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Reorder Columns</h3>
               <button onClick={() => setReorderModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#A8B4C0', cursor: 'pointer' }}><X size={24} /></button>
@@ -3542,7 +3542,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
       )}
       {jumpMenuOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setJumpMenuOpen(false)}>
-          <div style={{ background: '#162230', width: '100%', maxWidth: 400, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, boxShadow: '0 -10px 40px rgba(0,0,0,0.5)', animation: 'slideUp 0.3s ease-out' }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: '#162230', width: '100%', maxWidth: 400, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)', animation: 'slideUp 0.3s ease-out' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Jump to Section</h3>
               <button onClick={() => setJumpMenuOpen(false)} style={{ background: 'transparent', border: 'none', color: '#A8B4C0', cursor: 'pointer' }}><X size={24} /></button>
@@ -3642,7 +3642,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
 
       {/* Feature 6: Mobile Bottom Tab Bar (fixed, replaces desktop horizontal tab strip on phones) */}
       {isMobile && selected.length >= 2 && (
-        <nav className="no-print" aria-label="Compare section navigation" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: 'rgba(11,22,35,0.97)', borderTop: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', display: 'flex', justifyContent: 'space-around', alignItems: 'stretch', height: 56, paddingBottom: 'env(safe-area-inset-bottom,0px)' }}>
+        <nav className="no-print" aria-label="Compare section navigation" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: 'rgba(11,22,35,0.97)', borderTop: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', display: 'flex', justifyContent: 'space-around', alignItems: 'stretch', height: 'calc(56px + env(safe-area-inset-bottom, 0px))', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           {([
             { id: 'matrix'    as const, icon: <LayoutList size={17} />,    label: 'Matrix' },
             { id: 'proscons'  as const, icon: <Scale size={17} />,          label: 'Pros/Cons' },

@@ -441,7 +441,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
         display: 'flex',
         flexDirection: 'column',
         position: 'fixed',
-        top: 60,
+        top: 'var(--nav-offset, 60px)',
         left: 0,
         bottom: 0,
         zIndex: 50,

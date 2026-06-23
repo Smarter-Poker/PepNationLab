@@ -69,7 +69,7 @@ export default function ImpersonationBanner() {
         color: '#ffffff',
         borderTop: '1px solid rgba(255,255,255,0.25)',
         boxShadow: '0 -4px 18px rgba(0,0,0,0.4)',
-        padding: '10px 16px',
+        padding: '10px 16px calc(10px + env(safe-area-inset-bottom, 0px)) 16px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',

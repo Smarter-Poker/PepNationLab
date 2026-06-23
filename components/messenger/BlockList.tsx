@@ -101,7 +101,7 @@ export default function BlockList({ onClose }: Props) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 16,
+        padding: 'max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px))',
         zIndex: 1300,
       }}
       onClick={(e) => {

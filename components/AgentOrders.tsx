@@ -699,7 +699,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
-            padding: 'var(--space-6)',
+            padding: 'max(var(--space-6), env(safe-area-inset-top, 0px)) var(--space-6) max(var(--space-6), env(safe-area-inset-bottom, 0px))',
             backdropFilter: 'blur(8px)',
           }}
         >

@@ -111,7 +111,7 @@ html {
   /* In-page anchor jumps (legal "On This Page", research sections) land below
      the sticky header instead of hiding under it. */
   :target {
-    scroll-margin-top: 84px;
+    scroll-margin-top: calc(var(--nav-offset, 60px) + 8px);
   }
 
   /* Icon-only buttons (e.g. the admin "Edit" pencil) were as narrow as ~23px -

@@ -1296,7 +1296,7 @@ function ModalShell({ title, onClose, children, footer, maxWidth = 560 }: ModalS
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 'var(--space-3)',
+        padding: 'max(var(--space-3), env(safe-area-inset-top, 0px)) var(--space-3) max(var(--space-3), env(safe-area-inset-bottom, 0px))',
       }}
     >
       <div

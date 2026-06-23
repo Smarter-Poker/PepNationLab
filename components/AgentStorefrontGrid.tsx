@@ -766,9 +766,16 @@ export default function AgentStorefrontGrid({
   }, [detailProduct]);
 
   // Scroll to top when entering product detail view, back to previous position on close
+  const scrollPosRef = useRef(0);
   useEffect(() => {
     if (detailProduct) {
+      scrollPosRef.current = window.scrollY;
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      if (scrollPosRef.current > 0) {
+        window.scrollTo({ top: scrollPosRef.current, behavior: 'instant' });
+        scrollPosRef.current = 0;
+      }
     }
   }, [detailProduct]);
 
