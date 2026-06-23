@@ -601,12 +601,19 @@ export default function AgentDashboardClient({
           />
 
 
-        {/* My Sub-Agents Tab */}
-        {activeTab === 'My Sub-Agents' && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentSubAgents agentId={userProfile.id} />
-          </div>
-        )}
+        {/* My Sub-Agents Tab — super-agents are silently redirected to My Agent Accounts */}
+        {activeTab === 'My Sub-Agents' && (() => {
+          if (userProfile?.is_super_agent) {
+            // Super-agents don't use the sub-agent commission model — send them to the right tab immediately
+            setActiveTab('My Agent Accounts');
+            return null;
+          }
+          return (
+            <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+              <AgentSubAgents agentId={userProfile.id} />
+            </div>
+          );
+        })()}
 
         {/* My Agent Accounts Tab */}
         {activeTab === 'My Agent Accounts' && (
