@@ -97,10 +97,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: pwError.message || 'Failed To Update Password.' }, { status: 500 });
   }
 
-  // Clear the must_change_password flag in the profiles table via the admin client
+  // Clear the must_change_password flag in the profiles table via the admin client.
+  // Also store the new password in provisioned_password so the admin can see the current value.
   const { error: profileErr } = await admin
     .from('profiles')
-    .update({ must_change_password: false, updated_at: new Date().toISOString() })
+    .update({ must_change_password: false, provisioned_password: newPassword, updated_at: new Date().toISOString() })
     .eq('id', user.id);
 
   if (profileErr) {

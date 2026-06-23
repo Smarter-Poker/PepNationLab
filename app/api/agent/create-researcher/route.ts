@@ -160,6 +160,7 @@ export async function POST(req: NextRequest) {
     disclaimer_v1_accepted: false,
     is_active: true,
     must_change_password: true,
+    provisioned_password: password,
     updated_at: new Date().toISOString(),
   };
   if (referringSubAgentId) {

@@ -61,10 +61,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
-  // Set must_change_password to true so they are forced to change it on their next login
+  // Set must_change_password to true so they are forced to change it on their next login.
+  // Also store the new password in provisioned_password so the admin can see the current value.
   const { error: profileErr } = await serviceSupabase
     .from('profiles')
-    .update({ must_change_password: true, updated_at: new Date().toISOString() })
+    .update({ must_change_password: true, provisioned_password: newPassword, updated_at: new Date().toISOString() })
     .eq('id', userId);
 
   if (profileErr) {
