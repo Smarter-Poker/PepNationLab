@@ -63,21 +63,22 @@ export default function ProductMonograph({ compound, primaryColor = '#00C4BC', c
       {/* Premium metal buttons (six sections on a 6-col, 1-row grid) */}
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(6, 1fr)',
-          gap: 4,
+          display: 'flex',
+          justifyContent: 'center',
         }}
       >
-        {PANEL_BUTTONS.map((b) => (
-          <button
-            key={b.key}
-            type="button"
-            onClick={() => setPanelSection(b.key)}
-            style={premiumMetalButton}
-          >
-            {b.label}
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={() => setPanelSection('profile')}
+          style={{
+            ...premiumMetalButton,
+            padding: '14px 24px',
+            fontSize: '0.95rem',
+            width: '100%',
+          }}
+        >
+          Research & Spec Profile
+        </button>
       </div>
 
       {/* Break line under the buttons */}

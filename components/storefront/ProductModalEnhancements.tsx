@@ -849,7 +849,7 @@ export default function ProductModalEnhancements({
         const group = grouped.find((g) => g.compoundSlug === ref.slug) ?? null;
         return { ref, group };
       })
-      .filter((x) => x.group !== null && x.group.name !== currentProductName);
+      .filter((x) => x.group !== null && x.group.name !== currentProductName && !/bac.*water/i.test(x.group.name));
 
     // If scored matches are fewer than 3, pad with same-category products
     if (items.length < 3) {
@@ -858,6 +858,7 @@ export default function ProductModalEnhancements({
 
       const fallback = grouped.filter((g) => {
         if (g.name === currentProductName || !g.compoundSlug) return false;
+        if (/bac.*water/i.test(g.name)) return false;
         if (existingSlugs.has(g.compoundSlug)) return false;
         const comp = compoundsBySlug[g.compoundSlug];
         return comp?.category === currentCompound.category;
@@ -1266,14 +1267,14 @@ export default function ProductModalEnhancements({
                   onClick={() => onOpenProductByName(group.name)}
                   style={{
                     flex: '0 0 auto', scrollSnapAlign: 'start',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                    padding: '10px 8px', borderRadius: 16,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    padding: '12px 10px', borderRadius: 12,
                     background: '#0F1923',
-                    border: '4px solid #B0C4DE',
-                    cursor: 'pointer', minWidth: 280, maxWidth: 300,
+                    border: '2px solid rgba(176,196,222,0.4)',
+                    cursor: 'pointer', minWidth: 140, maxWidth: 160,
                     color: 'var(--white)',
                     position: 'relative',
-                    boxShadow: '0 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
                   }}
                 >
                   {/* "Pairs Well Together" badge for explicit best_stacked_with matches */}
@@ -1281,8 +1282,8 @@ export default function ProductModalEnhancements({
                     <div style={{
                       position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)',
                       background: primaryColor, color: '#fff',
-                      fontSize: '0.58rem', fontWeight: 800, letterSpacing: '0.04em',
-                      padding: '2px 8px', borderRadius: 99,
+                      fontSize: '0.55rem', fontWeight: 800, letterSpacing: '0.04em',
+                      padding: '2px 6px', borderRadius: 99,
                       whiteSpace: 'nowrap', textTransform: 'uppercase',
                       boxShadow: `0 2px 6px ${primaryColor}60`,
                     }}>
@@ -1294,34 +1295,33 @@ export default function ProductModalEnhancements({
                     <Image
                       src={group.imageUrl}
                       alt={group.name}
-                      width={256}
-                      height={256}
-                      style={{ width: 256, height: 256, borderRadius: 10, objectFit: 'cover', background: '#0F1923' }}
+                      width={80}
+                      height={80}
+                      style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: '#0F1923' }}
                      unoptimized />
                   ) : (
-                    <div style={{ width: 256, height: 256, borderRadius: 10, background: `${primaryColor}20` }} aria-hidden="true" />
+                    <div style={{ width: 80, height: 80, borderRadius: 8, background: `${primaryColor}20` }} aria-hidden="true" />
                   )}
                   <span style={{
-                    fontSize: '2.5rem', fontWeight: 800, lineHeight: 1.15,
-                    textAlign: 'center', maxWidth: 260,
+                    fontSize: '0.85rem', fontWeight: 700, lineHeight: 1.2,
+                    textAlign: 'center', maxWidth: '100%',
                     overflow: 'hidden', display: '-webkit-box',
-                    WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
-                    marginTop: '20px',
-                    marginBottom: '24px',
+                    WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                    marginTop: 6,
                   }}>
                     {group.name}
                   </span>
                   {/* Research area pills */}
                   {areaLabels.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', marginTop: 4 }}>
                       {areaLabels.map((label) => (
                         <span key={label} style={{
-                          fontSize: '1rem', fontWeight: 700, letterSpacing: '0.02em',
-                          padding: '8px 16px', borderRadius: 99,
+                          fontSize: '0.65rem', fontWeight: 600,
+                          padding: '2px 6px', borderRadius: 99,
                           background: 'rgba(255,255,255,0.07)',
                           border: '1px solid rgba(255,255,255,0.12)',
                           color: 'var(--grey-300)',
-                          whiteSpace: 'nowrap', maxWidth: 160,
+                          whiteSpace: 'nowrap', maxWidth: 120,
                           overflow: 'hidden', textOverflow: 'ellipsis',
                         }}>
                           {label}
@@ -1330,8 +1330,8 @@ export default function ProductModalEnhancements({
                     </div>
                   )}
                   {pricePerVial != null && (
-                    <span style={{ fontSize: '3.6rem', color: '#B0C4DE', fontWeight: 900, marginTop: '16px', marginBottom: '10px' }}>
-                      ${formatMoney(pricePerVial)}<span style={{ fontSize: '1.6rem' }}>/Vial</span>
+                    <span style={{ fontSize: '0.9rem', color: '#B0C4DE', fontWeight: 800, marginTop: 6 }}>
+                      ${formatMoney(pricePerVial)}<span style={{ fontSize: '0.7rem' }}>/vial</span>
                     </span>
                   )}
                 </button>

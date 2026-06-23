@@ -2023,65 +2023,81 @@ export default function AgentStorefrontGrid({
         }
       `}} />
 
-      {!showStoreGrid && (
-        <DiscoveryHero
-          compoundsBySlug={compoundsBySlug || {}}
-          primaryColor={primaryColor}
-          onSelectArea={(area) => {
-            setFilterArea(area);
-            setFilterCategory('all');
-            openGrid();
-          }}
-          onSearchStarted={(q?: string) => {
-            setFilterArea('');
-            setFilterCategory('all');
-            setSearchQuery(q || '');
-            openGrid();
-          }}
-          onAlreadyKnowClicked={() => {
-            openGrid();
-          }}
-        onAddToCart={(variantId) => addToCart(variantId)}
-        onOpenProduct={(variantId) => {
-          const grp = grouped.find(g => g.variants.some(v => v.id === variantId));
-          if (grp) setDetailProduct(grp);
-        }}
-        resolveProducts={(slugs) => {
-          const out: MatchedProduct[] = [];
-          for (const slug of slugs) {
-            const grp = grouped.find(g => g.compoundSlug === slug);
-            if (!grp) {
-              out.push({
-                product_id: '',
-                display_name: slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-                compound_slug: slug,
-                price_cents: 0,
-                evidence_tier: null,
-                rationale: '',
-                image_url: null,
-                in_stock: false,
-              });
-              continue;
-            }
-            const v0 = grp.variants[0];
-            const priceDollars = grp.lowestPrice || 0;
-            const evTier = compoundsBySlug?.[slug]?.evidence_tier ?? null;
-            out.push({
-              product_id: v0?.id || '',
-              display_name: grp.name,
-              compound_slug: slug,
-              price_cents: Math.round(priceDollars * 100),
-              evidence_tier: evTier,
-              rationale: '',
-              image_url: grp.imageUrl,
-              in_stock: true,
-            });
-          }
-          return out;
-        }}
-        autoSearchQuery={aiSearchFallbackQuery}
-        onAutoSearchConsumed={() => setAiSearchFallbackQuery('')}
-      />
+      {!showStoreGrid && !detailProduct && (
+        <>
+          <div role="note" style={{
+            display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center',
+            margin: '0 0 12px', padding: '8px 12px',
+            border: '1px solid rgba(229,62,62,0.35)', borderRadius: 10,
+            background: 'rgba(229,62,62,0.06)', textAlign: 'center',
+          }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <path d="M9 3h6M10 3v6.5L4.5 19a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L14 9.5V3" />
+            </svg>
+            <span style={{ fontSize: '0.74rem', lineHeight: 1.3, color: 'var(--silver)' }}>
+              <strong style={{ color: 'var(--red)' }}>Research Use Only.</strong>{' '}
+              For In Vitro Laboratory Research. Not For Human Or Animal Use.
+            </span>
+          </div>
+          <DiscoveryHero
+            compoundsBySlug={compoundsBySlug || {}}
+            primaryColor={primaryColor}
+            onSelectArea={(area) => {
+              setFilterArea(area);
+              setFilterCategory('all');
+              openGrid();
+            }}
+            onSearchStarted={(q?: string) => {
+              setFilterArea('');
+              setFilterCategory('all');
+              setSearchQuery(q || '');
+              openGrid();
+            }}
+            onAlreadyKnowClicked={() => {
+              openGrid();
+            }}
+            onAddToCart={(variantId) => addToCart(variantId)}
+            onOpenProduct={(variantId) => {
+              const grp = grouped.find(g => g.variants.some(v => v.id === variantId));
+              if (grp) setDetailProduct(grp);
+            }}
+            resolveProducts={(slugs) => {
+              const out: MatchedProduct[] = [];
+              for (const slug of slugs) {
+                const grp = grouped.find(g => g.compoundSlug === slug);
+                if (!grp) {
+                  out.push({
+                    product_id: '',
+                    display_name: slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+                    compound_slug: slug,
+                    price_cents: 0,
+                    evidence_tier: null,
+                    rationale: '',
+                    image_url: null,
+                    in_stock: false,
+                  });
+                  continue;
+                }
+                const v0 = grp.variants[0];
+                const priceDollars = grp.lowestPrice || 0;
+                const evTier = compoundsBySlug?.[slug]?.evidence_tier ?? null;
+                out.push({
+                  product_id: v0?.id || '',
+                  display_name: grp.name,
+                  compound_slug: slug,
+                  price_cents: Math.round(priceDollars * 100),
+                  evidence_tier: evTier,
+                  rationale: '',
+                  image_url: grp.imageUrl,
+                  in_stock: true,
+                });
+              }
+              return out;
+            }}
+            autoSearchQuery={aiSearchFallbackQuery}
+            onAutoSearchConsumed={() => setAiSearchFallbackQuery('')}
+          />
+        </>
       )}
 
       <StorefrontCompareDrawer primaryColor={primaryColor} compoundsBySlug={compoundsBySlug} />
@@ -2093,7 +2109,7 @@ export default function AgentStorefrontGrid({
 
       {filterArea && (
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
+          display: detailProduct ? 'none' : 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
           padding: '8px 12px', borderRadius: 10,
           background: 'rgba(192,197,206,0.08)',
           border: '1px solid rgba(192,197,206,0.32)',
@@ -2119,6 +2135,7 @@ export default function AgentStorefrontGrid({
       {/* ── Phase 3: Dynamic Image Hero ─────────────────────────────── */}
       <div
         style={{
+          display: detailProduct ? 'none' : undefined,
           position: 'relative',
           width: '100%',
           maxWidth: 960,
@@ -3579,7 +3596,7 @@ export default function AgentStorefrontGrid({
                         </div>
                       )}
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--silver)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>
                             Quantity (Vials)
@@ -3640,24 +3657,32 @@ export default function AgentStorefrontGrid({
                         </div>
 
                         {qty > 0 && (
-                          <div style={{ flex: 1, textAlign: 'right' }}>
-                            {isStorefrontOwner && (
-                              <div style={{ fontSize: '0.7rem', color: '#68D391', fontWeight: 700,
-                                textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
-                                Agent Direct Price Applied
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                            <div style={{ textAlign: 'right' }}>
+                              {isStorefrontOwner && (
+                                <div style={{ fontSize: '0.65rem', color: '#68D391', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
+                                  Agent Direct Price
+                                </div>
+                              )}
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, whiteSpace: 'nowrap' }}>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>${unitPrice.toFixed(2)} × {qty} =</span>
+                                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)' }}>${lineTotal.toFixed(2)}</span>
                               </div>
-                            )}
-                            <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 2 }}>
-                              ${unitPrice.toFixed(2)}/vial x {qty}
                             </div>
-                            <div style={{
-                              fontSize: '1.5rem', fontWeight: 800,
-                              color: primaryColor,
-                              fontFamily: 'var(--font-brand)',
-                              textShadow: `0 0 10px ${primaryColor}40`
-                            }}>
-                              ${lineTotal.toFixed(2)}
-                            </div>
+                            <DynamicAddToCartButton
+                              onClick={() => {
+                                const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
+                                setCartItems(prev => ({
+                                  ...prev,
+                                  [vId]: (prev[vId] || 0) + pendingQty,
+                                }));
+                                setDetailProduct(null);
+                                setShowBulkPricing(false);
+                                setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
+                                setShowCartFloat(true);
+                              }}
+                              style={{ width: 140, height: 44, fontSize: '0.9rem' }}
+                            />
                           </div>
                         )}
                       </div>
@@ -3809,28 +3834,7 @@ export default function AgentStorefrontGrid({
                 </ProductModalEnhancements>
               </div>{/* END sf-modal-body */}
 
-              {/* Actions bar: flows naturally at bottom of content */}
-              <div className="sf-modal-actions">
-                <DynamicDetailButton
-                  type="close"
-                  onClick={() => setDetailProduct(null)}
-                  style={{ width: 172, height: 48 }}
-                />
-                <DynamicAddToCartButton
-                  onClick={() => {
-                    const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
-                    setCartItems(prev => ({
-                      ...prev,
-                      [vId]: (prev[vId] || 0) + pendingQty,
-                    }));
-                    setDetailProduct(null);
-                    setShowBulkPricing(false);
-                    setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
-                    setShowCartFloat(true);
-                  }}
-                  style={{ width: 172, height: 48 }}
-                />
-              </div>
+
             </div>{/* END sf-modal-sheet */}
           </div>
       )}
