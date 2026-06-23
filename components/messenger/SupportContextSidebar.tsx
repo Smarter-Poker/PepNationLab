@@ -271,7 +271,7 @@ export default function SupportContextSidebar({
           right: 12,
           top: 'calc(var(--nav-offset, 60px) + 12px)',
           width: 320,
-          maxHeight: 'calc(100dvh - var(--nav-offset, 60px) - 84px)',
+          maxHeight: 'calc(100dvh - var(--nav-offset, 60px) - 24px)',
           overflowY: 'auto',
           zIndex: 95,
         };

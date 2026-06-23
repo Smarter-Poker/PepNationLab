@@ -95,9 +95,6 @@ html {
   .page-container {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-  body {
-    padding-bottom: 0 !important;
-  }
 }
 
 /* 4. Small mobile polish (touch comfort / readability). The app already has

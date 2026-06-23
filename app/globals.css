@@ -2468,16 +2468,3 @@ select option {
   }
 }
 
-/* Base Utility for Mobile Nav */
-.mobile-only-flex {
-  display: none !important;
-}
-
-@media (max-width: 768px) {
-  body {
-    padding-bottom: calc(75px + env(safe-area-inset-bottom));
-  }
-  .mobile-only-flex {
-    display: flex !important;
-  }
-}
