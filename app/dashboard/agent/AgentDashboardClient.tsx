@@ -129,8 +129,12 @@ export default function AgentDashboardClient({
   // the default tab - otherwise the main panel renders blank and looks broken.
   const VALID_TABS = ['Overview', 'Sales & Accounting', 'Orders', 'Researchers', 'My Sub-Agents', 'My Agent Accounts', 'Store Products', 'Research Bundles', 'Inventory', 'Coupons', 'Tier Ladder', 'Storefront Config', 'Settings'] as const;
   type AgentTabName = typeof VALID_TABS[number];
-  const resolveTab = (t: unknown): AgentTabName =>
-    (typeof t === 'string' && (VALID_TABS as readonly string[]).includes(t)) ? (t as AgentTabName) : (defaultTab as AgentTabName);
+  // If a super-agent lands on My Sub-Agents (bookmark, direct URL, etc.), remap to My Agent Accounts.
+  const resolveTab = (t: unknown): AgentTabName => {
+    const raw = (typeof t === 'string' && (VALID_TABS as readonly string[]).includes(t)) ? (t as AgentTabName) : (defaultTab as AgentTabName);
+    if (raw === 'My Sub-Agents' && userProfile?.is_super_agent) return 'My Agent Accounts';
+    return raw;
+  };
 
   const [activeTab, setActiveTabState] = useState<AgentTabName>(resolveTab(tabParam));
 
@@ -601,19 +605,12 @@ export default function AgentDashboardClient({
           />
 
 
-        {/* My Sub-Agents Tab — super-agents are silently redirected to My Agent Accounts */}
-        {activeTab === 'My Sub-Agents' && (() => {
-          if (userProfile?.is_super_agent) {
-            // Super-agents don't use the sub-agent commission model — send them to the right tab immediately
-            setActiveTab('My Agent Accounts');
-            return null;
-          }
-          return (
-            <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-              <AgentSubAgents agentId={userProfile.id} />
-            </div>
-          );
-        })()}
+        {/* My Sub-Agents Tab — only rendered for regular agents; super-agents are remapped by resolveTab */}
+        {activeTab === 'My Sub-Agents' && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentSubAgents agentId={userProfile.id} />
+          </div>
+        )}
 
         {/* My Agent Accounts Tab */}
         {activeTab === 'My Agent Accounts' && (

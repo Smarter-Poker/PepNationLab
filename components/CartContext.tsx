@@ -1152,7 +1152,7 @@ function CartDrawer() {
         </div>
 
         {cart.length > 0 && (
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '14px 20px', paddingBottom: 'calc(18px + 84px + env(safe-area-inset-bottom, 0px))', flexShrink: 0 }}>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '14px 20px', paddingBottom: 'calc(18px + env(safe-area-inset-bottom, 0px))', flexShrink: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '10px 14px', background: 'rgba(0,229,255,0.04)', borderRadius: 8, border: '1px solid rgba(0,229,255,0.1)' }}>
               <span style={{ fontSize: '0.86rem', color: 'var(--grey-400)', fontWeight: 600 }}>Subtotal</span>
               <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.02em' }}>

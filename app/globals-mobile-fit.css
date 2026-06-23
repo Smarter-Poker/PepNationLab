@@ -88,47 +88,15 @@ html {
   }
 }
 
-/* 3. Bottom action clearance. This MUST live on the content container, not
-   on body: .page-container has min-height:100dvh, which anchors the last
-   element (footer, final card, action button) to the viewport bottom on
-   short pages. Padding on body sits OUTSIDE that 100dvh box and cannot lift
-   the content above the fixed MobileBottomNav (calc(65px + safe-area)). */
+/* 3. Bottom safe-area clearance for iOS notch devices.
+   The MobileBottomNav has been removed. Keep only env(safe-area-inset-bottom)
+   so content isn't clipped by the iPhone home indicator on notched devices. */
 @media (max-width: 768px) {
   .page-container {
-    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   body {
     padding-bottom: 0 !important;
-  }
-}
-
-/* 3b. GLOBAL bottom action clearance for ALL pages and sub-pages.
-   Any sticky/fixed action bar (modal footers, checkout bars, form footers,
-   detail-page CTA rows) must clear the 84px MobileBottomNav.
-   We match class-name substrings used across the codebase so every page
-   benefits automatically — no per-page fix required.
-   The !important override beats inline padding/position: static that would
-   otherwise hide the buttons behind the nav bar. */
-@media (max-width: 768px) {
-  /* Storefront product modal */
-  .sf-modal-actions {
-    padding-bottom: calc(14px + 84px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  /* Generic bottom-actions / action-bar patterns used on other pages */
-  [class*="bottom-action"],
-  [class*="action-bar"],
-  [class*="cta-bar"],
-  [class*="footer-actions"],
-  [class*="modal-footer"] {
-    padding-bottom: calc(16px + 84px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  /* Checkout / form sticky submit bars */
-  [class*="checkout-bar"],
-  [class*="submit-bar"],
-  [class*="sticky-bottom"] {
-    padding-bottom: calc(16px + 84px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
 
