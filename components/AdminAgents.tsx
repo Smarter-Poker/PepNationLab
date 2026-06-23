@@ -716,45 +716,60 @@ export default function AdminAgents() {
               <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-4)' }}>
                 Username: <strong style={{ color: '#00E5FF', fontFamily: 'monospace' }}>{passwordAgent.username}</strong>
               </p>
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                if (!passwordAgent || !newPassword) return;
-                setPasswordSaving(true);
-                try {
-                  const res = await fetch('/api/admin/agents/update-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: passwordAgent.id, newPassword }),
-                  });
-                  const json = await res.json();
-                  if (!res.ok) throw new Error(json.error);
-                  toast.success('Password Updated Successfully');
-                  setPasswordAgent(null);
-                  setNewPassword('');
-                  fetchAgents();
-                } catch (err: any) {
-                  toast.error(err.message || 'Failed To Update Password');
-                } finally {
-                  setPasswordSaving(false);
-                }
-              }}>
-                <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
+              <form onSubmit={e => e.preventDefault()}>
+                <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
                   <label className="form-label">New Password</label>
                   <input
                     type="text"
                     className="form-input"
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
-                    placeholder="Minimum 8 Characters"
-                    required
-                    minLength={8}
+                    placeholder="Enter new password"
                     autoComplete="off"
+                    autoFocus
                     style={{ width: '100%' }}
                   />
+                  <div style={{ marginTop: 6, fontSize: '0.75rem', color: newPassword.length === 0 ? 'var(--grey-500)' : newPassword.length < 8 ? '#FF6B6B' : '#00FF9D', fontWeight: 600 }}>
+                    {newPassword.length === 0
+                      ? 'Minimum 8 characters required'
+                      : newPassword.length < 8
+                      ? `${newPassword.length}/8 — need ${8 - newPassword.length} more character${8 - newPassword.length !== 1 ? 's' : ''}`
+                      : `✓ ${newPassword.length} characters — good to go`}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', marginTop: 'var(--space-6)' }}>
                   <button type="button" className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.8rem' }} onClick={() => { setPasswordAgent(null); setNewPassword(''); }} disabled={passwordSaving}>Cancel</button>
-                  <button type="submit" className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.8rem' }} disabled={passwordSaving || newPassword.length < 8}>
+                  <button
+                    type="button"
+                    className="btn-neon-cyan"
+                    style={{ padding: '4px 12px', fontSize: '0.8rem', opacity: (passwordSaving || newPassword.length < 8) ? 0.4 : 1, cursor: (passwordSaving || newPassword.length < 8) ? 'not-allowed' : 'pointer' }}
+                    disabled={passwordSaving}
+                    onClick={async () => {
+                      if (newPassword.length < 8) {
+                        toast.error('Password must be at least 8 characters');
+                        return;
+                      }
+                      if (!passwordAgent || !newPassword) return;
+                      setPasswordSaving(true);
+                      try {
+                        const res = await fetch('/api/admin/agents/update-password', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ userId: passwordAgent.id, newPassword }),
+                        });
+                        const json = await res.json();
+                        if (!res.ok) throw new Error(json.error);
+                        toast.success('Password updated successfully!');
+                        setPasswordAgent(null);
+                        setNewPassword('');
+                        fetchAgents();
+                      } catch (err: any) {
+                        toast.error(err.message || 'Failed to update password');
+                      } finally {
+                        setPasswordSaving(false);
+                      }
+                    }}
+                  >
                     {passwordSaving ? 'Saving...' : 'Update Password'}
                   </button>
                 </div>
