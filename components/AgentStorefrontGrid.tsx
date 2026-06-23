@@ -765,19 +765,10 @@ export default function AgentStorefrontGrid({
     }
   }, [detailProduct]);
 
-  // Bug fix: lock body scroll/touch while modal is open so the background
-  // page doesn't slide side-to-side when the user swipes inside the modal.
+  // Scroll to top when entering product detail view, back to previous position on close
   useEffect(() => {
     if (detailProduct) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      document.body.style.overscrollBehavior = 'none';
-      document.body.style.touchAction = 'none';
-      return () => {
-        document.body.style.overflow = prev;
-        document.body.style.overscrollBehavior = '';
-        document.body.style.touchAction = '';
-      };
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [detailProduct]);
 
@@ -1953,46 +1944,31 @@ export default function AgentStorefrontGrid({
           box-sizing: border-box;
         }
         .sf-wishlist-btn:hover { transform: scale(1.12); }
-        /* ── Modal overlay: full-screen fixed, no pass-through scroll ── */
+        /* ── Product detail: inline full-page view (no overlay) ── */
         .sf-modal-overlay {
-          position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(10,15,20,1);
-          z-index: 1000; display: flex; align-items: flex-end; justify-content: center;
-          overflow: hidden;
-          touch-action: none;
-        }
-        /* ── Modal sheet: true 100dvh, internal scroll, overscroll contained ── */
-        .sf-modal-sheet {
-          width: 100%; height: 100dvh; max-height: 100dvh;
-          overflow-x: hidden;
-          overscroll-behavior: contain;
+          /* Not an overlay — just a wrapper so CSS class names are preserved */
+          display: block;
+          width: 100%;
+          min-height: 100vh;
           background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%);
-          border-radius: 0;
-          border: none;
-          box-shadow: none;
+        }
+        .sf-modal-sheet {
+          width: 100%; max-width: 860px; margin: 0 auto;
           display: flex; flex-direction: column;
-          position: relative;
-          touch-action: pan-y;
+          padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
         }
-        .sf-modal-drag-bar {
-          display: none;
-        }
+        .sf-modal-drag-bar { display: none; }
         .sf-modal-img {
-          height: 260px; flex-shrink: 0; position: relative; overflow: hidden;
+          height: 300px; flex-shrink: 0; position: relative; overflow: hidden;
           border-radius: 0;
           margin: 0;
         }
-        /* ── Body: flex-1 + min-height:0 so it scrolls instead of pushing actions off ── */
-        .sf-modal-body { padding: 24px 22px 8px; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+        .sf-modal-body { padding: 24px 22px 8px; }
         .sf-modal-h2 { font-size: 1.4rem !important; }
-        /* ── Actions: always-visible footer pinned by flex layout, clears 84px MobileBottomNav ── */
+        /* Actions: normal in-flow block at bottom of content */
         .sf-modal-actions {
           display: flex; justify-content: center; gap: 16px;
-          padding: 14px 20px;
-          padding-bottom: calc(14px + 84px + env(safe-area-inset-bottom, 0px));
-          flex-shrink: 0;
-          background: linear-gradient(0deg, #0a0f14 55%, rgba(10,15,20,0) 100%);
-          z-index: 10;
+          padding: 24px 20px 12px;
         }
         .sf-modal-actions .sf-close-btn {
           padding: 12px 20px;
@@ -2011,29 +1987,17 @@ export default function AgentStorefrontGrid({
           display: inline-flex; align-items: center; justify-content: center; text-align: center;
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 6px 16px rgba(192,197,206,0.40);
         }
-        /* ── Desktop: centred dialog with standard padding ── */
         @media (min-width: 600px) {
-          .sf-modal-overlay { align-items: center; padding: 20px; overflow-y: auto; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); touch-action: auto; }
-          .sf-modal-sheet {
-            border-radius: 20px; max-width: 800px; max-height: 90vh; height: auto;
-            overflow-y: auto; overscroll-behavior: auto; touch-action: auto;
-            border: 5px solid transparent;
+          .sf-modal-overlay { padding: 20px 0; }
+          .sf-modal-sheet { border-radius: 20px; border: 5px solid transparent;
             background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%) padding-box,
                         linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box;
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,0.15),
-              0 24px 80px rgba(0,0,0,0.85),
-              0 4px 24px rgba(138,144,153,0.12);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 24px 80px rgba(0,0,0,0.85);
           }
-          .sf-modal-drag-bar { display: none; }
           .sf-modal-img { height: 320px; border-radius: 18px 18px 0 0; }
-          .sf-modal-body { padding: 32px 40px 16px; overflow-y: visible; min-height: auto; }
+          .sf-modal-body { padding: 32px 40px 16px; }
           .sf-modal-h2 { font-size: 1.8rem !important; }
-          .sf-modal-actions {
-            position: static; background: none;
-            padding: 16px 0 12px;
-            justify-content: center; gap: 20px;
-          }
+          .sf-modal-actions { padding: 16px 40px 32px; justify-content: center; gap: 20px; }
           .sf-modal-actions .sf-add-btn { flex: none; padding: 10px 28px; }
         }
         .sf-product-card-nickel {
@@ -2288,6 +2252,9 @@ export default function AgentStorefrontGrid({
           );
         })}
       </div>
+
+      {/* Grid section — hidden when product detail is shown */}
+      <div style={{ display: detailProduct ? 'none' : undefined }}>
 
       {/* Did You Mean Banner */}
       {didYouMeanSuggestion && (
@@ -2909,6 +2876,7 @@ export default function AgentStorefrontGrid({
         })}
         </motion.div>
       )}
+      </div>{/* END grid section */}
       </>
       )}
 
@@ -3304,51 +3272,38 @@ export default function AgentStorefrontGrid({
           )}
         </div>
 
-      <AnimatePresence>
-        {detailProduct && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="sf-modal-overlay"
-            onClick={() => setDetailProduct(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 80 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 80 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-              onClick={e => e.stopPropagation()}
-              className="sf-modal-sheet"
-            >
-              <div style={{
-                position: 'sticky', top: 0, zIndex: 8,
-                display: 'flex', alignItems: 'center', padding: '14px 18px 10px',
-                background: 'linear-gradient(180deg, #131b24 78%, rgba(19,27,36,0))',
-              }}>
-                <div style={{ flex: 1 }} />
-                <div style={{ width: 44, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.20)' }} aria-hidden="true" />
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    onClick={() => setDetailProduct(null)}
-                    aria-label="Close"
-                    style={{
-                      width: 34, height: 34, minWidth: 34, minHeight: 34,
-                      borderRadius: '50%', padding: 0,
-                      background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
-                      border: '1px solid rgba(190,200,210,0.30)',
-                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 9px rgba(0,0,0,0.5)',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', boxSizing: 'border-box', flexShrink: 0,
-                      transition: 'background 0.15s ease',
-                    }}
-                    className="hover-bg-glass"
-                  >
-                    <X size={15} stroke="#ffffff" strokeWidth={2.5} aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-              <div
+      {/* Product detail: inline in-page view — replaces the grid, no fixed overlay */}
+      {detailProduct && (
+        <div className="sf-modal-overlay">
+          <div className="sf-modal-sheet">
+            {/* Back / close bar */}
+            <div style={{
+              display: 'flex', alignItems: 'center', padding: '14px 18px 10px',
+              background: 'linear-gradient(180deg, #131b24 78%, rgba(19,27,36,0))',
+            }}>
+              <button
+                onClick={() => setDetailProduct(null)}
+                aria-label="Back"
+                style={{
+                  width: 34, height: 34, minWidth: 34, minHeight: 34,
+                  borderRadius: '50%', padding: 0,
+                  background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
+                  border: '1px solid rgba(190,200,210,0.30)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 9px rgba(0,0,0,0.5)',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', boxSizing: 'border-box', flexShrink: 0,
+                  transition: 'background 0.15s ease',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+              </button>
+              <div style={{ flex: 1 }} />
+              <div style={{ width: 44, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.20)' }} aria-hidden="true" />
+              <div style={{ flex: 1 }} />
+            </div>
+            <div
                 className="sf-modal-img"
-                style={{ marginTop: -54, background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)` }}
+                style={{ background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)` }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <Image
@@ -3847,7 +3802,7 @@ export default function AgentStorefrontGrid({
                 </ProductModalEnhancements>
               </div>{/* END sf-modal-body */}
 
-              {/* Actions bar: direct flex child of sf-modal-sheet → always pinned to bottom of 100dvh */}
+              {/* Actions bar: flows naturally at bottom of content */}
               <div className="sf-modal-actions">
                 <DynamicDetailButton
                   type="close"
@@ -3869,10 +3824,9 @@ export default function AgentStorefrontGrid({
                   style={{ width: 172, height: 48 }}
                 />
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>{/* END sf-modal-sheet */}
+          </div>
+      )}
 
       <AnimatePresence>
         {detailProduct && showEli5 && (() => {
