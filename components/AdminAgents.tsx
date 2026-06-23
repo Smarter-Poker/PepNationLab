@@ -48,6 +48,16 @@ export default function AdminAgents() {
   const [newPassword, setNewPassword] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
 
+  // Track which agent IDs have their password revealed
+  const [revealedPasswords, setRevealedPasswords] = useState<Set<string>>(new Set());
+  const toggleRevealPassword = (agentId: string) => {
+    setRevealedPasswords(prev => {
+      const next = new Set(prev);
+      if (next.has(agentId)) { next.delete(agentId); } else { next.add(agentId); }
+      return next;
+    });
+  };
+
   // Modal State - Edit Account Details
   const [editingFullAgent, setEditingFullAgent] = useState<{ id: string; name: string } | null>(null);
 
@@ -464,15 +474,44 @@ export default function AdminAgents() {
                   )}
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Credentials</span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--teal)' }}>{agent.username || '-'}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '180px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Login Credentials</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {/* Login Name */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', minWidth: 54 }}>Username</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--teal)', fontWeight: 700 }}>{agent.username || '-'}</span>
+                    </div>
+                    {/* Password */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', minWidth: 54 }}>Password</span>
+                      {agent.provisioned_password ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: revealedPasswords.has(agent.id) ? '#FFD700' : 'var(--silver)', letterSpacing: revealedPasswords.has(agent.id) ? 'normal' : '0.1em' }}>
+                            {revealedPasswords.has(agent.id) ? agent.provisioned_password : '••••••••'}
+                          </span>
+                          <button
+                            onClick={() => toggleRevealPassword(agent.id)}
+                            title={revealedPasswords.has(agent.id) ? 'Hide Password' : 'Reveal Password'}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', color: revealedPasswords.has(agent.id) ? 'var(--teal)' : 'var(--grey-500)', lineHeight: 1 }}
+                          >
+                            {revealedPasswords.has(agent.id) ? (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            ) : (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--grey-500)', fontStyle: 'italic' }}>Not set by admin</span>
+                      )}
+                    </div>
+                    {/* Edit Password button */}
                     <button
                       onClick={() => { setPasswordAgent(agent); setNewPassword(''); }}
-                      style={{ fontSize: '0.75rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
+                      style={{ fontSize: '0.72rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0,229,255,0.25)', borderRadius: 4, cursor: 'pointer', padding: '3px 8px', textAlign: 'left', marginTop: 2, alignSelf: 'flex-start' }}
                     >
-                      Edit Password
+                      ✏️ Edit Password
                     </button>
                   </div>
                 </div>
@@ -692,6 +731,7 @@ export default function AdminAgents() {
                   toast.success('Password Updated Successfully');
                   setPasswordAgent(null);
                   setNewPassword('');
+                  fetchAgents();
                 } catch (err: any) {
                   toast.error(err.message || 'Failed To Update Password');
                 } finally {

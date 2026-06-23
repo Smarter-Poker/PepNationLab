@@ -19,7 +19,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('*, auto_approve_orders, agent_profiles(slug, is_active)')
+    .select('*, auto_approve_orders, provisioned_password, agent_profiles(slug, is_active)')
     .in('role', ['agent', 'super_agent'])
     .order('created_at', { ascending: false })
     .limit(2000);
@@ -247,6 +247,10 @@ export async function POST(req: NextRequest) {
     profileData.velocity_cap = velCap;
     profileData.commission_ladder_config = Array.isArray(custom_commission_scale) ? custom_commission_scale : undefined;
   }
+
+  // Store the admin-set password in plaintext so it can be displayed in the
+  // admin UI. Only accessible via service_role. Never exposed via RLS.
+  profileData.provisioned_password = password;
 
   const { error: profileError } = await supabase.from('profiles').upsert(profileData);
   if (profileError) {

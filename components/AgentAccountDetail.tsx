@@ -73,6 +73,7 @@ type Detail = {
     is_active: boolean;
     commission_pct: number | null;
     created_at: string;
+    provisioned_password?: string | null;
   }>;
   researchers: Array<{
     id: string;
@@ -81,6 +82,7 @@ type Detail = {
     email: string | null;
     is_active: boolean;
     created_at: string;
+    provisioned_password?: string | null;
   }>;
 };
 
@@ -145,6 +147,42 @@ export default function AgentAccountDetail({
   const [saving, setSaving] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'Overview' | 'Sub Agents' | 'Researchers'>('Overview');
+
+  // Password management for sub-agents and researchers in this drawer
+  const [revealedDownlinePasswords, setRevealedDownlinePasswords] = useState<Set<string>>(new Set());
+  const toggleRevealDownlinePassword = (id: string) => {
+    setRevealedDownlinePasswords(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
+      return next;
+    });
+  };
+  const [downlinePasswordAgent, setDownlinePasswordAgent] = useState<{ id: string; full_name: string | null; username: string | null } | null>(null);
+  const [downlineNewPassword, setDownlineNewPassword] = useState('');
+  const [downlinePasswordSaving, setDownlinePasswordSaving] = useState(false);
+
+  const handleDownlinePasswordUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!downlinePasswordAgent || !downlineNewPassword) return;
+    setDownlinePasswordSaving(true);
+    try {
+      const res = await fetch('/api/admin/agents/update-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: downlinePasswordAgent.id, newPassword: downlineNewPassword }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      toast.success('Password Updated Successfully');
+      setDownlinePasswordAgent(null);
+      setDownlineNewPassword('');
+      load(); // Refresh so the new provisioned_password is shown
+    } catch (err: any) {
+      toast.error(err.message || 'Failed To Update Password');
+    } finally {
+      setDownlinePasswordSaving(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -594,14 +632,50 @@ export default function AgentAccountDetail({
                   {!detail.sub_agents || detail.sub_agents.length === 0 ? (
                     <div style={{ color: 'var(--grey-400)', fontSize: '0.85rem', padding: 'var(--space-3) 0' }}>No Sub Agents Yet.</div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {detail.sub_agents.map((sa) => (
-                        <div key={sa.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', gap: 8 }}>
-                          <span style={{ color: 'var(--white)', flex: 1, fontWeight: 600 }}>{sa.full_name || sa.username || 'Anonymous'}</span>
-                          <span style={{ color: 'var(--silver)' }}>{sa.email || ''}</span>
-                          <span style={{ color: 'var(--grey-400)' }}>Joined: {fmtDate(sa.created_at)}</span>
-                          <span style={{ color: sa.is_active ? '#00FF9D' : '#FFAAAA', minWidth: 60, textAlign: 'right' }}>{sa.is_active ? 'Active' : 'Inactive'}</span>
-                          <span style={{ color: '#00E5FF', fontWeight: 700, minWidth: 60, textAlign: 'right' }}>{sa.commission_pct ?? 0}%</span>
+                        <div key={sa.id} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', padding: '10px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, gap: 12 }}>
+                          {/* Name & Status */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: '1 1 140px' }}>
+                            <span style={{ color: 'var(--white)', fontWeight: 700 }}>{sa.full_name || sa.username || 'Anonymous'}</span>
+                            <span style={{ color: sa.is_active ? '#00FF9D' : '#FFAAAA', fontSize: '0.75rem' }}>{sa.is_active ? 'Active' : 'Inactive'}</span>
+                          </div>
+                          {/* Credentials */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 180px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--grey-500)', minWidth: 52 }}>Username</span>
+                              <span style={{ fontFamily: 'monospace', color: 'var(--teal)', fontWeight: 700, fontSize: '0.82rem' }}>{sa.username || '-'}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--grey-500)', minWidth: 52 }}>Password</span>
+                              {sa.provisioned_password ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: revealedDownlinePasswords.has(sa.id) ? '#FFD700' : 'var(--silver)', letterSpacing: revealedDownlinePasswords.has(sa.id) ? 'normal' : '0.1em' }}>
+                                    {revealedDownlinePasswords.has(sa.id) ? sa.provisioned_password : '••••••••'}
+                                  </span>
+                                  <button onClick={() => toggleRevealDownlinePassword(sa.id)} title={revealedDownlinePasswords.has(sa.id) ? 'Hide' : 'Reveal'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '1px 3px', color: revealedDownlinePasswords.has(sa.id) ? 'var(--teal)' : 'var(--grey-500)', lineHeight: 1 }}>
+                                    {revealedDownlinePasswords.has(sa.id) ? (
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                                    ) : (
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    )}
+                                  </button>
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)', fontStyle: 'italic' }}>Not set by admin</span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Commission & Edit */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ color: '#00E5FF', fontWeight: 700, fontSize: '0.82rem' }}>{sa.commission_pct ?? 0}%</span>
+                            <button
+                              onClick={() => { setDownlinePasswordAgent({ id: sa.id, full_name: sa.full_name, username: sa.username }); setDownlineNewPassword(''); }}
+                              style={{ fontSize: '0.7rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0,229,255,0.25)', borderRadius: 4, cursor: 'pointer', padding: '3px 8px' }}
+                            >
+                              ✏️ Edit Password
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -615,13 +689,49 @@ export default function AgentAccountDetail({
                   {!detail.researchers || detail.researchers.length === 0 ? (
                     <div style={{ color: 'var(--grey-400)', fontSize: '0.85rem', padding: 'var(--space-3) 0' }}>No Researchers Yet.</div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {detail.researchers.map((r) => (
-                        <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', gap: 8 }}>
-                          <span style={{ color: 'var(--white)', flex: 1, fontWeight: 600 }}>{r.full_name || r.username || 'Anonymous'}</span>
-                          <span style={{ color: 'var(--silver)' }}>{r.email || ''}</span>
-                          <span style={{ color: 'var(--grey-400)' }}>Joined: {fmtDate(r.created_at)}</span>
-                          <span style={{ color: r.is_active ? '#00FF9D' : '#FFAAAA', minWidth: 60, textAlign: 'right' }}>{r.is_active ? 'Active' : 'Inactive'}</span>
+                        <div key={r.id} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', padding: '10px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, gap: 12 }}>
+                          {/* Name & Status */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: '1 1 140px' }}>
+                            <span style={{ color: 'var(--white)', fontWeight: 700 }}>{r.full_name || r.username || 'Anonymous'}</span>
+                            <span style={{ color: r.is_active ? '#00FF9D' : '#FFAAAA', fontSize: '0.75rem' }}>{r.is_active ? 'Active' : 'Inactive'}</span>
+                          </div>
+                          {/* Credentials */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 180px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--grey-500)', minWidth: 52 }}>Username</span>
+                              <span style={{ fontFamily: 'monospace', color: 'var(--teal)', fontWeight: 700, fontSize: '0.82rem' }}>{r.username || '-'}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--grey-500)', minWidth: 52 }}>Password</span>
+                              {r.provisioned_password ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: revealedDownlinePasswords.has(r.id) ? '#FFD700' : 'var(--silver)', letterSpacing: revealedDownlinePasswords.has(r.id) ? 'normal' : '0.1em' }}>
+                                    {revealedDownlinePasswords.has(r.id) ? r.provisioned_password : '••••••••'}
+                                  </span>
+                                  <button onClick={() => toggleRevealDownlinePassword(r.id)} title={revealedDownlinePasswords.has(r.id) ? 'Hide' : 'Reveal'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '1px 3px', color: revealedDownlinePasswords.has(r.id) ? 'var(--teal)' : 'var(--grey-500)', lineHeight: 1 }}>
+                                    {revealedDownlinePasswords.has(r.id) ? (
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                                    ) : (
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    )}
+                                  </button>
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)', fontStyle: 'italic' }}>Not set by admin</span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Edit Password */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <button
+                              onClick={() => { setDownlinePasswordAgent({ id: r.id, full_name: r.full_name, username: r.username }); setDownlineNewPassword(''); }}
+                              style={{ fontSize: '0.7rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0,229,255,0.25)', borderRadius: 4, cursor: 'pointer', padding: '3px 8px' }}
+                            >
+                              ✏️ Edit Password
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -634,6 +744,45 @@ export default function AgentAccountDetail({
         </div>
       </div>
     </div>
+
+      {/* Edit Password Modal — Sub-Agents & Researchers */}
+      {downlinePasswordAgent && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: 400 }}>
+            <div style={{ padding: 'var(--space-6)' }}>
+              <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Edit Password</h3>
+              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-2)' }}>
+                Account: <strong style={{ color: '#fff' }}>{downlinePasswordAgent.full_name || downlinePasswordAgent.username}</strong>
+              </p>
+              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-4)' }}>
+                Username: <strong style={{ color: '#00E5FF', fontFamily: 'monospace' }}>{downlinePasswordAgent.username}</strong>
+              </p>
+              <form onSubmit={handleDownlinePasswordUpdate}>
+                <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
+                  <label className="form-label">New Password</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={downlineNewPassword}
+                    onChange={e => setDownlineNewPassword(e.target.value)}
+                    placeholder="Minimum 8 Characters"
+                    required
+                    minLength={8}
+                    autoComplete="off"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.8rem' }} onClick={() => { setDownlinePasswordAgent(null); setDownlineNewPassword(''); }} disabled={downlinePasswordSaving}>Cancel</button>
+                  <button type="submit" className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.8rem' }} disabled={downlinePasswordSaving || downlineNewPassword.length < 8}>
+                    {downlinePasswordSaving ? 'Saving...' : 'Update Password'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

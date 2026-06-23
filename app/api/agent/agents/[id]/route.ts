@@ -112,7 +112,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     // Sub-Agents of this agent
     const { data: subAgentsRows } = await supabase
       .from('profiles')
-      .select('id, full_name, username, email, created_at, is_active, commission_pct')
+      .select('id, full_name, username, email, created_at, is_active, commission_pct, provisioned_password')
       .eq('parent_agent_id', id)
       .eq('is_sub_agent', true)
       .order('created_at', { ascending: false });
@@ -120,7 +120,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     // Researchers of this agent
     const { data: researchersRows } = await supabase
       .from('profiles')
-      .select('id, full_name, username, email, created_at, is_active')
+      .select('id, full_name, username, email, created_at, is_active, provisioned_password')
       .eq('referring_agent_id', id)
       .eq('role', 'researcher')
       .order('created_at', { ascending: false });
@@ -195,6 +195,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         is_active: sa.is_active,
         commission_pct: sa.commission_pct != null ? num(sa.commission_pct) : null,
         created_at: sa.created_at,
+        provisioned_password: (sa as any).provisioned_password ?? null,
       })),
       researchers: (researchersRows ?? []).map((r) => ({
         id: r.id,
@@ -203,6 +204,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         email: r.email,
         is_active: r.is_active,
         created_at: r.created_at,
+        provisioned_password: (r as any).provisioned_password ?? null,
       })),
     });
   } catch (err) {
