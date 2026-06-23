@@ -102,6 +102,36 @@ html {
   }
 }
 
+/* 3b. GLOBAL bottom action clearance for ALL pages and sub-pages.
+   Any sticky/fixed action bar (modal footers, checkout bars, form footers,
+   detail-page CTA rows) must clear the 84px MobileBottomNav.
+   We match class-name substrings used across the codebase so every page
+   benefits automatically — no per-page fix required.
+   The !important override beats inline padding/position: static that would
+   otherwise hide the buttons behind the nav bar. */
+@media (max-width: 768px) {
+  /* Storefront product modal */
+  .sf-modal-actions {
+    padding-bottom: calc(14px + 84px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* Generic bottom-actions / action-bar patterns used on other pages */
+  [class*="bottom-action"],
+  [class*="action-bar"],
+  [class*="cta-bar"],
+  [class*="footer-actions"],
+  [class*="modal-footer"] {
+    padding-bottom: calc(16px + 84px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* Checkout / form sticky submit bars */
+  [class*="checkout-bar"],
+  [class*="submit-bar"],
+  [class*="sticky-bottom"] {
+    padding-bottom: calc(16px + 84px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
 /* 4. Small mobile polish (touch comfort / readability). The app already has
    tap-highlight, touch-action, momentum scroll, 44px controls and :active
    feedback; these fill the remaining gaps the audit surfaced. */

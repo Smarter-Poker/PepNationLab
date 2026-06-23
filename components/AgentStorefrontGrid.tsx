@@ -765,6 +765,22 @@ export default function AgentStorefrontGrid({
     }
   }, [detailProduct]);
 
+  // Bug fix: lock body scroll/touch while modal is open so the background
+  // page doesn't slide side-to-side when the user swipes inside the modal.
+  useEffect(() => {
+    if (detailProduct) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'none';
+      document.body.style.touchAction = 'none';
+      return () => {
+        document.body.style.overflow = prev;
+        document.body.style.overscrollBehavior = '';
+        document.body.style.touchAction = '';
+      };
+    }
+  }, [detailProduct]);
+
   const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
@@ -1937,38 +1953,48 @@ export default function AgentStorefrontGrid({
           box-sizing: border-box;
         }
         .sf-wishlist-btn:hover { transform: scale(1.12); }
+        /* ── Modal overlay: full-screen fixed, no pass-through scroll ── */
         .sf-modal-overlay {
           position: fixed; top: 0; left: 0; right: 0; bottom: 0;
           background: rgba(10,15,20,1);
-          z-index: 1000; display: flex; align-items: flex-start; justify-content: center;
+          z-index: 1000; display: flex; align-items: flex-end; justify-content: center;
           overflow: hidden;
+          touch-action: none;
         }
+        /* ── Modal sheet: true 100dvh, internal scroll, overscroll contained ── */
         .sf-modal-sheet {
-          width: 100%; height: 100dvh; max-height: 100dvh; overflow-y: auto;
-          -webkit-overflow-scrolling: touch;
-          background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%) padding-box;
+          width: 100%; height: 100dvh; max-height: 100dvh;
+          overflow-x: hidden;
+          overscroll-behavior: contain;
+          background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%);
           border-radius: 0;
           border: none;
           box-shadow: none;
           display: flex; flex-direction: column;
           position: relative;
+          touch-action: pan-y;
         }
         .sf-modal-drag-bar {
           display: none;
         }
         .sf-modal-img {
-          height: 280px; flex-shrink: 0; position: relative; overflow: hidden;
+          height: 260px; flex-shrink: 0; position: relative; overflow: hidden;
           border-radius: 0;
           margin: 0;
         }
-        .sf-modal-body { padding: 24px 22px 8px; flex: 1; }
+        /* ── Body: flex-1 + min-height:0 so it scrolls instead of pushing actions off ── */
+        .sf-modal-body { padding: 24px 22px 8px; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
         .sf-modal-h2 { font-size: 1.4rem !important; }
+        /* ── Actions: sticky at bottom, clears the 84px MobileBottomNav ── */
         .sf-modal-actions {
           display: flex; justify-content: center; gap: 16px;
-          padding: 16px 0 calc(12px + env(safe-area-inset-bottom, 0px));
-          margin-bottom: -12px;
-          position: static;
-          background: none;
+          padding: 14px 20px;
+          padding-bottom: calc(14px + 84px + env(safe-area-inset-bottom, 0px));
+          position: sticky;
+          bottom: 0;
+          background: linear-gradient(0deg, #0a0f14 55%, rgba(10,15,20,0) 100%);
+          z-index: 10;
+          flex-shrink: 0;
         }
         .sf-modal-actions .sf-close-btn {
           padding: 12px 20px;
@@ -1987,10 +2013,12 @@ export default function AgentStorefrontGrid({
           display: inline-flex; align-items: center; justify-content: center; text-align: center;
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 6px 16px rgba(192,197,206,0.40);
         }
+        /* ── Desktop: centred dialog with standard padding ── */
         @media (min-width: 600px) {
-          .sf-modal-overlay { align-items: center; padding: 20px; overflow-y: auto; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); }
+          .sf-modal-overlay { align-items: center; padding: 20px; overflow-y: auto; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); touch-action: auto; }
           .sf-modal-sheet {
             border-radius: 20px; max-width: 800px; max-height: 90vh; height: auto;
+            overflow-y: auto; overscroll-behavior: auto; touch-action: auto;
             border: 5px solid transparent;
             background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%) padding-box,
                         linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box;
@@ -2001,11 +2029,11 @@ export default function AgentStorefrontGrid({
           }
           .sf-modal-drag-bar { display: none; }
           .sf-modal-img { height: 320px; border-radius: 18px 18px 0 0; }
-          .sf-modal-body { padding: 32px 40px 16px; }
+          .sf-modal-body { padding: 32px 40px 16px; overflow-y: visible; min-height: auto; }
           .sf-modal-h2 { font-size: 1.8rem !important; }
           .sf-modal-actions {
-            position: static; background: none; padding: 16px 0 12px;
-            margin-bottom: -16px;
+            position: static; background: none;
+            padding: 16px 0 12px;
             justify-content: center; gap: 20px;
           }
           .sf-modal-actions .sf-add-btn { flex: none; padding: 10px 28px; }
