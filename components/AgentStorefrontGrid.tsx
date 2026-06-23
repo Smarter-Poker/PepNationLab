@@ -1985,16 +1985,14 @@ export default function AgentStorefrontGrid({
         /* ── Body: flex-1 + min-height:0 so it scrolls instead of pushing actions off ── */
         .sf-modal-body { padding: 24px 22px 8px; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
         .sf-modal-h2 { font-size: 1.4rem !important; }
-        /* ── Actions: sticky at bottom, clears the 84px MobileBottomNav ── */
+        /* ── Actions: always-visible footer pinned by flex layout, clears 84px MobileBottomNav ── */
         .sf-modal-actions {
           display: flex; justify-content: center; gap: 16px;
           padding: 14px 20px;
           padding-bottom: calc(14px + 84px + env(safe-area-inset-bottom, 0px));
-          position: sticky;
-          bottom: 0;
+          flex-shrink: 0;
           background: linear-gradient(0deg, #0a0f14 55%, rgba(10,15,20,0) 100%);
           z-index: 10;
-          flex-shrink: 0;
         }
         .sf-modal-actions .sf-close-btn {
           padding: 12px 20px;
@@ -3847,28 +3845,29 @@ export default function AgentStorefrontGrid({
                       </div>
                     )}
                 </ProductModalEnhancements>
+              </div>{/* END sf-modal-body */}
 
-                <div className="sf-modal-actions">
-                  <DynamicDetailButton
-                    type="close"
-                    onClick={() => setDetailProduct(null)}
-                    style={{ width: 172, height: 48 }}
-                  />
-                  <DynamicAddToCartButton
-                    onClick={() => {
-                      const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
-                      setCartItems(prev => ({
-                        ...prev,
-                        [vId]: (prev[vId] || 0) + pendingQty,
-                      }));
-                      setDetailProduct(null);
-                      setShowBulkPricing(false);
-                      setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
-                      setShowCartFloat(true);
-                    }}
-                    style={{ width: 172, height: 48 }}
-                  />
-                </div>
+              {/* Actions bar: direct flex child of sf-modal-sheet → always pinned to bottom of 100dvh */}
+              <div className="sf-modal-actions">
+                <DynamicDetailButton
+                  type="close"
+                  onClick={() => setDetailProduct(null)}
+                  style={{ width: 172, height: 48 }}
+                />
+                <DynamicAddToCartButton
+                  onClick={() => {
+                    const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
+                    setCartItems(prev => ({
+                      ...prev,
+                      [vId]: (prev[vId] || 0) + pendingQty,
+                    }));
+                    setDetailProduct(null);
+                    setShowBulkPricing(false);
+                    setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
+                    setShowCartFloat(true);
+                  }}
+                  style={{ width: 172, height: 48 }}
+                />
               </div>
             </motion.div>
           </motion.div>
