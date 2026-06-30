@@ -299,8 +299,8 @@ export default function ProductCatalogClient({
     fontWeight: 700,
     textTransform: "uppercase",
     letterSpacing: "0.05em",
-    background: "#ffffff",
-    color: "#0a0a0a",
+    background: "var(--surface-2)",
+    color: "var(--grey-400)",
   };
 
   return (
