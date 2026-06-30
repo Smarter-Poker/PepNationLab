@@ -78,7 +78,7 @@ export default function AdminAuditClient({
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search Summary…"
+          placeholder="Search Summary..."
           onKeyDown={(e) => {
             if (e.key === "Enter") applyFilters();
           }}
@@ -117,7 +117,7 @@ export default function AdminAuditClient({
           disabled={busy}
           onClick={applyFilters}
         >
-          {busy ? "Loading…" : "Filter"}
+          {busy ? "Loading..." : "Filter"}
         </button>
       </div>
 
@@ -235,8 +235,11 @@ export default function AdminAuditClient({
                         color: "var(--white)",
                       }}
                     >
-                      {r.actor_email ||
-                        (r.actor_id ? r.actor_id.slice(0, 8) : "system")}
+                      {r.actor_email
+                        ? r.actor_email
+                        : r.actor_id
+                        ? <span title={r.actor_id} style={{ color: "var(--grey-400)", fontStyle: "italic", fontSize: "0.8rem" }}>Deleted User ({r.actor_id.slice(0, 8)})</span>
+                        : "system"}
                     </td>
                     <td style={{ padding: "var(--space-3)" }}>
                       <span
@@ -284,7 +287,7 @@ export default function AdminAuditClient({
             disabled={busy}
             onClick={() => load()}
           >
-            {busy ? "Loading…" : "Load More"}
+            {busy ? "Loading..." : "Load More"}
           </button>
         </div>
       )}

@@ -136,7 +136,7 @@ export default function AdminCartRecoveryPage() {
         </div>
       )}
 
-      {loading && <div style={{ color: 'var(--grey-400)', padding: 16 }}>Loading…</div>}
+      {loading && <div style={{ color: 'var(--grey-400)', padding: 16 }}>Loading...</div>}
       {err && <div style={{ background: 'rgba(229,62,62,0.12)', border: '1px solid rgba(229,62,62,0.4)', color: '#FFFFFF', padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>{err}</div>}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
