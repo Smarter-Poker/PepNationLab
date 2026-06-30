@@ -673,7 +673,7 @@ export default function AgentAccountDetail({
                               onClick={() => { setDownlinePasswordAgent({ id: sa.id, full_name: sa.full_name, username: sa.username }); setDownlineNewPassword(''); }}
                               style={{ fontSize: '0.7rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0,229,255,0.25)', borderRadius: 4, cursor: 'pointer', padding: '3px 8px' }}
                             >
-                              ✏️ Edit Password
+                              Edit Password
                             </button>
                           </div>
                         </div>
@@ -729,7 +729,7 @@ export default function AgentAccountDetail({
                               onClick={() => { setDownlinePasswordAgent({ id: r.id, full_name: r.full_name, username: r.username }); setDownlineNewPassword(''); }}
                               style={{ fontSize: '0.7rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0,229,255,0.25)', borderRadius: 4, cursor: 'pointer', padding: '3px 8px' }}
                             >
-                              ✏️ Edit Password
+                              Edit Password
                             </button>
                           </div>
                         </div>
@@ -745,7 +745,7 @@ export default function AgentAccountDetail({
       </div>
     </div>
 
-      {/* Edit Password Modal — Sub-Agents & Researchers */}
+      {/* Edit Password Modal -- Sub-Agents & Researchers */}
       {downlinePasswordAgent && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: 400 }}>
