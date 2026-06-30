@@ -555,7 +555,7 @@ export default function AdminSearchClient() {
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
       <div style={{ position: 'sticky', top: 0, background: 'var(--black, #050A0F)', paddingBottom: 12, zIndex: 10, marginBottom: 16 }}>
-        <h1 style={{ fontSize: 'clamp(1.2rem, 4vw, 1.6rem)', fontWeight: 700, marginBottom: 12 }}>Global Search</h1>
+        <h1 className="animated-gradient-text" style={{ fontSize: 'clamp(1.2rem, 4vw, 1.6rem)', marginBottom: 12 }}>Global Search</h1>
 
         <label
           style={{
@@ -836,6 +836,8 @@ export default function AdminSearchClient() {
 }
 
 function OperationalNudgesPanel({ nudges }: { nudges: Nudges }) {
+  // Order = roughly by urgency: money-in (customer payments) -> fulfillment
+  // -> inventory -> financial-health -> researcher-hygiene -> setup gaps.
   const rows: Array<{ key: string; label: string; count: number; href: string }> = [
     { key: 'pcp',  label: 'Orders Pending Customer Payment', count: nudges.pendingCustomerPayment,   href: '/admin/orders?status=pending_customer_payment' },
     { key: 'aap',  label: 'Orders Awaiting Agent Approval',  count: nudges.agentApprovalPending,     href: '/admin/orders?status=agent_approval_pending' },

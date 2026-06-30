@@ -37,7 +37,11 @@ export default function AdminPaymentsPage() {
       if (!res.ok) throw new Error();
       const j = await res.json();
       setAgents(Array.isArray(j.agents) ? j.agents : []);
-    } catch { setError(true); } finally { setLoading(false); }
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }
   useEffect(() => { load(); }, []);
 
@@ -46,7 +50,8 @@ export default function AdminPaymentsPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return agents;
-    return agents.filter((a) => (a.full_name || '').toLowerCase().includes(q) || (a.email || '').toLowerCase().includes(q));
+    return agents.filter((a) =>
+      (a.full_name || '').toLowerCase().includes(q) || (a.email || '').toLowerCase().includes(q));
   }, [agents, query]);
 
   async function submit() {
@@ -72,7 +77,9 @@ export default function AdminPaymentsPage() {
       load();
     } catch (e: any) {
       toast.error('Payment Failed: ' + (e.message || 'Unknown'));
-    } finally { setSubmitting(false); }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -86,9 +93,15 @@ export default function AdminPaymentsPage() {
         <div style={{ color: '#ff6b6b' }}>Could Not Load Agents. <button onClick={load} style={{ color: 'var(--teal)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Retry</button></div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) minmax(280px, 360px)', gap: 18, alignItems: 'start' }}>
+          {/* Agent list */}
           <section className="glass-panel" style={{ padding: 14, borderRadius: 12 }}>
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search By Name Or Email"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, marginBottom: 10, fontSize: 16, background: 'rgba(255,255,255,0.04)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.1)' }} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search By Name Or Email"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, marginBottom: 10, fontSize: 16,
+                background: 'rgba(255,255,255,0.04)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.1)' }}
+            />
             {loading ? (
               <p style={{ color: 'var(--grey-500)' }}>Loading...</p>
             ) : filtered.length === 0 ? (
@@ -100,12 +113,19 @@ export default function AdminPaymentsPage() {
                   const owes = a.account_type === 'credit' ? a.credit_used : a.open_owed;
                   return (
                     <li key={a.id}>
-                      <button onClick={() => setSelectedId(a.id)} style={{ width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: 8, minHeight: 44, cursor: 'pointer', background: active ? 'rgba(0,196,188,0.14)' : 'rgba(255,255,255,0.03)', border: `1px solid ${active ? 'var(--teal)' : 'rgba(255,255,255,0.06)'}`, color: 'var(--white)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                      <button onClick={() => setSelectedId(a.id)} style={{
+                        width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: 8, minHeight: 44, cursor: 'pointer',
+                        background: active ? 'rgba(0,196,188,0.14)' : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${active ? 'var(--teal)' : 'rgba(255,255,255,0.06)'}`, color: 'var(--white)',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
+                      }}>
                         <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
                           <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {a.full_name || a.email}{a.is_super_agent ? ' - Super' : ''}
+                            {a.full_name || a.email}{a.is_super_agent ? ' · Super' : ''}
                           </span>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'capitalize' }}>{a.account_type || 'unset'}</span>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'capitalize' }}>
+                            {a.account_type || 'unset'}
+                          </span>
                         </span>
                         <span style={{ fontSize: '0.8rem', color: owes > 0 ? '#ff6b6b' : 'var(--grey-500)', whiteSpace: 'nowrap' }}>
                           {a.account_type === 'credit' ? `Used ${money(owes)}` : owes > 0 ? `Owes ${money(owes)}` : money(a.prepaid_balance)}
@@ -118,6 +138,7 @@ export default function AdminPaymentsPage() {
             )}
           </section>
 
+          {/* Payment panel */}
           <section className="glass-panel" style={{ padding: 16, borderRadius: 12, position: 'sticky', top: 76 }}>
             {!selected ? (
               <p style={{ color: 'var(--grey-500)', margin: 0 }}>Select An Agent To Record A Payment.</p>
@@ -142,7 +163,8 @@ export default function AdminPaymentsPage() {
                   <span style={{ color: 'var(--grey-400)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Payment Amount</span>
                   <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.00" className="form-input"
-                    style={{ width: '100%', padding: 12, marginTop: 4, borderRadius: 8, fontSize: 16, background: 'rgba(255,255,255,0.04)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                    style={{ width: '100%', padding: 12, marginTop: 4, borderRadius: 8, fontSize: 16,
+                      background: 'rgba(255,255,255,0.04)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.1)' }} />
                 </label>
                 {selected.account_type === 'credit' && selected.credit_used > 0 && (
                   <button type="button" onClick={() => setAmount(String(selected.credit_used))}
@@ -159,12 +181,15 @@ export default function AdminPaymentsPage() {
 
                 <label style={{ display: 'block', marginBottom: 14 }}>
                   <span style={{ color: 'var(--grey-400)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Note (Optional)</span>
-                  <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder="Zelle Ref, Week Of, Etc."
-                    style={{ width: '100%', padding: 12, marginTop: 4, borderRadius: 8, fontSize: 16, background: 'rgba(255,255,255,0.04)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                  <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200}
+                    placeholder="Zelle Ref, Week Of, Etc."
+                    style={{ width: '100%', padding: 12, marginTop: 4, borderRadius: 8, fontSize: 16,
+                      background: 'rgba(255,255,255,0.04)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.1)' }} />
                 </label>
 
                 <button onClick={submit} disabled={submitting} className="btn-primary"
-                  style={{ width: '100%', background: 'var(--teal)', color: 'var(--black)', border: 'none', padding: '13px', borderRadius: 10, fontWeight: 800, minHeight: 46, cursor: submitting ? 'wait' : 'pointer' }}>
+                  style={{ width: '100%', background: 'var(--teal)', color: 'var(--black)', border: 'none', padding: '13px',
+                    borderRadius: 10, fontWeight: 800, minHeight: 46, cursor: submitting ? 'wait' : 'pointer' }}>
                   {submitting ? 'Recording...' : 'Record Payment'}
                 </button>
               </>
