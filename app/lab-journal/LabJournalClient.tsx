@@ -166,16 +166,16 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   };
 
   const exportJournalToCSV = () => {
-    let csv = 'Type,Date,Title/Items,Details\\n';
+    let csv = 'Type,Date,Title/Items,Details\n';
     
     // Add Notes
     notes.forEach(n => {
-      csv += `Note,${new Date(n.updated_at).toLocaleDateString()},"${(n.title || 'Journal Entry').replace(/"/g, '""')}","${(n.note_text || '').replace(/"/g, '""')}"\\n`;
+      csv += `Note,${new Date(n.updated_at).toLocaleDateString()},"${(n.title || 'Journal Entry').replace(/"/g, '""')}","${(n.note_text || '').replace(/"/g, '""')}"\n`;
     });
     
     // Add Comparisons
     comparisons.forEach(c => {
-      csv += `Comparison,${new Date(c.created_at).toLocaleDateString()},"Folder: ${(c.folder_name || 'Unsorted').replace(/"/g, '""')} | Items: ${c.product_ids.join(', ')}","${(c.notes || '').replace(/"/g, '""')}"\\n`;
+      csv += `Comparison,${new Date(c.created_at).toLocaleDateString()},"Folder: ${(c.folder_name || 'Unsorted').replace(/"/g, '""')} | Items: ${c.product_ids.join(', ')}","${(c.notes || '').replace(/"/g, '""')}"\n`;
     });
     
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -185,7 +185,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     a.download = `Lab_Journal_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('Journal exported to CSV');
+    toast.success('Journal Exported To CSV');
   };
 
   async function removeItem(productId: string) {
@@ -211,7 +211,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   }
 
   async function clearRecentlyViewed() {
-    if (!confirm('Are you sure you want to clear your recently viewed history?')) return;
+    if (!confirm('Are You Sure You Want To Clear Your Recently Viewed History?')) return;
     try {
       const res = await fetch('/api/researcher/recently-viewed', { method: 'DELETE' });
       if (res.ok) {
@@ -261,10 +261,10 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         if (editingNote) setNotes(prev => prev.map(n => n.id === data.note.id ? data.note : n));
         else setNotes(prev => [data.note, ...prev]);
         setIsCreatingNote(false);
-        toast.success(editingNote ? 'Note updated' : 'Note saved');
+        toast.success(editingNote ? 'Note Updated' : 'Note Saved');
       } else throw new Error(data.error);
     } catch (e) {
-      toast.error('Failed to save note');
+      toast.error('Failed To Save Note');
     } finally {
       setNoteSaving(false);
     }
@@ -285,17 +285,17 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         setShowAiBuilder(false);
         setAiGoal('');
         setAiCompounds([]);
-        toast.success('AI Protocol generated and saved to notes!');
+        toast.success('AI Protocol Generated And Saved To Notes!');
       } else throw new Error(data.error);
     } catch (e) {
-      toast.error('Failed to generate protocol');
+      toast.error('Failed To Generate Protocol');
     } finally {
       setIsGeneratingAi(false);
     }
   };
 
   const deleteNote = async (id: string) => {
-    if (!confirm('Delete this note?')) return;
+    if (!confirm('Delete This Note?')) return;
     try {
       const res = await fetch('/api/researcher/notes', {
         method: 'DELETE',
@@ -304,15 +304,15 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       });
       if (res.ok) {
         setNotes(prev => prev.filter(n => n.id !== id));
-        toast.success('Note deleted');
+        toast.success('Note Deleted');
       }
     } catch (e) {
-      toast.error('Failed to delete note');
+      toast.error('Failed To Delete Note');
     }
   };
 
   const deleteComparison = async (id: string) => {
-    if (!confirm('Delete this saved comparison?')) return;
+    if (!confirm('Delete This Saved Comparison?')) return;
     try {
       const res = await fetch('/api/researcher/comparisons', {
         method: 'DELETE',
@@ -321,12 +321,12 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       });
       if (res.ok) {
         setComparisons(c => c.filter(x => x.id !== id));
-        toast.success('Comparison deleted');
+        toast.success('Comparison Deleted');
       } else {
-        toast.error('Failed to delete comparison');
+        toast.error('Failed To Delete Comparison');
       }
     } catch {
-      toast.error('Error deleting comparison');
+      toast.error('Error Deleting Comparison');
     }
   };
 
@@ -343,10 +343,10 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       if (res.ok && data.dose) {
         setDoses(prev => [data.dose, ...prev]);
         setDoseAmount('');
-        toast.success('Dose logged');
+        toast.success('Dose Logged');
       } else throw new Error(data.error);
     } catch (e) {
-      toast.error('Failed to log dose');
+      toast.error('Failed To Log Dose');
     } finally {
       setDoseSaving(false);
     }
@@ -365,10 +365,10 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       if (res.ok && data.biometric) {
         setBiometrics(prev => [...prev, data.biometric]);
         setBioValue('');
-        toast.success('Biometric logged');
+        toast.success('Biometric Logged');
       } else throw new Error(data.error);
     } catch (e) {
-      toast.error('Failed to log biometric');
+      toast.error('Failed To Log Biometric');
     } finally {
       setBioSaving(false);
     }
@@ -396,7 +396,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       byDay[day][d.compound_slug] = (byDay[day][d.compound_slug] || 0) + d.dose_amount;
       hasData = true;
     });
-    
+
     const chartData = Object.values(byDay).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     if (!hasData || chartData.length === 0) return null;
     
@@ -589,7 +589,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     
     toAdd.forEach(i => handleQuickAdd(i, 1, true));
     setSelectedItems(new Set());
-    toast.success(`Added ${toAdd.length} items to cart`);
+    toast.success(`Added ${toAdd.length} Items To Cart`);
   }
 
   function toggleSelection(id: string) {
@@ -776,7 +776,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
           { id: 'favorites', label: 'Saved Compounds', icon: Heart },
           { id: 'pastOrders', label: 'Helpful Data & Orders', icon: PackageOpen },
-          { id: 'doses', label: 'Dose Tracker', icon: Layers }, // Assuming Layers or similar icon
+          { id: 'doses', label: 'Dose Tracker', icon: Layers },
           { id: 'biometrics', label: 'Biometrics', icon: Layers },
           { id: 'recentlyViewed', label: 'Recently Viewed', icon: History },
           { id: 'compareHistory', label: 'Compare History', icon: Search },
@@ -826,7 +826,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           catalog={catalog} 
           onAddStackToCart={(items, name) => {
             items.forEach(i => handleQuickAdd(i, 1, true));
-            toast.success(`Custom Stack "${name}" added to cart!`);
+            toast.success(`Custom Stack "${name}" Added To Cart!`);
           }} 
         />
       ) : (
