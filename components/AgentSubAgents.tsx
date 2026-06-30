@@ -81,8 +81,8 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       const agentsJson = await agentsRes.json();
       const invoicesJson = await invoicesRes.json();
       
-      if (!agentsRes.ok) throw new Error(agentsJson.error || 'Failed to fetch sub-agents');
-      if (!invoicesRes.ok) throw new Error(invoicesJson.error || 'Failed to fetch invoices');
+      if (!agentsRes.ok) throw new Error(agentsJson.error || 'Failed To Fetch Sub-Agents');
+      if (!invoicesRes.ok) throw new Error(invoicesJson.error || 'Failed To Fetch Invoices');
       
       setSubAgents(agentsJson.data || []);
       setInvoices(invoicesJson.data || []);
@@ -98,7 +98,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       setLoadingPricing(true);
       const res = await fetch('/api/agent/super-agent/pricing');
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to fetch pricing');
+      if (!res.ok) throw new Error(json.error || 'Failed To Fetch Pricing');
       const items = json.data || [];
       setProducts(items);
       // Seed controlled inputs from server values.
@@ -139,11 +139,11 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
         body: JSON.stringify({ sub_agent_id: subAgentId, week_start: weekStart })
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to generate invoice');
+      if (!res.ok) throw new Error(json.error || 'Failed To Generate Invoice');
       fetchData();
-      toast.success('Weekly Invoice generated successfully!');
+      toast.success('Weekly Invoice Generated Successfully');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to generate invoice');
+      toast.error(err.message || 'Failed To Generate Invoice');
     }
   };
 
@@ -155,11 +155,11 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
         body: JSON.stringify({ invoice_id: invoiceId })
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to mark paid');
+      if (!res.ok) throw new Error(json.error || 'Failed To Mark Invoice As Paid');
       fetchData();
-      toast.success('Invoice marked as paid!');
+      toast.success('Invoice Marked As Paid');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to mark invoice as paid');
+      toast.error(err.message || 'Failed To Mark Invoice As Paid');
     }
   };
 
@@ -202,13 +202,13 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
         body: JSON.stringify({ targetUserId, auto_approve_orders: !currentStatus })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update auto-approve setting');
+      if (!res.ok) throw new Error(data.error || 'Failed To Update Auto-Approve Setting');
       
       toast.success(data.auto_approve_orders ? 'Auto-Approve Enabled' : 'Auto-Approve Disabled');
       
       setSubAgents(prev => prev.map(a => a.id === targetUserId ? { ...a, auto_approve_orders: data.auto_approve_orders } : a));
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message || 'Failed To Update Auto-Approve Setting');
     } finally {
       setTogglingTrust(null);
     }
@@ -222,7 +222,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
         body: JSON.stringify({ sub_agent_id: subAgentId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to dismiss previous name');
+      if (!res.ok) throw new Error(data.error || 'Failed To Dismiss Previous Name');
       
       setSubAgents(prev => prev.map(a => {
         if (a.id === subAgentId && a.agent_profiles) {
@@ -235,9 +235,9 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
         }
         return a;
       }));
-      toast.success('Previous name dismissed');
+      toast.success('Previous Name Dismissed');
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message || 'Failed To Dismiss Previous Name');
     }
   };
 
@@ -246,7 +246,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       setPricingError(null);
       setPricingSuccess(null);
       const cost = parseFloat(baselineCost);
-      if (isNaN(cost) || cost < 0) throw new Error('Invalid cost value');
+      if (isNaN(cost) || cost < 0) throw new Error('Invalid Cost Value');
       
       const bulkCost = bulkCostStr ? parseFloat(bulkCostStr) : null;
       const bulkThreshold = bulkThreshStr ? parseInt(bulkThreshStr, 10) : 100;
@@ -262,12 +262,12 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
         })
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to save pricing');
+      if (!res.ok) throw new Error(json.error || 'Failed To Save Pricing');
       
-      toast.success('Baseline Pricing updated successfully!');
+      toast.success('Baseline Pricing Updated Successfully');
       fetchPricing(); // Refresh
     } catch (err: any) {
-      toast.error(err.message || 'Failed to save pricing');
+      toast.error(err.message || 'Failed To Save Pricing');
     }
   };
 
