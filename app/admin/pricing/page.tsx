@@ -258,7 +258,7 @@ export default function PricingTiersPage() {
                         = Retail Price Per Unit{" "}
                         <span style={{ color: "var(--teal)", fontWeight: 700 }}>
                           $
-                          {(Number(sampleBaseCost) * tier.multiplier).toFixed(
+                          {(Number(sampleBaseCost) * tier.multiplier / 10).toFixed(
                             2,
                           )}
                         </span>
@@ -495,7 +495,7 @@ export default function PricingTiersPage() {
                   <span style={{ color: "var(--teal)", fontWeight: 700 }}>
                     $
                     {(
-                      Number(sampleBaseCost) * (Number(editMultiplier) || 0)
+                      Number(sampleBaseCost) * (Number(editMultiplier) || 0) / 10
                     ).toFixed(2)}
                   </span>
                 </div>
