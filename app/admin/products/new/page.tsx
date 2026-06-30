@@ -300,7 +300,7 @@ export default function NewProductPage() {
                 </div>
               </div>
               <p style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)', marginBottom: 0 }}>
-                If set, Agents purchasing at or above the threshold quantity will receive this flat unit cost regardless of their tier.
+                If Set, Agents Purchasing At Or Above The Threshold Quantity Will Receive This Flat Unit Cost Regardless Of Their Tier.
               </p>
             </div>
 
@@ -369,7 +369,7 @@ export default function NewProductPage() {
                 <div style={{ fontSize: '0.88rem', fontWeight: 700, color: invCount > 0 ? 'var(--teal)' : '#00E5FF' }}>
                   {invCount > 0
                     ? `In Stock - Ships Now (${form.inventory_count} Units)`
-                    : `Out of Stock / Backordered`}
+                    : `Out Of Stock / Backordered`}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginTop: 2 }}>
                   This Status Shows Live On All Agent Storefronts
@@ -404,7 +404,7 @@ export default function NewProductPage() {
             </div>
 
             <div style={{ marginTop: 'var(--space-3)', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-              Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Out of Stock / Backordered".
+              Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Out Of Stock / Backordered".
               When Restocked, Storefronts Instantly Update To "In Stock - Ships Now."
             </div>
           </div>
