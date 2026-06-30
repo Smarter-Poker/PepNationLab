@@ -222,7 +222,7 @@ export default function EditProductPage() {
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
-        {/* ── Product Information ── */}
+        {/* -- Product Information -- */}
         <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
           <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
@@ -259,7 +259,7 @@ export default function EditProductPage() {
 
             <div className="form-group">
               <label className="form-label" htmlFor="image_url">
-                Product Image
+                Product Image{' '}
                 <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 400 }}>Optional</span>
               </label>
               <input 
@@ -287,7 +287,7 @@ export default function EditProductPage() {
           </div>
         </div>
 
-        {/* ── Pricing ── */}
+        {/* -- Pricing -- */}
         <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.2s' }}>
           <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
@@ -379,19 +379,19 @@ export default function EditProductPage() {
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-6)' }}>
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 1 ({multipliers.tier_1}×)</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 1 ({multipliers.tier_1}x)</div>
                     <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
                       ${(baseCost * multipliers.tier_1 / 10).toFixed(2)}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 2 ({multipliers.tier_2}×)</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 2 ({multipliers.tier_2}x)</div>
                     <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>
                       ${(baseCost * multipliers.tier_2 / 10).toFixed(2)}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 3 ({multipliers.tier_3}×)</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 3 ({multipliers.tier_3}x)</div>
                     <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--grey-400)', fontFamily: 'var(--font-brand)' }}>
                       ${(baseCost * multipliers.tier_3 / 10).toFixed(2)}
                     </div>
@@ -402,7 +402,7 @@ export default function EditProductPage() {
           </div>
         </div>
 
-        {/* ── Inventory & Shipping ── */}
+        {/* -- Inventory & Shipping -- */}
         <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.3s' }}>
           <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
@@ -428,7 +428,7 @@ export default function EditProductPage() {
                 <div style={{ fontSize: '0.88rem', fontWeight: 700, color: invCount > 0 ? 'var(--teal)' : '#00E5FF' }}>
                   {invCount > 0
                     ? `In Stock - Ships Now (${form.inventory_count} Units)`
-                    : `Out of Stock / Backordered`}
+                    : `Out Of Stock / Backordered`}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginTop: 2 }}>
                   This Status Shows Live On All Agent Storefronts
@@ -463,13 +463,13 @@ export default function EditProductPage() {
             </div>
 
             <div style={{ marginTop: 'var(--space-3)', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-              Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Out of Stock / Backordered".
+              Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Out Of Stock / Backordered".
               When Restocked, Storefronts Instantly Update To "In Stock - Ships Now."
             </div>
           </div>
         </div>
 
-        {/* ── Visibility ── */}
+        {/* -- Visibility -- */}
         <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.4s' }}>
           <div className="" style={{ padding: 'var(--space-5)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--silver)' }}>
@@ -489,7 +489,7 @@ export default function EditProductPage() {
           </div>
         </div>
 
-        {/* ── Submit ── */}
+        {/* -- Submit -- */}
         <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
           <button type="submit" className="btn-neon-cyan" disabled={saving}
             style={{ opacity: saving ? 0.7 : 1 }}>
@@ -501,7 +501,7 @@ export default function EditProductPage() {
         </div>
       </form>
 
-      {/* ── Lot Tracking + COA Documents ── */}
+      {/* -- Lot Tracking + COA Documents -- */}
       <div style={{ marginTop: 'var(--space-8)' }}>
         <AdminProductLots productId={id} />
       </div>
