@@ -1,271 +1,215 @@
-J3VzZSBjbGllbnQnOwoKaW1wb3J0IHsgdXNlU3RhdGUgfSBmcm9tICdyZWFjdCc7CmltcG9ydCBM
-aW5rIGZyb20gJ25leHQvbGluayc7CmltcG9ydCB7IHVzZVBhdGhuYW1lIH0gZnJvbSAnbmV4dC9u
-YXZpZ2F0aW9uJzsKaW1wb3J0IEFkbWluTWVzc2FnZUJlbGwgZnJvbSAnQC9jb21wb25lbnRzL0Fk
-bWluTWVzc2FnZUJlbGwnOwppbXBvcnQgTmF2YmFyIGZyb20gJ0AvY29tcG9uZW50cy9OYXZiYXIn
-OwppbXBvcnQgQWRtaW5SZWFsdGltZVJlZnJlc2hlciBmcm9tICdAL2NvbXBvbmVudHMvQWRtaW5S
-ZWFsdGltZVJlZnJlc2hlcic7CmltcG9ydCBNeVFSQ29kZU1vZGFsIGZyb20gJ0AvY29tcG9uZW50
-cy9NeVFSQ29kZU1vZGFsJzsKCmNvbnN0IElDT05fUFJPUFMgPSB7CiAgd2lkdGg6IDE2LAogIGhl
-aWdodDogMTYsCiAgdmlld0JveDogJzAgMCAyNCAyNCcsCiAgZmlsbDogJ25vbmUnLAogIHN0cm9r
-ZTogJ2N1cnJlbnRDb2xvcicsCiAgc3Ryb2tlV2lkdGg6IDIsCiAgc3Ryb2tlTGluZWNhcDogJ3Jv
-dW5kJyBhcyBjb25zdCwKICBzdHJva2VMaW5lam9pbjogJ3JvdW5kJyBhcyBjb25zdCwKfTsKCmNv
-bnN0IE5BViA9IFsKICB7IGhyZWY6ICcvYWRtaW4nLCBsYWJlbDogJ0FkbWluIERhc2hib2FyZCcs
-IGljb246IDxzdmcgey4uLklDT05fUFJPUFN9PjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSI3IiBo
-ZWlnaHQ9IjkiIC8+PHJlY3QgeD0iMTQiIHk9IjMiIHdpZHRoPSI3IiBoZWlnaHQ9IjUiIC8+PHJl
-Y3QgeD0iMTQiIHk9IjEyIiB3aWR0aD0iNyIgaGVpZ2h0PSI5IiAvPjxyZWN0IHg9IjMiIHk9IjE2
-IiB3aWR0aD0iNyIgaGVpZ2h0PSI1IiAvPjwvc3ZnPiB9LAogIHsgaHJlZjogJy9hZG1pbi9wcmlj
-aW5nJywgbGFiZWw6ICdQcmljaW5nJywgaWNvbjogPHN2ZyB7Li4uSUNPTl9QUk9QU30+PGxpbmUg
-eDE9IjEyIiB5MT0iMSIgeDI9IjEyIiB5Mj0iMjMiIC8+PHBhdGggZD0iTTE3IDVIOS41YTMuNSAz
-LjUgMCAwIDAgMCA3aDVhMy41IDMuNSAwIDAgMSAwIDdINiIgLz48L3N2Zz4gfSwKICB7IGhyZWY6
-ICcvYWRtaW4vcHJvZHVjdHMnLCBsYWJlbDogJ1Byb2R1Y3RzJywgaWNvbjogPHN2ZyB7Li4uSUNP
-Tl9QUk9QU30+PHBhdGggZD0iTTIxIDE2VjhhMiAyIDAgMCAwLTEtMS43M2wtNy00YTIgMiAwIDAg
-MC0yIDBsLTcgNEEyIDIgMCAwIDAgMyA4djhhMiAyIDAgMCAwIDEgMS43M2w3IDRhMiAyIDAgMCAw
-IDIgMGw3LTRBMiAyIDAgMCAwIDIxIDE2eiIgLz48cG9seWxpbmUgcG9pbnRzPSIzLjI3IDYuOTYg
-MTIgMTIuMDEgMjAuNzMgNi45NiIgLz48bGluZSB4MT0iMTIiIHkxPSIyMi4wOCIgeDI9IjEyIiB5
-Mj0iMTIiIC8+PC9zdmc+IH0sCiAgeyBocmVmOiAnL2FkbWluL2FkbWluLXN0b3JlJywgbGFiZWw6
-ICdBZG1pbiBTdG9yZScsIGljb246IDxzdmcgey4uLklDT05fUFJPUFN9PjxwYXRoIGQ9Ik02IDJM
-MyA2djE0YTIgMiAwIDAgMCAyIDJoMTRhMiAyIDAgMCAwIDItMlY2bC0zLTR6Ii8+PGxpbmUgeDE9
-IjMiIHkxPSI2IiB4Mj0iMjEiIHkyPSI2Ii8+PHBhdGggZD0iTTE2IDEwYTQgNCAwIDAgMS04IDAi
-Lz48L3N2Zz4gfSwKICB7IGhyZWY6ICcvYWRtaW4vc3RvcmUtcHJldmlldycsIGxhYmVsOiAnVmlz
-aXQgU3RvcmVmcm9udCcsIGljb246IDxzdmcgey4uLklDT05fUFJPUFN9PjxyZWN0IHg9IjMiIHk9
-IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIiAvPjxsaW5lIHgxPSIzIiB5
-MT0iOSIgeDI9IjIxIiB5Mj0iOSIgLz48L3N2Zz4gfSwKICB7IGhyZWY6ICcvd2FsbGV0JywgbGFi
-ZWw6ICdXYWxsZXQnLCBpY29uOiA8c3ZnIHsuLi5JQ09OX1BST1BTfT48cGF0aCBkPSJNMjEgMTJW
-N0g1YTIgMiAwIDAgMSAwLTRoMTR2NCIgLz48cGF0aCBkPSJNMyA1djE0YTIgMiAwIDAgMCAyIDJo
-MTZ2LTUiIC8+PHBhdGggZD0iTTE4IDEyYTIgMiAwIDAgMCAwIDRoNHYtNFoiIC8+PC9zdmc+IH0s
-CiAgeyBocmVmOiAnL2FkbWluL3BheW1lbnRzJywgbGFiZWw6ICdBZ2VudCBQYXltZW50cycsIGlj
-b246IDxzdmcgey4uLklDT05fUFJPUFN9PjxyZWN0IHg9IjEiIHk9IjQiIHdpZHRoPSIyMiIgaGVp
-Z2h0PSIxNiIgcng9IjIiIC8+PGxpbmUgeDE9IjEiIHkxPSIxMCIgeDI9IjIzIiB5Mj0iMTAiIC8+
-PC9zdmc+IH0sCiAgeyBocmVmOiAnL2FkbWluL3N0YXRlbWVudHMnLCBsYWJlbDogJ1N0YXRlbWVu
-dHMnLCBpY29uOiA8c3ZnIHsuLi5JQ09OX1BST1BTfT48cGF0aCBkPSJNMTQgMkg2YTIgMiAwIDAg
-MC0yIDJ2MTZhMiAyIDAgMCAwIDIgMmgxMmEyIDIgMCAwIDAgMi0yVjh6IiAvPjxwb2x5bGluZSBw
-b2ludHM9IjE0IDIgMTQgOCAyMCA4IiAvPjxsaW5lIHgxPSIxNiIgeTE9IjEzIiB4Mj0iOCIgeTI9
-IjEzIiAvPjxsaW5lIHgxPSIxNiIgeTE9IjE3IiB4Mj0iOCIgeTI9IjE3IiAvPjwvc3ZnPiB9LAog
-IHsgaHJlZjogJy9hZG1pbi9jcmVkaXQtaW5jcmVhc2VzJywgbGFiZWw6ICdDcmVkaXQgUmVxdWVz
-dHMnLCBpY29uOiA8c3ZnIHsuLi5JQ09OX1BST1BTfT48bGluZSB4MT0iMTIiIHkxPSIxIiB4Mj0i
-MTIiIHkyPSIyMyIgLz48cGF0aCBkPSJNMTcgNUg5LjVhMy41IDMuNSAwIDAgMCAwIDdoNWEzLjUg
-My41IDAgMCAxIDAgN0g2IiAvPjwvc3ZnPiB9LAogIHsgaHJlZjogJy9hZG1pbi9kaXNwdXRlcycs
-IGxhYmVsOiAnRGlzcHV0ZXMnLCBpY29uOiA8c3ZnIHsuLi5JQ09OX1BST1BTfT48cGF0aCBkPSJN
-MTAuMjkgMy44NkwxLjgyIDE4YTIgMiAwIDAgMCAxLjcxIDNoMTYuOTRhMiAyIDAgMCAwIDEuNzEt
-M0wxMy43MSAzLjg2YTIgMiAwIDAgMC0zLjQyIDB6IiAvPjxsaW5lIHgxPSIxMiIgeTE9IjkiIHgy
-PSIxMiIgeTI9IjEzIiAvPjxsaW5lIHgxPSIxMiIgeTE9IjE3IiB4Mj0iMTIuMDEiIHkyPSIxNyIg
-Lz48L3N2Zz4gfSwKICB7IGhyZWY6ICcvbWVzc2VuZ2VyJywgbGFiZWw6ICdNZXNzZW5nZXInLCBp
-Y29uOiA8c3ZnIHsuLi5JQ09OX1BST1BTfT48cGF0aCBkPSJNMjEgMTVhMiAyIDAgMCAxLTIgMkg3
-bC00IDRWNWEyIDIgMCAwIDEgMi0yaDE0YTIgMiAwIDAgMSAyIDJ6Ij48L3BhdGg+PC9zdmc+IH0s
-CiAgeyBocmVmOiAnL2FkbWluL3NlYXJjaCcsIGxhYmVsOiAnR2xvYmFsIFNlYXJjaCcsIGljb246
-IDxzdmcgey4uLklDT05fUFJPUFN9PjxjaXJjbGUgY3g9IjExIiBjeT0iMTEiIHI9IjgiIC8+PGxp
-bmUgeDE9IjIxIiB5MT0iMjEiIHgyPSIxNi42NSIgeTI9IjE2LjY1IiAvPjwvc3ZnPiB9LAogIHsg
-aHJlZjogJy9tZXNzZW5nZXI/Y29tcG9zZT0xJywgbGFiZWw6ICdGaW5kIFVzZXInLCBpY29uOiA8
-c3ZnIHsuLi5JQ09OX1BST1BTfT48Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI4IiAvPjxsaW5l
-IHgxPSIyMSIgeTE9IjIxIiB4Mj0iMTYuNjUiIHkyPSIxNi42NSIgLz48L3N2Zz4sIGFjdGlvbjog
-dHJ1ZSB9LAogIHsgaHJlZjogJy9hZG1pbi9vcmRlcnMnLCBsYWJlbDogJ09yZGVycyAmIEZ1bGZp
-bGxtZW50JywgaWNvbjogPHN2ZyB7Li4uSUNPTl9QUk9QU30+PHBhdGggZD0iTTYgMkwzIDZ2MTRh
-MiAyIDAgMCAwIDIgMmgxNGEyIDIgMCAwIDAgMi0yVjZsLTMtNHoiIC8+PGxpbmUgeDE9IjMiIHkx
-PSI2IiB4Mj0iMjEiIHkyPSI2IiAvPjxwYXRoIGQ9Ik0xNiAxMGE0IDQgMCAwIDEtOCAwIiAvPjwv
-c3ZnPiB9LAogIHsgaHJlZjogJy9kYXNoYm9hcmQvYWdlbnQ/dGFiPVN0b3JlZnJvbnQrQ29uZmln
-JywgbGFiZWw6ICdTdG9yZWZyb250IENvbmZpZ3VyZScsIGljb246IDxzdmcgey4uLklDT05fUFJP
-UFN9PjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjMiIC8+PHBhdGggZD0iTTE5LjQgMTVhMS42
-NSAxLjY1IDAgMCAwIC4zMyAxLjgybC4wNi4wNmEyIDIgMCAwIDEgMCAyLjgzIDIgMiAwIDAgMS0y
-LjgzIDBsLS4wNi0uMDZhMS42NSAxLjY1IDAgMCAwLTEuODItLjMzIDEuNjUgMS42NSAwIDAgMC0x
-IDEuNTFWMjFhMiAyIDAgMCAxLTIgMiAyIDIgMCAwIDEtMi0ydi0uMDlBMS42NSAxLjY1IDAgMCAw
-IDkgMTkuNGExLjY1IDEuNjUgMCAwIDAtMS44Mi4zM2wtLjA2LjA2YTIgMiAwIDAgMS0yLjgzIDAg
-MiAyIDAgMCAxIDAtMi44M2wuMDYtLjA2YTEuNjUgMS42NSAwIDAgMCAuMzMtMS44MiAxLjY1IDEu
-NjUgMCAwIDAtMS41MS0xSDNhMiAyIDAgMCAxLTItMiAyIDIgMCAwIDEgMi0yaC4wOUExLjY1IDEu
-NjUgMCAwIDAgNC42IDlhMS42NSAxLjY1IDAgMCAwLS4zMy0xLjgybC0uMDYtLjA2YTIgMiAwIDAg
-MSAwLTIuODMgMiAyIDAgMCAxIDIuODMgMGwuMDYuMDZhMS42NSAxLjY1IDAgMCAwIDEuODIuMzNI
-OWExLjY1IDEuNjUgMCAwIDAgMS0xLjUxVjNhMiAyIDAgMCAxIDItMiAyIDIgMCAwIDEgMiAydi4w
-OWExLjY1IDEuNjUgMCAwIDAgMSAxLjUxIDEuNjUgMS42NSAwIDAgMCAxLjgyLS4zM2wuMDYtLjA2
-YTIgMiAwIDAgMSAyLjgzIDAgMiAyIDAgMCAxIDAgMi44M2wtLjA2LjA2YTEuNjUgMS42NSAwIDAg
-MC0uMzMgMS44MlY5YTEuNjUgMS42NSAwIDAgMCAxLjUxIDFIMjFhMiAyIDAgMCAxIDIgMiAyIDIg
-MCAwIDEtMiAyaC0uMDlhMS42NSAxLjY1IDAgMCAwLTEuNTEgMXoiIC8+PC9zdmc+IH0sCiAgeyBo
-cmVmOiAnL2FkbWluL2FnZW50cycsIGxhYmVsOiAnTXkgQWdlbnRzJywgaWNvbjogPHN2ZyB7Li4u
-SUNPTl9QUk9QU30+PHBhdGggZD0iTTE3IDIxdi0yYTQgNCAwIDAgMC00LTRINWE0IDQgMCAwIDAt
-NCA0djIiIC8+PGNpcmNsZSBjeD0iOSIgY3k9IjciIHI9IjQiIC8+PHBhdGggZD0iTTIzIDIxdi0y
-YTQgNCAwIDAgMC0zLTMuODciIC8+PHBhdGggZD0iTTE2IDMuMTNhNCA0IDAgMCAxIDAgNy43NSIg
-Lz48L3N2Zz4gfSwKICB7IGhyZWY6ICcvYWRtaW4vcmVzZWFyY2hlcnMnLCBsYWJlbDogJ015IFJl
-c2VhcmNoZXJzJywgaWNvbjogPHN2ZyB7Li4uSUNPTl9QUk9QU30+PHBhdGggZD0iTTE3IDIxdi0y
-YTQgNCAwIDAgMC00LTRINWE0IDQgMCAwIDAtNCA0djIiIC8+PGNpcmNsZSBjeD0iOSIgY3k9Ijci
-IHI9IjQiIC8+PC9zdmc+IH0sCiAgeyBocmVmOiAnL2FkbWluL3RyYW5zYWN0aW9ucycsIGxhYmVs
-OiAnVHJhbnNhY3Rpb25zJywgaWNvbjogPHN2ZyB7Li4uSUNPTl9QUk9QU30+PHBvbHlsaW5lIHBv
-aW50cz0iMTcgMSAyMSA1IDE3IDkiLz48cGF0aCBkPSJNMyAxMVY5YTQgNCAwIDAgMSA0LTRoMTQi
-Lz48cG9seWxpbmUgcG9pbnRzPSI3IDIzIDMgMTkgNyAxNSIvPjxwYXRoIGQ9Ik0yMSAxM3YyYTQg
-NCAwIDAgMS00IDRIMyIvPjwvc3ZnPiB9LAogIHsgaHJlZjogJy9hZG1pbi9hZ2VudC1ub3Rlcycs
-IGxhYmVsOiAnU2hhZG93IE5vdGVzJywgaWNvbjogPHN2ZyB7Li4uSUNPTl9QUk9QU30+PHBhdGgg
-ZD0iTTE0IDJINmEyIDIgMCAwIDAtMiAydjE2YTIgMiAwIDAgMCAyIDJoMTJhMiAyIDAgMCAwIDIt
-MlY4eiIgLz48cG9seWxpbmUgcG9pbnRzPSIxNCAyIDE0IDggMjAgOCIgLz48bGluZSB4MT0iOSIg
-eTE9IjEzIiB4Mj0iMTUiIHkyPSIxMyIgLz48L3N2Zz4gfSwKICB7IGhyZWY6ICcvYWRtaW4vbmV0
-d29yaycsIGxhYmVsOiAnTmV0d29yaycsIGljb246IDxzdmcgey4uLklDT05fUFJPUFN9PjxjaXJj
-bGUgY3g9IjEyIiBjeT0iNSIgcj0iMyIgLz48Y2lyY2xlIGN4PSI1IiBjeT0iMTkiIHI9IjMiIC8+
-PGNpcmNsZSBjeD0iMTkiIGN5PSIxOSIgcj0iMyIgLz48bGluZSB4MT0iMTIiIHkxPSI4IiB4Mj0i
-NSIgeTI9IjE2IiAvPjxsaW5lIHgxPSIxMiIgeTE9IjgiIHgyPSIxOSIgeTI9IjE2IiAvPjwvc3Zn
-PiB9LAogIHsgaHJlZjogJy9kYXNoYm9hcmQvYWdlbnQ/dGFiPUludmVudG9yeScsIGxhYmVsOiAn
-TG9jYWwgSW5zdG9jayBJbnZlbnRvcnknLCBpY29uOiA8c3ZnIHsuLi5JQ09OX1BST1BTfT48cGF0
-aCBkPSJNMjEgMTZWOGEyIDIgMCAwIDAtMS0xLjczbC03LTRhMiAyIDAgMCAwLTIgMGwtNyA0QTIg
-MiAwIDAgMCAzIDh2OGEyIDIgMCAwIDAgMSAxLjczbDcgNGEyIDIgMCAwIDAgMiAwbDctNEEyIDIg
-MCAwIDAgMjEgMTZ6IiAvPjxwb2x5bGluZSBwb2ludHM9IjMuMjcgNi45NiAxMiAxMi4wMSAyMC43
-MyA2Ljk2IiAvPjxsaW5lIHgxPSIxMiIgeTE9IjIyLjA4IiB4Mj0iMTIiIHkyPSIxMiIgLz48L3N2
-Zz4gfSwKICB7IGhyZWY6ICcvYWRtaW4vc2FsZXMnLCBsYWJlbDogJ1NhbGVzICYgUmV2ZW51ZScs
-IGljb246IDxzdmcgey4uLklDT05fUFJPUFN9Pjxwb2x5bGluZSBwb2ludHM9IjIyIDcgMTMuNSAx
-NS41IDguNSAxMC41IDIgMTciIC8+PHBvbHlsaW5lIHBvaW50cz0iMTYgNyAyMiA3IDIyIDEzIiAv
-Pjwvc3ZnPiB9LAogIHsgaHJlZjogJy9yZXNlYXJjaCcsIGxhYmVsOiAnUmVzZWFyY2ggTGlicmFy
-eScsIGljb246IDxzdmcgey4uLklDT05fUFJPUFN9PjxwYXRoIGQ9Ik00IDE5LjVBMi41IDIuNSAw
-IDAgMSA2LjUgMTdIMjAiLz48cGF0aCBkPSJNNi41IDJIMjB2MjBINi41QTIuNSAyLjUgMCAwIDEg
-NCAxOS41di0xNUEyLjUgMi41IDAgMCAxIDYuNSAyeiIvPjwvc3ZnPiB9LAogIHsgaHJlZjogJy9h
-ZG1pbi9jb3Vwb25zJywgbGFiZWw6ICdDb3Vwb25zJywgaWNvbjogPHN2ZyB7Li4uSUNPTl9QUk9Q
-U30+PHBhdGggZD0iTTIwLjU5IDEzLjQxbC03LjE3IDcuMTdhMiAyIDAgMCAxLTIuODMgMEwyIDEy
-VjJoMTBsOC41OSA4LjU5YTIgMiAwIDAgMSAwIDIuODJ6IiAvPjxsaW5lIHgxPSI3IiB5MT0iNyIg
-eDI9IjcuMDEiIHkyPSI3IiAvPjwvc3ZnPiB9LAogIHsgaHJlZjogJy9hZG1pbi9jYXRhbG9nLXJp
-c2snLCBsYWJlbDogJ0NhdGFsb2cgUmlzaycsIGljb246IDxzdmcgey4uLklDT05fUFJPUFN9Pjxw
-YXRoIGQ9Ik0xMiAyMnM4LTQgOC0xMFY1bC04LTMtOCAzdjdjMCA2IDggMTAgOCAxMHoiIC8+PGxp
-bmUgeDE9IjEyIiB5MT0iOSIgeDI9IjEyIiB5Mj0iMTMiIC8+PGxpbmUgeDE9IjEyIiB5MT0iMTci
-IHgyPSIxMi4wMSIgeTI9IjE3IiAvPjwvc3ZnPiB9LAogIHsgaHJlZjogJy9yZXNlYXJjaC9jYWxj
-dWxhdG9ycycsIGxhYmVsOiAnTGFiIFRvb2xzIENhbGN1bGF0b3InLCBpY29uOiA8c3ZnIHsuLi5J
-Q09OX1BST1BTfT48cGF0aCBkPSJNMTQuNyA2LjNhMSAxIDAgMCAwIDAgMS40bDEuNiAxLjZhMSAx
-IDAgMCAwIDEuNCAwbDMuNzctMy43N2E2IDYgMCAwIDEtNy45NCA3Ljk0bC02LjkxIDYuOTFhMi4x
-MiAyLjEyIDAgMCAxLTMtM2w2LjkxLTYuOTFhNiA2IDAgMCAxIDcuOTQtNy45NGwtMy43NiAzLjc2
-eiIvPjwvc3ZnPiB9LAogIHsgaHJlZjogJy9sYWItam91cm5hbCcsIGxhYmVsOiAnTGFiIEpvdXJu
-YWwnLCBpY29uOiA8c3ZnIHsuLi5JQ09OX1BST1BTfT48cGF0aCBkPSJNMjAuODQgNC42MWE1LjUg
-NS41IDAgMCAwLTcuNzggMEwxMiA1LjY3bC0xLjA2LTEuMDZhNS41IDUuNSAwIDAgMC03Ljc4IDcu
-NzhsMS4wNiAxLjA2TDEyIDIxLjIzbDcuNzgtNy43OCAxLjA2LTEuMDZhNS41IDUuNSAwIDAgMCAw
-LTcuNzh6IiAvPjwvc3ZnPiB9LAogIHsgaHJlZjogJy9hZG1pbi9zZXR0aW5ncy9zaGlwcGluZycs
-IGxhYmVsOiAnR2xvYmFsIFNoaXBwaW5nIFNldHRpbmdzJywgaWNvbjogPHN2ZyB7Li4uSUNPTl9Q
-Uk9QU30+PHJlY3QgeD0iMSIgeT0iMyIgd2lkdGg9IjE1IiBoZWlnaHQ9IjEzIi8+PHBvbHlnb24g
-cG9pbnRzPSIxNiA4IDIwIDggMjMgMTEgMjMgMTYgMTYgMTYgMTYgOCIvPjxjaXJjbGUgY3g9IjUu
-NSIgY3k9IjE4LjUiIHI9IjIuNSIvPjxjaXJjbGUgY3g9IjE4LjUiIGN5PSIxOC41IiByPSIyLjUi
-Lz48L3N2Zz4gfSwKICB7IGhyZWY6ICcvYWRtaW4vcmVmZXJyYWxzJywgbGFiZWw6ICdSZWZlcnJh
-bHMnLCBpY29uOiA8c3ZnIHsuLi5JQ09OX1BST1BTfT48cGF0aCBkPSJNMTcgMTFhNCA0IDAgMSAw
-LTggME0zIDIxaDE4TTUgMjFhNyA3IDAgMCAxIDE0IDAiLz48L3N2Zz4gfSwKICB7IGhyZWY6ICcv
-YWRtaW4vZmxhc2gtc2FsZXMnLCBsYWJlbDogJ0ZsYXNoIFNhbGUnLCBpY29uOiA8c3ZnIHsuLi5J
-Q09OX1BST1BTfT48cG9seWdvbiBwb2ludHM9IjEzIDIgMyAxNCAxMiAxNCAxMSAyMiAyMSAxMCAx
-MiAxMCAxMyAyIiAvPjwvc3ZnPiB9LAogIHsgaHJlZjogJy9hZG1pbi9jYXJ0LXJlY292ZXJ5Jywg
-bGFiZWw6ICdDYXJ0IFJlY292ZXJ5JywgaWNvbjogPHN2ZyB7Li4uSUNPTl9QUk9QU30+PGNpcmNs
-ZSBjeD0iOSIgY3k9IjIxIiByPSIxIiAvPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjEiIHI9IjEiIC8+
-PHBhdGggZD0iTTEgMWg0bDIuNjggMTMuMzlhMiAyIDAgMCAwIDIgMS42MWg5LjcyYTIgMiAwIDAg
-MCAyLTEuNjFMMjMgNkg2IiAvPjwvc3ZnPiB9LAogIHsgaHJlZjogJy9hZG1pbi9tb2RlcmF0aW9u
-JywgbGFiZWw6ICdNb2RlcmF0aW9uJywgaWNvbjogPHN2ZyB7Li4uSUNPTl9QUk9QU30+PHBhdGgg
-ZD0iTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweiIgLz48L3N2Zz4g
-fSwKICB7IGhyZWY6ICcjU0hPV19RUicsIGxhYmVsOiAnTXkgUVIgQ29kZScsIGljb246IDxzdmcg
-ey4uLklDT05fUFJPUFN9PjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSI3IiBoZWlnaHQ9IjciIC8+
-PHJlY3QgeD0iMTQiIHk9IjMiIHdpZHRoPSI3IiBoZWlnaHQ9IjciIC8+PHJlY3QgeD0iMyIgeT0i
-MTQiIHdpZHRoPSI3IiBoZWlnaHQ9IjciIC8+PHJlY3QgeD0iMTQiIHk9IjE0IiB3aWR0aD0iMyIg
-aGVpZ2h0PSIzIiAvPjxyZWN0IHg9IjE5IiB5PSIxNCIgd2lkdGg9IjIiIGhlaWdodD0iMiIgLz48
-cmVjdCB4PSIxNCIgeT0iMTkiIHdpZHRoPSIyIiBoZWlnaHQ9IjIiIC8+PHJlY3QgeD0iMTkiIHk9
-IjE5IiB3aWR0aD0iMiIgaGVpZ2h0PSIyIiAvPjwvc3ZnPiwgYWN0aW9uOiAncXInIH0sCiAgeyBo
-cmVmOiAnL2FkbWluL2F1ZGl0JywgbGFiZWw6ICdBdWRpdCBMb2cnLCBpY29uOiA8c3ZnIHsuLi5J
-Q09OX1BST1BTfT48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjxwb2x5bGluZSBwb2lu
-dHM9IjEyIDYgMTIgMTIgMTYgMTQiLz48L3N2Zz4gfSwKICB7IGhyZWY6ICcvYWRtaW4vc2V0dGlu
-Z3MnLCBsYWJlbDogJ0FjY291bnQgU2V0dGluZ3MnLCBpY29uOiA8c3ZnIHsuLi5JQ09OX1BST1BT
-fT48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIi8+PHBhdGggZD0iTTE5LjQgMTVhMS42NSAx
-LjY1IDAgMCAwIC4zMyAxLjgybC4wNi4wNmEyIDIgMCAwIDEgMCAyLjgzIDIgMiAwIDAgMS0yLjgz
-IDBsLS4wNi0uMDZhMS42NSAxLjY1IDAgMCAwLTEuODItLjMzIDEuNjUgMS42NSAwIDAgMC0xIDEu
-NTFWMjFhMiAyIDAgMCAxLTIgMiAyIDIgMCAwIDEtMi0ydi0uMDlBMS42NSAxLjY1IDAgMCAwIDkg
-MTkuNGExLjY1IDEuNjUgMCAwIDAtMS44Mi4zM2wtLjA2LjA2YTIgMiAwIDAgMS0yLjgzIDAgMiAy
-IDAgMCAxIDAtMi44M2wuMDYtLjA2YTEuNjUgMS42NSAwIDAgMCAuMzMtMS44MiAxLjY1IDEuNjUg
-MCAwIDAtMS41MS0xSDNhMiAyIDAgMCAxLTItMiAyIDIgMCAwIDEgMi0yaC4wOUExLjY1IDEuNjUg
-MCAwIDAgNC42IDlhMS42NSAxLjY1IDAgMCAwLS4zMy0xLjgybC0uMDYtLjA2YTIgMiAwIDAgMSAw
-LTIuODMgMiAyIDAgMCAxIDIuODMgMGwuMDYuMDZhMS42NSAxLjY1IDAgMCAwIDEuODIuMzNIOWEx
-LjY1IDEuNjUgMCAwIDAgMS0xLjUxVjNhMiAyIDAgMCAxIDItMiAyIDIgMCAwIDEgMiAydi4wOWEx
-LjY1IDEuNjUgMCAwIDAgMSAxLjUxIDEuNjUgMS42NSAwIDAgMCAxLjgyLS4zM2wuMDYtLjA2YTIg
-MiAwIDAgMSAyLjgzIDAgMiAyIDAgMCAxIDAgMi44M2wtLjA2LjA2YTEuNjUgMS42NSAwIDAgMC0u
-MzMgMS44MlY5YTEuNjUgMS42NSAwIDAgMCAxLjUxIDFIMjFhMiAyIDAgMCAxIDIgMiAyIDIgMCAw
-IDEtMiAyaC0uMDlhMS42NSAxLjY1IDAgMCAwLTEuNTEgMXoiLz48L3N2Zz4gfSwKICB7IGhyZWY6
-ICcvYXBpL2F1dGgvc2lnbm91dCcsIGxhYmVsOiAnTG9nIE91dCcsIGljb246IDxzdmcgey4uLklD
-T05fUFJPUFN9PjxwYXRoIGQ9Ik05IDIxSDVhMiAyIDAgMCAxLTItMlY1YTIgMiAwIDAgMSAyLTJo
-NCIvPjxwb2x5bGluZSBwb2ludHM9IjE2IDE3IDIxIDEyIDE2IDciLz48bGluZSB4MT0iMjEiIHkx
-PSIxMiIgeDI9IjkiIHkyPSIxMiIvPjwvc3ZnPiwgYWN0aW9uOiAnbG9nb3V0JyB9LApdOwoKZXhw
-b3J0IGZ1bmN0aW9uIEFkbWluTGF5b3V0Q2xpZW50KHsKICBjaGlsZHJlbiwKICBhZG1pbk5hbWUs
-Cn06IHsKICBjaGlsZHJlbjogUmVhY3QuUmVhY3ROb2RlOwogIGFkbWluTmFtZTogc3RyaW5nOwp9
-KSB7CiAgY29uc3QgcGF0aG5hbWUgPSB1c2VQYXRobmFtZSgpOwogIGNvbnN0IFtzaG93UVJNb2Rh
-bCwgc2V0U2hvd1FSTW9kYWxdID0gdXNlU3RhdGUoZmFsc2UpOwoKICByZXR1cm4gKAogICAgPD4K
-ICAgICAgey8qIGZpeC01NyAjNzogZ2xvYmFsIGFkbWluIFJlYWx0aW1lIHJlZnJlc2hlciAtIHNl
-cnZlciBjb21wb25lbnRzIHJlLWZldGNoIG9uIG9yZGVycy9ub3RpZmljYXRpb25zIGV2ZW50cy4g
-Ki99CiAgICAgIDxBZG1pblJlYWx0aW1lUmVmcmVzaGVyIC8+CgogICAgICA8TmF2YmFyIC8+Cgog
-ICAgICA8ZGl2IHN0eWxlPXt7IG1pbkhlaWdodDogJzEwMGR2aCcsIGJhY2tncm91bmQ6ICd2YXIo
-LS1ibGFjayknLCBkaXNwbGF5OiAnZmxleCcsIHBhZGRpbmdUb3A6ICd2YXIoLS1uYXYtb2Zmc2V0
-LCA2MHB4KScgfX0+CgogICAgICA8YXNpZGUKICAgICAgICBjbGFzc05hbWU9ImFkbWluLXNpZGVi
-YXIiCiAgICAgICAgc3R5bGU9e3sKICAgICAgICAgIHdpZHRoOiAyNDAsCiAgICAgICAgICBiYWNr
-Z3JvdW5kOiAndmFyKC0tYmxhY2stMiknLAogICAgICAgICAgYm9yZGVyUmlnaHQ6ICcxcHggc29s
-aWQgcmdiYSgxOTIsMTg0LDE2OCwwLjEyKScsCiAgICAgICAgICBwYWRkaW5nOiAndmFyKC0tc3Bh
-Y2UtNCkgMCcsCiAgICAgICAgICBwb3NpdGlvbjogJ3N0aWNreScsCiAgICAgICAgICB0b3A6ICd2
-YXIoLS1uYXYtb2Zmc2V0LCA2MHB4KScsCiAgICAgICAgICBhbGlnblNlbGY6ICdmbGV4LXN0YXJ0
-JywKICAgICAgICAgIGhlaWdodDogJ2NhbGMoMTAwZHZoIC0gdmFyKC0tbmF2LW9mZnNldCwgNjBw
-eCkpJywKICAgICAgICAgIG92ZXJmbG93WTogJ2F1dG8nLAogICAgICAgICAgekluZGV4OiA1MDAs
-CiAgICAgICAgICBkaXNwbGF5OiAnZmxleCcsCiAgICAgICAgICBmbGV4RGlyZWN0aW9uOiAnY29s
-dW1uJywKICAgICAgICB9fQogICAgICA+CiAgICAgICAgPGRpdiBzdHlsZT17eyBwYWRkaW5nOiAn
-MCB2YXIoLS1zcGFjZS00KSB2YXIoLS1zcGFjZS0zKScsIGRpc3BsYXk6ICdmbGV4JywgYWxpZ25J
-dGVtczogJ2NlbnRlcicsIGp1c3RpZnlDb250ZW50OiAnc3BhY2UtYmV0d2VlbicgfX0+CiAgICAg
-ICAgICA8ZGl2PgogICAgICAgICAgICA8ZGl2IHN0eWxlPXt7IGZvbnRTaXplOiAnMC43OHJlbScs
-IHRleHRUcmFuc2Zvcm06ICd1cHBlcmNhc2UnLCBsZXR0ZXJTcGFjaW5nOiAnMC4wOGVtJywgY29s
-b3I6ICd2YXIoLS10ZWFsKScsIGZvbnRXZWlnaHQ6IDcwMCB9fT4KICAgICAgICAgICAgICBBZG1p
-bgogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPGRpdiBzdHlsZT17eyBmb250U2l6ZTog
-JzAuOTVyZW0nLCBjb2xvcjogJ3ZhcigtLWl2b3J5KScsIG1hcmdpblRvcDogMiB9fT4KICAgICAg
-ICAgICAgICB7YWRtaW5OYW1lfQogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgIDwvZGl2Pgog
-ICAgICAgICAgPEFkbWluTWVzc2FnZUJlbGwgLz4KICAgICAgICA8L2Rpdj4KCiAgICAgICAgPG5h
-diBzdHlsZT17eyBkaXNwbGF5OiAnZmxleCcsIGZsZXhEaXJlY3Rpb246ICdjb2x1bW4nLCBnYXA6
-IDIsIHBhZGRpbmc6ICcwIHZhcigtLXNwYWNlLTIpJywgZmxleDogMSB9fT4KICAgICAgICAgIHtO
-QVYubWFwKChpdGVtKSA9PiB7CiAgICAgICAgICAgIGNvbnN0IGhyZWZSb3V0ZSA9IGl0ZW0uaHJl
-Zi5zcGxpdCgnPycpWzBdOwogICAgICAgICAgICBjb25zdCBhY3RpdmUgPSAhaXRlbS5hY3Rpb24g
-JiYgcGF0aG5hbWUgPT09IGhyZWZSb3V0ZTsKICAgICAgICAgICAgCiAgICAgICAgICAgIGNvbnN0
-IGNvbW1vblN0eWxlID0gewogICAgICAgICAgICAgIGRpc3BsYXk6ICdmbGV4JywKICAgICAgICAg
-ICAgICBhbGlnbkl0ZW1zOiAnY2VudGVyJywKICAgICAgICAgICAgICBnYXA6IDEwLAogICAgICAg
-ICAgICAgIHBhZGRpbmc6ICc4cHggMTJweCcsCiAgICAgICAgICAgICAgYm9yZGVyUmFkaXVzOiA4
-LAogICAgICAgICAgICAgIGNvbG9yOiBhY3RpdmUgPyAndmFyKC0tdGVhbCknIDogJ3ZhcigtLWl2
-b3J5KScsCiAgICAgICAgICAgICAgYmFja2dyb3VuZDogYWN0aXZlID8gJ3JnYmEoMTkyLDE4NCwx
-NjgsMC4wOCknIDogJ3RyYW5zcGFyZW50JywKICAgICAgICAgICAgICB0ZXh0RGVjb3JhdGlvbjog
-J25vbmUnLAogICAgICAgICAgICAgIGZvbnRTaXplOiAnMC44OHJlbScsCiAgICAgICAgICAgICAg
-Zm9udFdlaWdodDogYWN0aXZlID8gNjAwIDogNTAwLAogICAgICAgICAgICAgIGN1cnNvcjogJ3Bv
-aW50ZXInLAogICAgICAgICAgICAgIGJvcmRlcjogJ25vbmUnLAogICAgICAgICAgICAgIHdpZHRo
-OiAnMTAwJScsCiAgICAgICAgICAgICAgdGV4dEFsaWduOiAnbGVmdCcgYXMgY29uc3QsCiAgICAg
-ICAgICAgICAgZm9udEZhbWlseTogJ2luaGVyaXQnLAogICAgICAgICAgICB9OwoKICAgICAgICAg
-ICAgaWYgKGl0ZW0uYWN0aW9uID09PSAnbG9nb3V0JykgewogICAgICAgICAgICAgIHJldHVybiAo
-CiAgICAgICAgICAgICAgICA8Zm9ybSBrZXk9e2l0ZW0uaHJlZn0gYWN0aW9uPXtpdGVtLmhyZWZ9
-IG1ldGhvZD0iUE9TVCI+CiAgICAgICAgICAgICAgICAgIDxidXR0b24gdHlwZT0ic3VibWl0IiBz
-dHlsZT17Y29tbW9uU3R5bGV9PgogICAgICAgICAgICAgICAgICAgIDxzcGFuIHN0eWxlPXt7IGRp
-c3BsYXk6ICdpbmxpbmUtZmxleCcsIHdpZHRoOiAxOCwganVzdGlmeUNvbnRlbnQ6ICdjZW50ZXIn
-IH19PgogICAgICAgICAgICAgICAgICAgICAge2l0ZW0uaWNvbn0KICAgICAgICAgICAgICAgICAg
-ICA8L3NwYW4+CiAgICAgICAgICAgICAgICAgICAgPHNwYW4+e2l0ZW0ubGFiZWx9PC9zcGFuPgog
-ICAgICAgICAgICAgICAgICA8L2J1dHRvbj4KICAgICAgICAgICAgICAgIDwvZm9ybT4KICAgICAg
-ICAgICAgICApOwogICAgICAgICAgICB9CgogICAgICAgICAgICBpZiAoaXRlbS5hY3Rpb24gPT09
-ICdxcicpIHsKICAgICAgICAgICAgICByZXR1cm4gKAogICAgICAgICAgICAgICAgPGJ1dHRvbgog
-ICAgICAgICAgICAgICAgICBrZXk9e2l0ZW0uaHJlZn0KICAgICAgICAgICAgICAgICAgb25DbGlj
-az17KGUpID0+IHsgZS5wcmV2ZW50RGVmYXVsdCgpOyBzZXRTaG93UVJNb2RhbCh0cnVlKTsgfX0K
-ICAgICAgICAgICAgICAgICAgc3R5bGU9e2NvbW1vblN0eWxlfQogICAgICAgICAgICAgICAgPgog
-ICAgICAgICAgICAgICAgICA8c3BhbiBzdHlsZT17eyBkaXNwbGF5OiAnaW5saW5lLWZsZXgnLCB3
-aWR0aDogMTgsIGp1c3RpZnlDb250ZW50OiAnY2VudGVyJyB9fT4KICAgICAgICAgICAgICAgICAg
-ICB7aXRlbS5pY29ufQogICAgICAgICAgICAgICAgICA8L3NwYW4+CiAgICAgICAgICAgICAgICAg
-IDxzcGFuPntpdGVtLmxhYmVsfTwvc3Bhbj4KICAgICAgICAgICAgICAgIDwvYnV0dG9uPgogICAg
-ICAgICAgICAgICk7CiAgICAgICAgICAgIH0KCiAgICAgICAgICAgIHJldHVybiAoCiAgICAgICAg
-ICAgICAgPExpbmsKICAgICAgICAgICAgICAgIGtleT17aXRlbS5ocmVmfQogICAgICAgICAgICAg
-ICAgaHJlZj17aXRlbS5ocmVmfQogICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4ge319CiAg
-ICAgICAgICAgICAgICBzdHlsZT17Y29tbW9uU3R5bGV9CiAgICAgICAgICAgICAgPgogICAgICAg
-ICAgICAgICAgPHNwYW4gc3R5bGU9e3sgZGlzcGxheTogJ2lubGluZS1mbGV4Jywgd2lkdGg6IDE4
-LCBqdXN0aWZ5Q29udGVudDogJ2NlbnRlcicgfX0+CiAgICAgICAgICAgICAgICAgIHtpdGVtLmlj
-b259CiAgICAgICAgICAgICAgICA8L3NwYW4+CiAgICAgICAgICAgICAgICA8c3Bhbj57aXRlbS5s
-YWJlbH08L3NwYW4+CiAgICAgICAgICAgICAgPC9MaW5rPgogICAgICAgICAgICApOwogICAgICAg
-ICAgfSl9CiAgICAgICAgPC9uYXY+CgogICAgICAgIDxkaXYgc3R5bGU9e3sKICAgICAgICAgIHBh
-ZGRpbmc6ICd2YXIoLS1zcGFjZS00KScsCiAgICAgICAgICBwYWRkaW5nQm90dG9tOiAnbWF4KHZh
-cigtLXNwYWNlLTQpLCBlbnYoc2FmZS1hcmVhLWluc2V0LWJvdHRvbSwgMTZweCkpJywKICAgICAg
-ICAgIGJhY2tncm91bmQ6ICdyZ2JhKDAsMCwwLDAuMiknLAogICAgICAgICAgbWFyZ2luVG9wOiAn
-YXV0bycsCiAgICAgICAgICBkaXNwbGF5OiAnZmxleCcsCiAgICAgICAgICBhbGlnbkl0ZW1zOiAn
-Y2VudGVyJywKICAgICAgICAgIGdhcDogJ3ZhcigtLXNwYWNlLTMpJwogICAgICAgIH19PgogICAg
-ICAgICAgPGRpdiBzdHlsZT17eyAKICAgICAgICAgICAgd2lkdGg6IDM2LCBoZWlnaHQ6IDM2LCBi
-b3JkZXJSYWRpdXM6ICc1MCUnLCAKICAgICAgICAgICAgYmFja2dyb3VuZDogJ3ZhcigtLXRlYWwp
-JywgY29sb3I6ICcjMDAwJywgCiAgICAgICAgICAgIGRpc3BsYXk6ICdmbGV4JywgYWxpZ25JdGVt
-czogJ2NlbnRlcicsIGp1c3RpZnlDb250ZW50OiAnY2VudGVyJywgCiAgICAgICAgICAgIGZvbnRX
-ZWlnaHQ6IDgwMCwgZm9udFNpemU6ICcxcmVtJywgZmxleFNocmluazogMAogICAgICAgICAgfX0+
-CiAgICAgICAgICAgIHthZG1pbk5hbWUgPyBhZG1pbk5hbWUuY2hhckF0KDApLnRvVXBwZXJDYXNl
-KCkgOiAnPyd9CiAgICAgICAgICA8L2Rpdj4KICAgICAgICAgIDxkaXYgc3R5bGU9e3sgbWluV2lk
-dGg6IDAgfX0+CiAgICAgICAgICAgIDxkaXYgc3R5bGU9e3sgZm9udFNpemU6ICcwLjY1cmVtJywg
-Y29sb3I6ICd2YXIoLS1ncmV5LTQwMCknLCBmb250RmFtaWx5OiAndmFyKC0tZm9udC1icmFuZCkn
-LCBsZXR0ZXJTcGFjaW5nOiAnMC4wNWVtJywgdGV4dFRyYW5zZm9ybTogJ3VwcGVyY2FzZScsIG1h
-cmdpbkJvdHRvbTogMiB9fT4KICAgICAgICAgICAgICBMb2dnZWQgSW4gQXMKICAgICAgICAgICAg
-PC9kaXY+CiAgICAgICAgICAgIDxkaXYgc3R5bGU9e3sgZm9udFNpemU6ICcwLjg1cmVtJywgY29s
-b3I6ICcjZmZmJywgZm9udFdlaWdodDogNjAwLCB3aGl0ZVNwYWNlOiAnbm93cmFwJywgb3ZlcmZs
-b3c6ICdoaWRkZW4nLCB0ZXh0T3ZlcmZsb3c6ICdlbGxpcHNpcycgfX0+CiAgICAgICAgICAgICAg
-e2FkbWluTmFtZSB8fCAnQWRtaW4nfQogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgIDwvZGl2
-PgogICAgICAgIDwvZGl2PgogICAgICA8L2FzaWRlPgoKICAgICAgPG1haW4gc3R5bGU9e3sgZmxl
-eDogMSwgbWluV2lkdGg6IDAsIHBhZGRpbmc6ICd2YXIoLS1zcGFjZS00KScsIGJveFNpemluZzog
-J2JvcmRlci1ib3gnLCBtYXhXaWR0aDogJzEwMCUnIH19PgogICAgICAgIHtjaGlsZHJlbn0KICAg
-ICAgPC9tYWluPgoKICAgICAgPC9kaXY+CiAgICAgIAogICAgICB7c2hvd1FSTW9kYWwgJiYgKAog
-ICAgICAgIDxNeVFSQ29kZU1vZGFsIG9wZW49e3RydWV9IG9uQ2xvc2U9eygpID0+IHsgd2luZG93
-LmxvY2F0aW9uLmhhc2ggPSAnJzsgc2V0U2hvd1FSTW9kYWwoZmFsc2UpOyB9fSAvPgogICAgICAp
-fQogICAgPC8+CiAgKTsKfQo=
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import AdminMessageBell from '@/components/AdminMessageBell';
+import Navbar from '@/components/Navbar';
+import AdminRealtimeRefresher from '@/components/AdminRealtimeRefresher';
+import MyQRCodeModal from '@/components/MyQRCodeModal';
+
+const ICON_PROPS = {
+  width: 16,
+  height: 16,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+};
+
+const NAV = [
+  { href: '/admin', label: 'Admin Dashboard', icon: <svg {...ICON_PROPS}><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg> },
+  { href: '/admin/pricing', label: 'Pricing', icon: <svg {...ICON_PROPS}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> },
+  { href: '/admin/products', label: 'Products', icon: <svg {...ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
+  { href: '/admin/admin-store', label: 'Admin Store', icon: <svg {...ICON_PROPS}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg> },
+  { href: '/admin/store-preview', label: 'Visit Storefront', icon: <svg {...ICON_PROPS}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /></svg> },
+  { href: '/wallet', label: 'Wallet', icon: <svg {...ICON_PROPS}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg> },
+  { href: '/admin/payments', label: 'Agent Payments', icon: <svg {...ICON_PROPS}><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg> },
+  { href: '/admin/statements', label: 'Statements', icon: <svg {...ICON_PROPS}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg> },
+  { href: '/admin/credit-increases', label: 'Credit Requests', icon: <svg {...ICON_PROPS}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> },
+  { href: '/admin/disputes', label: 'Disputes', icon: <svg {...ICON_PROPS}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg> },
+  { href: '/messenger', label: 'Messenger', icon: <svg {...ICON_PROPS}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> },
+  { href: '/admin/search', label: 'Global Search', icon: <svg {...ICON_PROPS}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg> },
+  { href: '/messenger?compose=1', label: 'Find User', icon: <svg {...ICON_PROPS}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>, action: true },
+  { href: '/admin/orders', label: 'Orders & Fulfillment', icon: <svg {...ICON_PROPS}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg> },
+  { href: '/dashboard/agent?tab=Storefront+Config', label: 'Storefront Configure', icon: <svg {...ICON_PROPS}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg> },
+  { href: '/admin/agents', label: 'My Agents', icon: <svg {...ICON_PROPS}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> },
+  { href: '/admin/researchers', label: 'My Researchers', icon: <svg {...ICON_PROPS}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
+  { href: '/admin/transactions', label: 'Transactions', icon: <svg {...ICON_PROPS}><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> },
+  { href: '/admin/agent-notes', label: 'Shadow Notes', icon: <svg {...ICON_PROPS}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="9" y1="13" x2="15" y2="13" /></svg> },
+  { href: '/admin/network', label: 'Network', icon: <svg {...ICON_PROPS}><circle cx="12" cy="5" r="3" /><circle cx="5" cy="19" r="3" /><circle cx="19" cy="19" r="3" /><line x1="12" y1="8" x2="5" y2="16" /><line x1="12" y1="8" x2="19" y2="16" /></svg> },
+  { href: '/dashboard/agent?tab=Inventory', label: 'Local Instock Inventory', icon: <svg {...ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
+  { href: '/admin/sales', label: 'Sales & Revenue', icon: <svg {...ICON_PROPS}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
+  { href: '/research', label: 'Research Library', icon: <svg {...ICON_PROPS}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> },
+  { href: '/admin/coupons', label: 'Coupons', icon: <svg {...ICON_PROPS}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
+  { href: '/admin/catalog-risk', label: 'Catalog Risk', icon: <svg {...ICON_PROPS}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg> },
+  { href: '/research/calculators', label: 'Lab Tools Calculator', icon: <svg {...ICON_PROPS}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> },
+  { href: '/lab-journal', label: 'Lab Journal', icon: <svg {...ICON_PROPS}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg> },
+  { href: '/admin/settings/shipping', label: 'Global Shipping Settings', icon: <svg {...ICON_PROPS}><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
+  { href: '/admin/referrals', label: 'Referrals', icon: <svg {...ICON_PROPS}><path d="M17 11a4 4 0 1 0-8 0M3 21h18M5 21a7 7 0 0 1 14 0"/></svg> },
+  { href: '/admin/flash-sales', label: 'Flash Sale', icon: <svg {...ICON_PROPS}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg> },
+  { href: '/admin/cart-recovery', label: 'Cart Recovery', icon: <svg {...ICON_PROPS}><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg> },
+  { href: '/admin/moderation', label: 'Moderation', icon: <svg {...ICON_PROPS}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
+  { href: '#SHOW_QR', label: 'My QR Code', icon: <svg {...ICON_PROPS}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="3" height="3" /><rect x="19" y="14" width="2" height="2" /><rect x="14" y="19" width="2" height="2" /><rect x="19" y="19" width="2" height="2" /></svg>, action: 'qr' },
+  { href: '/admin/audit', label: 'Audit Log', icon: <svg {...ICON_PROPS}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+  { href: '/admin/settings', label: 'Account Settings', icon: <svg {...ICON_PROPS}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> },
+  { href: '/api/auth/signout', label: 'Log Out', icon: <svg {...ICON_PROPS}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>, action: 'logout' },
+];
+
+export function AdminLayoutClient({
+  children,
+  adminName,
+}: {
+  children: React.ReactNode;
+  adminName: string;
+}) {
+  const pathname = usePathname();
+  const [showQRModal, setShowQRModal] = useState(false);
+
+  return (
+    <>
+      {/* fix-57 #7: global admin Realtime refresher - server components re-fetch on orders/notifications events. */}
+      <AdminRealtimeRefresher />
+
+      <Navbar />
+
+      <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', paddingTop: 'var(--nav-offset, 60px)' }}>
+
+      <aside
+        className="admin-sidebar"
+        style={{
+          width: 240,
+          background: 'var(--black-2)',
+          borderRight: '1px solid rgba(192,184,168,0.12)',
+          padding: 'var(--space-4) 0',
+          position: 'sticky',
+          top: 'var(--nav-offset, 60px)',
+          alignSelf: 'flex-start',
+          height: 'calc(100dvh - var(--nav-offset, 60px))',
+          overflowY: 'auto',
+          zIndex: 500,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div style={{ padding: '0 var(--space-4) var(--space-3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--teal)', fontWeight: 700 }}>
+              Admin
+            </div>
+            <div style={{ fontSize: '0.95rem', color: 'var(--ivory)', marginTop: 2 }}>
+              {adminName}
+            </div>
+          </div>
+          <AdminMessageBell />
+        </div>
+
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 var(--space-2)', flex: 1 }}>
+          {NAV.map((item) => {
+            const hrefRoute = item.href.split('?')[0];
+            const active = !item.action && pathname === hrefRoute;
+            
+            const commonStyle = {
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '8px 12px',
+              borderRadius: 8,
+              color: active ? 'var(--teal)' : 'var(--ivory)',
+              background: active ? 'rgba(192,184,168,0.08)' : 'transparent',
+              textDecoration: 'none',
+              fontSize: '0.88rem',
+              fontWeight: active ? 600 : 500,
+              cursor: 'pointer',
+              border: 'none',
+              width: '100%',
+              textAlign: 'left' as const,
+              fontFamily: 'inherit',
+            };
+
+            if (item.action === 'logout') {
+              return (
+                <form key={item.href} action={item.href} method="POST">
+                  <button type="submit" style={commonStyle}>
+                    <span style={{ display: 'inline-flex', width: 18, justifyContent: 'center' }}>
+                      {item.icon}
+                    </span>
+                    <span>{item.label}</span>
+                  </button>
+                </form>
+              );
+            }
+
+            if (item.action === 'qr') {
+              return (
+                <button
+                  key={item.href}
+                  onClick={(e) => { e.preventDefault(); setShowQRModal(true); }}
+                  style={commonStyle}
+                >
+                  <span style={{ display: 'inline-flex', width: 18, justifyContent: 'center' }}>
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
+                </button>
+              );
+            }
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => {}}
+                style={commonStyle}
+              >
+                <span style={{ display: 'inline-flex', width: 18, justifyContent: 'center' }}>
+                  {item.icon}
+                </span>
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div style={{
+          padding: 'var(--space-4)',
+          paddingBottom: 'max(var(--space-4), env(safe-area-inset-bottom, 16px))',
+          background: 'rgba(0,0,0,0.2)',
+          marginTop: 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-3)'
+        }}>
+          <div style={{ 
+            width: 36, height: 36, borderRadius: '50%', 
+            background: 'var(--teal)', color: '#000', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center', 
+            fontWeight: 800, fontSize: '1rem', flexShrink: 0
+          }}>
+            {adminName ? adminName.charAt(0).toUpperCase() : '?'}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>
+              Logged In As
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {adminName || 'Admin'}
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main style={{ flex: 1, minWidth: 0, padding: 'var(--space-4)', boxSizing: 'border-box', maxWidth: '100%' }}>
+        {children}
+      </main>
+
+      </div>
+      
+      {showQRModal && (
+        <MyQRCodeModal open={true} onClose={() => { window.location.hash = ''; setShowQRModal(false); }} />
+      )}
+    </>
+  );
+}
