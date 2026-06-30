@@ -1,125 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { safeError } from '@/lib/api-error';
-import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
-import { assertSameOrigin } from '@/lib/csrf';
+import { createAdminClient } from '@/lib/supabase/server';
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export async function GET(req: NextRequest) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const { searchParams } = new URL(req.url);
+  const agentId = searchParams.get('agent_id');
 
-export async function GET(_req: NextRequest) {
-  const admin = await requireAdmin();
-  if (!admin.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const supabase = await createAdminClient();
 
-  const svc = await createServiceClient();
-  const [
-    { data: variants, error: variantsError },
-    { data: reminders, error: remindersError },
-  ] = await Promise.all([
-    svc.from('cart_recovery_variants').select('id, name, enabled, steps, created_at, updated_at').order('created_at', { ascending: true }),
-    svc.from('abandoned_cart_reminders').select('variant_name, recovered_order_id'),
-  ]);
+  let query = supabase
+    .from('profiles')
+    .select('id, full_name, email, cart_state, cart_updated_at, last_cart_reminder_at')
+    .eq('role', 'researcher')
+    .not('cart_state', 'is', null);
 
-  if (variantsError) return NextResponse.json({ error: 'Database Error' }, { status: 500 });
-  if (remindersError) return NextResponse.json({ error: 'Database Error' }, { status: 500 });
-
-  const stats = new Map<string, { sent: number; recovered: number }>();
-  for (const r of reminders ?? []) {
-    const name = (r as any).variant_name as string | null;
-    if (!name) continue;
-    const cur = stats.get(name) ?? { sent: 0, recovered: 0 };
-    cur.sent += 1;
-    if ((r as any).recovered_order_id) cur.recovered += 1;
-    stats.set(name, cur);
+  if (agentId) {
+    query = query.eq('referring_agent_id', agentId);
   }
 
-  const out = (variants ?? []).map((v: any) => ({
-    id: v.id,
-    name: v.name,
-    enabled: v.enabled,
-    steps: v.steps,
-    sent: stats.get(v.name)?.sent ?? 0,
-    recovered: stats.get(v.name)?.recovered ?? 0,
-    winRate: (() => {
-      const s = stats.get(v.name)?.sent ?? 0;
-      const r = stats.get(v.name)?.recovered ?? 0;
-      return s > 0 ? Math.round((r / s) * 1000) / 10 : 0;
-    })(),
-  }));
+  const { data, error } = await query.order('cart_updated_at', { ascending: false });
 
-  const res = NextResponse.json({ variants: out });
-  res.headers.set('Cache-Control', 'private, no-store, max-age=0');
-  return res;
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ researchers: data || [] });
 }
 
 export async function POST(req: NextRequest) {
-  const csrf = assertSameOrigin(req);
-  if (csrf) return csrf;
+  const authError = await requireAdmin();
+  if (authError) return authError;
 
-  const admin = await requireAdmin();
-  if (!admin.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const body = await req.json();
+  const { researcherId, message } = body;
 
-  let body: any = {};
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
-
-  const name = String(body.name ?? '').trim();
-  const steps = Array.isArray(body.steps) ? body.steps : null;
-  if (!name || !/^[a-z0-9_-]{2,40}$/i.test(name)) {
-    return NextResponse.json({ error: 'Name Must Be 2-40 Chars, Letters/Numbers/Dashes' }, { status: 400 });
-  }
-  if (!steps || steps.length === 0 || steps.length > 5) {
-    return NextResponse.json({ error: 'Steps Must Be 1 To 5 Entries' }, { status: 400 });
+  if (!researcherId) {
+    return NextResponse.json({ error: 'Missing researcherId' }, { status: 400 });
   }
 
-  const svc = await createServiceClient();
-  const { error } = await svc.from('cart_recovery_variants').insert({ name, steps, enabled: body.enabled !== false });
-  if (error) return safeError('cart-recovery-variants.create', error, 500);
-  return NextResponse.json({ success: true });
-}
+  const supabase = await createAdminClient();
 
-export async function PATCH(req: NextRequest) {
-  const csrf = assertSameOrigin(req);
-  if (csrf) return csrf;
+  // Log the reminder
+  const { error } = await supabase
+    .from('profiles')
+    .update({ last_cart_reminder_at: new Date().toISOString() })
+    .eq('id', researcherId);
 
-  const admin = await requireAdmin();
-  if (!admin.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const id = req.nextUrl.searchParams.get('id') || '';
-  if (!UUID_RE.test(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
-
-  let body: any = {};
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
-
-  const updates: any = {};
-  if (body.enabled !== undefined) updates.enabled = body.enabled === true;
-  if (body.steps !== undefined) {
-    if (!Array.isArray(body.steps) || body.steps.length === 0 || body.steps.length > 5) {
-      return NextResponse.json({ error: 'Steps Must Be 1 To 5 Entries' }, { status: 400 });
-    }
-    updates.steps = body.steps;
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  if (Object.keys(updates).length === 0) return NextResponse.json({ error: 'No Changes' }, { status: 400 });
 
-  const svc = await createServiceClient();
-  const { error } = await svc.from('cart_recovery_variants').update(updates).eq('id', id);
-  if (error) return NextResponse.json({ error: 'Failed To Update' }, { status: 500 });
-  return NextResponse.json({ success: true });
-}
-
-export async function DELETE(req: NextRequest) {
-  const csrf = assertSameOrigin(req);
-  if (csrf) return csrf;
-
-  const admin = await requireAdmin();
-  if (!admin.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const id = req.nextUrl.searchParams.get('id') || '';
-  if (!UUID_RE.test(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
-
-  const svc = await createServiceClient();
-  const { error } = await svc.from('cart_recovery_variants').delete().eq('id', id);
-  if (error) return NextResponse.json({ error: 'Failed To Delete' }, { status: 500 });
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, message: message || 'Reminder sent' });
 }
