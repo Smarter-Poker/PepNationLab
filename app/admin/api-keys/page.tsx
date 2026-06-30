@@ -1,3 +1,8 @@
+/**
+ * /admin/api-keys
+ * Admin-gated page to list, generate, and revoke API keys for the
+ * /api/research/public/v1/* endpoints.
+ */
 import { requireAdmin } from '@/lib/admin-auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { hashApiKey } from '@/lib/research/api-keys';
@@ -25,6 +30,9 @@ async function generateKey(formData: FormData) {
   });
   if (error) throw new Error('Failed To Generate Key');
   revalidatePath('/admin/api-keys');
+  // Hand the one-time plaintext back via a short-lived httpOnly cookie instead
+  // of a URL query param, so the full key never lands in browser history,
+  // server access logs, or a Referer header. It self-expires in 2 minutes.
   const jar = await cookies();
   jar.set('pnl_new_api_key', plaintext, {
     httpOnly: true,
@@ -60,6 +68,8 @@ export default async function ApiKeysPage() {
     .select('id, name, key_prefix, scopes, is_active, created_at, revoked_at, last_used_at')
     .order('created_at', { ascending: false })
     .limit(100);
+  // One-time plaintext is delivered via a short-lived httpOnly cookie set by
+  // generateKey (never the URL). Read it for this render; it self-expires.
   const jar = await cookies();
   const newKey = jar.get('pnl_new_api_key')?.value ?? null;
   if (newKey) jar.delete('pnl_new_api_key');
@@ -81,8 +91,13 @@ export default async function ApiKeysPage() {
       ) : null}
 
       <form action={generateKey} style={{ marginBottom: 32, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <input name="label" placeholder="Key Label (E.g. Research Partner A)" required maxLength={120}
-          style={{ flex: 1, minWidth: 240, padding: '10px 12px', borderRadius: 6, border: '1px solid #1D2D3E', background: '#0F1923', color: '#FFF' }} />
+        <input
+          name="label"
+          placeholder="Key Label (E.g. Research Partner A)"
+          required
+          maxLength={120}
+          style={{ flex: 1, minWidth: 240, padding: '10px 12px', borderRadius: 6, border: '1px solid #1D2D3E', background: '#0F1923', color: '#FFF' }}
+        />
         <button type="submit" className="btn-primary" style={{ padding: '10px 18px', borderRadius: 6, background: '#00C4BC', color: '#050A0F', fontWeight: 700, border: 'none' }}>
           Generate Key
         </button>

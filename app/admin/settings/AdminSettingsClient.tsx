@@ -26,7 +26,7 @@ export default function AdminSettingsClient({ profile }: AdminSettingsClientProp
       <div className="glass-panel hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
         <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Profile Picture</h4>
         <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)', marginTop: 0 }}>
-          Upload A Profile Picture To Show In Messenger Instead Of A Generic Initial.
+          Upload a profile picture to show in Messenger instead of a generic initial.
         </p>
         <AvatarUpload 
           currentAvatarUrl={profile.avatar_url ?? null} 
