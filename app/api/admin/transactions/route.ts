@@ -9,7 +9,7 @@ import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 const VALID_TRANSACTION_TYPES = [
   'commission', 'withdrawal', 'adjustment', 'order_charge', 'restock_charge',
-  'credit', 'bonus', 'payout', 'deposit', 'manual_adjustment',
+  'credit', 'debit', 'bonus', 'payout', 'deposit', 'manual_adjustment',
 ] as const;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
