@@ -337,7 +337,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                 disabled={bulkSaving}
                 style={{ padding: '6px 16px', fontSize: '0.8rem', height: 32 }}
               >
-                Reset to Standard Pricing (50%)
+                Reset To Standard Pricing (50%)
               </button>
               <button
                 className="btn-neon-cyan"
@@ -497,7 +497,8 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                         {getPopularName(p.products.name) && (
                           <div style={{ fontSize: '0.75rem', color: 'var(--teal)', fontStyle: 'italic', fontWeight: 500, marginBottom: 4 }}>
                             {getPopularName(p.products.name)}
-                          </div>)}
+                          </div>
+                        )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Your Cost:</span>
