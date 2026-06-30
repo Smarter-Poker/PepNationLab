@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     .select('route_of_admin')
     .eq('slug', slug)
     .maybeSingle();
-  if (loadErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (loadErr) return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
   if (!current) return NextResponse.json({ error: 'Compound Not Found' }, { status: 404 });
 
   const routes = new Set<string>(Array.isArray(current.route_of_admin) ? current.route_of_admin : []);
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     .eq('slug', slug)
     .select('slug');
 
-  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
   if (!updated || updated.length === 0) return NextResponse.json({ error: 'Compound Not Found' }, { status: 404 });
 
   // Immediately expire the shared 'compounds' cache tag so every public surface
