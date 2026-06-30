@@ -983,7 +983,7 @@ export default function AdminShippingSettingsClient() {
                       opacity: agentAssignLoading === agent.id ? 0.6 : 1,
                     }}
                   >
-                    {agentAssignLoading === agent.id ? '...' : 'Save'}
+                    {agentAssignLoading === agent.id ? 'Saving...' : 'Save'}
                   </button>
                 </div>
               </div>
