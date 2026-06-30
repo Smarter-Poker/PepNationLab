@@ -83,7 +83,11 @@ function parseFieldValue(raw: string): FieldFilter | null {
 
 function tokenize(raw: string): string[] {
   const tokens: string[] = [];
-  const re = /"([^"]*)"|(\ S+)/g;
+  // Match quoted phrases OR any non-whitespace token sequence.
+  // NOTE: the original regex had a typo -- `(\ S+)` (backslash-space-S)
+  // instead of `(\S+)` (non-whitespace). That caused zero tokens to be
+  // extracted from any query, making all searches return 0 results.
+  const re = /"([^"]*)"|(\S+)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(raw)) !== null) {
     if (m[1] !== undefined) tokens.push(`"${m[1]}"`);
