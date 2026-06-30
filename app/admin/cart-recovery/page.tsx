@@ -108,7 +108,7 @@ export default function AdminCartRecoveryPage() {
     <div style={{ padding: 'var(--space-8)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
-          <h1 style={{ fontSize: '1.6rem', margin: 0 }}>Cart Recovery Variants (A/B)</h1>
+          <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', margin: 0 }}>Cart Recovery Variants (A/B)</h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginTop: 6, marginBottom: 0 }}>
             Multi-Step Abandoned-Cart Sequences. Researchers Are Sticky-Assigned A Variant. Cron Runs Every 6 Hours.
           </p>
