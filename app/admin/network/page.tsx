@@ -40,7 +40,6 @@ export default async function AdminNetworkPage() {
   const { data, error } = await svc.rpc('fn_admin_downline_tree', { p_days: 30 });
   const rows: TreeRow[] = error || !data ? [] : (data as TreeRow[]);
 
-  // Compute aggregated leg GMV (own + descendants) for each node
   const legGmv = new Map<string, number>();
   for (const r of rows) {
     const idsInPath = r.path.split('/');
@@ -50,7 +49,6 @@ export default async function AdminNetworkPage() {
     if (!legGmv.has(r.id)) legGmv.set(r.id, Number(r.gmv || 0));
   }
 
-  // Build a flat list for the ReparentControl picker (agents + super agents only)
   const reparentOptions = rows
     .filter((r) => r.role === 'agent' || r.role === 'super_agent')
     .map((r) => ({
@@ -110,7 +108,7 @@ export default async function AdminNetworkPage() {
                   >
                     {row.depth > 0 && (
                       <span aria-hidden="true" style={{ color: 'var(--grey-500)', fontSize: '0.75rem', flexShrink: 0 }}>
-                        {'└─'}
+                        {'-- '}
                       </span>
                     )}
                     <span style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--white, #FFFFFF)', minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
