@@ -3,9 +3,9 @@
  *
  * Body: { api_key: string; webhook_secret?: string }
  *
- * Rotates the active platform Shippo API key. The existing active row is
- * deactivated (with rotated_from back-reference), then a new active row is
- * inserted. The mode is inferred from the new token prefix.
+ * Rotates the active platform Shippo API key. A new active row is inserted
+ * first; only after confirmed success is the old row deactivated. The mode
+ * is inferred from the new token prefix.
  *
  * Guards: admin role + recent MFA (5 min) + same-origin CSRF.
  */
@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
   try {
     encrypted = encryptSecret(apiKey);
   } catch (err) {
+    console.error('Shippo rotate encryption error:', err);
     const msg = 'Encryption failed.';
     return NextResponse.json({ error: `Encryption Error: ${msg}` }, { status: 500 });
   }
@@ -71,13 +72,8 @@ export async function POST(req: NextRequest) {
 
   const previousId = currentActive?.id ?? null;
 
-  // Deactivate the current active row.
-  await supabase
-    .from('platform_shippo_credentials')
-    .update({ is_active: false })
-    .eq('is_active', true);
-
-  // Insert new active row.
+  // Insert new active row first; only deactivate old row after confirmed success
+  // to avoid a window where no active credential exists.
   const { data: inserted, error: insertErr } = await supabase
     .from('platform_shippo_credentials')
     .insert({
@@ -97,11 +93,19 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (insertErr || !inserted) {
+    console.error('Shippo rotate insert failed:', insertErr?.message);
     return NextResponse.json(
-      { error: 'A database error occurred.' },
+      { error: 'A Database Error Occurred.' },
       { status: 500 },
     );
   }
+
+  // Deactivate the previous active row only after new row is confirmed inserted.
+  await supabase
+    .from('platform_shippo_credentials')
+    .update({ is_active: false })
+    .eq('is_active', true)
+    .neq('id', inserted.id);
 
   await supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,
