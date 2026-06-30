@@ -19,7 +19,7 @@ export default async function AdminCatalogRiskPage() {
   return (
     <div style={{ padding: 'var(--space-8)' }}>
       <div style={{ marginBottom: 'var(--space-6)' }}>
-        <h1 style={{ fontSize: '1.6rem', margin: 0 }}>Catalog Risk Audit</h1>
+        <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', margin: 0 }}>Catalog Risk Audit</h1>
         <p style={{ fontSize: '0.9rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)', maxWidth: 760 }}>
           Every Compound Scored Against The Research Knowledge Base For Safety And Regulatory Risk.
           Restrict Hides A Compound From All Storefronts; Remove Blocks It From Sale. This Protects

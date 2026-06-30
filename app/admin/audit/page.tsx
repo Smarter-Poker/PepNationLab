@@ -88,8 +88,8 @@ export default async function AdminAuditPage({
         </Link>
       </div>
       <h1
+        className="animated-gradient-text"
         style={{
-          color: "var(--white)",
           fontSize: "1.5rem",
           marginBottom: "var(--space-2)",
         }}
