@@ -112,11 +112,11 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
       });
       const json = await res.json();
       if (!res.ok) {
-        throw new Error(json.error || 'Failed to update stock');
+        throw new Error(json.error || 'Failed To Update Stock');
       }
-      toast.success('Inventory stock updated successfully');
+      toast.success('Inventory Stock Updated Successfully');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to update stock';
+      const msg = err instanceof Error ? err.message : 'Failed To Update Stock';
       setError(msg);
       toast.error(msg);
       fetchInventory();
@@ -174,7 +174,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
       });
       const json = await res.json();
       if (res.ok) {
-        setRestockStatus('Wholesale order placed successfully! Allow 10-15 days for shipping.');
+        setRestockStatus('Wholesale Order Placed Successfully! Allow 10-15 Days For Shipping.');
         setAlerts([]);
         setSuggestedCart([]);
         setTimeout(() => fetchInventory(), 2000);
@@ -413,7 +413,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
               <AlertTriangle size={20} color="var(--orange)" aria-hidden="true" /> <span style={{ color: 'var(--orange)' }}>Low Stock Smart Alerts</span>
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--grey-300)', marginBottom: 'var(--space-4)' }}>
-              Based on your 30-day run rate and our 10-15 day shipping transit time from China, you are at risk of stocking out of the following items:
+              Based On Your 30-Day Run Rate And Our 10-15 Day Shipping Transit Time From China, You Are At Risk Of Stocking Out Of The Following Items:
             </p>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
@@ -455,7 +455,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
                 Local Inventory Stock
               </h3>
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.82rem', margin: '4px 0 0' }}>
-                Manage Your On-Hand Stock. Decrements automatically on purchases.
+                Manage Your On-Hand Stock. Decrements Automatically On Purchases.
               </p>
             </div>
             <div className="agentprod-header-controls" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -528,7 +528,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'rgba(255,255,255,0.05)' }}>
               {searchFiltered.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>
-                  <p style={{ color: 'var(--grey-400)' }}>No items match your criteria.</p>
+                  <p style={{ color: 'var(--grey-400)' }}>No Items Match Your Criteria.</p>
                 </div>
               ) : (
                 searchFiltered.map(renderProductRow)
@@ -542,7 +542,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
       {effectiveViewMode === 'category' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
           {sortedCategories.length === 0 && (
-            <div className="glass-panel"><div className="" style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'var(--grey-400)' }}>No items match your criteria.</div></div>
+            <div className="glass-panel"><div className="" style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'var(--grey-400)' }}>No Items Match Your Criteria.</div></div>
           )}
           {sortedCategories.map(cat => (
             <div key={cat} className="glass-panel">
