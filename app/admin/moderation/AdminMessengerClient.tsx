@@ -136,6 +136,8 @@ export default function AdminMessengerClient() {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [reportNextBefore, setReportNextBefore] = useState<string | null>(null);
+  const [reportsLoadingMore, setReportsLoadingMore] = useState(false);
 
   // Phase 13: admin mentions tab
   const [mentionStatus, setMentionStatus] = useState<MentionStatusFilter>('unread');
@@ -145,8 +147,9 @@ export default function AdminMessengerClient() {
 
   const load = useCallback(async (filter: StatusFilter) => {
     setLoading(true);
+    setReportNextBefore(null);
     try {
-      const body = filter === 'all' ? {} : { status: filter };
+      const body: Record<string, unknown> = filter === 'all' ? {} : { status: filter };
       const res = await fetch('/api/admin/messenger/list-reports', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -156,14 +159,40 @@ export default function AdminMessengerClient() {
         toast('Could Not Load Reports');
         return;
       }
-      const json = (await res.json()) as { reports?: ReportRow[] };
+      const json = (await res.json()) as { reports?: ReportRow[]; nextBefore?: string | null };
       setRows(json.reports ?? []);
+      setReportNextBefore(json.nextBefore ?? null);
     } catch {
       toast('Network Error');
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const loadMoreReports = useCallback(async () => {
+    if (!reportNextBefore || reportsLoadingMore) return;
+    setReportsLoadingMore(true);
+    try {
+      const body: Record<string, unknown> = status === 'all' ? {} : { status };
+      body.before = reportNextBefore;
+      const res = await fetch('/api/admin/messenger/list-reports', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        toast('Could Not Load More Reports');
+        return;
+      }
+      const json = (await res.json()) as { reports?: ReportRow[]; nextBefore?: string | null };
+      setRows((cur) => [...cur, ...(json.reports ?? [])]);
+      setReportNextBefore(json.nextBefore ?? null);
+    } catch {
+      toast('Network Error');
+    } finally {
+      setReportsLoadingMore(false);
+    }
+  }, [reportNextBefore, reportsLoadingMore, status]);
 
   const loadMentions = useCallback(async (filter: MentionStatusFilter) => {
     setMentionsLoading(true);
@@ -581,6 +610,27 @@ export default function AdminMessengerClient() {
                   </div>
                 );
               })}
+            </div>
+          )}
+          {reportNextBefore && (
+            <div style={{ marginTop: 12, textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={loadMoreReports}
+                disabled={reportsLoadingMore}
+                style={{
+                  padding: '8px 20px',
+                  borderRadius: 8,
+                  border: '1px solid var(--surface-3, #1D2D3E)',
+                  background: 'transparent',
+                  color: 'var(--teal, #00C4BC)',
+                  cursor: reportsLoadingMore ? 'wait' : 'pointer',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                }}
+              >
+                {reportsLoadingMore ? 'Loading...' : 'Load More Reports'}
+              </button>
             </div>
           )}
         </>

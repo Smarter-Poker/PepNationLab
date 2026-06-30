@@ -9,7 +9,7 @@ import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 const VALID_TRANSACTION_TYPES = [
   'commission', 'withdrawal', 'adjustment', 'order_charge', 'restock_charge',
-  'credit', 'bonus', 'payout', 'deposit', 'manual_adjustment',
+  'credit', 'debit', 'bonus', 'payout', 'deposit', 'manual_adjustment',
 ] as const;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -107,8 +107,6 @@ export async function POST(req: NextRequest) {
   }
 
   // Fetch current agent balance server-side - NEVER trust caller-supplied balance values.
-  // Using balance_before/balance_after from the request body would allow fraudulent
-  // ledger entries with arbitrary balance snapshots.
   const { data: agentProfile, error: profileErr } = await supabase
     .from('profiles')
     .select('prepaid_balance')
@@ -120,9 +118,6 @@ export async function POST(req: NextRequest) {
   }
 
   const balanceBefore = Number(agentProfile.prepaid_balance) || 0;
-  // Note: this route logs the transaction but does NOT change the balance.
-  // Balance changes are performed by the deduct_prepaid_balance / credit_balance RPCs.
-  // The balance_before/after here are informational snapshots at the time of logging.
   const balanceAfter = balanceBefore;
 
   const { data, error } = await supabase
@@ -136,7 +131,7 @@ export async function POST(req: NextRequest) {
       description: description.trim(),
       reference_id: reference_id ?? null,
       reference_type: reference_type ?? null,
-      created_by: gate.userId, // always set to the authenticated admin - never caller-supplied
+      created_by: gate.userId,
     })
     .select('id')
     .single();
