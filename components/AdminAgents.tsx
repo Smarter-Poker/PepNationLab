@@ -511,7 +511,7 @@ export default function AdminAgents() {
                       onClick={() => { setPasswordAgent(agent); setNewPassword(''); }}
                       style={{ fontSize: '0.72rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0,229,255,0.25)', borderRadius: 4, cursor: 'pointer', padding: '3px 8px', textAlign: 'left', marginTop: 2, alignSelf: 'flex-start' }}
                     >
-                      ✏️ Edit Password
+                      Edit Password
                     </button>
                   </div>
                 </div>
@@ -734,7 +734,7 @@ export default function AdminAgents() {
                       ? 'Minimum 8 characters required'
                       : newPassword.length < 8
                       ? `${newPassword.length}/8 — need ${8 - newPassword.length} more character${8 - newPassword.length !== 1 ? 's' : ''}`
-                      : `✓ ${newPassword.length} characters — good to go`}
+                      : `${newPassword.length} Characters — Good To Go`}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', marginTop: 'var(--space-6)' }}>
