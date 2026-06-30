@@ -36,7 +36,10 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
 
   useEffect(() => {
     fetch('/api/agent/products')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Failed To Load Products');
+        return res.json();
+      })
       .then(data => {
         if (data.data) {
           const visibleProducts = data.data.filter((p: any) => p.is_visible);
@@ -45,6 +48,11 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
             setSelectedProductId(visibleProducts[0].product_id);
           }
         }
+      })
+      .catch(() => {
+        // Products failed to load but still allow manual entry if needed
+      })
+      .finally(() => {
         setLoading(false);
       });
   }, []);
@@ -198,7 +206,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
                     </div>
                     <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                       <span style={{ color: '#00E5FF', fontWeight: 700 }}>${(item.price * item.quantity).toFixed(2)}</span>
-                      <button type="button" onClick={() => handleRemoveFromCart(item.product_id)} className="badge-metal" style={{ background: 'rgba(229,62,62,0.1)', color: '#FC8181', border: '1px solid rgba(229,62,62,0.3)', cursor: 'pointer', padding: '4px 8px', fontSize: '1rem', lineHeight: 1 }}>×</button>
+                      <button type="button" onClick={() => handleRemoveFromCart(item.product_id)} className="badge-metal" style={{ background: 'rgba(229,62,62,0.1)', color: '#FC8181', border: '1px solid rgba(229,62,62,0.3)', cursor: 'pointer', padding: '4px 8px', fontSize: '1rem', lineHeight: 1 }}>x</button>
                     </div>
                   </div>
                 ))}
@@ -237,8 +245,6 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
                   <option value="venmo">Venmo</option>
                   <option value="apple_pay">Apple Pay</option>
                   <option value="zelle">Zelle</option>
-                  <option value="crypto">Crypto</option>
-                  <option value="cash">Cash / Offline</option>
                 </select>
               </div>
               <div className="form-group" style={{ width: 120, marginBottom: 0 }}>

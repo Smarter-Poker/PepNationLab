@@ -83,11 +83,7 @@ function parseFieldValue(raw: string): FieldFilter | null {
 
 function tokenize(raw: string): string[] {
   const tokens: string[] = [];
-  // Match quoted phrases OR any non-whitespace token sequence.
-  // NOTE: the original regex had a typo -- `(\ S+)` (backslash-space-S)
-  // instead of `(\S+)` (non-whitespace). That caused zero tokens to be
-  // extracted from any query, making all searches return 0 results.
-  const re = /"([^"]*)"|(\S+)/g;
+  const re = /"([^"]*)"|([\S]+)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(raw)) !== null) {
     if (m[1] !== undefined) tokens.push(`"${m[1]}"`);
@@ -152,7 +148,7 @@ const STOP_WORDS = new Set(['for', 'the', 'and', 'in', 'to', 'with', 'a', 'an', 
 // alternatives only - the user's original token is ALWAYS kept, so adding entries
 // can only widen recall (then re-ranked by ts_rank_cd), never drop a valid match.
 const SYNONYMS: Record<string, string[]> = {
-  // --- body-system / goal lay terms (original 15) ---
+  // body-system / goal lay terms (original 15)
   fat: ['weight loss', 'lipolysis', 'obesity', 'adipose', 'slimming', 'lean', 'weight'],
   muscle: ['hypertrophy', 'bodybuilding', 'mass', 'strength', 'growth', 'anabolic', 'gains'],
   sleep: ['insomnia', 'circadian', 'rest', 'recovery', 'rem', 'melatonin', 'dsip'],
@@ -169,7 +165,7 @@ const SYNONYMS: Record<string, string[]> = {
   stress: ['anxiety', 'cortisol', 'calm', 'relax', 'mood', 'depression', 'panic'],
   aging: ['longevity', 'senescence', 'lifespan', 'youth', 'telomere', 'anti-aging'],
 
-  // --- weight / metabolic intent ---
+  // weight / metabolic intent
   weight: ['weight loss', 'weight management', 'obesity', 'lipolysis', 'appetite', 'slimming', 'fat loss'],
   obesity: ['weight management', 'glp-1', 'semaglutide', 'tirzepatide', 'appetite', 'metabolic', 'lipolysis'],
   diet: ['weight management', 'appetite', 'obesity', 'metabolic', 'fat loss'],
@@ -178,7 +174,7 @@ const SYNONYMS: Record<string, string[]> = {
   metabolism: ['metabolic', 'energy', 'fat loss', 'mitochondrial', 'insulin', 'glucose'],
   mitochondria: ['mitochondrial', 'mots-c', 'ss-31', 'energy', 'nad', 'cellular energy'],
 
-  // --- healing / recovery / tissue ---
+  // healing / recovery / tissue
   recovery: ['healing', 'tissue repair', 'injury', 'tendon', 'bpc-157', 'tb-500', 'soft tissue'],
   healing: ['tissue repair', 'recovery', 'wound', 'regeneration', 'bpc-157', 'tb-500'],
   wound: ['healing', 'tissue repair', 'regeneration', 'collagen', 'angiogenesis'],
@@ -187,7 +183,7 @@ const SYNONYMS: Record<string, string[]> = {
   tendon: ['ligament', 'cartilage', 'healing', 'tissue repair', 'bone joint'],
   inflammation: ['anti-inflammatory', 'pain', 'immune', 'kpv', 'arthritis', 'swelling'],
 
-  // --- cognition / mood ---
+  // cognition / mood
   focus: ['cognitive', 'nootropic', 'memory', 'attention', 'concentration', 'semax'],
   memory: ['cognitive', 'nootropic', 'recall', 'learning', 'neuroprotective'],
   nootropic: ['cognitive', 'focus', 'memory', 'semax', 'selank', 'neuroprotective'],
@@ -195,7 +191,7 @@ const SYNONYMS: Record<string, string[]> = {
   anxiety: ['anxiolytic', 'stress', 'mood', 'calm', 'selank', 'gaba'],
   mood: ['depression', 'anxiety', 'stress', 'wellbeing', 'oxytocin'],
 
-  // --- hormonal / sexual ---
+  // hormonal / sexual
   hair: ['follicle', 'alopecia', 'regrowth', 'ghk-cu', 'ahk-cu', 'dermal', 'scalp', 'cosmetic'],
   libido: ['sexual health', 'arousal', 'erectile', 'desire', 'pt-141', 'testosterone'],
   testosterone: ['hormonal', 'hcg', 'trt', 'luteinizing', 'fertility', 'androgen'],
@@ -203,12 +199,12 @@ const SYNONYMS: Record<string, string[]> = {
   fertility: ['hcg', 'hmg', 'gonadotropin', 'kisspeptin', 'reproductive', 'hormonal'],
   tan: ['melanotan', 'melanocortin', 'tanning', 'pigmentation', 'melanin'],
 
-  // --- growth hormone axis ---
+  // growth hormone axis
   growth: ['growth hormone', 'ghrh', 'ghrp', 'secretagogue', 'igf', 'performance'],
   hgh: ['growth hormone', 'igf', 'ghrh', 'ghrp', 'secretagogue', 'fragment'],
   gh: ['growth hormone', 'ghrh', 'ghrp', 'secretagogue', 'igf'],
 
-  // --- longevity / antioxidant ---
+  // longevity / antioxidant
   antioxidant: ['glutathione', 'oxidative', 'free radical', 'longevity', 'mitochondrial'],
   longevity: ['anti-aging', 'senescence', 'lifespan', 'epithalon', 'nad', 'telomere'],
 };

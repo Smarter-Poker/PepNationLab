@@ -44,8 +44,7 @@ export async function GET() {
   rows.sort((a, b) => {
     if (!a.resolved && b.resolved) return -1;
     if (a.resolved && !b.resolved) return 1;
-    return (b.disputed_at ? new Date(b.disputed_at as string).getTime() : 0)
-      - (a.disputed_at ? new Date(a.disputed_at as string).getTime() : 0);
+    return (b.disputed_at ? new Date(b.disputed_at as string).getTime() : 0) - (a.disputed_at ? new Date(a.disputed_at as string).getTime() : 0);
   });
 
   return NextResponse.json({ disputes: rows });

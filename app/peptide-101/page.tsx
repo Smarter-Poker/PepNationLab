@@ -46,7 +46,7 @@ export default function Peptide101LandingPage() {
   const landingState = Math.min(completedModules + 1, 14);
   const CONTENT = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s11','s12','s13','s14'];
 
-  // "Continue Learning" / "Continue To Module" always goes to real saved progress
+  // "Continue Learning" / "Continue To Module" -> always goes to real saved progress
   const routeToNext = () => {
     let lastScreen = '';
     try {
@@ -130,7 +130,7 @@ export default function Peptide101LandingPage() {
               }}
               title={
                 isLocked
-                  ? `Locked: Module ${index + 1} -- Complete previous modules to unlock`
+                  ? `Locked: Module ${index + 1} - Complete previous modules to unlock`
                   : isCurrent
                   ? `Continue: Module ${index + 1}`
                   : `Review: Module ${index + 1}`
