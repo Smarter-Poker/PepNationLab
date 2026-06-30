@@ -168,7 +168,7 @@ export default function AgentStorefrontConfig({
       <div style={{ marginBottom: 'var(--space-6)' }}>
         <h3 className="metal-text" style={{ fontSize: '1.4rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Storefront Configuration</h3>
         <p style={{ color: 'var(--silver)', fontSize: '0.95rem', lineHeight: 1.5, maxWidth: 600 }}>
-          Manage your public-facing storefront identity, warehouse details, and payment options. Changes are reflected instantly.
+          Manage Your Public-Facing Storefront Identity, Warehouse Details, And Payment Options. Changes Are Reflected Instantly.
         </p>
       </div>
 
@@ -197,7 +197,7 @@ export default function AgentStorefrontConfig({
               {!canChangeDisplayName && (
                 <div style={{ marginTop: 8, fontSize: '0.8rem', color: '#F59E0B', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                  User Name can only be changed once every 6 months.
+                  User Name Can Only Be Changed Once Every 6 Months.
                 </div>
               )}
             </div>
@@ -245,11 +245,11 @@ export default function AgentStorefrontConfig({
                       const ext = file.name.split('.').pop() || 'png';
                       const path = `agent-logos/${agentId}-${Date.now()}.${ext}`;
                       const { error: uploadError } = await supabase.storage.from('public-assets').upload(path, file, { upsert: true });
-                      if (uploadError) { toast.error('Failed to upload logo: ' + uploadError.message); return; }
+                      if (uploadError) { toast.error('Failed To Upload Logo: ' + uploadError.message); return; }
                       const { data: pub } = supabase.storage.from('public-assets').getPublicUrl(path);
                       if (pub?.publicUrl) {
                         setLogoUrl(pub.publicUrl);
-                        toast.success('Logo uploaded! Click Save to apply.');
+                        toast.success('Logo Uploaded. Click Save To Apply.');
                       }
                     }}
                   />
@@ -272,7 +272,7 @@ export default function AgentStorefrontConfig({
             Warehouse Location
           </h4>
           <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-4)', marginTop: '-8px' }}>
-            Where your inventory is shipped from. This ensures accurate shipping rates for your customers.
+            Where Your Inventory Is Shipped From. This Ensures Accurate Shipping Rates For Your Customers.
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-4)' }}>
@@ -322,7 +322,7 @@ export default function AgentStorefrontConfig({
               Payment Methods
             </h4>
             <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-4)', marginTop: '-8px' }}>
-              Configure how your customers can pay you.
+              Configure How Your Customers Can Pay You.
             </p>
             {paymentMethodsNode}
           </section>
