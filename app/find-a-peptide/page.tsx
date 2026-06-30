@@ -75,7 +75,7 @@ export default async function FindAPeptidePage() {
             Find A Peptide Unavailable
           </h1>
           <p style={{ color: 'var(--silver)', fontSize: '0.92rem' }}>
-            No active agent storefront could be resolved at this time. Please contact support.
+            No Active Agent Storefront Could Be Resolved At This Time. Please Contact Support.
           </p>
         </div>
       </div>
