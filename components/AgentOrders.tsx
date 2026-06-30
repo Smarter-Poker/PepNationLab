@@ -154,7 +154,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             : o
         )
       );
-      toast.success(`Order Status Shifted To ${newStatus.replace(/_/g, ' ').toUpperCase()}`);
+      toast.success(`Order Status Shifted To ${STATUS_LABEL[newStatus] ?? newStatus.replace(/_/g, ' ').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`);
     } catch (err: any) {
       toast.error(err.message ?? 'An Error Occurred Updating Order Status.');
     } finally {
@@ -402,7 +402,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   }}>
                     <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', fontWeight: 600 }}>Buyer</div>
                     <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--white)' }}>
-                      {order.buyer_name || 'Anonymous Scientist'}
+                      {order.buyer_name || 'Anonymous Researcher'}
                     </div>
                     <div style={{ fontSize: '0.9rem', color: 'var(--teal)', marginTop: '4px', fontWeight: 500 }}>
                       {order.buyer_email || 'No Email Provided'}
@@ -681,7 +681,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
               </div>
               <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8, letterSpacing: '0.05em' }}>No Pending Ledgers</div>
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', maxWidth: 400, margin: '0 auto', lineHeight: 1.5 }}>
-                Orders registered by your clients will appear here for you to fulfill and manage.
+                Orders Registered By Your Clients Will Appear Here For You To Fulfill And Manage.
               </p>
             </div>
       )}
@@ -810,7 +810,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   Buyer
                 </div>
                 <div style={{ fontSize: '1.1rem', color: 'var(--white)', fontWeight: 700 }}>
-                  {detailOrder.buyer_name || 'Anonymous Scientist'}
+                  {detailOrder.buyer_name || 'Anonymous Researcher'}
                 </div>
                 <div
                   style={{
@@ -923,7 +923,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                               {item.stackData && (
                                 <div style={{ fontSize: '0.8rem', color: 'var(--silver)', marginTop: '4px' }}>
                                   {item.stackData.isPreBlended ? (
-                                    <span style={{ color: 'var(--teal)' }}>(Pre-blended stack - one peptide vial)</span>
+                                    <span style={{ color: 'var(--teal)' }}>(Pre-Blended Stack - One Peptide Vial)</span>
                                   ) : (
                                     <div>
                                       <span style={{ color: 'var(--brand-yellow)', fontWeight: 600 }}>Includes Vials:</span> {item.stackData.components.join(', ')}
