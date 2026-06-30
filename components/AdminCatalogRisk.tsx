@@ -51,6 +51,7 @@ export default function AdminCatalogRisk() {
   const [showLow, setShowLow] = useState(false);
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const res = await fetch('/api/admin/catalog-risk', { cache: 'no-store' });
       const json = await res.json();
@@ -75,7 +76,7 @@ export default function AdminCatalogRisk() {
         : action === 'restrict'
         ? 'Hide It From Every Storefront'
         : 'Make It Available Again';
-    if (!window.confirm(`${verb} ${row.display_name}? This Will ${detail} (${row.total_skus} SKUs).`)) return;
+    if (typeof window === 'undefined' || !window.confirm(`${verb} ${row.display_name}? This Will ${detail} (${row.total_skus} SKUs).`)) return;
 
     setBusy(row.slug);
     try {

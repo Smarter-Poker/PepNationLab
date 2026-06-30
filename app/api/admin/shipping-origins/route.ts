@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
     shippoAddressId = validation.shippoAddressId ?? null;
   } catch (err) {
     // Shippo unavailable or no credentials - save the origin but warn.
-    const msg = 'Shippo unavailable';
+    const msg = err instanceof Error ? err.message : 'Shippo Unavailable';
     validationWarning = `Address Not Validated: ${msg}`;
   }
 
