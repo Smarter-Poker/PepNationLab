@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { safeError } from '@/lib/api-error';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export async function PATCH(request: NextRequest) {
@@ -9,19 +10,10 @@ export async function PATCH(request: NextRequest) {
     const csrf = assertSameOrigin(request);
     if (csrf) return csrf;
 
-    const supabase = await createClient();
-    const { data: { user }, error: authErr } = await supabase.auth.getUser();
-    if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const gate = await requireAdmin();
+    if (!gate.ok) return gate.response;
 
-    const { data: adminCheck } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (adminCheck?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const supabase = createAdminClient();
 
     const {
       id,
@@ -33,7 +25,7 @@ export async function PATCH(request: NextRequest) {
       max_auto_approve_limit
     } = await request.json();
 
-    if (!id) return NextResponse.json({ error: 'Missing agent ID' }, { status: 400 });
+    if (!id) return NextResponse.json({ error: 'Missing Agent ID' }, { status: 400 });
 
     const updates: any = {};
     if (full_name !== undefined) updates.full_name = full_name;
@@ -42,7 +34,7 @@ export async function PATCH(request: NextRequest) {
       updates.account_type = account_type;
       updates.auto_approve_orders = account_type === 'credit';
     }
-    
+
     // Convert to number or null, ensuring safe defaults. Money fields are
     // clamped to >= 0 so a stray negative can never persist a bad balance.
     const nonNeg = (v: number) => (Number.isFinite(v) ? Math.max(0, v) : 0);
