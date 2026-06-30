@@ -1,19 +1,3 @@
-/**
- * GET  /api/admin/shipping-origins  - list all shipping origins
- * POST /api/admin/shipping-origins  - create a new shipping origin
- *
- * On POST: validates address via Shippo before persisting. If validation
- * returns isValid=false, returns 422 with the validation messages and
- * suggestion. If Shippo is not connected, the address is still saved
- * (with a warning) so the admin can configure origins before credentials
- * are provisioned.
- *
- * Setting is_default=true atomically clears any other default in the same
- * DB transaction via an UPDATE-then-INSERT pattern.
- *
- * Guards: requireAdmin() on all methods.
- */
-
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -23,9 +7,6 @@ import { createServiceClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-// ---------------------------------------------------------------------------
-// GET - list
-// ---------------------------------------------------------------------------
 export async function GET() {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
@@ -41,7 +22,6 @@ export async function GET() {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
-  // For each origin, fetch which agents are assigned to it.
   const origins = data ?? [];
   const originIds = origins.map((o) => o.id);
   let agentAssignments: Array<{ id: string; display_name: string; slug: string; warehouse_origin_id: string }> = [];
@@ -64,9 +44,6 @@ export async function GET() {
   return NextResponse.json({ origins: enriched });
 }
 
-// ---------------------------------------------------------------------------
-// POST - create
-// ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   const csrfErr = assertSameOrigin(req);
   if (csrfErr) return csrfErr;
@@ -81,7 +58,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON.' }, { status: 400 });
   }
 
-  // Validate required fields.
   const label = typeof body.label === 'string' ? body.label.trim() : '';
   const name = typeof body.name === 'string' ? body.name.trim() : '';
   const street1 = typeof body.street1 === 'string' ? body.street1.trim() : '';
@@ -102,79 +78,36 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const addrInput: AddressInput = {
-    name,
-    company: company ?? undefined,
-    street1,
-    street2: street2 ?? undefined,
-    city,
-    state,
-    zip,
-    country,
-    phone,
-    email,
-  };
+  const addrInput: AddressInput = { name, company: company ?? undefined, street1, street2: street2 ?? undefined, city, state, zip, country, phone, email };
 
-  // Attempt Shippo address validation. If credentials are not yet connected,
-  // allow the save but flag it as unvalidated.
   let shippoAddressId: string | null = null;
   let validationWarning: string | null = null;
 
   try {
     const validation = await validateAddress(addrInput);
     if (!validation.isValid) {
-      return NextResponse.json(
-        {
-          error: 'Address Validation Failed.',
-          messages: validation.messages,
-          suggestion: validation.suggestion ?? null,
-        },
-        { status: 422 },
-      );
+      return NextResponse.json({ error: 'Address Validation Failed.', messages: validation.messages, suggestion: validation.suggestion ?? null }, { status: 422 });
     }
     shippoAddressId = validation.shippoAddressId ?? null;
   } catch (err) {
-    // Shippo unavailable or no credentials - save the origin but warn.
     const msg = err instanceof Error ? err.message : 'Shippo Unavailable';
     validationWarning = `Address Not Validated: ${msg}`;
   }
 
   const supabase = await createServiceClient();
 
-  // If this will be the new default, clear existing defaults first.
   if (isDefault) {
-    await supabase
-      .from('shipping_origins')
-      .update({ is_default: false })
-      .eq('is_default', true);
+    await supabase.from('shipping_origins').update({ is_default: false }).eq('is_default', true);
   }
 
   const { data: inserted, error: insertErr } = await supabase
     .from('shipping_origins')
-    .insert({
-      label,
-      name,
-      company: company || null,
-      street1,
-      street2: street2 || null,
-      city,
-      state,
-      zip,
-      country,
-      phone,
-      email,
-      is_default: isDefault,
-      is_active: true,
-      shippo_address_id: shippoAddressId,
-    })
+    .insert({ label, name, company: company || null, street1, street2: street2 || null, city, state, zip, country, phone, email, is_default: isDefault, is_active: true, shippo_address_id: shippoAddressId })
     .select()
     .single();
 
   if (insertErr || !inserted) {
-    return NextResponse.json(
-      { error: 'A database error occurred.' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'A database error occurred.' }, { status: 500 });
   }
 
   await supabase.from('admin_audit_log').insert({
@@ -185,8 +118,5 @@ export async function POST(req: NextRequest) {
     changes: { label, is_default: isDefault, shippo_validated: !!shippoAddressId },
   });
 
-  return NextResponse.json(
-    { ok: true, origin: inserted, warning: validationWarning },
-    { status: 201 },
-  );
+  return NextResponse.json({ ok: true, origin: inserted, warning: validationWarning }, { status: 201 });
 }

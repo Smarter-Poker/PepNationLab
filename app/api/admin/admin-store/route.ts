@@ -21,7 +21,6 @@ export async function GET() {
     .order('name');
 
   if (error) {
-    console.error('[admin-store GET]', error);
     return NextResponse.json({ error: 'Failed To Load Products' }, { status: 500 });
   }
 
@@ -78,41 +77,18 @@ export async function POST(req: NextRequest) {
     const qty = Math.max(1, parseInt(String(item.quantity)) || 1);
     const unitPrice = Math.round(Number(prod.base_cost) * 5 * 100) / 100;
     subtotal += unitPrice * qty;
-    orderLines.push({
-      product_id: prod.id,
-      product_name: prod.name,
-      quantity: qty,
-      unit_retail_price: unitPrice,
-      unit_cost_price: Number(prod.base_cost),
-      unit_super_agent_cost: Number(prod.base_cost),
-    });
+    orderLines.push({ product_id: prod.id, product_name: prod.name, quantity: qty, unit_retail_price: unitPrice, unit_cost_price: Number(prod.base_cost), unit_super_agent_cost: Number(prod.base_cost) });
   }
 
   subtotal = Math.round(subtotal * 100) / 100;
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .insert({
-      buyer_id: gate.userId,
-      agent_id: gate.userId,
-      status: 'approved_ship',
-      payment_method,
-      fulfillment_method: shipping_address ? 'ship' : 'pickup',
-      shipping_address: shipping_address || null,
-      shipping_cost: 0,
-      subtotal,
-      discount_amount: 0,
-      total: subtotal,
-      is_wholesale_restock: true,
-      buyer_name: 'Admin Direct Purchase',
-      buyer_email: null,
-      idempotency_key: crypto.randomUUID(),
-    })
+    .insert({ buyer_id: gate.userId, agent_id: gate.userId, status: 'approved_ship', payment_method, fulfillment_method: shipping_address ? 'ship' : 'pickup', shipping_address: shipping_address || null, shipping_cost: 0, subtotal, discount_amount: 0, total: subtotal, is_wholesale_restock: true, buyer_name: 'Admin Direct Purchase', buyer_email: null, idempotency_key: crypto.randomUUID() })
     .select('id')
     .single();
 
   if (orderError || !order) {
-    console.error('[admin-store POST] order insert failed:', orderError);
     return NextResponse.json({ error: 'Failed To Create Order' }, { status: 500 });
   }
 
@@ -121,7 +97,6 @@ export async function POST(req: NextRequest) {
     .insert(orderLines.map(l => ({ ...l, order_id: order.id })));
 
   if (itemsError) {
-    console.error('[admin-store POST] order_items insert failed:', itemsError);
     await supabase.from('orders').delete().eq('id', order.id);
     return NextResponse.json({ error: 'Failed To Save Order Items' }, { status: 500 });
   }

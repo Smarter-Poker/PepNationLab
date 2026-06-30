@@ -1,15 +1,3 @@
-/**
- * POST /api/admin/shippo/connect
- *
- * Body: { api_key: string; mode: 'test' | 'live'; webhook_secret?: string }
- *
- * Encrypts the Shippo API key (and optional webhook secret) via AES-256-GCM,
- * inserts a new active row in platform_shippo_credentials, and deactivates
- * any previous active row only after the new row is confirmed inserted.
- *
- * Guards: admin role + recent MFA (5 min) + same-origin CSRF.
- */
-
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { requireAdmin, assertMfaRecent } from '@/lib/admin-auth';
@@ -40,14 +28,9 @@ export async function POST(req: NextRequest) {
   const mode = body.mode === 'live' ? 'live' : 'test';
   const webhookSecret = typeof body.webhook_secret === 'string' ? body.webhook_secret.trim() : null;
 
-  if (!apiKey) {
-    return NextResponse.json({ error: 'api_key Is Required.' }, { status: 400 });
-  }
+  if (!apiKey) return NextResponse.json({ error: 'api_key Is Required.' }, { status: 400 });
   if (!apiKey.startsWith('shippo_test_') && !apiKey.startsWith('shippo_live_')) {
-    return NextResponse.json(
-      { error: 'api_key Must Start With shippo_test_ Or shippo_live_.' },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: 'api_key Must Start With shippo_test_ Or shippo_live_.' }, { status: 400 });
   }
 
   let encrypted: ReturnType<typeof encryptSecret>;
@@ -62,8 +45,6 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createServiceClient();
 
-  // Insert new row first; only deactivate old row after confirmed success
-  // to avoid a window where no active credential exists.
   const { data: inserted, error: insertErr } = await supabase
     .from('platform_shippo_credentials')
     .insert({
@@ -83,32 +64,16 @@ export async function POST(req: NextRequest) {
 
   if (insertErr || !inserted) {
     console.error('Shippo connect insert failed:', insertErr?.message);
-    return NextResponse.json(
-      { error: 'An Unexpected Error Occurred.' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
   }
 
-  // Deactivate previous active row only after new row is confirmed inserted.
-  await supabase
-    .from('platform_shippo_credentials')
-    .update({ is_active: false })
-    .eq('is_active', true)
-    .neq('id', inserted.id);
+  await supabase.from('platform_shippo_credentials').update({ is_active: false }).eq('is_active', true).neq('id', inserted.id);
 
   await supabase.from('admin_audit_log').insert({
-    actor_id: gate.userId,
-    action: 'shippo_connect',
-    entity_type: 'platform_shippo_credentials',
-    entity_id: inserted.id,
+    actor_id: gate.userId, action: 'shippo_connect',
+    entity_type: 'platform_shippo_credentials', entity_id: inserted.id,
     changes: { mode, last4: lastFour(apiKey), webhook_secret_set: !!webhookSecret },
   });
 
-  return NextResponse.json({
-    ok: true,
-    id: inserted.id,
-    mode: inserted.mode,
-    last4: inserted.api_key_last4,
-    connected_at: inserted.connected_at,
-  });
+  return NextResponse.json({ ok: true, id: inserted.id, mode: inserted.mode, last4: inserted.api_key_last4, connected_at: inserted.connected_at });
 }
