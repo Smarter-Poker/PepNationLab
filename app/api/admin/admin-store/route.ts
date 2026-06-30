@@ -27,7 +27,7 @@ export async function GET() {
 
   const products = (data ?? []).map(p => ({
     ...p,
-    admin_price: Math.round(Number(p.base_cost) * 2 * 100) / 100,
+    admin_price: Math.round(Number(p.base_cost) * 5 * 100) / 100,
   }));
 
   return NextResponse.json({ products });
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Product Not Found: ${item.product_id}` }, { status: 400 });
     }
     const qty = Math.max(1, parseInt(String(item.quantity)) || 1);
-    const unitPrice = Math.round(Number(prod.base_cost) * 2 * 100) / 100;
+    const unitPrice = Math.round(Number(prod.base_cost) * 5 * 100) / 100;
     subtotal += unitPrice * qty;
     orderLines.push({
       product_id: prod.id,
