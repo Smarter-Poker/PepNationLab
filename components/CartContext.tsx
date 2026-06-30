@@ -227,7 +227,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             toast.error(`${detail.name} Is Not Available.`);
           }
         } catch (err) {
-          toast.error('Failed to add item to cart.');
+          toast.error('Failed To Add Item To Cart.');
         }
       }, 50);
     };
@@ -554,10 +554,10 @@ function BacWaterCalculator({
           }}
         >
           Your {totalPeptideVials} peptide vial{totalPeptideVials !== 1 ? 's' : ''} need{totalPeptideVials === 1 ? 's' : ''}{' '}
-          <strong style={{ color: 'var(--teal)' }}>~{totalMlNeeded} mL</strong> of BAC water for reconstitution.
+          <strong style={{ color: 'var(--teal)' }}>~{totalMlNeeded} mL</strong> of BAC Water For Reconstitution.
           {alreadyInCart && alreadyInCartQty > 0 && (
             <span style={{ color: 'rgba(255,255,255,0.5)' }}>
-              {' '}({alreadyInCartQty} vial{alreadyInCartQty !== 1 ? 's' : ''} already in cart.)
+              {' '}({alreadyInCartQty} vial{alreadyInCartQty !== 1 ? 's' : ''} Already In Cart.)
             </span>
           )}
         </div>
@@ -628,7 +628,7 @@ function BacWaterCalculator({
           </button>
         ) : (
           <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>
-            BAC Water not available in current catalog
+            BAC Water Not Available In Current Catalog
           </div>
         )}
       </div>
@@ -719,7 +719,7 @@ function SmartRecommendationStrip({
             Other Researchers Also Stack
           </div>
           <div style={{ fontSize: '0.63rem', color: 'var(--grey-400)', marginTop: 1 }}>
-            Based on compound compatibility &amp; order history
+            Based On Compound Compatibility &amp; Order History
           </div>
         </div>
       </div>
