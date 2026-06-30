@@ -508,17 +508,17 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                           type="checkbox" 
                           checked={!!agent.auto_approve_orders}
                           onChange={() => handleToggleTrust(agent.id, !!agent.auto_approve_orders)}
-                          disabled={togglingTrust === agent.id || agent.account_type === 'credit' || agent.account_type === 'prepaid'}
+                          disabled={togglingTrust === agent.id}
                           style={{ opacity: 0, width: 0, height: 0 }} 
                         />
                         <span style={{
                           position: 'absolute',
-                          cursor: (togglingTrust === agent.id || agent.account_type === 'credit' || agent.account_type === 'prepaid') ? 'not-allowed' : 'pointer',
+                          cursor: togglingTrust === agent.id ? 'not-allowed' : 'pointer',
                           top: 0, left: 0, right: 0, bottom: 0,
                           backgroundColor: agent.auto_approve_orders ? 'var(--teal)' : 'var(--grey-500)',
                           transition: '.4s',
                           borderRadius: '16px',
-                          opacity: (togglingTrust === agent.id || agent.account_type === 'credit' || agent.account_type === 'prepaid') ? 0.5 : 1
+                          opacity: togglingTrust === agent.id ? 0.5 : 1
                         }}>
                           <span style={{
                             position: 'absolute',
@@ -824,7 +824,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                 <div style={{ marginBottom: 'var(--space-6)' }}>
                   <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>New Password</label>
                   <input
-                    type="text"
+                    type="password"
                     style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={resetPwValue}
                     onChange={e => setResetPwValue(e.target.value)}
