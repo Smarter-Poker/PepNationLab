@@ -60,7 +60,7 @@ export default async function AdminCompoundQualityPage() {
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <header style={{ marginBottom: 'var(--space-5, 24px)' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--white, #FFFFFF)', margin: 0 }}>Compound Quality Backlog</h1>
+        <h1 className="animated-gradient-text" style={{ fontSize: '2rem', margin: 0 }}>Compound Quality Backlog</h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1rem', marginTop: 'var(--space-2, 8px)' }}>Lowest-Scoring Compounds First. Score Is 0-100 Based On Field Coverage. Click Any Row To Open The Monograph And Enrich.</p>
       </header>
 

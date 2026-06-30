@@ -1,3 +1,8 @@
+/**
+ * Admin: intranasal route classification editor. Admin-only via middleware +
+ * an explicit requireAdmin gate. Lists every compound with its current nasal
+ * tier so the team can reclassify without a database migration.
+ */
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -35,11 +40,11 @@ export default async function AdminIntranasalPage() {
         </Link>
       </nav>
       <header style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--white, #FFFFFF)', margin: 0 }}>Intranasal Route Classification</h1>
+        <h1 className="animated-gradient-text" style={{ fontSize: '1.8rem', margin: 0 }}>Intranasal Route Classification</h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1rem', marginTop: 8, maxWidth: 780, lineHeight: 1.6 }}>
-          Set Each Compound&apos;s Nasal-Route Tier. Established And Emerging Surface The Nasal Badges Across The Store And
-          Research Library. Injection Only Hides Them. Changes Save Immediately And Refresh The Public Pages. Currently
-          {' '}{established} Established And {emerging} Emerging.
+          Set each compound&apos;s nasal-route tier. Established and Emerging surface the nasal badges across the store and
+          research library; Injection Only hides them. Changes save immediately and refresh the public pages. Currently
+          {' '}{established} established and {emerging} emerging.
         </p>
       </header>
       <AdminIntranasalEditor rows={rows} />

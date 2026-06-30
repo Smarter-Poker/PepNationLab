@@ -878,6 +878,7 @@ function AdminOrdersPageInner() {
                             }}
                           >
                             {order.profiles?.full_name ||
+                              order.buyer_name ||
                               "Anonymous Researcher"}
                           </span>
                           <span
@@ -1034,11 +1035,10 @@ function AdminOrdersPageInner() {
                     }}
                   >
                     <div>
-                      Name: {selectedOrder.profiles?.full_name || "Anonymous"}
+                      Name: {selectedOrder.profiles?.full_name || selectedOrder.buyer_name || "Anonymous"}
                     </div>
                     <div>
-                      Username: @
-                      {selectedOrder.profiles?.email?.split("@")[0] ?? "-"}
+                      Email: {selectedOrder.profiles?.email || selectedOrder.buyer_email || "-"}
                     </div>
                     {selectedOrder.profiles?.phone && (
                       <div>Phone: {selectedOrder.profiles?.phone}</div>

@@ -59,7 +59,7 @@ export default async function AdminSearchAnalyticsPage() {
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <header style={{ marginBottom: 'var(--space-5, 24px)' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--white, #FFFFFF)', margin: 0 }}>Search Analytics</h1>
+        <h1 className="animated-gradient-text" style={{ fontSize: '2rem', margin: 0 }}>Search Analytics</h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1rem', marginTop: 'var(--space-2, 8px)' }}>Last 7 Days. {rows.length} Total Queries Across {groups.size} Unique Phrasings.</p>
       </header>
 
