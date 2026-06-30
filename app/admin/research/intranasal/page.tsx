@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminIntranasalPage() {
   const gate = await requireAdmin();
-  if (!gate.ok) redirect('/dashboard');
+  if (!gate.ok) redirect('/login');
 
   const supabase = await createServiceClient();
   const { data } = await supabase

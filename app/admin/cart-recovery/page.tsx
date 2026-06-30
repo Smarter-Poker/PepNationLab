@@ -45,11 +45,12 @@ export default function AdminCartRecoveryPage() {
 
   const toggleEnabled = async (v: Variant) => {
     try {
-      await fetch(`/api/admin/cart-recovery-variants?id=${encodeURIComponent(v.id)}`, {
+      const res = await fetch(`/api/admin/cart-recovery-variants?id=${encodeURIComponent(v.id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: !v.enabled }),
       });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); toast.error(j.error || 'Failed To Update'); return; }
       load();
     } catch { toast.error('Failed To Update'); }
   };
@@ -78,7 +79,8 @@ export default function AdminCartRecoveryPage() {
   const removeVariant = async (v: Variant) => {
     if (!confirm(`Delete Variant "${v.name}"?`)) return;
     try {
-      await fetch(`/api/admin/cart-recovery-variants?id=${encodeURIComponent(v.id)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/cart-recovery-variants?id=${encodeURIComponent(v.id)}`, { method: 'DELETE' });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); toast.error(j.error || 'Failed To Delete'); return; }
       load();
     } catch { toast.error('Failed To Delete'); }
   };

@@ -43,7 +43,7 @@ function missingFields(c: Record<string, unknown>): string[] {
 
 export default async function AdminCompoundQualityPage() {
   const gate = await requireAdmin();
-  if (!gate.ok) redirect('/dashboard');
+  if (!gate.ok) redirect('/login');
 
   const supabase = await createServiceClient();
   const { data: rows } = await supabase
