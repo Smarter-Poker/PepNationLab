@@ -97,7 +97,7 @@ export default function AdminFlashSalesPage() {
     <div style={{ padding: 'var(--space-8)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
-          <h1 style={{ fontSize: '1.6rem', margin: 0 }}>Flash Sales</h1>
+          <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', margin: 0 }}>Flash Sales</h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginTop: 6, marginBottom: 0 }}>
             Platform-Wide Sale Banners. Toggle Active To Push Live On Every Storefront Instantly.
           </p>
@@ -163,7 +163,7 @@ export default function AdminFlashSalesPage() {
                 </div>
                 {s.banner_text && (
                   <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 4, fontStyle: 'italic' }}>
-                    “{s.banner_text}”
+                    "{s.banner_text}"
                   </div>
                 )}
               </div>

@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { paymentMethodLabel, PAYMENT_METHOD_SLUGS } from "@/lib/payment-method-labels";
+import Pagination from "@/components/Pagination";
+
+const PAGE_SIZE = 25;
 
 interface AgentOption {
   id: string;
@@ -44,6 +47,7 @@ export default function AdminStatementsPage() {
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
 
   // Generate form
   const [genAgentId, setGenAgentId] = useState("");
@@ -76,6 +80,7 @@ export default function AdminStatementsPage() {
 
       if (stRes.ok) {
         setStatements(stJson.data || []);
+        setPage(1);
       } else {
         setError(stJson.error || "Failed To Load Statements");
       }
@@ -212,6 +217,10 @@ export default function AdminStatementsPage() {
     .filter((s) => s.status !== "paid")
     .reduce((acc, s) => acc + Number(s.total_owed), 0);
 
+  const totalPages = Math.max(1, Math.ceil(statements.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedStatements = statements.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   return (
     <div style={{ padding: "var(--space-8)" }}>
       {/* Header */}
@@ -303,7 +312,7 @@ export default function AdminStatementsPage() {
                 gap: "var(--space-4)",
               }}
             >
-              {statements.map((s, index) => {
+              {paginatedStatements.map((s, index) => {
                 const statusColor =
                   STATUS_COLORS[s.status] ?? "var(--grey-400)";
                 return (
@@ -472,6 +481,13 @@ export default function AdminStatementsPage() {
                   </div>
                 );
               })}
+              {statements.length > PAGE_SIZE && (
+                <Pagination
+                  page={safePage}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                />
+              )}
             </div>
           )}
         </div>
@@ -556,8 +572,8 @@ export default function AdminStatementsPage() {
             >
               The Statement Covers The Selected Date Through Six Days Later. It
               Aggregates The Agent&apos;s Non-Cancelled Orders Into Cost Of
-              Goods Plus Shipping. Regenerating The Same Week Replaces The
-              Existing Statement.
+              Goods Plus Shipping. Each Agent-Week Combination Can Only Be
+              Generated Once To Prevent Double-Billing.
             </p>
           </div>
         </div>
