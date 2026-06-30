@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { toast } from 'sonner';
 import Pagination from '@/components/Pagination';
 import { exportCSV, downloadCSV } from '@/lib/export';
 
@@ -69,8 +70,14 @@ export default function AdminSalesPage() {
     try {
       const res = await fetch(`/api/admin/transactions?agent_id=${agent.agent_id}&limit=50`);
       const json = await res.json();
-      if (res.ok) setLedger(json.data || []);
-    } catch {/* silent */} finally {
+      if (res.ok) {
+        setLedger(json.data || []);
+      } else {
+        toast.error(json.error || 'Failed To Load Ledger');
+      }
+    } catch {
+      toast.error('Network Error Loading Ledger');
+    } finally {
       setLedgerLoading(false);
     }
   }

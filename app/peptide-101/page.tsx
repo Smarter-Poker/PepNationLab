@@ -130,7 +130,7 @@ export default function Peptide101LandingPage() {
               }}
               title={
                 isLocked
-                  ? `🔒 Module ${index + 1} — Complete previous modules to unlock`
+                  ? `Locked: Module ${index + 1} — Complete previous modules to unlock`
                   : isCurrent
                   ? `▶ Continue: Module ${index + 1}`
                   : `↩ Review: Module ${index + 1}`

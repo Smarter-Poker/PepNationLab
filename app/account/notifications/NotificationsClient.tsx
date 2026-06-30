@@ -129,13 +129,13 @@ export default function NotificationCenterClient({
       });
       const json = await res.json();
       if (res.ok) {
-        setSaveMsg({ text: 'Preferences saved.', ok: true });
+        setSaveMsg({ text: 'Preferences Saved.', ok: true });
         if (json.preferences) setPrefs(json.preferences);
       } else {
-        setSaveMsg({ text: json.error || 'Save failed.', ok: false });
+        setSaveMsg({ text: json.error || 'Save Failed.', ok: false });
       }
     } catch {
-      setSaveMsg({ text: 'Network error. Please try again.', ok: false });
+      setSaveMsg({ text: 'Network Error. Please Try Again.', ok: false });
     } finally {
       setSaving(false);
       setTimeout(() => setSaveMsg(null), 4000);
@@ -186,10 +186,10 @@ export default function NotificationCenterClient({
     const r = await enablePush();
     if (r.ok) {
       setPrefs(p => ({ ...p, push_enabled: true }));
-      setPushMsg({ text: 'Push notifications enabled!', ok: true });
+      setPushMsg({ text: 'Push Notifications Enabled!', ok: true });
       setPushPermission('granted');
     } else {
-      setPushMsg({ text: r.error || 'Failed to enable push.', ok: false });
+      setPushMsg({ text: r.error || 'Failed To Enable Push.', ok: false });
     }
     setPushBusy(false);
   };
@@ -200,9 +200,9 @@ export default function NotificationCenterClient({
     const r = await disablePush();
     if (r.ok) {
       setPrefs(p => ({ ...p, push_enabled: false }));
-      setPushMsg({ text: 'Push notifications disabled.', ok: true });
+      setPushMsg({ text: 'Push Notifications Disabled.', ok: true });
     } else {
-      setPushMsg({ text: r.error || 'Failed to disable push.', ok: false });
+      setPushMsg({ text: r.error || 'Failed To Disable Push.', ok: false });
     }
     setPushBusy(false);
   };
@@ -212,9 +212,9 @@ export default function NotificationCenterClient({
     setPushMsg(null);
     const r = await sendTestPush();
     if (r.ok) {
-      setPushMsg({ text: `Test push sent to ${r.sent ?? 1} device(s).`, ok: true });
+      setPushMsg({ text: `Test Push Sent To ${r.sent ?? 1} Device(s).`, ok: true });
     } else {
-      setPushMsg({ text: r.error || 'Test push failed.', ok: false });
+      setPushMsg({ text: r.error || 'Test Push Failed.', ok: false });
     }
     setPushBusy(false);
   };
@@ -249,7 +249,7 @@ export default function NotificationCenterClient({
                 Profile Picture
               </h2>
               <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 18, marginTop: 4 }}>
-                Upload an avatar or logo to appear in Messenger instead of a generic initial.
+                Upload An Avatar Or Logo To Appear In Messenger Instead Of A Generic Initial.
               </p>
               <AvatarUpload 
                 currentAvatarUrl={sessionProfile?.avatar_url ?? null} 
@@ -263,17 +263,17 @@ export default function NotificationCenterClient({
                 Push Notifications
               </h2>
               <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 16, marginTop: 4 }}>
-                Receive alerts even when the browser tab is closed or minimized. Turn This On, Then Choose Exactly Which Alerts You Want Below.
+                Receive Alerts Even When The Browser Tab Is Closed Or Minimized. Turn This On, Then Choose Exactly Which Alerts You Want Below.
               </p>
 
               {/* Status */}
               <div style={{ marginBottom: 14, fontSize: '0.8rem' }}>
                 <span style={{ color: 'var(--white)', fontWeight: 600 }}>Status: </span>
-                {!pushSupported && <span style={{ color: '#00E5FF' }}>Not supported in this browser</span>}
-                {pushSupported && pushPermission === 'default' && <span style={{ color: SILVER }}>Not yet enabled</span>}
-                {pushSupported && pushPermission === 'denied' && <span style={{ color: '#E53E3E' }}>Blocked - check browser settings</span>}
+                {!pushSupported && <span style={{ color: '#00E5FF' }}>Not Supported In This Browser</span>}
+                {pushSupported && pushPermission === 'default' && <span style={{ color: SILVER }}>Not Yet Enabled</span>}
+                {pushSupported && pushPermission === 'denied' && <span style={{ color: '#E53E3E' }}>Blocked - Check Browser Settings</span>}
                 {pushSupported && pushPermission === 'granted' && prefs.push_enabled && <span style={{ color: TEAL }}>Active</span>}
-                {pushSupported && pushPermission === 'granted' && !prefs.push_enabled && <span style={{ color: SILVER }}>Granted but disabled</span>}
+                {pushSupported && pushPermission === 'granted' && !prefs.push_enabled && <span style={{ color: SILVER }}>Granted But Disabled</span>}
               </div>
 
               {/* Enable/disable buttons */}
@@ -386,13 +386,13 @@ export default function NotificationCenterClient({
                 In-App Notifications
               </h2>
               <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 18, marginTop: 4 }}>
-                Control which events appear in your notification bell.
+                Control Which Events Appear In Your Notification Bell.
               </p>
               {([
-                { key: 'events_order_approved', label: 'Order Approved', desc: 'When your order gets approved' },
-                { key: 'events_order_shipped',  label: 'Order Shipped',  desc: 'When your order ships with tracking' },
-                { key: 'events_order_delivered',label: 'Order Delivered',desc: 'When your order is delivered' },
-                { key: 'events_payment_reminder',label: 'Payment Reminders', desc: 'Outstanding balance reminders' },
+                { key: 'events_order_approved', label: 'Order Approved', desc: 'When Your Order Gets Approved' },
+                { key: 'events_order_shipped',  label: 'Order Shipped',  desc: 'When Your Order Ships With Tracking' },
+                { key: 'events_order_delivered',label: 'Order Delivered',desc: 'When Your Order Is Delivered' },
+                { key: 'events_payment_reminder',label: 'Payment Reminders', desc: 'Outstanding Balance Reminders' },
               ] as const).map(row => (
                 <label
                   key={row.key}
@@ -424,7 +424,7 @@ export default function NotificationCenterClient({
                 Privacy
               </h2>
               <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 18, marginTop: 4 }}>
-                Manage your privacy settings for messaging.
+                Manage Your Privacy Settings For Messaging.
               </p>
               <label
                 style={{
@@ -443,7 +443,7 @@ export default function NotificationCenterClient({
                 />
                 <div>
                   <div style={{ color: 'var(--white)', fontSize: '0.85rem', fontWeight: 500 }}>Send Read Receipts</div>
-                  <div style={{ color: SILVER, fontSize: '0.72rem' }}>Allow others to see when you have read their messages.</div>
+                  <div style={{ color: SILVER, fontSize: '0.72rem' }}>Allow Others To See When You Have Read Their Messages.</div>
                 </div>
               </label>
             </section>
@@ -470,7 +470,7 @@ export default function NotificationCenterClient({
             </div>
 
             <p style={{ fontSize: '0.7rem', color: 'rgba(192,184,168,0.3)', textAlign: 'center' }}>
-              Need to change your password?{' '}
+              Need To Change Your Password?{' '}
               <Link href="/account/security" style={{ color: TEAL }}>Account Security</Link>
             </p>
           </div>

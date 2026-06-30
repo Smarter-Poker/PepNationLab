@@ -53,7 +53,7 @@ export default async function StacksPage() {
               lineHeight: 1.6,
             }}
           >
-            Design, compare, and optimize research combinations. Evaluate compound synergy, calculate cumulative risk factors, and auto-generate 12-week dosing protocols.
+            Design, Compare, And Optimize Research Combinations. Evaluate Compound Synergy, Calculate Cumulative Risk Factors, And Auto-Generate 12-Week Dosing Protocols.
           </p>
         </header>
         

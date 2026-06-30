@@ -74,6 +74,17 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'No Updateable Fields Provided.' }, { status: 400 });
   }
 
+  // Prevent required fields from being cleared to null/empty.
+  const requiredFields = ['label', 'name', 'street1', 'city', 'state', 'zip', 'phone', 'email'] as const;
+  for (const f of requiredFields) {
+    if (f in updates && (updates[f] === null || updates[f] === '')) {
+      return NextResponse.json(
+        { error: `Field '${f}' Is Required And Cannot Be Cleared.` },
+        { status: 400 },
+      );
+    }
+  }
+
   // If address-relevant fields changed, re-validate.
   const addrChanged = ['street1', 'city', 'state', 'zip'].some((f) => f in updates);
   if (addrChanged) {

@@ -84,7 +84,7 @@ export default function AdminPaymentsPage() {
 
   return (
     <div style={{ padding: '20px 16px', maxWidth: 1100, margin: '0 auto' }}>
-      <h1 style={{ fontSize: '1.5rem', color: 'var(--white)', margin: 0, fontFamily: 'var(--font-brand)' }}>Agent Payments</h1>
+      <h1 className="animated-gradient-text" style={{ fontSize: '1.5rem', margin: 0 }}>Agent Payments</h1>
       <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem', margin: '4px 0 18px' }}>
         Record A Weekly Bill Payment Or Send Credit. Credit-Line Agents Have Their Balance Paid Down; Prepaid Agents Are Topped Up. A Full Payoff Marks Open Statements Paid In Full.
       </p>
@@ -187,7 +187,7 @@ export default function AdminPaymentsPage() {
                       background: 'rgba(255,255,255,0.04)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.1)' }} />
                 </label>
 
-                <button onClick={submit} disabled={submitting} className="btn"
+                <button onClick={submit} disabled={submitting} className="btn-primary"
                   style={{ width: '100%', background: 'var(--teal)', color: 'var(--black)', border: 'none', padding: '13px',
                     borderRadius: 10, fontWeight: 800, minHeight: 46, cursor: submitting ? 'wait' : 'pointer' }}>
                   {submitting ? 'Recording...' : 'Record Payment'}

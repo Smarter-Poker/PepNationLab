@@ -65,7 +65,7 @@ export default async function AdminNetworkPage() {
     <div style={{ padding: 'var(--space-8)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
-          <h1 style={{ fontSize: '1.6rem', margin: 0 }}>Network Map</h1>
+          <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', margin: 0 }}>Network Map</h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginTop: 6, marginBottom: 0 }}>
             Agent Downline - Last 30 Days Revenue Per Leg
           </p>

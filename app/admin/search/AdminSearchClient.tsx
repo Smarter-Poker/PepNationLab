@@ -555,7 +555,7 @@ export default function AdminSearchClient() {
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
       <div style={{ position: 'sticky', top: 0, background: 'var(--black, #050A0F)', paddingBottom: 12, zIndex: 10, marginBottom: 16 }}>
-        <h1 style={{ fontSize: 'clamp(1.2rem, 4vw, 1.6rem)', fontWeight: 700, marginBottom: 12 }}>Global Search</h1>
+        <h1 className="animated-gradient-text" style={{ fontSize: 'clamp(1.2rem, 4vw, 1.6rem)', marginBottom: 12 }}>Global Search</h1>
 
         <label
           style={{

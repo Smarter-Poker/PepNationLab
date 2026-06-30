@@ -21,15 +21,15 @@ export async function POST(req: NextRequest) {
       .from('profiles')
       .select('id, full_name, referring_agent_id, cart_state, cart_updated_at, last_cart_reminder_at')
       .not('cart_state', 'is', null)
-      .neq('cart_state', '[]')
+      .not('cart_state', 'eq', '[]')
       .lt('cart_updated_at', twentyFourHoursAgo.toISOString());
 
     if (fetchError) {
-      return NextResponse.json({ error: 'Failed to fetch abandoned carts' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed To Fetch Abandoned Carts' }, { status: 500 });
     }
 
     if (!abandonedCarts || abandonedCarts.length === 0) {
-      return NextResponse.json({ success: true, message: 'No abandoned carts found needing reminders.', sentCount: 0 });
+      return NextResponse.json({ success: true, message: 'No Abandoned Carts Found Needing Reminders.', sentCount: 0 });
     }
 
     const messagesToInsert = [];
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       const { error: msgError } = await supabase.from('internal_messages').insert(messagesToInsert);
       if (msgError) {
         console.error('Failed to insert reminder messages:', msgError);
-        return NextResponse.json({ error: 'Failed to send reminders' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed To Send Reminders' }, { status: 500 });
       }
 
       // 2. Stamp last_cart_reminder_at (NOT cart_updated_at) so we throttle to

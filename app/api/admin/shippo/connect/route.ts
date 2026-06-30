@@ -62,13 +62,8 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createServiceClient();
 
-  // Deactivate previous active row (the partial-unique index enforces one active row,
-  // so we must clear it before inserting the new one).
-  await supabase
-    .from('platform_shippo_credentials')
-    .update({ is_active: false })
-    .eq('is_active', true);
-
+  // Insert new row first; only deactivate old row after confirmed success
+  // to avoid a window where no active credential exists.
   const { data: inserted, error: insertErr } = await supabase
     .from('platform_shippo_credentials')
     .insert({
@@ -89,10 +84,17 @@ export async function POST(req: NextRequest) {
   if (insertErr || !inserted) {
     console.error('Shippo connect insert failed:', insertErr?.message);
     return NextResponse.json(
-      { error: 'An unexpected error occurred.' },
+      { error: 'An Unexpected Error Occurred.' },
       { status: 500 },
     );
   }
+
+  // Deactivate previous active row only after new row is confirmed inserted.
+  await supabase
+    .from('platform_shippo_credentials')
+    .update({ is_active: false })
+    .eq('is_active', true)
+    .neq('id', inserted.id);
 
   await supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,

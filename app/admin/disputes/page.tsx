@@ -74,7 +74,7 @@ export default function AdminDisputesPage() {
 
   return (
     <div style={{ padding: '20px 16px', maxWidth: 900, margin: '0 auto' }}>
-      <h1 style={{ fontSize: '1.5rem', color: 'var(--white)', margin: 0, fontFamily: 'var(--font-brand)' }}>Statement Disputes</h1>
+      <h1 className="animated-gradient-text" style={{ fontSize: '1.5rem', margin: 0 }}>Statement Disputes</h1>
       <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem', margin: '4px 0 18px' }}>
         {openCount > 0 ? `${openCount} Open Dispute${openCount === 1 ? '' : 's'} Awaiting Review.` : 'No Open Disputes.'}
       </p>

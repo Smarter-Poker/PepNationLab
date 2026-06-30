@@ -273,7 +273,7 @@ export default function AdminAgents() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed To Update Tier');
-      toast.success(`Tier updated to ${newTier.replace('_', ' ').toUpperCase()}`);
+      toast.success(`Tier Updated To ${newTier.replace('_', ' ').toUpperCase()}`);
       // Update local state immediately (no full refetch needed)
       setAgents(prev => prev.map(a => a.id === agentId ? { ...a, tier: newTier } : a));
     } catch (err: any) {
@@ -337,7 +337,7 @@ export default function AdminAgents() {
         body: JSON.stringify({ targetUserId, auto_approve_orders: !currentStatus })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update auto-approve setting');
+      if (!res.ok) throw new Error(data.error || 'Failed To Update Auto-Approve Setting');
       
       toast.success(data.auto_approve_orders ? 'Auto-Approve Enabled' : 'Auto-Approve Disabled');
       
@@ -511,7 +511,7 @@ export default function AdminAgents() {
                       onClick={() => { setPasswordAgent(agent); setNewPassword(''); }}
                       style={{ fontSize: '0.72rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0,229,255,0.25)', borderRadius: 4, cursor: 'pointer', padding: '3px 8px', textAlign: 'left', marginTop: 2, alignSelf: 'flex-start' }}
                     >
-                      ✏️ Edit Password
+                      Edit Password
                     </button>
                   </div>
                 </div>
@@ -734,7 +734,7 @@ export default function AdminAgents() {
                       ? 'Minimum 8 characters required'
                       : newPassword.length < 8
                       ? `${newPassword.length}/8 — need ${8 - newPassword.length} more character${8 - newPassword.length !== 1 ? 's' : ''}`
-                      : `✓ ${newPassword.length} characters — good to go`}
+                      : `${newPassword.length} Characters — Good To Go`}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', marginTop: 'var(--space-6)' }}>
@@ -746,7 +746,7 @@ export default function AdminAgents() {
                     disabled={passwordSaving}
                     onClick={async () => {
                       if (newPassword.length < 8) {
-                        toast.error('Password must be at least 8 characters');
+                        toast.error('Password Must Be At Least 8 Characters');
                         return;
                       }
                       if (!passwordAgent || !newPassword) return;
@@ -759,12 +759,12 @@ export default function AdminAgents() {
                         });
                         const json = await res.json();
                         if (!res.ok) throw new Error(json.error);
-                        toast.success('Password updated successfully!');
+                        toast.success('Password Updated Successfully');
                         setPasswordAgent(null);
                         setNewPassword('');
                         fetchAgents();
                       } catch (err: any) {
-                        toast.error(err.message || 'Failed to update password');
+                        toast.error(err.message || 'Failed To Update Password');
                       } finally {
                         setPasswordSaving(false);
                       }

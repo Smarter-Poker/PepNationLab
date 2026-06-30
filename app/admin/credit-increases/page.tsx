@@ -64,7 +64,7 @@ export default function AdminCreditIncreasesPage() {
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || 'failed');
       toast.success(decision === 'approved' ? `Approved - New Limit ${money(j.result?.new_limit || r.requested_limit)}` : 'Request Denied');
-      load();
+      await load();
     } catch (e: any) {
       toast.error(e.message || 'Failed');
     } finally {
@@ -76,7 +76,7 @@ export default function AdminCreditIncreasesPage() {
 
   return (
     <div style={{ padding: '20px 16px', maxWidth: 900, margin: '0 auto' }}>
-      <h1 style={{ fontSize: '1.5rem', color: 'var(--white)', margin: 0, fontFamily: 'var(--font-brand)' }}>Credit Increase Requests</h1>
+      <h1 className="animated-gradient-text" style={{ fontSize: '1.5rem', margin: 0 }}>Credit Increase Requests</h1>
       <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem', margin: '4px 0 18px' }}>
         {pendingCount > 0 ? `${pendingCount} Pending Review.` : 'No Pending Requests.'} Approving Raises The Agent's Credit Limit Immediately.
       </p>
@@ -125,11 +125,11 @@ export default function AdminCreditIncreasesPage() {
                         background: 'rgba(255,255,255,0.04)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.1)' }}
                     />
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <button onClick={() => decide(r, 'approved')} disabled={busyId === r.id} style={{
+                      <button type="button" onClick={() => decide(r, 'approved')} disabled={busyId === r.id} style={{
                         flex: 2, padding: '12px', borderRadius: 8, minHeight: 44, border: 'none', fontWeight: 800,
                         background: 'var(--teal)', color: 'var(--black)', cursor: busyId === r.id ? 'wait' : 'pointer',
                       }}>{busyId === r.id ? 'Saving...' : `Approve ${money(r.requested_limit)}`}</button>
-                      <button onClick={() => decide(r, 'denied')} disabled={busyId === r.id} style={{
+                      <button type="button" onClick={() => decide(r, 'denied')} disabled={busyId === r.id} style={{
                         flex: 1, padding: '12px', borderRadius: 8, minHeight: 44, fontWeight: 800,
                         background: 'rgba(229,62,62,0.12)', color: '#ff6b6b', border: '1px solid rgba(229,62,62,0.3)',
                         cursor: busyId === r.id ? 'wait' : 'pointer',

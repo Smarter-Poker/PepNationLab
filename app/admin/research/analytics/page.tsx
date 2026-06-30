@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminSearchAnalyticsPage() {
   const gate = await requireAdmin();
-  if (!gate.ok) redirect('/dashboard');
+  if (!gate.ok) redirect('/login');
 
   const supabase = await createServiceClient();
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();

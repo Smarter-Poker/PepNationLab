@@ -83,7 +83,7 @@ function parseFieldValue(raw: string): FieldFilter | null {
 
 function tokenize(raw: string): string[] {
   const tokens: string[] = [];
-  const re = /"([^"]*)"|(\ S+)/g;
+  const re = /"([^"]*)"|(\S+)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(raw)) !== null) {
     if (m[1] !== undefined) tokens.push(`"${m[1]}"`);

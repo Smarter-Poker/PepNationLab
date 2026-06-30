@@ -18,7 +18,7 @@ interface AdminSettingsClientProps {
 export default function AdminSettingsClient({ profile }: AdminSettingsClientProps) {
   return (
     <div style={{ padding: 'var(--space-6)', maxWidth: 600, margin: '0 auto', animation: 'fadeIn 0.3s ease-out' }}>
-      <h1 style={{ fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-6)', fontSize: '1.8rem', color: 'var(--white)' }}>
+      <h1 className="animated-gradient-text" style={{ marginBottom: 'var(--space-6)', fontSize: '1.8rem' }}>
         Account Settings
       </h1>
 

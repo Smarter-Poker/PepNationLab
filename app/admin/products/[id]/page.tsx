@@ -428,7 +428,7 @@ export default function EditProductPage() {
                 <div style={{ fontSize: '0.88rem', fontWeight: 700, color: invCount > 0 ? 'var(--teal)' : '#00E5FF' }}>
                   {invCount > 0
                     ? `In Stock - Ships Now (${form.inventory_count} Units)`
-                    : `Out of Stock / Backordered`}
+                    : `Out Of Stock / Backordered`}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginTop: 2 }}>
                   This Status Shows Live On All Agent Storefronts
@@ -463,7 +463,7 @@ export default function EditProductPage() {
             </div>
 
             <div style={{ marginTop: 'var(--space-3)', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-              Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Out of Stock / Backordered".
+              Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Out Of Stock / Backordered".
               When Restocked, Storefronts Instantly Update To "In Stock - Ships Now."
             </div>
           </div>

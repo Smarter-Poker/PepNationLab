@@ -45,11 +45,12 @@ export default function AdminCartRecoveryPage() {
 
   const toggleEnabled = async (v: Variant) => {
     try {
-      await fetch(`/api/admin/cart-recovery-variants?id=${encodeURIComponent(v.id)}`, {
+      const res = await fetch(`/api/admin/cart-recovery-variants?id=${encodeURIComponent(v.id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: !v.enabled }),
       });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); toast.error(j.error || 'Failed To Update'); return; }
       load();
     } catch { toast.error('Failed To Update'); }
   };
@@ -78,7 +79,8 @@ export default function AdminCartRecoveryPage() {
   const removeVariant = async (v: Variant) => {
     if (!confirm(`Delete Variant "${v.name}"?`)) return;
     try {
-      await fetch(`/api/admin/cart-recovery-variants?id=${encodeURIComponent(v.id)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/cart-recovery-variants?id=${encodeURIComponent(v.id)}`, { method: 'DELETE' });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); toast.error(j.error || 'Failed To Delete'); return; }
       load();
     } catch { toast.error('Failed To Delete'); }
   };
@@ -106,7 +108,7 @@ export default function AdminCartRecoveryPage() {
     <div style={{ padding: 'var(--space-8)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
-          <h1 style={{ fontSize: '1.6rem', margin: 0 }}>Cart Recovery Variants (A/B)</h1>
+          <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', margin: 0 }}>Cart Recovery Variants (A/B)</h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginTop: 6, marginBottom: 0 }}>
             Multi-Step Abandoned-Cart Sequences. Researchers Are Sticky-Assigned A Variant. Cron Runs Every 6 Hours.
           </p>

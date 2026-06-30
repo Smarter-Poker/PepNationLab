@@ -78,12 +78,16 @@ export async function POST(req: NextRequest) {
   }
 
   // Find the active label purchase.
-  const { data: purchase } = await supabase
+  const { data: purchase, error: purchaseFetchErr } = await supabase
     .from('shipping_label_purchases')
     .select('id, shippo_transaction_id, label_amount_cents, label_cost_cents, created_at')
     .eq('order_id', orderId)
     .eq('refunded', false)
     .maybeSingle();
+  if (purchaseFetchErr) {
+    console.error('[shippo-reprint] purchase fetch error', purchaseFetchErr.message);
+    return NextResponse.json({ error: 'Database Error' }, { status: 500 });
+  }
 
   // Step 1: Refund the existing label (if any). We must NOT proceed to step
   // 2 if either (a) Shippo rejects the refund or (b) our ledger write fails
@@ -125,7 +129,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Step 2: Purchase a fresh label.
-  const agentId = order.agent_id as string;
+  const agentId = (order.agent_id as string | null) ?? '';
   const labelResult = await buyLabel({
     orderId,
     agentId,

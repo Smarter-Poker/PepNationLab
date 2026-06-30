@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     if (purchasedProducts.size === 0) {
       return NextResponse.json({ 
         helpfulData: {
-          message: "You haven't made any purchases yet. Start exploring compounds to unlock personalized research data!",
+          message: "You Haven't Made Any Purchases Yet. Start Exploring Compounds To Unlock Personalized Research Data!",
           insights: []
         }
       });
@@ -84,27 +84,27 @@ export async function GET(req: NextRequest) {
       if (purchasedAt) {
         const daysAgo = Math.floor((Date.now() - new Date(purchasedAt).getTime()) / (1000 * 60 * 60 * 24));
         if (daysAgo > 35) {
-          insight += `Restock Alert: You ordered this ${daysAgo} days ago. Based on typical 6-week research cycles, you may need to restock soon. `;
+          insight += `Restock Alert: You Ordered This ${daysAgo} Days Ago. Based On Typical 6-Week Research Cycles, You May Need To Restock Soon. `;
         }
       }
 
       if (compound?.half_life) {
-        insight += `Note that it has a half-life of roughly ${compound.half_life}. `;
+        insight += `Note That It Has A Half-Life Of Roughly ${compound.half_life}. `;
       }
       
       if (p.unit_size && p.unit_measure?.toLowerCase() === 'mg') {
         const mg = parseFloat(p.unit_size);
         if (!isNaN(mg) && mg > 0) {
-          insight += `Reconstitution Guide: Adding 2ml of bacteriostatic water to this ${mg}mg vial yields a concentration of ${mg/2}mg per ml (or ${mg/20}mg per 10 units). `;
+          insight += `Reconstitution Guide: Adding 2ml Of Bacteriostatic Water To This ${mg}mg Vial Yields A Concentration Of ${mg/2}mg Per Ml (Or ${mg/20}mg Per 10 Units). `;
         }
       }
 
       if (compound?.best_stacked_with && compound.best_stacked_with.length > 0) {
-        insight += `Synergy: Known to stack well with ${compound.best_stacked_with.join(', ')}.`;
+        insight += `Synergy: Known To Stack Well With ${compound.best_stacked_with.join(', ')}.`;
       }
 
       if (!insight) {
-         insight = `Review past orders or compare history for further research tracking.`;
+         insight = `Review Past Orders Or Compare History For Further Research Tracking.`;
       }
 
       return {
@@ -118,13 +118,13 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ 
       helpfulData: {
-        message: "Here is your personalized research data based on your past orders.",
+        message: "Here Is Your Personalized Research Data Based On Your Past Orders.",
         insights
       } 
     });
 
   } catch (error) {
     console.error('Error fetching helpful data:', error);
-    return NextResponse.json({ error: 'Failed to fetch helpful data' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed To Fetch Helpful Data' }, { status: 500 });
   }
 }

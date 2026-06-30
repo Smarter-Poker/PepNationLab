@@ -1,7 +1,7 @@
 // Admin Dispute Queue - list disputed weekly statements and resolve them.
 // Resolving records dispute_resolved_at/resolution + an admin note (atomic RPC
 // resolve_statement_dispute). Unresolved disputes are surfaced first.
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -44,7 +44,7 @@ export async function GET() {
   rows.sort((a, b) => {
     if (!a.resolved && b.resolved) return -1;
     if (a.resolved && !b.resolved) return 1;
-    return new Date(b.disputed_at as string).getTime() - new Date(a.disputed_at as string).getTime();
+    return (b.disputed_at ? new Date(b.disputed_at as string).getTime() : 0) - (a.disputed_at ? new Date(a.disputed_at as string).getTime() : 0);
   });
 
   return NextResponse.json({ disputes: rows });
@@ -56,8 +56,8 @@ const Body = z.object({
   note: z.string().max(1000).optional(),
 });
 
-export async function POST(req: Request) {
-  const csrf = assertSameOrigin(req as any);
+export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
   const gate = await requireAdmin();

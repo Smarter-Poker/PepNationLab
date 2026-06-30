@@ -1808,12 +1808,12 @@ export default function AgentStorefrontGrid({
   const addToCart = useCallback((variantId: string) => {
     const item = products.find(p => p.id === variantId);
     if (!item) return;
-    const maxQty = item.products?.inventory_count || 0;
-    
+    const maxQty = item.products?.inventory_count ?? Infinity;
+
     setCartItems(prev => {
       const currentQty = prev[variantId] || 0;
       if (currentQty >= maxQty) {
-        toast.error(`Maximum available stock (${maxQty}) reached.`);
+        toast.error(maxQty === Infinity ? 'An Error Occurred Adding To Cart.' : `Maximum Available Stock (${maxQty}) Reached.`);
         return prev;
       }
       return { ...prev, [variantId]: currentQty + 1 };
@@ -3037,11 +3037,11 @@ export default function AgentStorefrontGrid({
                                 return next;
                               }
                               const prodItem = products.find(p => p.id === variantId);
-                              const maxQty = prodItem?.products?.inventory_count || 0;
+                              const maxQty = prodItem?.products?.inventory_count ?? Infinity;
 
                               let requested = isBW ? val * packSize : val;
                               if (requested > maxQty) {
-                                toast.error(`Maximum available stock is ${maxQty}.`);
+                                toast.error(maxQty === Infinity ? 'An Error Occurred Adding To Cart.' : `Maximum Available Stock Is ${maxQty}.`);
                                 requested = isBW ? Math.floor(maxQty / packSize) * packSize : maxQty;
                               }
 

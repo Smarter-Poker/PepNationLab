@@ -395,7 +395,7 @@ export default function AdminMessengerClient() {
           gap: 12,
         }}
       >
-        <h1 style={{ margin: 0, fontSize: '1.6rem', color: 'var(--white, #FFFFFF)' }}>Admin Moderation</h1>
+        <h1 className="animated-gradient-text" style={{ margin: 0, fontSize: '1.6rem' }}>Admin Moderation</h1>
         <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--grey-400, #A8B4C0)' }}>Messenger Reports And Mentions</p>
       </div>
 

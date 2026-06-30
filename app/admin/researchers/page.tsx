@@ -26,6 +26,7 @@ interface Profile {
   phone: string | null;
   parent_agent_id?: string | null;
   role: 'researcher' | 'agent' | 'super_agent' | 'admin';
+  is_super_agent?: boolean;
   tier: 'tier_1' | 'tier_2' | 'tier_3' | null;
   custom_markup_override: number | null;
   account_type: 'credit' | 'prepaid' | null;
@@ -207,7 +208,7 @@ function ResearchersAdminPageInner() {
     setModalMode('edit');
     setModalError('');
     setModalSuccess('');
-    setFormRole(profile.role === 'super_agent' ? 'super_agent' : 'agent');
+    setFormRole(profile.is_super_agent === true ? 'super_agent' : 'agent');
     setFormTier(profile.tier || 'tier_2');
     setFormCustomMarkup(profile.custom_markup_override != null ? String(Math.round(profile.custom_markup_override * 100)) : '');
     setFormAccountType(profile.account_type || 'prepaid');
@@ -770,7 +771,7 @@ function ResearchersAdminPageInner() {
                       targetLabel={profile.full_name ?? profile.email}
                     />
 
-                    {profile.role === 'super_agent' && (
+                    {profile.is_super_agent === true && (
                       <button onClick={() => setViewingDownlineFor(profile)} className="btn-secondary" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem' }}>
                         View Downline
                       </button>

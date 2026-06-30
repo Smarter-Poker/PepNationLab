@@ -93,8 +93,8 @@ export default function ChangePasswordPage() {
             textAlign: 'center', margin: '0 0 28px',
             lineHeight: 1.5,
           }}>
-            You were given a temporary password.<br />
-            We recommend changing it now.
+            You Were Given A Temporary Password.<br />
+            We Recommend Changing It Now.
           </p>
 
           {error && (

@@ -20,7 +20,7 @@ async function generateKey(formData: FormData) {
   const label = String(formData.get('label') ?? '').slice(0, 120).trim() || 'Unnamed Key';
   const plaintext = `pnl_${crypto.randomBytes(24).toString('hex')}`;
   const supabase = createAdminClient();
-  await supabase.from('api_keys').insert({
+  const { error } = await supabase.from('api_keys').insert({
     user_id: gate.userId,
     name: label,
     key_hash: hashApiKey(plaintext),
@@ -28,6 +28,7 @@ async function generateKey(formData: FormData) {
     is_active: true,
     key_prefix: plaintext.slice(0, 12) + '...',
   });
+  if (error) throw new Error('Failed To Generate Key');
   revalidatePath('/admin/api-keys');
   // Hand the one-time plaintext back via a short-lived httpOnly cookie instead
   // of a URL query param, so the full key never lands in browser history,
@@ -45,19 +46,22 @@ async function generateKey(formData: FormData) {
 
 async function revokeKey(formData: FormData) {
   'use server';
-  await requireAdmin();
+  const gate = await requireAdmin();
+  if (!gate.ok) throw new Error('Unauthorized');
   const id = String(formData.get('id') ?? '').trim();
   if (!id) return;
   const supabase = createAdminClient();
-  await supabase
+  const { error } = await supabase
     .from('api_keys')
     .update({ is_active: false, revoked_at: new Date().toISOString() })
     .eq('id', id);
+  if (error) throw new Error('Failed To Revoke Key');
   revalidatePath('/admin/api-keys');
 }
 
 export default async function ApiKeysPage() {
-  await requireAdmin();
+  const gate = await requireAdmin();
+  if (!gate.ok) redirect('/login');
   const supabase = createAdminClient();
   const { data } = await supabase
     .from('api_keys')
@@ -68,10 +72,11 @@ export default async function ApiKeysPage() {
   // generateKey (never the URL). Read it for this render; it self-expires.
   const jar = await cookies();
   const newKey = jar.get('pnl_new_api_key')?.value ?? null;
+  if (newKey) jar.delete('pnl_new_api_key');
 
   return (
     <main style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>API Keys</h1>
+      <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', marginBottom: 8 }}>API Keys</h1>
       <p style={{ color: 'var(--text-secondary, #A8B4C0)', marginBottom: 24 }}>
         Manage Bearer Tokens For The Public Research API V1.
       </p>

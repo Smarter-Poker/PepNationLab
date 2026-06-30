@@ -192,7 +192,7 @@ export function AdminLayoutClient({
           </div>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>
-              Logged in as
+              Logged In As
             </div>
             <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {adminName || 'Admin'}

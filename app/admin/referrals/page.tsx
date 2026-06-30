@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { createClient, createServiceClient, createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient, createAdminClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export const metadata = { title: 'Referral Program | Admin' };
 
@@ -94,20 +95,10 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default async function AdminReferralsPage() {
-  const supabaseAuth = await createClient();
-  const {
-    data: { user },
-  } = await supabaseAuth.auth.getUser();
-  if (!user) redirect('/login');
+  const gate = await requireAdmin();
+  if (!gate.ok) redirect('/login');
 
   const supabase = await createServiceClient();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile || profile.role !== 'admin') redirect('/dashboard');
 
   const { data: settingsRaw } = await supabase
     .from('referral_settings')
@@ -135,6 +126,8 @@ export default async function AdminReferralsPage() {
 
   async function saveSettings(formData: FormData) {
     'use server';
+    const gate = await requireAdmin();
+    if (!gate.ok) throw new Error('Unauthorized');
     const admin = createAdminClient();
     await admin.from('referral_settings').upsert({
       id: 1,
@@ -143,7 +136,7 @@ export default async function AdminReferralsPage() {
       referee_reward: Number(formData.get('referee_reward') || 0),
       min_order_total: Number(formData.get('min_order_total') || 0),
       updated_at: new Date().toISOString(),
-      updated_by: null,
+      updated_by: gate.userId,
     });
     revalidatePath('/admin/referrals');
   }
@@ -165,11 +158,11 @@ export default async function AdminReferralsPage() {
       >
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1
+            className="animated-gradient-text"
             style={{
               margin: 0,
               fontSize: '1.75rem',
               fontWeight: 700,
-              color: 'var(--text-primary)',
             }}
           >
             Referral Program

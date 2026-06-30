@@ -142,7 +142,9 @@ export default async function LabJournalPage() {
     name: p.name,
     image_url: p.image_url,
     category: p.category,
-    base_cost: p.base_cost,
+    // base_cost in DB is stored as price-per-10-units (same convention as retail_price);
+    // divide by 10 so the client always receives a per-unit dollar amount.
+    base_cost: p.base_cost != null ? Number(p.base_cost) / 10 : null,
     retail_price: priceMap.get(p.id)?.price ?? null,
     is_on_sale: priceMap.get(p.id)?.is_on_sale ?? false,
     agent_product_id: priceMap.get(p.id)?.agent_product_id ?? null,
@@ -208,7 +210,7 @@ export default async function LabJournalPage() {
       name: p.name,
       image_url: p.image_url,
       category: p.category,
-      base_cost: p.base_cost,
+      base_cost: p.base_cost != null ? Number(p.base_cost) / 10 : null,
       retail_price: priceMap.get(p.id)?.price ?? null,
       in_stock: p.in_stock,
       unit_size: p.unit_size,
@@ -224,7 +226,7 @@ export default async function LabJournalPage() {
       name: p.name,
       image_url: p.image_url,
       category: p.category,
-      base_cost: p.base_cost,
+      base_cost: p.base_cost != null ? Number(p.base_cost) / 10 : null,
       retail_price: priceMap.get(p.id)?.price ?? null,
       in_stock: p.in_stock,
       unit_size: p.unit_size,

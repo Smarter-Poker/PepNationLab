@@ -50,7 +50,14 @@ export async function POST(req: NextRequest) {
     .eq('refunded', false)
     .maybeSingle();
 
-  if (fetchErr || !purchase) {
+  if (fetchErr) {
+    console.error('[shippo-refund] purchase fetch error', fetchErr.message);
+    return NextResponse.json(
+      { error: 'Database Error Fetching Label Purchase.', detail: fetchErr.message },
+      { status: 500 },
+    );
+  }
+  if (!purchase) {
     return NextResponse.json(
       { error: 'No Active Label Purchase Found For This Order.' },
       { status: 404 },
@@ -79,6 +86,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Guard: if both cost columns are null we cannot record a meaningful refund amount.
+  const knownCost = purchase.label_amount_cents ?? purchase.label_cost_cents ?? null;
+  if (knownCost === null || knownCost === 0) {
+    return NextResponse.json(
+      { error: 'Cannot Refund: Label Cost Unknown' },
+      { status: 400 },
+    );
+  }
+
   // Request refund from Shippo.
   const refundResult = await refundLabel(purchase.shippo_transaction_id);
 
@@ -92,7 +108,7 @@ export async function POST(req: NextRequest) {
 
   // Coalesce label_amount_cents (set by webhook) with label_cost_cents (set at
   // purchase time). label_amount_cents starts NULL until the webhook fires.
-  const refundAmountCents: number = purchase.label_amount_cents ?? purchase.label_cost_cents ?? 0;
+  const refundAmountCents: number = knownCost;
 
   // Call the DB RPC to mark the purchase as refunded and insert refund ledger row.
   const { error: rpcErr } = await supabase.rpc('shippo_record_refund', {
