@@ -401,7 +401,7 @@ export default function AdminSearchClient() {
 
     const couponItems: FlatItem[] = results.coupons.map((c) => {
       const title = c.code;
-      const subtitle = `${c.type === 'percent' ? `${c.value}% off` : c.type === 'fixed' ? `${formatMoney(c.value)} off` : c.type} · Used ${c.uses_count}×${c.expires_at ? ' · Expires ' + new Date(c.expires_at).toLocaleDateString() : ''}`;
+      const subtitle = `${c.type === 'percent' ? `${c.value}% Off` : c.type === 'fixed' ? `${formatMoney(c.value)} Off` : c.type} · Used ${c.uses_count}x${c.expires_at ? ' · Expires ' + new Date(c.expires_at).toLocaleDateString() : ''}`;
       return {
         key: 'c:' + c.id,
         type: 'coupons',
@@ -732,7 +732,7 @@ export default function AdminSearchClient() {
       {showNoResults && (
         <div style={{ color: 'var(--grey-400, #A8B4C0)', background: 'var(--surface-2, #162230)', border: '1px solid var(--surface-3, #1D2D3E)', borderRadius: 12, padding: 24, textAlign: 'center' }}>
           <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--white, #FFFFFF)', marginBottom: 4 }}>
-            No Results{q.length >= 2 ? ` For “${q}”` : ''}{filtersActive ? ' With Those Filters' : ''}
+            No Results{q.length >= 2 ? ` For "${q}"` : ''}{filtersActive ? ' With Those Filters' : ''}
           </div>
           <div style={{ fontSize: '0.85rem' }}>
             Try Loosening The Filters Or A Shorter / Different Query. Fuzzy Match Tolerates Some Typos But Not Wholly Different Words.
@@ -836,8 +836,6 @@ export default function AdminSearchClient() {
 }
 
 function OperationalNudgesPanel({ nudges }: { nudges: Nudges }) {
-  // Order = roughly by urgency: money-in (customer payments) → fulfillment
-  // → inventory → financial-health → researcher-hygiene → setup gaps.
   const rows: Array<{ key: string; label: string; count: number; href: string }> = [
     { key: 'pcp',  label: 'Orders Pending Customer Payment', count: nudges.pendingCustomerPayment,   href: '/admin/orders?status=pending_customer_payment' },
     { key: 'aap',  label: 'Orders Awaiting Agent Approval',  count: nudges.agentApprovalPending,     href: '/admin/orders?status=agent_approval_pending' },
@@ -1036,7 +1034,7 @@ function ResultRow({
           )}
           {showScore && (
             <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 999, background: 'rgba(0,196,188,0.15)', color: 'var(--teal, #00C4BC)', fontWeight: 700, letterSpacing: '0.05em', flexShrink: 0 }}>
-              {Math.round((item.matchScore as number) * 10)}% match
+              {Math.round((item.matchScore as number) * 10)}% Match
             </span>
           )}
         </div>
