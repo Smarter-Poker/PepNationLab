@@ -171,7 +171,7 @@ export default async function AdminDashboard() {
       <AdminDashboardRealtime />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-        <h1 style={{ fontSize: '1.6rem', margin: 0 }}>Admin Dashboard</h1>
+        <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', margin: 0 }}>Admin Dashboard</h1>
         <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', margin: 0, fontFamily: 'var(--font-brand)', letterSpacing: '0.5px' }}>
           Pep Nation Lab Control Center
         </p>

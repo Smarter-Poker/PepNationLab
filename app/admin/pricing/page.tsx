@@ -255,7 +255,7 @@ export default function PricingTiersPage() {
                         >
                           ${Number(sampleBaseCost).toFixed(2)}
                         </span>{" "}
-                        = Dynamic Price{" "}
+                        = Retail Price Per Unit{" "}
                         <span style={{ color: "var(--teal)", fontWeight: 700 }}>
                           $
                           {(Number(sampleBaseCost) * tier.multiplier).toFixed(
@@ -264,6 +264,7 @@ export default function PricingTiersPage() {
                         </span>
                       </div>
                       <button
+                        type="button"
                         onClick={() => startEdit(tier)}
                         className="btn-silver"
                         style={{

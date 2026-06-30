@@ -141,7 +141,7 @@ export default function AdminSalesPage() {
           {/* Range Filter */}
           <div style={{ display: 'flex', gap: 6, background: 'var(--black-2)', padding: 4, borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)' }}>
             {RANGE_TABS.map(tab => (
-              <button key={tab.id} onClick={() => setRange(tab.id)}
+              <button type="button" key={tab.id} onClick={() => setRange(tab.id)}
                 style={{
                   padding: '6px 14px', fontSize: '0.8rem', fontWeight: 600,
                   color: range === tab.id ? '#fff' : 'var(--grey-400)',
@@ -168,10 +168,10 @@ export default function AdminSalesPage() {
           {/* Summary Cards */}
           <div className="grid-4" style={{ marginBottom: 'var(--space-8)' }}>
             {[
-              { label: 'Total Revenue', value: `$${data.totals.revenue.toFixed(2)}`, color: 'var(--teal)' },
+              { label: 'Total Revenue', value: `$${Number(data.totals.revenue || 0).toFixed(2)}`, color: 'var(--teal)' },
               { label: 'Total Orders', value: data.totals.orders, color: 'var(--silver)' },
               { label: 'Active Agents', value: data.agents.length, color: 'var(--silver)' },
-              { label: 'Direct Revenue', value: `$${data.direct.revenue.toFixed(2)}`, color: 'var(--grey-400)' },
+              { label: 'Direct Revenue', value: `$${Number(data.direct.revenue || 0).toFixed(2)}`, color: 'var(--grey-400)' },
             ].map(({ label, value, color }, index) => (
               <div key={label} className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: `${0.1 + index * 0.1}s` }}>
                 <div className="" style={{ padding: 'var(--space-5)' }}>
@@ -264,10 +264,10 @@ export default function AdminSalesPage() {
                         ) : <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)' }}>-</span>}
                       </td>
                       <td style={{ padding: 'var(--space-3) var(--space-4)', fontSize: '0.9rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
-                        ${agent.total_revenue.toFixed(2)}
+                        ${Number(agent.total_revenue || 0).toFixed(2)}
                       </td>
                       <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
-                        <button onClick={e => { e.stopPropagation(); loadAgentLedger(agent); }}
+                        <button type="button" onClick={e => { e.stopPropagation(); loadAgentLedger(agent); }}
                           style={{ fontSize: '0.75rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(192,184,168,0.3)', borderRadius: 4, padding: '3px 10px', cursor: 'pointer' }}>
                           Ledger
                         </button>
@@ -296,7 +296,7 @@ export default function AdminSalesPage() {
                     <h3 style={{ fontSize: '0.95rem' }}>Transaction Ledger</h3>
                     <p style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginTop: 2 }}>{selectedAgent.full_name}</p>
                   </div>
-                  <button onClick={() => setSelectedAgent(null)}
+                  <button type="button" onClick={() => setSelectedAgent(null)}
                     style={{ background: 'none', border: 'none', color: 'var(--grey-400)', cursor: 'pointer' }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                   </button>
@@ -322,7 +322,7 @@ export default function AdminSalesPage() {
                             </div>
                             <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 'var(--space-3)' }}>
                               <div style={{ fontSize: '0.85rem', fontWeight: 700, color, fontFamily: 'var(--font-brand)' }}>
-                                {isCredit ? '+' : '-'}${Number(tx.amount).toFixed(2)}
+                                {isCredit ? '+' : '−'}${Number(tx.amount).toFixed(2)}
                               </div>
                               <div style={{ fontSize: '0.68rem', color: 'var(--grey-500)' }}>Bal: ${Number(tx.balance_after).toFixed(2)}</div>
                             </div>
