@@ -124,6 +124,9 @@ export default function AdminShippingSettingsClient() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
   const [agentAssignLoading, setAgentAssignLoading] = useState<string | null>(null);
+  // Controlled state for each agent's origin dropdown — keyed by agent.id.
+  // Initialized from agentWarehouses on load so the select reflects the saved value.
+  const [agentOriginSelections, setAgentOriginSelections] = useState<Record<string, string>>({});
   const [webhookActivity, setWebhookActivity] = useState<WebhookActivity | null>(null);
 
   // Connect form state
@@ -193,7 +196,12 @@ export default function AdminShippingSettingsClient() {
       const r = await fetch('/api/admin/agents/warehouse-origins');
       if (r.ok) {
         const d = await r.json();
-        setAgentWarehouses(d.agents ?? []);
+        const agents = d.agents ?? [];
+        setAgentWarehouses(agents);
+        // Seed the controlled select state from the saved warehouse_origin_id.
+        const selections: Record<string, string> = {};
+        for (const a of agents) selections[a.id] = a.warehouse_origin_id ?? '';
+        setAgentOriginSelections(selections);
       }
     } catch {
       /* no-op */
@@ -464,7 +472,7 @@ export default function AdminShippingSettingsClient() {
         </div>
       )}
 
-      <h1 style={{ color: 'var(--white)', fontSize: '1.5rem', fontWeight: 700, marginBottom: 'var(--space-6)' }}>
+      <h1 className="animated-gradient-text" style={{ fontSize: '1.5rem', marginBottom: 'var(--space-6)' }}>
         Shipping Settings
       </h1>
 
@@ -522,7 +530,6 @@ export default function AdminShippingSettingsClient() {
             )}
             <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
               <button
-                id="btn-shippo-rotate-toggle"
                 className="btn-secondary"
                 style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
                 onClick={() => setShowRotate(!showRotate)}
@@ -531,7 +538,6 @@ export default function AdminShippingSettingsClient() {
                 Rotate Key
               </button>
               <button
-                id="btn-shippo-disconnect"
                 className="btn-danger"
                 style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
                 onClick={handleDisconnect}
@@ -547,7 +553,6 @@ export default function AdminShippingSettingsClient() {
                   Enter New API Key (MFA Will Be Verified)
                 </div>
                 <input
-                  id="rotate-api-key"
                   className="input"
                   type="password"
                   placeholder="shippo_test_... or shippo_live_..."
@@ -556,7 +561,6 @@ export default function AdminShippingSettingsClient() {
                   required
                 />
                 <input
-                  id="rotate-webhook-secret"
                   className="input"
                   type="password"
                   placeholder="Webhook Secret (Optional)"
@@ -564,7 +568,7 @@ export default function AdminShippingSettingsClient() {
                   onChange={(e) => setRotateWebhook(e.target.value)}
                 />
                 <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                  <button id="btn-rotate-submit" className="btn-primary" type="submit" disabled={rotateLoading} style={{ fontSize: '0.85rem' }}>
+                  <button className="btn-primary" type="submit" disabled={rotateLoading} style={{ fontSize: '0.85rem' }}>
                     {rotateLoading ? 'Rotating...' : 'Confirm Rotation'}
                   </button>
                   <button type="button" className="btn-ghost" style={{ fontSize: '0.85rem' }} onClick={() => setShowRotate(false)}>
@@ -585,7 +589,6 @@ export default function AdminShippingSettingsClient() {
                   API Key
                 </label>
                 <input
-                  id="connect-api-key"
                   className="input"
                   type="password"
                   placeholder="shippo_test_... or shippo_live_..."
@@ -599,7 +602,6 @@ export default function AdminShippingSettingsClient() {
                   Mode
                 </label>
                 <select
-                  id="connect-mode"
                   className="input"
                   value={connectMode}
                   onChange={(e) => setConnectMode(e.target.value as 'test' | 'live')}
@@ -614,7 +616,6 @@ export default function AdminShippingSettingsClient() {
                 Webhook Signing Secret (Optional)
               </label>
               <input
-                id="connect-webhook-secret"
                 className="input"
                 type="password"
                 placeholder="HMAC Signing Secret From Shippo Dashboard"
@@ -622,7 +623,7 @@ export default function AdminShippingSettingsClient() {
                 onChange={(e) => setConnectWebhook(e.target.value)}
               />
             </div>
-            <button id="btn-connect-submit" className="btn-primary" type="submit" disabled={connectLoading} style={{ alignSelf: 'flex-start' }}>
+            <button className="btn-primary" type="submit" disabled={connectLoading} style={{ alignSelf: 'flex-start' }}>
               {connectLoading ? 'Connecting...' : 'Connect Shippo'}
             </button>
           </form>
@@ -644,7 +645,6 @@ export default function AdminShippingSettingsClient() {
             </span>
           </div>
           <button
-            id="btn-add-origin"
             className="btn-secondary"
             style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
             onClick={startAddOrigin}
@@ -671,20 +671,19 @@ export default function AdminShippingSettingsClient() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Label</label>
-                <input id="origin-label" className="input" placeholder="Main Warehouse" value={originForm.label} onChange={(e) => setOriginForm(f => ({ ...f, label: e.target.value }))} required />
+                <input className="input" placeholder="Main Warehouse" value={originForm.label} onChange={(e) => setOriginForm(f => ({ ...f, label: e.target.value }))} required />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Contact Name</label>
-                <input id="origin-name" className="input" placeholder="Fulfillment Dept" value={originForm.name} onChange={(e) => setOriginForm(f => ({ ...f, name: e.target.value }))} required />
+                <input className="input" placeholder="Fulfillment Dept" value={originForm.name} onChange={(e) => setOriginForm(f => ({ ...f, name: e.target.value }))} required />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Company</label>
-                <input id="origin-company" className="input" placeholder="PepNationLab" value={originForm.company} onChange={(e) => setOriginForm(f => ({ ...f, company: e.target.value }))} />
+                <input className="input" placeholder="PepNationLab" value={originForm.company} onChange={(e) => setOriginForm(f => ({ ...f, company: e.target.value }))} />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Street 1</label>
                 <AddressAutocompleteInput
-                  id="origin-street1"
                   className="input"
                   placeholder="123 Warehouse Blvd"
                   required
@@ -695,35 +694,35 @@ export default function AdminShippingSettingsClient() {
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Street 2</label>
-                <input id="origin-street2" className="input" placeholder="Suite 100" value={originForm.street2} onChange={(e) => setOriginForm(f => ({ ...f, street2: e.target.value }))} />
+                <input className="input" placeholder="Suite 100" value={originForm.street2} onChange={(e) => setOriginForm(f => ({ ...f, street2: e.target.value }))} />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>City</label>
-                <input id="origin-city" className="input" placeholder="Los Angeles" value={originForm.city} onChange={(e) => setOriginForm(f => ({ ...f, city: e.target.value }))} required />
+                <input className="input" placeholder="Los Angeles" value={originForm.city} onChange={(e) => setOriginForm(f => ({ ...f, city: e.target.value }))} required />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>State</label>
-                <input id="origin-state" className="input" placeholder="CA" maxLength={2} value={originForm.state} onChange={(e) => setOriginForm(f => ({ ...f, state: e.target.value.toUpperCase() }))} required />
+                <input className="input" placeholder="CA" maxLength={2} value={originForm.state} onChange={(e) => setOriginForm(f => ({ ...f, state: e.target.value.toUpperCase() }))} required />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>ZIP</label>
-                <input id="origin-zip" className="input" placeholder="90001" value={originForm.zip} onChange={(e) => setOriginForm(f => ({ ...f, zip: e.target.value }))} required />
+                <input className="input" placeholder="90001" value={originForm.zip} onChange={(e) => setOriginForm(f => ({ ...f, zip: e.target.value }))} required />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Phone</label>
-                <input id="origin-phone" className="input" type="tel" placeholder="3105551234" value={originForm.phone} onChange={(e) => setOriginForm(f => ({ ...f, phone: e.target.value }))} required />
+                <input className="input" type="tel" placeholder="3105551234" value={originForm.phone} onChange={(e) => setOriginForm(f => ({ ...f, phone: e.target.value }))} required />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Email</label>
-                <input id="origin-email" className="input" type="email" placeholder="support@pepnationlab.com" value={originForm.email} onChange={(e) => setOriginForm(f => ({ ...f, email: e.target.value }))} required />
+                <input className="input" type="email" placeholder="support@pepnationlab.com" value={originForm.email} onChange={(e) => setOriginForm(f => ({ ...f, email: e.target.value }))} required />
               </div>
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', color: 'var(--silver)', fontSize: '0.88rem' }}>
-              <input id="origin-is-default" type="checkbox" checked={originForm.is_default} onChange={(e) => setOriginForm(f => ({ ...f, is_default: e.target.checked }))} />
+              <input type="checkbox" checked={originForm.is_default} onChange={(e) => setOriginForm(f => ({ ...f, is_default: e.target.checked }))} />
               Set As Default Origin
             </label>
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-              <button id="btn-save-origin" className="btn-primary" type="submit" disabled={originLoading} style={{ fontSize: '0.85rem' }}>
+              <button className="btn-primary" type="submit" disabled={originLoading} style={{ fontSize: '0.85rem' }}>
                 {originLoading ? 'Saving...' : editingOrigin ? 'Update Origin' : 'Create Origin'}
               </button>
               <button type="button" className="btn-ghost" style={{ fontSize: '0.85rem' }} onClick={() => setShowOriginForm(false)}>
@@ -768,7 +767,6 @@ export default function AdminShippingSettingsClient() {
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
                   <button
-                    id={`btn-edit-origin-${o.id}`}
                     className="btn-ghost"
                     style={{ padding: '6px 10px', fontSize: '0.82rem' }}
                     onClick={() => startEditOrigin(o)}
@@ -776,7 +774,6 @@ export default function AdminShippingSettingsClient() {
                     <Edit2 size={13} />
                   </button>
                   <button
-                    id={`btn-delete-origin-${o.id}`}
                     className="btn-ghost"
                     style={{ padding: '6px 10px', fontSize: '0.82rem', color: '#e53e3e' }}
                     onClick={() => handleDeleteOrigin(o.id)}
@@ -802,14 +799,13 @@ export default function AdminShippingSettingsClient() {
         </div>
         <form onSubmit={handleTestAddress} style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
           <input
-            id="test-address-input"
             className="input"
             style={{ flex: 1, minWidth: 260 }}
             placeholder="e.g. 100 Main St, Los Angeles CA 90001"
             value={testAddr}
             onChange={(e) => setTestAddr(e.target.value)}
           />
-          <button id="btn-test-address" className="btn-secondary" type="submit" disabled={testLoading || !status?.connected} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}>
+          <button className="btn-secondary" type="submit" disabled={testLoading || !status?.connected} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}>
             <RefreshCw size={14} />
             {testLoading ? 'Validating...' : 'Validate'}
           </button>
@@ -916,8 +912,8 @@ export default function AdminShippingSettingsClient() {
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flex: '0 0 auto' }}>
                   <select
-                    id={`agent-origin-select-${agent.id}`}
-                    defaultValue={agent.warehouse_origin_id ?? ''}
+                    value={agentOriginSelections[agent.id] ?? ''}
+                    onChange={(e) => setAgentOriginSelections((prev) => ({ ...prev, [agent.id]: e.target.value }))}
                     style={{
                       background: 'var(--surface-3)',
                       color: 'var(--white)',
@@ -933,11 +929,9 @@ export default function AdminShippingSettingsClient() {
                     ))}
                   </select>
                   <button
-                    id={`agent-origin-save-${agent.id}`}
                     disabled={agentAssignLoading === agent.id}
                     onClick={async () => {
-                      const sel = document.getElementById(`agent-origin-select-${agent.id}`) as HTMLSelectElement | null;
-                      const newOriginId = sel?.value ?? '';
+                      const newOriginId = agentOriginSelections[agent.id] ?? '';
                       setAgentAssignLoading(agent.id);
                       try {
                         if (newOriginId) {
@@ -983,7 +977,7 @@ export default function AdminShippingSettingsClient() {
                       opacity: agentAssignLoading === agent.id ? 0.6 : 1,
                     }}
                   >
-                    {agentAssignLoading === agent.id ? '...' : 'Save'}
+                    {agentAssignLoading === agent.id ? 'Saving...' : 'Save'}
                   </button>
                 </div>
               </div>
