@@ -18,7 +18,7 @@ interface AdminSettingsClientProps {
 export default function AdminSettingsClient({ profile }: AdminSettingsClientProps) {
   return (
     <div style={{ padding: 'var(--space-6)', maxWidth: 600, margin: '0 auto', animation: 'fadeIn 0.3s ease-out' }}>
-      <h1 style={{ fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-6)', fontSize: '1.8rem', color: 'var(--white)' }}>
+      <h1 className="animated-gradient-text" style={{ marginBottom: 'var(--space-6)', fontSize: '1.8rem' }}>
         Account Settings
       </h1>
 
@@ -26,7 +26,7 @@ export default function AdminSettingsClient({ profile }: AdminSettingsClientProp
       <div className="glass-panel hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
         <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Profile Picture</h4>
         <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)', marginTop: 0 }}>
-          Upload a profile picture to show in Messenger instead of a generic initial.
+          Upload A Profile Picture To Show In Messenger Instead Of A Generic Initial.
         </p>
         <AvatarUpload 
           currentAvatarUrl={profile.avatar_url ?? null} 
