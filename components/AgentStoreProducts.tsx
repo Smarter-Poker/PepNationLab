@@ -233,7 +233,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
   const effectiveViewMode = isMobile ? 'category' : viewMode;
   const searchTerm = search.trim().toLowerCase();
   const searchFiltered = !searchTerm ? filtered : filtered.filter(p => {
-    const name = (p.custom_name || p.products.name).toLowerCase();
+    const name = (p.custom_name || p.products?.name || '').toLowerCase();
     return name.includes(searchTerm);
   });
 
@@ -377,9 +377,9 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
           <div className="" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'rgba(255,255,255,0.05)' }}>
             {searchFiltered.map((p, _idx) => {
-              const displayName = p.custom_name || p.products.name;
+              const displayName = p.custom_name || p.products?.name || '';
               const isEditing = editingId === p.id;
-              const sizeLabel = p.products.unit_size && p.products.unit_measure
+              const sizeLabel = p.products?.unit_size && p.products?.unit_measure
                 ? `${p.products.unit_size}${p.products.unit_measure}`
                 : '';
               return (
@@ -583,9 +583,9 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
               {isExpanded && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'rgba(255,255,255,0.05)' }}>
                   {catProducts.map((p) => {
-                    const displayName = p.custom_name || p.products.name;
+                    const displayName = p.custom_name || p.products?.name || '';
                     const isEditing = editingId === p.id;
-                    const sizeLabel = p.products.unit_size && p.products.unit_measure
+                    const sizeLabel = p.products?.unit_size && p.products?.unit_measure
                       ? `${p.products.unit_size}${p.products.unit_measure}`
                       : '';
 
