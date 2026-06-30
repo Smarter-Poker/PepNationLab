@@ -14,10 +14,16 @@ export async function GET(_req: NextRequest) {
   if (!admin.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const svc = await createServiceClient();
-  const [{ data: variants }, { data: reminders }] = await Promise.all([
+  const [
+    { data: variants, error: variantsError },
+    { data: reminders, error: remindersError },
+  ] = await Promise.all([
     svc.from('cart_recovery_variants').select('id, name, enabled, steps, created_at, updated_at').order('created_at', { ascending: true }),
     svc.from('abandoned_cart_reminders').select('variant_name, recovered_order_id'),
   ]);
+
+  if (variantsError) return NextResponse.json({ error: 'Database Error' }, { status: 500 });
+  if (remindersError) return NextResponse.json({ error: 'Database Error' }, { status: 500 });
 
   const stats = new Map<string, { sent: number; recovered: number }>();
   for (const r of reminders ?? []) {
