@@ -97,11 +97,12 @@ function EditorRow({ row }: { row: IntranasalRow }) {
       <input
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder="Caveat / note"
+        placeholder="Caveat / Note"
         aria-label={`Route note for ${row.display_name}`}
         style={{ flex: '2 1 240px', minWidth: 160, padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', color: '#FFFFFF', fontSize: '0.82rem', boxSizing: 'border-box' }}
       />
       <button
+        type="button"
         onClick={save}
         disabled={saving}
         style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#00C4BC', color: '#04221F', fontWeight: 800, fontSize: '0.82rem', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1 }}
