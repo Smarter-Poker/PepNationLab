@@ -75,6 +75,7 @@ function formatAddress(address: any): string {
 
 export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [buyingLabelId, setBuyingLabelId] = useState<string | null>(null);
   const [labelModalUrl, setLabelModalUrl] = useState<string | null>(null);
   const [trackingNumbers, setTrackingNumbers] = useState<Record<string, string>>({});
@@ -514,28 +515,57 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       />
                     )}
                     
-                      <button
-                      onClick={(e) => { e.stopPropagation(); handleUpdateOrderStatus(order.id, 'cancelled'); }}
-                      className="btn btn-secondary"
-                      style={{
-                        border: 'none',
-                        color: '#FFAAAA',
-                        background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
-                        fontSize: '0.9rem',
-                        padding: '10px 20px',
-                        fontWeight: 700,
-                        borderRadius: '10px',
-                        boxShadow: '0 4px 15px rgba(252, 129, 129, 0.2), inset 0 1px 0 rgba(255,160,160,0.2), inset 0 -2px 0 rgba(0,0,0,0.4)',
-                        textShadow: '0 1px 2px rgba(0,0,0,0.6)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                      disabled={loadingOrderId === order.id}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                      Cancel
-                    </button>
+                      {confirmCancelId === order.id ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '0.85rem', color: '#FFAAAA', fontWeight: 600 }}>Confirm Cancel?</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleUpdateOrderStatus(order.id, 'cancelled'); setConfirmCancelId(null); }}
+                            className="btn btn-secondary"
+                            style={{
+                              border: 'none',
+                              color: '#FFAAAA',
+                              background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
+                              fontSize: '0.85rem',
+                              padding: '8px 16px',
+                              fontWeight: 700,
+                              borderRadius: '8px',
+                            }}
+                            disabled={loadingOrderId === order.id}
+                          >
+                            Yes, Cancel
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setConfirmCancelId(null); }}
+                            className="btn btn-ghost"
+                            style={{ fontSize: '0.85rem', padding: '8px 14px', borderRadius: '8px' }}
+                          >
+                            Keep
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                        onClick={(e) => { e.stopPropagation(); setConfirmCancelId(order.id); }}
+                        className="btn btn-secondary"
+                        style={{
+                          border: 'none',
+                          color: '#FFAAAA',
+                          background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
+                          fontSize: '0.9rem',
+                          padding: '10px 20px',
+                          fontWeight: 700,
+                          borderRadius: '10px',
+                          boxShadow: '0 4px 15px rgba(252, 129, 129, 0.2), inset 0 1px 0 rgba(255,160,160,0.2), inset 0 -2px 0 rgba(0,0,0,0.4)',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                        disabled={loadingOrderId === order.id}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        Cancel
+                      </button>
+                      )}
                     
                     {isPendingPayment && !order.is_sub_agent_order && (
                       <button
@@ -637,7 +667,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   fontSize: '0.9rem',
                   letterSpacing: '0.05em'
                 }}>
-                  PAGE {safeCurrentPage} OF {totalPages}
+                  Page {safeCurrentPage} Of {totalPages}
                 </div>
                 <button
                   className="btn btn-secondary btn-sm"
