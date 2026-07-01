@@ -140,7 +140,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
   const activeAgentSlug = propAgentSlug || agentSlug;
 
   const role = profile?.role ?? 'researcher';
-  const displayName = profile?.full_name || user?.email?.split('@')[0] || '';
+  const displayName = profile?.full_name?.trim() || user?.email?.split('@')[0] || '';
   const pageTitle = resolveTitle(pathname, role);
   const finalTitle = title || pageTitle;
   const isMessenger = pathname.startsWith('/messenger');
@@ -195,80 +195,60 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
 
   useEffect(() => {
     const supabase = createClient();
+
+    // Shared helper — fetches profile + agent slug/name for a given session user.
+    // Extracted to avoid duplicating this logic between getSession and onAuthStateChange.
+    const fetchUserProfile = (userId: string) => {
+      supabase
+        .from('profiles')
+        .select('full_name, role, referring_agent_id, is_super_agent, is_sub_agent')
+        .eq('id', userId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setProfile(data);
+            if (data.role === 'researcher' && data.referring_agent_id) {
+              supabase
+                .from('agent_profiles')
+                .select('slug, display_name')
+                .eq('id', data.referring_agent_id)
+                .maybeSingle()
+                .then(({ data: ap }) => {
+                  if (ap?.slug) setAgentSlug(ap.slug);
+                  if (ap?.display_name) setAgentName(ap.display_name);
+                })
+                .catch(() => {});
+            } else if ((data.role === 'agent' || data.role === 'super_agent') && data.is_sub_agent !== true) {
+              supabase
+                .from('agent_profiles')
+                .select('slug, display_name')
+                .eq('id', userId)
+                .maybeSingle()
+                .then(({ data: ap }) => {
+                  if (ap?.slug) setAgentSlug(ap.slug);
+                  if (ap?.display_name) setAgentName(ap.display_name);
+                })
+                .catch(() => {});
+            }
+          }
+          setLoading(false);
+        })
+        .catch(() => { setLoading(false); });
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setUser({ id: session.user.id, email: session.user.email });
-        supabase
-          .from('profiles')
-          .select('full_name, role, referring_agent_id, is_super_agent, is_sub_agent')
-          .eq('id', session.user.id)
-          .maybeSingle()
-          .then(({ data }) => {
-            if (data) {
-              setProfile(data);
-              if (data.role === 'researcher' && data.referring_agent_id) {
-                supabase
-                  .from('agent_profiles')
-                  .select('slug, display_name')
-                  .eq('id', data.referring_agent_id)
-                  .maybeSingle()
-                  .then(({ data: ap }) => {
-                    if (ap?.slug) setAgentSlug(ap.slug);
-                    if (ap?.display_name) setAgentName(ap.display_name);
-                  });
-              } else if ((data.role === 'agent' || data.role === 'super_agent') && data.is_sub_agent !== true) {
-                supabase
-                  .from('agent_profiles')
-                  .select('slug, display_name')
-                  .eq('id', session.user.id)
-                  .maybeSingle()
-                  .then(({ data: ap }) => {
-                    if (ap?.slug) setAgentSlug(ap.slug);
-                    if (ap?.display_name) setAgentName(ap.display_name);
-                  });
-              }
-            }
-            setLoading(false);
-          });
+        fetchUserProfile(session.user.id);
       } else {
         setLoading(false);
       }
-    });
+    }).catch(() => { setLoading(false); });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       if (session) {
         setUser({ id: session.user.id, email: session.user.email });
-        supabase
-          .from('profiles')
-          .select('full_name, role, referring_agent_id, is_super_agent, is_sub_agent')
-          .eq('id', session.user.id)
-          .maybeSingle()
-          .then(({ data }) => {
-            if (data) {
-              setProfile(data);
-              if (data.role === 'researcher' && data.referring_agent_id) {
-                supabase
-                  .from('agent_profiles')
-                  .select('slug, display_name')
-                  .eq('id', data.referring_agent_id)
-                  .maybeSingle()
-                  .then(({ data: ap }) => {
-                    if (ap?.slug) setAgentSlug(ap.slug);
-                    if (ap?.display_name) setAgentName(ap.display_name);
-                  });
-              } else if ((data.role === 'agent' || data.role === 'super_agent') && data.is_sub_agent !== true) {
-                supabase
-                  .from('agent_profiles')
-                  .select('slug, display_name')
-                  .eq('id', session.user.id)
-                  .maybeSingle()
-                  .then(({ data: ap }) => {
-                    if (ap?.slug) setAgentSlug(ap.slug);
-                    if (ap?.display_name) setAgentName(ap.display_name);
-                  });
-              }
-            }
-            setLoading(false);
-          });
+        fetchUserProfile(session.user.id);
       } else {
         setUser(null);
         setProfile(null);

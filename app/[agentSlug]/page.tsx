@@ -25,7 +25,7 @@ async function AgentStorefrontDataLoader({
 }) {
   const supabase = await createClient();
 
-  // ── Fetch products and auth user in parallel ─────────────────────────────────
+  // -- Fetch products and auth user in parallel -----------------------------------------------------------------------
   // Products are scoped to agent.id (from outer query) - safe to start immediately.
   const [productsResult, { data: { user } }] = await Promise.all([
     supabase
@@ -91,7 +91,7 @@ async function AgentStorefrontDataLoader({
   }
   const isStorefrontOwner = !!user && userProfile?.id === agent.id;
 
-  // ── Run independent queries in parallel - saves ~2 sequential round-trips ──
+  // -- Run independent queries in parallel - saves ~2 sequential round-trips --
   const productIds = (products ?? [])
     .map(p => p.product_id)
     .filter((v): v is string => !!v);
@@ -238,6 +238,14 @@ export default async function AgentStorefrontPage({ params }: Props) {
   // We need user context JUST to determine the top navbar icons and rename banner,
   // which is fine since getUser() is extremely fast (uses cookies)
   // compared to resolving 50 product DB calls.
+  //
+  // Note: AgentStorefrontDataLoader (rendered inside the Suspense boundary below)
+  // also fetches userProfile independently with a broader column set
+  // (role, id, tier, referring_agent_id, parent_agent_id) needed for pricing and
+  // wishlist logic. The two fetches cannot share state because the DataLoader is a
+  // separate async Server Component rendered after the Suspense fallback resolves.
+  // If this becomes a performance concern, the full profile could be passed as a
+  // prop from here into the DataLoader instead of re-querying.
   const { data: { user } } = await supabase.auth.getUser();
   let userProfile = null;
   if (user) {
