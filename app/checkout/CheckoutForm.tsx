@@ -104,10 +104,24 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && Array.isArray(parsed.items)) {
-          if (parsed.items.length > 0) setStorefrontCart(parsed.items);
+          const validItems = parsed.items.filter((item: any) => 
+            item && typeof item === 'object' && 
+            typeof item.id === 'string' &&
+            typeof item.quantity === 'number' &&
+            typeof item.retailPrice === 'number' &&
+            typeof item.costPrice === 'number'
+          );
+          if (validItems.length > 0) setStorefrontCart(validItems);
           if (typeof parsed._savedAt === 'number') setCartSavedAt(parsed._savedAt);
         } else if (Array.isArray(parsed) && parsed.length > 0) {
-          setStorefrontCart(parsed);
+          const validItems = parsed.filter((item: any) => 
+            item && typeof item === 'object' && 
+            typeof item.id === 'string' &&
+            typeof item.quantity === 'number' &&
+            typeof item.retailPrice === 'number' &&
+            typeof item.costPrice === 'number'
+          );
+          if (validItems.length > 0) setStorefrontCart(validItems);
         }
       }
     } catch { /* non-blocking */ }

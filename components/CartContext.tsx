@@ -164,7 +164,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setLoaded(true);
     if (initial.length > 0) {
       refreshCartPricing(initial, true).then(next => {
-        if (next.length !== initial.length || next.some((n, i) => n.id !== initial[i]?.id)) setCart(next);
+        setCart(prev => {
+          // If the cart has mutated (items added/removed) while fetching, don't blindly clobber.
+          if (prev.length !== initial.length || prev.some((p, i) => p.id !== initial[i]?.id)) {
+            return prev; // Trust the live cart over the stale hydrated data
+          }
+          if (next.length !== initial.length || next.some((n, i) => n.id !== initial[i]?.id)) {
+            return next;
+          }
+          return prev;
+        });
       }).catch(() => { /* ignore */ });
     }
   }, [refreshCartPricing]);
