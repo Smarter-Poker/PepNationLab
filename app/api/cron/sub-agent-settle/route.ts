@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { assertCronAuth } from '@/lib/cron';
+import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -34,8 +34,6 @@ export async function GET(req: NextRequest) {
   const unauth = assertCronAuth(req);
   if (unauth) return unauth;
 
-  const admin = createAdminClient();
-
   // Compute the current ISO week window in UTC. JS getUTCDay() returns 0..6
   // where 0 = Sunday. ISO week starts Monday, so subtract days accordingly.
   const now = new Date();
@@ -47,10 +45,21 @@ export async function GET(req: NextRequest) {
   ));
   const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
 
+  // Outer idempotency gate: prevent double-settlement if cron fires twice.
+  // The settle_sub_agent_week RPC also has UNIQUE(sub_agent_id, week_start)
+  // as defense-in-depth, but this outer claim is the primary dedup layer.
+  const partitionKey = `${weekStart.toISOString().slice(0, 10)}`;
+  const claim = await claimCronRun('sub_agent_settle', partitionKey);
+  if (!claim) {
+    return NextResponse.json({ skipped: true, reason: 'already_ran_this_week', week_start: weekStart.toISOString() });
+  }
+
+  const admin = createAdminClient();
   let processed = 0;
   let settled = 0;
   let skipped = 0;
   const errors: { sub_agent_id: string; error: string }[] = [];
+  let finishStatus: 'succeeded' | 'failed' = 'succeeded';
 
   try {
     // Pull distinct sub-agent ids with pending ledger rows in the window.
@@ -100,19 +109,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({
-      ok: errors.length === 0,
-      processed,
-      settled,
-      skipped,
-      error_count: errors.length,
-      errors: errors.slice(0, 20), // cap in case of bulk failure
-      week_start: weekStart.toISOString(),
-      week_end: weekEnd.toISOString(),
-    });
+    if (errors.length > 0) finishStatus = 'failed';
   } catch (err) {
+    finishStatus = 'failed';
     const msg = err instanceof Error ? err.message : 'unknown_error';
     console.error('[sub-agent-settle] unexpected:', err);
+    await finishCronRun(claim.id, 'failed', msg.slice(0, 500));
     return NextResponse.json(
       {
         ok: false,
@@ -124,4 +126,17 @@ export async function GET(req: NextRequest) {
       { status: 500 },
     );
   }
+
+  const summary = `processed=${processed} settled=${settled} skipped=${skipped} errors=${errors.length}`;
+  await finishCronRun(claim.id, finishStatus, summary.slice(0, 500));
+  return NextResponse.json({
+    ok: errors.length === 0,
+    processed,
+    settled,
+    skipped,
+    error_count: errors.length,
+    errors: errors.slice(0, 20), // cap in case of bulk failure
+    week_start: weekStart.toISOString(),
+    week_end: weekEnd.toISOString(),
+  });
 }

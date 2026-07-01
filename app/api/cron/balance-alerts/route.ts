@@ -116,12 +116,17 @@ export async function GET(req: Request) {
 
       if (needsAlert) {
         await notifyAccountAlert(service, p.id, title, body);
-        
-        // Update last_balance_alert_at
-        await service
+
+        // Update last_balance_alert_at to throttle repeat alerts.
+        // Log failure explicitly: if the stamp silently fails, this agent
+        // will re-alert on every cron run until the column is written.
+        const { error: stampErr } = await service
           .from('profiles')
           .update({ last_balance_alert_at: new Date().toISOString() })
           .eq('id', p.id);
+        if (stampErr) {
+          console.error(`[balance-alerts] failed to stamp last_balance_alert_at for ${p.id}:`, stampErr.message);
+        }
 
         alertsWritten++;
       }
@@ -133,9 +138,13 @@ export async function GET(req: Request) {
     await finishCronRun(claim.id, finishStatus, finishNotes);
   }
 
-  return NextResponse.json({
-    status: finishStatus,
-    alertsWritten,
-    notes: finishNotes,
-  });
+  return NextResponse.json(
+    {
+      status: finishStatus,
+      alertsWritten,
+      notes: finishNotes,
+    },
+    // Bug 4 fix: return 500 when the run failed so Vercel's cron alerting fires
+    { status: finishStatus === 'failed' ? 500 : 200 },
+  );
 }

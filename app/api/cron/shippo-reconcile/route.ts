@@ -55,6 +55,9 @@ export async function GET(req: NextRequest) {
 
     if (pErr) {
       errorNote = `fetch_purchases_failed: ${pErr.message}`.slice(0, 300);
+      // Bug 8 fix: emit a log line so the failure appears in Vercel function output.
+      // Without this, ops sees a cron_runs row with status='failed' but zero context.
+      console.error('[shippo-reconcile] failed to fetch label purchases:', pErr.message);
     } else {
       // Group by agent_id.
       const byAgent = new Map<string, { chargedCents: number; orderIds: Set<string> }>();
