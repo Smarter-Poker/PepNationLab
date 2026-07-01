@@ -239,6 +239,25 @@ export async function POST(request: NextRequest) {
     }
 
     // CLOSED-LOOP RESEARCHER OWNERSHIP + CATALOG GUARD
+    // Applied whether or not agentSlug is present — the slug just provides
+    // the storefront-level min-qty and domain checks on top. The core
+    // visibility gate is always enforced via the DB-stored referring_agent_id.
+    if (!isAgentSelfBuy && !isSubAgent && agentProfile) {
+      const { data: visibleRows } = await serviceSupabase
+        .from('agent_products')
+        .select('product_id')
+        .eq('agent_id', agentProfile.id)
+        .eq('is_visible', true)
+        .in('product_id', items.map(i => i.id));
+
+      const visibleSet = new Set((visibleRows ?? []).map((r: any) => r.product_id as string));
+      const blocked = items.find(i => !visibleSet.has(i.id));
+      if (blocked) {
+        const blockedName = dbProducts?.find(p => p.id === blocked.id)?.name ?? blocked.id;
+        return NextResponse.json({ error: `Product "${blockedName}" Is Not Available Through This Agent's Store.` }, { status: 403 });
+      }
+    }
+
     if (agentSlug) {
       const { data: storefrontAgent } = await serviceSupabase
         .from('agent_profiles')
@@ -269,20 +288,8 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: `This Storefront Requires A Minimum Of ${minPerItem} Per Peptide.` }, { status: 400 });
         }
       }
-
-      const { data: visibleRows } = await serviceSupabase
-        .from('agent_products')
-        .select('product_id')
-        .eq('agent_id', storefrontAgent.id)
-        .eq('is_visible', true)
-        .in('product_id', items.map(i => i.id));
-
-      const visibleSet = new Set((visibleRows ?? []).map((r: any) => r.product_id as string));
-      const blocked = items.find(i => !visibleSet.has(i.id));
-      if (blocked) {
-        const blockedName = dbProducts.find(p => p.id === blocked.id)?.name ?? blocked.id;
-        return NextResponse.json({ error: `Product "${blockedName}" Is Not Available Through This Agent's Store.` }, { status: 403 });
-      }
+      // Note: product visibility already checked above — skip the redundant
+      // per-slug visible-products query since the universal guard ran first.
     }
 
     // 1. Fetch Admin Default Multipliers
