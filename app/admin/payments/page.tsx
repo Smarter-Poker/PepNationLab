@@ -93,7 +93,6 @@ export default function AdminPaymentsPage() {
         <div style={{ color: '#ff6b6b' }}>Could Not Load Agents. <button onClick={load} style={{ color: 'var(--teal)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Retry</button></div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) minmax(280px, 360px)', gap: 18, alignItems: 'start' }}>
-          {/* Agent list */}
           <section className="glass-panel" style={{ padding: 14, borderRadius: 12 }}>
             <input
               value={query}
@@ -121,10 +120,10 @@ export default function AdminPaymentsPage() {
                       }}>
                         <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
                           <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {a.full_name || a.email}{a.is_super_agent ? ' · Super' : ''}
+                            {a.full_name || a.email}{a.is_super_agent ? ' - Super' : ''}
                           </span>
                           <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'capitalize' }}>
-                            {a.account_type || 'unset'}
+                            {a.account_type || 'Unset'}
                           </span>
                         </span>
                         <span style={{ fontSize: '0.8rem', color: owes > 0 ? '#ff6b6b' : 'var(--grey-500)', whiteSpace: 'nowrap' }}>
@@ -138,7 +137,6 @@ export default function AdminPaymentsPage() {
             )}
           </section>
 
-          {/* Payment panel */}
           <section className="glass-panel" style={{ padding: 16, borderRadius: 12, position: 'sticky', top: 76 }}>
             {!selected ? (
               <p style={{ color: 'var(--grey-500)', margin: 0 }}>Select An Agent To Record A Payment.</p>
