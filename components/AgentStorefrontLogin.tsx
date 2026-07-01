@@ -158,7 +158,7 @@ export default function AgentStorefrontLogin({
             <input
               type="password"
               className="form-input"
-              placeholder="••••••••"
+              placeholder="Enter Your Password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required

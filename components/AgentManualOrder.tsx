@@ -133,7 +133,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
           
           {/* Customer Details */}
           <div className="glass-panel" style={{ padding: '24px' }}>
-            <h4 style={{ fontSize: '1rem', color: '#00E5FF', marginBottom: '20px', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(0,229,255,0.2)', paddingBottom: '10px' }}>Customer & Shipping Details</h4>
+            <h4 style={{ fontSize: '1rem', color: '#00E5FF', marginBottom: '20px', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(0,229,255,0.2)', paddingBottom: '10px' }}>Customer And Shipping Details</h4>
             <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
               <div className="form-group">
                 <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Full Name</label>
@@ -206,7 +206,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
                     </div>
                     <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                       <span style={{ color: '#00E5FF', fontWeight: 700 }}>${(item.price * item.quantity).toFixed(2)}</span>
-                      <button type="button" onClick={() => handleRemoveFromCart(item.product_id)} className="badge-metal" style={{ background: 'rgba(229,62,62,0.1)', color: '#FC8181', border: '1px solid rgba(229,62,62,0.3)', cursor: 'pointer', padding: '4px 8px', fontSize: '1rem', lineHeight: 1 }}>×</button>
+                      <button type="button" onClick={() => handleRemoveFromCart(item.product_id)} className="badge-metal" style={{ background: 'rgba(229,62,62,0.1)', color: '#FC8181', border: '1px solid rgba(229,62,62,0.3)', cursor: 'pointer', padding: '4px 8px', fontSize: '1rem', lineHeight: 1 }}>x</button>
                     </div>
                   </div>
                 ))}
@@ -235,7 +235,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
             )}
           </div>
 
-          {/* Payment & Submit */}
+          {/* Payment And Submit */}
           <div className="glass-panel" style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
               <div className="form-group" style={{ width: 180, marginBottom: 0 }}>

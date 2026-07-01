@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-/* ── Types ─────────────────────────────────────────────────────────────── */
+/* -- Types -- */
 interface TierState {
   enabled: boolean;
   locked?: boolean;
@@ -28,7 +28,7 @@ function money(n: number): string {
   return `$${(n ?? 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
-/* ── Teal/Metal progress ring ──────────────────────────────────────────── */
+/* -- Teal/Metal progress ring -- */
 function ProgressRing({ progress, label, sub }: { progress: number; label: string; sub: string }) {
   const r = 54;
   const c = 2 * Math.PI * r;
@@ -57,10 +57,6 @@ function ProgressRing({ progress, label, sub }: { progress: number; label: strin
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   Agent Tier Widget - house tier ladder (Super/standalone) OR sub-agent
-   commission mini-ladder. Renders nothing when the v2 flag is off.
-   ══════════════════════════════════════════════════════════════════════════ */
 export default function AgentTierWidget() {
   const [tier, setTier] = useState<TierState | null>(null);
   const [comm, setComm] = useState<CommissionState | null>(null);
@@ -84,7 +80,6 @@ export default function AgentTierWidget() {
     return () => { cancelled = true; };
   }, []);
 
-  // Flag off (or not loaded) → render nothing so production is unchanged.
   if (!loaded || !tier?.enabled) return null;
 
   const isSub = comm?.enabled && comm.applicable;
@@ -93,7 +88,6 @@ export default function AgentTierWidget() {
     <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
       <div className="" style={{ padding: 'var(--space-6)' }}>
         {isSub ? (
-          /* ── Sub-agent commission mini-ladder ── */
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-6)' }}>
             <ProgressRing
               progress={comm!.cap_pct && comm!.cap_pct > 0 ? (comm!.effective_pct ?? 0) / comm!.cap_pct : 1}
@@ -118,7 +112,6 @@ export default function AgentTierWidget() {
             </div>
           </div>
         ) : (
-          /* ── House tier ladder (Super / standalone agent) ── */
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-6)' }}>
             <ProgressRing progress={tier.progress ?? 0} label={tier.levelName ?? 'Rookie'} sub={`Level ${tier.level ?? 1}`} />
             <div style={{ flex: 1, minWidth: 220 }}>
