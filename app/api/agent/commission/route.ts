@@ -6,15 +6,6 @@ import { isTierLadderV2 } from '@/lib/pricing';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/**
- * GET /api/agent/commission
- *
- * Sub-agent commission mini-ladder state for the gamification widget:
- * base %, current effective %, cap, this-month retail volume, the milestone
- * steps, and the next milestone. Blind: never exposes the super-agent's
- * wholesale tier or what the upline earns. Returns enabled:false when the flag
- * is off, or applicable:false for non-sub-agents.
- */
 export async function GET() {
   try {
   const gate = await requireAgent();
