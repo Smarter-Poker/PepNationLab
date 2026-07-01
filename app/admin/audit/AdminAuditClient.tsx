@@ -84,7 +84,7 @@ export default function AdminAuditClient({
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search Summary…"
+          placeholder="Search Summary"
           onKeyDown={(e) => {
             if (e.key === "Enter") applyFilters();
           }}
@@ -123,7 +123,7 @@ export default function AdminAuditClient({
           disabled={busy}
           onClick={applyFilters}
         >
-          {busy ? "Loading…" : "Filter"}
+          {busy ? "Loading" : "Filter"}
         </button>
       </div>
 
@@ -144,8 +144,17 @@ export default function AdminAuditClient({
       )}
 
       <div className="glass-panel hover-lift stagger-fade-in">
-        <div className="" style={{ padding: 0, overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+        <div
+          className=""
+          style={{ padding: 0, overflowX: "auto" }}
+        >
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: "0.85rem",
+            }}
+          >
             <thead>
               <tr>
                 <th style={{ textAlign: "left", padding: "var(--space-3)", color: "var(--silver)" }}>When</th>
@@ -158,14 +167,31 @@ export default function AdminAuditClient({
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ padding: "var(--space-5)", color: "var(--silver)", textAlign: "center" }}>
+                  <td
+                    colSpan={5}
+                    style={{
+                      padding: "var(--space-5)",
+                      color: "var(--silver)",
+                      textAlign: "center",
+                    }}
+                  >
                     No Audit Entries Match Your Filters.
                   </td>
                 </tr>
               ) : (
                 rows.map((r) => (
-                  <tr key={r.id} className="table-row-hover">
-                    <td suppressHydrationWarning style={{ padding: "var(--space-3)", color: "var(--silver)", whiteSpace: "nowrap" }}>
+                  <tr
+                    key={r.id}
+                    className="table-row-hover"
+                  >
+                    <td
+                      suppressHydrationWarning
+                      style={{
+                        padding: "var(--space-3)",
+                        color: "var(--silver)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
                       {new Date(r.created_at).toLocaleString()}
                     </td>
                     <td style={{ padding: "var(--space-3)", color: "var(--white)" }}>
@@ -176,12 +202,22 @@ export default function AdminAuditClient({
                         : "system"}
                     </td>
                     <td style={{ padding: "var(--space-3)" }}>
-                      <span style={{ background: "var(--surface-2)", color: "var(--teal)", padding: "2px 8px", borderRadius: 999, fontSize: "0.75rem" }}>
+                      <span
+                        style={{
+                          background: "var(--surface-2)",
+                          color: "var(--teal)",
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                          fontSize: "0.75rem",
+                        }}
+                      >
                         {formatAction(r.action)}
                       </span>
                     </td>
                     <td style={{ padding: "var(--space-3)", color: "var(--silver)" }}>
-                      {r.target_type && r.target_id ? `${formatAction(r.target_type)}:${r.target_id.slice(0, 8)}` : "-"}
+                      {r.target_type && r.target_id
+                        ? `${formatAction(r.target_type)}:${r.target_id.slice(0, 8)}`
+                        : "-"}
                     </td>
                     <td style={{ padding: "var(--space-3)", color: "var(--silver)" }}>
                       {r.summary || "-"}
@@ -195,8 +231,13 @@ export default function AdminAuditClient({
       </div>
       {hasMore && (
         <div style={{ marginTop: "var(--space-4)", textAlign: "center" }}>
-          <button className="btn-silver" style={{ padding: "6px 12px", fontSize: "0.75rem" }} disabled={busy} onClick={() => load()}>
-            {busy ? "Loading…" : "Load More"}
+          <button
+            className="btn-silver"
+            style={{ padding: "6px 12px", fontSize: "0.75rem" }}
+            disabled={busy}
+            onClick={() => load()}
+          >
+            {busy ? "Loading" : "Load More"}
           </button>
         </div>
       )}
