@@ -110,7 +110,6 @@ export default function AdminSalesPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* Export */}
           <button
             type="button"
             className="btn-silver btn-sm"
@@ -138,7 +137,6 @@ export default function AdminSalesPage() {
           >
             Export CSV
           </button>
-          {/* Range Filter */}
           <div style={{ display: 'flex', gap: 6, background: 'var(--black-2)', padding: 4, borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)' }}>
             {RANGE_TABS.map(tab => (
               <button type="button" key={tab.id} onClick={() => setRange(tab.id)}
@@ -165,7 +163,6 @@ export default function AdminSalesPage() {
         </div>
       ) : data && (
         <>
-          {/* Summary Cards */}
           <div className="grid-4" style={{ marginBottom: 'var(--space-8)' }}>
             {[
               { label: 'Total Revenue', value: `$${Number(data.totals.revenue || 0).toFixed(2)}`, color: 'var(--teal)' },
@@ -182,7 +179,6 @@ export default function AdminSalesPage() {
             ))}
           </div>
 
-          {/* Agent Revenue Chart */}
           {data.agents.length > 0 && (
             <div className="glass-panel hover-lift stagger-fade-in" style={{ height: 320, marginBottom: 'var(--space-8)', animationDelay: '0.3s' }}>
               <div className="" style={{ padding: 'var(--space-6)', height: '100%' }}>
@@ -207,7 +203,6 @@ export default function AdminSalesPage() {
           )}
 
           <div style={{ display: 'grid', gridTemplateColumns: selectedAgent ? 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))' : '1fr', gap: 'var(--space-6)', alignItems: 'start' }}>
-            {/* Agent Table */}
             <div className="glass-panel hover-lift stagger-fade-in" style={{ overflowX: 'auto', animationDelay: '0.4s' }}>
               <div className="" style={{ padding: 0 }}>
                 <div style={{ padding: 'var(--space-4) var(--space-5)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -287,7 +282,6 @@ export default function AdminSalesPage() {
               </div>
             </div>
 
-            {/* Transaction Ledger Drawer */}
             {selectedAgent && (
               <div className="glass-panel hover-lift stagger-fade-in" style={{ position: 'sticky', top: 'var(--space-6)' }}>
                 <div className="" style={{ padding: 'var(--space-5)' }}>
