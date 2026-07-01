@@ -1,4 +1,5 @@
-import { notFound, redirect } from 'next/navigation';
+export const dynamic = 'force-dynamic';
+
 import { Suspense } from 'react';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import Link from 'next/link';
@@ -61,17 +62,6 @@ async function AgentStorefrontDataLoader({
     supabase.auth.getUser(),
   ]);
   const products = productsResult.data;
-
-  // if (!user) {
-  //   return (
-  //     <AgentStorefrontLogin 
-  //       agentSlug={agentSlug} 
-  //       displayName={agent.display_name} 
-  //       primaryColor={agent.primary_color ?? '#00C4BC'} 
-  //       logoUrl={agent.logo_url} 
-  //     />
-  //   );
-  // }
 
   // Storefronts are public (allowed in middleware). Resolve the REAL viewer
   // profile when signed in so the storefront owner sees self-buy cost pricing
@@ -210,10 +200,43 @@ export default async function AgentStorefrontPage({ params }: Props) {
       storefront_renamed_at
     `)
     .ilike('slug', agentSlug)
-    .single();
+    .maybeSingle();
 
-  if (error || !agent) {
-    notFound();
+  if (error) {
+    // DB error - show store not found
+    return (
+      <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ maxWidth: 480, padding: 'var(--space-8)', textAlign: 'center', animationDelay: '0.1s' }}>
+          <h1 style={{ color: 'var(--white)', fontSize: '1.4rem', marginBottom: 'var(--space-3)' }}>
+            Store Not Found
+          </h1>
+          <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-4)' }}>
+            This Storefront Does Not Exist Or Is No Longer Available.
+          </p>
+          <Link href="/login" className="btn btn-primary" style={{ display: 'inline-flex', justifyContent: 'center' }}>
+            Return To Sign In
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!agent) {
+    return (
+      <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ maxWidth: 480, padding: 'var(--space-8)', textAlign: 'center', animationDelay: '0.1s' }}>
+          <h1 style={{ color: 'var(--white)', fontSize: '1.4rem', marginBottom: 'var(--space-3)' }}>
+            Store Not Found
+          </h1>
+          <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-4)' }}>
+            This Storefront Does Not Exist Or Is No Longer Available.
+          </p>
+          <Link href="/login" className="btn btn-primary" style={{ display: 'inline-flex', justifyContent: 'center' }}>
+            Return To Sign In
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   if (agent.is_active === false) {
@@ -320,9 +343,9 @@ export async function generateMetadata({ params }: Props) {
     .from('agent_profiles')
     .select('display_name')
     .ilike('slug', agentSlug)
-    .single();
+    .maybeSingle();
 
-  if (!agent) return { title: 'Not Found' };
+  if (!agent) return { title: 'Store Not Found | Pep Nation Lab' };
 
   return {
     title: `${agent.display_name} | Pep Nation Lab`,

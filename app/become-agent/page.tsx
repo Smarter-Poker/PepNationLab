@@ -22,9 +22,9 @@ export default function BecomeAgentPage() {
             Become A Distribution Agent
           </h1>
           <p style={{ color: 'var(--silver)', fontSize: '1.05rem', lineHeight: 1.7, maxWidth: 560, margin: '0 auto var(--space-6)' }}>
-            Qualified high-volume researchers can operate their own branded research-supply storefronts
-            on the Pep Nation Lab platform. Build a business backed by our distribution infrastructure,
-            competitive tier pricing, and compliance framework.
+            Qualified High-Volume Researchers Can Operate Their Own Branded Research-Supply Storefronts
+            On The Pep Nation Lab Platform. Build A Business Backed By Our Distribution Infrastructure,
+            Competitive Tier Pricing, And Compliance Framework.
           </p>
           <Link
             href="/login"
@@ -46,22 +46,22 @@ export default function BecomeAgentPage() {
               {
                 Icon: Package,
                 title: 'White-Label Storefront',
-                body: 'Your own branded URL, colors, logo, tagline, and product catalog. Researchers see your brand, not ours.',
+                body: 'Your Own Branded URL, Colors, Logo, Tagline, And Product Catalog. Researchers See Your Brand, Not Ours.',
               },
               {
                 Icon: BarChart2,
                 title: 'Tier-Based Pricing',
-                body: 'Tier 1, 2, and 3 multipliers on base cost. Top-performing agents earn the best margins automatically.',
+                body: 'Tier 1, 2, And 3 Multipliers On Base Cost. Top-Performing Agents Earn The Best Margins Automatically.',
               },
               {
                 Icon: Users,
                 title: 'Researcher CRM',
-                body: 'Manage your researcher accounts, view their order history, and communicate directly via in-app messaging.',
+                body: 'Manage Your Researcher Accounts, View Their Order History, And Communicate Directly Via In-App Messaging.',
               },
               {
                 Icon: Shield,
                 title: 'Built-In Compliance',
-                body: 'Four-layer disclaimer gates, research-use-only branding, and audit-ready acceptance logs included by default.',
+                body: 'Four-Layer Disclaimer Gates, Research-Use-Only Branding, And Audit-Ready Acceptance Logs Included By Default.',
               },
             ].map(({ Icon, title, body }) => (
               <div
@@ -82,14 +82,14 @@ export default function BecomeAgentPage() {
           <div className="card" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
             <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)', fontSize: '1.2rem' }}>Eligibility Requirements</h2>
             <ul style={{ color: 'var(--silver)', fontSize: '0.9rem', lineHeight: 2, margin: 0, paddingLeft: 'var(--space-5)' }}>
-              <li>Established relationship with a current Pep Nation Lab agent or admin</li>
-              <li>Demonstrated research background or client base</li>
-              <li>Agreement to all platform compliance and research-use-only terms</li>
-              <li>Weekly billing account (credit line or prepaid balance)</li>
+              <li>Established Relationship With A Current Pep Nation Lab Agent Or Admin</li>
+              <li>Demonstrated Research Background Or Client Base</li>
+              <li>Agreement To All Platform Compliance And Research-Use-Only Terms</li>
+              <li>Weekly Billing Account (Credit Line Or Prepaid Balance)</li>
             </ul>
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', marginTop: 'var(--space-4)', marginBottom: 0 }}>
-              Agent applications are reviewed manually. All compounds distributed through the platform are
-              for research use only and not intended for human consumption.
+              Agent Applications Are Reviewed Manually. All Compounds Distributed Through The Platform Are
+              For Research Use Only And Not Intended For Human Consumption.
             </p>
           </div>
         </div>
@@ -97,7 +97,7 @@ export default function BecomeAgentPage() {
         {/* CTA */}
         <div style={{ textAlign: 'center', marginTop: 'var(--space-10)' }}>
           <p style={{ color: 'var(--silver)', marginBottom: 'var(--space-4)', fontSize: '0.95rem' }}>
-            Already have an account? Sign in and contact your agent administrator to begin the application process.
+            Already Have An Account? Sign In And Contact Your Agent Administrator To Begin The Application Process.
           </p>
           <Link href="/login" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             Sign In
