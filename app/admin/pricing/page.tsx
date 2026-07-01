@@ -14,14 +14,18 @@ export default function PricingTiersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
+
   const [editingTier, setEditingTier] = useState<PricingTier | null>(null);
   const [editMultiplier, setEditMultiplier] = useState("");
   const [editDisplayName, setEditDisplayName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editError, setEditError] = useState("");
+
   const [sampleBaseCost, setSampleBaseCost] = useState("10.00");
 
-  useEffect(() => { fetchTiers(); }, []);
+  useEffect(() => {
+    fetchTiers();
+  }, []);
 
   async function fetchTiers() {
     setLoading(true);
@@ -29,11 +33,16 @@ export default function PricingTiersPage() {
     try {
       const res = await fetch("/api/admin/pricing-tiers");
       const json = await res.json();
-      if (res.ok) { setTiers(json || []); }
-      else { setError(json.error || "Failed To Load Pricing Tiers"); }
+      if (res.ok) {
+        setTiers(json || []);
+      } else {
+        setError(json.error || "Failed To Load Pricing Tiers");
+      }
     } catch (err: any) {
       setError(err.message || "An Error Occurred While Loading Tiers");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   function startEdit(tier: PricingTier) {
@@ -47,77 +56,162 @@ export default function PricingTiersPage() {
   async function handleSaveEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editingTier) return;
+
     const numMult = Number(editMultiplier);
     if (isNaN(numMult) || numMult < 1.0 || numMult > 99.99) {
       setEditError("Multiplier Must Be A Number Between 1.0 And 99.99");
       return;
     }
+
     setSaving(editingTier.tier_name);
     setEditError("");
+
     try {
       const res = await fetch("/api/admin/pricing-tiers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier_name: editingTier.tier_name, multiplier: numMult, display_name: editDisplayName, description: editDescription }),
+        body: JSON.stringify({
+          tier_name: editingTier.tier_name,
+          multiplier: numMult,
+          display_name: editDisplayName,
+          description: editDescription,
+        }),
       });
+
       const json = await res.json();
+
       if (res.ok) {
-        setTiers((prev) => prev.map((t) => t.tier_name === editingTier.tier_name ? { ...t, multiplier: numMult, display_name: editDisplayName, description: editDescription } : t));
+        setTiers((prev) =>
+          prev.map((t) =>
+            t.tier_name === editingTier.tier_name
+              ? {
+                  ...t,
+                  multiplier: numMult,
+                  display_name: editDisplayName,
+                  description: editDescription,
+                }
+              : t,
+          ),
+        );
         setEditingTier(null);
-      } else { setEditError(json.error || "Failed To Update Multiplier"); }
+      } else {
+        setEditError(json.error || "Failed To Update Multiplier");
+      }
     } catch (err: any) {
       setEditError(err.message || "An Error Occurred While Saving");
-    } finally { setSaving(null); }
+    } finally {
+      setSaving(null);
+    }
   }
 
   return (
     <div style={{ padding: "var(--space-8)" }}>
       <div style={{ marginBottom: "var(--space-8)" }}>
-        <h1 className="animated-gradient-text" style={{ fontSize: "1.6rem", marginBottom: "var(--space-2)" }}>Pricing Multiplier Tiers</h1>
-        <p style={{ fontSize: "0.85rem", color: "var(--grey-400)" }}>Configure Pricing Multipliers For All 3 Tiers. Changes Apply Instantly To Storefront Products.</p>
+        <h1 className="animated-gradient-text" style={{ fontSize: "1.6rem", marginBottom: "var(--space-2)" }}>
+          Pricing Multiplier Tiers
+        </h1>
+        <p style={{ fontSize: "0.85rem", color: "var(--grey-400)" }}>
+          Configure Pricing Multipliers For All 3 Tiers. Changes Apply Instantly To Storefront Products.
+        </p>
       </div>
-      {loading ? (
-        <div style={{ display: "flex", justifyContent: "center", padding: "var(--space-12)" }}>
-          <div style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid var(--teal)", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
-        </div>
-      ) : error ? (
-        <div className="disclaimer-warning" style={{ padding: "var(--space-6)" }}>
-          <p style={{ color: "var(--red)", fontSize: "0.9rem" }}>{error}</p>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-          {tiers.map((tier) => (
-            <div key={tier.tier_name} className="glass-panel hover-lift">
-              <div style={{ padding: "var(--space-6)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "var(--space-4)" }}>
-                  <div>
-                    <h3 style={{ fontSize: "1.1rem", color: "var(--teal)" }}>{tier.display_name}</h3>
-                    <p style={{ fontSize: "0.82rem", color: "var(--grey-400)", marginTop: "var(--space-1)" }}>{tier.description}</p>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: "0.72rem", color: "var(--grey-500)", textTransform: "uppercase" }}>Multiplier</div>
-                    <div style={{ fontSize: "1.8rem", fontWeight: 800, color: "var(--silver)", lineHeight: 1 }}>{Number(tier.multiplier).toFixed(2)}x</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) var(--space-4)", background: "var(--surface-1)", borderRadius: "var(--radius-md)", border: "var(--border-subtle)" }}>
-                  <div style={{ fontSize: "0.78rem", color: "var(--grey-400)" }}>
-                    Preview: $<span style={{ color: "var(--silver)", fontWeight: 600 }}>{Number(sampleBaseCost).toFixed(2)}</span> base = <span style={{ color: "var(--teal)", fontWeight: 700 }}>${(Number(sampleBaseCost) * tier.multiplier / 10).toFixed(2)}</span> retail
-                  </div>
-                  <button onClick={() => startEdit(tier)} className="btn-silver" style={{ padding: "var(--space-2) var(--space-4)", fontSize: "0.76rem" }}>Edit Multiplier</button>
-                </div>
-              </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "var(--space-8)", alignItems: "start" }}>
+        <div>
+          {loading ? (
+            <div style={{ display: "flex", justifyContent: "center", padding: "var(--space-12)" }}>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid var(--teal)", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
             </div>
-          ))}
+          ) : error ? (
+            <div className="disclaimer-warning" style={{ padding: "var(--space-6)" }}>
+              <p style={{ color: "var(--red)", fontSize: "0.9rem" }}>{error}</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+              {tiers.map((tier) => (
+                <div key={tier.tier_name} className="glass-panel hover-lift stagger-fade-in">
+                  <div className="" style={{ padding: "var(--space-6)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "var(--space-4)" }}>
+                      <div>
+                        <h3 style={{ fontSize: "1.1rem", color: "var(--teal)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                          {tier.display_name}
+                          <span className="badge" style={{ fontSize: "0.65rem" }}>
+                            {tier.tier_name.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                          </span>
+                        </h3>
+                        <p style={{ fontSize: "0.82rem", color: "var(--grey-400)", marginTop: "var(--space-1)" }}>
+                          {tier.description}
+                        </p>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: "0.72rem", color: "var(--grey-500)", textTransform: "uppercase" }}>Multiplier</div>
+                        <div style={{ fontSize: "1.8rem", fontWeight: 800, fontFamily: "var(--font-brand)", color: "var(--silver)", lineHeight: 1 }}>
+                          {Number(tier.multiplier).toFixed(2)}x
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) var(--space-4)", background: "var(--surface-1)", borderRadius: "var(--radius-md)", border: "var(--border-subtle)" }}>
+                      <div style={{ fontSize: "0.78rem", color: "var(--grey-400)" }}>
+                        Example Preview: Base Cost{" "}
+                        <span style={{ color: "var(--silver)", fontWeight: 600 }}>${Number(sampleBaseCost).toFixed(2)}</span>{" "}
+                        = Retail Price Per Unit{" "}
+                        <span style={{ color: "var(--teal)", fontWeight: 700 }}>
+                          ${(Number(sampleBaseCost) * tier.multiplier / 10).toFixed(2)}
+                        </span>
+                      </div>
+                      <button onClick={() => startEdit(tier)} className="btn-silver" style={{ padding: "var(--space-2) var(--space-4)", fontSize: "0.76rem" }}>
+                        Edit Multiplier
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+          <div className="glass-panel hover-lift stagger-fade-in">
+            <div className="" style={{ padding: "var(--space-6)" }}>
+              <h3 style={{ fontSize: "0.92rem", color: "var(--silver)", marginBottom: "var(--space-4)" }}>Pricing Preview Sandbox</h3>
+              <div className="form-group">
+                <label className="form-label" htmlFor="sample-base-cost">Configure Sample Base Product Cost ($)</label>
+                <input id="sample-base-cost" type="number" className="form-input" value={sampleBaseCost} onChange={(e) => setSampleBaseCost(e.target.value)} min="0" step="0.01" />
+              </div>
+              <p style={{ fontSize: "0.74rem", color: "var(--grey-500)", lineHeight: 1.4 }}>
+                Enter Any Base Product Cost Above To See The Live Cost Previews For All Three Tiers In Real-Time.
+              </p>
+            </div>
+          </div>
+
+          <div className="glass-panel hover-lift stagger-fade-in">
+            <div className="" style={{ padding: "var(--space-6)" }}>
+              <h4 style={{ fontSize: "0.85rem", color: "var(--teal)", marginBottom: "var(--space-3)" }}>Platform Rules & Regulations</h4>
+              <ul style={{ fontSize: "0.76rem", color: "var(--grey-400)", paddingLeft: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)", lineHeight: 1.4 }}>
+                <li>Multipliers Directly Determine Storefront Product Retail Prices For All Non-Customized Agent Pages.</li>
+                <li>Tiers Can Have Product-Specific Multiplier Overrides Assigned Within The Products Manager.</li>
+                <li>Changes Apply Globally To All Stores Instantly Upon Saving Multipliers.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <ProductTierOverrides />
+
       {editingTier && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 'var(--space-4)' }}>
           <div className="glass-panel" style={{ width: "100%", maxWidth: 440 }}>
-            <div style={{ padding: "var(--space-6)" }}>
+            <div className="" style={{ padding: "var(--space-6)" }}>
               <h2 className="metal-text" style={{ fontSize: "1.25rem", color: "#fff", marginBottom: "var(--space-2)" }}>Edit Pricing Tier</h2>
               <p style={{ fontSize: "0.8rem", color: "var(--grey-400)", marginBottom: "var(--space-6)" }}>Modifying Multiplier For {editingTier.display_name}</p>
-              {editError && (<div className="disclaimer-warning" style={{ marginBottom: "var(--space-4)", padding: "var(--space-3)" }}><p style={{ color: "var(--red)", fontSize: "0.82rem" }}>{editError}</p></div>)}
+
+              {editError && (
+                <div className="disclaimer-warning" style={{ marginBottom: "var(--space-4)", padding: "var(--space-3)" }}>
+                  <p style={{ color: "var(--red)", fontSize: "0.82rem" }}>{editError}</p>
+                </div>
+              )}
+
               <form onSubmit={handleSaveEdit}>
                 <div className="form-group">
                   <label className="form-label" htmlFor="edit-display-name">Pricing Tier Name</label>
@@ -131,6 +225,14 @@ export default function PricingTiersPage() {
                   <label className="form-label" htmlFor="edit-description">Description Text</label>
                   <textarea id="edit-description" className="form-input" rows={3} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} required style={{ resize: "vertical" }} />
                 </div>
+
+                <div style={{ padding: "var(--space-3) var(--space-4)", background: "var(--surface-1)", borderRadius: "var(--radius-md)", border: "var(--border-subtle)", marginBottom: "var(--space-6)", fontSize: "0.78rem", color: "var(--grey-400)" }}>
+                  Live Multiplier Preview:{" "}
+                  <span style={{ color: "var(--silver)", fontWeight: 600 }}>${Number(sampleBaseCost).toFixed(2)}</span>{" "}
+                  * {isNaN(Number(editMultiplier)) ? "0" : Number(editMultiplier).toFixed(2)}x ={" "}
+                  <span style={{ color: "var(--teal)", fontWeight: 700 }}>${(Number(sampleBaseCost) * (Number(editMultiplier) || 0) / 10).toFixed(2)}</span>
+                </div>
+
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)" }}>
                   <button type="button" className="btn-silver" onClick={() => setEditingTier(null)} disabled={saving !== null}>Cancel</button>
                   <button type="submit" className="btn-neon-cyan" disabled={saving !== null}>{saving ? "Saving..." : "Save Multiplier"}</button>
