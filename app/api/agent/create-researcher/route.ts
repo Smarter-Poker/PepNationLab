@@ -4,6 +4,34 @@ import { sanitizeUsername } from '@/lib/usernames';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyNewResearcher } from '@/lib/notify';
 
+/**
+ * POST /api/agent/create-researcher
+ *
+ * Creates a researcher account tied to the caller's downline.
+ *
+ * SACA 2026-05-31 - sub-agent callers:
+ *   When the caller is a sub-agent (profiles.is_sub_agent=true), the
+ *   researcher MUST be filed under the sub-agent's PARENT, not the sub-agent
+ *   itself. Sub-agents never have their own storefront and never own the
+ *   researcher relationship - they only earn commission on the researcher's
+ *   orders. So we stamp:
+ *     referring_agent_id     = sub-agent's parent_agent_id  (storefront owner)
+ *     referring_sub_agent_id = sub-agent's id              (commission tag)
+ *
+ *   For agent or super-agent callers (non-sub-agent), behavior is unchanged:
+ *     referring_agent_id     = caller.id
+ *     referring_sub_agent_id = NULL
+ *
+ *   Admins can create researchers but the researcher will not have a
+ *   storefront owner of record - kept for backwards compatibility with
+ *   admin-driven imports.
+ *
+ * Provisioning attribution (2026-06-01):
+ *   created_by_agent_id stamps the actual caller (sub-agent, agent, super
+ *   agent, or admin). created_by_role records the caller's role at creation
+ *   so the admin dashboard can render "Created By <Role>" without an extra
+ *   join to a possibly-changed creator profile.
+ */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -80,6 +108,7 @@ export async function POST(req: NextRequest) {
   }
 
   const internalEmail = `${usernameClean}@internal.auth`;
+
   const fullName = `${String(firstName).trim()} ${String(lastName).trim()}`;
 
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
