@@ -14,6 +14,9 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { messageId, newBody } = body;
   if (!messageId || !newBody?.trim()) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+  if (typeof newBody !== 'string' || newBody.trim().length > 4_000) {
+    return NextResponse.json({ error: 'Message body too long (max 4,000 characters)' }, { status: 400 });
+  }
 
   const service = await createServiceClient();
 

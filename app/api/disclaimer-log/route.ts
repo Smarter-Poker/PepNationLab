@@ -58,10 +58,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Authentication Required.' }, { status: 401 });
   }
 
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    null;
+  // Use getClientIp() which reads Vercel's trusted x-vercel-forwarded-for header
+  // rather than the attacker-controllable X-Forwarded-For header.
+  const ip = getClientIp(req);
 
   const userAgent = req.headers.get('user-agent') || null;
 

@@ -20,7 +20,8 @@ export const runtime = 'nodejs';
  */
 
 function escapeLikePattern(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/[%_]/g, (m) => '\\' + m);
+  // Escape PostgreSQL ILIKE special characters: \ % _ and [ (POSIX char-class).
+  return value.replace(/\\/g, '\\\\').replace(/[%_[]/g, (m) => '\\' + m);
 }
 
 export async function GET(req: NextRequest) {

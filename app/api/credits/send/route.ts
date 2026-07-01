@@ -30,7 +30,8 @@ export const dynamic = 'force-dynamic';
 // the literal string. Without this, "@gmail.com%" would route a transfer to
 // whichever Gmail-domain profile sorted first.
 function escapeLikeLiteral(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/[%_]/g, (m) => '\\' + m);
+  // Escape PostgreSQL ILIKE special characters: \ % _ and [ (POSIX char-class).
+  return value.replace(/\\/g, '\\\\').replace(/[%_[]/g, (m) => '\\' + m);
 }
 
 export async function POST(req: NextRequest) {
