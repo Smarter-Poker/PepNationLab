@@ -9,13 +9,23 @@ import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import IframeLink from '@/components/ui/IframeLink';
 import IframeModal from '@/components/ui/IframeModal';
 
+export interface ShippingAddress {
+  line1?: string;
+  street?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  postal_code?: string;
+  country?: string;
+}
 interface Order {
   id: string;
   buyer_id: string;
   status: string;
   fulfillment_method: string;
   payment_method: string;
-  shipping_address: any;
+  shipping_address: ShippingAddress | null;
   shipping_cost: number;
   subtotal: number;
   total: number;
@@ -60,9 +70,8 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 
-function formatAddress(address: any): string {
+function formatAddress(address: ShippingAddress | null): string {
   if (!address) return 'No Shipping Address Provided';
-  if (typeof address === 'string') return address;
   const parts = [
     address.street || address.line1,
     address.line2,
