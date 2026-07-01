@@ -347,7 +347,7 @@ export default function WalletSendSheet({
                       </div>
                     ) : (
                       <ul style={{ listStyle: 'none', margin: 0, padding: 4 }}>
-                        {results.map((r, i) => {
+                        {(results || []).map((r, i) => {
                           const active = i === activeIndex;
                           return (
                             <li key={r.id}>

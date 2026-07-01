@@ -15,8 +15,9 @@ interface TierData {
   levelName?: string;
   volume30?: number;
   progress?: number;
-  next?: { level: number; name: string; dollarsToNext: number } | null;
+  next?: { level: number; name: string; dollarsToNext: number; min_volume: number } | null;
   ladder?: TierRow[];
+  gracePeriodExpiresAt?: string | null;
 }
 
 export default function AgentTierLadder({ agentId }: { agentId: string }) {

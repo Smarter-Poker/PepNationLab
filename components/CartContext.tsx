@@ -156,7 +156,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const stored = localStorage.getItem('pnl_cart');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) initial = parsed;
+        if (Array.isArray(parsed)) {
+          // Filter out structurally invalid items to prevent downstream .map/.reduce crashes
+          initial = parsed.filter(item => item && typeof item === 'object' && 'id' in item && 'quantity' in item);
+        }
       }
       setAddToCartAcknowledged(localStorage.getItem(ADD_TO_CART_ACK_KEY) === 'true');
     } catch (e) { console.error('Failed To Load Cart:', e); }

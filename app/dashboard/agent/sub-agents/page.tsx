@@ -98,6 +98,7 @@ export default function SubAgentsPage() {
                 <th style={{ textAlign: 'left', padding: '8px', }}>Payment</th>
                 <th style={{ textAlign: 'right', padding: '8px', }}>Credit Cap</th>
                 <th style={{ textAlign: 'right', padding: '8px', }}>Prepaid Balance</th>
+                <th style={{ textAlign: 'right', padding: '8px', }}>30-Day Volume</th>
                 <th style={{ textAlign: 'right', padding: '8px', }}>Pending Commission</th>
                 <th style={{ textAlign: 'left', padding: '8px', }}>Joined</th>
               </tr>
@@ -113,6 +114,7 @@ export default function SubAgentsPage() {
                   <td style={{ padding: '8px', textTransform: 'capitalize' }}>{r.account_type || '-'}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{fmtMoney(r.credit_limit)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{fmtMoney(r.prepaid_balance)}</td>
+                  <td style={{ padding: '8px', textAlign: 'right', color: '#00E5FF', fontWeight: 600 }}>{fmtMoney((r as any).volume_30d)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{fmtMoney(r.pending_commission)}</td>
                   <td style={{ padding: '8px' }}>{fmtDate(r.created_at)}</td>
                 </tr>

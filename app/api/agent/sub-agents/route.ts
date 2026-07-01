@@ -79,9 +79,32 @@ export async function GET(_req: NextRequest) {
       pendingBySub[sid] = (pendingBySub[sid] ?? 0) + Number(row.commission_amount ?? 0);
     }
 
+    // P2: Fetch 30-day wholesale volume for each sub-agent (Downline Leaderboard)
+    let volumeRows: any = null;
+    try {
+      const res = await supabase.rpc('fn_agent_own_wholesale_30d_batch', { agent_ids: subAgentIds });
+      volumeRows = res.data;
+    } catch (e) {
+      // Fallback if RPC doesn't exist yet
+    }
+
+    // Temporary fallback loop if RPC doesn't exist (can be slow, but we'll create the RPC shortly)
+    const volumeBySub: Record<string, number> = {};
+    if (volumeRows && Array.isArray(volumeRows)) {
+      for (const row of volumeRows) {
+        volumeBySub[row.agent_id] = row.volume;
+      }
+    } else {
+      for (const sid of subAgentIds) {
+        const { data: vol } = await supabase.rpc('fn_agent_own_wholesale_30d', { p_agent: sid });
+        volumeBySub[sid] = Number(vol || 0);
+      }
+    }
+
     const enriched = subAgents.map((sa) => ({
       ...sa,
       pending_commission: pendingBySub[sa.id as string] ?? 0,
+      volume_30d: volumeBySub[sa.id as string] ?? 0,
     }));
 
     return NextResponse.json({ data: enriched });

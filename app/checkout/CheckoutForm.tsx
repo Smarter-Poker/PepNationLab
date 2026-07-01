@@ -501,7 +501,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
            lower.includes('acetic acid');
   };
 
-  const aceticPeptideVials = cart.reduce((sum, item) => {
+  const aceticPeptideVials = (cart || []).reduce((sum, item) => {
     if (isDiluentName(item.name)) return sum;
     const isAcetic = ACETIC_ACID_SLUGS.test(item.name) || (item.sku && ACETIC_ACID_SLUGS.test(item.sku));
     if (!isAcetic) return sum;
@@ -510,7 +510,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     return sum + (vialsPerUnit * item.quantity);
   }, 0);
 
-  const bacPeptideVials = cart.reduce((sum, item) => {
+  const bacPeptideVials = (cart || []).reduce((sum, item) => {
     if (isDiluentName(item.name)) return sum;
     const isAcetic = ACETIC_ACID_SLUGS.test(item.name) || (item.sku && ACETIC_ACID_SLUGS.test(item.sku));
     if (isAcetic) return sum;
@@ -519,13 +519,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     return sum + (vialsPerUnit * item.quantity);
   }, 0);
 
-  const currentBacWaterVials = cart.reduce((sum, item) => {
+  const currentBacWaterVials = (cart || []).reduce((sum, item) => {
     const lower = (item.name || '').toLowerCase();
     if (lower.includes('bac water') || lower.includes('bacteriostatic water') || lower.includes('bac. water')) return sum + item.quantity;
     return sum;
   }, 0);
 
-  const currentAceticAcidVials = cart.reduce((sum, item) => {
+  const currentAceticAcidVials = (cart || []).reduce((sum, item) => {
     const lower = (item.name || '').toLowerCase();
     if (lower.includes('acetic acid')) return sum + item.quantity;
     return sum;
@@ -581,7 +581,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     setStorefrontCart(updatedCart);
   };
 
-  const totalWeightOz = cart.reduce((acc, item) => acc + (item.weightOz ?? 0.5) * item.quantity, 0);
+  const totalWeightOz = (cart || []).reduce((acc, item) => acc + (item.weightOz ?? 0.5) * item.quantity, 0);
 
   useEffect(() => {
     if (shippingFetchAbortRef.current) shippingFetchAbortRef.current.abort();

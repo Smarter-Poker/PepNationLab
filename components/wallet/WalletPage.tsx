@@ -312,7 +312,7 @@ export default function WalletPage({
                   <p style={{ color: 'var(--grey-500)', fontSize: '0.9rem' }}>No Open Invoices.</p>
                 ) : (
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {openInvoices.map((s) => {
+                    {(openInvoices || []).map((s) => {
                       const isOverdue = s.due_date && new Date(s.due_date).getTime() < now && s.status !== 'paid';
                       const billsFromLabel = s.target_type === 'agent_invoice' ? 'Super Agent' : 'Admin';
                       return (
@@ -349,7 +349,7 @@ export default function WalletPage({
                 <p style={{ color: 'var(--grey-500)', fontSize: '0.9rem' }}>No Activity Yet.</p>
               ) : (
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {activity.map((t) => {
+                  {(activity || []).map((t) => {
                     const positive = t.signedAmount >= 0;
                     return (
                       <li key={t.id} style={{
@@ -403,7 +403,7 @@ export default function WalletPage({
                       </tr>
                     </thead>
                     <tbody>
-                      {statements.slice(0, 24).map((s) => {
+                      {(statements || []).slice(0, 24).map((s) => {
                         const colors = statusColors(s.status);
                         const billsFromLabel = s.target_type === 'agent_invoice' ? 'Super Agent' : 'Admin';
                         return (
