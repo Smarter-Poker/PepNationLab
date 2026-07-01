@@ -148,7 +148,38 @@ function formatPrice(price: number): string {
   return price.toFixed(2);
 }
 
-import { highlightText, splitProductName, getEditDistance } from '@/lib/storefront-helpers';
+function highlightText(text: string, query: string): React.ReactNode {
+  const q = query.trim();
+  if (!q) return text;
+  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(${escaped})`, 'ig');
+  const parts = text.split(re);
+  return parts.map((part, i) =>
+    re.test(part) ? (
+      <mark
+        key={i}
+        style={{
+          background: 'rgba(192,184,168,0.30)',
+          color: 'inherit',
+          padding: '0 2px',
+          borderRadius: 2,
+        }}
+      >
+        {part}
+      </mark>
+    ) : (
+      <React.Fragment key={i}>{part}</React.Fragment>
+    )
+  );
+}
+
+function splitProductName(name: string): { main: string; subtitle: string | null } {
+  const match = name.match(/^([^(]+?)\s*\((.+)\)\s*$/);
+  if (match) {
+    return { main: match[1].trim(), subtitle: `(${match[2].trim()})` };
+  }
+  return { main: name, subtitle: null };
+}
 
 function pickDefaultVariant(variants: ProductItem[]): string {
   const ten = variants.find(v => parseFloat(v.products?.unit_size || '0') === 10);
@@ -158,6 +189,25 @@ function pickDefaultVariant(variants: ProductItem[]): string {
   if (above.length > 0) return above[0].id;
   return variants[variants.length - 1]?.id ?? variants[0]?.id ?? '';
 }
+
+const getEditDistance = (a: string, b: string) => {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  const matrix = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return matrix[a.length][b.length];
+};
 
 /**
  * Background catalog cache refresher - stale-while-revalidate.
@@ -409,10 +459,10 @@ export default function AgentStorefrontGrid({
       const raw = window.localStorage.getItem('pnl:compare') || '[]';
       const list = JSON.parse(raw);
       if (Array.isArray(list)) {
-        return new Set(list.map((x: { productName: string }) => x.productName));
+        return new Set(list.map((x: any) => x.productName));
       }
     } catch {}
-    return new Set<string>();
+    return new Set();
   });
 
   useEffect(() => {
@@ -421,7 +471,7 @@ export default function AgentStorefrontGrid({
         const raw = window.localStorage.getItem('pnl:compare') || '[]';
         const list = JSON.parse(raw);
         if (Array.isArray(list)) {
-          setPinnedNames(new Set(list.map((x: { productName: string }) => x.productName)));
+          setPinnedNames(new Set(list.map((x: any) => x.productName)));
         }
       } catch {}
     };

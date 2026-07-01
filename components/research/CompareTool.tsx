@@ -1919,8 +1919,8 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
   const products = useMemo(() => {
     if (!liveProductsData?.products) return initialProducts;
     
-    const liveMap = new Map<string, AreaProduct>(liveProductsData.products.map((p: AreaProduct) => [p.compoundSlug || '', p]));
-    const initialMap = new Map<string, AreaProduct>(initialProducts.map((p: AreaProduct) => [p.compoundSlug || '', p]));
+    const liveMap = new Map<string, any>(liveProductsData.products.map((p: any) => [p.compoundSlug, p]));
+    const initialMap = new Map<string, any>(initialProducts.map((p: any) => [p.compoundSlug, p]));
     
     return selectedSlugs.map(slug => {
       const live = liveMap.get(slug);
@@ -1971,7 +1971,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
     setIsSavingJournal(true);
     try {
       // Find the product IDs for the selected slugs
-      const productIds = selectedSlugs.map(slug => products.find(p => p?.compoundSlug === slug)?.productId).filter(Boolean);
+      const productIds = selectedSlugs.map(slug => products.find(p => p.compoundSlug === slug)?.productId).filter(Boolean);
       
       const res = await fetch('/api/researcher/comparisons', {
         method: 'POST',
@@ -2084,7 +2084,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
     const rec = new SR();
     rec.lang = 'en-US'; rec.interimResults = false; rec.maxAlternatives = 1;
     setVoiceActive(true);
-    rec.onresult = (e: { results: { transcript: string }[][] }) => { setSearchQuery(e.results[0][0].transcript); setIsSearchOpen(true); setVoiceActive(false); };
+    rec.onresult = (e: any) => { setSearchQuery(e.results[0][0].transcript); setIsSearchOpen(true); setVoiceActive(false); };
     rec.onerror = () => setVoiceActive(false);
     rec.onend = () => setVoiceActive(false);
     rec.start();
@@ -2409,7 +2409,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
               <button type="button" onClick={() => {
                 if (!cartContext) return;
                 const itemsToAdd = selected
-                  .map(c => products.find(p => p?.compoundSlug === c.slug))
+                  .map(c => products.find(p => p.compoundSlug === c.slug))
                   .filter(Boolean)
                   .map(p => ({
                     product: {
@@ -3000,7 +3000,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                             
                             {/* Product Info & Add to Cart (Swipe Mode) */}
                             {(() => {
-                              const product = products.find(p => p?.compoundSlug === c.slug);
+                              const product = products.find(p => p.compoundSlug === c.slug);
                               if (!product) return null;
                               const mgMatch = product.productName.match(/(\d+(?:\.\d+)?)\s*mg/i);
                               const mg = mgMatch ? parseFloat(mgMatch[1]) : 0;
@@ -3216,7 +3216,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                               
                               {/* Product Info & Add to Cart (Matrix Mode) */}
                               {(() => {
-                                const product = products.find(p => p?.compoundSlug === c.slug);
+                                const product = products.find(p => p.compoundSlug === c.slug);
                                 if (!product) return null;
                                 const mgMatch = product.productName.match(/(\d+(?:\.\d+)?)\s*mg/i);
                                 const mg = mgMatch ? parseFloat(mgMatch[1]) : 0;
