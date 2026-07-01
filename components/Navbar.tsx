@@ -198,43 +198,40 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
 
     // Shared helper — fetches profile + agent slug/name for a given session user.
     // Extracted to avoid duplicating this logic between getSession and onAuthStateChange.
-    const fetchUserProfile = (userId: string) => {
-      supabase
-        .from('profiles')
-        .select('full_name, role, referring_agent_id, is_super_agent, is_sub_agent')
-        .eq('id', userId)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data) {
-            setProfile(data);
-            if (data.role === 'researcher' && data.referring_agent_id) {
-              supabase
-                .from('agent_profiles')
-                .select('slug, display_name')
-                .eq('id', data.referring_agent_id)
-                .maybeSingle()
-                .then(({ data: ap }) => {
-                  if (ap?.slug) setAgentSlug(ap.slug);
-                  if (ap?.display_name) setAgentName(ap.display_name);
-                })
-                .catch(() => {});
-            } else if ((data.role === 'agent' || data.role === 'super_agent') && data.is_sub_agent !== true) {
-              supabase
-                .from('agent_profiles')
-                .select('slug, display_name')
-                .eq('id', userId)
-                .maybeSingle()
-                .then(({ data: ap }) => {
-                  if (ap?.slug) setAgentSlug(ap.slug);
-                  if (ap?.display_name) setAgentName(ap.display_name);
-                })
-                .catch(() => {});
-            }
+    const fetchUserProfile = async (userId: string) => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('full_name, role, referring_agent_id, is_super_agent, is_sub_agent')
+          .eq('id', userId)
+          .maybeSingle();
+        if (data) {
+          setProfile(data);
+          if (data.role === 'researcher' && data.referring_agent_id) {
+            const { data: ap } = await supabase
+              .from('agent_profiles')
+              .select('slug, display_name')
+              .eq('id', data.referring_agent_id)
+              .maybeSingle();
+            if (ap?.slug) setAgentSlug(ap.slug);
+            if (ap?.display_name) setAgentName(ap.display_name);
+          } else if ((data.role === 'agent' || data.role === 'super_agent') && data.is_sub_agent !== true) {
+            const { data: ap } = await supabase
+              .from('agent_profiles')
+              .select('slug, display_name')
+              .eq('id', userId)
+              .maybeSingle();
+            if (ap?.slug) setAgentSlug(ap.slug);
+            if (ap?.display_name) setAgentName(ap.display_name);
           }
-          setLoading(false);
-        })
-        .catch(() => { setLoading(false); });
+        }
+      } catch {
+        // profile fetch failure is non-fatal; navbar degrades gracefully
+      } finally {
+        setLoading(false);
+      }
     };
+
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
