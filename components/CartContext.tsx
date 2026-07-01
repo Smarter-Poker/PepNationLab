@@ -320,8 +320,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const cancelAddToCart = () => setPendingAddition(null);
-  const removeFromCart = (productId: string, bundleName?: string) => {
-    setCart(prev => prev.filter(item => !(item.id === productId && item.bundleName === bundleName)));
+  const removeFromCart = (itemId: string, bundleName?: string) => {
+    // itemId is the cart item's id (agent_product id), not the underlying product_id.
+    setCart(prev => prev.filter(item => !(item.id === itemId && item.bundleName === bundleName)));
   };
 
   const updateQuantity = (productId: string, quantity: number, bundleName?: string) => {
@@ -925,7 +926,7 @@ function CartDrawer() {
         },
         qty
       );
-      toast.success(`${qty} vial${qty !== 1 ? 's' : ''} of BAC Water Added`);
+      toast.success(`${qty} Vial${qty !== 1 ? 's' : ''} Of BAC Water Added`);
     } catch {
       toast.error('Failed To Add BAC Water');
     }
