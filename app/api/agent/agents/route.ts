@@ -196,7 +196,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (authError || !authData.user) {
-      return NextResponse.json({ error: 'An unexpected error occurred creating auth user.' }, { status: 500 });
+      return NextResponse.json({ error: 'An Unexpected Error Occurred Creating Auth User.' }, { status: 500 });
     }
 
     const userId = authData.user.id;
@@ -244,7 +244,7 @@ export async function POST(req: NextRequest) {
     if (profileError) {
       console.error('[agent/agents] profile upsert failed:', profileError);
       await supabase.auth.admin.deleteUser(userId);
-      return NextResponse.json({ error: 'An unexpected error occurred saving profile.' }, { status: 500 });
+      return NextResponse.json({ error: 'An Unexpected Error Occurred Saving Profile.' }, { status: 500 });
     }
 
     if (Array.isArray(custom_commission_scale)) {
@@ -280,7 +280,7 @@ export async function POST(req: NextRequest) {
     if (agentError) {
       console.error('[agent/agents] agent_profiles upsert failed:', agentError);
       await supabase.auth.admin.deleteUser(userId);
-      return NextResponse.json({ error: 'An unexpected error occurred saving storefront.' }, { status: 500 });
+      return NextResponse.json({ error: 'An Unexpected Error Occurred Saving Storefront.' }, { status: 500 });
     }
 
     // Auto-provision Agent Products with 20% markup on Tier 1

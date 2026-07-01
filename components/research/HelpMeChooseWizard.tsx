@@ -272,7 +272,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
               >
                 <div>
                   <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>Conservative Budget</div>
-                  <div style={{ fontSize: '0.75rem' }}>Prioritize Cost-Efficient Options (Under $50 / Vial)</div>
+                  <div style={{ fontSize: '0.75rem' }}>Prioritize Cost-Efficient Options</div>
                 </div>
               </button>
               <button
@@ -282,7 +282,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
               >
                 <div>
                   <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>Standard Budget</div>
-                  <div style={{ fontSize: '0.75rem' }}>Balanced Value And Premium Reference Peptides (Under $100 / Vial)</div>
+                  <div style={{ fontSize: '0.75rem' }}>Balanced Value And Premium Reference Peptides</div>
                 </div>
               </button>
               <button

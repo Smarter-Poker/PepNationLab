@@ -320,8 +320,8 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
               <div style={{ position: 'relative', width: '48px', height: '48px', margin: '0 auto 16px auto', opacity: 0.5 }}>
                 <Image src="/images/redesign/molecule_default.png" alt="Database" fill style={{ objectFit: 'contain' }} />
               </div>
-              <div style={{ color: '#FFF', fontSize: '1.2rem', fontWeight: 800, marginBottom: '8px' }}>No matches found in the database.</div>
-              <div style={{ color: '#A8B4C0', marginBottom: '24px' }}>Try broadening your search parameters or research area.</div>
+              <div style={{ color: '#FFF', fontSize: '1.2rem', fontWeight: 800, marginBottom: '8px' }}>No Matches Found In The Database.</div>
+              <div style={{ color: '#A8B4C0', marginBottom: '24px' }}>Try Broadening Your Search Parameters Or Research Area.</div>
               <button onClick={clearAllFilters} style={{ background: '#00E5FF', color: '#000', border: 'none', padding: '12px 32px', borderRadius: '12px', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,229,255,0.3)' }}>
                 Reset Database Query
               </button>

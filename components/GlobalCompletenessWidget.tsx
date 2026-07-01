@@ -77,7 +77,7 @@ export default function GlobalCompletenessWidget() {
         setPercent(newP);
         setMissingTasks(newM);
         if (newP === 100 && percent !== 100) {
-          toast.success("Profile is 100% Completed!", { duration: 2000 });
+          toast.success('Profile Is 100% Complete', { duration: 2000 });
           setTimeout(() => setModalOpen(false), 2000);
         }
       }
@@ -89,8 +89,26 @@ export default function GlobalCompletenessWidget() {
 
   useEffect(() => {
     let cancelled = false;
-    
-    fetchCompleteness(cancelled);
+    const run = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || cancelled) return;
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+      if (!profile || cancelled) return;
+      let agentProfile = null;
+      if (profile.role === 'agent' || profile.role === 'super_agent') {
+        const { data: ap } = await supabase.from('agent_profiles').select('*').eq('id', session.user.id).maybeSingle();
+        agentProfile = ap;
+      }
+      if (cancelled) return;
+      const fullProfile = { ...profile, email: profile.email || session.user.email };
+      setProfileData(fullProfile);
+      setAgentProfileData(agentProfile);
+      const { percent: p, missingTasks: m } = getCompletenessData(fullProfile, agentProfile);
+      setPercent(p);
+      setMissingTasks(m);
+    };
+    run();
     return () => { cancelled = true; };
   }, []);
 
@@ -100,7 +118,7 @@ export default function GlobalCompletenessWidget() {
     <>
       <div 
         style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} 
-        title="Complete your profile"
+        title="Complete Your Profile"
       >
         <ProfileCompletenessRing 
           percent={percent} 
@@ -125,7 +143,7 @@ export default function GlobalCompletenessWidget() {
             </div>
             
             <p style={{ fontSize: '0.9rem', color: 'var(--silver)', marginBottom: 'var(--space-5)', lineHeight: 1.5 }}>
-              You're currently at {percent}% profile completion. Please complete the following remaining tasks to get to 100%.
+              You Are Currently At {percent}% Profile Completion. Please Complete The Following Remaining Tasks To Get To 100%.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
@@ -149,7 +167,7 @@ export default function GlobalCompletenessWidget() {
                                 setPercent(newP);
                                 setMissingTasks(newM);
                                 if (newP === 100 && percent !== 100) {
-                                  toast.success("Profile is 100% Completed!", { duration: 2000 });
+                                  toast.success('Profile Is 100% Complete', { duration: 2000 });
                                   setTimeout(() => setModalOpen(false), 2000);
                                 }
                               }
@@ -208,7 +226,7 @@ export default function GlobalCompletenessWidget() {
                                   setPercent(newP);
                                   setMissingTasks(newM);
                                   if (newP === 100 && percent !== 100) {
-                                    toast.success("Profile is 100% Completed!", { duration: 2000 });
+                                    toast.success('Profile Is 100% Complete', { duration: 2000 });
                                     setTimeout(() => setModalOpen(false), 2000);
                                   }
                                 }

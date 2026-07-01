@@ -445,7 +445,7 @@ export default function AdminStatementsPage() {
                             alignItems: "center",
                           }}
                         >
-                          {s.status !== "paid" ? (
+                          {s.status !== "paid" && Number(s.total_owed) > 0 ? (
                             <button
                               onClick={() => {
                                 setPayingStatement(s);
@@ -460,6 +460,16 @@ export default function AdminStatementsPage() {
                             >
                               Mark Paid
                             </button>
+                          ) : s.status !== "paid" && Number(s.total_owed) <= 0 ? (
+                            <div
+                              style={{
+                                fontSize: "0.74rem",
+                                color: "var(--grey-500)",
+                                fontStyle: "italic",
+                              }}
+                            >
+                              $0 — No Balance
+                            </div>
                           ) : (
                             <div
                               style={{

@@ -135,7 +135,7 @@ export default function FaqSuggestions({ draft, enabled }: Props) {
             fontWeight: 600,
           }}
         >
-          {it.q.length > 32 ? it.q.substring(0, 30) + '…' : it.q}
+          {it.q.length > 32 ? it.q.substring(0, 30) + '...' : it.q}
           <ExternalLink size={10} style={{ opacity: 0.7 }} />
         </IframeLink>
       ))}

@@ -181,7 +181,9 @@ function MenuButton({ onClick, icon, title, subtitle }: {
           letterSpacing: '0.04em', lineHeight: 1.4, fontWeight: 500,
         }}>{subtitle}</div>
       </div>
-      <div style={{ flexShrink: 0, color: 'rgba(192,184,168,0.3)', fontSize: '1.1rem', fontWeight: 300 }}>›</div>
+      <div style={{ flexShrink: 0, color: 'rgba(192,184,168,0.3)' }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
     </button>
   );
 }
@@ -661,7 +663,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
               </div>
               <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8, letterSpacing: '0.05em' }}>No Orders Yet</div>
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', maxWidth: 400, margin: '0 auto 20px', lineHeight: 1.5 }}>
-                You haven&apos;t placed any orders. Start browsing the catalog to find the products you need.
+                You Have Not Placed Any Orders. Start Browsing The Catalog To Find The Products You Need.
               </p>
               <button onClick={() => navigateWithLoader(agentSlug ? `/${agentSlug}` : '/products')} style={{ display: 'inline-block', padding: '10px 24px', borderRadius: '8px', background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', fontSize: '0.9rem', color: '#00E5FF', fontWeight: 700, cursor: 'pointer' }}>Browse Catalog</button>
             </div>
@@ -702,7 +704,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                               {STATUS_LABELS[o.status] || o.status}
                             </span>
                           </div>
-                          <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)', transition: 'transform 0.2s', transform: expandedOrder === o.id ? 'rotate(180deg)' : 'rotate(0deg)', display: 'inline-block', marginLeft: 8 }}>▼</span>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'transform 0.2s', transform: expandedOrder === o.id ? 'rotate(180deg)' : 'rotate(0deg)', display: 'inline-block', marginLeft: 8 }}><polyline points="6 9 12 15 18 9"/></svg>
                         </div>
                       </button>
 
@@ -838,7 +840,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                   </div>
                   <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>No Agent Assigned</div>
-                  <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem', marginTop: 6 }}>Contact support if you need assistance.</div>
+                  <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem', marginTop: 6 }}>Contact Support If You Need Assistance.</div>
                 </div>
               )}
             </div>
@@ -989,8 +991,8 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                     { label: 'Total Orders', value: `${orders.length}` },
                     { label: 'Delivered', value: `${deliveredCount}` },
                     { label: 'Total Spent', value: `$${totalSpent.toFixed(2)}` },
-                  ].map((item, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                  ].map((item) => (
+                    <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                       <span style={{ color: 'rgba(255,255,255,0.4)' }}>{item.label}</span>
                       <span style={{ color: '#fff', fontWeight: 600 }}>{item.value}</span>
                     </div>

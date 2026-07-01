@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 
+function formatAction(action: string): string {
+  return action
+    .replace(/[_\.]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 interface AuditRow {
   id: string;
   actor_id: string | null;
@@ -107,7 +113,7 @@ export default function AdminAuditClient({
           <option value="">All Actions</option>
           {availableActions.map((a) => (
             <option key={a} value={a}>
-              {a}
+              {formatAction(a)}
             </option>
           ))}
         </select>
@@ -251,7 +257,7 @@ export default function AdminAuditClient({
                           fontSize: "0.75rem",
                         }}
                       >
-                        {r.action}
+                        {formatAction(r.action)}
                       </span>
                     </td>
                     <td
@@ -261,7 +267,7 @@ export default function AdminAuditClient({
                       }}
                     >
                       {r.target_type && r.target_id
-                        ? `${r.target_type}:${r.target_id.slice(0, 8)}`
+                        ? `${formatAction(r.target_type)}:${r.target_id.slice(0, 8)}`
                         : "-"}
                     </td>
                     <td

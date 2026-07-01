@@ -24,15 +24,15 @@ export default function SavedMatches({ userId }: { userId: string }) {
   }, [userId]);
 
   if (loading) {
-    return <div style={{ color: 'var(--silver, #A8B4C0)', padding: 'var(--space-4, 16px)' }}>Loading saved matches...</div>;
+    return <div style={{ color: 'var(--silver, #A8B4C0)', padding: 'var(--space-4, 16px)' }}>Loading Saved Matches...</div>;
   }
 
   if (matches.length === 0) {
     return (
       <div style={{ color: 'var(--silver, #A8B4C0)', padding: 'var(--space-6, 32px)', textAlign: 'center', background: 'var(--grey-400, #162230)', borderRadius: 'var(--radius-lg, 12px)' }}>
-        <p>You haven't saved any research matches yet.</p>
+        <p>You Have Not Saved Any Research Matches Yet.</p>
         <Link href="/research/match" style={{ color: 'var(--teal, #00C4BC)', textDecoration: 'none', fontWeight: 600, marginTop: 'var(--space-2, 8px)', display: 'inline-block' }}>
-          Try the Match Me Engine
+          Try The Match Me Engine
         </Link>
       </div>
     );
@@ -50,7 +50,7 @@ export default function SavedMatches({ userId }: { userId: string }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-3, 12px)' }}>
             <div>
               <div style={{ color: 'var(--white, #FFFFFF)', fontWeight: 600, fontSize: '1.1rem' }}>
-                Saved Match
+                Saved Match Result
               </div>
               <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem' }}>
                 {new Date(m.created_at).toLocaleDateString()}
@@ -68,13 +68,13 @@ export default function SavedMatches({ userId }: { userId: string }) {
                 fontWeight: 700
               }}
             >
-              Re-run Match
+              Re-Run Match
             </Link>
           </div>
           
           <div style={{ background: 'rgba(0,0,0,0.2)', padding: 'var(--space-3, 12px)', borderRadius: 'var(--radius-md, 8px)', marginBottom: 'var(--space-3, 12px)' }}>
             <div style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', marginBottom: '4px' }}>Input Parameters</div>
-            <div style={{ color: 'var(--white, #FFFFFF)', fontSize: '0.95rem' }}>Goal: {m.match_input.goal || 'General'}</div>
+            <div style={{ color: 'var(--white, #FFFFFF)', fontSize: '0.95rem' }}>Goal: {m.match_input.goal || 'General Research'}</div>
             <div style={{ display: 'flex', gap: 'var(--space-3, 12px)', marginTop: 'var(--space-2, 8px)', fontSize: '0.8rem', color: 'var(--teal, #00C4BC)' }}>
               <span>Risk: {m.match_input.riskTolerance}</span>
               <span>Format: {m.match_input.preference}</span>
@@ -84,6 +84,7 @@ export default function SavedMatches({ userId }: { userId: string }) {
 
           <div>
             <div style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', marginBottom: '8px' }}>Top Matches</div>
+
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2, 8px)' }}>
               {m.results.slice(0, 3).map((r: any) => (
                 <Link key={r.slug} href={`/research/${r.slug}`} style={{

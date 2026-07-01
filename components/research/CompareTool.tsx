@@ -26,7 +26,7 @@ import IframeModal from '@/components/ui/IframeModal';
 import Image from 'next/image';
 import {
   Search, X, PlusCircle, Check, Printer, Share2, Download,
-  ChevronDown, ChevronRight, ChevronLeft, GripHorizontal,
+  ChevronDown, ChevronUp, ChevronRight, ChevronLeft, GripHorizontal,
   ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info,
   Zap, BookOpen, FlaskConical, Shield, Star,
   Clock, Thermometer, ArrowRight, BarChart3, Beaker,
@@ -1275,8 +1275,8 @@ function ProsConsCard({ pc }: { pc: ProsCons }) {
         ))}
       </div>
       {sorted.length > MAX_SHOWN && (
-        <button type="button" onClick={() => setExpanded(e => !e)} style={{ marginTop: 8, background: 'none', border: 'none', color: '#FFF', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
-          {expanded ? '▲ Show Less' : `▼ Show ${sorted.length - MAX_SHOWN} More`}
+        <button type="button" onClick={() => setExpanded(e => !e)} style={{ marginTop: 8, background: 'none', border: 'none', color: '#FFF', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          {expanded ? <><ChevronUp size={12} aria-hidden="true" /> Show Less</> : <><ChevronDown size={12} aria-hidden="true" /> Show {sorted.length - MAX_SHOWN} More</>}
         </button>
       )}
     </div>

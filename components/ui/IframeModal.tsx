@@ -167,9 +167,9 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
           {error && (
              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: '#333' }}>
                <AlertTriangle size={48} color="#FF6B6B" style={{ marginBottom: 16 }} />
-               <h3 style={{ margin: '0 0 8px 0' }}>Failed to load document</h3>
-               <p style={{ margin: 0, color: '#666' }}>The publisher may be blocking embedded viewers.</p>
-               <a href={url} target="_blank" rel="noopener noreferrer" style={{ marginTop: 16, display: 'inline-block', background: '#00C4BC', color: '#000', padding: '8px 16px', borderRadius: 4, textDecoration: 'none', fontWeight: 'bold' }}>Open in New Tab</a>
+               <h3 style={{ margin: '0 0 8px 0' }}>Failed To Load Document</h3>
+               <p style={{ margin: 0, color: '#666' }}>The Publisher May Be Blocking Embedded Viewers.</p>
+               <a href={url} target="_blank" rel="noopener noreferrer" style={{ marginTop: 16, display: 'inline-block', background: '#00C4BC', color: '#000', padding: '8px 16px', borderRadius: 4, textDecoration: 'none', fontWeight: 'bold' }}>Open In New Tab</a>
              </div>
           )}
 

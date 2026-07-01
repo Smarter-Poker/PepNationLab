@@ -118,7 +118,7 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
                   onNavigate={(tab) => {
                     const restrictedTabs = ['Store Products', 'Inventory', 'Storefront Config', 'Coupons', 'My Sub-Agents', 'My Agent Accounts'];
                     if (restrictedTabs.includes(tab)) {
-                      toast.info('This feature is restricted for Sub-Agents.');
+                      toast.info('This Feature Is Restricted For Sub-Agents.');
                     } else {
                       setActiveTab(tab);
                       // setIsMobileMenuOpen(false);
@@ -171,14 +171,14 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
                   <div>
                     <h3 style={{ fontSize: '14px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px' }}>Recent Order Activity</h3>
                     {data.recent_orders.length === 0 ? (
-                      <p style={{ opacity: 0.7 }}>No orders yet. Start sharing your referral link!</p>
+                      <p style={{ opacity: 0.7 }}>No Orders Yet. Start Sharing Your Referral Link.</p>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         {data.recent_orders.map(o => (
                           <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                             <div>
                               <div style={{ fontWeight: 600 }}>Order #{o.id.split('-')[0].toUpperCase()}</div>
-                              <div style={{ fontSize: '13px', opacity: 0.7 }}>{fmtDate(o.created_at)} &bull; {o.status.toUpperCase()}</div>
+                              <div style={{ fontSize: '13px', opacity: 0.7 }}>{fmtDate(o.created_at)} &bull; {o.status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
                               <div style={{ fontWeight: 600, color: 'var(--teal)' }}>+{fmtMoney(o.sub_agent_commission_amount)}</div>
@@ -211,14 +211,14 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
                 <div className="glass-panel stagger-fade-in" style={{ padding: 'var(--space-6)', borderRadius: '16px', animationDelay: '0.2s' }}>
                   <h3 style={{ fontSize: '14px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px' }}>Recent Settlements</h3>
                   {data.recent_settlements.length === 0 ? (
-                    <p style={{ opacity: 0.7 }}>No settlements yet.</p>
+                    <p style={{ opacity: 0.7 }}>No Settlements Yet.</p>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       {data.recent_settlements.map(s => (
                         <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                           <div>
                             <div style={{ fontWeight: 600 }}>{fmtDate(s.week_start)} - {fmtDate(s.week_end)}</div>
-                            <div style={{ fontSize: '13px', opacity: 0.7 }}>{s.orders_count} orders &bull; Settled {fmtDate(s.settled_at)}</div>
+                            <div style={{ fontSize: '13px', opacity: 0.7 }}>{s.orders_count} Orders &bull; Settled {fmtDate(s.settled_at)}</div>
                           </div>
                           <div style={{ textAlign: 'right', fontWeight: 600, color: 'var(--teal)' }}>
                             {fmtMoney(s.total_commission)}

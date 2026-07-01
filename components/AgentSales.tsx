@@ -693,7 +693,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
                 </div>
                 <div style={{ flex: 1, minWidth: 140, display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {a.topProductSlices.map((p, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem' }}>
+                    <div key={p.name + String(i)} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem' }}>
                       <span style={{ width: 10, height: 10, borderRadius: 2, background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
                       <span style={{ color: 'var(--silver)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{p.name}</span>
                       <span style={{ color: 'var(--white)', fontWeight: 700 }}>{fmt(p.value)}</span>
@@ -839,7 +839,7 @@ function RankList({ title, rows, empty }: { title: string; rows: { name: string;
         {rows.length === 0 ? <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0 }}>{empty}</p> : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {rows.map((r, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, borderBottom: i < rows.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', paddingBottom: 7 }}>
+              <div key={r.name + String(i)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, borderBottom: i < rows.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', paddingBottom: 7 }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                   <span style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(255,255,255,0.06)', color: 'var(--grey-400)', fontSize: '0.7rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
                   <span style={{ color: 'var(--silver)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>

@@ -142,7 +142,7 @@ export default function ThemeBuilder() {
         {theme?.slug && (
           <IframeLink href={`/${theme.slug}?preview=1`} style={{
             display: 'inline-block', marginTop: 12, color: 'var(--teal)', fontWeight: 700, fontSize: '0.88rem',
-          }}>Open Live Storefront →</IframeLink>
+          }}>Open Live Storefront</IframeLink>
         )}
       </section>
     </div>

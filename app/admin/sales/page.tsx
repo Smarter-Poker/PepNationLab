@@ -141,7 +141,7 @@ export default function AdminSalesPage() {
           {/* Range Filter */}
           <div style={{ display: 'flex', gap: 6, background: 'var(--black-2)', padding: 4, borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)' }}>
             {RANGE_TABS.map(tab => (
-              <button key={tab.id} onClick={() => setRange(tab.id)}
+              <button type="button" key={tab.id} onClick={() => setRange(tab.id)}
                 style={{
                   padding: '6px 14px', fontSize: '0.8rem', fontWeight: 600,
                   color: range === tab.id ? '#fff' : 'var(--grey-400)',
@@ -264,7 +264,7 @@ export default function AdminSalesPage() {
                         ) : <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)' }}>-</span>}
                       </td>
                       <td style={{ padding: 'var(--space-3) var(--space-4)', fontSize: '0.9rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
-                        ${agent.total_revenue.toFixed(2)}
+                        ${Number(agent.total_revenue || 0).toFixed(2)}
                       </td>
                       <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                         <button onClick={e => { e.stopPropagation(); loadAgentLedger(agent); }}

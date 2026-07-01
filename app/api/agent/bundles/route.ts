@@ -16,17 +16,21 @@ interface Bundle {
 
 // GET /api/agent/bundles - List all bundles for the current agent
 export async function GET(req: NextRequest) {
-  const gate = await requireAgent();
-  if (!gate.ok) return gate.response;
+  try {
+    const gate = await requireAgent();
+    if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
-  const { data: profile } = await supabase
-    .from('agent_profiles')
-    .select('bundles_config')
-    .eq('id', gate.user.id)
-    .single();
+    const supabase = await createServiceClient();
+    const { data: profile } = await supabase
+      .from('agent_profiles')
+      .select('bundles_config')
+      .eq('id', gate.user.id)
+      .single();
 
-  return NextResponse.json({ data: profile?.bundles_config || [] });
+    return NextResponse.json({ data: profile?.bundles_config || [] });
+  } catch {
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }
 
 // POST /api/agent/bundles - Create a new bundle
@@ -91,7 +95,7 @@ export async function POST(req: NextRequest) {
     .eq('id', gate.user.id);
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true, bundle: newBundle });
@@ -131,7 +135,7 @@ export async function PATCH(req: NextRequest) {
     .eq('id', gate.user.id);
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
@@ -169,7 +173,7 @@ export async function DELETE(req: NextRequest) {
     .eq('id', gate.user.id);
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

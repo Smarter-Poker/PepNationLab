@@ -150,7 +150,7 @@ export default function StorefrontRenameBanner({
             fontWeight: 700,
           }}
         >
-          {busy ? 'Saving…' : 'Keep My Username'}
+          {busy ? 'Saving...' : 'Keep My Username'}
         </button>
       </div>
     </div>

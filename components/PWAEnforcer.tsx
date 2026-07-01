@@ -102,20 +102,20 @@ export default function PWAEnforcer() {
           Agent App Required
         </h1>
         <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: 'var(--space-6)' }}>
-          For security and optimal performance, Agent and Subagent accounts are required to run PepNationLab as a native mobile app.
+          For Security And Optimal Performance, Agent And Subagent Accounts Are Required To Run PepNationLab As A Native Mobile App.
         </p>
 
         <div style={{ textAlign: 'left', background: 'rgba(0,0,0,0.3)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-2)', fontWeight: 600 }}>iOS / Safari</div>
           <ol style={{ paddingLeft: 'var(--space-4)', margin: 0, fontSize: '0.8rem', color: 'var(--grey-400)' }}>
-            <li style={{ marginBottom: 4 }}>Tap the <strong>Share</strong> icon at the bottom of your screen.</li>
-            <li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>
+            <li style={{ marginBottom: 4 }}>Tap The <strong>Share</strong> Icon At The Bottom Of Your Screen.</li>
+            <li>Scroll Down And Tap <strong>Add To Home Screen</strong>.</li>
           </ol>
           
           <div style={{ fontSize: '0.85rem', color: 'var(--silver)', marginTop: 'var(--space-4)', marginBottom: 'var(--space-2)', fontWeight: 600 }}>Android / Chrome</div>
           <ol style={{ paddingLeft: 'var(--space-4)', margin: 0, fontSize: '0.8rem', color: 'var(--grey-400)' }}>
-            <li style={{ marginBottom: 4 }}>Tap the <strong>Menu (3 dots)</strong> icon at the top right.</li>
-            <li>Tap <strong>Add to Home screen</strong> or <strong>Install app</strong>.</li>
+            <li style={{ marginBottom: 4 }}>Tap The <strong>Menu (3 Dots)</strong> Icon At The Top Right.</li>
+            <li>Tap <strong>Add To Home Screen</strong> Or <strong>Install App</strong>.</li>
           </ol>
         </div>
 
@@ -141,7 +141,7 @@ export default function PWAEnforcer() {
           onMouseOver={(e) => e.currentTarget.style.color = 'var(--silver)'}
           onMouseOut={(e) => e.currentTarget.style.color = 'var(--grey-500)'}
         >
-          Dismiss / I've Already Installed It
+          Dismiss / I Have Already Installed It
         </button>
       </div>
     </div>

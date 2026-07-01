@@ -10,7 +10,7 @@
 
 import { useMemo, useState } from 'react';
 import IframeModal from '../ui/IframeModal';
-import { isSocialPlatformUrl } from '@/lib/ArticleProxyUtils';
+
 
 export interface RefEntry {
   url: string;
@@ -64,7 +64,7 @@ export default function ReferencesBrowser({ refs }: { refs: RefEntry[] }) {
             style={{ borderRadius: 'var(--radius-lg, 12px)', padding: 'var(--space-4, 16px)' }}
           >
             <button
-              onClick={() => (isSocialPlatformUrl(r.url) ? window.open(r.url, '_blank') : setModalUrl(r.url))}
+              onClick={() => setModalUrl(r.url)}
               style={{
                 color: 'var(--teal, #00C4BC)',
                 fontWeight: 700,

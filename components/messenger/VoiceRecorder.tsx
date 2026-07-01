@@ -41,7 +41,7 @@ export default function VoiceRecorder({ onComplete, onCancel }: Props) {
 
   const start = async () => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      setError('You are offline');
+      setError('You Are Offline');
       return;
     }
     setError(null);

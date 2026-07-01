@@ -93,8 +93,8 @@ export async function POST(req: NextRequest) {
         const shortId = orderId.slice(0, 8).toUpperCase();
         const totalStr = Number(order.total).toFixed(2);
         const statusMsg = isAgentPickup
-          ? `Payment verified for Order #${shortId} ($${totalStr}). Your order has been approved for pickup - your agent will contact you shortly.`
-          : `Payment verified for Order #${shortId} ($${totalStr}). Your order has been submitted to fulfillment for processing. You will receive a tracking number once shipped.`;
+          ? `Payment Verified For Order #${shortId} ($${totalStr}). Your Order Has Been Approved For Pickup - Your Agent Will Contact You Shortly.`
+          : `Payment Verified For Order #${shortId} ($${totalStr}). Your Order Has Been Submitted To Fulfillment For Processing. You Will Receive A Tracking Number Once Shipped.`;
 
         // Send as the agent (they are marking it paid)
         await svc.from('messenger_messages').insert({

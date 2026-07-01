@@ -116,7 +116,7 @@ export default function ProductTierOverrides() {
           <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginTop: 4 }}>Set custom multipliers for specific products in specific tiers.</p>
         </div>
         <button onClick={() => setShowForm(!showForm)} className="btn btn-primary btn-sm">
-          {showForm ? 'Cancel' : '+ Add Override'}
+          {showForm ? 'Cancel' : 'Add Override'}
         </button>
       </div>
 

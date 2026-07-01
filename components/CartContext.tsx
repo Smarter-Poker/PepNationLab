@@ -227,7 +227,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             toast.error(`${detail.name} Is Not Available.`);
           }
         } catch (err) {
-          toast.error('Failed to add item to cart.');
+          toast.error('Failed To Add Item To Cart.');
         }
       }, 50);
     };
@@ -497,7 +497,7 @@ function BacWaterCalculator({
           <polyline points="20 6 9 17 4 12" />
         </svg>
         <span style={{ fontSize: '0.78rem', color: '#68D391', fontWeight: 700 }}>
-          BAC Water covered - {alreadyInCartQty} vial{alreadyInCartQty !== 1 ? 's' : ''} in cart for {totalPeptideVials} peptide vial{totalPeptideVials !== 1 ? 's' : ''}
+          BAC Water Covered - {alreadyInCartQty} Vial{alreadyInCartQty !== 1 ? 's' : ''} In Cart For {totalPeptideVials} Peptide Vial{totalPeptideVials !== 1 ? 's' : ''}
         </span>
       </div>
     );
@@ -554,10 +554,10 @@ function BacWaterCalculator({
           }}
         >
           Your {totalPeptideVials} peptide vial{totalPeptideVials !== 1 ? 's' : ''} need{totalPeptideVials === 1 ? 's' : ''}{' '}
-          <strong style={{ color: 'var(--teal)' }}>~{totalMlNeeded} mL</strong> of BAC water for reconstitution.
+          <strong style={{ color: 'var(--teal)' }}>~{totalMlNeeded} mL</strong> of BAC Water For Reconstitution.
           {alreadyInCart && alreadyInCartQty > 0 && (
             <span style={{ color: 'rgba(255,255,255,0.5)' }}>
-              {' '}({alreadyInCartQty} vial{alreadyInCartQty !== 1 ? 's' : ''} already in cart.)
+              {' '}({alreadyInCartQty} vial{alreadyInCartQty !== 1 ? 's' : ''} Already In Cart.)
             </span>
           )}
         </div>
@@ -622,13 +622,13 @@ function BacWaterCalculator({
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                   <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
-                Add {stillNeeded} Vial{stillNeeded !== 1 ? 's' : ''} of BAC Water to Cart
+                Add {stillNeeded} Vial{stillNeeded !== 1 ? 's' : ''} Of BAC Water To Cart
               </>
             )}
           </button>
         ) : (
           <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>
-            BAC Water not available in current catalog
+            BAC Water Not Available In Current Catalog
           </div>
         )}
       </div>
@@ -719,7 +719,7 @@ function SmartRecommendationStrip({
             Other Researchers Also Stack
           </div>
           <div style={{ fontSize: '0.63rem', color: 'var(--grey-400)', marginTop: 1 }}>
-            Based on compound compatibility &amp; order history
+            Based On Compound Compatibility &amp; Order History
           </div>
         </div>
       </div>
@@ -1048,7 +1048,7 @@ function CartDrawer() {
                             </h4>
                             <div style={{ fontSize: '0.65rem', color: '#68D391', marginTop: 2, fontWeight: 700 }}>Stack Discount (10% Off) Applied</div>
                             <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', marginTop: 4, fontStyle: 'italic', maxWidth: '90%' }}>
-                              Note: This peptide stack is not all inside one vial, it is individually packaged as the vials listed below.
+                              Note: This Peptide Stack Is Not All Inside One Vial - It Is Individually Packaged As The Vials Listed Below.
                             </div>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

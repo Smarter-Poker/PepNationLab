@@ -64,7 +64,7 @@ export default function PremiumCompoundCard({ compound, isEli5 = false, onQuickV
         <div style={{ width: '120px', height: '120px', flexShrink: 0, borderRadius: '12px', background: storeProduct?.imageUrl ? 'none' : 'rgba(0,0,0,0.3)', border: storeProduct?.imageUrl ? 'none' : '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
            <Image 
              src={storeProduct?.imageUrl || "/images/redesign/hero_molecule.png"} 
-             alt="molecule" 
+             alt="Compound Molecule"
              fill 
              style={{ objectFit: 'contain', opacity: storeProduct?.imageUrl ? 1 : 0.5, mixBlendMode: storeProduct?.imageUrl ? 'normal' : 'screen' }} 
            />

@@ -921,7 +921,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
       });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        toast.error(json.error || `Could not ${action} call`);
+        toast.error(json.error || (action === 'accept' ? 'Could Not Accept Call' : 'Could Not End Call'));
         if (action !== 'accept') onClose();
       } else {
         if (action === 'decline' || action === 'hangup') {

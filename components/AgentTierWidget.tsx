@@ -109,11 +109,11 @@ export default function AgentTierWidget() {
               </p>
               {comm!.next ? (
                 <div style={{ fontSize: '0.85rem', color: 'var(--silver-light)' }}>
-                  Sell <span style={{ color: 'var(--teal)', fontWeight: 700 }}>{money(comm!.next.dollarsToNext)}</span> more to unlock a
+                  Sell <span style={{ color: 'var(--teal)', fontWeight: 700 }}>{money(comm!.next.dollarsToNext)}</span> More To Unlock A
                   {' '}<span style={{ color: '#00FF9D', fontWeight: 700 }}>+{comm!.next.bonus_pct}% Performance Bonus</span>.
                 </div>
               ) : (
-                <div style={{ fontSize: '0.85rem', color: '#00FF9D', fontWeight: 600 }}>You&apos;ve unlocked every performance bonus this month.</div>
+                <div style={{ fontSize: '0.85rem', color: '#00FF9D', fontWeight: 600 }}>You&apos;ve Unlocked Every Performance Bonus This Month.</div>
               )}
             </div>
           </div>
@@ -130,8 +130,8 @@ export default function AgentTierWidget() {
               </p>
               {tier.next ? (
                 <div style={{ fontSize: '0.85rem', color: 'var(--silver-light)' }}>
-                  <span style={{ color: 'var(--teal)', fontWeight: 700 }}>{money(tier.next.dollarsToNext)}</span> more to reach
-                  {' '}<span style={{ color: '#00FF9D', fontWeight: 700 }}>{tier.next.name}</span> and lower your Agent Cost.
+                  <span style={{ color: 'var(--teal)', fontWeight: 700 }}>{money(tier.next.dollarsToNext)}</span> More To Reach
+                  {' '}<span style={{ color: '#00FF9D', fontWeight: 700 }}>{tier.next.name}</span> And Lower Your Agent Cost.
                 </div>
               ) : (
                 <div style={{ fontSize: '0.85rem', color: 'var(--teal)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: '8px' }}>

@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
   const { username, password, firstName, lastName, phone } = body || {};
 
   if (!username || !password || !firstName || !lastName) {
-    return NextResponse.json({ error: 'Username, password, first name, and last name are required.' }, { status: 400 });
+    return NextResponse.json({ error: 'Username, Password, First Name, And Last Name Are Required.' }, { status: 400 });
   }
 
   if (password.length < 8) {

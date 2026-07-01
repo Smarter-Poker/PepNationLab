@@ -397,7 +397,7 @@ export default function Messaging({
       {/* Search bar */}
       {searchOpen && (
         <div style={{ padding: '8px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', gap: 8 }}>
-          <input type="text" placeholder="Search messages..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+          <input type="text" placeholder="Search Messages..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
             style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '6px 10px', color: '#fff', fontSize: '0.8rem', outline: 'none', fontFamily: 'inherit' }} />
           <button onClick={handleSearch}
@@ -489,7 +489,7 @@ export default function Messaging({
                           background: 'rgba(255,255,255,0.02)', fontStyle: 'italic',
                           fontSize: '0.78rem', color: 'rgba(255,255,255,0.2)',
                         }}>
-                          This message was deleted
+                          This Message Was Deleted
                         </div>
                       ) : isSpecial ? (
                         <div style={{
@@ -542,7 +542,7 @@ export default function Messaging({
                           padding: '8px 12px',
                         }}>
                           <div style={{ fontSize: '0.82rem', color: mine ? '#fff' : 'rgba(255,255,255,0.85)', lineHeight: 1.45, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.body}</div>
-                          {m.edited_at && <div style={{ fontSize: '0.6rem', color: mine ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)', marginTop: 2 }}>(edited)</div>}
+                          {m.edited_at && <div style={{ fontSize: '0.6rem', color: mine ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)', marginTop: 2 }}>(Edited)</div>}
                           {m.attachment_url && (
                             isImage(m.attachment_url) ? (
                               <IframeLink href={m.attachment_url} style={{ display: 'inline-block' }}>
@@ -658,7 +658,7 @@ export default function Messaging({
       {replyTo && (
         <div style={{ padding: '6px 16px', borderTop: '1px solid rgba(192,184,168,0.1)', background: 'rgba(192,184,168,0.03)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ borderLeft: '3px solid var(--teal)', paddingLeft: 8, flex: 1 }}>
-            <div style={{ fontSize: '0.68rem', color: 'var(--teal)', fontWeight: 600 }}>Replying to</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--teal)', fontWeight: 600 }}>Replying To</div>
             <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{replyTo.body?.substring(0, 60)}</div>
           </div>
           <button onClick={() => setReplyTo(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: 4 }}>

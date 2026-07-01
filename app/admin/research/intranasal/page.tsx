@@ -40,7 +40,7 @@ export default async function AdminIntranasalPage() {
         </Link>
       </nav>
       <header style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--white, #FFFFFF)', margin: 0 }}>Intranasal Route Classification</h1>
+        <h1 className="animated-gradient-text" style={{ fontSize: '1.8rem', margin: 0 }}>Intranasal Route Classification</h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1rem', marginTop: 8, maxWidth: 780, lineHeight: 1.6 }}>
           Set each compound&apos;s nasal-route tier. Established and Emerging surface the nasal badges across the store and
           research library; Injection Only hides them. Changes save immediately and refresh the public pages. Currently

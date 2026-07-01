@@ -72,7 +72,7 @@ export default function IncomingCallToast({ call, onAccept, onDecline, stackInde
       success = res.ok;
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        toast.error(json.error || `Could not ${action} call`);
+        toast.error(json.error || (action === 'accept' ? 'Could Not Accept Call' : 'Could Not Decline Call'));
       }
     } catch {
       toast.error('Network Error');

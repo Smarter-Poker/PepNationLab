@@ -128,11 +128,10 @@ export default function WalletPage({
 
   useEffect(() => { refresh(); }, []);
 
-  // Open invoices = anything that isn't paid/cancelled. The unified statements
-  // list already merges agent_invoices so sub-agents who owe their super-agent
-  // also see them here.
+  // Open invoices = anything that isn't paid/cancelled AND has an actual balance.
+  // $0 statements should never be shown as outstanding — they have nothing to pay.
   const openInvoices = useMemo(
-    () => statements.filter((s) => s.status !== 'paid' && s.status !== 'cancelled'),
+    () => statements.filter((s) => s.status !== 'paid' && s.status !== 'cancelled' && Number(s.total_owed || 0) > 0),
     [statements],
   );
   const hasOpenStatement = openInvoices.length > 0;

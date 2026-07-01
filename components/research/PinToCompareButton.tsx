@@ -109,7 +109,7 @@ export default function PinToCompareButton({
       if (list.length > 0) {
         const firstCategory = list[0].category;
         if (firstCategory && category && firstCategory !== category) {
-          toast.error(`You can only compare peptides within the same category ("${firstCategory}").`);
+          toast.error(`Only Peptides Within The Same Category Can Be Compared ("${firstCategory}").`);
           return;
         }
       }
@@ -124,7 +124,7 @@ export default function PinToCompareButton({
       };
       writePinned([...list, item]);
     } else {
-      toast.error('You can compare up to 4 compounds at a time.');
+      toast.error('Up To 4 Compounds Can Be Compared At A Time.');
     }
     sync();
   }, [compoundSlug, compoundName, evidenceTierKey, productName, imageUrl, pricePerVialDollars, category, sync]);
@@ -137,7 +137,7 @@ export default function PinToCompareButton({
       <button
         type="button"
         onClick={toggle}
-        title="Remove from compare"
+        title="Remove From Compare"
         style={{
           background: 'none',
           border: 'none',
@@ -193,7 +193,7 @@ export default function PinToCompareButton({
       type="button"
       onClick={toggle}
       disabled={full}
-      title={full ? 'Compare tray is full (max 4)' : `Add ${compoundName} to compare`}
+      title={full ? 'Compare Tray Is Full (Max 4)' : `Add ${compoundName} To Compare`}
       style={{
         background: 'none',
         border: 'none',

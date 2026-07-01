@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic';
  * is off, or applicable:false for non-sub-agents.
  */
 export async function GET() {
+  try {
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
 
@@ -67,4 +68,7 @@ export async function GET() {
     steps,
     next: next ? { min_volume: next.min_volume, bonus_pct: next.bonus_pct, dollarsToNext: Number(Math.max(0, next.min_volume - monthRetail).toFixed(2)) } : null,
   });
+  } catch {
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }

@@ -87,7 +87,7 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
     return (
       <div style={{ padding: 40, fontFamily: 'Arial, sans-serif', color: '#222' }}>
         <h1 style={{ fontSize: 22 }}>Invoice Not Found</h1>
-        <p>The invoice you requested could not be found, or you do not have access to view it.</p>
+        <p>The Invoice You Requested Could Not Be Found, Or You Do Not Have Access To View It.</p>
       </div>
     );
   }

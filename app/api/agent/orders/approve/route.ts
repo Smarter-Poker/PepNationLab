@@ -19,13 +19,13 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createServiceClient();
     const callerId = gate.user.id;
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const { orderId, newStatus, tracking_number } = body;
 
-    if (!orderId || !newStatus) return NextResponse.json({ error: 'Order ID and Status required' }, { status: 400 });
+    if (!orderId || !newStatus) return NextResponse.json({ error: 'Order ID And Status Required' }, { status: 400 });
     const VALID_AGENT_TRANSITIONS = new Set(['approved_ship', 'approved_pickup', 'cancelled']);
     if (!VALID_AGENT_TRANSITIONS.has(newStatus)) {
-      return NextResponse.json({ error: 'Invalid agent status transition. Must be approved_ship, approved_pickup, or cancelled.' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid Agent Status Transition. Must Be Approved_Ship, Approved_Pickup, Or Cancelled.' }, { status: 400 });
     }
 
     return withIdempotency({
@@ -41,16 +41,16 @@ export async function POST(req: NextRequest) {
       .eq('id', orderId)
       .single();
 
-    if (orderError || !order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    if (orderError || !order) return NextResponse.json({ error: 'Order Not Found' }, { status: 404 });
 
     const orderAgentProfile = pickOne<{ parent_agent_id: string | null }>(order.profiles);
     const orderAgentParentId = orderAgentProfile?.parent_agent_id ?? null;
 
     if (order.agent_id !== callerId && orderAgentParentId !== callerId) {
-      return NextResponse.json({ error: 'Unauthorized to modify this order' }, { status: 403 });
+      return NextResponse.json({ error: 'Unauthorized To Modify This Order' }, { status: 403 });
     }
     if (order.status !== 'pending_customer_payment' && order.status !== 'agent_approval_pending') {
-      return NextResponse.json({ error: 'Order is no longer pending approval' }, { status: 400 });
+      return NextResponse.json({ error: 'Order Is No Longer Pending Approval' }, { status: 400 });
     }
 
     if (newStatus === 'cancelled') {
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       });
       if (cancelError) {
         console.error('Cancel order RPC failed:', cancelError.message);
-        return NextResponse.json({ error: 'Failed to cancel order. Please try again.' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed To Cancel Order. Please Try Again.' }, { status: 500 });
       }
       try {
         const orderPayload = await fetchOrderForWebhook(supabase, orderId);
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     if (finalStatus === 'agent_approval_pending') {
       const updatePayload: Record<string, string> = { status: finalStatus, updated_at: new Date().toISOString() };
       const { error: updateError } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
-      if (updateError) return NextResponse.json({ error: 'Failed to forward order to Super Agent' }, { status: 500 });
+      if (updateError) return NextResponse.json({ error: 'Failed To Forward Order To Super Agent' }, { status: 500 });
       return NextResponse.json({ success: true, status: finalStatus });
     }
 
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
       .from('profiles').select('account_type, prepaid_balance, credit_limit')
       .eq('id', primaryBilledAgentId).single();
 
-    if (profileError || !primaryProfile) return NextResponse.json({ error: 'Failed to retrieve billing profile' }, { status: 500 });
+    if (profileError || !primaryProfile) return NextResponse.json({ error: 'Failed To Retrieve Billing Profile' }, { status: 500 });
 
     // Invoice v2 chain check. The freeze walk MUST start at the transacting
     // agent (order.agent_id) so a frozen sub-agent's order is blocked even
@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
       const balance = Number(primaryProfile.prepaid_balance) || 0;
       if (balance < totalOwed) {
         return NextResponse.json({
-          error: `Insufficient Prepaid Balance. Requires $${totalOwed.toFixed(2)}, but balance is $${balance.toFixed(2)}. Please recharge your account.`
+          error: `Insufficient Prepaid Balance. Requires $${totalOwed.toFixed(2)}, But Balance Is $${balance.toFixed(2)}. Please Recharge Your Account.`
         }, { status: 402 });
       }
     }
@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
     if (primaryProfile.account_type === 'prepaid') {
       oldBalance = Number(primaryProfile.prepaid_balance) || 0;
       const { data: deductSuccess, error: deductError } = await supabase.rpc('deduct_prepaid_balance', { agent_id: primaryBilledAgentId, amount: totalOwed });
-      if (deductError || !deductSuccess) return NextResponse.json({ error: 'Failed to deduct balance. Please try again.' }, { status: 500 });
+      if (deductError || !deductSuccess) return NextResponse.json({ error: 'Failed To Deduct Balance. Please Try Again.' }, { status: 500 });
       prepaidDeducted = true;
     }
 
@@ -243,7 +243,7 @@ export async function POST(req: NextRequest) {
           });
         }
       }
-      return NextResponse.json({ error: 'Failed to update order status' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed To Update Order Status' }, { status: 500 });
     }
 
     if (prepaidDeducted) {

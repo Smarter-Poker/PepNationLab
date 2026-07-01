@@ -53,13 +53,13 @@ function NotifIcon({ type }: { type: string }) {
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const s = Math.floor(diff / 1000);
-  if (s < 60)  return 'just now';
+  if (s < 60)  return 'Just Now';
   const m = Math.floor(s / 60);
-  if (m < 60)  return `${m}m ago`;
+  if (m < 60)  return `${m}m Ago`;
   const h = Math.floor(m / 60);
-  if (h < 24)  return `${h}h ago`;
+  if (h < 24)  return `${h}h Ago`;
   const d = Math.floor(h / 24);
-  return `${d}d ago`;
+  return `${d}d Ago`;
 }
 
 /* ─── Bell animation keyframe injection ────────────────────────────────────── */
@@ -368,7 +368,7 @@ export default function NavbarNotificationBell() {
                   borderRadius: 99,
                   padding: '2px 6px',
                 }}>
-                  {unread} new
+                  {unread} New
                 </span>
               )}
             </div>
@@ -386,7 +386,7 @@ export default function NavbarNotificationBell() {
                     fontWeight: 600,
                   }}
                 >
-                  Mark all read
+                  Mark All Read
                 </button>
               )}
               <Link
@@ -429,10 +429,10 @@ export default function NavbarNotificationBell() {
               <div style={{ padding: '32px 16px', textAlign: 'center' }}>
                 <div style={{ display: 'inline-flex', marginBottom: 12, color: 'rgba(255,255,255,0.15)' }}><Bell size={36} /></div>
                 <div style={{ color: 'rgba(192,184,168,0.5)', fontSize: '0.82rem' }}>
-                  No notifications yet
+                  No Notifications Yet
                 </div>
                 <div style={{ color: 'rgba(192,184,168,0.3)', fontSize: '0.72rem', marginTop: 4 }}>
-                  You&apos;ll see orders, messages, and updates here
+                  You Will See Orders, Messages, And Updates Here
                 </div>
               </div>
             ) : (

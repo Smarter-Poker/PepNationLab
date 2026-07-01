@@ -241,10 +241,10 @@ function MatchFormInner() {
       if (res.error) {
         toast.error(res.error);
       } else {
-        toast.success('Match saved to your dashboard!');
+        toast.success('Match Saved To Your Dashboard.');
       }
     } catch {
-      toast.error('Failed to save match.');
+      toast.error('Failed To Save Match.');
     } finally {
       setSaving(false);
     }
@@ -313,15 +313,15 @@ function MatchFormInner() {
       <AnimatePresence mode="wait">
         {step === 1 && (
           <motion.div key="step1" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
-            <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>What is your primary research goal?</h2>
-            <p style={{ color: 'var(--silver)', marginBottom: '32px' }}>Select the main focus of your protocol to calibrate the engine.</p>
+            <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>What Is Your Primary Research Goal?</h2>
+            <p style={{ color: 'var(--silver)', marginBottom: '32px' }}>Select The Main Focus Of Your Protocol To Calibrate The Engine.</p>
             
             <div style={{ marginBottom: '40px', padding: '16px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
               <p style={{ color: 'var(--silver)', fontSize: '0.9rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={16} color="var(--teal)" /> Or use AI to configure parameters:
+                <Sparkles size={16} color="var(--teal)" /> Or Use AI To Configure Parameters:
               </p>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="text" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="Describe your scenario..." style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #1D2D3E', background: '#0F1923', color: 'white', fontSize: '1rem' }} onKeyDown={e => e.key === 'Enter' && onAiSubmit()} />
+                <input type="text" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="Describe Your Scenario..." style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #1D2D3E', background: '#0F1923', color: 'white', fontSize: '1rem' }} onKeyDown={e => e.key === 'Enter' && onAiSubmit()} />
                 <button onClick={onAiSubmit} disabled={aiLoading} className="btn-secondary" style={{ padding: '0 1.5rem', fontWeight: 600 }}>{aiLoading ? 'Thinking...' : 'AI Configure'}</button>
               </div>
             </div>
@@ -384,7 +384,7 @@ function MatchFormInner() {
         {step === 2 && (
           <motion.div key="step2" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Evidence Tier Comfort</h2>
-            <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>How much clinical evidence do you require for these compounds?</p>
+            <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>How Much Clinical Evidence Do You Require For These Compounds?</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {EVIDENCE_OPTIONS.map(o => (
                 <div key={o.value} onClick={() => setEvidenceComfort(o.value)} className={`step-card ${evidenceComfort === o.value ? 'selected' : ''}`}>
@@ -403,7 +403,7 @@ function MatchFormInner() {
         {step === 3 && (
           <motion.div key="step3" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Risk Tolerance</h2>
-            <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Set your safety constraints.</p>
+            <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Set Your Safety Constraints.</p>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {RISK_OPTIONS.map(o => (
@@ -424,7 +424,7 @@ function MatchFormInner() {
         {step === 4 && (
           <motion.div key="step4" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Advanced Preferences</h2>
-            <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Fine-tune format and handling requirements.</p>
+            <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Fine-Tune Format And Handling Requirements.</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
@@ -510,7 +510,7 @@ function MatchFormInner() {
                 <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--silver)' }}>
                   The engine detected that <strong>{stackPartners[0].displayName}</strong> and <strong>{stackPartners[1].displayName}</strong> are highly synergistic and frequently researched together as a stack for this protocol.
                   <Link href={`/research/compare?add=${stackPartners[0].slug},${stackPartners[1].slug}`} style={{ color: 'var(--white)', fontWeight: 700, marginLeft: '8px', textDecoration: 'underline' }}>
-                    Compare Them Side-by-Side <ChevronRight size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />
+                    Compare Them Side-By-Side <ChevronRight size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />
                   </Link>
                 </p>
               </div>
@@ -631,7 +631,7 @@ function MatchFormInner() {
         <div className="no-print" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', background: '#0F1923' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, color: 'white' }}>Head-to-Head Comparison</h3>
+              <h3 style={{ margin: 0, color: 'white' }}>Head-To-Head Comparison</h3>
               <button onClick={() => setShowCompare(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={24} /></button>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: 'white' }}>

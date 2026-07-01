@@ -148,7 +148,7 @@ export default function MessageBubble({
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
       vibrateLight();
-      onReact(message, '❤️', 'add');
+      onReact(message, '\u2764\uFE0F', 'add');
       lastTapRef.current = 0;
     } else {
       lastTapRef.current = now;
@@ -160,7 +160,7 @@ export default function MessageBubble({
     if (now - lastTapRef.current < 300) {
       // Double tap detected
       if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
-      onReact(message, '❤️', 'add');
+      onReact(message, '\u2764\uFE0F', 'add');
       if (navigator.vibrate) navigator.vibrate(50);
       lastTapRef.current = 0;
       return;

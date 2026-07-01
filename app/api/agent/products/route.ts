@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     .order('sort_order', { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
   }
 
   const augmentedPromises = (data ?? []).map(async ap => {
@@ -87,7 +87,7 @@ export async function PATCH(req: NextRequest) {
   } = body;
 
   if (!id) {
-    return NextResponse.json({ error: 'Missing agent_product id' }, { status: 400 });
+    return NextResponse.json({ error: 'Missing Agent Product ID' }, { status: 400 });
   }
 
   const supabase = await createServiceClient();
@@ -101,7 +101,7 @@ export async function PATCH(req: NextRequest) {
     .single();
 
   if (!check) {
-    return NextResponse.json({ error: 'Unauthorized or not found' }, { status: 403 });
+    return NextResponse.json({ error: 'Unauthorized Or Not Found' }, { status: 403 });
   }
 
   // ── Compute agent cost for server-side floor enforcement ──────────────────
@@ -251,7 +251,7 @@ export async function PATCH(req: NextRequest) {
     .eq('agent_id', gate.user.id); // enforce ownership on the write, not just the pre-check
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

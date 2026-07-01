@@ -122,7 +122,7 @@ export default function ForgotPasswordPage() {
               </div>
               <h2 className="animated-gradient-text" style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)', textAlign: 'center' }}>Password Reset</h2>
               <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.6, textAlign: 'center', marginBottom: 'var(--space-6)' }}>
-                Please contact your Research Agent directly if you forgot your password or need it reset.
+                Please Contact Your Research Agent Directly If You Forgot Your Password Or Need It Reset.
               </p>
 
               <div style={{ display: 'flex', justifyContent: 'center' }}>

@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { fmtDate } from './format';
+import IframeModal from '@/components/ui/IframeModal';
 
 export default function ReceiptVault() {
   const [data, setData] = useState<any>(null);
   const [opening, setOpening] = useState<string | null>(null);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/agent/wallet/receipts?limit=100', { cache: 'no-store' })
@@ -21,7 +23,7 @@ export default function ReceiptVault() {
       const res = await fetch(`/api/agent/wallet/receipts/${id}`, { cache: 'no-store' });
       const j = await res.json();
       if (!res.ok || !j.url) throw new Error(j.error || 'failed');
-      window.open(j.url, '_blank', 'noopener,noreferrer');
+      setReceiptUrl(j.url);
     } catch {
       toast.error('Could Not Open Receipt');
     } finally {
@@ -32,6 +34,8 @@ export default function ReceiptVault() {
   if (!data) return <div style={{ color: 'var(--grey-400)', padding: 16 }}>Loading...</div>;
 
   return (
+    <>
+    {receiptUrl && <IframeModal url={receiptUrl} title="Receipt" onClose={() => setReceiptUrl(null)} />}
     <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
       <h3 style={{ color: 'var(--white)', marginTop: 0 }}>Receipt Vault</h3>
       <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem' }}>{(data.count ?? data.receipts.length)} Payment Proofs Across All Orders.</p>
@@ -70,5 +74,6 @@ export default function ReceiptVault() {
         </div>
       )}
     </section>
+    </>
   );
 }

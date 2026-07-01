@@ -14,8 +14,8 @@ export default function ChangePasswordPage() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    if (newPassword.length < 6) {
-      setError('Password Must Be At Least 6 Characters');
+    if (newPassword.length < 8) {
+      setError('Password Must Be At Least 8 Characters');
       return;
     }
     if (newPassword !== confirm) {
@@ -31,7 +31,7 @@ export default function ChangePasswordPage() {
       });
       const json = await res.json();
       if (!res.ok) { setError(json.error || 'Failed To Update Password'); return; }
-      window.location.replace('/dashboard');
+      window.location.replace('/account/security');
     } catch {
       setError('Network Error. Please Try Again.');
     } finally {
@@ -116,7 +116,7 @@ export default function ChangePasswordPage() {
                 type="password"
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
-                placeholder="At Least 6 Characters"
+                placeholder="At Least 8 Characters"
                 required
                 style={{
                   width: '100%', boxSizing: 'border-box',

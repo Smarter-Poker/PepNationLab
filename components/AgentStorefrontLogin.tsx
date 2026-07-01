@@ -75,7 +75,7 @@ export default function AgentStorefrontLogin({
       if (!verifyRes.ok && verifyRes.status !== 200) {
         await supabase.auth.signOut();
         evictAllCatalogCaches();
-        throw new Error('Access verification failed. Please try again.');
+        throw new Error('Access Verification Failed. Please Try Again.');
       }
 
       const verifyData = await verifyRes.json();

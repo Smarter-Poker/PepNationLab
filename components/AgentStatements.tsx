@@ -62,7 +62,7 @@ export default function AgentStatements() {
     return (
       <div className="glass-panel">
         <div className="">
-          <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>Admin Statements</h2>
+          <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>Weekly Statements</h2>
           <div style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
             <p style={{ color: 'var(--silver-light)' }}>No Statements Found. Statements Are Generated Weekly For Your Fulfillment Costs.</p>
           </div>
@@ -74,7 +74,7 @@ export default function AgentStatements() {
   return (
     <div className="glass-panel">
       <div className="">
-        <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>Admin Statements</h2>
+        <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>Weekly Statements</h2>
         <p style={{ color: 'var(--silver-light)', fontSize: '0.9rem', marginBottom: 'var(--space-6)' }}>
           These Statements Represent Your Wholesale Cost (COGS) And Shipping Costs Owed To The Admin For Fulfillment.
         </p>

@@ -48,24 +48,24 @@ export default function BottomToolBar() {
         >
           <div style={{ position: 'relative', width: '16px', height: '16px' }}>
             <Image src="/images/redesign/icon_sparkles_3d.png" alt="Message" fill style={{ objectFit: 'contain' }} />
-          </div> Ask an Expert
+          </div> Ask An Expert
         </motion.div>
       </Link>
       
       <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
       
-      <a href="https://pepnationlab.com/community" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-        <motion.div 
+      <Link href="/community" style={{ textDecoration: 'none' }}>
+        <motion.div
           whileHover={{ scale: 1.05, background: 'rgba(255,255,255,0.1)' }}
           whileTap={{ scale: 0.95 }}
           style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', color: '#FFF', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
         >
-          Community 
+          Community
           <div style={{ position: 'relative', width: '14px', height: '14px' }}>
             <Image src="/images/redesign/icon_pin_3d.png" alt="Link" fill style={{ objectFit: 'contain' }} />
           </div>
         </motion.div>
-      </a>
+      </Link>
     </motion.div>
   );
 }

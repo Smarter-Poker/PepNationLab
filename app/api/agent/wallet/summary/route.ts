@@ -31,7 +31,7 @@ export async function GET() {
     (sum: number, s: any) => sum + Number(s.total_owed || 0),
     0
   );
-  const hasOpenStatement = (openStmts ?? []).length > 0;
+  const hasOpenStatement = (openStmts ?? []).some((s: any) => Number(s.total_owed || 0) > 0);
 
   // Next statement date - Sunday 23:59 UTC of current week
   const now = new Date();

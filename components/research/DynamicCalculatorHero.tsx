@@ -139,7 +139,7 @@ export default function DynamicCalculatorHero({ onSelect }: { onSelect?: (id: st
               </button>
             )) : (
               <div style={{ padding: '12px 16px', color: '#888', fontSize: '0.9rem' }}>
-                No calculators found.
+                No Calculators Found.
               </div>
             )}
           </div>

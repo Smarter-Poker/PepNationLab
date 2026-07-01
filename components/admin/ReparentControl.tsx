@@ -50,7 +50,7 @@ export default function ReparentControl({ people }: { people: ReparentablePerson
             <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--grey-400)', fontWeight: 700 }}>Agent To Move</span>
             <select value={agentId} onChange={(e) => setAgentId(e.target.value)}
               style={{ padding: '8px 12px', borderRadius: 8, background: 'var(--surface-1)', border: '1px solid var(--surface-3)', color: 'var(--white)', fontSize: '0.88rem', outline: 'none' }}>
-              <option value="">Select…</option>
+              <option value="">Select</option>
               {people.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
@@ -67,7 +67,7 @@ export default function ReparentControl({ people }: { people: ReparentablePerson
             </select>
           </label>
           <button type="submit" disabled={busy || !agentId} className="btn-primary" style={{ opacity: busy || !agentId ? 0.5 : 1 }}>
-            {busy ? 'Saving…' : 'Reparent'}
+            {busy ? 'Saving...' : 'Reparent'}
           </button>
         </form>
       </div>

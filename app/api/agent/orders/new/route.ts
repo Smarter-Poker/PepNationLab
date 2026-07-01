@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createServiceClient();
     const agentId = gate.user.id;
 
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const { buyerName, buyerEmail, street, city, state, zip, items, subtotal: clientSubtotal, shippingCost, paymentMethod, fulfillmentMethod } = body as {
       buyerName?: string; buyerEmail?: string; street?: string; city?: string; state?: string; zip?: string;
       items?: ManualOrderItemInput[]; subtotal?: number; shippingCost?: number; paymentMethod?: string; fulfillmentMethod?: string;
@@ -215,13 +215,13 @@ export async function POST(req: NextRequest) {
       if (admins && admins.length > 0) {
         const short = newOrder.id.slice(0, 8).toUpperCase();
         const totalStr = Number(computedTotal).toFixed(2);
-        const fulfillmentMsg = fulfillment === 'ship' ? 'Ready for Shipping' : 'Ready for Agent Pickup';
+        const fulfillmentMsg = fulfillment === 'ship' ? 'Ready For Shipping' : 'Ready For Agent Pickup';
         const notifications = admins.map((admin) => ({
           user_id: admin.id,
           title: finalAutoStatus === 'admin_approval_pending' ? 'Manual Order Needs Admin Approval' : 'Manual Order Auto-Approved',
           body: finalAutoStatus === 'admin_approval_pending' 
             ? `Order #${short} ($${totalStr}) - Agent Created & Approved. Needs Admin Release (${fulfillmentMsg}).`
-            : `Order #${short} ($${totalStr}) - Agent Created & Auto-Approved on Credit Line. (${fulfillmentMsg}).`,
+            : `Order #${short} ($${totalStr}) - Agent Created & Auto-Approved On Credit Line. (${fulfillmentMsg}).`,
           type: 'system',
           url: `/admin/orders?status=${finalAutoStatus}`,
         }));

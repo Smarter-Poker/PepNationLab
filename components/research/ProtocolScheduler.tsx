@@ -8,7 +8,7 @@ export function ProtocolScheduler({ results, primaryColor }: { results: MatchedP
   if (scheduled.length === 0) {
     return (
       <div style={{ padding: 24, textAlign: 'center', color: '#A8B4C0' }}>
-        No scheduling data available for this protocol.
+        No Scheduling Data Available For This Protocol.
       </div>
     );
   }
@@ -37,7 +37,7 @@ export function ProtocolScheduler({ results, primaryColor }: { results: MatchedP
         Suggested Administration Schedule
       </h3>
       <p style={{ color: '#A8B4C0', fontSize: '0.85rem', marginBottom: 20, lineHeight: 1.5 }}>
-        Based on the pharmacokinetic half-life of these compounds, here is a theoretical research schedule to maintain stable blood serum levels. 
+        Based On The Pharmacokinetic Half-Life Of These Compounds, Here Is A Theoretical Research Schedule To Maintain Stable Blood Serum Levels. 
         <strong style={{ color: '#FC8181' }}> Research Use Only.</strong>
       </p>
 

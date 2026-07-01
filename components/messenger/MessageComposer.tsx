@@ -277,7 +277,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
     const trimmed = text.trim();
     if (!trimmed || sending) return;
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      toast('You are offline');
+      toast('You Are Offline');
       return;
     }
     stopTypingNow();
@@ -332,7 +332,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
 
   const uploadAndSend = async (blob: Blob, contentType: string, messageType: MessageType, metadata: Record<string, unknown>) => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      toast('You are offline');
+      toast('You Are Offline');
       return;
     }
     const localUrl = URL.createObjectURL(blob);

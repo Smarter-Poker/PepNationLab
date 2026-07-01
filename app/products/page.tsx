@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
-// This legacy wholesale ordering page has been retired.
-// All product browsing now happens on agent storefronts (e.g. /savagebrands).
+// Product browsing happens on the Research Library catalog.
+// /products is a legacy path; send visitors to the catalog.
 export default function ProductsPage() {
-  redirect('/');
+  redirect('/research/catalog');
 }

@@ -183,7 +183,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
                 <select className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)}>
                   {products.map(p => {
                     const name = p.custom_name || p.products.name;
-                    const size = p.products.unit_size ? ` (${p.products.unit_size}${p.products.unit_measure})` : '';
+                    const size = p.products.unit_size ? ` (${p.products.unit_size}${p.products.unit_measure || ''})` : '';
                     return (
                       <option key={p.product_id} value={p.product_id}>{name}{size} - ${p.retail_price}</option>
                     );
@@ -230,7 +230,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
               </div>
             ) : (
               <div style={{ padding: '32px', textAlign: 'center', background: 'rgba(0,0,0,0.2)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '8px' }}>
-                <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)' }}>Cart Is Empty. Add products above.</p>
+                <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)' }}>Cart Is Empty. Add Products Above.</p>
               </div>
             )}
           </div>
@@ -254,7 +254,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
             </div>
             
             <button type="submit" className="btn-neon-cyan" disabled={submitting || cart.length === 0} style={{ padding: '12px 32px', fontSize: '1rem', fontWeight: 800 }}>
-              {submitting ? 'Creating Order...' : 'CREATE ORDER'}
+              {submitting ? 'Creating Order...' : 'Create Order'}
             </button>
           </div>
 

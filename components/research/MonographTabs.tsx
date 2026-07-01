@@ -388,7 +388,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                   {compound.is_pro_angiogenic && (
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, background: 'rgba(246,173,85,0.1)', border: '1px solid rgba(246,173,85,0.25)' }}>
                       <AlertTriangle size={13} color="#F6AD55" />
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#F6AD55' }}>Pro-Angiogenic - promotes new vessel growth</span>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#F6AD55' }}>Pro-Angiogenic - Promotes New Vessel Growth</span>
                     </div>
                   )}
                   {compound.is_stack && compound.stack_components && compound.stack_components.length > 0 && (
@@ -446,7 +446,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 Application Domain Efficacy Profile
               </div>
               <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', margin: 0, lineHeight: 1.6 }}>
-                Per-domain efficacy scores derived from compound research metadata. Scores represent the strength of research evidence and mechanistic alignment with each application area (0-100 scale).
+                Per-Domain Efficacy Scores Derived From Compound Research Metadata. Scores Represent The Strength Of Research Evidence And Mechanistic Alignment With Each Application Area (0-100 Scale).
               </p>
             </div>
 
@@ -485,7 +485,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 <SectionDivider title="Research Coverage" />
                 <div style={{ marginBottom: 14 }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 8 }}>
-                    {compound.research_areas.length} Application Area{compound.research_areas.length > 1 ? 's' : ''} - {compound.research_areas.length >= 6 ? 'Exceptionally broad' : compound.research_areas.length >= 4 ? 'Wide coverage' : compound.research_areas.length >= 2 ? 'Moderate coverage' : 'Focused scope'}
+                    {compound.research_areas.length} Application Area{compound.research_areas.length > 1 ? 's' : ''} - {compound.research_areas.length >= 6 ? 'Exceptionally Broad' : compound.research_areas.length >= 4 ? 'Wide Coverage' : compound.research_areas.length >= 2 ? 'Moderate Coverage' : 'Focused Scope'}
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {compound.research_areas.map((area) => (
@@ -667,14 +667,14 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                   {nasal.nasal && (
                     <p style={{ margin: '6px 0 0', fontSize: '0.84rem', color: '#C2CEDA', lineHeight: 1.6 }}>
                       {nasal.status === 'established'
-                        ? 'In addition to injection, this compound has documented intranasal (nasal spray) use as a delivery route.'
-                        : 'Beyond injection, intranasal delivery has been explored in early research only.'}
+                        ? 'In Addition To Injection, This Compound Has Documented Intranasal (Nasal Spray) Use As A Delivery Route.'
+                        : 'Beyond Injection, Intranasal Delivery Has Been Explored In Early Research Only.'}
                       {nasal.caveat ? ' ' + nasal.caveat : ''}
                     </p>
                   )}
                   {!nasal.nasal && (
                     <p style={{ margin: '6px 0 0', fontSize: '0.84rem', color: '#9FB0BD', lineHeight: 1.6 }}>
-                      Injection is the established route for this compound. There is no credible evidence supporting a nasal spray alternative.
+                      Injection Is The Established Route For This Compound. There Is No Credible Evidence Supporting A Nasal Spray Alternative.
                     </p>
                   )}
                 </div>
@@ -779,7 +779,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 Research Metrics & External Databases
               </div>
               <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', margin: 0, lineHeight: 1.6 }}>
-                Quantitative research footprint: clinical trial registrations, peer-reviewed publications, regulatory classifications, and links to authoritative external databases.
+                Quantitative Research Footprint: Clinical Trial Registrations, Peer-Reviewed Publications, Regulatory Classifications, And Links To Authoritative External Databases.
               </p>
             </div>
             <TrialsMetricsPanel compound={compound} />

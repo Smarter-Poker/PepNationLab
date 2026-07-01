@@ -161,20 +161,27 @@ export async function persistStatement(
   // If we found a non-paid row, always let the upsert proceed so totals
   // are refreshed for the same week (regardless of force flag).
 
+  // A $0 statement has nothing to collect — close it immediately so it never
+  // appears as "outstanding" in the admin panel, wallet, or any balance query.
+  const isZeroBalance = computed.totalOwed <= 0;
+  const upsertPayload: Record<string, unknown> = {
+    agent_id: agentId,
+    week_start: weekStart,
+    week_end: computed.weekEnd,
+    total_cogs: computed.totalCogs,
+    total_shipping: computed.totalShipping,
+    total_owed: computed.totalOwed,
+    status: isZeroBalance ? 'paid' : 'pending_payment',
+  };
+  if (isZeroBalance) {
+    upsertPayload.paid_at = new Date().toISOString();
+    upsertPayload.payment_method = 'zero_balance';
+    upsertPayload.payment_reference = 'Auto-closed: no balance due';
+  }
+
   const { data: statement, error: upsertError } = await supabase
     .from('weekly_statements')
-    .upsert(
-      {
-        agent_id: agentId,
-        week_start: weekStart,
-        week_end: computed.weekEnd,
-        total_cogs: computed.totalCogs,
-        total_shipping: computed.totalShipping,
-        total_owed: computed.totalOwed,
-        status: 'pending_payment',
-      },
-      { onConflict: 'agent_id,week_start' }
-    )
+    .upsert(upsertPayload, { onConflict: 'agent_id,week_start' })
     .select('id')
     .single();
 

@@ -74,11 +74,11 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return 'Just Now';
-    if (mins < 60) return `${mins}m ago`;
+    if (mins < 60) return `${mins}m Ago`;
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
+    if (hrs < 24) return `${hrs}h Ago`;
     const days = Math.floor(hrs / 24);
-    if (days < 7) return `${days}d ago`;
+    if (days < 7) return `${days}d Ago`;
     return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' });
   }
 

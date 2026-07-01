@@ -131,7 +131,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
   const prevPercentRef = useRef(completeness);
   useEffect(() => {
     if (completeness === 100 && prevPercentRef.current !== 100) {
-      toast.success("Profile is 100% Completed!", { duration: 2000 });
+      toast.success("Profile Is 100% Complete!", { duration: 2000 });
       if (missingTasksModalOpen) {
         setTimeout(() => setMissingTasksModalOpen(false), 2000);
       }
@@ -396,7 +396,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
             </div>
             
             <p style={{ fontSize: '0.9rem', color: 'var(--silver)', marginBottom: 'var(--space-5)', lineHeight: 1.5 }}>
-              You're currently at {completeness}% profile completion. Please complete the following remaining tasks to get to 100%.
+              You Are Currently At {completeness}% Profile Completion. Please Complete The Following Remaining Tasks To Get To 100%.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>

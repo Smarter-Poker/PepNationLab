@@ -330,7 +330,7 @@ function GoalHeader({ goal, onSetGoal }: {
           {goal.streak_months > 0 ? (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#F59E0B', fontWeight: 700, fontSize: '0.75rem' }}><Flame size={12} aria-hidden /> {goal.streak_months} Month Streak!</span>
           ) : (
-            <span style={{ fontSize: '0.75rem', color: '#FFFFFF', fontWeight: 600 }}>Keep pushing!</span>
+            <span style={{ fontSize: '0.75rem', color: '#FFFFFF', fontWeight: 600 }}>Keep Pushing!</span>
           )}
         </div>
       </div>
@@ -401,7 +401,7 @@ function InlineTagInput({ onAdd, onCancel }: { onAdd: (tag: string) => Promise<v
     <div style={{ display: 'flex', gap: 5, alignItems: 'center', marginTop: 6 }}>
       <input ref={ref} value={val} onChange={e => setVal(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') void submit(); if (e.key === 'Escape') onCancel(); }}
-        placeholder="e.g. VIP" maxLength={32}
+        placeholder="E.g. VIP" maxLength={32}
         style={{ flex: 1, padding: '6px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(0,196,188,0.35)', color: '#FFFFFF', fontSize: '0.78rem', outline: 'none', minWidth: 0 }} />
       <button type="button" onClick={() => void submit()} disabled={saving || !val.trim()}
         style={{ padding: '6px 11px', borderRadius: 8, background: 'rgba(0,196,188,0.14)', border: '1px solid rgba(0,196,188,0.38)', color: '#00C4BC', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
@@ -446,7 +446,7 @@ function NoteEditor({ researcherId, initialNote, onSave }: { researcherId: strin
       </div>
       <textarea value={val} rows={3}
         onChange={e => { setVal(e.target.value); setDirty(true); }}
-        placeholder="Add a private note about this researcher..."
+        placeholder="Add A Private Note About This Researcher..."
         style={{ resize: 'vertical', padding: '9px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)', color: '#E6EEF6', fontSize: '0.78rem', outline: 'none', lineHeight: 1.5, fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }} />
       {dirty && (
         <div style={{ display: 'flex', gap: 6 }}>
@@ -840,15 +840,31 @@ export default function AgentResearcherCRMv2({
     router.push(`/messenger?participant=${encodeURIComponent(r.id)}`);
   }, [router]);
 
-  const addReminder = useCallback(async (r: Researcher) => {
-    const title = window.prompt('What Do You Want To Be Reminded About?');
-    if (!title) return;
-    const days = Math.max(1, parseInt(window.prompt('In How Many Days?', '7') ?? '7', 10) || 7);
-    const res = await fetch('/api/agent/researchers/reminders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ researcherId: r.id, title: title.slice(0, 200), remindAt: new Date(Date.now() + days * 86400000).toISOString() }) });
-    if (!res.ok) { toast.error('Could Not Save Reminder'); return; }
-    toast.success(`Reminder Set For ${days} Days`);
-    void refresh();
-  }, [refresh]);
+  const [reminderTarget, setReminderTarget] = useState<Researcher | null>(null);
+  const [reminderTitle, setReminderTitle] = useState('');
+  const [reminderDays, setReminderDays] = useState('7');
+  const [reminderSaving, setReminderSaving] = useState(false);
+
+  const addReminder = useCallback((r: Researcher) => {
+    setReminderTarget(r);
+    setReminderTitle('');
+    setReminderDays('7');
+  }, []);
+
+  const submitReminder = useCallback(async () => {
+    if (!reminderTarget || !reminderTitle.trim()) { toast.error('Please Enter A Reminder Title'); return; }
+    const days = Math.max(1, parseInt(reminderDays, 10) || 7);
+    setReminderSaving(true);
+    try {
+      const res = await fetch('/api/agent/researchers/reminders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ researcherId: reminderTarget.id, title: reminderTitle.trim().slice(0, 200), remindAt: new Date(Date.now() + days * 86400000).toISOString() }) });
+      if (!res.ok) { toast.error('Could Not Save Reminder'); return; }
+      toast.success(`Reminder Set For ${days} Day${days !== 1 ? 's' : ''}`);
+      setReminderTarget(null);
+      void refresh();
+    } finally {
+      setReminderSaving(false);
+    }
+  }, [reminderTarget, reminderTitle, reminderDays, refresh]);
 
   const setGoal = useCallback(async (n: number) => {
     const res = await fetch('/api/agent/researchers/goals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetCount: n }) });
@@ -873,7 +889,7 @@ export default function AgentResearcherCRMv2({
   const messageNeverLoggedIn = useCallback(() => {
     if (!data) return;
     const ids = data.researchers.filter(r => !(r.last_login ?? r.last_sign_in_at)).map(r => r.id);
-    if (ids.length === 0) { toast('No un-activated researchers'); return; }
+    if (ids.length === 0) { toast('No Un-Activated Researchers'); return; }
     router.push(`/messenger?participants=${encodeURIComponent(ids.join(','))}`);
   }, [data, router]);
 
@@ -954,7 +970,7 @@ export default function AgentResearcherCRMv2({
             <span style={{ fontSize: '0.8rem', color: '#F59E0B', fontWeight: 700 }}>
               {neverLoggedIn} Researcher{neverLoggedIn !== 1 ? 's' : ''} Haven't Logged In Yet
             </span>
-            <span style={{ fontSize: '0.75rem', color: '#7A8B9E' }}>- They haven't activated their account</span>
+            <span style={{ fontSize: '0.75rem', color: '#7A8B9E' }}>- They Haven't Activated Their Account</span>
           </div>
           <button type="button" onClick={messageNeverLoggedIn}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 9, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.32)', color: '#F59E0B', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
@@ -999,7 +1015,7 @@ export default function AgentResearcherCRMv2({
             <div style={{ flex: 1 }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, padding: '0 11px', minWidth: 200, flex: '0 1 240px' }}>
               <Search size={13} color="#7A8B9E" aria-hidden />
-              <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, email, username"
+              <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search Name, Email, Username"
                 style={{ border: 0, background: 'transparent', color: '#FFFFFF', padding: '9px 0', fontSize: '0.77rem', outline: 'none', width: '100%' }} />
             </div>
             <button type="button" onClick={() => { window.location.href = '/api/agent/researchers/export'; }}
@@ -1028,7 +1044,7 @@ export default function AgentResearcherCRMv2({
               </div>
 
               {filtered.length === 0 ? (
-                <div style={{ padding: '32px', textAlign: 'center', color: '#5A6A7A', fontSize: '0.83rem' }}>No researchers match this filter.</div>
+                <div style={{ padding: '32px', textAlign: 'center', color: '#5A6A7A', fontSize: '0.83rem' }}>No Researchers Match This Filter.</div>
               ) : (
                 filtered.map(r => (
                   <ResearcherRow key={r.id} r={r}
@@ -1052,6 +1068,52 @@ export default function AgentResearcherCRMv2({
       {tab === 'acquisition' && <div style={{ marginTop: 4 }}><AcquisitionView sourceCounts={data.source_counts} funnel={insights?.funnel ?? null} /></div>}
 
       <ActivityFeed items={data.activity} />
+
+      {/* Inline reminder modal */}
+      {reminderTarget && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.65)', padding: 16 }} onClick={() => setReminderTarget(null)}>
+          <div style={{ background: 'linear-gradient(160deg, rgba(18,26,42,0.99) 0%, rgba(12,18,30,0.99) 100%)', border: '1px solid rgba(0,196,188,0.28)', borderRadius: 16, padding: '24px 24px 20px', width: '100%', maxWidth: 400, boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+              <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FFFFFF' }}>Set Reminder</span>
+              <button type="button" onClick={() => setReminderTarget(null)} style={{ background: 'transparent', border: 0, color: '#7A8B9E', cursor: 'pointer', display: 'inline-flex' }}><X size={16} /></button>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#7A8B9E', marginBottom: 14 }}>
+              For: <strong style={{ color: '#FFFFFF' }}>{reminderTarget.full_name || reminderTarget.username || 'Researcher'}</strong>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ fontSize: '0.68rem', color: '#7A8B9E', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: 5 }}>Reminder Title</label>
+                <input
+                  autoFocus
+                  type="text" maxLength={200} value={reminderTitle}
+                  onChange={e => setReminderTitle(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') void submitReminder(); if (e.key === 'Escape') setReminderTarget(null); }}
+                  placeholder="E.g. Follow Up On Last Order"
+                  style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,196,188,0.30)', color: '#FFFFFF', fontSize: '0.83rem', outline: 'none' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.68rem', color: '#7A8B9E', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: 5 }}>Remind In (Days)</label>
+                <input
+                  type="number" min="1" max="365" value={reminderDays}
+                  onChange={e => setReminderDays(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', fontSize: '0.83rem', outline: 'none' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <button type="button" onClick={() => void submitReminder()} disabled={reminderSaving || !reminderTitle.trim()}
+                  style={{ flex: 1, padding: '10px', borderRadius: 10, background: 'rgba(0,196,188,0.16)', border: '1px solid rgba(0,196,188,0.40)', color: '#00C4BC', fontSize: '0.80rem', fontWeight: 700, cursor: reminderSaving || !reminderTitle.trim() ? 'not-allowed' : 'pointer', opacity: reminderSaving || !reminderTitle.trim() ? 0.6 : 1 }}>
+                  {reminderSaving ? 'Saving...' : 'Set Reminder'}
+                </button>
+                <button type="button" onClick={() => setReminderTarget(null)}
+                  style={{ padding: '10px 14px', borderRadius: 10, background: 'transparent', border: '1px solid rgba(255,255,255,0.10)', color: '#7A8B9E', fontSize: '0.80rem', cursor: 'pointer' }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         .crm-icon-btn {

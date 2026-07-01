@@ -43,13 +43,13 @@ export default function ChangePaymentMethod({ orderId, currentMethod, availableM
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update payment method');
+      if (!res.ok) throw new Error(data.error || 'Failed To Update Payment Method');
 
-      toast.success('Payment method updated');
+      toast.success('Payment Method Updated');
       setIsEditing(false);
       router.refresh();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to update payment method');
+      toast.error(err.message || 'Failed To Update Payment Method');
     } finally {
       setIsSubmitting(false);
     }

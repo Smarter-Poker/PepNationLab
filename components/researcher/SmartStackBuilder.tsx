@@ -88,7 +88,7 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
             <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--silver)' }} />
             <input 
               type="text" 
-              placeholder="Search compounds to add..." 
+              placeholder="Search Compounds To Add..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 12px 10px 34px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }}
@@ -183,7 +183,7 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
                         opacity: (isAnalyzing || selectedItems.length < 2) ? 0.5 : 1
                       }}
                     >
-                      {isAnalyzing ? 'Analyzing Synergy...' : selectedItems.length < 2 ? 'Add 2+ items to analyze' : 'Analyze with AI'}
+                      {isAnalyzing ? 'Analyzing Synergy...' : selectedItems.length < 2 ? 'Add 2+ Items To Analyze' : 'Analyze With AI'}
                     </button>
                   ) : (
                     <>

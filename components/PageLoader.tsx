@@ -12,7 +12,7 @@ interface PageLoaderProps {
 export default function PageLoader({
   open,
   title = 'Initializing Research Environment',
-  subtitle = 'Pep Nation Lab is preparing your secure storefront...',
+  subtitle = 'Pep Nation Lab Is Preparing Your Secure Storefront...',
 }: PageLoaderProps) {
   if (!open) return null;
 

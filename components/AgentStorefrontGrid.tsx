@@ -1461,10 +1461,10 @@ export default function AgentStorefrontGrid({
                   }
                }
             };
-            checkLev(g.name, 40, `Did you mean ${g.name}?`);
+            checkLev(g.name, 40, `Did You Mean ${g.name}?`);
             if (compoundsBySlug && g.compoundSlug) {
                const c = compoundsBySlug[g.compoundSlug];
-               if (c) checkLev(c.display_name, 40, `Did you mean ${c.display_name}?`);
+               if (c) checkLev(c.display_name, 40, `Did You Mean ${c.display_name}?`);
             }
           }
 
@@ -1503,11 +1503,11 @@ export default function AgentStorefrontGrid({
               reasonStr.startsWith('Research Area') ||
               reasonStr.startsWith('Compound Class') ||
               reasonStr.startsWith('Target:') ||
-              reasonStr.startsWith('Did you mean')
+              reasonStr.startsWith('Did You Mean')
             );
             if (isSemanticReason && maxTokenScore >= 40) {
               // Build a user-friendly label focusing on the extracted keyword
-              if (reasonStr.startsWith('Did you mean')) {
+              if (reasonStr.startsWith('Did You Mean')) {
                 // Keep typo message as-is - it's already user-facing
                 primaryReason = reasonStr;
               } else {
@@ -2295,7 +2295,7 @@ export default function AgentStorefrontGrid({
         }}>
           <Sparkles size={16} color="#EBB236" style={{ flexShrink: 0 }} />
           <span style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.88rem', fontWeight: 500 }}>
-            Did you mean:{' '}
+            Did You Mean:{' '}
             <button
               type="button"
               onClick={() => {
@@ -2683,7 +2683,7 @@ export default function AgentStorefrontGrid({
                     onChange={(e) => {
                       if (e.target.checked) {
                         if (pinnedNames.size >= 4) {
-                          toast.error('You can compare up to 4 compounds at a time.');
+                          toast.error('You Can Compare Up To 4 Compounds At A Time.');
                           return;
                         }
                         try {
@@ -2693,7 +2693,7 @@ export default function AgentStorefrontGrid({
                             const firstItem = list[0];
                             const firstCategory = firstItem.category;
                             if (firstCategory && firstCategory !== group.category) {
-                              toast.error(`You can only compare peptides within the same category ("${firstCategory}").`);
+                              toast.error(`You Can Only Compare Peptides Within The Same Category ("${firstCategory}").`);
                               return;
                             }
                           }
@@ -3247,7 +3247,7 @@ export default function AgentStorefrontGrid({
                       .filter(Boolean);
 
                     if (totalCartItems < overallMin) {
-                      toast.error(`Order Minimum Not Met: This storefront requires an overall minimum order of ${overallMin} items. You currently have ${totalCartItems}.`);
+                      toast.error(`Order Minimum Not Met: This Storefront Requires An Overall Minimum Order Of ${overallMin} Items. You Currently Have ${totalCartItems}.`);
                       return;
                     }
                     
@@ -3937,7 +3937,7 @@ export default function AgentStorefrontGrid({
                       letterSpacing: '0.05em',
                       fontWeight: 600,
                     }}>
-                      ELI5 Summary • {sanitize(c.display_name)}
+                      ELI5 Summary - {sanitize(c.display_name)}
                     </p>
                   </div>
                 </div>
