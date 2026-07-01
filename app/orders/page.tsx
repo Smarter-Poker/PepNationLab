@@ -262,7 +262,7 @@ export default async function OrdersPage({
 
                     {/* Line items */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-                      {order.order_items.map((item) => (
+                      {order.order_items?.map((item) => (
                         <div
                           key={item.id}
                           style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}

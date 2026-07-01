@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const VALUES = [
   {
     title: 'Wholesale Distribution',
-    body: 'We connect qualified researchers and institutions with research compounds at transparent wholesale pricing, removing the markup layers of traditional supply chains.',
+    body: 'We Connect Qualified Researchers And Institutions With Research Compounds At Transparent Wholesale Pricing, Removing The Markup Layers Of Traditional Supply Chains.',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
@@ -22,7 +22,7 @@ const VALUES = [
   },
   {
     title: 'Research-Grade Compounds',
-    body: 'Every compound in our catalog is intended strictly for in vitro laboratory research and analytical science. We do not sell consumer health products.',
+    body: 'Every Compound In Our Catalog Is Intended Strictly For In Vitro Laboratory Research And Analytical Science. We Do Not Sell Consumer Health Products.',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <path d="M6 3h12" />
@@ -32,7 +32,7 @@ const VALUES = [
   },
   {
     title: 'Agent Network',
-    body: 'Qualified high-volume researchers can operate their own branded storefronts as agents, building research-supply businesses on top of our distribution platform.',
+    body: 'Qualified High-Volume Researchers Can Operate Their Own Branded Storefronts As Agents, Building Research-Supply Businesses On Top Of Our Distribution Platform.',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -44,7 +44,7 @@ const VALUES = [
   },
   {
     title: 'Transparent Pricing',
-    body: 'Tier-based pricing multipliers are configurable and consistent. Researchers and agents always see exactly how a price is derived from base cost.',
+    body: 'Tier-Based Pricing Multipliers Are Configurable And Consistent. Researchers And Agents Always See Exactly How A Price Is Derived From Base Cost.',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <line x1="12" y1="1" x2="12" y2="23" />
@@ -81,14 +81,14 @@ export default function AboutPage() {
               Our <span style={{ color: 'var(--teal)' }}>Mission</span>
             </h2>
             <p style={{ fontSize: '0.95rem', color: 'var(--silver)', lineHeight: 1.8, marginBottom: 'var(--space-4)' }}>
-              Research laboratories deserve a supply partner that is transparent about pricing,
-              rigorous about compliance, and built around the realities of professional research
-              work. Pep Nation Lab exists to be that partner.
+              Research Laboratories Deserve A Supply Partner That Is Transparent About Pricing,
+              Rigorous About Compliance, And Built Around The Realities Of Professional Research
+              Work. Pep Nation Lab Exists To Be That Partner.
             </p>
             <p style={{ fontSize: '0.95rem', color: 'var(--silver)', lineHeight: 1.8, margin: 0 }}>
-              We operate a streamlined distribution platform that pairs a curated research catalog
-              with a network of vetted agents, so qualified researchers can source the compounds
-              they need without the opacity and inflated markups common to the industry.
+              We Operate A Streamlined Distribution Platform That Pairs A Curated Research Catalog
+              With A Network Of Vetted Agents, So Qualified Researchers Can Source The Compounds
+              They Need Without The Opacity And Inflated Markups Common To The Industry.
             </p>
           </div>
         </div>
@@ -143,8 +143,8 @@ export default function AboutPage() {
               Pep Nation Lab Strictly Prohibits The Sale Of Needles, Syringes, Or Any Medical
               Injection Delivery Devices By Our Company Or Our Agents. We Only Provide
               Research-Grade Peptides And Authorized Laboratory Diluents Exclusively For In
-              Vitro Testing. Compliance is not a formality for us - it is the foundation the
-              platform is built on.
+              Vitro Testing. Compliance Is Not A Formality For Us - It Is The Foundation The
+              Platform Is Built On.
             </p>
           </div>
         </div>

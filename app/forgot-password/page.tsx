@@ -4,43 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Key } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [sent, setSent] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-
-    if (!email.trim()) {
-      setError('Please Enter Your Email Address.');
-      return;
-    }
-
-    setLoading(true);
-    const supabase = createClient();
-
-    const redirectTo =
-      typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined;
-
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-      email.trim(),
-      redirectTo ? { redirectTo } : undefined
-    );
-
-    setLoading(false);
-
-    if (resetError) {
-      setError(resetError.message);
-      return;
-    }
-
-    setSent(true);
-  }
+  const [email] = useState('');
+  const [sent] = useState(false);
 
   return (
     <div
