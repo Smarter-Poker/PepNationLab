@@ -120,11 +120,12 @@ function QrModal({ coupon, storefront }: { coupon: Coupon; storefront: string })
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    QRCode.toCanvas(canvasRef.current, storefront, {
+    const qrUrl = coupon.code ? `${storefront}?coupon=${coupon.code}` : storefront;
+    QRCode.toCanvas(canvasRef.current, qrUrl, {
       width: 200,
       color: { dark: '#00C4BC', light: '#0a0f14' },
     }).catch(console.error);
-  }, [storefront]);
+  }, [storefront, coupon.code]);
 
   return (
     <div style={{ textAlign: 'center' }}>
@@ -132,7 +133,7 @@ function QrModal({ coupon, storefront }: { coupon: Coupon; storefront: string })
       <p style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>
         QR Code Links To Storefront With Coupon: <strong style={{ color: 'var(--teal)' }}>{coupon.code}</strong>
       </p>
-      <p style={{ color: 'var(--grey-400)', fontSize: '0.78rem' }}>{storefront}</p>
+      <p style={{ color: 'var(--grey-400)', fontSize: '0.78rem' }}>{storefront}?coupon={coupon.code}</p>
     </div>
   );
 }
@@ -324,6 +325,9 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
   // Bulk generate modal
   const [showBulkModal, setShowBulkModal] = useState(false);
 
+  // In-UI archive confirmation (replaces window.confirm)
+  const [confirmArchiveId, setConfirmArchiveId] = useState<string | null>(null);
+
   // Create / Edit form state
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -481,16 +485,17 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
     }
   };
 
-  const deleteCoupon = async (coupon: Coupon) => {
-    if (!window.confirm(`Archive Coupon ${coupon.code}? It Will No Longer Be Usable.`)) return;
+  const deleteCoupon = async (couponId: string) => {
     try {
-      const res = await fetch(`/api/agent/coupons/${coupon.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/agent/coupons/${couponId}`, { method: 'DELETE' });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed To Archive Coupon');
       toast.success('Coupon Archived Successfully');
+      setConfirmArchiveId(null);
       fetchCoupons();
     } catch (err: any) {
       toast.error(err.message || 'Failed To Archive Coupon');
+      setConfirmArchiveId(null);
     }
   };
 
@@ -586,12 +591,12 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
   const previewSummary = useMemo(() => {
     if (!discountValue || Number(discountValue) <= 0) return null;
     const val = Number(discountValue);
-    const minStr = minSubtotal ? ` on orders over $${Number(minSubtotal).toFixed(0)}` : '';
-    const usesStr = maxUses ? ` (${maxUses} use${Number(maxUses) > 1 ? 's' : ''} max)` : '';
-    const expStr = expiresAt ? ` until ${new Date(expiresAt).toLocaleDateString()}` : '';
+    const minStr = minSubtotal ? ` On Orders Over $${Number(minSubtotal).toFixed(0)}` : '';
+    const usesStr = maxUses ? ` (${maxUses} Use${Number(maxUses) > 1 ? 's' : ''} Max)` : '';
+    const expStr = expiresAt ? ` Until ${new Date(expiresAt).toLocaleDateString()}` : '';
     return discountType === 'percent'
-      ? `${val}% off${minStr}${usesStr}${expStr}`
-      : `$${val.toFixed(2)} off${minStr}${usesStr}${expStr}`;
+      ? `${val}% Off${minStr}${usesStr}${expStr}`
+      : `$${val.toFixed(2)} Off${minStr}${usesStr}${expStr}`;
   }, [discountType, discountValue, minSubtotal, maxUses, expiresAt]);
 
   const couponState = (c: Coupon) => {
@@ -700,13 +705,32 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
                       >
                         {c.is_active ? 'Deactivate' : 'Activate'}
                       </button>
-                      <button
-                        className="btn-neon-red"
-                        style={{ fontSize: '0.72rem', padding: '4px 10px' }}
-                        onClick={() => deleteCoupon(c)}
-                      >
-                        Archive
-                      </button>
+                      {confirmArchiveId === c.id ? (
+                        <>
+                          <button
+                            className="btn-neon-red"
+                            style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                            onClick={() => deleteCoupon(c.id)}
+                          >
+                            Confirm Archive
+                          </button>
+                          <button
+                            className="btn-silver"
+                            style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                            onClick={() => setConfirmArchiveId(null)}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          className="btn-neon-red"
+                          style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                          onClick={() => setConfirmArchiveId(c.id)}
+                        >
+                          Archive
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -143,18 +143,22 @@ export default function Messaging({
   useEffect(() => { setTimeout(scrollToBottom, 50); }, [messages, scrollToBottom]);
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 100); }, [counterpartId]);
 
-  // Load reactions for visible messages
+  // Load reactions for visible messages in parallel
   useEffect(() => {
     if (messages.length === 0) return;
     const loadReactions = async () => {
+      const results = await Promise.all(
+        messages.slice(-30).map((m) =>
+          fetch(`/api/messages/reactions?messageId=${m.id}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null)
+        )
+      );
       const rMap: Record<string, Reaction[]> = {};
-      for (const m of messages.slice(-30)) {
-        try {
-          const res = await fetch(`/api/messages/reactions?messageId=${m.id}`);
-          const json = await res.json();
-          if (json.reactions?.length) rMap[m.id] = json.reactions;
-        } catch { /* silent */ }
-      }
+      messages.slice(-30).forEach((m, idx) => {
+        const json = results[idx];
+        if (json?.reactions?.length) rMap[m.id] = json.reactions;
+      });
       setReactions(rMap);
     };
     loadReactions();
@@ -417,7 +421,7 @@ export default function Messaging({
       )}
 
       {/* Messages */}
-      <div ref={scrollRef} style={{ flexGrow: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '12px 16px 6px', display: 'flex', flexDirection: 'column', scrollBehavior: 'smooth', position: 'relative' }}>
+      <div ref={scrollRef} style={{ flexGrow: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '12px 16px 6px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
         {loading ? (
           <div style={{ margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2.5px solid rgba(192,184,168,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} />
@@ -711,7 +715,7 @@ export default function Messaging({
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }} />
           </label>
           {/* Input */}
-          <input ref={inputRef} type="text" placeholder="Aa" disabled={sending}
+          <input ref={inputRef} type="text" placeholder="Type A Message" disabled={sending}
             value={editingMsg ? editBody : body}
             onChange={e => editingMsg ? setEditBody(e.target.value) : setBody(e.target.value)}
             onPaste={handlePaste}
