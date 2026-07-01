@@ -94,9 +94,9 @@ export default function AdminDisputesPage() {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ color: 'var(--white)', fontWeight: 700 }}>{d.agent_name} · Week Of {fmtDate(d.week_start)}</div>
+                  <div style={{ color: 'var(--white)', fontWeight: 700 }}>{d.agent_name} - Week Of {fmtDate(d.week_start)}</div>
                   <div style={{ color: 'var(--grey-500)', fontSize: '0.76rem' }}>
-                    {d.agent_email} · Owed {money(d.total_owed)} · Disputed {fmtDate(d.disputed_at)}
+                    {d.agent_email} - Owed {money(d.total_owed)} - Disputed {fmtDate(d.disputed_at)}
                   </div>
                 </div>
                 <span style={{ color: d.resolved ? '#2ed573' : '#ff6b6b', fontWeight: 800, fontSize: '0.76rem', textTransform: 'uppercase' }}>
@@ -112,7 +112,7 @@ export default function AdminDisputesPage() {
 
               {d.resolved ? (
                 <div style={{ color: 'var(--grey-500)', fontSize: '0.8rem' }}>
-                  Resolved {fmtDate(d.dispute_resolved_at)}{d.dispute_resolution && d.dispute_resolution !== 'resolved' ? ` · ${d.dispute_resolution}` : ''}
+                  Resolved {fmtDate(d.dispute_resolved_at)}{d.dispute_resolution && d.dispute_resolution !== 'resolved' ? ` - ${d.dispute_resolution}` : ''}
                 </div>
               ) : (
                 <>

@@ -142,8 +142,6 @@ export default async function LabJournalPage() {
     name: p.name,
     image_url: p.image_url,
     category: p.category,
-    // base_cost in DB is stored as price-per-10-units (same convention as retail_price);
-    // divide by 10 so the client always receives a per-unit dollar amount.
     base_cost: p.base_cost != null ? Number(p.base_cost) / 10 : null,
     retail_price: priceMap.get(p.id)?.price ?? null,
     is_on_sale: priceMap.get(p.id)?.is_on_sale ?? false,

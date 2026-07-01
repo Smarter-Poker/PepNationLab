@@ -110,7 +110,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
       if (!res.ok) throw new Error(data.error || 'Failed To Create Manual Order');
 
       toast.success('Manual Order Created Successfully');
-      onOrderCreated(data.order); // Trigger parent refresh or view toggle
+      onOrderCreated(data.order);
     } catch (err: any) {
       toast.error(err.message || 'An Error Occurred');
     } finally {

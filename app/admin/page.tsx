@@ -299,7 +299,6 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      {/* fix-55 #5: Top Agents Leaderboard */}
       {metrics.topAgents.length > 0 && (
         <div className="glass-panel" style={{ marginBottom: 'var(--space-8)' }}>
           <div className="" style={{ padding: 'var(--space-6)' }}>
@@ -309,7 +308,7 @@ export default async function AdminDashboard() {
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ }}>
+                <tr>
                   <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'left', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', width: 48 }}>Rank</th>
                   <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'left', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agent</th>
                   <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Orders</th>
@@ -318,7 +317,7 @@ export default async function AdminDashboard() {
               </thead>
               <tbody>
                 {metrics.topAgents.map((a, idx) => (
-                  <tr key={a.id} style={{ }}>
+                  <tr key={a.id}>
                     <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)', fontWeight: 700 }}>#{idx + 1}</td>
                     <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.85rem', color: 'var(--white)' }}>
                       <Link href={`/admin/transactions?agent=${encodeURIComponent(a.id)}`} style={{ color: 'inherit', textDecoration: 'none' }}>
@@ -349,7 +348,7 @@ export default async function AdminDashboard() {
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ }}>
+                  <tr>
                     <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'left', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Product</th>
                     <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Qty</th>
                     <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Revenue</th>
@@ -357,7 +356,7 @@ export default async function AdminDashboard() {
                 </thead>
                 <tbody>
                   {metrics.topSkus.map((sku) => (
-                    <tr key={sku.name} style={{ }}>
+                    <tr key={sku.name}>
                       <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)' }}>{sku.name}</td>
                       <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--white)', textAlign: 'right', fontWeight: 600 }}>{sku.quantity}</td>
                       <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--teal)', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(sku.revenue)}</td>

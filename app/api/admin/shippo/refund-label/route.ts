@@ -1,15 +1,3 @@
-/**
- * POST /api/admin/shippo/refund-label
- *
- * Requests a label refund from Shippo for a given order's label purchase.
- * Calls shippo_record_refund RPC which marks the shipping_label_purchases row
- * as refunded and inserts a matching row in order_refunds.
- *
- * Body: { order_id: string; reason?: string }
- *
- * Guards: admin role + same-origin CSRF.
- */
-
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -42,7 +30,6 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createServiceClient();
 
-  // Find the active (non-refunded) label purchase for this order.
   const { data: purchase, error: fetchErr } = await supabase
     .from('shipping_label_purchases')
     .select('id, shippo_transaction_id, label_amount_cents, label_cost_cents, tracking_number, refunded, created_at')
@@ -71,10 +58,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Shippo enforces a 90-day refund window from label purchase time. Calling
-  // the API outside that window returns a generic error; reject up-front so
-  // we do not flip our refunded=true flag for a refund the carrier will not
-  // honor.
   if (purchase.created_at) {
     const ageMs = Date.now() - new Date(purchase.created_at).getTime();
     const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
@@ -86,7 +69,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Guard: if both cost columns are null we cannot record a meaningful refund amount.
   const knownCost = purchase.label_amount_cents ?? purchase.label_cost_cents ?? null;
   if (knownCost === null || knownCost === 0) {
     return NextResponse.json(
@@ -95,10 +77,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Request refund from Shippo.
   const refundResult = await refundLabel(purchase.shippo_transaction_id);
 
-  // Shippo rejected the refund (4xx) - do NOT flip our ledger to refunded.
   if (!refundResult.ok) {
     return NextResponse.json(
       { error: 'Shippo Refund Request Was Rejected.' },
@@ -106,11 +86,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Coalesce label_amount_cents (set by webhook) with label_cost_cents (set at
-  // purchase time). label_amount_cents starts NULL until the webhook fires.
   const refundAmountCents: number = knownCost;
 
-  // Call the DB RPC to mark the purchase as refunded and insert refund ledger row.
   const { error: rpcErr } = await supabase.rpc('shippo_record_refund', {
     p_label_purchase_id: purchase.id,
     p_refund_amount_cents: refundAmountCents,
@@ -120,7 +97,6 @@ export async function POST(req: NextRequest) {
   });
 
   if (rpcErr) {
-    // Generic body - do not echo PG internals to the caller.
     console.error('[shippo-refund] RPC failed', rpcErr.message);
     return NextResponse.json(
       { error: 'Refund Ledger Write Failed.' },

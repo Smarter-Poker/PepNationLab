@@ -147,7 +147,7 @@ export default function MFAEnrollFlow({ onEnrolled }: Props) {
           <button type="button" className="btn btn-ghost" onClick={cancel} disabled={busy}>
             Cancel
           </button>
-          <button type="button" className="btn btn-primary" onClick={verify} disabled={busy || code.length < 4}>
+          <button type="button" className="btn btn-primary" onClick={verify} disabled={busy || code.length < 6}>
             {busy ? 'Verifying...' : 'Verify And Enable'}
           </button>
         </div>

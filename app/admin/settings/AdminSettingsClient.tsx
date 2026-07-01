@@ -22,19 +22,17 @@ export default function AdminSettingsClient({ profile }: AdminSettingsClientProp
         Account Settings
       </h1>
 
-      {/* Profile Picture Upload */}
       <div className="glass-panel hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
         <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Profile Picture</h4>
         <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)', marginTop: 0 }}>
-          Upload a profile picture to show in Messenger instead of a generic initial.
+          Upload A Profile Picture To Show In Messenger Instead Of A Generic Initial.
         </p>
-        <AvatarUpload 
-          currentAvatarUrl={profile.avatar_url ?? null} 
-          name={profile.full_name ?? profile.email?.split('@')[0] ?? 'Admin'} 
+        <AvatarUpload
+          currentAvatarUrl={profile.avatar_url ?? null}
+          name={profile.full_name ?? profile.email?.split('@')[0] ?? 'Admin'}
         />
       </div>
 
-      {/* Account Info */}
       <div className="glass-panel hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
         <h4 style={{ marginBottom: 'var(--space-4)', color: 'var(--teal)' }}>Account Information</h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -49,13 +47,11 @@ export default function AdminSettingsClient({ profile }: AdminSettingsClientProp
         </div>
       </div>
 
-      {/* Change Password */}
       <div className="glass-panel hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
         <h4 style={{ marginBottom: 'var(--space-4)', color: 'var(--teal)' }}>Change Password</h4>
         <SettingsPasswordForm />
       </div>
 
-      {/* Device Notifications */}
       <div style={{ marginTop: 'var(--space-6)' }}>
         <PushNotificationToggle
           title="Notification Settings"
@@ -63,7 +59,6 @@ export default function AdminSettingsClient({ profile }: AdminSettingsClientProp
         />
       </div>
 
-      {/* Theme Preferences */}
       <ThemeToggleCard />
     </div>
   );
@@ -136,7 +131,6 @@ function ThemeToggleCard() {
         borderRadius: 'var(--radius-lg)',
         border: '1px solid rgba(192,184,168,0.2)',
       }}>
-        {/* Icon + Label */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
           <div style={{
             width: 40,
@@ -179,7 +173,6 @@ function ThemeToggleCard() {
           </div>
         </div>
 
-        {/* Toggle switch */}
         <button
           onClick={toggleTheme}
           aria-label={isLight ? 'Switch To Dark Mode' : 'Switch To Light Mode'}

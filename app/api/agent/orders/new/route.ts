@@ -35,11 +35,6 @@ export async function POST(req: NextRequest) {
     const { data: agentProfile, error: agentProfileError } = await supabase.from('profiles').select('tier, parent_agent_id, role, is_sub_agent, account_type, max_auto_approve_limit').eq('id', agentId).single();
     if (agentProfileError || !agentProfile) return NextResponse.json({ error: 'Agent Profile Not Found.' }, { status: 404 });
 
-    // SACA: sub-agents do not own a storefront and therefore cannot create
-    // manual orders. They can only earn commission on orders placed via the
-    // parent's storefront - manual order creation belongs to the storefront
-    // owner. Reject with a clear error instead of silently failing on the
-    // empty agent_products query below.
     if ((agentProfile as { is_sub_agent?: boolean | null }).is_sub_agent === true) {
       return NextResponse.json(
         { error: 'Sub-Agents Cannot Create Manual Orders. Ask Your Agent To Place The Order.' },
@@ -74,9 +69,6 @@ export async function POST(req: NextRequest) {
     const orderItems: Array<{ product_id: string; product_name: string; agent_product_id: string; quantity: number; unit_retail_price: number; unit_cost_price: number; unit_super_agent_cost: number | null; }> = [];
 
     for (const raw of items) {
-      // BUG-9 FIX: Math.max(1, ...) was silently promoting qty=0 to qty=1,
-      // and the if (qty <= 0) continue below was dead/unreachable code.
-      // Validate quantity >= 1 first, then floor for float safety.
       const rawQty = Number(raw.quantity);
       if (!Number.isFinite(rawQty) || rawQty < 1) {
         return NextResponse.json({ error: 'Each item must have a quantity of at least 1.' }, { status: 400 });
@@ -85,13 +77,8 @@ export async function POST(req: NextRequest) {
       const ap = (raw.agent_product_id && byId.get(raw.agent_product_id)) || (raw.product_id && byProductId.get(raw.product_id)) || null;
       if (!ap) return NextResponse.json({ error: 'One Or More Items Are Not In Your Catalog.' }, { status: 400 });
 
-      // retail_price is stored as a 10-pack price; divide by 10 for per-vial unit price.
-      // Quantity is the number of individual vials (consistent with storefront orders model).
       const unitRetail = (Number(ap.retail_price) || 0) / 10;
       computedSubtotal += unitRetail * qty;
-      // computeAgentCost / computeSubAgentBaselineCost return per-10-vial-pack costs.
-      // Divide by 10 to get per-vial cost, consistent with the per-vial unit_retail_price
-      // and per-vial quantity stored in order_items (same model as orders/route.ts).
       const unitCost = (await computeAgentCostForAgent(supabase, ap.product_id, agentId, tier)) / 10;
       const unitSuperAgentCost = parentAgentId
         ? (await computeSubAgentBaselineCost(supabase, ap.product_id, parentAgentId)) / 10
@@ -99,9 +86,6 @@ export async function POST(req: NextRequest) {
       orderItems.push({ product_id: ap.product_id, product_name: ap.product_name, agent_product_id: ap.id, quantity: qty, unit_retail_price: unitRetail, unit_cost_price: unitCost, unit_super_agent_cost: unitSuperAgentCost });
     }
 
-    // BUG-10 FIX: round BEFORE the mismatch check, not after.
-    // Floating-point accumulation across many items can make the pre-round value
-    // differ enough from the post-round value to cause spurious 422 rejections.
     computedSubtotal = Math.round(computedSubtotal * 100) / 100;
 
     if (clientSubtotal != null) {
@@ -134,17 +118,11 @@ export async function POST(req: NextRequest) {
     const { error: itemsError } = await supabase.from('order_items').insert(itemsPayload);
     if (itemsError) {
       console.error('Manual Order Items Error:', itemsError);
-      // BUG-19 FIX: log rollback errors instead of silently ignoring them.
       const { error: cleanupErr } = await supabase.from('orders').delete().eq('id', newOrder.id);
       if (cleanupErr) console.error('[CRITICAL] Orphan order cleanup failed:', newOrder.id, cleanupErr.message);
       return NextResponse.json({ error: 'Failed To Add Items To Order.' }, { status: 500 });
     }
 
-    // Prepaid agents owe the platform COGS up front. The storefront flow debits
-    // prepaid at agent approval, but manual orders skip that route - without this
-    // a prepaid agent's manual order was never billed. Charge COGS (item cost +
-    // shipping) now and roll the order back if the balance is short or the debit
-    // fails. Credit agents are billed via charge_order_credit_line on release.
     let prepaidCharged = false;
     const manualCogs = Math.round(
       (orderItems.reduce((s, it) => s + (Number(it.unit_cost_price) || 0) * it.quantity, 0) + safeShipping) * 100
@@ -177,18 +155,12 @@ export async function POST(req: NextRequest) {
       ? (fulfillment === 'ship' ? 'approved_ship' : 'approved_pickup')
       : 'admin_approval_pending';
 
-    // GATE: agent-created manual orders must still pass admin approval before
-    // reaching the shipping team unless the agent has a credit line. Park at admin_approval_pending
-    // (inventory is deducted on this hop by deduct_inventory_on_order_approval); only an admin
-    // releases it onward to approved_ship / approved_pickup.
     const { error: approvalError } = await supabase.from('orders').update({
       status: finalAutoStatus, agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     }).eq('id', newOrder.id);
 
     if (approvalError) {
       console.error('Manual Order Approval Error:', approvalError);
-      // Refund the prepaid debit before deleting the order, otherwise a prepaid
-      // agent is charged for an order that never reached approval.
       if (prepaidCharged) {
         try {
           await supabase.rpc('refund_prepaid_balance', { p_agent_id: agentId, p_amount: manualCogs });
@@ -206,10 +178,8 @@ export async function POST(req: NextRequest) {
       try {
         await supabase.rpc('charge_order_credit_line', { p_order_id: newOrder.id, p_created_by: agentId });
       } catch {}
-      // Shipping labels are created MANUALLY (on-demand) only - no auto-enqueue.
     }
 
-    // Notify Admins that the manual order is approved and ready
     try {
       const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
       if (admins && admins.length > 0) {

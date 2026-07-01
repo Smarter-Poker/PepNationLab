@@ -745,7 +745,7 @@ export default function AgentAccountDetail({
       </div>
     </div>
 
-      {/* Edit Password Modal — Sub-Agents & Researchers */}
+      {/* Edit Password Modal -- Sub-Agents & Researchers */}
       {downlinePasswordAgent && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: 400 }}>

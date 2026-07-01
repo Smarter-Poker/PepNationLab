@@ -163,7 +163,7 @@ export default function NewProductPage() {
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
-        {/* ── Product Information ── */}
+        {/* Product Information */}
         <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
           <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
@@ -228,7 +228,7 @@ export default function NewProductPage() {
           </div>
         </div>
 
-        {/* ── Pricing ── */}
+        {/* Pricing */}
         <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.2s' }}>
           <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
@@ -304,9 +304,6 @@ export default function NewProductPage() {
               </p>
             </div>
 
-            {/* Live tier price preview - reads REAL multipliers from DB. Shown
-                PER UNIT (single vial), matching what researchers pay in the
-                storefront (retail_price / 10). */}
             {validCost && multipliers.tier_1 != null && (
               <div style={{
                 marginTop: 'var(--space-4)',
@@ -320,19 +317,19 @@ export default function NewProductPage() {
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-6)' }}>
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 1 ({multipliers.tier_1}×)</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 1 ({multipliers.tier_1}x)</div>
                     <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
                       ${(baseCost * multipliers.tier_1 / 10).toFixed(2)}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 2 ({multipliers.tier_2}×)</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 2 ({multipliers.tier_2}x)</div>
                     <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>
                       ${(baseCost * multipliers.tier_2 / 10).toFixed(2)}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 3 ({multipliers.tier_3}×)</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 3 ({multipliers.tier_3}x)</div>
                     <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--grey-400)', fontFamily: 'var(--font-brand)' }}>
                       ${(baseCost * multipliers.tier_3 / 10).toFixed(2)}
                     </div>
@@ -343,14 +340,13 @@ export default function NewProductPage() {
           </div>
         </div>
 
-        {/* ── Inventory & Shipping ── */}
+        {/* Inventory & Shipping */}
         <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.3s' }}>
           <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
               Inventory & Shipping
             </h3>
 
-            {/* Live shipping status preview */}
             <div style={{
               padding: 'var(--space-4)',
               background: invCount > 0 ? 'rgba(192,184,168,0.06)' : 'rgba(246,173,85,0.06)',
@@ -410,7 +406,7 @@ export default function NewProductPage() {
           </div>
         </div>
 
-        {/* ── Visibility ── */}
+        {/* Visibility */}
         <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.4s' }}>
           <div className="" style={{ padding: 'var(--space-5)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--silver)' }}>
@@ -430,7 +426,7 @@ export default function NewProductPage() {
           </div>
         </div>
 
-        {/* ── Submit ── */}
+        {/* Submit */}
         <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
           <button type="submit" className="btn-neon-cyan" disabled={loading}
             style={{ opacity: loading ? 0.7 : 1 }}>

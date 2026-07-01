@@ -176,8 +176,6 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       if (!res.ok) throw new Error(json.error || 'Failed To Revoke Sub-Agent');
       setRevokeTarget(null);
       await fetchData();
-      // SACA: surface how many researcher tags were detached so the parent
-      // knows their downline didn't quietly lose attribution.
       const detached = typeof json?.detached_researcher_count === 'number'
         ? json.detached_researcher_count
         : 0;
@@ -226,7 +224,6 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       
       setSubAgents(prev => prev.map(a => {
         if (a.id === subAgentId && a.agent_profiles) {
-          // Mutate the loaded sub-agent in place or recreate it
           const apArray = Array.isArray(a.agent_profiles) ? a.agent_profiles : [a.agent_profiles];
           return {
             ...a,
@@ -265,7 +262,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       if (!res.ok) throw new Error(json.error || 'Failed To Save Pricing');
       
       toast.success('Baseline Pricing Updated Successfully');
-      fetchPricing(); // Refresh
+      fetchPricing();
     } catch (err: any) {
       toast.error(err.message || 'Failed To Save Pricing');
     }
@@ -273,7 +270,6 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
 
   const formatCurrency = (val: number) => `$${(Number(val) || 0).toFixed(2)}`;
 
-  /** Load a single invoice + its line items, then trigger PDF or CSV download. */
   async function downloadInvoice(invoiceId: string, format: 'pdf' | 'csv') {
     try {
       const res = await fetch(`/api/agent/super-agent/invoices/${invoiceId}`);
@@ -634,7 +630,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flex: '1 1 auto' }}>
                     <span className="badge-metal" style={{ marginRight: '8px', color: inv.status === 'paid' ? '#00FF9D' : 'var(--teal)' }}>
-                      {inv.status ? inv.status.charAt(0).toUpperCase() + inv.status.slice(1) : ''}
+                      {inv.status}
                     </span>
                     <button
                       type="button"

@@ -32,7 +32,7 @@ interface AgentProduct {
   sale_price: number | null;
   sort_order: number;
   products: ProductInfo;
-  /** Your cost price from PNL (base_cost × tier multiplier, per 10 vials) */
+  /** Your cost price from PNL (base_cost x tier multiplier, per 10 vials) */
   agent_cost: number | null;
   /** The agent's current tier key, e.g. 'tier_1' */
   agent_tier: string | null;
@@ -53,7 +53,6 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
   const [bulkSaving, setBulkSaving] = useState(false);
   const [reordering, setReordering] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  // Round 9: mobile-only search bar (replaces dropdowns) + force category view on mobile
   const [search, setSearch] = useState('');
   const [isMobile, setIsMobile] = useState(false);
 
@@ -166,7 +165,6 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
 
     const listedPrice = Number((editForm as any).retail_price);
     const currentProduct = products.find(p => p.id === editingId);
-    if (!currentProduct) return;
     const agentCostPer10 = currentProduct?.agent_cost ?? 0;
     if (listedPrice < agentCostPer10) {
       toast.error(`Listed Price Cannot Be Below Your Cost ($${(agentCostPer10 / (/bac\.?\s*water/i.test(currentProduct?.products?.name || "") ? 1 : 10)).toFixed(2)} / Vial). Please Increase Your Price.`);
@@ -230,7 +228,6 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
     return true;
   });
 
-  // Round 9: on mobile, force By Category view + apply search filter
   const effectiveViewMode = isMobile ? 'category' : viewMode;
   const searchTerm = search.trim().toLowerCase();
   const searchFiltered = !searchTerm ? filtered : filtered.filter(p => {
@@ -310,7 +307,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
         }}
       />
 
-      {/* ── Pricing & Discounts Configuration ── */}
+      {/* Pricing & Discounts Configuration */}
       <PricingConfig agentId={agentId} />
 
       {/* Master Reset / Bulk Margin */}
@@ -318,7 +315,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
         <div className="" style={{ padding: 'var(--space-5)' }}>
           <h4 style={{ fontSize: '0.9rem', color: '#00E5FF', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Master Reset (Bulk Margin)</h4>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem', marginBottom: 'var(--space-4)', lineHeight: 1.4 }}>
-            Apply A Universal Bulk Margin Percentage To All Products. This Will Override Existing Custom Margins And Automatically Mark Up Your Direct Cost, Increasing The Final Displayed Retail Prices Inside Your Store By This Exact Percentage.
+            Apply a universal bulk margin percentage to all products. This will override existing custom margins and automatically mark up your direct cost, increasing the final displayed retail prices inside your store by this exact percentage.
           </p>
           <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)' }}>Apply +</span>
@@ -433,7 +430,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>TBD</span>
                             )}
                           </div>
-                          <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</div>
+                          <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div style={{ position: 'relative' }}>
                               <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#00E5FF', fontWeight: 700, fontSize: '0.85rem', pointerEvents: 'none' }}>$</span>
@@ -509,7 +506,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>TBD</span>
                             )}
                           </div>
-                          <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</div>
+                          <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</div>
                           <div style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }} onClick={() => handleEdit(p)} title="Click to edit price" onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}>
                             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
                               Listed Price <Edit2 size={10} color="#00E5FF" />
@@ -573,7 +570,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                  <span style={{ color: '#00E5FF', fontSize: '0.8rem', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>▶</span>
+                  <span style={{ color: '#00E5FF', fontSize: '0.8rem', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>&#9658;</span>
                   <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{category}</span>
                   <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)', color: '#00E5FF', border: '1px solid rgba(0,229,255,0.2)' }}>
                     {catActiveCount}/{catProducts.length} Active
@@ -634,7 +631,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>TBD</span>
                             )}
                           </div>
-                          <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</div>
+                          <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div style={{ position: 'relative' }}>
                               <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#00E5FF', fontWeight: 700, fontSize: '0.85rem', pointerEvents: 'none' }}>$</span>
@@ -710,7 +707,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>TBD</span>
                             )}
                           </div>
-                          <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</div>
+                          <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</div>
                           <div style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }} onClick={() => handleEdit(p)} title="Click to edit price" onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}>
                             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
                               Listed Price <Edit2 size={10} color="#00E5FF" />
@@ -769,13 +766,12 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
   );
 }
 
-/* ─── Pricing Config Sub-Component ─── */
+/* Pricing Config Sub-Component */
 function PricingConfig({ agentId }: { agentId: string }) {
   const supabase = createClient();
   const [loaded, setLoaded] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
 
-  // Dynamic pricing (small-order surcharges)
   const [enableDynamic, setEnableDynamic] = React.useState(true);
   const [minOrderQty, setMinOrderQty] = React.useState(1);
   const [minOverallQty, setMinOverallQty] = React.useState(3);
@@ -786,7 +782,6 @@ function PricingConfig({ agentId }: { agentId: string }) {
     { min_qty: 10, max_qty: 999999, surcharge_percent: 0 },
   ]);
 
-  // Bulk volume discounts
   const [enableBulk, setEnableBulk] = React.useState(true);
   const [bulkTiers, setBulkTiers] = React.useState([
     { min_qty: 100, discount_percent: 5 },
@@ -854,7 +849,7 @@ function PricingConfig({ agentId }: { agentId: string }) {
         style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent', cursor: 'pointer' }}
       >
         <h3 className="metal-text" style={{ fontSize: '1.1rem', margin: 0, fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ color: '#00E5FF', fontSize: '0.8rem', transform: showConfig ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>▶</span>
+          <span style={{ color: '#00E5FF', fontSize: '0.8rem', transform: showConfig ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>&#9658;</span>
           Bulk Discounts & Dynamic Pricing
         </h3>
         <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>{showConfig ? 'Click To Collapse' : 'Click To Expand And Configure'}</span>
@@ -887,7 +882,7 @@ function PricingConfig({ agentId }: { agentId: string }) {
                 <h4 style={{ color: '#fff', fontSize: '1.05rem', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
                   Dynamic Pricing 
                   <span style={{ fontSize: '0.8rem', color: 'var(--grey-500)', background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 4 }}>
-                    {showDynamicPricing ? '▼ Collapsed' : '▶ Expand'}
+                    {showDynamicPricing ? 'Collapsed' : 'Expand'}
                   </span>
                 </h4>
                 <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Small-Order Surcharges For Orders Under 10 Vials</p>
@@ -916,13 +911,13 @@ function PricingConfig({ agentId }: { agentId: string }) {
                 </div>
                 {dynamicTiers.map((tier, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: '0.85rem' }}>
-                    <span style={{ color: 'var(--grey-400)', minWidth: 60 }}>{tier.min_qty}-{tier.max_qty === 999999 ? '∞' : tier.max_qty} vials</span>
+                    <span style={{ color: 'var(--grey-400)', minWidth: 60 }}>{tier.min_qty}-{tier.max_qty === 999999 ? 'unlimited' : tier.max_qty} vials</span>
                     <span style={{ color: 'var(--grey-400)' }}>+</span>
                     <input type="number" min={0} max={100} className="form-input" style={{ width: 60, padding: '4px 8px', height: 32 }}
                       value={tier.surcharge_percent} onChange={e => {
                         const next = [...dynamicTiers]; next[i] = { ...next[i], surcharge_percent: Number(e.target.value) || 0 }; setDynamicTiers(next);
                       }} />
-                    <span style={{ color: 'var(--grey-400)' }}>% Surcharge</span>
+                    <span style={{ color: 'var(--grey-400)' }}>% surcharge</span>
                   </div>
                 ))}
               </div>
@@ -955,7 +950,7 @@ function PricingConfig({ agentId }: { agentId: string }) {
             {showBulkExplain && (
               <div style={{ background: 'var(--surface-2)', padding: '12px 16px', borderRadius: 8, marginBottom: 'var(--space-4)', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <p style={{ fontSize: '0.85rem', color: 'var(--silver)', margin: 0, lineHeight: 1.5 }}>
-                  <strong>How It Works:</strong> Bulk Pricing Automatically Applies A Percentage Discount To The Entire Order Subtotal When The Customer's Cart Reaches A Specific Total Vial Count. For Example, If A Customer Buys 50 Vials Of BPC-157 And 50 Vials Of TB-500, They Reach The 100-Vial Tier And Receive The Discount Off Their Total. This Encourages Larger Overall Purchases Across Your Entire Catalog. This Feature Is Always Active To Ensure High Conversions.
+                  How It Works: Bulk Pricing Automatically Applies A Percentage Discount To The Entire Order Subtotal When The Customer's Cart Reaches A Specific Total Vial Count. For Example, If A Customer Buys 50 Vials Of BPC-157 And 50 Vials Of TB-500, They Reach The 100-Vial Tier And Receive The Discount Off Their Total. This Encourages Larger Overall Purchases Across Your Entire Catalog. This Feature Is Always Active To Ensure High Conversions.
                 </p>
               </div>
             )}
@@ -968,12 +963,12 @@ function PricingConfig({ agentId }: { agentId: string }) {
                       value={tier.min_qty} onChange={e => {
                         const next = [...bulkTiers]; next[i] = { ...next[i], min_qty: Number(e.target.value) || 1 }; setBulkTiers(next);
                       }} />
-                    <span style={{ color: 'var(--grey-400)' }}>+ Vials =</span>
+                    <span style={{ color: 'var(--grey-400)' }}>+ vials =</span>
                     <input type="number" min={0} max={100} className="form-input" style={{ width: 60, padding: '4px 8px', height: 32 }}
                       value={tier.discount_percent} onChange={e => {
                         const next = [...bulkTiers]; next[i] = { ...next[i], discount_percent: Number(e.target.value) || 0 }; setBulkTiers(next);
                       }} />
-                    <span style={{ color: 'var(--grey-400)' }}>% Off</span>
+                    <span style={{ color: 'var(--grey-400)' }}>% off</span>
                     <button type="button" onClick={() => setBulkTiers(prev => prev.filter((_, j) => j !== i))}
                       style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '0.8rem' }}>Remove</button>
                   </div>

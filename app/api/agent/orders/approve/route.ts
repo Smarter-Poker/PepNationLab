@@ -54,9 +54,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (newStatus === 'cancelled') {
-      // Route through cancel_order so the coupon redemption slot is restored.
-      // A raw status update only fires the inventory + commission triggers and
-      // would permanently burn the researcher's coupon use on an agent reject.
       const { error: cancelError } = await supabase.rpc('cancel_order', {
         p_order_id: orderId,
         p_reason: 'Cancelled By Agent',
@@ -82,8 +79,6 @@ export async function POST(req: NextRequest) {
     }
 
     let finalStatus = newStatus;
-    // Sub-Agents cannot bypass Super Agent approval. Their approval transitions
-    // the order to `agent_approval_pending` so the Super Agent can review it.
     if (order.agent_id === callerId && orderAgentParentId !== null && (newStatus === 'approved_ship' || newStatus === 'approved_pickup')) {
       finalStatus = 'agent_approval_pending';
     }
@@ -135,16 +130,11 @@ export async function POST(req: NextRequest) {
 
     if (profileError || !primaryProfile) return NextResponse.json({ error: 'Failed To Retrieve Billing Profile' }, { status: 500 });
 
-    // Invoice v2 chain check. The freeze walk MUST start at the transacting
-    // agent (order.agent_id) so a frozen sub-agent's order is blocked even
-    // when the billed root (their super-agent) is unfrozen. The credit walk
-    // stays rooted on the billed agent because credit limits live on the
-    // billed tier, not the transacting one.
     const chainCheck = await assertChainCanTransact(
       supabase,
       primaryBilledAgentId,
       totalOwed,
-      order.agent_id, // freeze-walk root = transacting agent (sub-agent on sub-agent orders)
+      order.agent_id,
     );
     if (!chainCheck.ok) {
       return NextResponse.json(
@@ -193,12 +183,6 @@ export async function POST(req: NextRequest) {
     const { error: updateError } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
     if (updateError) {
       if (prepaidDeducted) {
-        // FINANCIAL ROLLBACK: refund the prepaid deduction since the order
-        // status update failed. Use the canonical refund_prepaid_balance RPC
-        // (positive amount = add back). If the refund ALSO fails the user
-        // has been debited with no order - log explicitly + write an
-        // 'adjustment' audit row (the allowed enum value) flagged as
-        // UNRESOLVED so an admin can reconcile manually.
         try {
           const { data: refundOk, error: refundError } = await supabase.rpc(
             'refund_prepaid_balance',
@@ -212,10 +196,6 @@ export async function POST(req: NextRequest) {
               originalError: updateError.message,
               refundError: refundError?.message ?? 'rpc_returned_false',
             });
-            // Audit row using the canonical 'adjustment' type (the
-            // balance_transactions_type_check constraint does not allow a
-            // dedicated rollback type). The description carries the
-            // UNRESOLVED marker so an operator can find it via search.
             const auditInsert = await supabase.from('balance_transactions').insert({
               agent_id: primaryBilledAgentId,
               type: 'adjustment',
@@ -264,7 +244,6 @@ export async function POST(req: NextRequest) {
       try {
         await supabase.rpc('charge_order_credit_line', { p_order_id: orderId, p_created_by: callerId });
       } catch {}
-      // Shipping labels are created MANUALLY (on-demand) only - no auto-enqueue.
     }
 
     try {

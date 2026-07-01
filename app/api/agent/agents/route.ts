@@ -86,11 +86,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden. Only Super Agents can create Agent Accounts.' }, { status: 403 });
     }
 
-    // Super agent's onboarding default applied to new agents (overridable
-    // per-agent later). 'gamified' -> NULL custom_markup_override so the agent
-    // rides the platform volume ladder. 'flat' -> fixed override fraction from
-    // default_agent_markup_pct (whole percent). undefined leaves the column to
-    // the provisioning trigger's default when no onboarding default was set.
     const callerPricing = callerProfile as { default_agent_markup_pct?: number | null; default_agent_pricing_mode?: string | null };
     const defaultAgentMarkupOverride: number | null | undefined =
       callerPricing.default_agent_pricing_mode === 'gamified'
@@ -136,15 +131,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Commission structure (optional). Fixed Percentage = cap equal to base
-    // (forces a flat effective rate); Gamification Scale = cap above the base
-    // plus an optional velocity cap, so the milestone ladder lifts the rate.
     let commPct: number | null = null;
     if (commission_pct !== undefined && commission_pct !== null && commission_pct !== '') {
       commPct = Number(commission_pct);
-      // DB CHECK profiles_commission_pct_range caps this at 40, matching the
-      // platform's hard 40% rule. Validate here so an out-of-range value gives a
-      // clean 400 instead of a constraint-violation 500 on the profile upsert.
       if (!Number.isFinite(commPct) || commPct < 0 || commPct > MAX_CAP_LIMIT) {
         return NextResponse.json({ error: 'Commission Rate Cannot Exceed 40%' }, { status: 400 });
       }
@@ -201,11 +190,8 @@ export async function POST(req: NextRequest) {
 
     const userId = authData.user.id;
 
-    // The user gets 'agent' role, and is_sub_agent = false, parent_agent_id = callerId
     const profileData: Record<string, any> = {
       id: userId,
-      // Must be NULL, not '' - the profiles_email_not_blank CHECK rejects a blank
-      // string (internal.auth accounts carry no real email).
       email: null,
       username: usernameClean,
       full_name,
@@ -213,7 +199,6 @@ export async function POST(req: NextRequest) {
       is_sub_agent: false,
       parent_agent_id: callerId,
       referring_agent_id: callerId,
-      // Provisioning attribution (2026-06-01): track the super_agent as the creator.
       created_by_agent_id: callerId,
       created_by_role: 'super_agent',
       disclaimer_v1_accepted: true,
@@ -222,21 +207,14 @@ export async function POST(req: NextRequest) {
       must_change_password: true,
       provisioned_password: password,
       updated_at: new Date().toISOString(),
-      // profiles.tier is the agent_tier enum (tier_1|tier_2|tier_3). It must be a
-      // valid enum label or the whole upsert fails. Full agents under a super
-      // agent are priced via super_agent_pricing, not this tier, so default to
-      // tier_3 (entry) purely to satisfy the column.
       tier: 'tier_3',
       account_type: account_type,
       credit_limit: account_type === 'credit' ? (Number(credit_limit) || null) : null,
       prepaid_balance: account_type === 'prepaid' ? (Number(prepaid_balance) || 0) : 0,
-      // Commission structure (fixed vs gamification). Null when not supplied.
       commission_pct: commPct,
       commission_max_pct: commMax,
       velocity_cap: velCap,
       commission_ladder_config: Array.isArray(custom_commission_scale) ? custom_commission_scale : undefined,
-      // Seed pricing from the super agent's onboarding default markup (omitted
-      // when the super never set one).
       custom_markup_override: defaultAgentMarkupOverride,
     };
 
@@ -264,11 +242,6 @@ export async function POST(req: NextRequest) {
       console.error('QR generation failed:', qrErr);
     }
 
-    // A DB trigger (provision_agent_storefront) auto-creates an agent_profiles
-    // row the moment the profile role becomes 'agent' (during the upsert above),
-    // using a username-derived slug. So a row with this id already exists here.
-    // Upsert (not insert) so the chosen slug + display name win and we never hit
-    // a primary-key collision.
     const { error: agentError } = await supabase.from('agent_profiles').upsert({
       id: userId,
       slug,
@@ -283,7 +256,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred Saving Storefront.' }, { status: 500 });
     }
 
-    // Auto-provision Agent Products with 20% markup on Tier 1
     try {
       const { data: tier1 } = await supabase.from('pricing_tiers').select('multiplier').eq('tier_name', 'tier_1').single();
       const { data: products } = await supabase.from('products').select('id, base_cost').eq('is_active', true);
@@ -305,7 +277,6 @@ export async function POST(req: NextRequest) {
       }
     } catch (provisionErr) {
       console.error('Failed to auto-provision agent products:', provisionErr);
-      // Non-fatal, agent account still created
     }
 
     return NextResponse.json({ success: true, userId, username: usernameClean, role: 'Agent Account' });

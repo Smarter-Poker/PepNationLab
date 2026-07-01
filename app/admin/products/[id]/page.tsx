@@ -28,9 +28,6 @@ export default function EditProductPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  // Multipliers come from the DB (pricing_tiers) on mount - never hardcode a
-  // default ladder; an empty map keeps the preview hidden until the real
-  // multipliers load so it can never flash an incorrect price.
   const [multipliers, setMultipliers] = useState<Record<string, number>>({});
 
   const [form, setForm] = useState({
@@ -53,11 +50,9 @@ export default function EditProductPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch real multipliers and product details on mount
   useEffect(() => {
     if (!id) return;
 
-    // 1. Fetch Multipliers
     fetch('/api/admin/pricing-tiers')
       .then(r => r.json())
       .then(data => {
@@ -69,9 +64,8 @@ export default function EditProductPage() {
           setMultipliers(m);
         }
       })
-      .catch(() => {/* Keep Defaults On Error */});
+      .catch(() => {});
 
-    // 2. Fetch Product Info
     fetch(`/api/admin/products?id=${id}`)
       .then(async r => {
         if (!r.ok) {
@@ -114,7 +108,6 @@ export default function EditProductPage() {
     setError('');
     setSaving(true);
 
-    // Validate base_cost >= 0 before any network call
     const parsedBaseCost = parseFloat(form.base_cost);
     if (!form.base_cost || isNaN(parsedBaseCost) || parsedBaseCost < 0) {
       setError('Base Cost Must Be Positive Or Zero');
@@ -125,7 +118,6 @@ export default function EditProductPage() {
     const supabase = createClient();
     let finalImageUrl = form.image_url;
 
-    // Handle Image Upload if a file was selected
     if (fileInputRef.current?.files?.[0]) {
       setUploadingImage(true);
       const file = fileInputRef.current.files[0];
@@ -221,65 +213,35 @@ export default function EditProductPage() {
       )}
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-
-        {/* ── Product Information ── */}
         <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
           <div className="" style={{ padding: 'var(--space-6)' }}>
-            <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
-              Product Information
-            </h3>
-
+            <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>Product Information</h3>
             <div className="grid-2" style={{ gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" htmlFor="name">Product Name</label>
-                <input id="name" type="text" className="form-input" placeholder="e.g. BPC-157"
-                  value={form.name} onChange={e => set('name', e.target.value)} required />
+                <input id="name" type="text" className="form-input" placeholder="e.g. BPC-157" value={form.name} onChange={e => set('name', e.target.value)} required />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" htmlFor="sku">SKU</label>
-                <input id="sku" type="text" className="form-input" placeholder="e.g. BPC-157-5MG"
-                  value={form.sku} onChange={e => set('sku', e.target.value)} />
+                <input id="sku" type="text" className="form-input" placeholder="e.g. BPC-157-5MG" value={form.sku} onChange={e => set('sku', e.target.value)} />
               </div>
             </div>
-
             <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
               <label className="form-label" htmlFor="category">Category</label>
-              <select id="category" className="form-input" value={form.category}
-                onChange={e => set('category', e.target.value)} style={{ cursor: 'pointer' }}>
+              <select id="category" className="form-input" value={form.category} onChange={e => set('category', e.target.value)} style={{ cursor: 'pointer' }}>
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-
             <div className="form-group">
               <label className="form-label" htmlFor="description">Description</label>
-              <textarea id="description" className="form-input" placeholder="Research Compound Description..."
-                value={form.description} onChange={e => set('description', e.target.value)}
-                rows={4} style={{ resize: 'vertical' }} />
+              <textarea id="description" className="form-input" placeholder="Research Compound Description..." value={form.description} onChange={e => set('description', e.target.value)} rows={4} style={{ resize: 'vertical' }} />
             </div>
-
             <div className="form-group">
-              <label className="form-label" htmlFor="image_url">
-                Product Image{' '}
-                <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 400 }}>Optional</span>
-              </label>
-              <input 
-                id="image_url" 
-                type="file" 
-                accept="image/*"
-                ref={fileInputRef}
-                className="form-input"
-                style={{ padding: '8px' }}
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    const url = URL.createObjectURL(e.target.files[0]);
-                    set('image_url', url);
-                  }
-                }}
-              />
+              <label className="form-label" htmlFor="image_url">Product Image <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 400 }}>Optional</span></label>
+              <input id="image_url" type="file" accept="image/*" ref={fileInputRef} className="form-input" style={{ padding: '8px' }} onChange={(e) => { if (e.target.files?.[0]) { const url = URL.createObjectURL(e.target.files[0]); set('image_url', url); } }} />
               {form.image_url && (
                 <div style={{ marginTop: 'var(--space-3)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: 'var(--border-subtle)', width: 120, height: 120, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Image src={form.image_url} alt="Product Preview" width={120} height={120} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <Image src={form.image_url} alt="Product Preview" width={120} height={120} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
               )}
               {uploadingImage && <div style={{ fontSize: '0.8rem', color: 'var(--teal)', marginTop: 8 }}>Uploading Image...</div>}
@@ -287,221 +249,95 @@ export default function EditProductPage() {
           </div>
         </div>
 
-        {/* ── Pricing ── */}
         <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.2s' }}>
           <div className="" style={{ padding: 'var(--space-6)' }}>
-            <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
-              Pricing
-            </h3>
-
+            <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>Pricing</h3>
             <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-              {/* Base cost - takes most of the space */}
               <div className="form-group" style={{ flex: '1 1 180px', marginBottom: 0 }}>
-                <label className="form-label" htmlFor="base_cost">
-                  Base Cost{' '}
-                  <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 400 }}>
-                    (Your COGS)
-                  </span>
-                </label>
+                <label className="form-label" htmlFor="base_cost">Base Cost <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 400 }}>(Your COGS)</span></label>
                 <div style={{ position: 'relative' }}>
-                  <span style={{
-                    position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-                    color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontWeight: 700, fontSize: '0.9rem'
-                  }}>$</span>
-                  <input id="base_cost" type="number" step="0.01" min="0" required
-                    className="form-input" placeholder="0.00"
-                    value={form.base_cost} onChange={e => set('base_cost', e.target.value)}
-                    style={{ paddingLeft: 28 }} />
+                  <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontWeight: 700, fontSize: '0.9rem' }}>$</span>
+                  <input id="base_cost" type="number" step="0.01" min="0" required className="form-input" placeholder="0.00" value={form.base_cost} onChange={e => set('base_cost', e.target.value)} style={{ paddingLeft: 28 }} />
                 </div>
               </div>
-
-              {/* Unit Size */}
               <div className="form-group" style={{ flex: '0 1 100px', marginBottom: 0 }}>
                 <label className="form-label" htmlFor="unit_size">Unit Size</label>
-                <input id="unit_size" type="text" className="form-input" placeholder="e.g. 5"
-                  value={form.unit_size} onChange={e => set('unit_size', e.target.value)} />
+                <input id="unit_size" type="text" className="form-input" placeholder="e.g. 5" value={form.unit_size} onChange={e => set('unit_size', e.target.value)} />
               </div>
-
-              {/* Unit measure */}
               <div className="form-group" style={{ flex: '0 1 100px', marginBottom: 0 }}>
                 <label className="form-label" htmlFor="unit_measure">Unit</label>
-                <select id="unit_measure" className="form-input" value={form.unit_measure}
-                  onChange={e => set('unit_measure', e.target.value)}>
-                  {['mg', 'mcg', 'g', 'ml', 'IU', 'unit'].map(u => (
-                    <option key={u} value={u}>{u}</option>
-                  ))}
+                <select id="unit_measure" className="form-input" value={form.unit_measure} onChange={e => set('unit_measure', e.target.value)}>
+                  {['mg', 'mcg', 'g', 'ml', 'IU', 'unit'].map(u => <option key={u} value={u}>{u}</option>)}
                 </select>
               </div>
             </div>
-
-            {/* Bulk Pricing */}
             <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px dashed rgba(192, 184, 168, 0.3)' }}>
-              <h4 style={{ fontSize: '0.85rem', color: 'var(--teal)', marginBottom: 'var(--space-3)' }}>
-                Bulk Wholesale Pricing
-              </h4>
+              <h4 style={{ fontSize: '0.85rem', color: 'var(--teal)', marginBottom: 'var(--space-3)' }}>Bulk Wholesale Pricing</h4>
               <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                 <div className="form-group" style={{ flex: '1 1 160px', marginBottom: 0 }}>
                   <label className="form-label" htmlFor="admin_bulk_threshold">Threshold (Vials)</label>
-                  <input id="admin_bulk_threshold" type="number" min="1" className="form-input" placeholder="e.g. 100"
-                    value={form.admin_bulk_threshold} onChange={e => set('admin_bulk_threshold', e.target.value)} />
+                  <input id="admin_bulk_threshold" type="number" min="1" className="form-input" placeholder="e.g. 100" value={form.admin_bulk_threshold} onChange={e => set('admin_bulk_threshold', e.target.value)} />
                 </div>
                 <div className="form-group" style={{ flex: '1 1 160px', marginBottom: 0 }}>
                   <label className="form-label" htmlFor="admin_bulk_price">Bulk Unit Cost ($)</label>
                   <div style={{ position: 'relative' }}>
-                    <span style={{
-                      position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-                      color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontWeight: 700, fontSize: '0.9rem'
-                    }}>$</span>
-                    <input id="admin_bulk_price" type="number" step="0.01" min="0" className="form-input" placeholder="Optional"
-                      value={form.admin_bulk_price} onChange={e => set('admin_bulk_price', e.target.value)}
-                      style={{ paddingLeft: 28 }} />
+                    <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontWeight: 700, fontSize: '0.9rem' }}>$</span>
+                    <input id="admin_bulk_price" type="number" step="0.01" min="0" className="form-input" placeholder="Optional" value={form.admin_bulk_price} onChange={e => set('admin_bulk_price', e.target.value)} style={{ paddingLeft: 28 }} />
                   </div>
                 </div>
               </div>
-              <p style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)', marginBottom: 0 }}>
-                If Set, Agents Purchasing At Or Above The Threshold Quantity Will Receive This Flat Unit Cost Regardless Of Their Tier.
-              </p>
+              <p style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)', marginBottom: 0 }}>If Set, Agents Purchasing At Or Above The Threshold Quantity Will Receive This Flat Unit Cost Regardless Of Their Tier.</p>
             </div>
-
-            {/* Live tier price preview - reads REAL multipliers from DB. Shown
-                PER UNIT (single vial), matching what researchers pay in the
-                storefront (retail_price / 10). */}
             {validCost && multipliers.tier_1 != null && (
-              <div style={{
-                marginTop: 'var(--space-4)',
-                padding: 'var(--space-4)',
-                background: 'var(--surface-2)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid rgba(192,184,168,0.15)',
-              }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  Agent Sell Prices Per Unit (From DB Multipliers)
-                </div>
+              <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(192,184,168,0.15)' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Agent Sell Prices Per Unit (From DB Multipliers)</div>
                 <div style={{ display: 'flex', gap: 'var(--space-6)' }}>
-                  <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 1 ({multipliers.tier_1}×)</div>
-                    <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
-                      ${(baseCost * multipliers.tier_1 / 10).toFixed(2)}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 2 ({multipliers.tier_2}×)</div>
-                    <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>
-                      ${(baseCost * multipliers.tier_2 / 10).toFixed(2)}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 3 ({multipliers.tier_3}×)</div>
-                    <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--grey-400)', fontFamily: 'var(--font-brand)' }}>
-                      ${(baseCost * multipliers.tier_3 / 10).toFixed(2)}
-                    </div>
-                  </div>
+                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 1 ({multipliers.tier_1}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_1 / 10).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 2 ({multipliers.tier_2}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_2 / 10).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 3 ({multipliers.tier_3}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--grey-400)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_3 / 10).toFixed(2)}</div></div>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* ── Inventory & Shipping ── */}
         <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.3s' }}>
           <div className="" style={{ padding: 'var(--space-6)' }}>
-            <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
-              Inventory & Shipping
-            </h3>
-
-            {/* Live shipping status preview */}
-            <div style={{
-              padding: 'var(--space-4)',
-              background: invCount > 0 ? 'rgba(192,184,168,0.06)' : 'rgba(246,173,85,0.06)',
-              border: `1px solid ${invCount > 0 ? 'rgba(192,184,168,0.3)' : 'rgba(246,173,85,0.3)'}`,
-              borderRadius: 'var(--radius-md)',
-              marginBottom: 'var(--space-5)',
-              display: 'flex', alignItems: 'center', gap: 'var(--space-3)'
-            }}>
-              <div style={{
-                width: 10, height: 10, borderRadius: '50%',
-                background: invCount > 0 ? 'var(--teal)' : '#00E5FF',
-                boxShadow: `0 0 6px ${invCount > 0 ? 'var(--teal)' : '#00E5FF'}`,
-                flexShrink: 0
-              }} />
+            <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>Inventory & Shipping</h3>
+            <div style={{ padding: 'var(--space-4)', background: invCount > 0 ? 'rgba(192,184,168,0.06)' : 'rgba(246,173,85,0.06)', border: `1px solid ${invCount > 0 ? 'rgba(192,184,168,0.3)' : 'rgba(246,173,85,0.3)'}`, borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: invCount > 0 ? 'var(--teal)' : '#00E5FF', boxShadow: `0 0 6px ${invCount > 0 ? 'var(--teal)' : '#00E5FF'}`, flexShrink: 0 }} />
               <div>
-                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: invCount > 0 ? 'var(--teal)' : '#00E5FF' }}>
-                  {invCount > 0
-                    ? `In Stock - Ships Now (${form.inventory_count} Units)`
-                    : `Out Of Stock / Backordered`}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginTop: 2 }}>
-                  This Status Shows Live On All Agent Storefronts
-                </div>
+                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: invCount > 0 ? 'var(--teal)' : '#00E5FF' }}>{invCount > 0 ? `In Stock - Ships Now (${form.inventory_count} Units)` : `Out Of Stock / Backordered`}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginTop: 2 }}>This Status Shows Live On All Agent Storefronts</div>
               </div>
             </div>
-
             <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-              <div className="form-group" style={{ flex: '1 1 120px', marginBottom: 0 }}>
-                <label className="form-label" htmlFor="inventory_count">Units In Stock</label>
-                <input id="inventory_count" type="number" min="0" className="form-input"
-                  placeholder="0" value={form.inventory_count}
-                  onChange={e => set('inventory_count', e.target.value)} />
-              </div>
-              <div className="form-group" style={{ flex: '1 1 140px', marginBottom: 0 }}>
-                <label className="form-label" htmlFor="low_stock_threshold">
-                  Low Stock Alert
-                  <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 400, display: 'block' }}>
-                    (Badge Below This)
-                  </span>
-                </label>
-                <input id="low_stock_threshold" type="number" min="0" className="form-input"
-                  placeholder="5" value={form.low_stock_threshold}
-                  onChange={e => set('low_stock_threshold', e.target.value)} />
-              </div>
-              <div className="form-group" style={{ flex: '1 1 120px', marginBottom: 0 }}>
-                <label className="form-label" htmlFor="backorder_days">Backorder Days</label>
-                <input id="backorder_days" type="number" min="1" className="form-input"
-                  placeholder="14" value={form.backorder_days}
-                  onChange={e => set('backorder_days', e.target.value)} />
-              </div>
+              <div className="form-group" style={{ flex: '1 1 120px', marginBottom: 0 }}><label className="form-label" htmlFor="inventory_count">Units In Stock</label><input id="inventory_count" type="number" min="0" className="form-input" placeholder="0" value={form.inventory_count} onChange={e => set('inventory_count', e.target.value)} /></div>
+              <div className="form-group" style={{ flex: '1 1 140px', marginBottom: 0 }}><label className="form-label" htmlFor="low_stock_threshold">Low Stock Alert <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 400, display: 'block' }}>(Badge Below This)</span></label><input id="low_stock_threshold" type="number" min="0" className="form-input" placeholder="5" value={form.low_stock_threshold} onChange={e => set('low_stock_threshold', e.target.value)} /></div>
+              <div className="form-group" style={{ flex: '1 1 120px', marginBottom: 0 }}><label className="form-label" htmlFor="backorder_days">Backorder Days</label><input id="backorder_days" type="number" min="1" className="form-input" placeholder="14" value={form.backorder_days} onChange={e => set('backorder_days', e.target.value)} /></div>
             </div>
-
-            <div style={{ marginTop: 'var(--space-3)', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-              Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Out Of Stock / Backordered".
-              When Restocked, Storefronts Instantly Update To "In Stock - Ships Now."
-            </div>
+            <div style={{ marginTop: 'var(--space-3)', fontSize: '0.78rem', color: 'var(--grey-400)' }}>Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Out Of Stock / Backordered". When Restocked, Storefronts Instantly Update To "In Stock - Ships Now."</div>
           </div>
         </div>
 
-        {/* ── Visibility ── */}
         <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.4s' }}>
           <div className="" style={{ padding: 'var(--space-5)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--silver)' }}>
-              <input
-                type="checkbox"
-                checked={form.is_active}
-                onChange={e => set('is_active', e.target.checked)}
-                style={{ accentColor: 'var(--teal)', width: 18, height: 18 }}
-              />
+              <input type="checkbox" checked={form.is_active} onChange={e => set('is_active', e.target.checked)} style={{ accentColor: 'var(--teal)', width: 18, height: 18 }} />
               <div>
                 <div style={{ fontWeight: 600 }}>Active - Visible In Agent Catalogs</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginTop: 2 }}>
-                  Uncheck To Save As Draft Without Publishing
-                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginTop: 2 }}>Uncheck To Save As Draft Without Publishing</div>
               </div>
             </label>
           </div>
         </div>
 
-        {/* ── Submit ── */}
         <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
-          <button type="submit" className="btn-neon-cyan" disabled={saving}
-            style={{ opacity: saving ? 0.7 : 1 }}>
-            {saving ? 'Saving Product...' : 'Save Product'}
-          </button>
-          <Link href="/admin/products" className="btn-silver">
-            Cancel
-          </Link>
+          <button type="submit" className="btn-neon-cyan" disabled={saving} style={{ opacity: saving ? 0.7 : 1 }}>{saving ? 'Saving Product...' : 'Save Product'}</button>
+          <Link href="/admin/products" className="btn-silver">Cancel</Link>
         </div>
       </form>
 
-      {/* ── Lot Tracking + COA Documents ── */}
       <div style={{ marginTop: 'var(--space-8)' }}>
         <AdminProductLots productId={id} />
       </div>

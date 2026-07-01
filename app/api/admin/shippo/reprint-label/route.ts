@@ -1,24 +1,3 @@
-/**
- * POST /api/admin/shippo/reprint-label
- *
- * Voids the existing label purchase, purchases a fresh replacement label,
- * and updates the order with the new tracking number and label URL.
- *
- * This is a two-step operation:
- *   1. Refund the existing Shippo transaction.
- *   2. Insert a new label_jobs row in 'pending' status so the cron picks it up,
- *      OR immediately call buyLabel if the caller wants a synchronous response.
- *
- * For M1 we take the immediate synchronous path for simplicity. If the label
- * purchase takes >10s the call will time out on Vercel; the async queue path
- * is available via posting to label_jobs directly.
- *
- * Body:
- *   { order_id: string; service_level_token?: string; reason?: string }
- *
- * Guards: admin role + same-origin CSRF.
- */
-
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -28,7 +7,6 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
 
 export const dynamic = 'force-dynamic';
-// Extended timeout hint for Vercel (Shippo may take 5-8s).
 export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
@@ -55,7 +33,6 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createServiceClient();
 
-  // Fetch the order to verify it exists and get agent_id.
   const { data: order } = await supabase
     .from('orders')
     .select('id, agent_id, status')
@@ -66,9 +43,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Order Not Found.' }, { status: 404 });
   }
 
-  // Refuse to reprint for terminal states. A reprint on a cancelled order
-  // would charge Shippo for a label that will never ship; on a delivered
-  // order it would refund the only valid label and re-buy it for no reason.
   const currentStatus = String(order.status ?? '');
   if (currentStatus === 'cancelled' || currentStatus === 'delivered') {
     return NextResponse.json(
@@ -77,7 +51,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Find the active label purchase.
   const { data: purchase, error: purchaseFetchErr } = await supabase
     .from('shipping_label_purchases')
     .select('id, shippo_transaction_id, label_amount_cents, label_cost_cents, created_at')
@@ -89,10 +62,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Database Error' }, { status: 500 });
   }
 
-  // Step 1: Refund the existing label (if any). We must NOT proceed to step
-  // 2 if either (a) Shippo rejects the refund or (b) our ledger write fails
-  // - otherwise we double-charge the platform card and leave the old
-  // purchase un-refunded in our books.
   if (purchase?.shippo_transaction_id) {
     if (purchase.created_at) {
       const ageMs = Date.now() - new Date(purchase.created_at).getTime();
@@ -128,7 +97,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Step 2: Purchase a fresh label.
   const agentId = (order.agent_id as string | null) ?? '';
   const labelResult = await buyLabel({
     orderId,
@@ -158,7 +126,6 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Enqueue push for buyer - best-effort.
   try {
     const { data: orderFull } = await supabase
       .from('orders')

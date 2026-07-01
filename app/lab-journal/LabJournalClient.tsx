@@ -166,16 +166,16 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   };
 
   const exportJournalToCSV = () => {
-    let csv = 'Type,Date,Title/Items,Details\\n';
+    let csv = 'Type,Date,Title/Items,Details\n';
     
     // Add Notes
     notes.forEach(n => {
-      csv += `Note,${new Date(n.updated_at).toLocaleDateString()},"${(n.title || 'Journal Entry').replace(/"/g, '""')}","${(n.note_text || '').replace(/"/g, '""')}"\\n`;
+      csv += `Note,${new Date(n.updated_at).toLocaleDateString()},"${(n.title || 'Journal Entry').replace(/"/g, '""')}","${(n.note_text || '').replace(/"/g, '""')}"\n`;
     });
     
     // Add Comparisons
     comparisons.forEach(c => {
-      csv += `Comparison,${new Date(c.created_at).toLocaleDateString()},"Folder: ${(c.folder_name || 'Unsorted').replace(/"/g, '""')} | Items: ${c.product_ids.join(', ')}","${(c.notes || '').replace(/"/g, '""')}"\\n`;
+      csv += `Comparison,${new Date(c.created_at).toLocaleDateString()},"Folder: ${(c.folder_name || 'Unsorted').replace(/"/g, '""')} | Items: ${c.product_ids.join(', ')}","${(c.notes || '').replace(/"/g, '""')}"\n`;
     });
     
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -396,7 +396,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       byDay[day][d.compound_slug] = (byDay[day][d.compound_slug] || 0) + d.dose_amount;
       hasData = true;
     });
-    
+
     const chartData = Object.values(byDay).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     if (!hasData || chartData.length === 0) return null;
     
@@ -776,7 +776,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
           { id: 'favorites', label: 'Saved Compounds', icon: Heart },
           { id: 'pastOrders', label: 'Helpful Data & Orders', icon: PackageOpen },
-          { id: 'doses', label: 'Dose Tracker', icon: Layers }, // Assuming Layers or similar icon
+          { id: 'doses', label: 'Dose Tracker', icon: Layers },
           { id: 'biometrics', label: 'Biometrics', icon: Layers },
           { id: 'recentlyViewed', label: 'Recently Viewed', icon: History },
           { id: 'compareHistory', label: 'Compare History', icon: Search },

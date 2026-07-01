@@ -190,9 +190,8 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDrawerOpen(false);
-  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -280,7 +279,6 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
     });
     return () => subscription.unsubscribe();
   }, []);
-
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -444,7 +442,6 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                 </svg>
               </div>
             </button>
-
             <div style={{ width: 1, height: 22, background: 'var(--surface-3)', flexShrink: 0, marginLeft: 4 }} />
           </>
         )}
@@ -605,7 +602,6 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
               <DrawerLink href="/about" label="About" onClick={closeDrawer}
                 icon={<svg {...IP}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>}
               />
-
               {user && (
                 <>
                   <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
@@ -631,15 +627,12 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
           {user && (
             <>
               <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
-
               <DrawerLink href="/account/help" label="Help & Support" onClick={closeDrawer}
                 icon={<svg {...IP}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></svg>}
               />
-
               <DrawerLink href="/peptide-101" label="Peptide 101" onClick={closeDrawer}
                 icon={<svg {...IP}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>}
               />
-
               <button
                 onClick={() => { closeDrawer(); handleSignOut(); }}
                 style={{
@@ -694,12 +687,8 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
               {displayName ? displayName.charAt(0).toUpperCase() : '?'}
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>
-                Logged In As
-              </div>
-              <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {displayName || 'User'}
-              </div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>Logged In As</div>
+              <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName || 'User'}</div>
             </div>
           </div>
         )}

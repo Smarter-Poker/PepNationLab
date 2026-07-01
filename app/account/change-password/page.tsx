@@ -14,8 +14,8 @@ export default function ChangePasswordPage() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    if (newPassword.length < 8) {
-      setError('Password Must Be At Least 8 Characters');
+    if (newPassword.length < 12) {
+      setError('Password Must Be At Least 12 Characters');
       return;
     }
     if (newPassword !== confirm) {
@@ -116,7 +116,7 @@ export default function ChangePasswordPage() {
                 type="password"
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
-                placeholder="At Least 8 Characters"
+                placeholder="At Least 12 Characters"
                 required
                 style={{
                   width: '100%', boxSizing: 'border-box',

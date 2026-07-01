@@ -60,16 +60,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Only Active Agents Can Create Researcher Accounts' }, { status: 403 });
   }
 
-  // SACA: resolve the storefront owner and commission tag based on caller role.
-  // Sub-agent callers must route the researcher under their parent; the
-  // researcher stays on the parent's storefront, the sub-agent gets the tag.
   let referringAgentId: string = user.id;
   let referringSubAgentId: string | null = null;
 
   if (callerProfile.is_sub_agent === true) {
     if (!callerProfile.parent_agent_id) {
-      // Defensive: a sub-agent without a parent is an invalid state and would
-      // strand the researcher with no storefront owner.
       console.error('[create-researcher] sub-agent caller has no parent_agent_id:', user.id);
       return NextResponse.json(
         { error: 'Sub-Agent Account Is Not Properly Linked. Contact Your Agent.' },
@@ -80,9 +75,6 @@ export async function POST(req: NextRequest) {
     referringSubAgentId = user.id;
   }
 
-  // Provisioning attribution: created_by_role records WHICH KIND of account
-  // performed the creation. Sub-agents are still role='agent' in the enum,
-  // so check is_sub_agent / is_super_agent to disambiguate for the UI.
   let createdByRole: string = callerProfile.role;
   if (callerProfile.is_sub_agent === true) {
     createdByRole = 'sub_agent';
@@ -101,13 +93,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
   }
 
-  // sanitizeUsername lowercases + strips non-alphanumeric
   const usernameClean = sanitizeUsername(username);
   if (!usernameClean || usernameClean.length < 2) {
     return NextResponse.json({ error: 'Username Must Be At Least 2 Characters (Letters, Numbers, Underscores)' }, { status: 400 });
   }
 
-  // Check username uniqueness
   const { data: existingUser } = await admin
     .from('profiles')
     .select('id')
@@ -118,13 +108,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'That Username Is Already Taken' }, { status: 400 });
   }
 
-  // Email is always lowercase (sanitizeUsername lowercases the username)
   const internalEmail = `${usernameClean}@internal.auth`;
 
   const fullName = `${String(firstName).trim()} ${String(lastName).trim()}`;
 
-  // Create the auth user. The handle_new_user trigger fires and auto-creates
-  // a partial profile row. We pass metadata so the trigger sets username + full_name.
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
     email: internalEmail,
     password,
@@ -142,9 +129,6 @@ export async function POST(req: NextRequest) {
 
   const newUserId = authData.user.id;
 
-  // UPSERT (not just UPDATE) - guarantees the profile is written even if the
-  // handle_new_user trigger races with this call and the row doesn't exist yet.
-  // createAdminClient() bypasses RLS so this always succeeds regardless of policies.
   const profilePayload: Record<string, unknown> = {
     id: newUserId,
     email: null,
@@ -154,7 +138,6 @@ export async function POST(req: NextRequest) {
     last_name: String(lastName).trim(),
     role: 'researcher',
     referring_agent_id: referringAgentId,
-    // Provisioning attribution (2026-06-01)
     created_by_agent_id: user.id,
     created_by_role: createdByRole,
     disclaimer_v1_accepted: false,
@@ -181,7 +164,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Sanity-check: verify referring_agent_id was actually written
   const written = upsertedRows?.[0];
   if (!written?.referring_agent_id || written.referring_agent_id !== referringAgentId) {
     console.error('[create-researcher] referring_agent_id not set correctly after upsert - rolling back');
@@ -200,8 +182,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Audit log for the SACA path so we have proof a sub-agent created
-  // a researcher under the parent storefront.
   if (referringSubAgentId) {
     try {
       await admin.from('admin_audit_log').insert({
@@ -223,8 +203,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Fire-and-forget: notify the storefront-owning agent (parent for sub-agent
-  // callers, caller for regular agents) that a new researcher joined.
   await notifyNewResearcher(admin, referringAgentId, fullName).catch(() => { /* ignore */ });
 
   return NextResponse.json({

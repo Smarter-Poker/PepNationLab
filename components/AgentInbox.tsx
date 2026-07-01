@@ -116,170 +116,55 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
   return (
     <div className="glass-panel">
       <div className="" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
           <div>
-            <h3 className="metal-text" style={{
-              fontSize: '1.25rem', margin: 0,
-              fontFamily: 'var(--font-brand)',
-              letterSpacing: '0.04em', fontWeight: 800, textTransform: 'uppercase'
-            }}>
-              Inbox
-            </h3>
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem', margin: '4px 0 0' }}>
-              Invoices, Notifications, And Messages
-            </p>
+            <h3 className="metal-text" style={{ fontSize: '1.25rem', margin: 0, fontFamily: 'var(--font-brand)', letterSpacing: '0.04em', fontWeight: 800, textTransform: 'uppercase' }}>Inbox</h3>
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem', margin: '4px 0 0' }}>Invoices, Notifications, And Messages</p>
           </div>
-          <button
-            onClick={loadInbox}
-            className="btn-silver"
-            style={{
-              padding: '6px 12px', fontSize: '0.75rem',
-              display: 'flex', alignItems: 'center', gap: 6,
-            }}
-          >
+          <button onClick={loadInbox} className="btn-silver" style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={12} />
             Refresh
           </button>
         </div>
 
-        {/* Filter Tabs */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {filters.map(f => (
-            <button
-              key={f.key}
-              onClick={() => setActiveFilter(f.key)}
-              style={{
-                padding: '8px 16px', borderRadius: '4px',
-                border: activeFilter === f.key ? '1px solid rgba(0,229,255,0.3)' : '1px solid rgba(255,255,255,0.1)',
-                cursor: 'pointer',
-                fontSize: '0.8rem', fontWeight: activeFilter === f.key ? 700 : 500,
-                background: activeFilter === f.key ? 'rgba(0,229,255,0.1)' : 'rgba(0,0,0,0.5)',
-                color: activeFilter === f.key ? '#00E5FF' : 'rgba(255,255,255,0.4)',
-                transition: 'all 0.15s',
-              }}
-            >
+            <button key={f.key} onClick={() => setActiveFilter(f.key)}
+              style={{ padding: '8px 16px', borderRadius: '4px', border: activeFilter === f.key ? '1px solid rgba(0,229,255,0.3)' : '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: activeFilter === f.key ? 700 : 500, background: activeFilter === f.key ? 'rgba(0,229,255,0.1)' : 'rgba(0,0,0,0.5)', color: activeFilter === f.key ? '#00E5FF' : 'rgba(255,255,255,0.4)', transition: 'all 0.15s' }}>
               {f.label}
-              {counts[f.key] > 0 && (
-                <span style={{
-                  marginLeft: 6, fontSize: '0.65rem', fontWeight: 700,
-                  background: activeFilter === f.key ? 'rgba(0,229,255,0.2)' : 'rgba(255,255,255,0.1)',
-                  padding: '2px 6px', borderRadius: '4px',
-                }}>
-                  {counts[f.key]}
-                </span>
-              )}
+              {counts[f.key] > 0 && (<span style={{ marginLeft: 6, fontSize: '0.65rem', fontWeight: 700, background: activeFilter === f.key ? 'rgba(0,229,255,0.2)' : 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>{counts[f.key]}</span>)}
             </button>
           ))}
         </div>
 
-        {error && (
-          <div className="glass-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: '10px 14px', fontSize: '0.82rem', color: '#FFAAAA' }}>
-            {error}
-          </div>
-        )}
+        {error && (<div className="glass-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: '10px 14px', fontSize: '0.82rem', color: '#FFAAAA' }}>{error}</div>)}
 
-        {/* Messages */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxHeight: 600, overflowY: 'auto' }}>
           {filtered.length === 0 ? (
             <div className="glass-panel" style={{ padding: '48px 24px', textAlign: 'center' }}>
-              <div style={{
-                width: 56, height: 56, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.02)', margin: '0 auto 14px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: '1px solid rgba(255,255,255,0.05)'
-              }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2" />
-                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                </svg>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(255,255,255,0.02)', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>
               </div>
               <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.88rem', fontWeight: 600 }}>No Messages</div>
-              <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', marginTop: 4 }}>
-                {activeFilter === 'all' ? 'Your Inbox Is Empty' : `No ${toTitleCase(activeFilter)}s Found`}
-              </div>
+              <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', marginTop: 4 }}>{activeFilter === 'all' ? 'Your Inbox Is Empty' : `No ${toTitleCase(activeFilter)}s Found`}</div>
             </div>
           ) : (
-            filtered.map((msg, i) => {
+            filtered.map((msg) => {
               const cfg = typeConfig[msg.type] || typeConfig.direct_message;
               const IconComp = cfg.icon;
               return (
-                <div
-                  key={msg.id}
-                  className="glass-panel"
-                  style={{
-                    display: 'flex', gap: 14,
-                    padding: '16px 20px',
-                    borderLeft: !msg.is_read ? '3px solid #00E5FF' : '1px solid rgba(0,0,0,0.5)',
-                  }}
-                >
-                  {/* Type avatar */}
-                  <div style={{
-                    width: 42, height: 42, borderRadius: '50%',
-                    background: cfg.gradient,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: cfg.color, flexShrink: 0,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
-                    border: '1px solid rgba(255,255,255,0.1)'
-                  }}>
-                    <IconComp size={18} />
-                  </div>
-
-                  {/* Content */}
+                <div key={msg.id} className="glass-panel" style={{ display: 'flex', gap: 14, padding: '16px 20px', borderLeft: !msg.is_read ? '3px solid #00E5FF' : '1px solid rgba(0,0,0,0.5)' }}>
+                  <div style={{ width: 42, height: 42, borderRadius: '50%', background: cfg.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: cfg.color, flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}><IconComp size={18} /></div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                      <span style={{
-                        fontSize: '0.9rem', fontWeight: !msg.is_read ? 700 : 500,
-                        color: !msg.is_read ? '#00E5FF' : 'rgba(255,255,255,0.8)',
-                      }}>
-                        {msg.subject}
-                      </span>
-                      <span style={{
-                        fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)',
-                        fontWeight: 500, flexShrink: 0, marginLeft: 8,
-                      }}>
-                        {timeAgo(msg.created_at)}
-                      </span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: !msg.is_read ? 700 : 500, color: !msg.is_read ? '#00E5FF' : 'rgba(255,255,255,0.8)' }}>{msg.subject}</span>
+                      <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', fontWeight: 500, flexShrink: 0, marginLeft: 8 }}>{timeAgo(msg.created_at)}</span>
                     </div>
-                    <div style={{
-                      fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)',
-                      whiteSpace: 'pre-wrap', lineHeight: 1.5,
-                      display: '-webkit-box', WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
-                    }}>
-                      {msg.body}
-                    </div>
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      marginTop: 10, fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)',
-                    }}>
+                    <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', whiteSpace: 'pre-wrap', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{msg.body}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)' }}>
                       <span>From: {msg.sender_profile?.full_name || msg.sender_profile?.email || 'System'}</span>
-                      {msg.attachment_url && (
-                        <>
-                          <span>·</span>
-                          <IframeLink
-                            href={msg.attachment_url}
-                            style={{
-                              color: '#00E5FF',
-                              textDecoration: 'none',
-                              fontWeight: 600,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4
-                            }}
-                          >
-                            <Paperclip size={12} /> Attachment
-                          </IframeLink>
-                        </>
-                      )}
-                      {!msg.is_read && (
-                        <div style={{
-                          width: 8, height: 8, borderRadius: '50%',
-                          background: '#00E5FF',
-                          boxShadow: '0 0 8px #00E5FF',
-                          marginLeft: 'auto',
-                        }} />
-                      )}
+                      {msg.attachment_url && (<><span>·</span><IframeLink href={msg.attachment_url} style={{ color: '#00E5FF', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Paperclip size={12} /> Attachment</IframeLink></>)}
+                      {!msg.is_read && (<div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00E5FF', boxShadow: '0 0 8px #00E5FF', marginLeft: 'auto' }} />)}
                     </div>
                   </div>
                 </div>
@@ -287,7 +172,6 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
             })
           )}
         </div>
-
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </div>
