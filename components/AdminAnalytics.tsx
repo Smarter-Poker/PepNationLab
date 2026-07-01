@@ -190,7 +190,7 @@ export default function AdminAnalytics() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
         {[
           {
-            label: 'Revenue This Month', value: `$${data.revenueThisMonth.toFixed(2)}`,
+            label: 'Revenue This Month', value: `$${Number(data.revenueThisMonth || 0).toFixed(2)}`,
             change: pctChange(data.revenueThisMonth, data.revenueLastMonth),
             positive: isPositive(data.revenueThisMonth, data.revenueLastMonth),
           },
@@ -200,7 +200,7 @@ export default function AdminAnalytics() {
             positive: isPositive(data.ordersThisMonth, data.ordersLastMonth),
           },
           {
-            label: 'Avg Order Value', value: `$${data.avgOrderValue.toFixed(2)}`,
+            label: 'Avg Order Value', value: `$${Number(data.avgOrderValue || 0).toFixed(2)}`,
             change: '', positive: true,
           },
           {
@@ -342,7 +342,7 @@ export default function AdminAnalytics() {
                         <span style={{ color: 'rgba(255,255,255,0.3)', marginRight: 6 }}>#{i + 1}</span>
                         {a.name}
                       </span>
-                      <span style={{ color: 'var(--teal)', fontWeight: 700 }}>${a.revenue.toFixed(2)}</span>
+                      <span style={{ color: 'var(--teal)', fontWeight: 700 }}>${Number(a.revenue || 0).toFixed(2)}</span>
                     </div>
                     <div style={{ height: 6, background: 'rgba(255,255,255,0.04)', borderRadius: 3, overflow: 'hidden' }}>
                       <div style={{
@@ -394,7 +394,7 @@ export default function AdminAnalytics() {
                         {prod.sales}
                       </td>
                       <td style={{ padding: 'var(--space-2) var(--space-4)', textAlign: 'right', color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>
-                        ${prod.revenue.toFixed(2)}
+                        ${Number(prod.revenue || 0).toFixed(2)}
                       </td>
                     </tr>
                   ))}

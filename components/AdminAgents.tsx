@@ -291,7 +291,7 @@ export default function AdminAgents() {
         })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || 'Failed To Update Contact Info');
       toast.success('Contact Info Updated Successfully');
       setEditingAgent(null);
       fetchAgents();
@@ -319,7 +319,7 @@ export default function AdminAgents() {
       toast.success(data.auto_approve_orders ? 'Auto-Approve Enabled' : 'Auto-Approve Disabled');
       setAgents(prev => prev.map(a => a.id === targetUserId ? { ...a, auto_approve_orders: data.auto_approve_orders } : a));
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message || 'Failed To Update Auto-Approve Setting');
     } finally {
       setTogglingTrust(null);
     }
@@ -728,7 +728,7 @@ export default function AdminAgents() {
                           body: JSON.stringify({ userId: passwordAgent.id, newPassword }),
                         });
                         const json = await res.json();
-                        if (!res.ok) throw new Error(json.error);
+                        if (!res.ok) throw new Error(json.error || 'Failed To Update Password');
                         toast.success('Password Updated Successfully');
                         setPasswordAgent(null);
                         setNewPassword('');
