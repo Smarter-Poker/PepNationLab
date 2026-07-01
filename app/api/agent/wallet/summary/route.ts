@@ -20,6 +20,11 @@ export async function GET() {
     .single();
   if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
 
+  const ALLOWED_ROLES = ['agent', 'super_agent', 'admin'];
+  if (!ALLOWED_ROLES.includes(profile.role)) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  }
+
   // Owed this week - sum of open / pending statements
   const { data: openStmts } = await svc
     .from('weekly_statements')
@@ -37,7 +42,7 @@ export async function GET() {
   // Next statement date - Sunday 23:59 UTC of current week
   const now = new Date();
   const dow = now.getUTCDay();
-  const daysUntilSunday = (7 - dow) % 7;
+  const daysUntilSunday = dow === 0 ? 7 : (7 - dow) % 7;
   const nextStatementDate = new Date(now);
   nextStatementDate.setUTCDate(now.getUTCDate() + daysUntilSunday);
   nextStatementDate.setUTCHours(23, 59, 0, 0);

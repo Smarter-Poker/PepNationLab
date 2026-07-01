@@ -136,6 +136,7 @@ export default function WalletPage({
   );
   const hasOpenStatement = openInvoices.length > 0;
   const hasCreditLine = (summary?.creditLimit ?? 0) > 0;
+  const canSend = ['agent', 'super_agent', 'admin'].includes(role);
 
   // A statement is overdue when it is still open/pending and its due date has passed.
   const now = Date.now();
@@ -247,10 +248,12 @@ export default function WalletPage({
                 }}>
                 Pay Now
               </button>
-              <button type="button" onClick={() => setSendOpen(true)} className="btn btn-primary"
-                style={{ padding: '12px 18px', borderRadius: 10, minHeight: 44, whiteSpace: 'nowrap' }}>
-                Send Funds
-              </button>
+              {canSend && (
+                <button type="button" onClick={() => setSendOpen(true)} className="btn btn-primary"
+                  style={{ padding: '12px 18px', borderRadius: 10, minHeight: 44, whiteSpace: 'nowrap' }}>
+                  Send Funds
+                </button>
+              )}
               <button type="button" disabled={!hasCreditLine} onClick={() => setCreditOpen(true)} className="btn-secondary"
                 style={{
                   padding: '12px 18px', borderRadius: 10, minHeight: 44,
@@ -295,10 +298,12 @@ export default function WalletPage({
                     Real Funds You Can Send Or Spend Across The Network.
                   </div>
                 </div>
-                <button type="button" onClick={() => setSendOpen(true)} className="btn btn-primary"
-                  style={{ padding: '10px 16px', borderRadius: 10, minHeight: 44, whiteSpace: 'nowrap' }}>
-                  Send Funds
-                </button>
+                {canSend && (
+                  <button type="button" onClick={() => setSendOpen(true)} className="btn btn-primary"
+                    style={{ padding: '10px 16px', borderRadius: 10, minHeight: 44, whiteSpace: 'nowrap' }}>
+                    Send Funds
+                  </button>
+                )}
               </section>
 
               <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
@@ -455,7 +460,7 @@ export default function WalletPage({
           onSubmitted={() => { setCreditOpen(false); toast.success('Request Submitted'); }}
         />
       )}
-      {sendOpen && (
+      {sendOpen && canSend && (
         <WalletSendSheet onClose={() => setSendOpen(false)} onSent={refresh} />
       )}
     </div>

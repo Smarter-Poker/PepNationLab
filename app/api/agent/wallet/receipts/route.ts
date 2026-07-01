@@ -11,6 +11,17 @@ export async function GET(req: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  const ALLOWED_ROLES = ['agent', 'super_agent', 'admin'];
+  if (!profile || !ALLOWED_ROLES.includes(profile.role)) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  }
+
   const url = new URL(req.url);
   const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '100', 10) || 100, 500);
   const offset = parseInt(url.searchParams.get('offset') ?? '0', 10) || 0;

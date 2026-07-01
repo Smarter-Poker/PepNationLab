@@ -102,15 +102,9 @@ async function upstashRateLimit(
       },
       body: JSON.stringify([
         ['INCR', bucketKey],
-        // EXPIRE NX: set the TTL only if not already set (fixed window).
-        // This is safe for subsequent hits in the same window.
-        ['EXPIRE', bucketKey, String(windowSeconds), 'NX'],
-        // Safety: unconditionally refresh TTL when counter=1 (first touch)
-        // to prevent a no-TTL key if the INCR and EXPIRE NX race during failover.
-        // We'll check the counter from the INCR result below and apply accordingly.
-        // Simpler fix: always EXPIRE (makes it a sliding window, acceptable trade-off).
-        // For fixed window semantics, uncomment NX above and remove this line.
-        // ['EXPIRE', bucketKey, String(windowSeconds)],
+        // Always EXPIRE (makes it a sliding window, acceptable trade-off)
+        // to prevent a no-TTL key leak on the very first hit.
+        ['EXPIRE', bucketKey, String(windowSeconds)],
       ]),
       // Don't let a slow Upstash request stall a checkout. Vercel functions
       // already have a ~10s budget; cap our share at 1.5s.
