@@ -39,36 +39,29 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Pricing Modal State
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   const [loadingPricing, setLoadingPricing] = useState(false);
   const [pricingError, setPricingError] = useState<string | null>(null);
   const [pricingSuccess, setPricingSuccess] = useState<string | null>(null);
-  // Controlled inputs per product - keyed by product id.
   const [costInputs, setCostInputs] = useState<Record<string, string>>({});
   const [bulkCostInputs, setBulkCostInputs] = useState<Record<string, string>>({});
   const [bulkThreshInputs, setBulkThreshInputs] = useState<Record<string, string>>({});
 
-  // Password Reset State
   const [resetPwUser, setResetPwUser] = useState<{ id: string; name: string; username: string } | null>(null);
   const [resetPwValue, setResetPwValue] = useState('');
   const [resetPwSaving, setResetPwSaving] = useState(false);
 
-  // Edit Contact State
   const [editContactUser, setEditContactUser] = useState<{ id: string; name: string; email: string; phone: string } | null>(null);
   const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editContactSaving, setEditContactSaving] = useState(false);
 
-  // Revoke Sub-Agent State
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null);
   const [revoking, setRevoking] = useState(false);
 
-  // Trust Toggle State
   const [togglingTrust, setTogglingTrust] = useState<string | null>(null);
 
-  // Agent management detail drawer
   const [detailAgent, setDetailAgent] = useState<{ id: string; name: string } | null>(null);
 
   const fetchData = async () => {
@@ -101,7 +94,6 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       if (!res.ok) throw new Error(json.error || 'Failed To Fetch Pricing');
       const items = json.data || [];
       setProducts(items);
-      // Seed controlled inputs from server values.
       const cost: Record<string, string> = {};
       const bulkCost: Record<string, string> = {};
       const bulkThresh: Record<string, string> = {};
@@ -126,10 +118,9 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
 
   const handleGenerateInvoice = async (subAgentId: string) => {
     try {
-      // Create a week string for Monday of the current week
       const date = new Date();
       const day = date.getDay();
-      const diff = date.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+      const diff = date.getDate() - day + (day === 0 ? -6 : 1);
       date.setDate(diff);
       const weekStart = date.toISOString().split('T')[0];
 
@@ -392,7 +383,6 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
-      {/* Sub-Agents List */}
       <div className="glass-panel stagger-fade-in" style={{ padding: 'var(--space-6)', borderRadius: '16px' }}>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
@@ -591,7 +581,6 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
         </div>
       </div>
 
-      {/* Invoices */}
       <div className="glass-panel stagger-fade-in" style={{ padding: 'var(--space-6)', borderRadius: '16px' }}>
         <div>
           <h2 style={{ fontSize: '1.25rem', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)', color: 'var(--white)', fontWeight: 800 }}>
@@ -630,33 +619,12 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flex: '1 1 auto' }}>
                     <span className="badge-metal" style={{ marginRight: '8px', color: inv.status === 'paid' ? '#00FF9D' : 'var(--teal)' }}>
-                      {inv.status}
+                      {inv.status ? inv.status.charAt(0).toUpperCase() + inv.status.slice(1) : ''}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => downloadInvoice(inv.id, 'pdf')}
-                      className="btn-silver"
-                      style={{ padding: '4px 12px', fontSize: '0.8rem' }}
-                    >
-                      Download PDF
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => downloadInvoice(inv.id, 'csv')}
-                      className="btn-silver"
-                      style={{ padding: '4px 12px', fontSize: '0.8rem' }}
-                    >
-                      Download CSV
-                    </button>
+                    <button type="button" onClick={() => downloadInvoice(inv.id, 'pdf')} className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.8rem' }}>Download PDF</button>
+                    <button type="button" onClick={() => downloadInvoice(inv.id, 'csv')} className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.8rem' }}>Download CSV</button>
                     {inv.status !== 'paid' && (
-                      <button
-                        type="button"
-                        onClick={() => handleMarkPaid(inv.id)}
-                        className="btn-neon-cyan"
-                        style={{ padding: '4px 12px', fontSize: '0.8rem' }}
-                      >
-                        Mark Paid
-                      </button>
+                      <button type="button" onClick={() => handleMarkPaid(inv.id)} className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.8rem' }}>Mark Paid</button>
                     )}
                   </div>
                 </div>
@@ -666,7 +634,6 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
         </div>
       </div>
 
-      {/* Pricing Modal */}
       <AnimatePresence>
         {showPricingModal && (
           <motion.div 
@@ -780,13 +747,8 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
         )}
       </AnimatePresence>
 
-      {/* Reset Password Modal */}
       {resetPwUser && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.8)', zIndex: 1100,
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)', borderRadius: '16px' }}>
             <div>
               <h3 style={{ marginTop: 0, marginBottom: 'var(--space-4)', fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)' }}>Reset Sub-Agent Password</h3>
@@ -842,14 +804,8 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
         </div>
       )}
 
-      {/* Revoke Sub-Agent Confirm Modal */}
       {revokeTarget && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.8)', zIndex: 1100,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: 'var(--space-4)',
-        }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: 440, padding: 'var(--space-6)', borderRadius: '16px' }}>
             <div>
               <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)', fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)' }}>
@@ -862,20 +818,8 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                 This Action Is Logged. You Can Re-Promote Them Later.
               </p>
               <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  className="btn-silver"
-                  onClick={() => setRevokeTarget(null)}
-                  disabled={revoking}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="btn-neon-red"
-                  onClick={handleRevoke}
-                  disabled={revoking}
-                >
+                <button type="button" className="btn-silver" onClick={() => setRevokeTarget(null)} disabled={revoking}>Cancel</button>
+                <button type="button" className="btn-neon-red" onClick={handleRevoke} disabled={revoking}>
                   {revoking ? 'Revoking...' : 'Confirm Revoke'}
                 </button>
               </div>
@@ -884,13 +828,8 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
         </div>
       )}
 
-      {/* Edit Contact Modal */}
       {editContactUser && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.8)', zIndex: 1100,
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)', borderRadius: '16px' }}>
             <div>
               <h3 style={{ marginTop: 0, marginBottom: 'var(--space-4)', fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)' }}>Edit Contact Info</h3>
@@ -920,36 +859,21 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
               }}>
                 <div style={{ marginBottom: 'var(--space-4)' }}>
                   <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Email Address</label>
-                  <input
-                    type="email"
-                    style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
-                    value={editEmail}
-                    onChange={e => setEditEmail(e.target.value)}
-                    placeholder=""
-                  />
+                  <input type="email" style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="" />
                 </div>
                 <div style={{ marginBottom: 'var(--space-6)' }}>
                   <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Phone Number</label>
-                  <input
-                    type="tel"
-                    style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
-                    value={editPhone}
-                    onChange={e => setEditPhone(e.target.value)}
-                    placeholder=""
-                  />
+                  <input type="tel" style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="" />
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                   <button type="button" className="btn-silver" onClick={() => setEditContactUser(null)} disabled={editContactSaving}>Cancel</button>
-                  <button type="submit" className="btn-neon-cyan" disabled={editContactSaving}>
-                    {editContactSaving ? 'Saving...' : 'Save Changes'}
-                  </button>
+                  <button type="submit" className="btn-neon-cyan" disabled={editContactSaving}>{editContactSaving ? 'Saving...' : 'Save Changes'}</button>
                 </div>
               </form>
             </div>
           </div>
         </div>
       )}
-      {/* Agent Management Detail Drawer */}
       {detailAgent && (
         <AgentAccountDetail
           agentId={detailAgent.id}
