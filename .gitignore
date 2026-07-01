@@ -66,3 +66,5 @@ components/.full_b64.txt
 # Additional push-script b64 scratch files
 *_b64.txt
 *.b64.txt
+monograph_b64*.txt
+*_b64_p*.txt
