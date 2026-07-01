@@ -19,67 +19,71 @@ function LoginPageInner() {
     setLoading(true);
     setError('');
 
-    const supabase = createClient();
-    const raw = identifier.trim();
-    let authEmail: string;
+    try {
+      const supabase = createClient();
+      const raw = identifier.trim();
+      let authEmail: string;
 
-    if (raw.includes('@')) {
-      // Admin logging in with their real email - use as-is
-      authEmail = raw;
-    } else {
-      // Everyone else - resolve username → email via server
-      const res = await fetch('/api/auth/resolve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: raw }),
+      if (raw.includes('@')) {
+        // Admin logging in with their real email - use as-is
+        authEmail = raw;
+      } else {
+        // Everyone else - resolve username -> email via server
+        const res = await fetch('/api/auth/resolve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: raw }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.email) {
+          setError('Invalid Username Or Password');
+          setLoading(false);
+          return;
+        }
+        authEmail = data.email;
+      }
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: authEmail,
+        password,
       });
-      const data = await res.json();
-      if (!res.ok || !data.email) {
+
+      if (authError) {
         setError('Invalid Username Or Password');
         setLoading(false);
         return;
       }
-      authEmail = data.email;
-    }
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email: authEmail,
-      password,
-    });
+      // Single-session enforcement - deferred to avoid a race condition in
+      // incognito mode where the signOut RPC can race against the new session
+      // cookie being written, causing silent logout. We fire it 3 seconds after
+      // navigation starts - by then the session cookie is safely committed.
+      // Best-effort: failures are ignored (old sessions expire naturally).
+      const supabaseForSignOut = supabase; // capture ref
 
-    if (authError) {
-      setError('Invalid Username Or Password');
+      // Record session
+      fetch('/api/agent/sessions', { method: 'POST' }).catch(() => {});
+
+      const redirectTo = searchParams.get('redirect') ?? '/dashboard';
+
+      // Wait until Supabase confirms the session is readable locally (max 3s).
+      // On mobile incognito the cookie write is async - navigating too soon
+      // means the server request arrives before the cookie exists.
+      for (let i = 0; i < 15; i++) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) break;
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      // Hard navigation ensures that the browser sends the new session cookie to the server
+      // and completely bypasses any Next.js client-side router cache that might be stale.
+      // Using .replace() keeps the login page out of the history stack, so the back button works perfectly.
+      window.location.replace(redirectTo);
+    } catch (err) {
+      setError('Something Went Wrong. Please Try Again.');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Single-session enforcement - deferred to avoid a race condition in
-    // incognito mode where the signOut RPC can race against the new session
-    // cookie being written, causing silent logout. We fire it 3 seconds after
-    // navigation starts - by then the session cookie is safely committed.
-    // Best-effort: failures are ignored (old sessions expire naturally).
-    const supabaseForSignOut = supabase; // capture ref
-
-    // Record session
-    fetch('/api/agent/sessions', { method: 'POST' }).catch(() => {});
-
-    const redirectTo = searchParams.get('redirect') ?? '/dashboard';
-    
-    // Wait until Supabase confirms the session is readable locally (max 3s).
-    // On mobile incognito the cookie write is async - navigating too soon
-    // means the server request arrives before the cookie exists.
-    for (let i = 0; i < 15; i++) {
-      const { data: { session } } = await supabase.auth.getSession();
-      // round-23: removed `console.log('Session access_token:', ...)` -
-      // was leaking the bearer token to the browser console in production.
-      if (session?.access_token) break;
-      await new Promise(r => setTimeout(r, 200));
-    }
-
-    // Hard navigation ensures that the browser sends the new session cookie to the server
-    // and completely bypasses any Next.js client-side router cache that might be stale.
-    // Using .replace() keeps the login page out of the history stack, so the back button works perfectly.
-    window.location.replace(redirectTo);
   }
 
   return (

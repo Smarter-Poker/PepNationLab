@@ -59,7 +59,7 @@ export default function AdminStatementsPage() {
       if (stRes.ok) { setStatements(stJson.data || []); setPage(1); } else { setError(stJson.error || "Failed To Load Statements"); }
       if (agRes.ok) {
         const all: AgentOption[] = agJson.data || [];
-        setAgents(all.filter((p) => (p.role === "agent" || p.role === "super_agent") && p.account_type === "credit"));
+        setAgents(all.filter((p) => p.role === "agent" || p.role === "super_agent"));
       }
     } catch (err) { setError(err instanceof Error ? err.message : "An Error Occurred While Loading Data"); } finally { setLoading(false); }
   }
@@ -88,7 +88,7 @@ export default function AdminStatementsPage() {
 
   const handleDownloadCSV = () => {
     if (statements.length === 0) return;
-    const headers = ["Agent", "Week Start", "Week End", "Cost of Goods", "Shipping", "Total Owed", "Status"];
+    const headers = ["Agent", "Week Start", "Week End", "Cost Of Goods", "Shipping", "Total Owed", "Status"];
     const rows = statements.map((s) => { const agentName = s.profiles?.full_name || s.profiles?.email || "Agent"; return [`"${agentName}"`, s.week_start, s.week_end, Number(s.total_cogs).toFixed(2), Number(s.total_shipping).toFixed(2), Number(s.total_owed).toFixed(2), s.status]; });
     const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -99,7 +99,7 @@ export default function AdminStatementsPage() {
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
   };
 
-  const outstanding = statements.filter((s) => s.status !== "paid").reduce((acc, s) => acc + Number(s.total_owed), 0);
+  const outstanding = statements.filter((s) => s.status === "pending_payment").reduce((acc, s) => acc + Number(s.total_owed), 0);
   const totalPages = Math.max(1, Math.ceil(statements.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paginatedStatements = statements.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
