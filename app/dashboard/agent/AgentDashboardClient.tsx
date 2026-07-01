@@ -12,7 +12,6 @@ import AgentSales from '@/components/AgentSales';
 import AgentSubAgents from '@/components/AgentSubAgents';
 import AgentInventory from '@/components/AgentInventory';
 import AgentDownline from '@/components/AgentDownline';
-import AgentInbox from '@/components/AgentInbox';
 import AgentOverview from '@/components/AgentOverview';
 import AgentStorefrontConfig from '@/components/AgentStorefrontConfig';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
@@ -127,11 +126,13 @@ export default function AgentDashboardClient({
   // Whitelist of valid tabs. Any unknown / malformed ?tab= value (e.g. a link
   // whose "&" terminated the query string, leaving "Sales ") must fall back to
   // the default tab - otherwise the main panel renders blank and looks broken.
-  const VALID_TABS = ['Overview', 'Sales & Accounting', 'Orders', 'Researchers', 'My Sub-Agents', 'My Agent Accounts', 'Store Products', 'Research Bundles', 'Inventory', 'Coupons', 'Tier Ladder', 'Storefront Config', 'Settings'] as const;
+  const VALID_TABS = ['Overview', 'Sales & Accounting', 'Orders', 'Researchers', 'My Sub-Agents', 'My Agent Accounts', 'Store Products', 'Research Bundles', 'Inventory', 'Coupons', 'Tier Ladder', 'Storefront Config'] as const;
   type AgentTabName = typeof VALID_TABS[number];
   // If a super-agent lands on My Sub-Agents (bookmark, direct URL, etc.), remap to My Agent Accounts.
   const resolveTab = (t: unknown): AgentTabName => {
-    const raw = (typeof t === 'string' && (VALID_TABS as readonly string[]).includes(t)) ? (t as AgentTabName) : (defaultTab as AgentTabName);
+    // 'Settings' was previously in VALID_TABS but had no render block -- redirect to Storefront Config
+    const normalised = t === 'Settings' ? 'Storefront Config' : t;
+    const raw = (typeof normalised === 'string' && (VALID_TABS as readonly string[]).includes(normalised)) ? (normalised as AgentTabName) : (defaultTab as AgentTabName);
     if (raw === 'My Sub-Agents' && userProfile?.is_super_agent) return 'My Agent Accounts';
     return raw;
   };
@@ -227,7 +228,7 @@ export default function AgentDashboardClient({
         body: JSON.stringify({ targetUserId, auto_approve_orders: !currentStatus })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update auto-approve setting');
+      if (!res.ok) throw new Error(data.error || 'Failed To Update Auto-Approve Setting');
       
       toast.success(data.auto_approve_orders ? 'Auto-Approve Enabled' : 'Auto-Approve Disabled');
       
@@ -296,9 +297,9 @@ export default function AgentDashboardClient({
       });
       if (!resApi.ok) {
         const errData = await resApi.json();
-        throw new Error(errData.error || 'Failed to promote');
+        throw new Error(errData.error || 'Failed To Promote');
       }
-      toast.success(`Researcher successfully promoted to ${userProfile.is_super_agent ? 'Agent' : 'Sub-Agent'}!`);
+      toast.success(`Researcher Successfully Promoted To ${userProfile.is_super_agent ? 'Agent' : 'Sub-Agent'}`);
       setResearcherList(prev => prev.filter(r => r.id !== promoteResearcher.id));
       setPromoteResearcher(null);
     } catch (err: any) {
@@ -576,7 +577,7 @@ export default function AgentDashboardClient({
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
       {/* Mobile Top Navbar (Global) */}
-      <Navbar title={initialAgentProfile?.display_name || userProfile.full_name || 'AGENT DASHBOARD'} />
+      <Navbar title={initialAgentProfile?.display_name || userProfile.full_name || 'Agent Dashboard'} />
 
       <style dangerouslySetInnerHTML={{__html: `
         @media (max-width: 768px) {
@@ -605,7 +606,7 @@ export default function AgentDashboardClient({
           />
 
 
-        {/* My Sub-Agents Tab — only rendered for regular agents; super-agents are remapped by resolveTab */}
+        {/* My Sub-Agents Tab - only rendered for regular agents; super-agents are remapped by resolveTab */}
         {activeTab === 'My Sub-Agents' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
             <AgentSubAgents agentId={userProfile.id} />
@@ -646,7 +647,6 @@ export default function AgentDashboardClient({
         {activeTab === 'Overview' && (
           <div style={{
             animation: 'fadeIn 0.3s ease-out',
-            /* Bust out of the container so the image goes edge-to-edge */
             marginLeft: 'calc(-1 * var(--container-px, var(--space-6)))',
             marginRight: 'calc(-1 * var(--container-px, var(--space-6)))',
             marginTop: 'calc(-1 * var(--space-8))',
@@ -700,7 +700,6 @@ export default function AgentDashboardClient({
                   overflowY: 'auto',
                 }}
               >
-                {/* Brushed-steel outer frame */}
                 <div
                   onClick={e => e.stopPropagation()}
                   style={{
@@ -712,7 +711,6 @@ export default function AgentDashboardClient({
                     flexShrink: 0,
                   }}
                 >
-                  {/* Inner dark panel */}
                   <div style={{
                     borderRadius: 12,
                     background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
@@ -720,7 +718,6 @@ export default function AgentDashboardClient({
                     boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6)',
                     position: 'relative',
                   }}>
-                    {/* Header row */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
                       <div>
                         <h3 style={{
@@ -732,7 +729,6 @@ export default function AgentDashboardClient({
                           {userProfile.is_super_agent ? 'Promote To Agent' : 'Promote To Sub-Agent'}
                         </h3>
                       </div>
-                      {/* X close button */}
                       <button
                         type="button"
                         onClick={() => setPromoteResearcher(null)}
@@ -811,7 +807,6 @@ export default function AgentDashboardClient({
                   overflowY: 'auto',
                 }}
               >
-                {/* Brushed-steel outer frame */}
                 <div
                   onClick={e => e.stopPropagation()}
                   className="glass-panel stagger-fade-in"
@@ -822,10 +817,7 @@ export default function AgentDashboardClient({
                     flexShrink: 0,
                   }}
                 >
-                  {/* Inner container */}
                   <div>
-
-                    {/* Header row */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
                       <div>
                         <h3 style={{
@@ -840,7 +832,6 @@ export default function AgentDashboardClient({
                           Account Will Be Linked To Your Agency
                         </p>
                       </div>
-                      {/* X close button */}
                       <button
                         type="button"
                         onClick={() => setShowCreateResearcher(false)}
@@ -858,7 +849,6 @@ export default function AgentDashboardClient({
                       </button>
                     </div>
 
-                    {/* Error / success banners */}
                     {crError && (
                       <div style={{
                         background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.35)',
@@ -876,7 +866,6 @@ export default function AgentDashboardClient({
 
                     <form onSubmit={handleCreateResearcher} style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
 
-                      {/* R31: First + Last Name - top-aligned grid */}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18, alignItems: 'start' }}>
                         <div>
                           <label style={{
@@ -938,7 +927,6 @@ export default function AgentDashboardClient({
                         </div>
                       </div>
 
-                      {/* Username */}
                       <div style={{ marginBottom: 6 }}>
                         <label style={{
                           display: 'block', fontSize: '0.92rem', fontWeight: 700,
@@ -981,7 +969,6 @@ export default function AgentDashboardClient({
                             else e.currentTarget.style.border = '1px solid #2a3045';
                           }}
                         />
-                        {/* Live availability status row - green/red/amber/silver */}
                         {crUsernameMsg && (
                           <div
                             id="cr-username-status"
@@ -1027,7 +1014,6 @@ export default function AgentDashboardClient({
                         )}
                       </div>
 
-                      {/* Temporary Password */}
                       <div style={{ marginBottom: 6 }}>
                         <label style={{
                           display: 'block', fontSize: '0.92rem', fontWeight: 700,
@@ -1059,7 +1045,6 @@ export default function AgentDashboardClient({
                         </p>
                       </div>
 
-                      {/* Submit button at the bottom */}
                       <button
                         type="submit"
                         disabled={crLoading || crUsernameBlocked || crUsernameCheck.status === 'checking'}
@@ -1090,7 +1075,7 @@ export default function AgentDashboardClient({
                           e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)';
                         }}
                       >
-                        {crLoading ? 'Creating Account...' : (crUsernameBlocked ? 'Pick A Different Username' : (crUsernameCheck.status === 'checking' ? 'Checking Username…' : 'Create Researcher Account'))}
+                        {crLoading ? 'Creating Account...' : (crUsernameBlocked ? 'Pick A Different Username' : (crUsernameCheck.status === 'checking' ? 'Checking Username...' : 'Create Researcher Account'))}
                       </button>
 
                     </form>
@@ -1103,7 +1088,6 @@ export default function AgentDashboardClient({
             {/* My Researchers - premium header with action + full CRM below */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-              {/* Action header */}
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 flexWrap: 'wrap', gap: 12,
@@ -1114,7 +1098,7 @@ export default function AgentDashboardClient({
               }}>
                 <div>
                   <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em', margin: 0 }}>My Researchers</h3>
-                  <p style={{ fontSize: '0.78rem', color: '#6A7A8A', margin: '4px 0 0' }}>Your full researcher team - manage, message, and track from here</p>
+                  <p style={{ fontSize: '0.78rem', color: '#6A7A8A', margin: '4px 0 0' }}>Your Full Researcher Team - Manage, Message, And Track From Here</p>
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                   {researcherList.length > 0 && (
@@ -1153,7 +1137,6 @@ export default function AgentDashboardClient({
                 </div>
               </div>
 
-              {/* Full CRM */}
               <AgentResearcherCRMv2
                 isSuperAgent={userProfile.is_super_agent}
                 onResetPassword={setResetPwUser}
@@ -1182,7 +1165,7 @@ export default function AgentDashboardClient({
               }}>
                 <h4 style={{ color: 'var(--red)', margin: '0 0 var(--space-2) 0', fontSize: '1rem' }}>Action Required: Add Payment Handles</h4>
                 <p style={{ color: 'var(--red)', fontSize: '0.9rem', margin: 0 }}>
-                  You must configure at least one payment method before you can access the rest of your dashboard. This ensures researchers know how to pay you.
+                  You Must Configure At Least One Payment Method Before You Can Access The Rest Of Your Dashboard. This Ensures Researchers Know How To Pay You.
                 </p>
               </div>
             )}
@@ -1332,9 +1315,6 @@ function SettingsPasswordForm() {
   );
 }
 
-/* ─────────────────────────────────────────────────────
-   ThemeToggleCard - Dark / Light mode toggle in Settings
-   ───────────────────────────────────────────────────── */
 function ThemeToggleCard() {
   const { theme, toggleTheme } = useTheme();
   const isLight = theme === 'light';
@@ -1355,7 +1335,6 @@ function ThemeToggleCard() {
         borderRadius: 'var(--radius-lg)',
         border: '1px solid rgba(192,184,168,0.2)',
       }}>
-        {/* Icon + Label */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
           <div style={{
             width: 40,
@@ -1371,7 +1350,6 @@ function ThemeToggleCard() {
             transition: 'all 0.3s ease',
           }}>
             {isLight ? (
-              /* Sun icon */
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round">
                 <circle cx="12" cy="12" r="5"/>
                 <line x1="12" y1="1" x2="12" y2="3"/>
@@ -1384,7 +1362,6 @@ function ThemeToggleCard() {
                 <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
               </svg>
             ) : (
-              /* Moon icon */
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
               </svg>
@@ -1400,7 +1377,6 @@ function ThemeToggleCard() {
           </div>
         </div>
 
-        {/* Toggle switch */}
         <button
           onClick={toggleTheme}
           aria-label={isLight ? 'Switch To Dark Mode' : 'Switch To Light Mode'}
