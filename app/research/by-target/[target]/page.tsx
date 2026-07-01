@@ -81,7 +81,7 @@ export default async function ResearchTargetDetailPage({ params }: PageProps) {
             Binding Affinity (pChEMBL)
           </h2>
           <ReceptorAffinityHeatmap bindings={bindingRows.map((b) => ({
-            target_name: b.compound_slug,
+            target_name: b.target_name,
             standard_type: b.standard_type ?? '',
             standard_value: b.standard_value ?? 0,
             standard_units: b.standard_units ?? '',

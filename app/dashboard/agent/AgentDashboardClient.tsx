@@ -1166,7 +1166,7 @@ export default function AgentDashboardClient({
 
 
         {/* TAB: Discount Coupons */}
-        {activeTab === 'Coupons' && <AgentCoupons agentId={userProfile.id} />}
+        {activeTab === 'Coupons' && <AgentCoupons />}
 
 
         {/* TAB: Tier Ladder */}

@@ -1,10 +1,10 @@
-import { readFileSync } from 'fs';
+import { readFile } from 'fs/promises';
 import { join } from 'path';
 
 export async function GET() {
   let html: string;
   try {
-    html = readFileSync(join(process.cwd(), 'public', 'peptide-101.html'), 'utf-8');
+    html = await readFile(join(process.cwd(), 'public', 'peptide-101.html'), 'utf-8');
   } catch (err) {
     console.error('Failed to read peptide-101.html:', err);
     return new Response('Course content unavailable', { status: 503 });

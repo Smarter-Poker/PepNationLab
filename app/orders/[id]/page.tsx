@@ -539,7 +539,7 @@ export default async function OrderDetailPage(
                           </div>
                         </div>
                         {group.items.map(item => {
-                          const m = item.product_name.match(/^(.*?)\s+\[Part of:\s+(.*?)\]$/);
+                          const m = item.product_name && typeof item.product_name === 'string' ? item.product_name.match(/^(.*?)\s+\[Part of:\s+(.*?)\]$/) : null;
                           const cleanName = m ? m[1] : item.product_name;
                           return (
                             <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 8, paddingTop: 4 }}>

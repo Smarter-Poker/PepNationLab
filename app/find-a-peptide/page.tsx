@@ -107,7 +107,7 @@ export default async function FindAPeptidePage() {
   const productList = products || [];
 
   const compoundsBySlug = await getCompoundsBySlugs(
-    productList.map((p: any) => p.products?.compound_slug)
+    productList.map((p: any) => p.products?.compound_slug).filter(Boolean) as string[]
   );
 
   const isStorefrontOwner = profile.id === agent.id;
