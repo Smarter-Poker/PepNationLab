@@ -6,6 +6,7 @@
  */
 
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import GlobalSearchBar from '@/components/research/GlobalSearchBar';
@@ -120,18 +121,20 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
       </div>
 
       <div style={{ padding: '28px 0 0' }}>
-        <SearchResults
-          query={query}
-          results={results}
-          intent={intent}
-          instantAnswer={instantAnswer}
-          total={total}
-          latencyMs={latencyMs}
-          limit={20}
-          offset={offset}
-          correctedQuery={searchData.correctedQuery}
-          originalQuery={searchData.originalQuery}
-        />
+        <Suspense fallback={<div style={{ textAlign: 'center', padding: '60px', color: 'var(--silver, #A8B4C0)' }}>Loading Results…</div>}>
+          <SearchResults
+            query={query}
+            results={results}
+            intent={intent}
+            instantAnswer={instantAnswer}
+            total={total}
+            latencyMs={latencyMs}
+            limit={20}
+            offset={offset}
+            correctedQuery={searchData.correctedQuery}
+            originalQuery={searchData.originalQuery}
+          />
+        </Suspense>
       </div>
 
       <div style={{ maxWidth: 760, margin: '32px auto 0', padding: '0 16px 48px' }}>

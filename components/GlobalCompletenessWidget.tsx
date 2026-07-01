@@ -54,6 +54,65 @@ export default function GlobalCompletenessWidget() {
   const [inputValue, setInputValue] = useState('');
   const [savingTask, setSavingTask] = useState(false);
 
+  // Inline warehouse address state
+  const [warehouseDraft, setWarehouseDraft] = useState({
+    street1: '',
+    street2: '',
+    city: '',
+    state: '',
+    zip: '',
+  });
+  const [savingWarehouse, setSavingWarehouse] = useState(false);
+
+  const refreshCompletenessFrom = (nextProfile: any, nextAgent: any) => {
+    const { percent: newP, missingTasks: newM } = getCompletenessData(nextProfile, nextAgent);
+    setPercent(newP);
+    setMissingTasks(newM);
+    if (newP === 100 && percent !== 100) {
+      toast.success('Profile Is 100% Complete', { duration: 2000 });
+      setTimeout(() => setModalOpen(false), 2000);
+    }
+  };
+
+  const handleSaveWarehouse = async () => {
+    if (!warehouseDraft.street1.trim() || !warehouseDraft.city.trim() || !warehouseDraft.state.trim() || !warehouseDraft.zip.trim()) {
+      toast.error('Street, City, State, and Zip are required.');
+      return;
+    }
+    setSavingWarehouse(true);
+    try {
+      const res = await fetch('/api/agent/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'warehouse',
+          data: {
+            street1: warehouseDraft.street1.trim(),
+            street2: warehouseDraft.street2.trim() || '',
+            city:    warehouseDraft.city.trim(),
+            state:   warehouseDraft.state.trim().toUpperCase(),
+            zip:     warehouseDraft.zip.trim(),
+            country: 'US',
+          },
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to save warehouse address.');
+      // Optimistically update local agent profile state
+      const nextAgent = { ...agentProfileData, warehouse_address: json.warehouse_address };
+      setAgentProfileData(nextAgent);
+      refreshCompletenessFrom(profileData, nextAgent);
+      toast.success('Warehouse address saved!');
+      setExpandedTask(null);
+      // Sync with server in background
+      await fetchCompleteness();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save warehouse address.');
+    } finally {
+      setSavingWarehouse(false);
+    }
+  };
+
   const handleSaveInline = async (t: { id: string }) => {
     setSavingTask(true);
     const keyMap: Record<string, string> = {
@@ -73,13 +132,7 @@ export default function GlobalCompletenessWidget() {
       if (res.ok) {
         const nextProfile = { ...profileData, [dbKey]: inputValue };
         setProfileData(nextProfile);
-        const { percent: newP, missingTasks: newM } = getCompletenessData(nextProfile, agentProfileData);
-        setPercent(newP);
-        setMissingTasks(newM);
-        if (newP === 100 && percent !== 100) {
-          toast.success('Profile Is 100% Complete', { duration: 2000 });
-          setTimeout(() => setModalOpen(false), 2000);
-        }
+        refreshCompletenessFrom(nextProfile, agentProfileData);
       }
       await fetchCompleteness();
     } catch(err) {}
@@ -104,6 +157,17 @@ export default function GlobalCompletenessWidget() {
       const fullProfile = { ...profile, email: profile.email || session.user.email };
       setProfileData(fullProfile);
       setAgentProfileData(agentProfile);
+      // Pre-fill warehouse draft from existing data if any
+      if (agentProfile?.warehouse_address) {
+        const w = agentProfile.warehouse_address;
+        setWarehouseDraft({
+          street1: w.street1 || '',
+          street2: w.street2 || '',
+          city:    w.city    || '',
+          state:   w.state   || '',
+          zip:     w.zip     || '',
+        });
+      }
       const { percent: p, missingTasks: m } = getCompletenessData(fullProfile, agentProfile);
       setPercent(p);
       setMissingTasks(m);
@@ -163,13 +227,7 @@ export default function GlobalCompletenessWidget() {
                               if (res.ok) {
                                 const nextProfile = { ...profileData, avatar_url: 'default' };
                                 setProfileData(nextProfile);
-                                const { percent: newP, missingTasks: newM } = getCompletenessData(nextProfile, agentProfileData);
-                                setPercent(newP);
-                                setMissingTasks(newM);
-                                if (newP === 100 && percent !== 100) {
-                                  toast.success('Profile Is 100% Complete', { duration: 2000 });
-                                  setTimeout(() => setModalOpen(false), 2000);
-                                }
+                                refreshCompletenessFrom(nextProfile, agentProfileData);
                               }
                               await fetchCompleteness();
                             } catch(err) {}
@@ -184,7 +242,7 @@ export default function GlobalCompletenessWidget() {
                         style={{ minWidth: 100 }}
                         disabled={expandedTask === t.id}
                         onClick={() => {
-                          const isInlineEditable = ['first-name', 'last-name', 'email', 'phone', 'timezone', 'avatar'].includes(t.id);
+                          const isInlineEditable = ['first-name', 'last-name', 'email', 'phone', 'timezone', 'avatar', 'warehouse'].includes(t.id);
                           if (isInlineEditable) {
                             setExpandedTask(t.id);
                             const keyMap: Record<string, string> = {
@@ -222,19 +280,66 @@ export default function GlobalCompletenessWidget() {
                                 if (res.ok) {
                                   const nextProfile = { ...profileData, avatar_url: url };
                                   setProfileData(nextProfile);
-                                  const { percent: newP, missingTasks: newM } = getCompletenessData(nextProfile, agentProfileData);
-                                  setPercent(newP);
-                                  setMissingTasks(newM);
-                                  if (newP === 100 && percent !== 100) {
-                                    toast.success('Profile Is 100% Complete', { duration: 2000 });
-                                    setTimeout(() => setModalOpen(false), 2000);
-                                  }
+                                  refreshCompletenessFrom(nextProfile, agentProfileData);
                                 }
                                 await fetchCompleteness();
                               } catch(err) {}
                               setExpandedTask(null);
                             }}
                           />
+                        </div>
+                      ) : t.id === 'warehouse' ? (
+                        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <input
+                            className="form-input"
+                            style={{ margin: 0 }}
+                            placeholder="Street Address *"
+                            value={warehouseDraft.street1}
+                            onChange={e => setWarehouseDraft(d => ({ ...d, street1: e.target.value }))}
+                            autoFocus
+                          />
+                          <input
+                            className="form-input"
+                            style={{ margin: 0 }}
+                            placeholder="Apt / Suite (optional)"
+                            value={warehouseDraft.street2}
+                            onChange={e => setWarehouseDraft(d => ({ ...d, street2: e.target.value }))}
+                          />
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px 96px', gap: 8 }}>
+                            <input
+                              className="form-input"
+                              style={{ margin: 0 }}
+                              placeholder="City *"
+                              value={warehouseDraft.city}
+                              onChange={e => setWarehouseDraft(d => ({ ...d, city: e.target.value }))}
+                            />
+                            <input
+                              className="form-input"
+                              style={{ margin: 0, textTransform: 'uppercase' }}
+                              placeholder="ST *"
+                              maxLength={2}
+                              value={warehouseDraft.state}
+                              onChange={e => setWarehouseDraft(d => ({ ...d, state: e.target.value }))}
+                            />
+                            <input
+                              className="form-input"
+                              style={{ margin: 0 }}
+                              placeholder="Zip *"
+                              maxLength={10}
+                              value={warehouseDraft.zip}
+                              onChange={e => setWarehouseDraft(d => ({ ...d, zip: e.target.value }))}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+                            <button className="btn btn-ghost btn-sm" onClick={() => setExpandedTask(null)}>Cancel</button>
+                            <button
+                              className="btn btn-primary btn-sm"
+                              disabled={savingWarehouse || !warehouseDraft.street1.trim() || !warehouseDraft.city.trim() || !warehouseDraft.state.trim() || !warehouseDraft.zip.trim()}
+                              onClick={handleSaveWarehouse}
+                            >
+                              {savingWarehouse ? 'Saving...' : 'Save Address'}
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>

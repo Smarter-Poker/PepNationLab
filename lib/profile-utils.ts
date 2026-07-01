@@ -32,7 +32,7 @@ export function getCompletenessData(p: any, ap?: any) {
     filled += check(!!ap.slug && !/^agent(?:-|$)/i.test(ap.slug), 'username', 'Custom Username', 'Edit Now', 'nav:/dashboard/agent');
     
     const warehouse = ap.warehouse_address;
-    filled += check(!!(warehouse && warehouse.street1 && warehouse.city && warehouse.state && warehouse.zip), 'warehouse', 'Warehouse Address', 'Go to Agent Settings', 'nav:/dashboard/agent');
+    filled += check(!!(warehouse && warehouse.street1 && warehouse.city && warehouse.state && warehouse.zip), 'warehouse', 'Warehouse Address', 'Add Now', 'inline:warehouse');
     
     const handles = ap.payment_handles;
     filled += check(!!(handles && Object.keys(handles).some((k: string) => handles[k])), 'payment', 'Payment Methods', 'Go to Agent Settings', 'nav:/dashboard/agent');

@@ -5,6 +5,7 @@
  */
 
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { getAllCompounds } from '@/lib/compounds-server';
@@ -67,7 +68,9 @@ export default async function CompareCompoundsPage({
           </p>
         </header>
 
-        <CompareTool compounds={compounds} initialSlugs={initialSlugs} products={products} />
+        <Suspense fallback={<div style={{ textAlign: 'center', padding: '60px', color: 'var(--silver, #A8B4C0)' }}>Loading Compare Tool…</div>}>
+          <CompareTool compounds={compounds} initialSlugs={initialSlugs} products={products} />
+        </Suspense>
       </div>
     </div>
   );
