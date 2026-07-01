@@ -99,7 +99,7 @@ function getCompletenessData(p: AccountProfile | null, ap?: any) {
     filled += check(!!ap.slug && !/^agent(?:-|$)/i.test(ap.slug), 'username', 'Custom Username', 'Edit Now', 'modal:username');
     
     const warehouse = ap.warehouse_address;
-    filled += check(!!(warehouse && warehouse.street1 && warehouse.city && warehouse.state && warehouse.zip), 'warehouse', 'Warehouse Address', 'Go to Agent Settings', 'nav:/dashboard/agent');
+    filled += check(!!(warehouse && warehouse.street1 && warehouse.city && warehouse.state && warehouse.zip), 'warehouse', 'Warehouse Address', 'Add Now', 'inline:warehouse');
     
     const handles = ap.payment_handles;
     filled += check(!!(handles && Object.keys(handles).some((k: string) => handles[k])), 'payment', 'Payment Methods', 'Go to Agent Settings', 'nav:/dashboard/agent');
@@ -114,6 +114,8 @@ function getCompletenessData(p: AccountProfile | null, ap?: any) {
 }
 
 export default function AccountOverview({ userEmail, profile, agentProfile, onProfileChange }: Props) {
+  // Local copy of agentProfile so warehouse saves update completeness immediately
+  const [localAgentProfile, setLocalAgentProfile] = useState<any>(agentProfile);
   const [draft, setDraft] = useState({
     first_name: profile?.first_name ?? '',
     last_name:  profile?.last_name ?? '',
@@ -126,7 +128,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
   const [missingTasksModalOpen, setMissingTasksModalOpen] = useState(false);
   const router = useRouter();
 
-  const { percent: completeness, missingTasks } = useMemo(() => getCompletenessData(profile, agentProfile), [profile, agentProfile]);
+  const { percent: completeness, missingTasks } = useMemo(() => getCompletenessData(profile, localAgentProfile), [profile, localAgentProfile]);
 
   const prevPercentRef = useRef(completeness);
   useEffect(() => {
@@ -142,6 +144,51 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [savingTask, setSavingTask] = useState(false);
+
+  // Inline warehouse address form state
+  const [warehouseDraft, setWarehouseDraft] = useState({
+    street1: (agentProfile?.warehouse_address?.street1 ?? '') as string,
+    street2: (agentProfile?.warehouse_address?.street2 ?? '') as string,
+    city:    (agentProfile?.warehouse_address?.city    ?? '') as string,
+    state:   (agentProfile?.warehouse_address?.state   ?? '') as string,
+    zip:     (agentProfile?.warehouse_address?.zip     ?? '') as string,
+  });
+  const [savingWarehouse, setSavingWarehouse] = useState(false);
+
+  const handleSaveWarehouse = async () => {
+    if (!warehouseDraft.street1.trim() || !warehouseDraft.city.trim() || !warehouseDraft.state.trim() || !warehouseDraft.zip.trim()) {
+      toast.error('Street, City, State, and Zip are required.');
+      return;
+    }
+    setSavingWarehouse(true);
+    try {
+      const res = await fetch('/api/agent/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'warehouse',
+          data: {
+            street1: warehouseDraft.street1.trim(),
+            street2: warehouseDraft.street2.trim() || '',
+            city:    warehouseDraft.city.trim(),
+            state:   warehouseDraft.state.trim().toUpperCase(),
+            zip:     warehouseDraft.zip.trim(),
+            country: 'US',
+          },
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to save warehouse address.');
+      // Update local agent profile state so the completeness ring refreshes immediately
+      setLocalAgentProfile((prev: any) => ({ ...prev, warehouse_address: json.warehouse_address }));
+      toast.success('Warehouse address saved!');
+      setExpandedTask(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save warehouse address.');
+    } finally {
+      setSavingWarehouse(false);
+    }
+  };
 
   const handleSaveInline = async (t: { id: string }) => {
     setSavingTask(true);
@@ -434,7 +481,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
                         className="btn btn-primary btn-sm"
                         disabled={expandedTask === t.id}
                         onClick={() => {
-                          const isInlineEditable = ['first-name', 'last-name', 'email', 'phone', 'timezone', 'avatar'].includes(t.id);
+                          const isInlineEditable = ['first-name', 'last-name', 'email', 'phone', 'timezone', 'avatar', 'warehouse'].includes(t.id);
                           if (isInlineEditable) {
                             setExpandedTask(t.id);
                             const keyMap: Record<string, string> = {
@@ -450,6 +497,9 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
                             setMissingTasksModalOpen(false);
                             const id = t.target.split(':')[1];
                             if (id === 'username') setUsernameModalOpen(true);
+                          } else if (t.target.startsWith('nav:')) {
+                            setMissingTasksModalOpen(false);
+                            router.push(t.target.slice(4));
                           } else {
                             setExpandedTask(t.id);
                             setInputValue('');
@@ -477,6 +527,59 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
                               setExpandedTask(null);
                             }}
                           />
+                        </div>
+                      ) : t.id === 'warehouse' ? (
+                        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <input
+                            className="form-input"
+                            style={{ margin: 0 }}
+                            placeholder="Street Address *"
+                            value={warehouseDraft.street1}
+                            onChange={e => setWarehouseDraft(d => ({ ...d, street1: e.target.value }))}
+                            autoFocus
+                          />
+                          <input
+                            className="form-input"
+                            style={{ margin: 0 }}
+                            placeholder="Apt / Suite (optional)"
+                            value={warehouseDraft.street2}
+                            onChange={e => setWarehouseDraft(d => ({ ...d, street2: e.target.value }))}
+                          />
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 100px', gap: 8 }}>
+                            <input
+                              className="form-input"
+                              style={{ margin: 0 }}
+                              placeholder="City *"
+                              value={warehouseDraft.city}
+                              onChange={e => setWarehouseDraft(d => ({ ...d, city: e.target.value }))}
+                            />
+                            <input
+                              className="form-input"
+                              style={{ margin: 0 }}
+                              placeholder="State *"
+                              maxLength={2}
+                              value={warehouseDraft.state}
+                              onChange={e => setWarehouseDraft(d => ({ ...d, state: e.target.value }))}
+                            />
+                            <input
+                              className="form-input"
+                              style={{ margin: 0 }}
+                              placeholder="Zip *"
+                              maxLength={10}
+                              value={warehouseDraft.zip}
+                              onChange={e => setWarehouseDraft(d => ({ ...d, zip: e.target.value }))}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+                            <button className="btn btn-ghost btn-sm" onClick={() => setExpandedTask(null)}>Cancel</button>
+                            <button
+                              className="btn btn-primary btn-sm"
+                              disabled={savingWarehouse || !warehouseDraft.street1.trim() || !warehouseDraft.city.trim() || !warehouseDraft.state.trim() || !warehouseDraft.zip.trim()}
+                              onClick={handleSaveWarehouse}
+                            >
+                              {savingWarehouse ? 'Saving...' : 'Save Address'}
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
