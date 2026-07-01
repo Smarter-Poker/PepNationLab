@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     const gate = await requireAdmin();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
 
     // Find users with items in cart, updated more than 24 hours ago
     const twentyFourHoursAgo = new Date();

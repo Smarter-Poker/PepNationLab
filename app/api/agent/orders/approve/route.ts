@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
 import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const callerId = gate.user.id;
     const body = await req.json().catch(() => ({}));
     const { orderId, newStatus, tracking_number } = body;
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       .from('orders')
       .select('*, order_items(product_id, product_name, quantity, unit_cost_price, unit_super_agent_cost), profiles!orders_agent_id_fkey(parent_agent_id)')
       .eq('id', orderId)
-      .single();
+      .maybeSingle();
 
     if (orderError || !order) return NextResponse.json({ error: 'Order Not Found' }, { status: 404 });
 
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
 
     const { data: primaryProfile, error: profileError } = await supabase
       .from('profiles').select('account_type, prepaid_balance, credit_limit')
-      .eq('id', primaryBilledAgentId).single();
+      .eq('id', primaryBilledAgentId).maybeSingle();
 
     if (profileError || !primaryProfile) return NextResponse.json({ error: 'Failed To Retrieve Billing Profile' }, { status: 500 });
 
@@ -167,36 +167,78 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // BUG 8 fix: use atomic RPC that wraps balance deduction + order status
-    // update in a single Postgres transaction. Eliminates the TOCTOU window
-    // where money is deducted but the order stays in agent_approval_pending
-    // if the second step fails.
-    const amountToDeduct = primaryProfile.account_type === 'prepaid' ? totalOwed : 0;
-    const finalAutoStatus = primaryProfile.account_type === 'credit' ? finalStatus : 'admin_approval_pending';
-    const trackingArg = (tracking_number && typeof tracking_number === 'string') ? tracking_number : null;
-
-    const { data: approveResult, error: approveError } = await supabase.rpc('approve_agent_order_atomic', {
-      p_order_id:    orderId,
-      p_agent_id:    primaryBilledAgentId,
-      p_amount:      amountToDeduct,
-      p_new_status:  finalAutoStatus,
-      p_tracking_no: trackingArg,
-    });
-
-    if (approveError || !approveResult?.ok) {
-      const reason = approveResult?.error || approveError?.message || 'unknown';
-      console.error('[agent/orders/approve] atomic approve RPC failed', { orderId, reason });
-      if (reason === 'insufficient_balance') {
-        return NextResponse.json({ error: 'Insufficient Prepaid Balance To Approve This Order.' }, { status: 400 });
-      }
-      return NextResponse.json({ error: 'Failed To Approve Order. Please Try Again.' }, { status: 500 });
+    let prepaidDeducted = false;
+    let oldBalance = 0;
+    if (primaryProfile.account_type === 'prepaid') {
+      oldBalance = Number(primaryProfile.prepaid_balance) || 0;
+      const { data: deductSuccess, error: deductError } = await supabase.rpc('deduct_prepaid_balance', { agent_id: primaryBilledAgentId, amount: totalOwed });
+      if (deductError || !deductSuccess) return NextResponse.json({ error: 'Failed To Deduct Balance. Please Try Again.' }, { status: 500 });
+      prepaidDeducted = true;
     }
 
-    const prepaidDeducted = amountToDeduct > 0;
+    const finalAutoStatus = primaryProfile.account_type === 'credit' ? finalStatus : 'admin_approval_pending';
+    const updatePayload: Record<string, string> = { status: finalAutoStatus, agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+    if (tracking_number && typeof tracking_number === 'string') updatePayload.tracking_number = tracking_number;
 
-    // Note: the balance_transactions ledger record is written inside the
-    // approve_agent_order_atomic RPC — no duplicate insert needed here.
+    const { error: updateError } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
+    if (updateError) {
+      if (prepaidDeducted) {
+        try {
+          const { data: refundOk, error: refundError } = await supabase.rpc(
+            'refund_prepaid_balance',
+            { p_agent_id: primaryBilledAgentId, p_amount: totalOwed },
+          );
+          if (refundError || !refundOk) {
+            console.error('[CRITICAL] prepaid REFUND failed after order update failed', {
+              orderId,
+              agentId: primaryBilledAgentId,
+              amount: totalOwed,
+              originalError: updateError.message,
+              refundError: refundError?.message ?? 'rpc_returned_false',
+            });
+            const auditInsert = await supabase.from('balance_transactions').insert({
+              agent_id: primaryBilledAgentId,
+              type: 'adjustment',
+              amount: 0,
+              balance_before: oldBalance,
+              balance_after: oldBalance - totalOwed,
+              description: `UNRESOLVED prepaid debit of $${totalOwed} on order ${orderId} could NOT be refunded after order update failed (${updateError.message}; refund error: ${refundError?.message ?? 'rpc_returned_false'}). Manual reconciliation required.`,
+              reference_id: orderId,
+              reference_type: 'order',
+              created_by: callerId,
+            });
+            if (auditInsert.error) {
+              console.error('[CRITICAL] UNRESOLVED-rollback audit insert ALSO failed', {
+                orderId,
+                error: auditInsert.error.message,
+              });
+            }
+          }
+        } catch (rollbackThrow: any) {
+          console.error('[CRITICAL] prepaid refund threw after order update failed', {
+            orderId,
+            agentId: primaryBilledAgentId,
+            amount: totalOwed,
+            error: rollbackThrow?.message ?? String(rollbackThrow),
+          });
+        }
+      }
+      return NextResponse.json({ error: 'Failed To Update Order Status' }, { status: 500 });
+    }
 
+    if (prepaidDeducted) {
+      const newBalance = oldBalance - totalOwed;
+      const { error: txError } = await supabase.from('balance_transactions').insert({
+        agent_id: primaryBilledAgentId, type: 'order_charge', amount: totalOwed,
+        balance_before: oldBalance, balance_after: newBalance,
+        description: `Charge for Order ${orderId}`, reference_id: orderId, reference_type: 'order', created_by: callerId
+      });
+      if (txError) {
+        console.error('[CRITICAL] balance_transactions insert failed after prepaid deduction', {
+          orderId, agentId: primaryBilledAgentId, amount: totalOwed, error: txError.message
+        });
+      }
+    }
 
     if (finalAutoStatus === 'approved_ship' || finalAutoStatus === 'approved_pickup') {
       try {

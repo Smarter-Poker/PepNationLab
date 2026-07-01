@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { isAgentAncestorOf } from '@/lib/agent-auth';
 
@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
+  const supabase = createAdminClient();
   const orderId = req.nextUrl.searchParams.get('orderId');
 
   if (!orderId) {
