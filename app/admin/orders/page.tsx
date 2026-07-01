@@ -176,17 +176,22 @@ function AdminOrdersPageInner() {
   }, []);
 
   async function checkRole() {
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-      if (data) setUserRole(data.role);
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        if (data) setUserRole(data.role);
+      }
+    } catch (err) {
+      console.error('[orders] checkRole failed — defaulting to empty role', err);
+      // Leave userRole as '' (most restrictive: shipping view)
     }
   }
 

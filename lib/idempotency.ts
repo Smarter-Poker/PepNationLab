@@ -144,9 +144,14 @@ export async function withIdempotency(opts: IdempotencyOptions): Promise<NextRes
       .maybeSingle<CachedRow>();
 
     if (!existing) {
-      // Race lost the conflict and now the row is gone (expired sweep?).
-      // Just run the handler - safer than refusing a real request.
-      return handler();
+      // Race lost the conflict and now the row is gone (idempotency_sweep?).
+      // Do NOT call handler() — that would double-execute a money mutation.
+      // Force the client to retry with a fresh key instead.
+      console.warn('[idempotency] key row disappeared mid-flight, returning 503', { key, route });
+      return NextResponse.json(
+        { error: 'Idempotency state lost. Please use a new key and retry.' },
+        { status: 503 }
+      );
     }
 
     if (existing.user_id !== userId) {
@@ -195,7 +200,7 @@ export async function withIdempotency(opts: IdempotencyOptions): Promise<NextRes
   }
 
   const body = await readBodyJson(response);
-  await admin
+  const { error: updateErr } = await admin
     .from('idempotency_keys')
     .update({
       response_status: status,
@@ -203,6 +208,12 @@ export async function withIdempotency(opts: IdempotencyOptions): Promise<NextRes
       updated_at: new Date().toISOString(),
     })
     .eq('key', key);
+
+  if (updateErr) {
+    // Don't re-throw — response is already computed and will be sent.
+    // Log so ops can detect if the cache is consistently failing.
+    console.error('[idempotency] failed to cache response — duplicate requests may re-execute:', updateErr);
+  }
 
   return response;
 }

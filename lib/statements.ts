@@ -189,14 +189,23 @@ export async function persistStatement(
     return { ok: false, error: upsertError?.message ?? 'Failed To Save Statement.' };
   }
 
-  await supabase.from('statement_orders').delete().eq('statement_id', statement.id);
+  const { error: deleteError } = await supabase.from('statement_orders').delete().eq('statement_id', statement.id);
+  if (deleteError) {
+    console.error('[statements] failed to clear old statement_orders:', deleteError);
+    return { ok: false, error: 'Failed To Clear Old Order Links.' };
+  }
+
   if (computed.orderIds.length > 0) {
-    await supabase.from('statement_orders').insert(
+    const { error: insertError } = await supabase.from('statement_orders').insert(
       computed.orderIds.map((orderId) => ({
         statement_id: statement.id,
         order_id: orderId,
       }))
     );
+    if (insertError) {
+      console.error('[statements] failed to insert statement_orders:', insertError);
+      return { ok: false, error: 'Failed To Link Orders To Statement.' };
+    }
   }
 
   return { ok: true, statementId: statement.id };

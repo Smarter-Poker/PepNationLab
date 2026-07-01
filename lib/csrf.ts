@@ -55,8 +55,9 @@ export function assertSameOrigin(req: NextRequest): NextResponse | null {
   const accepted = new Set<string>(ALLOWED_HOSTS);
   const requestHost = hostOf(req.nextUrl.origin) ?? req.headers.get('host');
   if (requestHost) accepted.add(requestHost.toLowerCase());
-  const forwardedHost = req.headers.get('x-forwarded-host');
-  if (forwardedHost) accepted.add(forwardedHost.toLowerCase());
+  // NOTE: X-Forwarded-Host is intentionally NOT added to the allowset.
+  // It is user-controlled in many proxy configurations and would allow
+  // an attacker to self-whitelist by forging the header.
 
   const originHost = hostOf(req.headers.get('origin'));
   if (originHost) {
@@ -77,5 +78,11 @@ export function assertSameOrigin(req: NextRequest): NextResponse | null {
   // The Supabase auth cookie is SameSite=Lax, so a true cross-site attacker
   // still cannot ride along with credentials -- requireSession would fail.
   // Treat the missing-headers case as allow so we do not lock out real users.
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('[csrf] no Origin/Referer header — allowed by fallback', {
+      method: req.method,
+      path: req.nextUrl.pathname,
+    });
+  }
   return null;
 }

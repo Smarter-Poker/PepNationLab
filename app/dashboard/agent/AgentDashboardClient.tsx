@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
 import { toast } from 'sonner';
@@ -104,7 +104,7 @@ export default function AgentDashboardClient({
   initialResearchers,
   initialOrders
 }: AgentDashboardClientProps) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(initialAgentProfile);
   const [orders, setOrders] = useState<Order[]>(initialOrders);

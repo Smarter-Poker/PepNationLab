@@ -243,7 +243,15 @@ export async function POST(req: NextRequest) {
     if (finalAutoStatus === 'approved_ship' || finalAutoStatus === 'approved_pickup') {
       try {
         await supabase.rpc('charge_order_credit_line', { p_order_id: orderId, p_created_by: callerId });
-      } catch {}
+      } catch (creditErr) {
+        console.error('[CRITICAL] charge_order_credit_line failed \u2014 order approved but credit line not charged:', {
+          orderId,
+          agentId: primaryBilledAgentId,
+          error: creditErr instanceof Error ? creditErr.message : String(creditErr),
+        });
+        // Don't block the approval response \u2014 the order is already approved.
+        // Ops must reconcile this manually via the financial ledger.
+      }
     }
 
     try {

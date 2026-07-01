@@ -711,7 +711,7 @@ function ResearchersAdminPageInner() {
                       {ap?.slug && <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>(@{ap.slug})</span>}
                     </div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: 2 }}>
-                      {profile.username ? `@${profile.username}` : profile.email.split('@')[0]}
+                      {profile.username ? `@${profile.username}` : (profile.email ?? '').split('@')[0]}
                       {profile.phone && ` • ${profile.phone}`}
                     </div>
                     <div style={{ fontSize: '0.74rem', color: 'var(--grey-500)', marginTop: 4 }}>

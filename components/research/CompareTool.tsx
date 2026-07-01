@@ -1890,6 +1890,9 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
     return initialSlugs.filter(s => compounds.some(c => c.slug === s)).slice(0, MAX_COLUMNS);
   });
 
+  // Stable key: join compound slugs so the effect only re-runs when the catalog itself changes,
+  // not on every re-render where `compounds` is a new array reference.
+  const compoundSlugKey = compounds.map(c => c.slug).join(',');
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     const urlCompare = sp.get('compare');
@@ -1897,7 +1900,8 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
       const slugs = urlCompare.split(',').filter(Boolean);
       setSelectedSlugs(slugs.filter(s => compounds.some(c => c.slug === s)).slice(0, MAX_COLUMNS));
     }
-  }, [compounds]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compoundSlugKey]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);

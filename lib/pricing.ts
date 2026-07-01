@@ -225,7 +225,7 @@ export async function verifyCommissionSafeguard(
 
   for (const p of products) {
     const retail = Number(p.retail_price);
-    if (retail <= 0) continue;
+    if (!Number.isFinite(retail) || retail <= 0) continue;
 
     const cost = await computeAgentCostForAgent(supabase, p.product_id, agentId, legacyTier);
     
