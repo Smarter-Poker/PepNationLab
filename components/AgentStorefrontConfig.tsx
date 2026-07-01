@@ -14,7 +14,6 @@ interface AgentStorefrontConfigProps {
   setSlug: (val: string) => void;
   logoUrl: string;
   setLogoUrl: (val: string) => void;
-  // Warehouse address (JSONB) - read/write directly to agent_profiles.
   warehouseAddress?: Record<string, any> | null;
   agentId: string;
   displayNameChangedAt?: string | null;
@@ -22,12 +21,11 @@ interface AgentStorefrontConfigProps {
   paymentMethodsNode?: React.ReactNode;
 }
 
-/** Derive a slug-shaped suggestion from a free-form display name. */
 function deriveSlugFromName(name: string): string {
   return name
     .toLowerCase()
     .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '') // strip diacritics
+    .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
@@ -46,13 +44,9 @@ export default function AgentStorefrontConfig({
 }: AgentStorefrontConfigProps) {
   const [loading, setLoading] = React.useState(false);
 
-  // Reservation tokens issued by the live availability check. Sent on save.
   const [slugReservationToken, setSlugReservationToken] = React.useState<string | null>(null);
   const [displayNameReservationToken, setDisplayNameReservationToken] = React.useState<string | null>(null);
 
-  // One-shot slug auto-suggestion. Triggers only when slug is empty and the
-  // user starts typing a display name - once accepted (or once they touch
-  // the slug field), we never overwrite again.
   const slugWasAutoFilledRef = React.useRef(false);
   React.useEffect(() => {
     const derived = deriveSlugFromName(displayName);
@@ -63,7 +57,6 @@ export default function AgentStorefrontConfig({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [displayName]);
 
-  // Warehouse address local state - mirrors agent_profiles.warehouse_address.
   const [whName, setWhName] = React.useState(warehouseAddress?.name ?? '');
   const [whStreet1, setWhStreet1] = React.useState(warehouseAddress?.street1 ?? '');
   const [whStreet2, setWhStreet2] = React.useState(warehouseAddress?.street2 ?? '');
@@ -71,7 +64,6 @@ export default function AgentStorefrontConfig({
   const [whState, setWhState] = React.useState(warehouseAddress?.state ?? '');
   const [whZip, setWhZip] = React.useState(warehouseAddress?.zip ?? '');
 
-  // Check if User Name is in 6-month cooldown
   const canChangeDisplayName = React.useMemo(() => {
     if (!displayNameChangedAt) return true;
     const lastChange = new Date(displayNameChangedAt).getTime();
@@ -92,9 +84,6 @@ export default function AgentStorefrontConfig({
     const supabase = createClient();
 
     try {
-      // 1) Slug update goes through the server endpoint so it can enforce
-      //    the DB UNIQUE + reserved-word CHECK with a clean 409 surface,
-      //    and now also consume the soft reservation token.
       const slugRes = await fetch('/api/agent/storefront-slug', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -111,8 +100,6 @@ export default function AgentStorefrontConfig({
         throw new Error(slugJson?.error || 'Failed To Update Slug');
       }
 
-      // 2) The new Display Name (User Name) goes through a dedicated endpoint
-      //    to handle the cooldown logic and notifications.
       const nameRes = await fetch('/api/agent/storefront-name', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -125,7 +112,6 @@ export default function AgentStorefrontConfig({
         throw new Error(nameJson?.error || 'Failed To Update User Name');
       }
 
-      // 3) Everything else updates inline.
       const updatePayload: Record<string, any> = {
         slug: cleanSlug,
         logo_url: logoUrl.trim() || null,
@@ -164,7 +150,6 @@ export default function AgentStorefrontConfig({
 
   return (
     <div style={{ maxWidth: 900, width: '100%' }}>
-      {/* Header Section */}
       <div style={{ marginBottom: 'var(--space-6)' }}>
         <h3 className="metal-text" style={{ fontSize: '1.4rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Storefront Configuration</h3>
         <p style={{ color: 'var(--silver)', fontSize: '0.95rem', lineHeight: 1.5, maxWidth: 600 }}>
@@ -174,7 +159,6 @@ export default function AgentStorefrontConfig({
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
         
-        {/* Identity & Branding Section */}
         <section className="glass-panel" style={{ padding: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #00C4BC 0%, #00E5FF 100%)' }} />
           <h4 style={{ fontSize: '1.1rem', color: 'var(--white)', fontWeight: 600, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -264,7 +248,6 @@ export default function AgentStorefrontConfig({
           </div>
         </section>
 
-        {/* Warehouse Location Section */}
         <section className="glass-panel" style={{ padding: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #A855F7 0%, #D8B4FE 100%)' }} />
           <h4 style={{ fontSize: '1.1rem', color: 'var(--white)', fontWeight: 600, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -313,7 +296,6 @@ export default function AgentStorefrontConfig({
           </div>
         </section>
 
-        {/* Payment Methods Section (Rendered externally by AgentDashboardClient) */}
         {paymentMethodsNode && (
           <section className="glass-panel" style={{ padding: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #F59E0B 0%, #FCD34D 100%)' }} />
