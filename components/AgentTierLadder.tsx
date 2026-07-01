@@ -22,12 +22,20 @@ interface TierData {
 export default function AgentTierLadder({ agentId }: { agentId: string }) {
   const [data, setData] = useState<TierData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [graceExpired, setGraceExpired] = useState(false);
 
   useEffect(() => {
     const ctrl = new AbortController();
     fetch('/api/agent/tier', { signal: ctrl.signal })
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-      .then(setData)
+      .then(res => {
+        if (!ctrl.signal.aborted) {
+          setData(res);
+          if (res.gracePeriodExpiresAt && new Date(res.gracePeriodExpiresAt).getTime() < Date.now()) {
+            setGraceExpired(true);
+          }
+        }
+      })
       .catch(() => { if (!ctrl.signal.aborted) setData({ enabled: false }); })
       .finally(() => { if (!ctrl.signal.aborted) setLoading(false); });
     return () => ctrl.abort();
@@ -95,14 +103,44 @@ export default function AgentTierLadder({ agentId }: { agentId: string }) {
     progress = 0,
     next,
     ladder = [],
+    gracePeriodExpiresAt,
   } = data;
 
   const progressPct = Math.round(progress * 100);
   const maxVolumeLabel = (t: TierRow) =>
     t.max_volume == null ? 'No Limit' : `$${t.max_volume.toLocaleString()}`;
 
+  const hasActiveGracePeriod = gracePeriodExpiresAt && !graceExpired;
+  const graceDateStr = hasActiveGracePeriod ? new Date(gracePeriodExpiresAt!).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', paddingTop: 'var(--space-4)' }}>
+      {hasActiveGracePeriod && (
+        <div style={{
+          background: 'rgba(255, 60, 60, 0.1)',
+          border: '1px solid rgba(255, 60, 60, 0.4)',
+          borderRadius: 'var(--radius-md)',
+          padding: 'var(--space-4)',
+          marginBottom: 'var(--space-6)',
+          display: 'flex',
+          gap: 'var(--space-3)',
+          alignItems: 'flex-start'
+        }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff3c3c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <div>
+            <h4 style={{ color: '#ff3c3c', margin: '0 0 var(--space-1)', fontSize: '0.95rem', fontWeight: 600 }}>Grace Period Active</h4>
+            <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>
+              Your 30-day volume has dropped below the minimum required for the <strong style={{ color: 'var(--white)' }}>{levelName}</strong> tier. 
+              You have until <strong style={{ color: 'var(--white)' }}>{graceDateStr}</strong> to reach ${next?.min_volume.toLocaleString() ?? '0'} in volume, or you will be demoted to your earned tier and your prices will increase.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Current Tier Card */}
       <div
         className="card-glass"

@@ -25,7 +25,7 @@ export async function GET() {
   const svc = await createServiceClient();
 
   const [{ data: profile }, tiers, level, volRes] = await Promise.all([
-    svc.from('profiles').select('fixed_scale_override, locked_tier_level').eq('id', agentId).maybeSingle(),
+    svc.from('profiles').select('fixed_scale_override, locked_tier_level, tier_grace_period_expires_at').eq('id', agentId).maybeSingle(),
     getHouseTiers(svc),
     resolveHouseTierLevel(svc, agentId),
     svc.rpc('fn_agent_volume_30d', { p_agent: agentId }),
@@ -33,7 +33,7 @@ export async function GET() {
 
   const volume30 = volRes.error ? 0 : Number(volRes.data ?? 0);
   const current = tiers.find((t) => t.level === level) ?? null;
-  const next = tiers.find((t) => t.level === level + 1) ?? null;
+  const next = tiers.find((t) => t.level === level - 1) ?? null;
 
   // Progress within the current tier band (top tier = full).
   let progress = 1;
@@ -57,5 +57,6 @@ export async function GET() {
     progress: Number(progress.toFixed(4)),
     next: next ? { level: next.level, name: next.name, dollarsToNext: Number(dollarsToNext.toFixed(2)) } : null,
     ladder: tiers.map((t) => ({ level: t.level, name: t.name, min_volume: t.min_volume, max_volume: t.max_volume })),
+    gracePeriodExpiresAt: profile?.tier_grace_period_expires_at || null,
   });
 }
