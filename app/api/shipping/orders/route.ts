@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export async function GET() {
@@ -15,14 +15,14 @@ export async function GET() {
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile || (profile.role !== 'shipping' && profile.role !== 'admin')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // Use service client to bypass RLS since we have manually verified the user's role
-  const serviceClient = await createServiceClient();
+  // Use admin client to bypass RLS since we have manually verified the user's role
+  const serviceClient = createAdminClient();
 
   // Fetch orders that need shipping + recently shipped
   const { data: orders, error } = await serviceClient
@@ -47,7 +47,7 @@ export async function GET() {
     .order('created_at', { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   return NextResponse.json({ data: orders });
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile || (profile.role !== 'shipping' && profile.role !== 'admin')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -78,14 +78,14 @@ export async function POST(request: NextRequest) {
   const { order_id, tracking_number, action } = await request.json();
 
   if (!order_id || !action) {
-    return NextResponse.json({ error: 'Missing order_id or action' }, { status: 400 });
+    return NextResponse.json({ error: 'Missing Order_Id Or Action' }, { status: 400 });
   }
 
   let updateData: Record<string, string | null> = {};
-  
+
   if (action === 'mark_shipped') {
     if (!tracking_number) {
-      return NextResponse.json({ error: 'Tracking number is required to mark as shipped' }, { status: 400 });
+      return NextResponse.json({ error: 'Tracking Number Is Required To Mark As Shipped' }, { status: 400 });
     }
     updateData = {
       status: 'shipped',
@@ -97,11 +97,11 @@ export async function POST(request: NextRequest) {
       status: 'in_fulfillment' // Move from approved_ship to in_fulfillment once tracking is assigned
     };
   } else {
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid Action' }, { status: 400 });
   }
 
-  // Use service client to bypass RLS since we have manually verified the user's role
-  const serviceClient = await createServiceClient();
+  // Use admin client to bypass RLS since we have manually verified the user's role
+  const serviceClient = createAdminClient();
 
   const { data, error } = await serviceClient
     .from('orders')
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   // Audit log: the shipping team's status changes were previously untracked,
@@ -130,5 +130,5 @@ export async function POST(request: NextRequest) {
     });
   } catch { /* audit failure must not break the shipping response */ }
 
-  return NextResponse.json({ data, message: 'Order updated successfully' });
+  return NextResponse.json({ data, message: 'Order Updated Successfully' });
 }

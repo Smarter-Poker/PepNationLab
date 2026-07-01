@@ -16,13 +16,16 @@
  *
  * Auth: authenticated user (any role). Public callers via agent storefronts
  * are allowed - the rate does not expose sensitive data.
+ *
+ * Shippo API key: resolved per-agent from agent_profiles.shippo_api_key
+ * (via lib/shippo quoteRates). Falls back to platform default key.
  */
 
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { quoteRates, type AddressInput } from '@/lib/shippo';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
@@ -47,7 +50,7 @@ export async function POST(req: NextRequest) {
   const rl = await rateLimit({ key: 'shipping_quote', limit: 60, windowSeconds: 60, identifier: ip });
   if (!rl.allowed) {
     return NextResponse.json(
-      { error: 'Too Many Rate Requests. Please Wait And Try Again.' },
+      { error: 'Too Many Requests. Please Wait And Try Again.' },
       {
         status: 429,
         headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) },
@@ -75,7 +78,7 @@ export async function POST(req: NextRequest) {
 
   const addrRaw = body.shipping_address;
   if (!addrRaw || typeof addrRaw !== 'object') {
-    return NextResponse.json({ error: 'shipping_address Is Required.' }, { status: 400 });
+    return NextResponse.json({ error: 'Shipping_Address Is Required.' }, { status: 400 });
   }
 
   const a = addrRaw as Record<string, unknown>;
@@ -89,7 +92,7 @@ export async function POST(req: NextRequest) {
   };
   if (!toAddr.street1 || !toAddr.city || !toAddr.state || !toAddr.zip) {
     return NextResponse.json(
-      { error: 'shipping_address Must Include street1, city, state, And zip.' },
+      { error: 'Shipping_Address Must Include Street1, City, State, And Zip.' },
       { status: 400 },
     );
   }
@@ -99,7 +102,7 @@ export async function POST(req: NextRequest) {
   let totalWeightOz = 0;
   let totalQty = 0;
   if (items.length > 0) {
-    const service = await createServiceClient();
+    const service = createAdminClient();
     for (const it of items as Array<{ product_id?: unknown; quantity?: unknown }>) {
       const pid = typeof it.product_id === 'string' ? it.product_id : null;
       const qty = Math.max(1, Number(it.quantity) || 1);
@@ -122,18 +125,20 @@ export async function POST(req: NextRequest) {
   else if (totalQty > 10) { lengthIn = 12; widthIn = 9; heightIn = 4; }
 
   // Resolve ship-from origin.
-  // Priority: agent warehouse_origin_id (via agent_slug) → platform default → LA fallback.
-  // Using the agent's real warehouse ensures checkout rates match the actual label cost.
+  // Priority: agent warehouse_origin_id (via agent_slug) -> agent warehouse_address
+  // (legacy JSONB) -> platform default shipping_origin -> LA hardcoded fallback.
+  // Shippo API key is resolved per-agent inside lib/shippo quoteRates via
+  // agent_profiles.shippo_api_key; the quote route does NOT pass an API key directly.
   let fromAddr = ORIGIN_FALLBACK;
   try {
-    const service = await createServiceClient();
+    const service = createAdminClient();
 
     // 1) If agent_slug provided, find the agent's own warehouse first.
     const agentSlug = typeof body.agent_slug === 'string' ? body.agent_slug.trim() : null;
     if (agentSlug) {
       const { data: agentProfile } = await service
         .from('agent_profiles')
-        .select('warehouse_origin_id, warehouse_address, display_name')
+        .select('warehouse_origin_id, warehouse_address, shippo_api_key, display_name')
         .eq('slug', agentSlug)
         .eq('is_active', true)
         .maybeSingle();
@@ -243,7 +248,7 @@ export async function POST(req: NextRequest) {
   // Bracket fallback.
   let bracketDollars = 12;
   try {
-    const service = await createServiceClient();
+    const service = createAdminClient();
     const { data: rates } = await service
       .from('shipping_rates')
       .select('rate, min_weight_oz, max_weight_oz')

@@ -44,8 +44,7 @@ export async function POST(request: NextRequest) {
   if (csrf) return csrf;
   try {
     const supabase = await createClient();
-    // Fix 1: createAdminClient() must be awaited
-    const serviceSupabase = await createAdminClient();
+    const serviceSupabase = createAdminClient();
 
     // Authenticate the user session
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -91,7 +90,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Shipping Address Is Required For Deliveries.' }, { status: 400 });
     }
 
-    // Idempotency replay
+    // Idempotency replay: early exit if this key was already committed
     if (idempotencyKey) {
       const { data: existing } = await serviceSupabase
         .from('orders')
@@ -114,7 +113,7 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .select('id, full_name, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (profileError || !profile) {
       return NextResponse.json({ error: 'Researcher Profile Not Found.' }, { status: 404 });
@@ -131,14 +130,14 @@ export async function POST(request: NextRequest) {
       agentProfile = profile;
       isAgentSelfBuy = true;
       if (profile.parent_agent_id) {
-        const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders').eq('id', profile.parent_agent_id).single();
+        const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders').eq('id', profile.parent_agent_id).maybeSingle();
         superAgentProfile = sap;
       }
     } else if (profile.referring_agent_id) {
-      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders, account_type, max_auto_approve_limit, is_sub_agent, referring_sub_agent_id').eq('id', profile.referring_agent_id).single();
+      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders, account_type, max_auto_approve_limit, is_sub_agent, referring_sub_agent_id').eq('id', profile.referring_agent_id).maybeSingle();
       agentProfile = ap;
       if (ap && ap.parent_agent_id) {
-        const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders').eq('id', ap.parent_agent_id).single();
+        const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders').eq('id', ap.parent_agent_id).maybeSingle();
         superAgentProfile = sap;
       }
     }
@@ -248,7 +247,7 @@ export async function POST(request: NextRequest) {
         .from('agent_profiles')
         .select('id, min_overall_qty, min_order_qty')
         .ilike('slug', agentSlug)
-        .single();
+        .maybeSingle();
 
       if (!storefrontAgent) {
         return NextResponse.json({ error: 'Agent Storefront Not Found.' }, { status: 404 });
@@ -662,6 +661,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Disclaimer audit check: verify Layer 3 (add_to_cart) acceptance exists before
+    // inserting Layer 4 (checkout). A missing add_to_cart row means the researcher
+    // bypassed the cart disclaimer gate — refuse the order.
+    const { data: addToCartRow } = await serviceSupabase
+      .from('disclaimer_acceptances')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('layer', 'add_to_cart')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!addToCartRow) {
+      await rollbackPreOrder();
+      return NextResponse.json(
+        { error: 'Disclaimer Acceptance Required. Please Add Items To Your Cart Again And Accept The Disclaimer.' },
+        { status: 403 }
+      );
+    }
+
     // Record the Layer 4 (checkout) disclaimer audit row
     const disclaimerVersion = process.env.NEXT_PUBLIC_DISCLAIMER_VERSION || 'v1.0';
     const checkoutIp =
@@ -705,10 +724,8 @@ export async function POST(request: NextRequest) {
       if (saProfile.account_type === 'prepaid') {
         const bal = Number(saProfile.prepaid_balance) || 0;
         if (bal < amount) {
-          // Fix 3: Title Case in error message
           return { error: `Insufficient Prepaid Balance. Requires $${amount.toFixed(2)}, But Balance Is $${bal.toFixed(2)}. Please Recharge Your Account.`, status: 402 };
         }
-        // Fix 2: deduct_prepaid_balance called with correct p_ prefixed parameter names and all required params
         const { data: deductSuccess } = await serviceSupabase.rpc('deduct_prepaid_balance', {
           p_agent_id: saProfile.id,
           p_amount: amount,
@@ -753,7 +770,6 @@ export async function POST(request: NextRequest) {
         const creditLimit = Number(saProfile.credit_limit) || 0;
         const projected = currentUnbilled + inFlight + amount;
         if (projected > creditLimit) {
-          // Fix 3: Title Case in error message
           return { error: `Credit Limit Exceeded. Your Order Of $${amount.toFixed(2)} Pushes Your Balance To $${projected.toFixed(2)} (Limit: $${creditLimit.toFixed(2)}). Please Pay Your Pending Weekly Statements.`, status: 403 };
         }
         return { success: true, prepaidDeducted: false };
@@ -852,7 +868,6 @@ export async function POST(request: NextRequest) {
       .from('orders')
       .insert({
         buyer_id: user.id,
-        // Fix 5: include buyer_name and buyer_email on order insert
         buyer_name: (profile as any).full_name || null,
         buyer_email: user.email || null,
         agent_id: isAgentSelfBuy ? (superAgentProfile ? superAgentProfile.id : null) : (agentProfile ? agentProfile.id : null),
@@ -871,14 +886,14 @@ export async function POST(request: NextRequest) {
         // precise local/China split). The approval trigger skips reserved orders
         // so stock is never deducted a second time on approval.
         inventory_reserved: localReserved || chinaReserved,
-
-
         idempotency_key: idempotencyKey ?? null,
       })
       .select('id, total')
       .single();
 
     if (orderError || !order) {
+      // Handle unique constraint violation on idempotency_key (race between two
+      // concurrent requests with the same key — the loser returns the winner's order)
       if (orderError && (orderError as any).code === '23505' && idempotencyKey) {
         const { data: existing } = await serviceSupabase
           .from('orders')
@@ -889,9 +904,7 @@ export async function POST(request: NextRequest) {
         if (existing) {
           // This duplicate (same idempotency_key) request lost the INSERT race
           // but already re-ran reserve / redeem / prepaid-deduct above. Undo ALL
-          // of THIS attempt's side effects before returning the original order -
-          // including the prepaid deduction, otherwise a prepaid agent is
-          // double-charged for a single order (mirrors the failure path below).
+          // of THIS attempt's side effects before returning the original order.
           await releaseReservedInventory();
           if (appliedCouponId) await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
           if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
@@ -1046,7 +1059,6 @@ export async function POST(request: NextRequest) {
           tag: `new-order-${order.id}`,
         });
       }
-      // Fix 4: Title Case in notify() body
       await notify(serviceSupabase, {
         userId: user.id,
         type: 'order_placed',
@@ -1071,7 +1083,6 @@ export async function POST(request: NextRequest) {
       success: true,
       orderId: order.id,
       total: Number(order.total) || 0,
-
     });
 
   } catch (error) {

@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 
 // GET: Per-agent sales aggregates with optional date range
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
+  const supabase = createAdminClient();
   const { searchParams } = req.nextUrl;
   const range = searchParams.get('range') ?? 'all'; // 'week' | 'month' | 'all'
 
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
   const { data: orders, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   // Aggregate by agent
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
   let directCount = 0;
 
   for (const order of (orders ?? [])) {
-    const total = Number(order.total ?? 0);
+    const total = Number(order.total || 0);
     if (!order.agent_id) {
       directRevenue += total;
       directCount++;
@@ -102,12 +102,12 @@ export async function GET(req: NextRequest) {
 
   // Also get overall totals
   const agents = Object.values(agentMap).sort((a, b) => b.total_revenue - a.total_revenue);
-  const grandTotal = agents.reduce((sum, a) => sum + a.total_revenue, 0) + directRevenue;
+  const grandTotal = agents.reduce((sum, a) => sum + Number(a.total_revenue || 0), 0) + Number(directRevenue || 0);
   const grandOrders = agents.reduce((sum, a) => sum + a.order_count, 0) + directCount;
 
   return NextResponse.json({
     agents,
-    direct: { revenue: directRevenue, count: directCount },
-    totals: { revenue: grandTotal, orders: grandOrders },
+    direct: { revenue: Number(directRevenue || 0), count: directCount },
+    totals: { revenue: Number(grandTotal || 0), orders: grandOrders },
   });
 }
