@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
-import { rateLimit } from '@/lib/rate-limit';
-import { getClientIp } from '@/lib/get-client-ip';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 /**
  * POST /api/auth/verify-agent-access
