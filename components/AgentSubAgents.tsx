@@ -292,8 +292,8 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
           lineItems.map((it) => ({
             product: it.product,
             qty: it.qty,
-            unit_cost: it.unitCost.toFixed(2),
-            line_total: it.lineTotal.toFixed(2),
+            unit_cost: Number(it.unitCost).toFixed(2),
+            line_total: Number(it.lineTotal).toFixed(2),
           })),
           [
             { key: 'product', label: 'Product' },
@@ -323,8 +323,8 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                 <tr>
                   <td>${escapeHtml(it.product)}</td>
                   <td class="num">${it.qty}</td>
-                  <td class="num">$${it.unitCost.toFixed(2)}</td>
-                  <td class="num">$${it.lineTotal.toFixed(2)}</td>
+                  <td class="num">$${Number(it.unitCost).toFixed(2)}</td>
+                  <td class="num">$${Number(it.lineTotal).toFixed(2)}</td>
                 </tr>
               `).join('')}
           </tbody>

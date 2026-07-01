@@ -81,7 +81,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
     setCart(prev => prev.filter(item => item.product_id !== productId));
   };
 
-  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
   const shippingCost = Number(shippingCostInput) || 0;
   const total = subtotal + (cart.length > 0 ? shippingCost : 0);
 
@@ -185,7 +185,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
                     const name = p.custom_name || p.products.name;
                     const size = p.products.unit_size ? ` (${p.products.unit_size}${p.products.unit_measure || ''})` : '';
                     return (
-                      <option key={p.product_id} value={p.product_id}>{name}{size} - ${p.retail_price}</option>
+                      <option key={p.product_id} value={p.product_id}>{name}{size} - ${Number(p.retail_price).toFixed(2)}</option>
                     );
                   })}
                 </select>
@@ -205,7 +205,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
                       <span style={{ color: '#fff', fontWeight: 600 }}>{item.quantity}x {item.name}</span>
                     </div>
                     <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                      <span style={{ color: '#00E5FF', fontWeight: 700 }}>${(item.price * item.quantity).toFixed(2)}</span>
+                      <span style={{ color: '#00E5FF', fontWeight: 700 }}>${(Number(item.price) * Number(item.quantity)).toFixed(2)}</span>
                       <button type="button" onClick={() => handleRemoveFromCart(item.product_id)} className="badge-metal" style={{ background: 'rgba(229,62,62,0.1)', color: '#FC8181', border: '1px solid rgba(229,62,62,0.3)', cursor: 'pointer', padding: '4px 8px', fontSize: '1rem', lineHeight: 1 }}>x</button>
                     </div>
                   </div>
