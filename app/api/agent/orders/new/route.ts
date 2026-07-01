@@ -144,8 +144,7 @@ export async function POST(req: NextRequest) {
       prepaidCharged = true;
       await supabase.from('balance_transactions').insert({
         agent_id: agentId, type: 'order_charge', amount: manualCogs,
-        balance_before: Number(balRow?.prepaid_balance) || 0,
-        balance_after: Math.round(((Number(balRow?.prepaid_balance) || 0) - manualCogs) * 100) / 100,
+        balance_before: balance, balance_after: Math.round((balance - manualCogs) * 100) / 100,
         description: `Charge For Manual Order ${newOrder.id}`, reference_id: newOrder.id, reference_type: 'order', created_by: agentId,
       });
     }
