@@ -168,7 +168,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
     }
 
-    const { data: existingUsername } = await supabase.from('profiles').select('id').ilike('username', usernameClean).maybeSingle();
+    // Use .eq() not .ilike() — sanitized usernames may contain underscores (a LIKE wildcard).
+    const { data: existingUsername } = await supabase.from('profiles').select('id').eq('username', usernameClean).maybeSingle();
     if (existingUsername) {
       return NextResponse.json({ error: 'This Username Is Already Taken' }, { status: 400 });
     }

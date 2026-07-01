@@ -101,11 +101,11 @@ export async function POST(req: NextRequest) {
 
   const referringAgentId: string = agentProfile.id;
 
-  // Check username uniqueness
+  // Check username uniqueness — use .eq() not .ilike() (underscore is a LIKE wildcard).
   const { data: existingUser } = await admin
     .from('profiles')
     .select('id')
-    .ilike('username', usernameClean)
+    .eq('username', usernameClean)
     .maybeSingle();
 
   if (existingUser) {
