@@ -146,7 +146,7 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
       <body>
         <div className="no-print" style={{ marginBottom: 20, display: 'flex', gap: 8 }}>
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-          <a href="/wallet" style={{ color: '#555', textDecoration: 'none', fontSize: 13, alignSelf: 'center' }}>&#8592; Back To Wallet</a>
+          <a href="/wallet" style={{ color: '#555', textDecoration: 'none', fontSize: 13, alignSelf: 'center' }}>← Back To Wallet</a>
           <span style={{ flex: 1 }} />
           <PrintButton />
         </div>
@@ -175,7 +175,7 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
           </div>
           <div className="meta-box">
             <div className="meta-label">Week Of</div>
-            <div className="meta-value">{fmtDate(row.week_start)} &#8594; {fmtDate(row.week_end)}</div>
+            <div className="meta-value">{fmtDate(row.week_start)} → {fmtDate(row.week_end)}</div>
           </div>
           <div className="meta-box">
             <div className="meta-label">{row.status === 'paid' ? 'Paid On' : 'Due Date'}</div>
@@ -208,7 +208,7 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
           Use Invoice Number <strong>{invoiceNumber}</strong> as the memo. Payment posts to your Wallet once recorded by the
           billing party. No automated billing or late fees are applied.
           <br /><br />
-          Pep Nation Lab &#8226; Research Use Only &#8226; Not For Human Consumption
+          Pep Nation Lab • Research Use Only • Not For Human Consumption
         </div>
       </body>
     </html>
