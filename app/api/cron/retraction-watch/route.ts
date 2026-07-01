@@ -10,7 +10,7 @@ import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { checkPmidForRetraction } from '@/lib/research/retraction-watch';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const BATCH = 20;
 const PMIDS_PER_COMPOUND = 10;
