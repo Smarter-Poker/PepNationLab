@@ -8,13 +8,12 @@ import AdminTierOverrideControl from '@/components/AdminTierOverrideControl';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
 import { freshDefaultLadder, GAMIFICATION_MAX_PCT } from '@/lib/gamification';
 
-// Availability indicator component
 const AvailabilityIndicator = ({ status }: { status: 'idle' | 'checking' | 'available' | 'taken' }) => {
   if (status === 'idle') return null;
   if (status === 'checking') {
     return (
       <span style={{ fontSize: '0.8rem', color: 'var(--silver)', marginTop: 4, display: 'block' }}>
-        Checking availability…
+        Checking Availability...
       </span>
     );
   }
@@ -37,18 +36,15 @@ export default function AdminAgents() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Modal State - Edit Contact
   const [editingAgent, setEditingAgent] = useState<any | null>(null);
   const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Modal State - Edit Password
   const [passwordAgent, setPasswordAgent] = useState<any | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
 
-  // Track which agent IDs have their password revealed
   const [revealedPasswords, setRevealedPasswords] = useState<Set<string>>(new Set());
   const toggleRevealPassword = (agentId: string) => {
     setRevealedPasswords(prev => {
@@ -58,17 +54,13 @@ export default function AdminAgents() {
     });
   };
 
-  // Modal State - Edit Account Details
   const [editingFullAgent, setEditingFullAgent] = useState<{ id: string; name: string } | null>(null);
 
-  // Inline Tier Editing
   const [tierEditing, setTierEditing] = useState<Set<string>>(new Set());
   const [tierSaving, setTierSaving] = useState<Set<string>>(new Set());
 
-  // Trust Toggle
   const [togglingTrust, setTogglingTrust] = useState<string | null>(null);
 
-  // Modal State - Create Agent
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
     firstName: '',
@@ -88,16 +80,13 @@ export default function AdminAgents() {
   });
   const [isCreating, setIsCreating] = useState(false);
 
-  // Commission Settings (for new agents)
   const [caCommissionMode, setCaCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
   const [caCommissionPct, setCaCommissionPct] = useState('');
-  // 'default' = read-only house ladder (20% -> 40%); 'custom' = fully adjustable.
   const [caScaleType, setCaScaleType] = useState<'default' | 'custom'>('default');
   const [caCustomSteps, setCaCustomSteps] = useState(freshDefaultLadder());
   const [showGamificationInfo, setShowGamificationInfo] = useState(false);
   const [viewingDownlineFor, setViewingDownlineFor] = useState<any | null>(null);
 
-  // Real-time availability checks
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const usernameTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -120,7 +109,6 @@ export default function AdminAgents() {
     fetchAgents();
   }, []);
 
-  // Debounced username availability check
   const checkUsernameAvailability = useCallback((raw: string) => {
     if (usernameTimerRef.current) clearTimeout(usernameTimerRef.current);
     const clean = raw.toLowerCase().replace(/[^a-z0-9_]/g, '');
@@ -144,7 +132,6 @@ export default function AdminAgents() {
     }, 500);
   }, []);
 
-  // Debounced slug availability check
   const checkSlugAvailability = useCallback((raw: string) => {
     if (slugTimerRef.current) clearTimeout(slugTimerRef.current);
     const clean = raw.toLowerCase().replace(/[^a-z0-9-]/g, '');
@@ -168,7 +155,6 @@ export default function AdminAgents() {
     }, 500);
   }, []);
 
-  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (usernameTimerRef.current) clearTimeout(usernameTimerRef.current);
@@ -188,7 +174,6 @@ export default function AdminAgents() {
 
   const handleCreateAgent = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Platform rule: no gamification level may exceed 40%.
     if (createForm.account_role !== 'researcher' && caCommissionMode === 'gamified'
         && caCustomSteps.some(s => Number(s.bonus_pct) > GAMIFICATION_MAX_PCT)) {
       toast.error('Gamification Levels Cannot Exceed 40%.');
@@ -205,9 +190,6 @@ export default function AdminAgents() {
           lastName: createForm.lastName.trim(),
           username: createForm.username.toLowerCase().replace(/[^a-z0-9_]/g, ''),
           slug: createForm.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''),
-          // Commission config for agents/super_agents
-          // Fixed -> flat rate (cap == base). Gamified (Default or Custom) ->
-          // persist the concrete 5-level ladder; base = Rookie, cap = Apex.
           commission_pct: createForm.account_role === 'researcher' ? undefined : (
             caCommissionMode === 'fixed'
               ? (caCommissionPct === '' ? undefined : caCommissionPct)
@@ -262,7 +244,6 @@ export default function AdminAgents() {
 
   const formatCurrency = (val: number) => `$${(Number(val) || 0).toFixed(2)}`;
 
-  // Inline tier change - saves immediately on select change
   const handleTierChange = async (agentId: string, newTier: string) => {
     setTierSaving(prev => new Set([...prev, agentId]));
     try {
@@ -274,7 +255,6 @@ export default function AdminAgents() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed To Update Tier');
       toast.success(`Tier Updated To ${newTier.replace('_', ' ').toUpperCase()}`);
-      // Update local state immediately (no full refetch needed)
       setAgents(prev => prev.map(a => a.id === agentId ? { ...a, tier: newTier } : a));
     } catch (err: any) {
       toast.error(err.message || 'Failed To Update Tier');
@@ -284,7 +264,6 @@ export default function AdminAgents() {
     }
   };
 
-  // Tier badge colours
   const tierStyle = (tier: string) => ({
     tier_1: { bg: 'rgba(104,211,145,0.15)', color: '#68D391', border: '1px solid rgba(104,211,145,0.35)' },
     tier_2: { bg: 'rgba(99,179,237,0.15)',  color: '#63B3ED', border: '1px solid rgba(99,179,237,0.35)' },
@@ -307,13 +286,12 @@ export default function AdminAgents() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: editingAgent.id,
-          email: editEmail || editingAgent.email, // fallback if empty
+          email: editEmail || editingAgent.email,
           phone: editPhone
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      
       toast.success('Contact Info Updated Successfully');
       setEditingAgent(null);
       fetchAgents();
@@ -338,9 +316,7 @@ export default function AdminAgents() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed To Update Auto-Approve Setting');
-      
       toast.success(data.auto_approve_orders ? 'Auto-Approve Enabled' : 'Auto-Approve Disabled');
-      
       setAgents(prev => prev.map(a => a.id === targetUserId ? { ...a, auto_approve_orders: data.auto_approve_orders } : a));
     } catch (err: any) {
       toast.error(err.message);
@@ -348,8 +324,6 @@ export default function AdminAgents() {
       setTogglingTrust(null);
     }
   };
-
-
 
   if (loading) return <div style={{ color: 'var(--silver)' }}>Loading Agents...</div>;
   if (error) return <div style={{ color: 'var(--red)' }}>Error: {error}</div>;
@@ -377,7 +351,7 @@ export default function AdminAgents() {
             <span style={{ fontWeight: 700, color: 'var(--teal)', fontSize: '1.05rem' }}>{viewingDownlineFor.full_name || viewingDownlineFor.username}</span>
           </div>
           <button onClick={() => setViewingDownlineFor(null)} className="btn-secondary btn-sm" style={{ padding: '6px 12px' }}>
-            &larr; Back To Top-Level Agents
+            Back To Top-Level Agents
           </button>
         </div>
       )}
@@ -477,12 +451,10 @@ export default function AdminAgents() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '180px' }}>
                   <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Login Credentials</span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {/* Login Name */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', minWidth: 54 }}>Username</span>
                       <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--teal)', fontWeight: 700 }}>{agent.username || '-'}</span>
                     </div>
-                    {/* Password */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', minWidth: 54 }}>Password</span>
                       {agent.provisioned_password ? (
@@ -503,10 +475,9 @@ export default function AdminAgents() {
                           </button>
                         </div>
                       ) : (
-                        <span style={{ fontSize: '0.8rem', color: 'var(--grey-500)', fontStyle: 'italic' }}>Not set by admin</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--grey-500)', fontStyle: 'italic' }}>Not Set By Admin</span>
                       )}
                     </div>
-                    {/* Edit Password button */}
                     <button
                       onClick={() => { setPasswordAgent(agent); setNewPassword(''); }}
                       style={{ fontSize: '0.72rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0,229,255,0.25)', borderRadius: 4, cursor: 'pointer', padding: '3px 8px', textAlign: 'left', marginTop: 2, alignSelf: 'flex-start' }}
@@ -544,9 +515,8 @@ export default function AdminAgents() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '130px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Tier & Type</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Tier And Type</span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
-                    {/* Inline tier editor */}
                     {tierEditing.has(agent.id) ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <select
@@ -566,13 +536,13 @@ export default function AdminAgents() {
                           <option value="tier_3">Tier 3</option>
                         </select>
                         {tierSaving.has(agent.id) && (
-                          <span style={{ fontSize: '0.68rem', color: 'var(--teal)' }}>Saving…</span>
+                          <span style={{ fontSize: '0.68rem', color: 'var(--teal)' }}>Saving...</span>
                         )}
                       </div>
                     ) : (
                       <button
                         onClick={() => setTierEditing(prev => new Set([...prev, agent.id]))}
-                        title="Click to change tier"
+                        title="Click To Change Tier"
                         style={{
                           background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                           display: 'flex', alignItems: 'center', gap: 5,
@@ -633,7 +603,7 @@ export default function AdminAgents() {
                         {ap.slug}
                       </a>
                     ) : (
-                      <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem' }}>No storefront</span>
+                      <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem' }}>No Storefront</span>
                     );
                   })()}
                 </div>
@@ -663,7 +633,7 @@ export default function AdminAgents() {
                 Edit Contact Info
               </h3>
               <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-4)' }}>
-                Updating the email will change the Agent&apos;s login credentials.
+                Updating The Email Will Change The Agent&apos;s Login Credentials.
               </p>
               <form onSubmit={handleSaveContact}>
                 <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
@@ -673,7 +643,7 @@ export default function AdminAgents() {
                     className="form-input" 
                     value={editEmail} 
                     onChange={e => setEditEmail(e.target.value)} 
-                    placeholder={editingAgent.email?.includes('@internal.auth') || editingAgent.email?.includes('@pepnationlab.com') ? 'Enter real email...' : editingAgent.email}
+                    placeholder={editingAgent.email?.includes('@internal.auth') || editingAgent.email?.includes('@pepnationlab.com') ? 'Enter Real Email...' : editingAgent.email}
                   />
                 </div>
                 <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
@@ -724,16 +694,16 @@ export default function AdminAgents() {
                     className="form-input"
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
+                    placeholder="Enter New Password"
                     autoComplete="off"
                     autoFocus
                     style={{ width: '100%' }}
                   />
                   <div style={{ marginTop: 6, fontSize: '0.75rem', color: newPassword.length === 0 ? 'var(--grey-500)' : newPassword.length < 8 ? '#FF6B6B' : '#00FF9D', fontWeight: 600 }}>
                     {newPassword.length === 0
-                      ? 'Minimum 8 characters required'
+                      ? 'Minimum 8 Characters Required'
                       : newPassword.length < 8
-                      ? `${newPassword.length}/8 — need ${8 - newPassword.length} more character${8 - newPassword.length !== 1 ? 's' : ''}`
+                      ? `${newPassword.length}/8 — Need ${8 - newPassword.length} More Character${8 - newPassword.length !== 1 ? 's' : ''}`
                       : `${newPassword.length} Characters — Good To Go`}
                   </div>
                 </div>
@@ -814,10 +784,9 @@ export default function AdminAgents() {
                 Create New Agent
               </h3>
               <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-5)' }}>
-                This will create a new agent account with auth credentials and a storefront.
+                This Will Create A New Agent Account With Auth Credentials And A Storefront.
               </p>
             <form onSubmit={handleCreateAgent}>
-              {/* First + Last Name - top-aligned so both labels sit on the same row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>First Name</label>
@@ -844,7 +813,6 @@ export default function AdminAgents() {
                 </div>
               </div>
 
-              {/* Account Role */}
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
                 <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Account Type</label>
                 <select
@@ -859,7 +827,6 @@ export default function AdminAgents() {
                 </select>
               </div>
 
-              {/* Parent Agent (for researchers only) */}
               {createForm.account_role === 'researcher' && (
                 <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
                   <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Assign To Agent</label>
@@ -879,7 +846,6 @@ export default function AdminAgents() {
                 </div>
               )}
 
-              {/* Username */}
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
                 <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Username</label>
                 <input
@@ -895,7 +861,6 @@ export default function AdminAgents() {
                 <AvailabilityIndicator status={usernameStatus} />
               </div>
 
-              {/* Password */}
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
                 <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Password</label>
                 <input
@@ -903,7 +868,7 @@ export default function AdminAgents() {
                   className="form-input"
                   value={createForm.password}
                   onChange={e => handleCreateFormChange('password', e.target.value)}
-                  placeholder="Minimum 8 characters"
+                  placeholder="Minimum 8 Characters"
                   required
                   minLength={8}
                   autoComplete="new-password"
@@ -911,7 +876,6 @@ export default function AdminAgents() {
                 />
               </div>
 
-              {/* Tier & Billing Mode - top-aligned, side by side (agents + super-agents only) */}
               {createForm.account_role !== 'researcher' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
@@ -942,7 +906,6 @@ export default function AdminAgents() {
               </div>
               )}
 
-              {/* Conditional: Balance or Credit Limit (agents only) */}
               {createForm.account_role !== 'researcher' && (
               <>
               {createForm.account_type === 'prepaid' ? (
@@ -987,7 +950,6 @@ export default function AdminAgents() {
                 </>
               )}
 
-              {/* Storefront Slug */}
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
                 <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Storefront URL (Slug)</label>
                 <input
@@ -1002,15 +964,14 @@ export default function AdminAgents() {
                 <AvailabilityIndicator status={slugStatus} />
               </div>
 
-              {/* User Name */}
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>User Name</label>
+                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Display Name</label>
                 <input
                   type="text"
                   className="form-input"
                   value={createForm.display_name}
                   onChange={e => handleCreateFormChange('display_name', e.target.value)}
-                  placeholder="User Name"
+                  placeholder="Display Name"
                   required
                   style={{ width: '100%' }}
                 />
@@ -1018,10 +979,6 @@ export default function AdminAgents() {
               </>
               )}
 
-              {/* Commission / Markup Settings - agents only.
-                  Super-agents do NOT see this: they earn purely off the Tier 1/2/3
-                  multiplier on the master catalog. The fixed/gamified markup
-                  ladder is for agents who set their own retail prices. */}
               {createForm.account_role === 'agent' && (
                 <div style={{ marginTop: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
                   <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Markup Structure</label>
@@ -1075,7 +1032,6 @@ export default function AdminAgents() {
                 </div>
               )}
 
-              {/* Actions */}
               <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
