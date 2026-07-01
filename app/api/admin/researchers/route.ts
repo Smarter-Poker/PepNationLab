@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
+  const supabase = await createAdminClient();
   const searchParams = req.nextUrl.searchParams;
   const role = searchParams.get('role');
   const rawQuery = searchParams.get('query');
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
   let dbQuery = supabase
     .from('profiles')
-    .select('*, agent_profiles(*)', { count: 'exact' });
+    .select('*, agent_profiles(slug, display_name, is_active)', { count: 'exact' });
 
   if (role) {
     dbQuery = dbQuery.eq('role', role);
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
   dbQuery = dbQuery.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
   const { data, error, count } = await dbQuery;
-  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   return NextResponse.json({ data, total: count ?? 0, page, limit });
 }
 
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
+  const supabase = await createAdminClient();
   const body = await req.json().catch(() => ({}));
 
   const { id, action, role, tier, account_type, credit_limit, is_active, slug, display_name, balance_delta, custom_markup_override } = body;
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
   if (action === 'toggle_active') {
     if (is_active === undefined) return NextResponse.json({ error: 'Missing is_active Value' }, { status: 400 });
     const { error: toggleError } = await supabase.from('profiles').update({ is_active, updated_at: new Date().toISOString() }).eq('id', id);
-    if (toggleError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    if (toggleError) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     await supabase.from('agent_profiles').update({ is_active: !!is_active }).eq('id', id);
 
     // Audit log: account (de)activation is a sensitive admin action.
@@ -93,14 +93,15 @@ export async function POST(req: NextRequest) {
     // Cap single adjustments to +-$10,000 to prevent accidental massive credits.
     if (Math.abs(delta) > 10000) return NextResponse.json({ error: 'Balance Adjustment Exceeds $10,000 Limit' }, { status: 400 });
 
-    const { data: currentProfile, error: fetchError } = await supabase.from('profiles').select('prepaid_balance, full_name').eq('id', id).single();
-    if (fetchError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    const { data: currentProfile, error: fetchError } = await supabase.from('profiles').select('prepaid_balance, full_name').eq('id', id).maybeSingle();
+    if (fetchError) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+    if (!currentProfile) return NextResponse.json({ error: 'User Not Found' }, { status: 404 });
 
     const balanceBefore = Number(currentProfile?.prepaid_balance ?? 0);
     const newBalance = Math.max(0, balanceBefore + delta);
 
     const { error: balanceError } = await supabase.from('profiles').update({ prepaid_balance: newBalance, updated_at: new Date().toISOString() }).eq('id', id);
-    if (balanceError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    if (balanceError) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
     const txType = delta >= 0 ? 'credit' : 'debit';
     await supabase.from('balance_transactions').insert({
@@ -162,7 +163,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { error: profileError } = await supabase.from('profiles').update(profileUpdates).eq('id', id);
-  if (profileError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (profileError) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
   // Audit log for profile role changes.
   await supabase.from('admin_audit_log').insert({
@@ -180,7 +181,7 @@ export async function POST(req: NextRequest) {
     if (slug.length < 2 || slug.length > 50) return NextResponse.json({ error: 'Slug Length Must Be Between 2 And 50 Characters' }, { status: 400 });
 
     const { data: existingSlug, error: slugCheckError } = await supabase.from('agent_profiles').select('id').eq('slug', slug).neq('id', id).maybeSingle();
-    if (slugCheckError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    if (slugCheckError) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     if (existingSlug) return NextResponse.json({ error: 'This Agent Storefront Slug Is Already Taken' }, { status: 400 });
 
     const agentProfileData = {
@@ -189,7 +190,7 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     };
     const { error: agentError } = await supabase.from('agent_profiles').upsert(agentProfileData);
-    if (agentError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    if (agentError) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   } else {
     await supabase.from('agent_profiles').update({ is_active: false }).eq('id', id);
   }

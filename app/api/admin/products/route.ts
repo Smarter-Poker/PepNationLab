@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
+  const supabase = await createAdminClient();
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
 
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       .order('name', { ascending: true });
 
     if (error) {
-      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+      return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     }
 
     return NextResponse.json({ data });
@@ -38,10 +38,14 @@ export async function GET(req: NextRequest) {
     .from('products')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 404 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+  }
+
+  if (!data) {
+    return NextResponse.json({ error: 'Product Not Found' }, { status: 404 });
   }
 
   return NextResponse.json(data);
@@ -54,7 +58,7 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
+  const supabase = await createAdminClient();
   const body = await req.json();
 
   const {
@@ -95,7 +99,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   return NextResponse.json({ id: data.id }, { status: 201 });
@@ -108,7 +112,7 @@ export async function PATCH(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
+  const supabase = await createAdminClient();
   const body = await req.json();
   const { id, ...raw } = body;
 
@@ -153,7 +157,7 @@ export async function PATCH(req: NextRequest) {
     .eq('id', id);
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   // If base_cost changed, cascade the new price to all agent_products for this product.

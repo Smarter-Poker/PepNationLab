@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
@@ -7,7 +7,7 @@ export async function GET() {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
+  const supabase = await createAdminClient();
 
   const { data, error } = await supabase
     .from('pricing_tiers')
@@ -15,7 +15,7 @@ export async function GET() {
     .order('tier_name');
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   return NextResponse.json(data);
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
+  const supabase = await createAdminClient();
   const body = await req.json().catch(() => ({}));
 
   const { tier_name, multiplier, display_name, description } = body;
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Multiplier Must Be A Valid Number Between 1.0 And 99.99' }, { status: 400 });
   }
 
-  const updates: any = {
+  const updates: Record<string, unknown> = {
     multiplier: numMultiplier,
     updated_at: new Date().toISOString(),
   };
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     .select('tier_name');
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   if (!updated || updated.length === 0) {

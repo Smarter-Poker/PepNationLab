@@ -15,7 +15,7 @@ export async function GET() {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = createAdminClient();
+  const supabase = await createAdminClient();
 
   const { data, error } = await supabase
     .from('profiles')
@@ -25,7 +25,7 @@ export async function GET() {
     .limit(2000);
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   return NextResponse.json({ data });
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = createAdminClient();
+  const supabase = await createAdminClient();
   const body = await req.json().catch(() => ({}));
 
   const {
@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (authError || !authData.user) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   const userId = authData.user.id;
@@ -256,7 +256,7 @@ export async function POST(req: NextRequest) {
   if (profileError) {
     console.error('[admin/agents] profile upsert failed:', profileError);
     await supabase.auth.admin.deleteUser(userId);
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   if (!isResearcher) {
@@ -285,7 +285,7 @@ export async function POST(req: NextRequest) {
     if (agentError) {
       console.error('[admin/agents] agent_profiles upsert failed:', agentError);
       await supabase.auth.admin.deleteUser(userId);
-      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+      return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     }
 
     // Persist a custom gamification ladder if the admin built one. The order-time
@@ -306,19 +306,23 @@ export async function POST(req: NextRequest) {
     // Seed the agent's product catalog so the storefront isn't empty. Mirrors
     // POST /api/agent/agents. Non-fatal: the account exists regardless.
     try {
-      const { data: tier1 } = await supabase.from('pricing_tiers').select('multiplier').eq('tier_name', 'tier_1').single();
-      const { data: products } = await supabase.from('products').select('id, base_cost').eq('is_active', true);
-      if (tier1 && products && products.length > 0) {
-        const agentMultiplier = (Number(tier1.multiplier) || 1.3) * 1.2;
-        const agentProductsToInsert = products.map((p) => ({
-          agent_id: userId,
-          product_id: p.id,
-          retail_price: Math.round((Number(p.base_cost) * agentMultiplier) * 100) / 100,
-          margin_percent: 50,
-          is_visible: true,
-          sort_order: 0,
-        }));
-        await supabase.from('agent_products').insert(agentProductsToInsert);
+      const { data: tier1 } = await supabase.from('pricing_tiers').select('multiplier').eq('tier_name', 'tier_1').maybeSingle();
+      if (!tier1?.multiplier) {
+        console.warn('[admin/agents] tier_1 multiplier not found; skipping catalog seed');
+      } else {
+        const { data: products } = await supabase.from('products').select('id, base_cost').eq('is_active', true);
+        if (products && products.length > 0) {
+          const agentMultiplier = Number(tier1.multiplier) * 1.2;
+          const agentProductsToInsert = products.map((p) => ({
+            agent_id: userId,
+            product_id: p.id,
+            retail_price: Math.round((Number(p.base_cost) * agentMultiplier) * 100) / 100,
+            margin_percent: 50,
+            is_visible: true,
+            sort_order: 0,
+          }));
+          await supabase.from('agent_products').insert(agentProductsToInsert);
+        }
       }
     } catch (provisionErr) {
       console.error('[admin/agents] agent product provisioning failed (non-fatal):', provisionErr);
