@@ -27,8 +27,9 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const rawLayer = String((body as { layer?: unknown }).layer ?? 'site_entry');
 
+  // P1: Validate layer is one of the known enum values.
   if (!VALID_LAYERS.includes(rawLayer as DisclaimerLayer)) {
-    return NextResponse.json({ error: 'Invalid Disclaimer Layer' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid Disclaimer Layer.' }, { status: 400 });
   }
   const layer = rawLayer as DisclaimerLayer;
 
@@ -41,19 +42,20 @@ export async function POST(req: NextRequest) {
   if (rawVerifiedAge !== undefined && rawVerifiedAge !== null && rawVerifiedAge !== '') {
     const n = Number(rawVerifiedAge);
     if (!Number.isFinite(n) || !Number.isInteger(n) || n < 0 || n > 150) {
-      return NextResponse.json({ error: 'Invalid Age Value' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid Age Value.' }, { status: 400 });
     }
     verifiedAge = n;
   }
 
-  // Resolve the user from the session cookie. RLS on disclaimer_acceptances
-  // requires user_id = auth.uid() for any layer other than site_entry, so we
-  // authenticate first and gate accordingly.
+  // P0: Resolve the user from the session cookie -- never from the request body.
+  // user_id is always set from the authenticated session so a caller cannot
+  // forge attribution to another user. The DB WITH CHECK policy is a backstop,
+  // but we enforce it here as well.
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user && layer !== 'site_entry') {
-    return NextResponse.json({ error: 'Authentication Required' }, { status: 401 });
+    return NextResponse.json({ error: 'Authentication Required.' }, { status: 401 });
   }
 
   const ip =
@@ -68,7 +70,8 @@ export async function POST(req: NextRequest) {
 
   // Use the service-role client only for the insert. site_entry rows are
   // anonymous (user_id is null) so they cannot pass the RLS check the anon
-  // role would enforce.
+  // role would enforce. user_id is sourced exclusively from the session above,
+  // never from the request body.
   const serviceSupabase = await createServiceClient();
   const { error } = await serviceSupabase.from('disclaimer_acceptances').insert({
     user_id: user?.id ?? null,
@@ -81,7 +84,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (error) {
-    return NextResponse.json({ error: 'Failed To Log Disclaimer Acceptance' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed To Log Disclaimer Acceptance.' }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

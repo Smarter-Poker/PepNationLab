@@ -138,14 +138,15 @@ export async function POST(req: NextRequest) {
     const admin = createAdminClient();
     const callerId = gate.user.id;
 
+    // P0: maybeSingle() so a missing profile returns null instead of throwing.
     const { data: callerProfile } = await admin
       .from('profiles')
       .select('role, is_super_agent, is_sub_agent, full_name, username, default_sub_commission_pct, default_agent_markup_pct, default_agent_pricing_mode')
       .eq('id', callerId)
-      .single();
+      .maybeSingle();
 
     if (!callerProfile) {
-      return NextResponse.json({ error: 'Caller Profile Not Found' }, { status: 404 });
+      return NextResponse.json({ error: 'Caller Profile Not Found.' }, { status: 404 });
     }
     if (callerProfile.is_sub_agent === true) {
       return NextResponse.json(
@@ -218,11 +219,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // P0: maybeSingle() so a missing researcher returns null instead of throwing.
     const { data: researcherProfile } = await admin
       .from('profiles')
       .select('role, referring_agent_id, full_name, username, email, is_sub_agent')
       .eq('id', researcherId)
-      .single();
+      .maybeSingle();
 
     if (!researcherProfile) {
       return NextResponse.json({ error: 'Researcher Not Found.' }, { status: 404 });
@@ -257,6 +259,10 @@ export async function POST(req: NextRequest) {
     const updatePayload: Record<string, unknown> = {
       role: 'agent',
       is_sub_agent: !isPromotingToFullAgent,
+      // P1: Explicitly clear is_super_agent so a promoted user cannot
+      // inherit or retain super-agent privileges from a previous state.
+      is_super_agent: false,
+      // P1: Bind the promoted user to the calling agent's downline.
       parent_agent_id: callerId,
       created_by_agent_id: callerId,
       created_by_role: createdByRole,
@@ -322,6 +328,7 @@ export async function POST(req: NextRequest) {
         previous_role: researcherProfile.role,
         new_role: 'agent',
         is_sub_agent: !isPromotingToFullAgent,
+        is_super_agent: false,
         commission_pct: commissionPct,
         commission_active_since: now,
         parent_agent_id: callerId,

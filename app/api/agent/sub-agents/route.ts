@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 
 /**
@@ -24,14 +24,16 @@ export async function GET(_req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const callerId = gate.user.id;
 
+    // P0: use maybeSingle() so a missing profile returns null instead of
+    // throwing a "multiple/no rows" error.
     const { data: callerProfile } = await supabase
       .from('profiles')
       .select('role, is_super_agent, is_sub_agent')
       .eq('id', callerId)
-      .single();
+      .maybeSingle();
 
     if (!callerProfile || callerProfile.is_sub_agent === true) {
       return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
@@ -39,6 +41,8 @@ export async function GET(_req: NextRequest) {
 
     // List sub-agents under this caller. Uses is_sub_agent flag, not role,
     // because role='agent' is shared with non-sub-agents under super-agents.
+    // P1: parent_agent_id = callerId scopes results to this agent's downline
+    // only -- no agent can see another agent's sub-agents.
     const { data: subAgents, error } = await supabase
       .from('profiles')
       .select(`
