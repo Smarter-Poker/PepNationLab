@@ -1,1 +1,265 @@
-J3VzZSBjbGllbnQnOwoKaW1wb3J0IFJlYWN0LCB7IHVzZVN0YXRlLCB1c2VFZmZlY3QgfSBmcm9tICdyZWFjdCc7CmltcG9ydCB7IHRvYXN0IH0gZnJvbSAnc29ubmVyJzsKaW1wb3J0IER5bmFtaWNBZGRUb0NhcnRCdXR0b24gZnJvbSAnLi9zdG9yZWZyb250L0R5bmFtaWNBZGRUb0NhcnRCdXR0b24nOwppbXBvcnQgQWRkcmVzc0F1dG9jb21wbGV0ZUlucHV0IGZyb20gJ0AvY29tcG9uZW50cy9BZGRyZXNzQXV0b2NvbXBsZXRlSW5wdXQnOwoKaW50ZXJmYWNlIEFnZW50UHJvZHVjdCB7CiAgcHJvZHVjdF9pZDogc3RyaW5nOwogIGN1c3RvbV9uYW1lOiBzdHJpbmcgfCBudWxsOwogIHJldGFpbF9wcmljZTogbnVtYmVyOwogIHByb2R1Y3RzOiB7CiAgICBuYW1lOiBzdHJpbmc7CiAgICB1bml0X3NpemU6IHN0cmluZyB8IG51bGw7CiAgICB1bml0X21lYXN1cmU6IHN0cmluZyB8IG51bGw7CiAgfTsKfQoKZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gQWdlbnRNYW51YWxPcmRlcih7IG9uT3JkZXJDcmVhdGVkIH06IHsgb25PcmRlckNyZWF0ZWQ6IChvcmRlcjogYW55KSA9PiB2b2lkIH0pIHsKICBjb25zdCBbcHJvZHVjdHMsIHNldFByb2R1Y3RzXSA9IHVzZVN0YXRlPEFnZW50UHJvZHVjdFtdPihbXSk7CiAgY29uc3QgW2xvYWRpbmcsIHNldExvYWRpbmddID0gdXNlU3RhdGUodHJ1ZSk7CgogIGNvbnN0IFtidXllck5hbWUsIHNldEJ1eWVyTmFtZV0gPSB1c2VTdGF0ZSgnJyk7CiAgY29uc3QgW2J1eWVyRW1haWwsIHNldEJ1eWVyRW1haWxdID0gdXNlU3RhdGUoJycpOwogIGNvbnN0IFtzdHJlZXQsIHNldFN0cmVldF0gPSB1c2VTdGF0ZSgnJyk7CiAgY29uc3QgW2NpdHksIHNldENpdHldID0gdXNlU3RhdGUoJycpOwogIGNvbnN0IFtzdGF0ZSwgc2V0U3RhdGVdID0gdXNlU3RhdGUoJycpOwogIGNvbnN0IFt6aXAsIHNldFppcF0gPSB1c2VTdGF0ZSgnJyk7CiAgY29uc3QgW3BheW1lbnRNZXRob2QsIHNldFBheW1lbnRNZXRob2RdID0gdXNlU3RhdGUoJ2Nhc2hhcHAnKTsKICBjb25zdCBbc2hpcHBpbmdDb3N0SW5wdXQsIHNldFNoaXBwaW5nQ29zdElucHV0XSA9IHVzZVN0YXRlKCcxMCcpOwogIAogIGNvbnN0IFtjYXJ0LCBzZXRDYXJ0XSA9IHVzZVN0YXRlPEFycmF5PHsgcHJvZHVjdF9pZDogc3RyaW5nOyBxdWFudGl0eTogbnVtYmVyOyBwcmljZTogbnVtYmVyOyBuYW1lOiBzdHJpbmcgfT4+KFtdKTsKICBjb25zdCBbc2VsZWN0ZWRQcm9kdWN0SWQsIHNldFNlbGVjdGVkUHJvZHVjdElkXSA9IHVzZVN0YXRlKCcnKTsKICAKICBjb25zdCBbc3VibWl0dGluZywgc2V0U3VibWl0dGluZ10gPSB1c2VTdGF0ZShmYWxzZSk7CgogIHVzZUVmZmVjdCgoKSA9PiB7CiAgICBmZXRjaCgnL2FwaS9hZ2VudC9wcm9kdWN0cycpCiAgICAgIC50aGVuKHJlcyA9PiB7CiAgICAgICAgaWYgKCFyZXMub2spIHRocm93IG5ldyBFcnJvcignRmFpbGVkIFRvIExvYWQgUHJvZHVjdHMnKTsKICAgICAgICByZXR1cm4gcmVzLmpzb24oKTsKICAgICAgfSkKICAgICAgLnRoZW4oZGF0YSA9PiB7CiAgICAgICAgaWYgKGRhdGEuZGF0YSkgewogICAgICAgICAgY29uc3QgdmlzaWJsZVByb2R1Y3RzID0gZGF0YS5kYXRhLmZpbHRlcigocDogYW55KSA9PiBwLmlzX3Zpc2libGUpOwogICAgICAgICAgc2V0UHJvZHVjdHModmlzaWJsZVByb2R1Y3RzKTsKICAgICAgICAgIGlmICh2aXNpYmxlUHJvZHVjdHMubGVuZ3RoID4gMCkgewogICAgICAgICAgICBzZXRTZWxlY3RlZFByb2R1Y3RJZCh2aXNpYmxlUHJvZHVjdHNbMF0ucHJvZHVjdF9pZCk7CiAgICAgICAgICB9CiAgICAgICAgfQogICAgICB9KQogICAgICAuY2F0Y2goKCkgPT4gewogICAgICAgIC8vIFByb2R1Y3RzIGZhaWxlZCB0byBsb2FkIGJ1dCBzdGlsbCBhbGxvdyBtYW51YWwgZW50cnkgaWYgbmVlZGVkCiAgICAgIH0pCiAgICAgIC5maW5hbGx5KCgpID0+IHsKICAgICAgICBzZXRMb2FkaW5nKGZhbHNlKTsKICAgICAgfSk7CiAgfSwgW10pOwoKICBjb25zdCBoYW5kbGVBZGRUb0NhcnQgPSAoKSA9PiB7CiAgICBjb25zdCBwcm9kdWN0ID0gcHJvZHVjdHMuZmluZChwID0+IHAucHJvZHVjdF9pZCA9PT0gc2VsZWN0ZWRQcm9kdWN0SWQpOwogICAgaWYgKCFwcm9kdWN0KSByZXR1cm47CgogICAgc2V0Q2FydChwcmV2ID0+IHsKICAgICAgY29uc3QgZXhpc3RpbmcgPSBwcmV2LmZpbmQoaXRlbSA9PiBpdGVtLnByb2R1Y3RfaWQgPT09IHNlbGVjdGVkUHJvZHVjdElkKTsKICAgICAgaWYgKGV4aXN0aW5nKSB7CiAgICAgICAgcmV0dXJuIHByZXYubWFwKGl0ZW0gPT4gaXRlbS5wcm9kdWN0X2lkID09PSBzZWxlY3RlZFByb2R1Y3RJZCA/IHsgLi4uaXRlbSwgcXVhbnRpdHk6IGl0ZW0ucXVhbnRpdHkgKyAxIH0gOiBpdGVtKTsKICAgICAgfQogICAgICBjb25zdCBkaXNwbGF5TmFtZSA9IHByb2R1Y3QuY3VzdG9tX25hbWUgfHwgcHJvZHVjdC5wcm9kdWN0cy5uYW1lOwogICAgICBjb25zdCBzaXplU3RyID0gcHJvZHVjdC5wcm9kdWN0cy51bml0X3NpemUgPyBgICgke3Byb2R1Y3QucHJvZHVjdHMudW5pdF9zaXplfSR7cHJvZHVjdC5wcm9kdWN0cy51bml0X21lYXN1cmUgfHwgJyd9KWAgOiAnJzsKICAgICAgcmV0dXJuIFsuLi5wcmV2LCB7CiAgICAgICAgcHJvZHVjdF9pZDogcHJvZHVjdC5wcm9kdWN0X2lkLAogICAgICAgIHF1YW50aXR5OiAxLAogICAgICAgIHByaWNlOiBwcm9kdWN0LnJldGFpbF9wcmljZSwKICAgICAgICBuYW1lOiBkaXNwbGF5TmFtZSArIHNpemVTdHIKICAgICAgfV07CiAgICB9KTsKICB9OwoKICBjb25zdCBoYW5kbGVSZW1vdmVGcm9tQ2FydCA9IChwcm9kdWN0SWQ6IHN0cmluZykgPT4gewogICAgc2V0Q2FydChwcmV2ID0+IHByZXYuZmlsdGVyKGl0ZW0gPT4gaXRlbS5wcm9kdWN0X2lkICE9PSBwcm9kdWN0SWQpKTsKICB9OwoKICBjb25zdCBzdWJ0b3RhbCA9IGNhcnQucmVkdWNlKChzdW0sIGl0ZW0pID0+IHN1bSArIChpdGVtLnByaWNlICogaXRlbS5xdWFudGl0eSksIDApOwogIGNvbnN0IHNoaXBwaW5nQ29zdCA9IE51bWJlcihzaGlwcGluZ0Nvc3RJbnB1dCkgfHwgMDsKICBjb25zdCB0b3RhbCA9IHN1YnRvdGFsICsgKGNhcnQubGVuZ3RoID4gMCA/IHNoaXBwaW5nQ29zdCA6IDApOwoKICBjb25zdCBoYW5kbGVTdWJtaXQgPSBhc3luYyAoZTogUmVhY3QuRm9ybUV2ZW50KSA9PiB7CiAgICBlLnByZXZlbnREZWZhdWx0KCk7CiAgICBpZiAoY2FydC5sZW5ndGggPT09IDApIHsKICAgICAgdG9hc3QuZXJyb3IoJ0NhcnQgSXMgRW1wdHkuJyk7CiAgICAgIHJldHVybjsKICAgIH0KCiAgICBzZXRTdWJtaXR0aW5nKHRydWUpOwogICAgdHJ5IHsKICAgICAgY29uc3QgcmVzID0gYXdhaXQgZmV0Y2goJy9hcGkvYWdlbnQvb3JkZXJzL25ldycsIHsKICAgICAgICBtZXRob2Q6ICdQT1NUJywKICAgICAgICBoZWFkZXJzOiB7ICdDb250ZW50LVR5cGUnOiAnYXBwbGljYXRpb24vanNvbicgfSwKICAgICAgICBib2R5OiBKU09OLnN0cmluZ2lmeSh7CiAgICAgICAgICBidXllck5hbWUsIGJ1eWVyRW1haWwsIHN0cmVldCwgY2l0eSwgc3RhdGUsIHppcCwKICAgICAgICAgIHBheW1lbnRNZXRob2QsCiAgICAgICAgICBpdGVtczogY2FydCwKICAgICAgICAgIHRvdGFsLAogICAgICAgICAgc2hpcHBpbmdDb3N0CiAgICAgICAgfSkKICAgICAgfSk7CgogICAgICBjb25zdCBkYXRhID0gYXdhaXQgcmVzLmpzb24oKTsKICAgICAgaWYgKCFyZXMub2spIHRocm93IG5ldyBFcnJvcihkYXRhLmVycm9yIHx8ICdGYWlsZWQgVG8gQ3JlYXRlIE1hbnVhbCBPcmRlcicpOwoKICAgICAgdG9hc3Quc3VjY2VzcygnTWFudWFsIE9yZGVyIENyZWF0ZWQgU3VjY2Vzc2Z1bGx5Jyk7CiAgICAgIG9uT3JkZXJDcmVhdGVkKGRhdGEub3JkZXIpOyAvLyBUcmlnZ2VyIHBhcmVudCByZWZyZXNoIG9yIHZpZXcgdG9nZ2xlCiAgICB9IGNhdGNoIChlcnI6IGFueSkgewogICAgICB0b2FzdC5lcnJvcihlcnIubWVzc2FnZSB8fCAnQW4gRXJyb3IgT2NjdXJyZWQnKTsKICAgIH0gZmluYWxseSB7CiAgICAgIHNldFN1Ym1pdHRpbmcoZmFsc2UpOwogICAgfQogIH07CgogIGlmIChsb2FkaW5nKSB7CiAgICByZXR1cm4gPGRpdiBzdHlsZT17eyBwYWRkaW5nOiAndmFyKC0tc3BhY2UtNCknLCBjb2xvcjogJ3ZhcigtLWdyZXktNDAwKScgfX0+TG9hZGluZyBQcm9kdWN0cy4uLjwvZGl2PjsKICB9CgogIHJldHVybiAoCiAgICA8ZGl2IGNsYXNzTmFtZT0iZ2xhc3MtcGFuZWwiPgogICAgICA8ZGl2IGNsYXNzTmFtZT0iIiBzdHlsZT17eyBkaXNwbGF5OiAnZmxleCcsIGZsZXhEaXJlY3Rpb246ICdjb2x1bW4nLCBnYXA6ICd2YXIoLS1zcGFjZS02KScgfX0+CiAgICAgICAgPGgzIGNsYXNzTmFtZT0ibWV0YWwtdGV4dCIgc3R5bGU9e3sgZm9udFNpemU6ICcxLjI1cmVtJywgbWFyZ2luOiAwLCBmb250RmFtaWx5OiAndmFyKC0tZm9udC1icmFuZCknLCB0ZXh0VHJhbnNmb3JtOiAndXBwZXJjYXNlJywgbGV0dGVyU3BhY2luZzogJzAuMDRlbScgfX0+CiAgICAgICAgICBDcmVhdGUgTWFudWFsIFNoaXBtZW50IE9yZGVyCiAgICAgICAgPC9oMz4KICAgICAgICAKICAgICAgICA8Zm9ybSBvblN1Ym1pdD17aGFuZGxlU3VibWl0fSBzdHlsZT17eyBkaXNwbGF5OiAnZmxleCcsIGZsZXhEaXJlY3Rpb246ICdjb2x1bW4nLCBnYXA6ICd2YXIoLS1zcGFjZS02KScgfX0+CiAgICAgICAgICAKICAgICAgICAgIHsvKiBDdXN0b21lciBEZXRhaWxzICovfQogICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImdsYXNzLXBhbmVsIiBzdHlsZT17eyBwYWRkaW5nOiAnMjRweCcgfX0+CiAgICAgICAgICAgIDxoNCBzdHlsZT17eyBmb250U2l6ZTogJzFyZW0nLCBjb2xvcjogJyMwMEU1RkYnLCBtYXJnaW5Cb3R0b206ICcyMHB4JywgZm9udEZhbWlseTogJ3ZhcigtLWZvbnQtYnJhbmQpJywgdGV4dFRyYW5zZm9ybTogJ3VwcGVyY2FzZScsIGxldHRlclNwYWNpbmc6ICcwLjA1ZW0nLCBib3JkZXJCb3R0b206ICcxcHggc29saWQgcmdiYSgwLDIyOSwyNTUsMC4yKScsIHBhZGRpbmdCb3R0b206ICcxMHB4JyB9fT5DdXN0b21lciAmIFNoaXBwaW5nIERldGFpbHM8L2g0PgogICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZ3JpZC0yIiBzdHlsZT17eyBnYXA6ICd2YXIoLS1zcGFjZS00KScgfX0+CiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZvcm0tZ3JvdXAiPgogICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT0iZm9ybS1sYWJlbCIgc3R5bGU9e3sgY29sb3I6ICdyZ2JhKDI1NSwyNTUsMjU1LDAuNiknIH19PkZ1bGwgTmFtZTwvbGFiZWw+CiAgICAgICAgICAgICAgICA8aW5wdXQgdHlwZT0idGV4dCIgY2xhc3NOYW1lPSJmb3JtLWlucHV0IiBzdHlsZT17eyBiYWNrZ3JvdW5kOiAndmFyKC0tYmctbWV0YWwtZGFyayknLCBib3JkZXI6ICcxcHggc29saWQgcmdiYSgwLDAsMCwwLjgpJywgYm94U2hhZG93OiAnaW5zZXQgMCAycHggNHB4IHJnYmEoMCwwLDAsMC41KScsIGNvbG9yOiAnI2ZmZicgfX0gcmVxdWlyZWQgdmFsdWU9e2J1eWVyTmFtZX0gb25DaGFuZ2U9e2UgPT4gc2V0QnV5ZXJOYW1lKGUudGFyZ2V0LnZhbHVlKX0gLz4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZm9ybS1ncm91cCI+CiAgICAgICAgICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPSJmb3JtLWxhYmVsIiBzdHlsZT17eyBjb2xvcjogJ3JnYmEoMjU1LDI1NSwyNTUsMC42KScgfX0+RW1haWwgKE9wdGlvbmFsKTwvbGFiZWw+CiAgICAgICAgICAgICAgICA8aW5wdXQgdHlwZT0iZW1haWwiIGNsYXNzTmFtZT0iZm9ybS1pbnB1dCIgc3R5bGU9e3sgYmFja2dyb3VuZDogJ3ZhcigtLWJnLW1ldGFsLWRhcmspJywgYm9yZGVyOiAnMXB4IHNvbGlkIHJnYmEoMCwwLDAsMC44KScsIGJveFNoYWRvdzogJ2luc2V0IDAgMnB4IDRweCByZ2JhKDAsMCwwLDAuNSknLCBjb2xvcjogJyNmZmYnIH19IHZhbHVlPXtidXllckVtYWlsfSBvbkNoYW5nZT17ZSA9PiBzZXRCdXllckVtYWlsKGUudGFyZ2V0LnZhbHVlKX0gLz4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIAogICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZm9ybS1ncm91cCIgc3R5bGU9e3sgbWFyZ2luVG9wOiAndmFyKC0tc3BhY2UtNCknIH19PgogICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9ImZvcm0tbGFiZWwiIHN0eWxlPXt7IGNvbG9yOiAncmdiYSgyNTUsMjU1LDI1NSwwLjYpJyB9fT5TdHJlZXQgQWRkcmVzczwvbGFiZWw+CiAgICAgICAgICAgICAgPEFkZHJlc3NBdXRvY29tcGxldGVJbnB1dAogICAgICAgICAgICAgICAgY2xhc3NOYW1lPSJmb3JtLWlucHV0IgogICAgICAgICAgICAgICAgc3R5bGU9e3sgYmFja2dyb3VuZDogJ3ZhcigtLWJnLW1ldGFsLWRhcmspJywgYm9yZGVyOiAnMXB4IHNvbGlkIHJnYmEoMCwwLDAsMC44KScsIGJveFNoYWRvdzogJ2luc2V0IDAgMnB4IDRweCByZ2JhKDAsMCwwLDAuNSknLCBjb2xvcjogJyNmZmYnIH19CiAgICAgICAgICAgICAgICByZXF1aXJlZAogICAgICAgICAgICAgICAgdmFsdWU9e3N0cmVldH0KICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXtzZXRTdHJlZXR9CiAgICAgICAgICAgICAgICBvblNlbGVjdD17KGEpID0+IHsgc2V0U3RyZWV0KGEuc3RyZWV0MSk7IGlmIChhLmNpdHkpIHNldENpdHkoYS5jaXR5KTsgaWYgKGEuc3RhdGUpIHNldFN0YXRlKGEuc3RhdGUpOyBpZiAoYS56aXApIHNldFppcChhLnppcCk7IH19CiAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIAogICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZ3JpZC0zIiBzdHlsZT17eyBnYXA6ICd2YXIoLS1zcGFjZS00KScsIG1hcmdpblRvcDogJ3ZhcigtLXNwYWNlLTQpJyB9fT4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZm9ybS1ncm91cCI+CiAgICAgICAgICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPSJmb3JtLWxhYmVsIiBzdHlsZT17eyBjb2xvcjogJ3JnYmEoMjU1LDI1NSwyNTUsMC42KScgfX0+Q2l0eTwvbGFiZWw+CiAgICAgICAgICAgICAgICA8aW5wdXQgdHlwZT0idGV4dCIgY2xhc3NOYW1lPSJmb3JtLWlucHV0IiBzdHlsZT17eyBiYWNrZ3JvdW5kOiAndmFyKC0tYmctbWV0YWwtZGFyayknLCBib3JkZXI6ICcxcHggc29saWQgcmdiYSgwLDAsMCwwLjgpJywgYm94U2hhZG93OiAnaW5zZXQgMCAycHggNHB4IHJnYmEoMCwwLDAsMC41KScsIGNvbG9yOiAnI2ZmZicgfX0gcmVxdWlyZWQgdmFsdWU9e2NpdHl9IG9uQ2hhbmdlPXtlID0+IHNldENpdHkoZS50YXJnZXQudmFsdWUpfSAvPgogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmb3JtLWdyb3VwIj4KICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9ImZvcm0tbGFiZWwiIHN0eWxlPXt7IGNvbG9yOiAncmdiYSgyNTUsMjU1LDI1NSwwLjYpJyB9fT5TdGF0ZTwvbGFiZWw+CiAgICAgICAgICAgICAgICA8aW5wdXQgdHlwZT0idGV4dCIgY2xhc3NOYW1lPSJmb3JtLWlucHV0IiBzdHlsZT17eyBiYWNrZ3JvdW5kOiAndmFyKC0tYmctbWV0YWwtZGFyayknLCBib3JkZXI6ICcxcHggc29saWQgcmdiYSgwLDAsMCwwLjgpJywgYm94U2hhZG93OiAnaW5zZXQgMCAycHggNHB4IHJnYmEoMCwwLDAsMC41KScsIGNvbG9yOiAnI2ZmZicgfX0gcmVxdWlyZWQgdmFsdWU9e3N0YXRlfSBvbkNoYW5nZT17ZSA9PiBzZXRTdGF0ZShlLnRhcmdldC52YWx1ZSl9IC8+CiAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZvcm0tZ3JvdXAiPgogICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT0iZm9ybS1sYWJlbCIgc3R5bGU9e3sgY29sb3I6ICdyZ2JhKDI1NSwyNTUsMjU1LDAuNiknIH19PlpJUCBDb2RlPC9sYWJlbD4KICAgICAgICAgICAgICAgIDxpbnB1dCB0eXBlPSJ0ZXh0IiBjbGFzc05hbWU9ImZvcm0taW5wdXQiIHN0eWxlPXt7IGJhY2tncm91bmQ6ICd2YXIoLS1iZy1tZXRhbC1kYXJrKScsIGJvcmRlcjogJzFweCBzb2xpZCByZ2JhKDAsMCwwLDAuOCknLCBib3hTaGFkb3c6ICdpbnNldCAwIDJweCA0cHggcmdiYSgwLDAsMCwwLjUpJywgY29sb3I6ICcjZmZmJyB9fSByZXF1aXJlZCB2YWx1ZT17emlwfSBvbkNoYW5nZT17ZSA9PiBzZXRaaXAoZS50YXJnZXQudmFsdWUpfSAvPgogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgIHsvKiBPcmRlciBJdGVtcyAqL30KICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJnbGFzcy1wYW5lbCIgc3R5bGU9e3sgcGFkZGluZzogJzI0cHgnIH19PgogICAgICAgICAgICA8aDQgc3R5bGU9e3sgZm9udFNpemU6ICcxcmVtJywgY29sb3I6ICcjMDBFNUZGJywgbWFyZ2luQm90dG9tOiAnMjBweCcsIGZvbnRGYW1pbHk6ICd2YXIoLS1mb250LWJyYW5kKScsIHRleHRUcmFuc2Zvcm06ICd1cHBlcmNhc2UnLCBsZXR0ZXJTcGFjaW5nOiAnMC4wNWVtJywgYm9yZGVyQm90dG9tOiAnMXB4IHNvbGlkIHJnYmEoMCwyMjksMjU1LDAuMiknLCBwYWRkaW5nQm90dG9tOiAnMTBweCcgfX0+T3JkZXIgSXRlbXM8L2g0PgogICAgICAgICAgICAKICAgICAgICAgICAgPGRpdiBzdHlsZT17eyBkaXNwbGF5OiAnZmxleCcsIGdhcDogJ3ZhcigtLXNwYWNlLTMpJywgYWxpZ25JdGVtczogJ2ZsZXgtZW5kJywgbWFyZ2luQm90dG9tOiAndmFyKC0tc3BhY2UtNiknIH19PgogICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmb3JtLWdyb3VwIiBzdHlsZT17eyBmbGV4R3JvdzogMSwgbWFyZ2luQm90dG9tOiAwIH19PgogICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT0iZm9ybS1sYWJlbCIgc3R5bGU9e3sgY29sb3I6ICdyZ2JhKDI1NSwyNTUsMjU1LDAuNiknIH19PlNlbGVjdCBQcm9kdWN0PC9sYWJlbD4KICAgICAgICAgICAgICAgIDxzZWxlY3QgY2xhc3NOYW1lPSJmb3JtLWlucHV0IiBzdHlsZT17eyBiYWNrZ3JvdW5kOiAndmFyKC0tYmctbWV0YWwtZGFyayknLCBib3JkZXI6ICcxcHggc29saWQgcmdiYSgwLDAsMCwwLjgpJywgYm94U2hhZG93OiAnaW5zZXQgMCAycHggNHB4IHJnYmEoMCwwLDAsMC41KScsIGNvbG9yOiAnI2ZmZicgfX0gdmFsdWU9e3NlbGVjdGVkUHJvZHVjdElkfSBvbkNoYW5nZT17ZSA9PiBzZXRTZWxlY3RlZFByb2R1Y3RJZChlLnRhcmdldC52YWx1ZSl9PgogICAgICAgICAgICAgICAgICB7cHJvZHVjdHMubWFwKHAgPT4gewogICAgICAgICAgICAgICAgICAgIGNvbnN0IG5hbWUgPSBwLmN1c3RvbV9uYW1lIHx8IHAucHJvZHVjdHMubmFtZTsKICAgICAgICAgICAgICAgICAgICBjb25zdCBzaXplID0gcC5wcm9kdWN0cy51bml0X3NpemUgPyBgICgke3AucHJvZHVjdHMudW5pdF9zaXplfSR7cC5wcm9kdWN0cy51bml0X21lYXN1cmUgfHwgJyd9KWAgOiAnJzsKICAgICAgICAgICAgICAgICAgICByZXR1cm4gKAogICAgICAgICAgICAgICAgICAgICAgPG9wdGlvbiBrZXk9e3AucHJvZHVjdF9pZH0gdmFsdWU9e3AucHJvZHVjdF9pZH0+e25hbWV9e3NpemV9IC0gJHtwLnJldGFpbF9wcmljZX08L29wdGlvbj4KICAgICAgICAgICAgICAgICAgICApOwogICAgICAgICAgICAgICAgICB9KX0KICAgICAgICAgICAgICAgIDwvc2VsZWN0PgogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgIDxEeW5hbWljQWRkVG9DYXJ0QnV0dG9uCiAgICAgICAgICAgICAgICBvbkNsaWNrPXtoYW5kbGVBZGRUb0NhcnR9CiAgICAgICAgICAgICAgICBpc1NtYWxsPXt0cnVlfQogICAgICAgICAgICAgICAgc3R5bGU9e3sgaGVpZ2h0OiA0MiB9fQogICAgICAgICAgICAgIC8+CiAgICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgICAge2NhcnQubGVuZ3RoID4gMCA/ICgKICAgICAgICAgICAgICA8ZGl2IHN0eWxlPXt7IGJhY2tncm91bmQ6ICdyZ2JhKDAsMCwwLDAuNCknLCBib3JkZXI6ICcxcHggc29saWQgcmdiYSgyNTUsMjU1LDI1NSwwLjA1KScsIGJvcmRlclJhZGl1czogJzhweCcsIHBhZGRpbmc6ICcxNnB4JyB9fT4KICAgICAgICAgICAgICAgIHtjYXJ0Lm1hcCgoaXRlbSwgaSkgPT4gKAogICAgICAgICAgICAgICAgICA8ZGl2IGtleT17aX0gc3R5bGU9e3sgZGlzcGxheTogJ2ZsZXgnLCBqdXN0aWZ5Q29udGVudDogJ3NwYWNlLWJldHdlZW4nLCBhbGlnbkl0ZW1zOiAnY2VudGVyJywgbWFyZ2luQm90dG9tOiAnMTJweCcsIHBhZGRpbmdCb3R0b206ICcxMnB4JywgYm9yZGVyQm90dG9tOiAnMXB4IHNvbGlkIHJnYmEoMjU1LDI1NSwyNTUsMC4wNSknIH19PgogICAgICAgICAgICAgICAgICAgIDxkaXY+CiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBzdHlsZT17eyBjb2xvcjogJyNmZmYnLCBmb250V2VpZ2h0OiA2MDAgfX0+e2l0ZW0ucXVhbnRpdHl9eCB7aXRlbS5uYW1lfTwvc3Bhbj4KICAgICAgICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICAgICAgICA8ZGl2IHN0eWxlPXt7IGRpc3BsYXk6ICdmbGV4JywgZ2FwOiAnMTZweCcsIGFsaWduSXRlbXM6ICdjZW50ZXInIH19PgogICAgICAgICAgICAgICAgICAgICAgPHNwYW4gc3R5bGU9e3sgY29sb3I6ICcjMDBFNUZGJywgZm9udFdlaWdodDogNzAwIH19PiR7KGl0ZW0ucHJpY2UgKiBpdGVtLnF1YW50aXR5KS50b0ZpeGVkKDIpfTwvc3Bhbj4KICAgICAgICAgICAgICAgICAgICAgIDxidXR0b24gdHlwZT0iYnV0dG9uIiBvbkNsaWNrPXsoKSA9PiBoYW5kbGVSZW1vdmVGcm9tQ2FydChpdGVtLnByb2R1Y3RfaWQpfSBjbGFzc05hbWU9ImJhZGdlLW1ldGFsIiBzdHlsZT17eyBiYWNrZ3JvdW5kOiAncmdiYSgyMjksNjIsNjIsMC4xKScsIGNvbG9yOiAnI0ZDODE4MScsIGJvcmRlcjogJzFweCBzb2xpZCByZ2JhKDIyOSw2Miw2MiwwLjMpJywgY3Vyc29yOiAncG9pbnRlcicsIHBhZGRpbmc6ICc0cHggOHB4JywgZm9udFNpemU6ICcxcmVtJywgbGluZUhlaWdodDogMSB9fT7DlzwvYnV0dG9uPgogICAgICAgICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICAgICkpfQogICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICA8ZGl2IHN0eWxlPXt7IGRpc3BsYXk6ICdmbGV4JywganVzdGlmeUNvbnRlbnQ6ICdmbGV4LWVuZCcsIG1hcmdpblRvcDogJzE2cHgnIH19PgogICAgICAgICAgICAgICAgICA8ZGl2IHN0eWxlPXt7IHdpZHRoOiAyMjAgfX0+CiAgICAgICAgICAgICAgICAgICAgPGRpdiBzdHlsZT17eyBkaXNwbGF5OiAnZmxleCcsIGp1c3RpZnlDb250ZW50OiAnc3BhY2UtYmV0d2VlbicsIG1hcmdpbkJvdHRvbTogNiwgZm9udFNpemU6ICcwLjg1cmVtJywgY29sb3I6ICdyZ2JhKDI1NSwyNTUsMjU1LDAuNSknIH19PgogICAgICAgICAgICAgICAgICAgICAgPHNwYW4+U3VidG90YWw8L3NwYW4+CiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBzdHlsZT17eyBjb2xvcjogJyNmZmYnIH19PiR7c3VidG90YWwudG9GaXhlZCgyKX08L3NwYW4+CiAgICAgICAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgICAgICAgPGRpdiBzdHlsZT17eyBkaXNwbGF5OiAnZmxleCcsIGp1c3RpZnlDb250ZW50OiAnc3BhY2UtYmV0d2VlbicsIG1hcmdpbkJvdHRvbTogMTIsIGZvbnRTaXplOiAnMC44NXJlbScsIGNvbG9yOiAncmdiYSgyNTUsMjU1LDI1NSwwLjUpJyB9fT4KICAgICAgICAgICAgICAgICAgICAgIDxzcGFuPlNoaXBwaW5nPC9zcGFuPgogICAgICAgICAgICAgICAgICAgICAgPHNwYW4gc3R5bGU9e3sgY29sb3I6ICcjZmZmJyB9fT4ke3NoaXBwaW5nQ29zdC50b0ZpeGVkKDIpfTwvc3Bhbj4KICAgICAgICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICAgICAgICA8ZGl2IHN0eWxlPXt7IGRpc3BsYXk6ICdmbGV4JywganVzdGlmeUNvbnRlbnQ6ICdzcGFjZS1iZXR3ZWVuJywgcGFkZGluZ1RvcDogMTIsIGJvcmRlclRvcDogJzFweCBkYXNoZWQgcmdiYSgyNTUsMjU1LDI1NSwwLjE1KScsIGZvbnRTaXplOiAnMS4xcmVtJywgY29sb3I6ICcjZmZmJywgZm9udFdlaWdodDogODAwIH19PgogICAgICAgICAgICAgICAgICAgICAgPHNwYW4+VG90YWw8L3NwYW4+CiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBzdHlsZT17eyBjb2xvcjogJyMwMEU1RkYnLCB0ZXh0U2hhZG93OiAnMCAwIDEwcHggcmdiYSgwLDIyOSwyNTUsMC4zKScgfX0+JHt0b3RhbC50b0ZpeGVkKDIpfTwvc3Bhbj4KICAgICAgICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgKSA6ICgKICAgICAgICAgICAgICA8ZGl2IHN0eWxlPXt7IHBhZGRpbmc6ICczMnB4JywgdGV4dEFsaWduOiAnY2VudGVyJywgYmFja2dyb3VuZDogJ3JnYmEoMCwwLDAsMC4yKScsIGJvcmRlcjogJzFweCBkYXNoZWQgcmdiYSgyNTUsMjU1LDI1NSwwLjEpJywgYm9yZGVyUmFkaXVzOiAnOHB4JyB9fT4KICAgICAgICAgICAgICAgIDxwIHN0eWxlPXt7IGZvbnRTaXplOiAnMC45cmVtJywgY29sb3I6ICdyZ2JhKDI1NSwyNTUsMjU1LDAuMyknIH19PkNhcnQgSXMgRW1wdHkuIEFkZCBQcm9kdWN0cyBBYm92ZS48L3A+CiAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICl9CiAgICAgICAgICA8L2Rpdj4KCiAgICAgICAgICB7LyogUGF5bWVudCAmIFN1Ym1pdCAqL30KICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJnbGFzcy1wYW5lbCIgc3R5bGU9e3sgcGFkZGluZzogJzI0cHgnLCBkaXNwbGF5OiAnZmxleCcsIGp1c3RpZnlDb250ZW50OiAnc3BhY2UtYmV0d2VlbicsIGFsaWduSXRlbXM6ICdmbGV4LWVuZCcsIGZsZXhXcmFwOiAnd3JhcCcsIGdhcDogJzIwcHgnIH19PgogICAgICAgICAgICA8ZGl2IHN0eWxlPXt7IGRpc3BsYXk6ICdmbGV4JywgZ2FwOiAndmFyKC0tc3BhY2UtNCknLCBmbGV4V3JhcDogJ3dyYXAnIH19PgogICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmb3JtLWdyb3VwIiBzdHlsZT17eyB3aWR0aDogMTgwLCBtYXJnaW5Cb3R0b206IDAgfX0+CiAgICAgICAgICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPSJmb3JtLWxhYmVsIiBzdHlsZT17eyBjb2xvcjogJ3JnYmEoMjU1LDI1NSwyNTUsMC42KScgfX0+UGF5bWVudCBSZWNlaXZlZCBWaWE8L2xhYmVsPgogICAgICAgICAgICAgICAgPHNlbGVjdCBjbGFzc05hbWU9ImZvcm0taW5wdXQiIHN0eWxlPXt7IGJhY2tncm91bmQ6ICd2YXIoLS1iZy1tZXRhbC1kYXJrKScsIGJvcmRlcjogJzFweCBzb2xpZCByZ2JhKDAsMCwwLDAuOCknLCBib3hTaGFkb3c6ICdpbnNldCAwIDJweCA0cHggcmdiYSgwLDAsMCwwLjUpJywgY29sb3I6ICcjZmZmJyB9fSB2YWx1ZT17cGF5bWVudE1ldGhvZH0gb25DaGFuZ2U9e2UgPT4gc2V0UGF5bWVudE1ldGhvZChlLnRhcmdldC52YWx1ZSl9PgogICAgICAgICAgICAgICAgICA8b3B0aW9uIHZhbHVlPSJjYXNoYXBwIj5DYXNoIEFwcDwvb3B0aW9uPgogICAgICAgICAgICAgICAgICA8b3B0aW9uIHZhbHVlPSJ2ZW5tbyI+VmVubW88L29wdGlvbj4KICAgICAgICAgICAgICAgICAgPG9wdGlvbiB2YWx1ZT0iYXBwbGVfcGF5Ij5BcHBsZSBQYXk8L29wdGlvbj4KICAgICAgICAgICAgICAgICAgPG9wdGlvbiB2YWx1ZT0iemVsbGUiPlplbGxlPC9vcHRpb24+CiAgICAgICAgICAgICAgICA8L3NlbGVjdD4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZm9ybS1ncm91cCIgc3R5bGU9e3sgd2lkdGg6IDEyMCwgbWFyZ2luQm90dG9tOiAwIH19PgogICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT0iZm9ybS1sYWJlbCIgc3R5bGU9e3sgY29sb3I6ICdyZ2JhKDI1NSwyNTUsMjU1LDAuNiknIH19PlNoaXBwaW5nIENvc3QgKCQpPC9sYWJlbD4KICAgICAgICAgICAgICAgIDxpbnB1dCB0eXBlPSJudW1iZXIiIGNsYXNzTmFtZT0iZm9ybS1pbnB1dCIgc3R5bGU9e3sgYmFja2dyb3VuZDogJ3ZhcigtLWJnLW1ldGFsLWRhcmspJywgYm9yZGVyOiAnMXB4IHNvbGlkIHJnYmEoMCwwLDAsMC44KScsIGJveFNoYWRvdzogJ2luc2V0IDAgMnB4IDRweCByZ2JhKDAsMCwwLDAuNSknLCBjb2xvcjogJyNmZmYnIH19IHZhbHVlPXtzaGlwcGluZ0Nvc3RJbnB1dH0gb25DaGFuZ2U9e2UgPT4gc2V0U2hpcHBpbmdDb3N0SW5wdXQoZS50YXJnZXQudmFsdWUpfSAvPgogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgCiAgICAgICAgICAgIDxidXR0b24gdHlwZT0ic3VibWl0IiBjbGFzc05hbWU9ImJ0bi1uZW9uLWN5YW4iIGRpc2FibGVkPXtzdWJtaXR0aW5nIHx8IGNhcnQubGVuZ3RoID09PSAwfSBzdHlsZT17eyBwYWRkaW5nOiAnMTJweCAzMnB4JywgZm9udFNpemU6ICcxcmVtJywgZm9udFdlaWdodDogODAwIH19PgogICAgICAgICAgICAgIHtzdWJtaXR0aW5nID8gJ0NyZWF0aW5nIE9yZGVyLi4uJyA6ICdDcmVhdGUgT3JkZXInfQogICAgICAgICAgICA8L2J1dHRvbj4KICAgICAgICAgIDwvZGl2PgoKICAgICAgICA8L2Zvcm0+CiAgICAgIDwvZGl2PgogICAgPC9kaXY+CiAgKTsKfQo=
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
+import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
+
+interface AgentProduct {
+  product_id: string;
+  custom_name: string | null;
+  retail_price: number;
+  products: {
+    name: string;
+    unit_size: string | null;
+    unit_measure: string | null;
+  };
+}
+
+export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (order: any) => void }) {
+  const [products, setProducts] = useState<AgentProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [buyerName, setBuyerName] = useState('');
+  const [buyerEmail, setBuyerEmail] = useState('');
+  const [street, setStreet] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [zip, setZip] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cashapp');
+  const [shippingCostInput, setShippingCostInput] = useState('10');
+  
+  const [cart, setCart] = useState<Array<{ product_id: string; quantity: number; price: number; name: string }>>([]);
+  const [selectedProductId, setSelectedProductId] = useState('');
+  
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/agent/products')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed To Load Products');
+        return res.json();
+      })
+      .then(data => {
+        if (data.data) {
+          const visibleProducts = data.data.filter((p: any) => p.is_visible);
+          setProducts(visibleProducts);
+          if (visibleProducts.length > 0) {
+            setSelectedProductId(visibleProducts[0].product_id);
+          }
+        }
+      })
+      .catch(() => {
+        // Products failed to load but still allow manual entry if needed
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const handleAddToCart = () => {
+    const product = products.find(p => p.product_id === selectedProductId);
+    if (!product) return;
+
+    setCart(prev => {
+      const existing = prev.find(item => item.product_id === selectedProductId);
+      if (existing) {
+        return prev.map(item => item.product_id === selectedProductId ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      const displayName = product.custom_name || product.products.name;
+      const sizeStr = product.products.unit_size ? ` (${product.products.unit_size}${product.products.unit_measure || ''})` : '';
+      return [...prev, {
+        product_id: product.product_id,
+        quantity: 1,
+        price: product.retail_price,
+        name: displayName + sizeStr
+      }];
+    });
+  };
+
+  const handleRemoveFromCart = (productId: string) => {
+    setCart(prev => prev.filter(item => item.product_id !== productId));
+  };
+
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const shippingCost = Number(shippingCostInput) || 0;
+  const total = subtotal + (cart.length > 0 ? shippingCost : 0);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (cart.length === 0) {
+      toast.error('Cart Is Empty.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/agent/orders/new', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          buyerName, buyerEmail, street, city, state, zip,
+          paymentMethod,
+          items: cart,
+          total,
+          shippingCost
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed To Create Manual Order');
+
+      toast.success('Manual Order Created Successfully');
+      onOrderCreated(data.order);
+    } catch (err: any) {
+      toast.error(err.message || 'An Error Occurred');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return <div style={{ padding: 'var(--space-4)', color: 'var(--grey-400)' }}>Loading Products...</div>;
+  }
+
+  return (
+    <div className="glass-panel">
+      <div className="" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+        <h3 className="metal-text" style={{ fontSize: '1.25rem', margin: 0, fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Create Manual Shipment Order
+        </h3>
+        
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+          
+          {/* Customer Details */}
+          <div className="glass-panel" style={{ padding: '24px' }}>
+            <h4 style={{ fontSize: '1rem', color: '#00E5FF', marginBottom: '20px', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(0,229,255,0.2)', paddingBottom: '10px' }}>Customer & Shipping Details</h4>
+            <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Full Name</label>
+                <input type="text" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={buyerName} onChange={e => setBuyerName(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Email (Optional)</label>
+                <input type="email" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)} />
+              </div>
+            </div>
+            
+            <div className="form-group" style={{ marginTop: 'var(--space-4)' }}>
+              <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Street Address</label>
+              <AddressAutocompleteInput
+                className="form-input"
+                style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
+                required
+                value={street}
+                onChange={setStreet}
+                onSelect={(a) => { setStreet(a.street1); if (a.city) setCity(a.city); if (a.state) setState(a.state); if (a.zip) setZip(a.zip); }}
+              />
+            </div>
+            
+            <div className="grid-3" style={{ gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>City</label>
+                <input type="text" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={city} onChange={e => setCity(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>State</label>
+                <input type="text" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={state} onChange={e => setState(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>ZIP Code</label>
+                <input type="text" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={zip} onChange={e => setZip(e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          {/* Order Items */}
+          <div className="glass-panel" style={{ padding: '24px' }}>
+            <h4 style={{ fontSize: '1rem', color: '#00E5FF', marginBottom: '20px', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(0,229,255,0.2)', paddingBottom: '10px' }}>Order Items</h4>
+            
+            <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end', marginBottom: 'var(--space-6)' }}>
+              <div className="form-group" style={{ flexGrow: 1, marginBottom: 0 }}>
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Select Product</label>
+                <select className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)}>
+                  {products.map(p => {
+                    const name = p.custom_name || p.products.name;
+                    const size = p.products.unit_size ? ` (${p.products.unit_size}${p.products.unit_measure || ''})` : '';
+                    return (
+                      <option key={p.product_id} value={p.product_id}>{name}{size} - ${p.retail_price}</option>
+                    );
+                  })}
+                </select>
+              </div>
+              <DynamicAddToCartButton
+                onClick={handleAddToCart}
+                isSmall={true}
+                style={{ height: 42 }}
+              />
+            </div>
+
+            {cart.length > 0 ? (
+              <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '16px' }}>
+                {cart.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div>
+                      <span style={{ color: '#fff', fontWeight: 600 }}>{item.quantity}x {item.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                      <span style={{ color: '#00E5FF', fontWeight: 700 }}>${(item.price * item.quantity).toFixed(2)}</span>
+                      <button type="button" onClick={() => handleRemoveFromCart(item.product_id)} className="badge-metal" style={{ background: 'rgba(229,62,62,0.1)', color: '#FC8181', border: '1px solid rgba(229,62,62,0.3)', cursor: 'pointer', padding: '4px 8px', fontSize: '1rem', lineHeight: 1 }}>×</button>
+                    </div>
+                  </div>
+                ))}
+                
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                  <div style={{ width: 220 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
+                      <span>Subtotal</span>
+                      <span style={{ color: '#fff' }}>${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
+                      <span>Shipping</span>
+                      <span style={{ color: '#fff' }}>${shippingCost.toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px dashed rgba(255,255,255,0.15)', fontSize: '1.1rem', color: '#fff', fontWeight: 800 }}>
+                      <span>Total</span>
+                      <span style={{ color: '#00E5FF', textShadow: '0 0 10px rgba(0,229,255,0.3)' }}>${total.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: '32px', textAlign: 'center', background: 'rgba(0,0,0,0.2)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '8px' }}>
+                <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)' }}>Cart Is Empty. Add Products Above.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Payment & Submit */}
+          <div className="glass-panel" style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+              <div className="form-group" style={{ width: 180, marginBottom: 0 }}>
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Payment Received Via</label>
+                <select className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+                  <option value="cashapp">Cash App</option>
+                  <option value="venmo">Venmo</option>
+                  <option value="apple_pay">Apple Pay</option>
+                  <option value="zelle">Zelle</option>
+                </select>
+              </div>
+              <div className="form-group" style={{ width: 120, marginBottom: 0 }}>
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Shipping Cost ($)</label>
+                <input type="number" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={shippingCostInput} onChange={e => setShippingCostInput(e.target.value)} />
+              </div>
+            </div>
+            
+            <button type="submit" className="btn-neon-cyan" disabled={submitting || cart.length === 0} style={{ padding: '12px 32px', fontSize: '1rem', fontWeight: 800 }}>
+              {submitting ? 'Creating Order...' : 'Create Order'}
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  );
+}
