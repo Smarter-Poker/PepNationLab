@@ -1,1 +1,30 @@
-J3VzZSBjbGllbnQnOwoKaW1wb3J0IHsgQXJlYUNoYXJ0LCBBcmVhLCBYQXhpcywgWUF4aXMsIENhcnRlc2lhbkdyaWQsIFRvb2x0aXAsIFJlc3BvbnNpdmVDb250YWluZXIgfSBmcm9tICdyZWNoYXJ0cyc7CgpleHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBTYWxlc1RpbWVzZXJpZXNDaGFydCh7IHBvaW50cyB9OiB7IHBvaW50czogYW55W10gfSkgewogIGNvbnN0IGRhdGEgPSAocG9pbnRzID8/IFtdKS5tYXAocCA9PiAoewogICAgZGF5OiBwLmRheT8uc2xpY2UgPyBwLmRheS5zbGljZSg1KSA6IHAuZGF5LAogICAgcmV2ZW51ZTogTnVtYmVyKHAucmV2ZW51ZV9jZW50cykgLyAxMDAsCiAgICBwcm9maXQ6IE51bWJlcihwLnByb2ZpdF9jZW50cykgLyAxMDAsCiAgfSkpOwogIHJldHVybiAoCiAgICA8ZGl2IGNsYXNzTmFtZT0iZ2xhc3MtcGFuZWwiPgogICAgICA8ZGl2IGNsYXNzTmFtZT0iIiBzdHlsZT17eyBwYWRkaW5nOiAxMiB9fT4KICAgICAgICA8aDMgc3R5bGU9e3sgY29sb3I6ICd2YXIoLS13aGl0ZSknLCBmb250U2l6ZTogJzAuOTVyZW0nLCBtYXJnaW46ICcwIDAgOHB4JyB9fT5QZXJmb3JtYW5jZSBUcmVuZDwvaDM+CiAgICAgICAgPGRpdiBzdHlsZT17eyB3aWR0aDogJzEwMCUnLCBoZWlnaHQ6IDI0MCB9fT4KICAgICAgICAgIDxSZXNwb25zaXZlQ29udGFpbmVyIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPgogICAgICAgICAgICA8QXJlYUNoYXJ0IGRhdGE9e2RhdGF9PgogICAgICAgICAgICAgIDxDYXJ0ZXNpYW5HcmlkIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA2KSIgLz4KICAgICAgICAgICAgICA8WEF4aXMgZGF0YUtleT0iZGF5IiBzdHJva2U9InZhcigtLWdyZXktNTAwKSIgZm9udFNpemU9ezExfSAvPgogICAgICAgICAgICAgIDxZQXhpcyBzdHJva2U9InZhcigtLWdyZXktNTAwKSIgZm9udFNpemU9ezExfSAvPgogICAgICAgICAgICAgIDxUb29sdGlwIGNvbnRlbnRTdHlsZT17eyBiYWNrZ3JvdW5kOiAndmFyKC0tZ3JleS05MDApJywgYm9yZGVyOiAnMXB4IHNvbGlkIHJnYmEoMjU1LDI1NSwyNTUsMC4xKScgfX0gLz4KICAgICAgICAgICAgICA8QXJlYSB0eXBlPSJtb25vdG9uZSIgZGF0YUtleT0icmV2ZW51ZSIgc3Ryb2tlPSJ2YXIoLS10ZWFsKSIgZmlsbD0idmFyKC0tdGVhbCkiIGZpbGxPcGFjaXR5PXswLjE4fSAvPgogICAgICAgICAgICAgIDxBcmVhIHR5cGU9Im1vbm90b25lIiBkYXRhS2V5PSJwcm9maXQiIHN0cm9rZT0iIzJlZDU3MyIgZmlsbD0iIzJlZDU3MyIgZmlsbE9wYWNpdHk9ezAuMTJ9IC8+CiAgICAgICAgICAgIDwvQXJlYUNoYXJ0PgogICAgICAgICAgPC9SZXNwb25zaXZlQ29udGFpbmVyPgogICAgICAgIDwvZGl2PgogICAgICA8L2Rpdj4KICAgIDwvZGl2PgogICk7Cn0K
+'use client';
+
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+export default function SalesTimeseriesChart({ points }: { points: any[] }) {
+  const data = (points ?? []).map(p => ({
+    day: p.day?.slice ? p.day.slice(5) : p.day,
+    revenue: Number(p.revenue_cents) / 100,
+    profit: Number(p.profit_cents) / 100,
+  }));
+  return (
+    <div className="glass-panel">
+      <div className="" style={{ padding: 12 }}>
+        <h3 style={{ color: 'var(--white)', fontSize: '0.95rem', margin: '0 0 8px' }}>Performance Trend</h3>
+        <div style={{ width: '100%', height: 240 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data}>
+              <CartesianGrid stroke="rgba(255,255,255,0.06)" />
+              <XAxis dataKey="day" stroke="var(--grey-500)" fontSize={11} />
+              <YAxis stroke="var(--grey-500)" fontSize={11} />
+              <Tooltip contentStyle={{ background: 'var(--grey-900)', border: '1px solid rgba(255,255,255,0.1)' }} />
+              <Area type="monotone" dataKey="revenue" stroke="var(--teal)" fill="var(--teal)" fillOpacity={0.18} />
+              <Area type="monotone" dataKey="profit" stroke="#2ed573" fill="#2ed573" fillOpacity={0.12} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+}
