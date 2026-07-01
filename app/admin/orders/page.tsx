@@ -135,6 +135,10 @@ function AdminOrdersPageInner() {
   const [cancelReason, setCancelReason] = useState("");
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
 
+  // Bulk cancel confirmation state
+  const [showBulkCancelConfirm, setShowBulkCancelConfirm] = useState(false);
+  const [pendingBulkIds, setPendingBulkIds] = useState<string[]>([]);
+
   function openCancelModal() {
     if (!selectedOrder) return;
     setCancelReason("");
@@ -310,11 +314,11 @@ function AdminOrdersPageInner() {
       cancel: "Cancelling",
       generate_labels: "Generating Labels",
     };
-    if (
-      action === "cancel" &&
-      !confirm(`Cancel ${ids.length} Order(s)? This Cannot Be Undone.`)
-    )
+    if (action === "cancel") {
+      setPendingBulkIds(ids);
+      setShowBulkCancelConfirm(true);
       return;
+    }
 
     setBulkRunning(true);
     const progressToast = toast.loading(
@@ -475,7 +479,7 @@ function AdminOrdersPageInner() {
             const rows = filteredOrders.map((o) => ({
               id: o.id,
               created_at: new Date(o.created_at).toISOString(),
-              buyer: o.profiles?.full_name || o.profiles?.email || "",
+              buyer: o.profiles?.full_name || o.profiles?.email || o.buyer_name || o.buyer_email || "",
               status: STATUS_LABELS[o.status] ?? o.status,
               fulfillment: o.fulfillment_method || "",
               payment_method: o.payment_method || "",
@@ -1096,17 +1100,17 @@ function AdminOrdersPageInner() {
                           gap: 2,
                         }}
                       >
-                        {selectedOrder.shipping_address.fullName && (
-                          <div>{selectedOrder.shipping_address.fullName}</div>
+                        {selectedOrder.shipping_address?.fullName && (
+                          <div>{selectedOrder.shipping_address?.fullName}</div>
                         )}
-                        <div>{selectedOrder.shipping_address.street}</div>
-                        {selectedOrder.shipping_address.suite && (
-                          <div>{selectedOrder.shipping_address.suite}</div>
+                        <div>{selectedOrder.shipping_address?.street || ""}</div>
+                        {selectedOrder.shipping_address?.suite && (
+                          <div>{selectedOrder.shipping_address?.suite}</div>
                         )}
                         <div>
-                          {selectedOrder.shipping_address.city},{" "}
-                          {selectedOrder.shipping_address.state}{" "}
-                          {selectedOrder.shipping_address.zip}
+                          {selectedOrder.shipping_address?.city || ""},{" "}
+                          {selectedOrder.shipping_address?.state || ""}{" "}
+                          {selectedOrder.shipping_address?.zip || ""}
                         </div>
                       </div>
                     </div>
@@ -1599,6 +1603,95 @@ function AdminOrdersPageInner() {
                   }}
                 >
                   {cancelSubmitting ? "Cancelling..." : "Cancel Order"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBulkCancelConfirm && (
+        <div
+          onClick={() => setShowBulkCancelConfirm(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "var(--space-4)",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="glass-panel"
+            style={{ maxWidth: 420, width: "100%" }}
+          >
+            <div style={{ padding: "var(--space-6)" }}>
+              <h2
+                className="metal-text"
+                style={{
+                  fontSize: "1.25rem",
+                  color: "#fff",
+                  marginBottom: "var(--space-2)",
+                }}
+              >
+                Cancel {pendingBulkIds.length} Order(s)?
+              </h2>
+              <p
+                style={{
+                  fontSize: "0.78rem",
+                  color: "var(--grey-400)",
+                  marginBottom: "var(--space-5)",
+                }}
+              >
+                This Action Cannot Be Undone.
+              </p>
+              <div style={{ display: "flex", gap: "var(--space-3)", justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => {
+                    setShowBulkCancelConfirm(false);
+                    setPendingBulkIds([]);
+                  }}
+                >
+                  Keep Orders
+                </button>
+                <button
+                  type="button"
+                  className="btn-danger"
+                  style={{ background: "var(--red)", borderColor: "var(--red)" }}
+                  onClick={async () => {
+                    setShowBulkCancelConfirm(false);
+                    setBulkRunning(true);
+                    const progressToast = toast.loading(
+                      `Cancelling ${pendingBulkIds.length} Order(s)...`,
+                    );
+                    try {
+                      const res = await fetch("/api/admin/orders/bulk", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "cancel", ids: pendingBulkIds }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || "Bulk cancel failed");
+                      toast.dismiss(progressToast);
+                      toast.success(`Cancelled ${data.processed ?? pendingBulkIds.length} Order(s)`);
+                      setSelectedIds(new Set());
+                      setPendingBulkIds([]);
+                      await fetchOrders();
+                    } catch (err: any) {
+                      toast.dismiss(progressToast);
+                      toast.error(err.message || "Bulk cancel failed");
+                    } finally {
+                      setBulkRunning(false);
+                    }
+                  }}
+                >
+                  Cancel Orders
                 </button>
               </div>
             </div>
