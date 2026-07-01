@@ -293,7 +293,7 @@ export async function GET(req: NextRequest) {
       aliases: string[] | null;
       research_areas: string[] | null;
       category: string | null;
-    }>();
+    }>;
 
     const intent = classifyIntent(parsed, { catalog });
     const { payload } = await buildPayload(supabase, intent);
