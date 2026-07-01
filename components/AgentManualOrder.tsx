@@ -94,9 +94,13 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
 
     setSubmitting(true);
     try {
+      const idempotencyKey = crypto.randomUUID();
       const res = await fetch('/api/agent/orders/new', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
+        },
         body: JSON.stringify({
           buyerName, buyerEmail, street, city, state, zip,
           paymentMethod,
