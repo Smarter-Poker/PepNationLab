@@ -3,7 +3,6 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { isAgentAncestorOf } from '@/lib/agent-auth';
 import { assertSameOrigin } from '@/lib/csrf';
-import { notifyOrderApproved } from '@/lib/notify';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,7 +21,7 @@ export async function POST(req: NextRequest) {
   const { orderId } = body ?? {};
 
   if (!orderId || typeof orderId !== 'string') {
-    return NextResponse.json({ error: 'orderId Is Required.' }, { status: 400 });
+    return NextResponse.json({ error: 'Order ID Is Required.' }, { status: 400 });
   }
 
   const { data: order, error: orderErr } = await svc

@@ -27,7 +27,7 @@ export async function GET(_req: NextRequest) {
       .from('profiles')
       .select('role, is_super_agent, is_sub_agent')
       .eq('id', callerId)
-      .single();
+      .maybeSingle();
     if (!callerProfile || callerProfile.is_sub_agent === true) {
       return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }

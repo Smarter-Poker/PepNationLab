@@ -179,8 +179,9 @@ export async function PATCH(req: NextRequest) {
         }
 
         if (maxExisting > netMarginPct) {
-          import('@/lib/notify').then(({ notifyMarginWarning }) => {
-            const admin = require('@/lib/supabase/server').createAdminClient();
+          import('@/lib/notify').then(async ({ notifyMarginWarning }) => {
+            const { createAdminClient } = await import('@/lib/supabase/server');
+            const admin = await createAdminClient();
             notifyMarginWarning(admin, gate.user.id).catch((err: Error) => {
               console.error('[products/route] Failed to fire margin warning:', err);
             });

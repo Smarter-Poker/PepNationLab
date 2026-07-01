@@ -243,7 +243,7 @@ export async function GET() {
     function statusFor(r: Researcher, a: Agg | undefined): ResearcherStatus {
       const daysSinceJoin = Math.floor((now - new Date(r.created_at).getTime()) / MS_DAY);
       if (!a || a.orderCount === 0) {
-        if (daysSinceJoin <= 30) return 'lead';
+        if (daysSinceJoin <= 30) return 'new';
         return 'lead';
       }
       const daysSinceLast = a.lastOrderAt

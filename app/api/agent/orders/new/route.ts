@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     for (const raw of items) {
       const rawQty = Number(raw.quantity);
       if (!Number.isFinite(rawQty) || rawQty < 1) {
-        return NextResponse.json({ error: 'Each item must have a quantity of at least 1.' }, { status: 400 });
+        return NextResponse.json({ error: 'Each Item Must Have A Quantity Of At Least 1.' }, { status: 400 });
       }
       const qty = Math.floor(rawQty);
       const ap = (raw.agent_product_id && byId.get(raw.agent_product_id)) || (raw.product_id && byProductId.get(raw.product_id)) || null;

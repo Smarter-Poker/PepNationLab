@@ -157,11 +157,11 @@ export async function POST(req: NextRequest) {
         if (!item.product_id) continue;
         const qtyRequired = Number(item.quantity) || 0;
         if (qtyRequired <= 0) continue;
-        const { data: invData } = await supabase.from('agent_inventory').select('stock_count').eq('agent_id', order.agent_id).eq('product_id', item.product_id).single();
+        const { data: invData } = await supabase.from('agent_inventory').select('stock_count').eq('agent_id', order.agent_id).eq('product_id', item.product_id).maybeSingle();
         const currentStock = Number(invData?.stock_count) || 0;
         if (currentStock < qtyRequired) {
           return NextResponse.json({
-            error: `Insufficient Inventory for "${item.product_name}". You need ${qtyRequired} units, but only have ${currentStock} in stock. Please purchase more bulk inventory before approving this order.`
+            error: `Insufficient Inventory For "${item.product_name}". You Need ${qtyRequired} Units, But Only Have ${currentStock} In Stock. Please Purchase More Bulk Inventory Before Approving This Order.`
           }, { status: 400 });
         }
       }
@@ -244,13 +244,11 @@ export async function POST(req: NextRequest) {
       try {
         await supabase.rpc('charge_order_credit_line', { p_order_id: orderId, p_created_by: callerId });
       } catch (creditErr) {
-        console.error('[CRITICAL] charge_order_credit_line failed \u2014 order approved but credit line not charged:', {
+        console.error('[CRITICAL] charge_order_credit_line failed — order approved but credit line not charged:', {
           orderId,
           agentId: primaryBilledAgentId,
           error: creditErr instanceof Error ? creditErr.message : String(creditErr),
         });
-        // Don't block the approval response \u2014 the order is already approved.
-        // Ops must reconcile this manually via the financial ledger.
       }
     }
 
