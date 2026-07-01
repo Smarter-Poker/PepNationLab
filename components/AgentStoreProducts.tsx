@@ -795,7 +795,7 @@ function PricingConfig({ agentId }: { agentId: string }) {
         .from('agent_profiles')
         .select('enable_dynamic_pricing, dynamic_pricing_tiers, min_order_qty, min_overall_qty, enable_bulk_discounts, bulk_discount_tiers')
         .eq('id', agentId)
-        .single();
+        .maybeSingle();
       if (data) {
         if (data.enable_dynamic_pricing != null) setEnableDynamic(data.enable_dynamic_pricing);
         if (data.dynamic_pricing_tiers) setDynamicTiers(data.dynamic_pricing_tiers as any);
@@ -882,7 +882,7 @@ function PricingConfig({ agentId }: { agentId: string }) {
                 <h4 style={{ color: '#fff', fontSize: '1.05rem', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
                   Dynamic Pricing 
                   <span style={{ fontSize: '0.8rem', color: 'var(--grey-500)', background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 4 }}>
-                    {showDynamicPricing ? 'Collapsed' : 'Expand'}
+                    {showDynamicPricing ? 'Collapse' : 'Expand'}
                   </span>
                 </h4>
                 <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Small-Order Surcharges For Orders Under 10 Vials</p>
