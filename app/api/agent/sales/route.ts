@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
 
@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const agentId = gate.user.id;
 
     // 1. Fetch all researchers under this agent
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
       .eq('role', 'researcher');
 
     if (researchersError) {
-      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+      return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
     }
 
     // Filter to only researchers with active carts
@@ -39,13 +39,13 @@ export async function GET(req: NextRequest) {
       .from('orders')
       .select('*, order_items(*), profiles!orders_buyer_id_fkey(full_name, email)')
       .eq('agent_id', agentId)
-      // BUG-14 FIX: exclude wholesale restock orders from the sales view.
+      // Exclude wholesale restock orders from the sales view.
       // Restocks were appearing as zero-profit 'sales' in the agent dashboard.
       .eq('is_wholesale_restock', false)
       .order('created_at', { ascending: false });
 
     if (ordersError) {
-      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+      return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
     }
 
     // Calculate profit for each order. The agent's true margin is:
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
 
       const profit = totalRetail - totalCost - shippingCost;
 
-      // BUG-15 FIX: o.profiles from Supabase FK join may be an array.
+      // o.profiles from Supabase FK join may be an array.
       // Direct .full_name access on an array returns undefined.
       // Use pickOne() to correctly unwrap the single-row relation.
       const buyer = pickOne<{ full_name?: string; email?: string }>((o as any).profiles);
@@ -79,10 +79,10 @@ export async function GET(req: NextRequest) {
         fulfillment_method: o.fulfillment_method,
         payment_method: o.payment_method,
         shipping_address: o.shipping_address,
-        shipping_cost: o.shipping_cost,
-        subtotal: o.subtotal,
-        total: o.total,
-        discount_amount: o.discount_amount,
+        shipping_cost: Number(o.shipping_cost || 0),
+        subtotal: Number(o.subtotal || 0),
+        total: Number(o.total || 0),
+        discount_amount: Number(o.discount_amount || 0),
         coupon_code: o.coupon_code,
         created_at: o.created_at,
         buyer_name: buyer?.full_name || buyer?.email || null,
@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
         label_url: o.label_url,
         agent_id: o.agent_id,
         is_sub_agent_order: o.is_sub_agent_order,
-        profit,
+        profit: Number(profit.toFixed(2)),
         items: o.order_items
       };
     });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { computeAgentCostForAgent, computeSubAgentBaselineCost, type AgentTier } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const agentId = gate.user.id;
 
     const body = await req.json().catch(() => ({}));
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const safeShipping = Math.max(0, Number(shippingCost) || 0);
     const fulfillment = fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'ship';
 
-    const { data: agentProfile, error: agentProfileError } = await supabase.from('profiles').select('tier, parent_agent_id, role, is_sub_agent, account_type, max_auto_approve_limit').eq('id', agentId).single();
+    const { data: agentProfile, error: agentProfileError } = await supabase.from('profiles').select('tier, parent_agent_id, role, is_sub_agent, account_type, max_auto_approve_limit').eq('id', agentId).maybeSingle();
     if (agentProfileError || !agentProfile) return NextResponse.json({ error: 'Agent Profile Not Found.' }, { status: 404 });
 
     if ((agentProfile as { is_sub_agent?: boolean | null }).is_sub_agent === true) {
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       subtotal: computedSubtotal, shipping_cost: safeShipping, total: computedTotal,
       shipping_address: fulfillment === 'ship' ? { street, city, state, zipCode: zip, country: 'US' } : null,
       buyer_name: buyerName ?? null, buyer_email: buyerEmail ?? null,
-    }).select('id').single();
+    }).select('id').maybeSingle();
 
     if (orderError || !newOrder) {
       console.error('Manual Order Insert Error:', orderError);
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
       (orderItems.reduce((s, it) => s + (Number(it.unit_cost_price) || 0) * it.quantity, 0) + safeShipping) * 100
     ) / 100;
     if (agentProfile.account_type === 'prepaid' && manualCogs > 0) {
-      const { data: balRow } = await supabase.from('profiles').select('prepaid_balance').eq('id', agentId).single();
+      const { data: balRow } = await supabase.from('profiles').select('prepaid_balance').eq('id', agentId).maybeSingle();
       const balance = Number(balRow?.prepaid_balance) || 0;
       if (balance < manualCogs) {
         await supabase.from('order_items').delete().eq('order_id', newOrder.id);
@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
         const notifications = admins.map((admin) => ({
           user_id: admin.id,
           title: finalAutoStatus === 'admin_approval_pending' ? 'Manual Order Needs Admin Approval' : 'Manual Order Auto-Approved',
-          body: finalAutoStatus === 'admin_approval_pending' 
+          body: finalAutoStatus === 'admin_approval_pending'
             ? `Order #${short} ($${totalStr}) - Agent Created & Approved. Needs Admin Release (${fulfillmentMsg}).`
             : `Order #${short} ($${totalStr}) - Agent Created & Auto-Approved On Credit Line. (${fulfillmentMsg}).`,
           type: 'system',

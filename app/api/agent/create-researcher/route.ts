@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     .from('profiles')
     .select('id, role, is_active, full_name, is_sub_agent, parent_agent_id, is_super_agent')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (profileErr || !callerProfile) {
     return NextResponse.json({ error: 'Agent Profile Not Found' }, { status: 403 });

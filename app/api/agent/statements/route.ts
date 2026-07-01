@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireSession } from '@/lib/admin-auth';
 
 export async function GET(req: Request) {
@@ -8,7 +8,7 @@ export async function GET(req: Request) {
     if (!gate.ok) return gate.response;
 
     const agentId = gate.user.id;
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
 
     // Statements from admin (top-level agents + super-agents)
     const { data: weekly, error: stmtErr } = await supabase
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
       .eq('agent_id', agentId)
       .order('week_start', { ascending: false });
     if (stmtErr) {
-      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+      return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
     }
 
     // Invoices from super-agent (sub-agents)
@@ -27,14 +27,28 @@ export async function GET(req: Request) {
       .eq('agent_id', agentId)
       .order('week_start', { ascending: false });
     if (invErr) {
-      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+      return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
     }
 
     // Unified shape - target_type tells the UI which path to use for Pay Now
     // and which API the print view hits.
     const merged = [
-      ...(weekly ?? []).map((s) => ({ ...s, target_type: 'statement' as const, bills_from: 'admin' as const })),
-      ...(invoices ?? []).map((i) => ({ ...i, target_type: 'agent_invoice' as const, bills_from: 'super_agent' as const })),
+      ...(weekly ?? []).map((s) => ({
+        ...s,
+        total_cogs: Number(s.total_cogs || 0),
+        total_shipping: Number(s.total_shipping || 0),
+        total_owed: Number(s.total_owed || 0),
+        target_type: 'statement' as const,
+        bills_from: 'admin' as const,
+      })),
+      ...(invoices ?? []).map((i) => ({
+        ...i,
+        total_cogs: Number(i.total_cogs || 0),
+        total_shipping: Number(i.total_shipping || 0),
+        total_owed: Number(i.total_owed || 0),
+        target_type: 'agent_invoice' as const,
+        bills_from: 'super_agent' as const,
+      })),
     ].sort((a, b) => String(b.week_start).localeCompare(String(a.week_start)));
 
     return NextResponse.json({ statements: merged, data: merged });
