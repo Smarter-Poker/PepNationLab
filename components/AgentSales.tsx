@@ -432,7 +432,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
   const exportPnlCsv = useCallback(() => {
     const rows: (string | number)[][] = [['Month', 'Orders', 'Revenue', 'COGS', 'Shipping', 'Owed To Platform', 'Net Profit']];
-    for (const m of a.pnl) rows.push([m.label, m.orders, m.revenue.toFixed(2), m.cogs.toFixed(2), m.shipping.toFixed(2), (m.cogs + m.shipping).toFixed(2), m.net.toFixed(2)]);
+    for (const m of a.pnl) rows.push([m.label, m.orders, Number(m.revenue || 0).toFixed(2), Number(m.cogs || 0).toFixed(2), Number(m.shipping || 0).toFixed(2), Number((m.cogs || 0) + (m.shipping || 0)).toFixed(2), Number(m.net || 0).toFixed(2)]);
     downloadCsv(rows, `profit-and-loss-${new Date().toISOString().slice(0, 10)}.csv`);
   }, [a.pnl, downloadCsv]);
 
@@ -500,7 +500,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
             <div className="sa-label">Lifetime Profit<span className="sa-info" title={PROFIT_HELP}>i</span></div>
             <div className="sa-stat" style={{ marginTop: 6 }}>{fmt(a.lifetimeProfit)}</div>
-            <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{a.margin.toFixed(0)}% Margin</div>
+            <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{Number(a.margin || 0).toFixed(0)}% Margin</div>
           </div>
         </div>
         {showCommission && (
@@ -518,7 +518,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       {!a.hasCollected && (
         <div className="glass-panel">
           <div className="" style={{ padding: 'var(--space-6)' }}>
-            <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: '0 0 6px' }}>Let’s Get Your First Sale</h2>
+            <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: '0 0 6px' }}>Let's Get Your First Sale</h2>
             <p style={{ color: 'var(--silver)', fontSize: '0.88rem', margin: '0 0 14px' }}>Your Stats, Charts, Streak, And Goal All Come Alive Once Orders Start Landing. A Few Good First Moves:</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <a className="sa-cta" href={tabHref('Storefront Config')} style={{ background: 'var(--teal)', color: '#04201f' }}>Set Up Storefront</a>
@@ -589,7 +589,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             <div className="sa-label">This Month vs Last</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 6 }}>
               <span style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>{fmt(a.monthRevenue)}</span>
-              <span className={a.momDelta >= 0 ? 'sa-delta-up' : 'sa-delta-down'} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>{a.momDelta >= 0 ? <ArrowUp size={12} aria-hidden /> : <ArrowDown size={12} aria-hidden />}{Math.abs(a.momDelta).toFixed(0)}%</span>
+              <span className={a.momDelta >= 0 ? 'sa-delta-up' : 'sa-delta-down'} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>{a.momDelta >= 0 ? <ArrowUp size={12} aria-hidden /> : <ArrowDown size={12} aria-hidden />}{Number(Math.abs(a.momDelta || 0)).toFixed(0)}%</span>
             </div>
             <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 4 }}>Last Month: {fmt(a.lastMonthRevenue)}</div>
           </div>
@@ -635,7 +635,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" help={PROFIT_HELP} />
         <KpiCard label="Orders" value={String(a.lifetimeOrders)} delta={a.ordersDelta30} deltaLabel="Vs Prior 30d" color="#00E5FF" />
         <KpiCard label="Avg Order Value" value={fmt(a.aov)} />
-        <KpiCard label="Repeat Buyer Rate" value={`${a.repeatRate.toFixed(0)}%`} sub={`${a.distinctBuyers} Buyers`} />
+        <KpiCard label="Repeat Buyer Rate" value={`${Number(a.repeatRate || 0).toFixed(0)}%`} sub={`${a.distinctBuyers} Buyers`} />
       </div>
 
       {/* ─────────────── TREND CHART ─────────────── */}
