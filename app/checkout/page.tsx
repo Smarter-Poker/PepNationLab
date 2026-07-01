@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import CheckoutForm from './CheckoutForm';
 
 export const dynamic = 'force-dynamic';
@@ -35,8 +35,9 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
     redirect('/login');
   }
 
-  // Fetch PNL pricing configuration to pass down
-  const { data: tiers } = await supabase
+  // Fetch PNL pricing configuration using service client - pricing_tiers RLS blocks researcher reads
+  const adminClient = await createServiceClient();
+  const { data: tiers } = await adminClient
     .from('pricing_tiers')
     .select('tier_name, multiplier');
 
@@ -47,7 +48,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
 
   // Resolve the agent's payment handles so CheckoutForm shows only the
   // handles this specific agent has configured (not hardcoded platform handles).
-  // Prefer agentSlug (storefront URL) → then researcher's referring_agent_id.
+  // Prefer agentSlug (storefront URL) -> then researcher's referring_agent_id.
   let agentPaymentHandles: Record<string, string> = {};
   let minOverallQty = 1;
   let minOrderQty = 1;

@@ -1,4 +1,4 @@
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -12,7 +12,7 @@ export default async function AdminProductsPage() {
   } = await supabaseAuth.auth.getUser();
   if (!user) redirect("/login");
 
-  const supabase = await createServiceClient();
+  const supabase = createAdminClient();
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -31,7 +31,7 @@ export default async function AdminProductsPage() {
   const { data: products } = await supabase
     .from("products")
     .select(
-      "id, name, category, base_cost, is_active, created_at, sku, unit_size, unit_measure, inventory_count",
+      "id, name, category, base_cost, is_active, is_banned, created_at, sku, unit_size, unit_measure, inventory_count",
     )
     .order("created_at", { ascending: false });
 
@@ -76,7 +76,7 @@ export default async function AdminProductsPage() {
             Product Catalog
           </h1>
           <p style={{ fontSize: "0.85rem", color: "var(--grey-400)" }}>
-            {products?.length ?? 0} SKUs • Manage Research Compound Listings
+            {products?.length ?? 0} SKUs - Manage Research Compound Listings
           </p>
         </div>
         <Link href="/admin/products/new" className="btn-neon-cyan">
