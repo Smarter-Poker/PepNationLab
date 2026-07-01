@@ -98,7 +98,10 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   useEffect(() => {
     if (detailOrder) {
       const updatedOrder = orders.find(o => o.id === detailOrder.id);
-      if (updatedOrder && JSON.stringify(updatedOrder) !== JSON.stringify(detailOrder)) {
+      if (updatedOrder && (
+        updatedOrder.status !== detailOrder.status ||
+        updatedOrder.created_at !== detailOrder.created_at
+      )) {
         setDetailOrder(updatedOrder);
       }
     }

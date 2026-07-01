@@ -638,12 +638,12 @@ export default function AgentStorefrontGrid({
   const [bulkOnly, setBulkOnly] = useState<boolean>(getInit('bulk') === '1');
 
   const priceBounds = useMemo(() => {
-    const prices = products.map(p => Number(p.retail_price)).filter(n => Number.isFinite(n));
+    const prices = (products ?? []).map(p => Number(p.retail_price)).filter(n => Number.isFinite(n));
     if (prices.length === 0) return { min: 0, max: 0 };
     return { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) };
   }, [products]);
   const weightBounds = useMemo(() => {
-    const weights = products
+    const weights = (products ?? [])
       .map(p => Number(p.products?.weight_oz))
       .filter(n => Number.isFinite(n) && n > 0);
     if (weights.length === 0) return { min: 0, max: 0 };
@@ -710,7 +710,8 @@ export default function AgentStorefrontGrid({
       if (minWeight !== weightBounds.min) params.set('wMin', String(minWeight));
       if (maxWeight !== weightBounds.max) params.set('wMax', String(maxWeight));
       const qs = params.toString();
-      const target = qs ? `${pathname}?${qs}` : pathname;
+      const currentPathname = pathname;
+      const target = qs ? `${currentPathname}?${qs}` : currentPathname;
       try {
         router.replace(target, { scroll: false });
       } catch {
@@ -731,11 +732,10 @@ export default function AgentStorefrontGrid({
     return () => {
       if (urlSyncTimer.current) clearTimeout(urlSyncTimer.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
+    }, [
     searchQuery, filterCategory, filterArea, sortBy,
     minPrice, maxPrice, inStockOnly, bulkOnly,
-    minWeight, maxWeight,
+    minWeight, maxWeight, pathname,
   ]);
 
   const resetFilters = useCallback(() => {
@@ -941,7 +941,7 @@ export default function AgentStorefrontGrid({
 
   const grouped = useMemo(() => {
     const map = new Map<string, GroupedProduct>();
-    products.forEach(item => {
+    (products ?? []).forEach(item => {
       let rawName = item.products?.name ?? 'Research Compound';
       // Strip out " Research Grade" suffix to normalize names and prevent duplicate groups
       rawName = rawName.replace(/\s*Research Grade$/i, '');
@@ -1219,7 +1219,7 @@ export default function AgentStorefrontGrid({
 
     // Dynamically build the set of specific compound names, slugs, and aliases to prevent broad synonym expansion
     const SPECIFIC_COMPOUNDS = new Set<string>();
-    products.forEach(p => {
+    (products ?? []).forEach(p => {
       const name = p.products?.name?.toLowerCase().trim();
       if (name) {
         SPECIFIC_COMPOUNDS.add(name);

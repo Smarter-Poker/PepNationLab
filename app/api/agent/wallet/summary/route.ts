@@ -8,8 +8,9 @@ export const runtime = 'nodejs';
 
 export async function GET() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  const user = authData?.user;
+  if (authError || !user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const svc = await createServiceClient();
   const { data: profile } = await svc
@@ -44,7 +45,8 @@ export async function GET() {
   // Forecast WIP this week
   let forecastNext = 0;
   // R24 hotfix: forecast RPC requires auth.uid(); call via user-authed client.
-  const { data: forecast } = await supabase.rpc('forecast_next_statement', { p_agent_id: user.id });
+  const { data: forecast, error: forecastError } = await supabase.rpc('forecast_next_statement', { p_agent_id: user.id });
+  if (forecastError) console.error('[wallet/summary] forecast RPC error:', forecastError.message);
   if (typeof forecast === 'number') forecastNext = forecast;
 
   // Admins (and anyone without a positive credit line) are prepaid - their

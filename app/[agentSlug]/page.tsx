@@ -118,7 +118,7 @@ async function AgentStorefrontDataLoader({
       ? supabase
           .from('researcher_favorites')
           .select('product_id')
-          .eq('user_id', user!.id)
+          .eq('user_id', user?.id ?? '')
       : Promise.resolve({ data: null }),
   ]);
 
