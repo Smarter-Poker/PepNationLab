@@ -68,3 +68,7 @@ components/.full_b64.txt
 *.b64.txt
 monograph_b64*.txt
 *_b64_p*.txt
+MonographTabs_b64.txt
+SalesTimeseries_b64.txt
+*Tabs_b64.txt
+*Timeseries_b64.txt

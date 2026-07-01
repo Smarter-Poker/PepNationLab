@@ -154,7 +154,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     let initial: CartItem[] = [];
     try {
       const stored = localStorage.getItem('pnl_cart');
-      if (stored) initial = JSON.parse(stored);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) initial = parsed;
+      }
       setAddToCartAcknowledged(localStorage.getItem(ADD_TO_CART_ACK_KEY) === 'true');
     } catch (e) { console.error('Failed To Load Cart:', e); }
     setCart(initial);

@@ -609,8 +609,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       couponAutoAppliedRef.current = true;
       setCouponInput(stashed);
       window.localStorage.removeItem('pnl_pending_coupon');
+      // Pass stashed directly — React state updates are async so couponInput
+      // would still be '' if we called applyCoupon() without the override.
       setTimeout(() => {
-        try { applyCoupon(); } catch { /* applyCoupon may throw if cart empty */ }
+        try { applyCoupon(stashed); } catch { /* applyCoupon may throw if cart empty */ }
       }, 50);
     } catch { /* Storage unavailable or malformed */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -670,9 +672,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   const handlePrevStep = () => { setError(null); setStep(prev => prev - 1); };
 
-  const applyCoupon = async () => {
+  const applyCoupon = async (overrideCode?: string) => {
     setCouponError('');
-    const code = couponInput.trim();
+    const code = (overrideCode ?? couponInput).trim();
     if (!code) { setCouponError('Enter A Coupon Code.'); return; }
     setCouponLoading(true);
     try {
@@ -1254,7 +1256,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 ) : (
                   <div className="coupon-row" style={{ display: 'flex', gap: 'var(--space-2)' }}>
                     <input type="text" className="form-input premium-input" placeholder="Coupon Code" value={couponInput} onChange={(e) => setCouponInput(e.target.value)} style={{ margin: 0, flexGrow: 1, fontSize: '0.8rem' }} />
-                    <button type="button" onClick={applyCoupon} disabled={couponLoading} className="btn-neon-cyan" style={{ fontSize: '0.78rem', padding: '0 var(--space-4)' }}>{couponLoading ? 'Checking' : 'Apply'}</button>
+                    <button type="button" onClick={() => applyCoupon()} disabled={couponLoading} className="btn-neon-cyan" style={{ fontSize: '0.78rem', padding: '0 var(--space-4)' }}>{couponLoading ? 'Checking' : 'Apply'}</button>
                   </div>
                 )}
                 {couponError && <p style={{ fontSize: '0.72rem', color: 'var(--red)', margin: 'var(--space-2) 0 0' }}>{couponError}</p>}

@@ -62,9 +62,31 @@ export async function POST(req: NextRequest) {
       if (profileErr || !agentProfile) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
 
       const balanceBefore = Number(agentProfile.prepaid_balance) || 0;
-      const { data, error } = await supabase.from('balance_transactions').insert({ agent_id, type, amount: parsedAmount, balance_before: balanceBefore, balance_after: balanceBefore, description: description.trim(), reference_id: reference_id ?? null, reference_type: reference_type ?? null, created_by: gate.userId }).select('id').single();
+      // Determine direction: credit types add to balance, debit types subtract.
+      const CREDIT_TYPES = ['credit', 'deposit', 'bonus', 'commission', 'adjustment', 'manual_adjustment'];
+      const direction = CREDIT_TYPES.includes(type) ? 1 : -1;
+      const balanceAfter = balanceBefore + direction * parsedAmount;
+
+      // Update profiles.prepaid_balance atomically before inserting the ledger row
+      const { error: balanceErr } = await supabase
+        .from('profiles')
+        .update({ prepaid_balance: balanceAfter, updated_at: new Date().toISOString() })
+        .eq('id', agent_id);
+      if (balanceErr) return NextResponse.json({ error: 'An unexpected error occurred updating balance.' }, { status: 500 });
+
+      const { data, error } = await supabase.from('balance_transactions').insert({
+        agent_id,
+        type,
+        amount: parsedAmount,
+        balance_before: balanceBefore,
+        balance_after: balanceAfter,
+        description: description.trim(),
+        reference_id: reference_id ?? null,
+        reference_type: reference_type ?? null,
+        created_by: gate.userId,
+      }).select('id').single();
       if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
-      return NextResponse.json({ success: true, id: data.id });
+      return NextResponse.json({ success: true, id: data.id, balanceBefore, balanceAfter });
     },
   });
 }

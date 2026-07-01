@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import AgentDashboardClient from './AgentDashboardClient';
 
@@ -138,18 +139,20 @@ export default async function AgentDashboardPage() {
   });
 
   return (
-    <AgentDashboardClient
-      userProfile={{
-        id: profile.id,
-        email: profile.email,
-        full_name: profile.full_name,
-        role: profile.role,
-        tier: profile.tier,
-        is_super_agent: profile.is_super_agent
-      }}
-      initialAgentProfile={agentProfile}
-      initialResearchers={researchers}
-      initialOrders={orders}
-    />
+    <Suspense fallback={<div style={{ padding: '2rem', color: 'var(--grey-400, #888)' }}>Loading dashboard…</div>}>
+      <AgentDashboardClient
+        userProfile={{
+          id: profile.id,
+          email: profile.email,
+          full_name: profile.full_name,
+          role: profile.role,
+          tier: profile.tier,
+          is_super_agent: profile.is_super_agent
+        }}
+        initialAgentProfile={agentProfile}
+        initialResearchers={researchers}
+        initialOrders={orders}
+      />
+    </Suspense>
   );
 }

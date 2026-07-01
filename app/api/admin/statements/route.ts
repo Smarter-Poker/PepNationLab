@@ -69,6 +69,14 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    if (!UUID_RE.test(agentId)) {
+      return NextResponse.json({ error: 'Invalid agentId format (must be UUID).' }, { status: 400 });
+    }
+    if (!DATE_RE.test(weekStart) || isNaN(Date.parse(weekStart))) {
+      return NextResponse.json({ error: 'Invalid weekStart format (must be YYYY-MM-DD).' }, { status: 400 });
+    }
 
     // Check if statement already exists to prevent Double-Billing
     const { data: existingStmt } = await supabase
