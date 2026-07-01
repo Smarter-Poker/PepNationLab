@@ -18,7 +18,7 @@ const CheckoutSchema = z.object({
     id: z.string().uuid(),
     quantity: z.number().int().min(1),
     bundleName: z.string().optional()
-  })).min(1, 'Cart cannot be empty.'),
+  })).min(1, 'Cart Cannot Be Empty.'),
   fulfillmentMethod: z.enum(['ship', 'agent_pickup']),
   shippingOption: z.enum(['fedex', 'usps', 'agent_pickup']).optional(),
   paymentMethod: z.enum(['zelle', 'cashapp', 'venmo', 'apple_pay', 'apple_cash', 'paypal', 'google_wallet', 'wise', 'chime']),
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const validation = CheckoutSchema.safeParse(rawBody);
 
     if (!validation.success) {
-      return NextResponse.json({ error: 'Invalid checkout data.', details: validation.error.issues }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid Checkout Data.', details: validation.error.issues }, { status: 400 });
     }
 
     const {
@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
 
       if (qty > 10_000) {
         return NextResponse.json(
-          { error: `Quantity for "${dbProduct.name}" exceeds the maximum allowed (10,000 per item).` },
+          { error: `Quantity For "${dbProduct.name}" Exceeds The Maximum Allowed (10,000 Per Item).` },
           { status: 400 }
         );
       }
@@ -260,13 +260,13 @@ export async function POST(request: NextRequest) {
       const totalRequestedQty = items.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
       const minQty = Number(storefrontAgent.min_overall_qty) || 1;
       if (totalRequestedQty < minQty) {
-        return NextResponse.json({ error: `This storefront requires a minimum overall order of ${minQty} items.` }, { status: 400 });
+        return NextResponse.json({ error: `This Storefront Requires A Minimum Overall Order Of ${minQty} Items.` }, { status: 400 });
       }
 
       const minPerItem = Number(storefrontAgent.min_order_qty) || 1;
       for (const item of items) {
         if ((Number(item.quantity) || 0) < minPerItem) {
-          return NextResponse.json({ error: `This storefront requires a minimum of ${minPerItem} per peptide.` }, { status: 400 });
+          return NextResponse.json({ error: `This Storefront Requires A Minimum Of ${minPerItem} Per Peptide.` }, { status: 400 });
         }
       }
 
@@ -399,7 +399,7 @@ export async function POST(request: NextRequest) {
 
       if (itemQty > 10_000) {
         return NextResponse.json(
-          { error: `Quantity for a cart item exceeds the maximum allowed (10,000 per item).` },
+          { error: `Quantity For A Cart Item Exceeds The Maximum Allowed (10,000 Per Item).` },
           { status: 400 }
         );
       }
@@ -688,7 +688,7 @@ export async function POST(request: NextRequest) {
       console.error('Checkout Disclaimer Audit Insert Failed:', disclaimerError);
       await rollbackPreOrder();
       return NextResponse.json(
-        { error: 'Disclaimer audit failed; order not placed.' },
+        { error: 'Disclaimer Audit Failed; Order Not Placed.' },
         { status: 500 }
       );
     }
@@ -707,10 +707,10 @@ export async function POST(request: NextRequest) {
       if (saProfile.account_type === 'prepaid') {
         const bal = Number(saProfile.prepaid_balance) || 0;
         if (bal < amount) {
-          return { error: `Insufficient Prepaid Balance. Requires $${amount.toFixed(2)}, but balance is $${bal.toFixed(2)}. Please recharge your account.`, status: 402 };
+          return { error: `Insufficient Prepaid Balance. Requires $${amount.toFixed(2)}, but balance is $${bal.toFixed(2)}. Please Recharge Your Account.`, status: 402 };
         }
         const { data: deductSuccess } = await serviceSupabase.rpc('deduct_prepaid_balance', { agent_id: saProfile.id, amount });
-        if (!deductSuccess) return { error: 'Failed to deduct prepaid balance.', status: 500 };
+        if (!deductSuccess) return { error: 'Failed To Deduct Prepaid Balance.', status: 500 };
         return { success: true, prepaidDeducted: true, amount, agentId: saProfile.id };
       } else if (saProfile.account_type === 'credit') {
         const { data: statements } = await serviceSupabase.from('weekly_statements').select('total_owed').eq('agent_id', saProfile.id).eq('status', 'pending_payment');
@@ -752,7 +752,7 @@ export async function POST(request: NextRequest) {
         }
         return { success: true, prepaidDeducted: false };
       } else {
-        return { error: 'Your account is not configured for wholesale credit or prepaid. Please contact admin.', status: 403 };
+        return { error: 'Your Account Is Not Configured For Wholesale Credit Or Prepaid. Please Contact Admin.', status: 403 };
       }
     };
 
@@ -941,7 +941,7 @@ export async function POST(request: NextRequest) {
         await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
       }
 
-      return NextResponse.json({ error: `An unexpected error occurred: ${itemsError.message || JSON.stringify(itemsError)}` }, { status: 500 });
+      return NextResponse.json({ error: `An Unexpected Error Occurred: ${itemsError.message || JSON.stringify(itemsError)}` }, { status: 500 });
     }
 
     if (initialStatus === 'approved_ship' || initialStatus === 'approved_pickup') {

@@ -69,6 +69,7 @@ export default function SubAgentDashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = async () => {
+    setRefreshing(true);
     try {
       const res = await fetch('/api/sub-agent/overview', { credentials: 'include', cache: 'no-store' });
       const json = await res.json();
@@ -77,6 +78,8 @@ export default function SubAgentDashboardPage() {
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed To Load Dashboard.');
+    } finally {
+      setRefreshing(false);
     }
   };
 
