@@ -53,6 +53,7 @@ export default async function AdminCompoundQualityPage() {
     .limit(40);
 
   const items = (rows ?? []) as Array<Record<string, unknown>>;
+
   const cellStyle: React.CSSProperties = { padding: '8px 14px', color: 'var(--silver-light, #D0DAE4)', fontSize: '0.88rem' };
   const thStyle: React.CSSProperties = { ...cellStyle, color: 'var(--silver, #A8B4C0)', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em', textAlign: 'left' };
 
@@ -62,9 +63,17 @@ export default async function AdminCompoundQualityPage() {
         <h1 className="animated-gradient-text" style={{ fontSize: '2rem', margin: 0 }}>Compound Quality Backlog</h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1rem', marginTop: 'var(--space-2, 8px)' }}>Lowest-Scoring Compounds First. Score Is 0-100 Based On Field Coverage. Click Any Row To Open The Monograph And Enrich.</p>
       </header>
+
       <section className="glass-panel" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr><th style={thStyle}>Compound</th><th style={thStyle}>Score</th><th style={thStyle}>Bucket</th><th style={thStyle}>Missing Fields</th></tr></thead>
+          <thead>
+            <tr>
+              <th style={thStyle}>Compound</th>
+              <th style={thStyle}>Score</th>
+              <th style={thStyle}>Bucket</th>
+              <th style={thStyle}>Missing Fields</th>
+            </tr>
+          </thead>
           <tbody>
             {items.map((c) => {
               const score = (c.quality_score as number) ?? 0;
