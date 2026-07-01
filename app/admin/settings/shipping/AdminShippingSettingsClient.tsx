@@ -19,6 +19,10 @@ import {
   DollarSign,
 } from 'lucide-react';
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
 interface ShippoStatus {
   connected: boolean;
   mode: 'test' | 'live' | null;
@@ -109,6 +113,10 @@ const EMPTY_ORIGIN: OriginFormData = {
   is_default: false,
 };
 
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
+
 export default function AdminShippingSettingsClient() {
   const [status, setStatus] = useState<ShippoStatus | null>(null);
   const [origins, setOrigins] = useState<ShippingOrigin[]>([]);
@@ -119,21 +127,25 @@ export default function AdminShippingSettingsClient() {
   const [agentOriginSelections, setAgentOriginSelections] = useState<Record<string, string>>({});
   const [webhookActivity, setWebhookActivity] = useState<WebhookActivity | null>(null);
 
+  // Connect form state
   const [connectKey, setConnectKey] = useState('');
   const [connectMode, setConnectMode] = useState<'test' | 'live'>('test');
   const [connectWebhook, setConnectWebhook] = useState('');
   const [connectLoading, setConnectLoading] = useState(false);
 
+  // Rotate form state
   const [rotateKey, setRotateKey] = useState('');
   const [rotateWebhook, setRotateWebhook] = useState('');
   const [rotateLoading, setRotateLoading] = useState(false);
   const [showRotate, setShowRotate] = useState(false);
 
+  // Origin form state
   const [showOriginForm, setShowOriginForm] = useState(false);
   const [editingOrigin, setEditingOrigin] = useState<string | null>(null);
   const [originForm, setOriginForm] = useState<OriginFormData>(EMPTY_ORIGIN);
   const [originLoading, setOriginLoading] = useState(false);
 
+  // Test address state
   const [testAddr, setTestAddr] = useState('');
   const [testResult, setTestResult] = useState<string | null>(null);
   const [testLoading, setTestLoading] = useState(false);
@@ -416,6 +428,7 @@ export default function AdminShippingSettingsClient() {
 
   return (
     <div style={{ padding: 'var(--space-6)', maxWidth: 900 }}>
+      {/* Toast */}
       {toast && (
         <div style={{
           position: 'fixed',
@@ -889,7 +902,6 @@ export default function AdminShippingSettingsClient() {
                     ))}
                   </select>
                   <button
-                    type="button"
                     disabled={agentAssignLoading === agent.id}
                     onClick={async () => {
                       const newOriginId = agentOriginSelections[agent.id] ?? '';
