@@ -674,7 +674,7 @@ function ResearchersAdminPageInner() {
                     <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', alignItems: 'center' }}>
                       {isAgent && (
                         <>
-                          <ViewAsButton agentId={profile.id} />
+                          <ViewAsButton targetUserId={profile.id} targetLabel={profile.full_name ?? profile.email} />
                           <button onClick={() => openEditModal(profile)}
                             style={{ fontSize: '0.75rem', padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(192,184,168,0.3)', background: 'none', color: 'var(--silver)', cursor: 'pointer' }}>
                             Edit
@@ -810,8 +810,8 @@ function ResearchersAdminPageInner() {
                 <input type="text" className="form-input" placeholder="E.g. john_doe (Login Handle)" value={newUsername}
                   onChange={e => { setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); setUsernameDirty(true); }} required />
                 {newUsernameMsg && (
-                  <p style={{ fontSize: '0.72rem', marginTop: 4, color: newUsernameCheck.status === 'available' ? 'var(--teal)' : newUsernameCheck.status === 'checking' ? 'var(--grey-400)' : 'var(--red)' }}>
-                    {newUsernameMsg}
+                  <p style={{ fontSize: '0.72rem', marginTop: 4, color: newUsernameMsg.color }}>
+                    {newUsernameMsg.text}
                   </p>
                 )}
               </div>

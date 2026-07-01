@@ -106,7 +106,8 @@ export async function GET(req: NextRequest) {
   }
 
   const summary = `scanned=${scanned} recovered=${recovered} still_failing=${stillFailing}${errorNote ? ` err=${errorNote}` : ''}`;
-  await finishCronRun(claim.id, errorNote ? 'failed' : 'succeeded', summary);
+  const cronStatus = errorNote ? 'failed' : stillFailing > 0 ? 'partial_failure' : 'succeeded';
+  await finishCronRun(claim.id, cronStatus, summary);
 
   return Response.json({ ok: !errorNote, scanned, recovered, stillFailing, error: errorNote });
 }

@@ -53,11 +53,15 @@ export async function GET(req: Request) {
       let body = '';
 
       if (p.account_type === 'credit' && p.credit_limit) {
-        // Compute current utilization
+        // Compute current utilization — only look at the last 90 days.
+        // Older orders are already invoiced and paid; pulling all-time history
+        // for agents with years of orders was an unbounded full-table scan.
+        const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
         const { data: orders, error: ordersErr } = await service
           .from('orders')
           .select('id, total, status')
-          .eq('agent_id', p.id);
+          .eq('agent_id', p.id)
+          .gte('created_at', cutoff);
 
         if (ordersErr) {
           console.error(`Failed to fetch orders for ${p.id}:`, ordersErr);

@@ -180,20 +180,31 @@ export async function isBlockedEither(a: string, b: string): Promise<boolean> {
 export function getCronAuth(
   req: Request,
 ): { ok: true } | { ok: false; status: number; error: string } {
-  if (req.headers.get('x-vercel-cron') === '1') return { ok: true };
+  // NOTE: x-vercel-cron header was intentionally removed as an auth bypass —
+  // it is a user-controlled header and can be forged by any caller.
+  // CRON_SECRET is the sole auth mechanism for all cron endpoints.
 
   const secret = process.env.CRON_SECRET;
   if (!secret) return { ok: false, status: 503, error: 'Cron Not Configured' };
+
   const header = req.headers.get('authorization') ?? '';
-  const expected = `Bearer ${secret}`;
-  const headerBuf = Buffer.from(header);
-  const expectedBuf = Buffer.from(expected);
-  if (headerBuf.length !== expectedBuf.length) {
+  const got = header.startsWith('Bearer ') ? header.slice('Bearer '.length) : header;
+
+  if (!got) return { ok: false, status: 401, error: 'Unauthorized' };
+
+  try {
+    // Hash both sides to fixed-length SHA-256 so the comparison is constant-time
+    // regardless of secret or token length (prevents length oracle attacks).
+    const { createHash } = require('crypto') as typeof import('crypto');
+    const expectedBuf = createHash('sha256').update(secret).digest();
+    const gotBuf = createHash('sha256').update(got).digest();
+    if (!timingSafeEqual(expectedBuf, gotBuf)) {
+      return { ok: false, status: 401, error: 'Unauthorized' };
+    }
+  } catch {
     return { ok: false, status: 401, error: 'Unauthorized' };
   }
-  if (!timingSafeEqual(headerBuf, expectedBuf)) {
-    return { ok: false, status: 401, error: 'Unauthorized' };
-  }
+
   return { ok: true };
 }
 

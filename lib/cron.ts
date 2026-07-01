@@ -16,16 +16,18 @@ export function assertCronAuth(req: Request): Response | null {
     ? header.slice('Bearer '.length)
     : header;
 
-  if (!expected || !got || expected.length !== got.length) {
+  // Guard: if either side is missing, reject immediately.
+  // We still proceed to the hash comparison below (constant-time path).
+  if (!expected || !got) {
     return new Response('Unauthorized', { status: 401 });
   }
 
   try {
-    const expectedBuf = Buffer.from(expected);
-    const gotBuf = Buffer.from(got);
-    if (expectedBuf.length !== gotBuf.length) {
-      return new Response('Unauthorized', { status: 401 });
-    }
+    // Hash both sides to fixed-length SHA-256 digests before comparing.
+    // This prevents length-based timing attacks — the comparison always
+    // runs in O(32) regardless of how long the secret or token is.
+    const expectedBuf = crypto.createHash('sha256').update(expected).digest();
+    const gotBuf = crypto.createHash('sha256').update(got).digest();
     if (!crypto.timingSafeEqual(expectedBuf, gotBuf)) {
       return new Response('Unauthorized', { status: 401 });
     }
@@ -74,7 +76,7 @@ export async function claimCronRun(
  */
 export async function finishCronRun(
   id: string,
-  status: 'succeeded' | 'failed',
+  status: 'succeeded' | 'failed' | 'partial_failure',
   notes?: string
 ): Promise<void> {
   try {
