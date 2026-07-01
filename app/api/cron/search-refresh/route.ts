@@ -9,7 +9,7 @@
 
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { assertCronAuth } from '@/lib/cron';
+import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,21 +17,30 @@ export async function GET(req: Request) {
   const unauth = assertCronAuth(req);
   if (unauth) return unauth;
 
+  // Partition by hour so a re-trigger within the same scheduling window
+  // short-circuits cleanly rather than hammering the materialized view refresh.
+  const partitionKey = new Date().toISOString().slice(0, 13); // YYYY-MM-DDTHH
+  const claim = await claimCronRun('search_refresh', partitionKey);
+  if (!claim) {
+    return NextResponse.json({ ok: true, skipped: true, reason: 'already_ran_this_hour' });
+  }
+
   try {
     const supabase = await createServiceClient();
     const { error } = await supabase.rpc('refresh_compound_search');
     if (error) {
+      await finishCronRun(claim.id, 'failed', error.message.slice(0, 500));
       return NextResponse.json(
         { ok: false, error: error.message },
         { status: 500 },
       );
     }
-    return NextResponse.json({
-      ok: true,
-      refreshedAt: new Date().toISOString(),
-    });
+    const refreshedAt = new Date().toISOString();
+    await finishCronRun(claim.id, 'succeeded', `refreshed at ${refreshedAt}`);
+    return NextResponse.json({ ok: true, refreshedAt });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    await finishCronRun(claim.id, 'failed', message.slice(0, 500));
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }
