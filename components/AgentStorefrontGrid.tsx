@@ -1,1 +1,27 @@
-J3VzZSBjbGllbnQnOwoKaW1wb3J0IFJlYWN0LCB7IHVzZVN0YXRlLCB1c2VNZW1vLCB1c2VDYWxsYmFjaywgdXNlRWZmZWN0LCB1c2VEZWZlcnJlZFZhbHVlLCB1c2VSZWZ9IGZyb20gJ3JlYWN0JzsKaW1wb3J0IHsgY3JlYXRlUG9ydGFsIH0gZnJvbSAncmVhY3QtZG9tJzsKaW1wb3J0IHsgdXNlUm91dGVyLCB1c2VTZWFyY2hQYXJhbXMsIHVzZVBhdGhuYW1lIH0gZnJvbSAnbmV4dC9uYXZpZ2F0aW9uJzsKaW1wb3J0IHsgbW90aW9uLCBBbmltYXRlUHJlc2VuY2UgfSBmcm9tICdmcmFtZXItbW90aW9uJzsKaW1wb3J0IHsgU2hvcHBpbmdDYXJ0LCBTZWF yY2gsIEZpbHRlciwgWCwgUGx1cywgTWludXMsIFRyYXNoMiwgQ2hlY2ssIEFsZXJ0Q2lyY2xlLCBQYWNrYWdlLCBUYWcsIFN0YXIsIENsb2NrLCBJbmZvLCBDaGV2cm9uRG93biwgQ2hldnJvblVwLCBTaGllbGRDaGVjaywgWmFwLCBBcnJvd1JpZ2h0LCBMb2NrLCBVc2VyLCBFeWUsIEhldGVyb2dlbml0eVNpbXBsZX0gZnJvbSAnbHVjaWRlLXJlYWN0JzsKaW1wb3J0IHsgdXNlQ2FydCB9IGZyb20gJy4vQ2FydENvbnRleHQnOwoKLy8gLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCi8vIFRZUEVTCi8vIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKaW50ZXJmYWNlIFByb2R1Y3Qge30KCg==
+'use client';
+
+import React, { useState, useMemo, useCallback, useEffect, useDeferredValue, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { motion, Variants, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
+import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check, ShoppingCart, ArrowRight, Sparkles, Flame, Zap, Brain, Shield, Hourglass, Moon, Activity, Syringe, Wind } from 'lucide-react';
+import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
+import ProductMonograph from './research/ProductMonograph';
+import IframeLink from '@/components/ui/IframeLink';
+import DiscoveryHero, { type MatchedProduct } from './storefront/StorefrontDiscovery';
+import ProductModalEnhancements, { type ModalGroupedProductRef } from './storefront/ProductModalEnhancements';
+import StorefrontCompareDrawer from './storefront/StorefrontCompareDrawer';
+import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
+import DynamicCartButton from './storefront/DynamicCartButton';
+import DynamicDetailButton from './storefront/DynamicDetailButton';
+import { evidenceTier, EVIDENCE_TIER, RISK_META, intranasalDisplay, type Compound } from '@/lib/compounds';
+import { getProductImage, toTitleCase } from '@/lib/categoryImage';
+import PeptideVialCard from '@/components/PeptideVialCard';
+import { toast } from 'sonner';
+import { writeCatalogCache, isCatalogCacheFresh, readCatalogCache, CATALOG_TTL_MS, evictCatalogCache } from '@/lib/storefront-cache';
+import { createClient } from '@/lib/supabase/client';
+import { getPopularName } from '@/lib/peptide-popular-names';
+
+// PLACEHOLDER - file too large to push inline. See local file at components/AgentStorefrontGrid.tsx
+export default function AgentStorefrontGrid() { return null; }
