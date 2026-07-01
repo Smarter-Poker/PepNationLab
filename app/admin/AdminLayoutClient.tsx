@@ -109,7 +109,11 @@ export function AdminLayoutClient({
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 var(--space-2)', flex: 1 }}>
           {NAV.map((item) => {
             const hrefRoute = item.href.split('?')[0];
-            const active = !item.action && pathname === hrefRoute;
+            const active = !item.action && (
+              hrefRoute === '/admin'
+                ? pathname === '/admin'
+                : pathname === hrefRoute || pathname.startsWith(hrefRoute + '/')
+            );
             
             const commonStyle = {
               display: 'flex',
@@ -161,7 +165,6 @@ export function AdminLayoutClient({
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => {}}
                 style={commonStyle}
               >
                 <span style={{ display: 'inline-flex', width: 18, justifyContent: 'center' }}>
@@ -208,7 +211,10 @@ export function AdminLayoutClient({
       </div>
       
       {showQRModal && (
-        <MyQRCodeModal open={true} onClose={() => { window.location.hash = ''; setShowQRModal(false); }} />
+        <MyQRCodeModal open={true} onClose={() => {
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+          setShowQRModal(false);
+        }} />
       )}
     </>
   );
