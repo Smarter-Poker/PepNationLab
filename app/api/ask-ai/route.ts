@@ -40,6 +40,13 @@ export async function POST(req: NextRequest) {
       messages.push({ role: 'user', content: body.contents });
     }
 
+    // Cap total request size to prevent API cost amplification from a single large payload.
+    const MAX_CHARS = 20_000;
+    const totalChars = messages.reduce((sum, m) => sum + m.content.length, 0);
+    if (totalChars > MAX_CHARS) {
+      return NextResponse.json({ error: 'Request too large' }, { status: 400 });
+    }
+
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
