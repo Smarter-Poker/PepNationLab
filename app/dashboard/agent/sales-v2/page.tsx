@@ -12,7 +12,7 @@ export default async function SalesV2Route() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  if (!profile || !['agent', 'super_agent', 'admin'].includes(profile.role)) redirect('/dashboard');
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  if (!profile || !['agent', 'super_agent', 'admin'].includes(profile?.role)) redirect('/dashboard');
   return <SalesPageV2 />;
 }

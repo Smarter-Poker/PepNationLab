@@ -7,6 +7,10 @@ import Link from 'next/link';
  * SACA Phase 8: Parent landing page for sub-agent management.
  * Fetches GET /api/agent/sub-agents (Phase 2 endpoint) and renders a
  * read-only table. Promote-new and edit links route to dedicated pages.
+ *
+ * AUTH NOTE: Server-side auth is provided by app/dashboard/layout.tsx which
+ * redirects unauthenticated users to /login before this component renders.
+ * No duplicate auth gate is needed here.
  */
 
 type Row = {
@@ -72,7 +76,7 @@ export default function SubAgentsPage() {
       </div>
 
       {loading ? (
-        <div>Loading...</div>
+        <div>Loading</div>
       ) : error ? (
         <div style={{ color: '#E53E3E' }}>{error}</div>
       ) : rows.length === 0 ? (

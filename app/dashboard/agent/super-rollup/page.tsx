@@ -10,11 +10,17 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// money() expects a value in CENTS and formats it as a dollar string.
 function money(cents: number | null | undefined): string {
   const n = typeof cents === 'number' ? cents : 0;
   return `$${(n / 100).toFixed(2)}`;
 }
 
+// NOTE ON UNITS: margin_earned is accumulated from order_items columns
+// unit_cost_price and unit_super_agent_cost. Those columns store values in
+// DOLLARS (not cents), so margin_earned is in DOLLARS. revenue_cents is in
+// CENTS and is formatted via money(). To keep display consistent, margin is
+// formatted with .toFixed(2) directly (dollar value), NOT via money().
 interface SubRow {
   agent_id: string;
   display_name: string;
@@ -22,7 +28,7 @@ interface SubRow {
   pageviews: number;
   orders: number;
   revenue_cents: number;
-  margin_earned: number;
+  margin_earned: number; // dollars (unit_cost_price / unit_super_agent_cost are dollar-valued columns)
 }
 
 export default async function SuperAgentRollupPage() {
@@ -30,11 +36,12 @@ export default async function SuperAgentRollupPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileErr } = await supabase
     .from('profiles')
     .select('role, is_super_agent')
     .eq('id', user.id)
     .maybeSingle();
+  if (profileErr) console.error('super-rollup profile query error:', profileErr);
 
   if (!profile || (!profile.is_super_agent && profile.role !== 'admin')) {
     redirect('/dashboard/agent');
@@ -42,32 +49,37 @@ export default async function SuperAgentRollupPage() {
 
   const svc = await createServiceClient();
 
-  const { data: downline } = await svc
+  const { data: downline, error: downlineErr } = await svc
     .from('profiles')
     .select('id, full_name, username')
     .eq('parent_agent_id', user.id);
+  if (downlineErr) console.error('super-rollup downline query error:', downlineErr);
 
   const subIds = (downline ?? []).map((d) => d.id);
 
-  const { data: storefronts } = subIds.length
+  const { data: storefronts, error: storefrontsErr } = subIds.length
     ? await svc.from('agent_profiles').select('id, display_name, slug').in('id', subIds)
-    : { data: [] as Array<{ id: string; display_name: string | null; slug: string | null }> };
+    : { data: [] as Array<{ id: string; display_name: string | null; slug: string | null }>, error: null };
+  if (storefrontsErr) console.error('super-rollup storefronts query error:', storefrontsErr);
+
   const storefrontMap = new Map(
     (storefronts ?? []).map((s) => [String(s.id), { display_name: s.display_name ?? '', slug: s.slug ?? null }])
   );
 
-  const { data: analytics } = subIds.length
+  const { data: analytics, error: analyticsErr } = subIds.length
     ? await svc
         .from('agent_storefront_analytics_30d')
         .select('agent_id, pageviews_30d, orders_30d, revenue_cents_30d')
         .in('agent_id', subIds)
-    : { data: [] };
+    : { data: [], error: null };
+  if (analyticsErr) console.error('super-rollup analytics query error:', analyticsErr);
+
   const analyticsMap = new Map(
     (analytics ?? []).map((a) => [String(a.agent_id), a])
   );
 
   const rangeStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: subOrders } = subIds.length
+  const { data: subOrders, error: subOrdersErr } = subIds.length
     ? await svc
         .from('orders')
         .select('agent_id, order_items(quantity, unit_cost_price, unit_super_agent_cost)')
@@ -75,7 +87,8 @@ export default async function SuperAgentRollupPage() {
         .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'])
         .eq('is_wholesale_restock', false)
         .gte('created_at', rangeStart)
-    : { data: [] };
+    : { data: [], error: null };
+  if (subOrdersErr) console.error('super-rollup subOrders query error:', subOrdersErr);
 
   const marginMap = new Map<string, number>();
   for (const o of subOrders ?? []) {
@@ -86,6 +99,7 @@ export default async function SuperAgentRollupPage() {
     for (const item of items) {
        const q = Number(item.quantity) || 0;
        if (q <= 0) continue;
+       // unit_cost_price and unit_super_agent_cost are stored in DOLLARS
        const cost = Number(item.unit_cost_price) || 0;
        const superCost = Number(item.unit_super_agent_cost) || 0;
        if (cost > superCost) {
@@ -152,6 +166,7 @@ export default async function SuperAgentRollupPage() {
         </div>
         <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: '0.5s' }}>
           <div style={{ color: 'var(--silver)', fontSize: '0.78rem', textTransform: 'uppercase' }}>Margin Earned</div>
+          {/* margin_earned is in DOLLARS (unit_cost_price columns are dollar-valued), formatted directly */}
           <div style={{ color: 'var(--white)', fontSize: '1.6rem', fontWeight: 800, marginTop: 4 }}>${totals.margin_earned.toFixed(2)}</div>
         </div>
       </div>
@@ -183,6 +198,7 @@ export default async function SuperAgentRollupPage() {
                 <td style={{ padding: 'var(--space-3)', color: 'var(--silver)', textAlign: 'right' }}>{r.pageviews}</td>
                 <td style={{ padding: 'var(--space-3)', color: 'var(--silver)', textAlign: 'right' }}>{r.orders}</td>
                 <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'right' }}>{money(r.revenue_cents)}</td>
+                {/* margin_earned is in DOLLARS (not cents), formatted with toFixed(2) directly */}
                 <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'right' }}>${r.margin_earned.toFixed(2)}</td>
               </tr>
             ))}
