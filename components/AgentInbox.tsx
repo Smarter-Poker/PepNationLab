@@ -115,8 +115,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
 
   return (
     <div className="glass-panel">
-      <div className="" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-        {/* Header */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
           <div>
             <h3 className="metal-text" style={{
@@ -133,17 +132,13 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
           <button
             onClick={loadInbox}
             className="btn-silver"
-            style={{
-              padding: '6px 12px', fontSize: '0.75rem',
-              display: 'flex', alignItems: 'center', gap: 6,
-            }}
+            style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 6 }}
           >
             <RefreshCw size={12} />
             Refresh
           </button>
         </div>
 
-        {/* Filter Tabs */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {filters.map(f => (
             <button
@@ -179,7 +174,6 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
           </div>
         )}
 
-        {/* Messages */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxHeight: 600, overflowY: 'auto' }}>
           {filtered.length === 0 ? (
             <div className="glass-panel" style={{ padding: '48px 24px', textAlign: 'center' }}>
@@ -200,7 +194,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
               </div>
             </div>
           ) : (
-            filtered.map((msg, i) => {
+            filtered.map((msg) => {
               const cfg = typeConfig[msg.type] || typeConfig.direct_message;
               const IconComp = cfg.icon;
               return (
@@ -213,7 +207,6 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
                     borderLeft: !msg.is_read ? '3px solid #00E5FF' : '1px solid rgba(0,0,0,0.5)',
                   }}
                 >
-                  {/* Type avatar */}
                   <div style={{
                     width: 42, height: 42, borderRadius: '50%',
                     background: cfg.gradient,
@@ -225,7 +218,6 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
                     <IconComp size={18} />
                   </div>
 
-                  {/* Content */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
                       <span style={{
@@ -256,7 +248,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
                       <span>From: {msg.sender_profile?.full_name || msg.sender_profile?.email || 'System'}</span>
                       {msg.attachment_url && (
                         <>
-                          <span>·</span>
+                          <span>&middot;</span>
                           <IframeLink
                             href={msg.attachment_url}
                             style={{
