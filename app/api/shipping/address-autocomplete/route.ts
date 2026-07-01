@@ -123,6 +123,8 @@ export async function GET(req: NextRequest) {
   const q = (new URL(req.url).searchParams.get('q') || '').trim();
   // Only start once "enough data" is typed, so we don't fire on a few letters.
   if (q.length < 4) return NextResponse.json({ suggestions: [] });
+  // Cap query length to prevent unbounded payloads being forwarded to geocoders.
+  if (q.length > 200) return NextResponse.json({ suggestions: [] }, { status: 400 });
 
   try {
     const token = process.env.MAPBOX_TOKEN;

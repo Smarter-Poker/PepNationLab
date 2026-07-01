@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
       const parsedAmount = Number(amount);
       if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return NextResponse.json({ error: 'Amount Must Be A Positive Number' }, { status: 400 });
       if (!description || typeof description !== 'string' || description.trim().length === 0) return NextResponse.json({ error: 'Description Is Required' }, { status: 400 });
+      if (description.trim().length > 500) return NextResponse.json({ error: 'Description Too Long (Max 500 Characters)' }, { status: 400 });
 
       const { data: agentProfile, error: profileErr } = await supabase.from('profiles').select('prepaid_balance').eq('id', agent_id).maybeSingle();
       if (profileErr || !agentProfile) return NextResponse.json({ error: 'Agent Not Found' }, { status: 404 });

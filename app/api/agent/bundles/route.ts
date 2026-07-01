@@ -47,6 +47,12 @@ export async function POST(req: NextRequest) {
   if (!name || !Array.isArray(product_ids) || product_ids.length < 2) {
     return NextResponse.json({ error: 'Bundle Name And At Least 2 Products Are Required' }, { status: 400 });
   }
+  if (typeof name !== 'string' || name.trim().length > 100) {
+    return NextResponse.json({ error: 'Bundle Name Too Long (Max 100 Characters)' }, { status: 400 });
+  }
+  if (description !== undefined && description !== null && (typeof description !== 'string' || description.length > 500)) {
+    return NextResponse.json({ error: 'Bundle Description Too Long (Max 500 Characters)' }, { status: 400 });
+  }
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (product_ids.some((id: unknown) => typeof id !== 'string' || !UUID_RE.test(id))) {
     return NextResponse.json({ error: 'product_ids must be an array of valid UUIDs' }, { status: 400 });

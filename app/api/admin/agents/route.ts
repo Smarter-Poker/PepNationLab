@@ -86,6 +86,12 @@ export async function POST(req: NextRequest) {
   if (!effFullName || !username || !password) {
     return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
   }
+  // Length caps: prevent column stuffing / OOM on unbounded text fields.
+  if (username.length > 40) return NextResponse.json({ error: 'Username Too Long (Max 40 Characters)' }, { status: 400 });
+  if (password.length > 128) return NextResponse.json({ error: 'Password Too Long (Max 128 Characters)' }, { status: 400 });
+  if (effFullName.length > 160) return NextResponse.json({ error: 'Full Name Too Long (Max 160 Characters)' }, { status: 400 });
+  if (slug && slug.length > 80) return NextResponse.json({ error: 'Slug Too Long (Max 80 Characters)' }, { status: 400 });
+  if (display_name && display_name.length > 120) return NextResponse.json({ error: 'Display Name Too Long (Max 120 Characters)' }, { status: 400 });
   if (!isResearcher && (!tier || !account_type || !slug || !display_name)) {
     return NextResponse.json({ error: 'Missing Required Agent Fields (Tier, Billing, Slug, User Name)' }, { status: 400 });
   }
@@ -172,7 +178,10 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const { data: existingUsername } = await supabase.from('profiles').select('id').ilike('username', usernameClean).maybeSingle();
+  // Use .eq() not .ilike() — sanitizeUsername may produce usernames containing
+  // underscores (a valid LIKE wildcard), so .ilike('username', 'a_c') would
+  // accidentally match 'abc'. .eq() is a literal equality check.
+  const { data: existingUsername } = await supabase.from('profiles').select('id').eq('username', usernameClean).maybeSingle();
   if (existingUsername) {
     return NextResponse.json({ error: 'This Username Is Already Taken' }, { status: 400 });
   }
