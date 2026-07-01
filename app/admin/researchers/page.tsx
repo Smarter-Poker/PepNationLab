@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import Pagination from '@/components/Pagination';
 import ViewAsButton from '@/components/ViewAsButton';
@@ -21,7 +22,7 @@ interface AgentProfile {
 interface Profile {
   id: string;
   email: string;
-  username: string | null;   // username-based login identity
+  username: string | null;
   full_name: string | null;
   phone: string | null;
   parent_agent_id?: string | null;
@@ -72,14 +73,12 @@ function ResearchersAdminPageInner() {
   const [page, setPage] = useState(1);
   const [viewingDownlineFor, setViewingDownlineFor] = useState<Profile | null>(null);
 
-  // Modal State
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [modalMode, setModalMode] = useState<'upgrade' | 'edit' | 'qr' | 'balance' | 'create_agent' | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState('');
   const [modalSuccess, setModalSuccess] = useState('');
 
-  // Edit/Upgrade Form Fields
   const [formRole, setFormRole] = useState<'agent' | 'super_agent' | 'researcher'>('agent');
   const [formTier, setFormTier] = useState<'tier_1' | 'tier_2' | 'tier_3'>('tier_2');
   const [formAccountType, setFormAccountType] = useState<'credit' | 'prepaid'>('prepaid');
@@ -88,12 +87,9 @@ function ResearchersAdminPageInner() {
   const [formSlug, setFormSlug] = useState('');
   const [formDisplayName, setFormDisplayName] = useState('');
 
-  // Balance adjustment
   const [balanceDelta, setBalanceDelta] = useState('');
   const [balanceType, setBalanceType] = useState<'add' | 'deduct'>('add');
 
-  // Create New Agent fields
-  // R31: split first/last across every create-account form.
   const [newFirstName, setNewFirstName] = useState('');
   const [newLastName, setNewLastName] = useState('');
   const [newUsername, setNewUsername] = useState('');
@@ -104,20 +100,10 @@ function ResearchersAdminPageInner() {
   const [newPrepaidBalance, setNewPrepaidBalance] = useState('');
   const [newSlug, setNewSlug] = useState('');
   const [newDisplayName, setNewDisplayName] = useState('');
-  // Which kind of account the create modal is building. Researcher mode hides
-  // the agent-only Pricing/Billing/Storefront sections and instead requires the
-  // owning agent (parent_agent_id), which the API mandates for researchers.
   const [createRole, setCreateRole] = useState<'agent' | 'researcher'>('agent');
   const [newParentAgentId, setNewParentAgentId] = useState('');
-  // Tracks whether the operator has manually edited the Username field. Until
-  // they do, the username auto-mirrors the first name (sanitized) so the login
-  // handle can never silently diverge from the name via a typo. Once edited,
-  // we stop overwriting it. Mirrors the existing auto-slug-from-first-name.
   const [usernameDirty, setUsernameDirty] = useState(false);
 
-  // Live username availability - fires when the modal is mounted with a typed
-  // username. Mirrors the storefront register form + the agent create-researcher
-  // modal so the operator sees green/red feedback before they press submit.
   const newUsernameCheck = useAvailability({
     field: 'username',
     value: newUsername,
@@ -145,7 +131,7 @@ function ResearchersAdminPageInner() {
         setUnpaidAgentIds(ids);
       }
     } catch {
-      // best-effort - Outstanding filter falls back to empty set
+      // best-effort
     }
   }
 
@@ -171,8 +157,6 @@ function ResearchersAdminPageInner() {
     const nextActive = !profile.is_active;
     setProfiles(prev => prev.map(p => p.id === profile.id ? { ...p, is_active: nextActive } : p));
     try {
-      // Use action:'toggle_active' so the API only updates is_active,
-      // without requiring slug/display_name (which would break for agents).
       const res = await fetch('/api/admin/researchers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -376,6 +360,7 @@ function ResearchersAdminPageInner() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          account_role: 'agent',
           full_name: `${newFirstName.trim()} ${newLastName.trim()}`.trim(),
           username: newUsername,
           password: newPassword,
@@ -402,7 +387,6 @@ function ResearchersAdminPageInner() {
     }
   }
 
-  // Persist filter state to URL params so refresh + share-URL works.
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('q', searchQuery);
@@ -429,12 +413,11 @@ function ResearchersAdminPageInner() {
       if (activeTab === 'researchers' && p.role !== 'researcher') return false;
       if (activeTab === 'agents') {
         if (p.role !== 'agent' && p.role !== 'super_agent') return false;
-        // Apply hierarchy filter only if there is no active search query
         if (!q) {
           if (viewingDownlineFor) {
             if (p.parent_agent_id !== viewingDownlineFor.id) return false;
           } else {
-            if (p.parent_agent_id != null) return false; // Hide sub-agents from the root view
+            if (p.parent_agent_id != null) return false;
           }
         }
       }
@@ -449,12 +432,10 @@ function ResearchersAdminPageInner() {
     });
   }, [profiles, searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly, unpaidAgentIds, viewingDownlineFor]);
 
-  // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredProfiles.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paginatedProfiles = filteredProfiles.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  // Reset to page 1 and clear downline view when filter or search changes
   useEffect(() => {
     setPage(1);
     if (activeTab !== 'agents') setViewingDownlineFor(null);
@@ -468,10 +449,6 @@ function ResearchersAdminPageInner() {
     setAccountTypeFilter('all');
     setOutstandingOnly(false);
   }
-
-  const resolvedAgentProfile = selectedProfile
-    ? (Array.isArray(selectedProfile.agent_profiles) ? selectedProfile.agent_profiles[0] : selectedProfile.agent_profiles)
-    : null;
 
   const inputStyle = { accentColor: 'var(--teal)', width: 18, height: 18 };
 
@@ -487,7 +464,6 @@ function ResearchersAdminPageInner() {
             Manage Research Accounts, Role Upgrades, Pricing Tiers, And Prepaid Balances
           </p>
         </div>
-        {/* Create Account Buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
           <button
             onClick={() => openCreateModal('researcher')}
@@ -620,11 +596,9 @@ function ResearchersAdminPageInner() {
               <div key={profile.id} className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: `${idx * 0.03}s` }}>
                 <div className="" style={{ padding: 'var(--space-4) var(--space-5)' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-                    {/* Avatar */}
                     <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, var(--teal) 0%, #007A75 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff', fontSize: '1.1rem', flexShrink: 0 }}>
                       {(profile.full_name || profile.email || '?')[0].toUpperCase()}
                     </div>
-                    {/* Info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 2 }}>
                         <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--white)' }}>
@@ -649,7 +623,6 @@ function ResearchersAdminPageInner() {
                         </span>
                       </div>
                     </div>
-                    {/* Badges */}
                     <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', alignItems: 'center' }}>
                       <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: profile.role === 'admin' ? 'rgba(229,62,62,0.15)' : profile.role === 'super_agent' || profile.is_super_agent ? 'rgba(0,196,188,0.15)' : 'rgba(192,184,168,0.1)', color: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' || profile.is_super_agent ? 'var(--teal)' : 'var(--silver)', border: `1px solid ${profile.role === 'admin' ? 'rgba(229,62,62,0.3)' : profile.role === 'super_agent' || profile.is_super_agent ? 'rgba(0,196,188,0.3)' : 'rgba(192,184,168,0.2)'}` }}>
                         {profile.is_super_agent ? 'Super Agent' : ROLE_LABELS[profile.role] ?? profile.role}
@@ -670,7 +643,6 @@ function ResearchersAdminPageInner() {
                         </span>
                       )}
                     </div>
-                    {/* Actions */}
                     <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', alignItems: 'center' }}>
                       {isAgent && (
                         <>
@@ -709,7 +681,6 @@ function ResearchersAdminPageInner() {
                       )}
                     </div>
                   </div>
-                  {/* Agent Financial Summary */}
                   {isAgent && (
                     <div style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
                       <div>
@@ -761,7 +732,9 @@ function ResearchersAdminPageInner() {
               <h2 style={{ fontSize: '1.2rem' }}>
                 {createRole === 'researcher' ? 'Create Researcher Account' : 'Create Agent Account'}
               </h2>
-              <button type="button" onClick={closeModal} style={{ background: 'none', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1 }}>x</button>
+              <button type="button" onClick={closeModal} style={{ background: 'none', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={18} />
+              </button>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
               {createRole === 'researcher'
