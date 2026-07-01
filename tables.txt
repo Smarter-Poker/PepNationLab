@@ -1,0 +1,17 @@
+CREATE TABLE IF
+CREATE TABLE agent_products
+CREATE TABLE agent_profiles
+CREATE TABLE coupons
+CREATE TABLE disclaimer_acceptances
+CREATE TABLE messages
+CREATE TABLE order_items
+CREATE TABLE orders
+CREATE TABLE pricing_tiers
+CREATE TABLE product_tier_overrides
+CREATE TABLE products
+CREATE TABLE profiles
+CREATE TABLE researcher_biometrics
+CREATE TABLE researcher_doses
+CREATE TABLE shipping_rates
+CREATE TABLE statement_orders
+CREATE TABLE weekly_statements
