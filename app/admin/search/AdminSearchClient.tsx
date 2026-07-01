@@ -836,8 +836,6 @@ export default function AdminSearchClient() {
 }
 
 function OperationalNudgesPanel({ nudges }: { nudges: Nudges }) {
-  // Order = roughly by urgency: money-in (customer payments) -> fulfillment
-  // -> inventory -> financial-health -> researcher-hygiene -> setup gaps.
   const rows: Array<{ key: string; label: string; count: number; href: string }> = [
     { key: 'pcp',  label: 'Orders Pending Customer Payment', count: nudges.pendingCustomerPayment,   href: '/admin/orders?status=pending_customer_payment' },
     { key: 'aap',  label: 'Orders Awaiting Agent Approval',  count: nudges.agentApprovalPending,     href: '/admin/orders?status=agent_approval_pending' },
