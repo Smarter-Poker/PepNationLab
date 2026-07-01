@@ -167,14 +167,18 @@ export async function GET(req: Request) {
   const errors: string[] = [];
 
   try {
-    // Pull due deliveries
+    // Atomically claim due deliveries by flipping status pending→processing.
+    // Two concurrent invocations cannot double-deliver the same webhook because
+    // the UPDATE only matches status='pending' rows, and Postgres row-level
+    // locks prevent concurrent claims of the same rows.
     const { data: deliveries, error: dlvErr } = await admin
       .from('webhook_deliveries')
-      .select('id, endpoint_id, event_type, payload, attempts, next_attempt_at, related_order_id')
+      .update({ status: 'processing' })
       .eq('status', 'pending')
       .lte('next_attempt_at', startedAt.toISOString())
       .order('next_attempt_at', { ascending: true })
-      .limit(BATCH_SIZE);
+      .limit(BATCH_SIZE)
+      .select('id, endpoint_id, event_type, payload, attempts, next_attempt_at, related_order_id');
 
     if (dlvErr) {
       throw new Error(`fetch deliveries: ${dlvErr.message}`);

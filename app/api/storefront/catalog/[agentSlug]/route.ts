@@ -92,10 +92,7 @@ export async function GET(
           unit_size,
           unit_measure,
           weight_oz,
-          inventory_count,
-          low_stock_threshold,
-          compound_slug,
-          admin_bulk_price
+          compound_slug
         )
       `)
       .eq('agent_id', agent.id)

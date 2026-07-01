@@ -273,10 +273,30 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Scrub private/internal fields before returning — these were needed for
+  // server-side filtering (bulk, inStock) but must not be exposed publicly.
+  const publicProducts = products.map(p => {
+    const productsRaw = (p as { products: unknown }).products;
+    const scrubProduct = (prod: unknown) => {
+      if (prod && typeof prod === 'object') {
+        const { admin_bulk_price, admin_bulk_threshold, inventory_count, low_stock_threshold, ...rest } = prod as Record<string, unknown>;
+        void admin_bulk_price; void admin_bulk_threshold; void inventory_count; void low_stock_threshold;
+        return rest;
+      }
+      return prod;
+    };
+    return {
+      ...p,
+      products: Array.isArray(productsRaw)
+        ? productsRaw.map(scrubProduct)
+        : scrubProduct(productsRaw),
+    };
+  });
+
   return NextResponse.json(
     {
-      products,
-      total: products.length,
+      products: publicProducts,
+      total: publicProducts.length,
       agent: { id: agent.id, slug: agent.slug },
     },
     { status: 200 }
