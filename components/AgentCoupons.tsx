@@ -612,7 +612,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
             )}
 
             <div>
-              <div style={SECTION_LABEL}>1 &middot; Identity</div>
+              <div style={SECTION_LABEL}>1 · Identity</div>
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'minmax(0, 1fr) auto',
@@ -653,7 +653,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
             </div>
 
             <div>
-              <div style={SECTION_LABEL}>2 &middot; Discount</div>
+              <div style={SECTION_LABEL}>2 · Discount</div>
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
@@ -703,7 +703,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
             </div>
 
             <div>
-              <div style={SECTION_LABEL}>3 &middot; Limits</div>
+              <div style={SECTION_LABEL}>3 · Limits</div>
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -780,7 +780,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
             </div>
 
             <div>
-              <div style={SECTION_LABEL}>4 &middot; Audience</div>
+              <div style={SECTION_LABEL}>4 · Audience</div>
               <label style={{
                 display: 'flex',
                 alignItems: 'flex-start',
@@ -809,7 +809,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
             </div>
 
             <div>
-              <div style={SECTION_LABEL}>5 &middot; Validity</div>
+              <div style={SECTION_LABEL}>5 · Validity</div>
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -927,7 +927,6 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
           </div>
         </div>
 
-        {/* LIST CONTROLS */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -1136,7 +1135,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
 
                       {perf[c.code] && perf[c.code].redemptions > 0 && (
                         <div style={{ fontSize: '0.74rem', color: '#00FF9D', marginTop: 8, fontWeight: 600 }}>
-                          {`Drove ${fmtMoney(perf[c.code].revenue_driven)} In Revenue · ${fmtMoney(perf[c.code].discount_given)} Discounted Across ${perf[c.code].redemptions} Order${perf[c.code].redemptions !== 1 ? 's' : ''}`}
+                          {`Drove ${fmtMoney(perf[c.code].revenue_driven)} In Revenue - ${fmtMoney(perf[c.code].discount_given)} Discounted Across ${perf[c.code].redemptions} Order${perf[c.code].redemptions !== 1 ? 's' : ''}`}
                         </div>
                       )}
                     </div>
@@ -1259,8 +1258,6 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
   );
 }
 
-// -------- MODALS --------
-
 interface ModalShellProps {
   title: string;
   onClose: () => void;
@@ -1341,7 +1338,7 @@ function ModalShell({ title, onClose, children, footer, maxWidth = 560 }: ModalS
 function QrModal({ coupon, onClose }: { coupon: Coupon; onClose: () => void }) {
   const qrUrl = `/api/agent/coupons/${coupon.id}/qr`;
   return (
-    <ModalShell title={`QR · ${coupon.code}`} onClose={onClose}>
+    <ModalShell title={`QR - ${coupon.code}`} onClose={onClose}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
         <div style={{
           background: '#FFFFFF',
@@ -1389,7 +1386,7 @@ function RedemptionsModal({
   onClose: () => void;
 }) {
   return (
-    <ModalShell title={`Redemptions · ${coupon.code}`} onClose={onClose} maxWidth={720}>
+    <ModalShell title={`Redemptions - ${coupon.code}`} onClose={onClose} maxWidth={720}>
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-6)' }}>
           <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
@@ -1618,66 +1615,34 @@ function BulkGenerateModal({ onClose, onCreated }: { onClose: () => void; onCrea
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-2)' }}>
           <div>
             <label style={FONT_LABEL}>Starts On</label>
-            <input
-              type="date"
-              value={startsAt}
-              onChange={(e) => setStartsAt(e.target.value)}
-              style={INPUT}
-            />
+            <input type="date" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} style={INPUT} />
           </div>
           <div>
             <label style={FONT_LABEL}>Expires On</label>
-            <input
-              type="date"
-              value={expiresAt}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              style={INPUT}
-            />
+            <input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} style={INPUT} />
           </div>
         </div>
 
         <label style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: 'var(--space-2) var(--space-3)',
-          borderRadius: 8,
-          background: 'rgba(0,229,255,0.04)',
-          border: '1px solid rgba(0,229,255,0.16)',
-          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: 'var(--space-2) var(--space-3)', borderRadius: 8,
+          background: 'rgba(0,229,255,0.04)', border: '1px solid rgba(0,229,255,0.16)', cursor: 'pointer',
         }}>
-          <input
-            type="checkbox"
-            checked={newCustomersOnly}
-            onChange={(e) => setNewCustomersOnly(e.target.checked)}
-            style={{ accentColor: '#00E5FF' }}
-          />
+          <input type="checkbox" checked={newCustomersOnly} onChange={(e) => setNewCustomersOnly(e.target.checked)} style={{ accentColor: '#00E5FF' }} />
           <span style={{ fontSize: '0.82rem', color: 'var(--white)' }}>Limit To New Customers Only</span>
         </label>
 
         <label style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: 'var(--space-2) var(--space-3)',
-          borderRadius: 8,
-          background: 'rgba(0,196,188,0.04)',
-          border: '1px solid rgba(0,196,188,0.16)',
-          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: 'var(--space-2) var(--space-3)', borderRadius: 8,
+          background: 'rgba(0,196,188,0.04)', border: '1px solid rgba(0,196,188,0.16)', cursor: 'pointer',
         }}>
-          <input
-            type="checkbox"
-            checked={singleUse}
-            onChange={(e) => setSingleUse(e.target.checked)}
-            style={{ accentColor: 'var(--teal)' }}
-          />
+          <input type="checkbox" checked={singleUse} onChange={(e) => setSingleUse(e.target.checked)} style={{ accentColor: 'var(--teal)' }} />
           <span style={{ fontSize: '0.82rem', color: 'var(--white)' }}>Single-Use (Each Code Can Be Redeemed Once)</span>
         </label>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
-          <button type="button" className="btn-silver" onClick={onClose} disabled={submitting} style={{ minHeight: 40, padding: '8px 16px', fontSize: '0.85rem' }}>
-            Cancel
-          </button>
+          <button type="button" className="btn-silver" onClick={onClose} disabled={submitting} style={{ minHeight: 40, padding: '8px 16px', fontSize: '0.85rem' }}>Cancel</button>
           <button type="submit" className="btn-neon-cyan" disabled={submitting} style={{ minHeight: 40, padding: '8px 16px', fontSize: '0.85rem', fontWeight: 700 }}>
             {submitting ? 'Generating...' : 'Generate Codes'}
           </button>
