@@ -275,6 +275,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ kind: 'none', note: RESEARCH_NOTE });
   }
 
+  // Guard: very long queries are a DoS vector against the intent classifier.
+  if (q.length > 500) {
+    return NextResponse.json({ kind: 'none', note: RESEARCH_NOTE }, { status: 400 });
+  }
+
   const parsed = parseQuery(q);
   const supabase = await createServiceClient();
 

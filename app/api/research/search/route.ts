@@ -256,6 +256,14 @@ async function handle(req: NextRequest, q: string, limit: number, offset: number
     );
   }
 
+  // Guard: very long queries are a DoS vector (O(n²) Levenshtein + unbounded tsquery).
+  if (trimmed.length > 500) {
+    return NextResponse.json(
+      { results: [], total: 0, latencyMs: 0, note: RESEARCH_NOTE, filters_applied: [] },
+      { status: 400 },
+    );
+  }
+
   const supabase = await createServiceClient();
 
   const { data: catalogData } = await supabase

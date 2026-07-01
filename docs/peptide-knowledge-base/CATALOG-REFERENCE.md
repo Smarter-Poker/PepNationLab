@@ -6,7 +6,7 @@
 > self-administration dosing guidance. Where dose figures appear, they are stated solely as
 > published study or label parameters and labeled as such.
 >
-> **Last compiled:** 2026-06-02
+> **Last compiled:** 2026-07-01
 > **Scope:** Every distinct compound in the live `products` catalog (approximately 58 entities)
 > plus combination stacks and reconstitution supplies. Many catalog rows are dose/size variants
 > of the same compound; this reference profiles each distinct compound once.
@@ -641,11 +641,11 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 - **Identity:** 31-aa GLP-1 analog (Aib2, Arg34, C18 fatty-diacid on Lys26); C187H291N45O59; ~4113.6 g/mol; CAS 910463-68-2. SC bioavailability ~89%; oral (Rybelsus + SNAC) ~1-2%.
 - **Mechanism / target:** Selective GLP-1R agonist; glucose-dependent insulin secretion, suppressed glucagon, slowed gastric emptying, central appetite/satiety. Albumin binding -> ~1-week half-life (weekly SC).
 - **Research use cases:** T2D glycemic control, chronic weight management, CV risk reduction, HFpEF with obesity, MASLD/NASH, CKD in T2D.
-- **Reported benefits:** Human -- SUSTAIN/PIONEER (T2D); STEP (obesity) ~15% weight loss at 68 wk (2.4 mg); SELECT reduced MACE in overweight/obese with CVD, no diabetes; STEP-HFpEF improved symptoms/function.
+- **Reported benefits:** Human -- SUSTAIN/PIONEER (T2D); STEP (obesity) ~15% weight loss at 68 wk (2.4 mg); SELECT reduced MACE in overweight/obese with CVD, no diabetes; STEP-HFpEF improved symptoms/function; FLOW trial: 24% reduction in kidney-disease progression and CV death in CKD+T2D (basis for Jan 2025 CKD approval); ESSENCE trial: histological improvement in MASH with fibrosis (basis for Aug 2025 MASH approval).
 - **Side effects:** Dose-dependent GI (nausea, vomiting, diarrhea, constipation, abdominal pain); gallbladder disease, acute pancreatitis (MHRA monitoring rare severe); hypoglycemia mainly with insulin/sulfonylureas.
 - **Warnings/limitations:** FDA boxed warning for thyroid C-cell tumors (rodent MTC); contraindicated with personal/family MTC or MEN 2; not for type 1 diabetes; caution pancreatitis history and diabetic retinopathy.
 - **Handling:** Pens refrigerated 2-8C pre-use; room-temp in-use window. Research lyophilizate desiccated/frozen, reconstitute bacteriostatic water, refrigerate; heat/freeze-thaw/agitation-sensitive. Oral form requires fasting administration with minimal water (SNAC-dependent).
-- **Regulatory:** FDA-approved (Ozempic 2017, Rybelsus 2019, Wegovy 2021). FDA cautions compounded salt forms (sodium/acetate) not established safe/effective.
+- **Regulatory:** FDA-approved: Ozempic (T2D, 2017), Rybelsus (oral T2D, 2019), Wegovy (obesity, 2021); Ozempic label expanded for CKD risk reduction in T2D (Jan 2025); Wegovy approved for MASH with moderate-to-advanced fibrosis (Aug 2025). Compounded salt forms (sodium/acetate) cautioned by FDA as not established safe/effective.
 - **Sources:** en.wikipedia.org/wiki/Semaglutide; pubmed.ncbi.nlm.nih.gov/33567185 (STEP 1); nejm.org/doi/full/10.1056/NEJMoa2307563 (SELECT)
 
 ### Tirzepatide (Mounjaro, Zepbound; LY3298176)
@@ -665,11 +665,11 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 - **Identity:** SPPS peptide with Aib substitutions, alpha-methyl-leucine, C-terminal serinamide, Lys with AEEA-(gamma-Glu)-(C20 diacid) lipidation; CAS 2381089-83-2; ChEMBL CHEMBL5095485; UNII NOP2Y096GV. Weekly.
 - **Mechanism / target:** Co-agonism at GLP-1, GIP, and glucagon receptors; glucagon arm increases energy expenditure and lipolysis/fat oxidation on top of incretin appetite/glucose actions.
 - **Research use cases:** Obesity/overweight, T2D, body-composition, MASLD, CVD (TRIUMPH-3); preclinical obesity-associated cancer interest.
-- **Reported benefits:** Human -- Phase 2 (Jastreboff, NEJM 2023): up to ~17.5% weight reduction at 24 wk, larger at 48 wk; meta-analyses ~15-24% over 48-72 wk; T2D substudy body-fat differences at 36 wk (Lancet Diab Endo 2025). Preclinical -- reduced tumor engraftment/growth in pancreatic/lung mouse models (exceeding semaglutide in that model). Phase 3 (TRIUMPH) ongoing.
+- **Reported benefits:** Human -- Phase 2 (Jastreboff, NEJM 2023): up to ~17.5% weight reduction at 24 wk, larger at 48 wk; meta-analyses ~15-24% over 48-72 wk; T2D substudy body-fat differences at 36 wk (Lancet Diab Endo 2025). Phase 3 TRIUMPH-1 (announced May 2026; 2,339 participants, 80 wk): retatrutide 12 mg achieved -28.3% mean weight loss; all three doses (4 mg, 8 mg, 12 mg) met primary and key secondary endpoints vs placebo -- largest weight loss reported in any Phase 3 obesity trial to date. Preclinical -- reduced tumor engraftment/growth in pancreatic/lung mouse models.
 - **Side effects:** Dose-dependent GI (nausea, vomiting, diarrhea, constipation, abdominal discomfort), fatigue, headache, mild HR increases; low hypoglycemia, infrequent serious AEs in non-diabetic trials to date; class pancreatitis/gallbladder/GI risks apply; long-term outcomes not established.
 - **Warnings/limitations:** Investigational -- no label, no long-term safety; theoretical thyroid C-cell/pancreatitis considerations under study. Not approved.
 - **Handling:** Lyophilized; store frozen/desiccated, dark; reconstitute bacteriostatic/sterile water, refrigerate; avoid freeze-thaw/agitation; lipidated/amphiphilic -- gentle reconstitution avoids foaming/aggregation.
-- **Regulatory:** Investigational (Eli Lilly); Phase 3 ongoing; not FDA-approved; non-trial material research-use-only.
+- **Regulatory:** Investigational (Eli Lilly); Phase 3 TRIUMPH program -- TRIUMPH-1 topline results positive (May 2026); NDA submission expected Q4 2026 to Q1 2027; FDA decision projected 2027 or later; not FDA-approved; non-trial material research-use-only.
 - **Sources:** pubmed.ncbi.nlm.nih.gov/37366315 (Jastreboff); 35985340 (Coskun POC); en.wikipedia.org/wiki/Retatrutide
 
 ### Survodutide (BI 456906)
@@ -697,7 +697,7 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 - **Sources:** en.wikipedia.org/wiki/Cagrilintide; pubmed.ncbi.nlm.nih.gov/34798060 (Lau); go.drugbank.com/drugs/DB18887
 
 ### Combination: Cagrilintide + Semaglutide (CagriSema)
-Investigational fixed combination (cagrilintide 2.4 mg + semaglutide 2.4 mg) exploiting amylin + incretin synergy via complementary, non-redundant satiety pathways. Phase 1b (Enebo, Lancet 2021) established tolerability/PK; Phase 2 ~-15.6% at 32 wk. Phase 3 REDEFINE (NEJM, June 2025): REDEFINE 1 (68 wk, 3,417, obesity/overweight) -- CagriSema -20.4% vs -11.5% cagrilintide, -14.9% semaglutide, -3.0% placebo; REDEFINE 2 (68 wk, 1,206, T2D) -- -13.7% vs -3.1% placebo. AEs predominantly GI. Investigational (Novo Nordisk); not FDA-approved.
+Investigational fixed combination (cagrilintide 2.4 mg + semaglutide 2.4 mg) exploiting amylin + incretin synergy via complementary, non-redundant satiety pathways. Phase 1b (Enebo, Lancet 2021) established tolerability/PK; Phase 2 ~-15.6% at 32 wk. Phase 3 REDEFINE (NEJM, June 2025): REDEFINE 1 (68 wk, 3,417, obesity/overweight) -- CagriSema -20.4% vs -11.5% cagrilintide, -14.9% semaglutide, -3.0% placebo; REDEFINE 2 (68 wk, 1,206, T2D) -- -13.7% vs -3.1% placebo. AEs predominantly GI. Investigational (Novo Nordisk); NDA filed with FDA Dec 18, 2025 (under FDA review in 2026); not yet approved.
 - **Sources:** en.wikipedia.org/wiki/Cagrilintide/semaglutide; pubmed 40544433 (REDEFINE 1); 40544432 (REDEFINE 2); 33894838 (Enebo)
 
 
@@ -782,4 +782,4 @@ All GH secretagogues/GHRH analogs (CJC-1295 +/-DAC, Sermorelin, Tesamorelin, GHR
 
 ---
 
-> **Identity/data caveats to resolve before any public-facing publication:** verify CAS numbers and molecular weights for the less-common compounds (notably 5-Amino-1MQ salt, AHK-Cu, Pinealon) against supplier certificates of analysis, and resolve the Thymalin identity ambiguity (historical thymus-extract complex vs vendor "Glu-Trp" dipeptide).
+> **Identity/data notes (updated 2026-07-01):** Pinealon (Glu-Asp-Arg tripeptide) CAS 175175-23-2 is confirmed in multiple chemical registries (MW 418.4 Da, C14H23N5O6). 5-Amino-1MQ has two relevant CAS numbers: free-base 5-amino-1-methylquinoline (CAS 5611-99-4, MW ~158 Da) and iodide salt 5-amino-1-methylquinolinium iodide (CAS 685079-15-6, MW ~285 Da) -- verify per certificate of analysis which form is supplied. AHK-Cu (Ala-His-Lys+Cu(II)) has no single registry CAS; confirm per certificate of analysis. Thymalin identity is accurately documented in its entry: the commercial research compound is most commonly supplied as the Glu-Trp dipeptide; the historical thymus-extract "Thymalin" is a distinct multi-peptide preparation -- treat as Glu-Trp unless the certificate of analysis specifies otherwise.

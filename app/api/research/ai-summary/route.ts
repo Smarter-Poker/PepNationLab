@@ -44,8 +44,8 @@ export async function POST(req: NextRequest) {
     }
 
     const { slug } = await req.json();
-    if (!slug) {
-      return NextResponse.json({ error: 'Compound slug is required' }, { status: 400 });
+    if (!slug || typeof slug !== 'string' || slug.length > 200) {
+      return NextResponse.json({ error: 'Valid compound slug is required (max 200 chars)' }, { status: 400 });
     }
 
     const supabase = await createServiceClient();

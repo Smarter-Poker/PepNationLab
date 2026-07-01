@@ -180,6 +180,14 @@ async function handle(q: string) {
     });
   }
 
+  // Guard: extremely long queries are a DoS vector against the tokenizer.
+  if (query.length > 500) {
+    return NextResponse.json(
+      { matches: [], message: 'Search query is too long (max 500 characters).', note: RESEARCH_NOTE },
+      { status: 400 },
+    );
+  }
+
   const supabase = await createServiceClient();
   const { data, error } = await supabase
     .from('compounds')
