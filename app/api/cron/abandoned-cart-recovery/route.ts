@@ -151,7 +151,7 @@ export async function GET(req: Request) {
 
       await notifyCartReminder(supabase, candidate.id, itemCount, cartValue).catch(() => { /* best-effort */ });
 
-      await supabase.from('abandoned_cart_reminders').insert({
+      const { error: reminderErr } = await supabase.from('abandoned_cart_reminders').insert({
         user_id: candidate.id,
         cart_state_snapshot: candidate.cart_state,
         cart_value: cartValue || null,
@@ -159,6 +159,14 @@ export async function GET(req: Request) {
         variant_name: variant.name,
         step_index: nextStep,
       });
+
+      if (reminderErr) {
+        // Don't increment sent — without the reminder record, next run will
+        // re-send the same message (duplicate notification loop).
+        console.error('[abandoned-cart-recovery] reminder insert failed for user', candidate.id, reminderErr);
+        skipped++;
+        continue;
+      }
 
       await supabase
         .from('profiles')

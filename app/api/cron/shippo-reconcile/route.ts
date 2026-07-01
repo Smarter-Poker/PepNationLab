@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
         if (variancePct > VARIANCE_PCT_THRESHOLD || varianceCents > VARIANCE_CENTS_THRESHOLD) {
           variancesFound++;
 
-          await supabase.from('admin_audit_log').insert({
+          const { error: auditErr } = await supabase.from('admin_audit_log').insert({
             actor_id: null,
             action: 'shippo_reconcile_variance',
             entity_type: 'agent_profiles',
@@ -112,6 +112,13 @@ export async function GET(req: NextRequest) {
               threshold_cents: VARIANCE_CENTS_THRESHOLD,
             },
           });
+          if (auditErr) {
+            // Don't throw — the variance was detected, we just couldn't record it.
+            // This appears in Vercel function logs for ops to catch.
+            console.error('[shippo-reconcile] audit_log insert failed for variance:', {
+              agentId, varianceCents, error: auditErr.message,
+            });
+          }
         }
       }
     }

@@ -65,15 +65,21 @@ export async function GET(req: NextRequest) {
     const supabase = await createServiceClient();
     const pushOn = isWebPushConfigured();
 
+    // Atomically claim a batch by flipping status pending→processing.
+    // Two concurrent invocations cannot claim the same row because the
+    // UPDATE only touches rows with status='pending', and Postgres row-level
+    // locks prevent double-claiming under concurrent writes.
     const { data: rows, error } = await supabase
       .from('push_outbox')
-      .select('id, recipient_user_id, title, body, url, tag, icon_url, badge_url, attempts')
+      .update({ status: 'processing' })
       .eq('status', 'pending')
+      .lt('attempts', MAX_ATTEMPTS)
       .order('created_at', { ascending: true })
-      .limit(BATCH_LIMIT);
+      .limit(BATCH_LIMIT)
+      .select('id, recipient_user_id, title, body, url, tag, icon_url, badge_url, attempts');
 
     if (error) {
-      errorNote = `select_failed: ${error.message}`.slice(0, 300);
+      errorNote = `claim_failed: ${error.message}`.slice(0, 300);
     } else {
       for (const row of (rows ?? []) as OutboxRow[]) {
         processed++;

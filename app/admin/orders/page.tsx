@@ -230,9 +230,13 @@ function AdminOrdersPageInner() {
       const json = await res.json();
       if (res.ok) {
         setItems(json.data || []);
+      } else {
+        console.error('Failed to load order items:', json.error);
+        toast.error(json.error || 'Failed To Load Order Items.');
       }
     } catch (err) {
-      console.error("Failed to load items", err);
+      console.error('Failed to load items', err);
+      toast.error('Failed To Load Order Items. Check Your Connection.');
     } finally {
       setLoadingItems(false);
     }

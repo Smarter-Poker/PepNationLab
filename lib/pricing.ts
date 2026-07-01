@@ -68,10 +68,15 @@ export async function computeSubAgentBaselineCost(supabase: ServiceClient, produ
   const key = `superBaseline:${superAgentId}:${productId}`;
   const cached = getCached<number | null>(key);
   if (cached === undefined) {
-    const { data } = await supabase.from('super_agent_pricing').select('baseline_cost').eq('super_agent_id', superAgentId).eq('product_id', productId).maybeSingle();
-    const value = data?.baseline_cost != null ? Number(data.baseline_cost) : null;
-    setCache(key, value);
-    if (value !== null) return value;
+    const { data, error } = await supabase.from('super_agent_pricing').select('baseline_cost').eq('super_agent_id', superAgentId).eq('product_id', productId).maybeSingle();
+    if (error) {
+      // Don't cache on DB error — transient failures should be retried.
+      console.warn('[pricing] super_agent_pricing query failed, falling back to computed cost:', error.message);
+    } else {
+      const value = data?.baseline_cost != null ? Number(data.baseline_cost) : null;
+      setCache(key, value);
+      if (value !== null) return value;
+    }
   } else if (cached !== null) {
     return cached;
   }

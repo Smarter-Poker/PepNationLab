@@ -83,7 +83,7 @@ export async function notify(
 
     if (!pushTypeAllowed(prefs.push_type_prefs as Record<string, boolean> | null, type)) return;
 
-    const { data: outbox } = await supabase
+    const { data: outbox, error: outboxErr } = await supabase
       .from('push_outbox')
       .insert({
         recipient_user_id: userId,
@@ -95,6 +95,11 @@ export async function notify(
       })
       .select('id')
       .single();
+
+    if (outboxErr) {
+      console.error('[notify] push_outbox insert failed — skipping push to preserve audit trail:', outboxErr);
+      return;
+    }
 
     const sent = await deliverPushNow(supabase, userId, {
       title,
