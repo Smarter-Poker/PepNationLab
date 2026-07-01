@@ -60,11 +60,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ allowed: false, reason: 'Not Authenticated' }, { status: 401 });
   }
 
-  // Resolve agent from slug
+  // Resolve agent from slug — use .eq() (slugs are always lowercase; .ilike()
+  // on a user-supplied URL param enables underscore-wildcard matching).
   const { data: agent } = await supabase
     .from('agent_profiles')
     .select('id')
-    .ilike('slug', String(agentSlug))
+    .eq('slug', String(agentSlug))
     .maybeSingle();
 
   if (!agent) {

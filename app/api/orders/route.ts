@@ -243,10 +243,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (agentSlug) {
+      // Use .eq() not .ilike() — slug is a user-supplied value; underscore in
+      // .ilike() is a LIKE wildcard that could match wrong storefronts.
       const { data: storefrontAgent } = await serviceSupabase
         .from('agent_profiles')
         .select('id, min_overall_qty, min_order_qty')
-        .ilike('slug', agentSlug)
+        .eq('slug', agentSlug)
         .maybeSingle();
 
       if (!storefrontAgent) {

@@ -72,6 +72,13 @@ export async function POST(req: NextRequest) {
   if (!name || isNaN(parsedBaseCost) || parsedBaseCost <= 0) {
     return NextResponse.json({ error: 'Name And A Positive Base Cost Are Required' }, { status: 400 });
   }
+  // Length caps — prevent column stuffing of product text fields.
+  if (typeof name !== 'string' || name.length > 200) return NextResponse.json({ error: 'Product Name Too Long (Max 200)' }, { status: 400 });
+  if (sku && (typeof sku !== 'string' || sku.length > 100)) return NextResponse.json({ error: 'SKU Too Long (Max 100)' }, { status: 400 });
+  if (description && (typeof description !== 'string' || description.length > 5000)) return NextResponse.json({ error: 'Description Too Long (Max 5,000)' }, { status: 400 });
+  if (image_url && (typeof image_url !== 'string' || image_url.length > 500)) return NextResponse.json({ error: 'Image URL Too Long (Max 500)' }, { status: 400 });
+  if (category && (typeof category !== 'string' || category.length > 80)) return NextResponse.json({ error: 'Category Too Long (Max 80)' }, { status: 400 });
+  if (unit_size && (typeof unit_size !== 'string' || unit_size.length > 50)) return NextResponse.json({ error: 'Unit Size Too Long (Max 50)' }, { status: 400 });
 
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 

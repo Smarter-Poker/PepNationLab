@@ -56,10 +56,12 @@ export async function GET(
   const supabase = await createServiceClient();
 
   // ── 1. Resolve agent ────────────────────────────────────────────────────────
+  // Use .eq() not .ilike() — slugs are lowercase; .ilike() on a user-supplied
+  // URL param allows underscore-wildcard matching to wrong storefronts.
   const { data: agent } = await supabase
     .from('agent_profiles')
     .select('id, slug, primary_color, is_active')
-    .ilike('slug', agentSlug)
+    .eq('slug', agentSlug)
     .maybeSingle();
 
   if (!agent) {
