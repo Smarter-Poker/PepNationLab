@@ -15,10 +15,15 @@ export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const role = searchParams.get('role');
   const rawQuery = searchParams.get('query');
+  const rawLimit = parseInt(searchParams.get('limit') ?? '100', 10);
+  const rawPage = parseInt(searchParams.get('page') ?? '1', 10);
+  const limit = Math.min(isNaN(rawLimit) || rawLimit < 1 ? 100 : rawLimit, 500);
+  const page = isNaN(rawPage) || rawPage < 1 ? 1 : rawPage;
+  const offset = (page - 1) * limit;
 
   let dbQuery = supabase
     .from('profiles')
-    .select('*, agent_profiles(*)');
+    .select('*, agent_profiles(*)', { count: 'exact' });
 
   if (role) {
     dbQuery = dbQuery.eq('role', role);
@@ -34,10 +39,10 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  dbQuery = dbQuery.order('created_at', { ascending: false });
-  const { data, error } = await dbQuery;
+  dbQuery = dbQuery.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
+  const { data, error, count } = await dbQuery;
   if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
-  return NextResponse.json({ data });
+  return NextResponse.json({ data, total: count ?? 0, page, limit });
 }
 
 export async function POST(req: NextRequest) {
