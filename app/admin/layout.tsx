@@ -17,11 +17,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
+  // maybeSingle() instead of single() so a fresh auth user without a profiles
+  // row does not crash this layout with PGRST116 ("exactly one row expected").
+  // If profile is null, the role check below treats it as non-admin and
+  // redirects to /dashboard.
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, full_name')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (profile?.role === 'shipping') {
     redirect('/shipping');
