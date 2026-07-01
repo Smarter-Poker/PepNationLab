@@ -58,7 +58,9 @@ export default function EditProductPage() {
       .then(data => {
         if (data && Array.isArray(data)) {
           const m: Record<string, number> = {};
-          data.forEach((t: { tier_name: string; multiplier: number }) => { m[t.tier_name] = t.multiplier; });
+          data.forEach((t: { tier_name: string; multiplier: number }) => {
+            m[t.tier_name] = t.multiplier;
+          });
           setMultipliers(m);
         }
       })
@@ -121,14 +123,23 @@ export default function EditProductPage() {
       const file = fileInputRef.current.files[0];
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('product-images').upload(fileName, file);
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file);
+
       if (uploadError) {
         setError(`Image Upload Failed: ${uploadError.message}`);
         setSaving(false);
         setUploadingImage(false);
         return;
       }
-      const { data: publicUrlData } = supabase.storage.from('product-images').getPublicUrl(fileName);
+
+      const { data: publicUrlData } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
       finalImageUrl = publicUrlData.publicUrl;
       setUploadingImage(false);
     }
@@ -169,7 +180,9 @@ export default function EditProductPage() {
   if (loading) {
     return (
       <div style={{ padding: 'var(--space-12)', textAlign: 'center' }}>
-        <p style={{ color: 'var(--teal)', fontSize: '1.1rem', fontWeight: 600 }}>Loading Product Details...</p>
+        <p style={{ color: 'var(--teal)', fontSize: '1.1rem', fontWeight: 600 }}>
+          Loading Product Details...
+        </p>
       </div>
     );
   }
@@ -182,10 +195,15 @@ export default function EditProductPage() {
     <div style={{ padding: 'var(--space-8)', maxWidth: 760 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
         <Link href="/admin/products" style={{ fontSize: '0.85rem', color: 'var(--grey-400)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
           Products
         </Link>
-        <h1 className="animated-gradient-text" style={{ fontSize: '1.4rem' }}>Edit Product</h1>
+        <h1 className="animated-gradient-text" style={{ fontSize: '1.4rem' }}>
+          Edit Product
+        </h1>
       </div>
 
       {error && (
@@ -195,7 +213,7 @@ export default function EditProductPage() {
       )}
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-        <div className="glass-panel hover-lift stagger-fade-in">
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
           <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>Product Information</h3>
             <div className="grid-2" style={{ gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
@@ -220,8 +238,7 @@ export default function EditProductPage() {
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="image_url">Product Image <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 400 }}>Optional</span></label>
-              <input id="image_url" type="file" accept="image/*" ref={fileInputRef} className="form-input" style={{ padding: '8px' }}
-                onChange={(e) => { if (e.target.files?.[0]) { const url = URL.createObjectURL(e.target.files[0]); set('image_url', url); } }} />
+              <input id="image_url" type="file" accept="image/*" ref={fileInputRef} className="form-input" style={{ padding: '8px' }} onChange={(e) => { if (e.target.files?.[0]) { const url = URL.createObjectURL(e.target.files[0]); set('image_url', url); } }} />
               {form.image_url && (
                 <div style={{ marginTop: 'var(--space-3)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: 'var(--border-subtle)', width: 120, height: 120, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Image src={form.image_url} alt="Product Preview" width={120} height={120} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -232,7 +249,7 @@ export default function EditProductPage() {
           </div>
         </div>
 
-        <div className="glass-panel hover-lift stagger-fade-in">
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.2s' }}>
           <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>Pricing</h3>
             <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
@@ -269,6 +286,7 @@ export default function EditProductPage() {
                   </div>
                 </div>
               </div>
+              <p style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)', marginBottom: 0 }}>If Set, Agents Purchasing At Or Above The Threshold Quantity Will Receive This Flat Unit Cost Regardless Of Their Tier.</p>
             </div>
             {validCost && multipliers.tier_1 != null && (
               <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(192,184,168,0.15)' }}>
@@ -283,7 +301,7 @@ export default function EditProductPage() {
           </div>
         </div>
 
-        <div className="glass-panel hover-lift stagger-fade-in">
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.3s' }}>
           <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>Inventory & Shipping</h3>
             <div style={{ padding: 'var(--space-4)', background: invCount > 0 ? 'rgba(192,184,168,0.06)' : 'rgba(246,173,85,0.06)', border: `1px solid ${invCount > 0 ? 'rgba(192,184,168,0.3)' : 'rgba(246,173,85,0.3)'}`, borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -294,23 +312,15 @@ export default function EditProductPage() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-              <div className="form-group" style={{ flex: '1 1 120px', marginBottom: 0 }}>
-                <label className="form-label" htmlFor="inventory_count">Units In Stock</label>
-                <input id="inventory_count" type="number" min="0" className="form-input" placeholder="0" value={form.inventory_count} onChange={e => set('inventory_count', e.target.value)} />
-              </div>
-              <div className="form-group" style={{ flex: '1 1 140px', marginBottom: 0 }}>
-                <label className="form-label" htmlFor="low_stock_threshold">Low Stock Alert</label>
-                <input id="low_stock_threshold" type="number" min="0" className="form-input" placeholder="5" value={form.low_stock_threshold} onChange={e => set('low_stock_threshold', e.target.value)} />
-              </div>
-              <div className="form-group" style={{ flex: '1 1 120px', marginBottom: 0 }}>
-                <label className="form-label" htmlFor="backorder_days">Backorder Days</label>
-                <input id="backorder_days" type="number" min="1" className="form-input" placeholder="14" value={form.backorder_days} onChange={e => set('backorder_days', e.target.value)} />
-              </div>
+              <div className="form-group" style={{ flex: '1 1 120px', marginBottom: 0 }}><label className="form-label" htmlFor="inventory_count">Units In Stock</label><input id="inventory_count" type="number" min="0" className="form-input" placeholder="0" value={form.inventory_count} onChange={e => set('inventory_count', e.target.value)} /></div>
+              <div className="form-group" style={{ flex: '1 1 140px', marginBottom: 0 }}><label className="form-label" htmlFor="low_stock_threshold">Low Stock Alert <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 400, display: 'block' }}>(Badge Below This)</span></label><input id="low_stock_threshold" type="number" min="0" className="form-input" placeholder="5" value={form.low_stock_threshold} onChange={e => set('low_stock_threshold', e.target.value)} /></div>
+              <div className="form-group" style={{ flex: '1 1 120px', marginBottom: 0 }}><label className="form-label" htmlFor="backorder_days">Backorder Days</label><input id="backorder_days" type="number" min="1" className="form-input" placeholder="14" value={form.backorder_days} onChange={e => set('backorder_days', e.target.value)} /></div>
             </div>
+            <div style={{ marginTop: 'var(--space-3)', fontSize: '0.78rem', color: 'var(--grey-400)' }}>Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Out Of Stock / Backordered". When Restocked, Storefronts Instantly Update To "In Stock - Ships Now."</div>
           </div>
         </div>
 
-        <div className="glass-panel hover-lift stagger-fade-in">
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.4s' }}>
           <div className="" style={{ padding: 'var(--space-5)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--silver)' }}>
               <input type="checkbox" checked={form.is_active} onChange={e => set('is_active', e.target.checked)} style={{ accentColor: 'var(--teal)', width: 18, height: 18 }} />
