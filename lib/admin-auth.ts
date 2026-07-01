@@ -88,7 +88,9 @@ export async function requireOrdersAccess(): Promise<
 }
 
 /**
- * Guards API routes that can be accessed by Agents (or Admins).
+ * Guards API routes that can only be accessed by Agents (agent or super_agent).
+ * Admins must use admin-prefixed routes; passing admin through here violates the
+ * agent ownership assumption that all agent routes rely on (agent_id = callerId).
  */
 export async function requireAgent(): Promise<
   | { ok: true; user: { id: string } }
@@ -111,7 +113,9 @@ export async function requireAgent(): Promise<
     .eq('id', user.id)
     .maybeSingle();
 
-  if (profile?.role !== 'agent' && profile?.role !== 'super_agent' && profile?.role !== 'admin') {
+  // BUG 7 fix: removed 'admin' from the allowed set. Admins are not agents and
+  // must not pass agent-scoped ownership checks with a mismatched callerId.
+  if (profile?.role !== 'agent' && profile?.role !== 'super_agent') {
     return {
       ok: false,
       response: NextResponse.json({ error: 'Forbidden. Agent Access Required.' }, { status: 403 }),
