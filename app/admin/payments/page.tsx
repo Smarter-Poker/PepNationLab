@@ -123,7 +123,7 @@ export default function AdminPaymentsPage() {
                             {a.full_name || a.email}{a.is_super_agent ? ' - Super' : ''}
                           </span>
                           <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'capitalize' }}>
-                            {a.account_type || 'Unset'}
+                            {a.account_type || 'unset'}
                           </span>
                         </span>
                         <span style={{ fontSize: '0.8rem', color: owes > 0 ? '#ff6b6b' : 'var(--grey-500)', whiteSpace: 'nowrap' }}>

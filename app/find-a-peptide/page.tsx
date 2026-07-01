@@ -14,12 +14,10 @@ export default async function FindAPeptidePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Security gate - redirect logged out users to login
   if (!user) {
     redirect('/login');
   }
 
-  // Get user profile role and referring agent details
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, id, referring_agent_id, parent_agent_id')
@@ -35,7 +33,6 @@ export default async function FindAPeptidePage() {
   if (profile.role === 'researcher' && profile.referring_agent_id) {
     agentId = profile.referring_agent_id;
   } else if ((profile.role === 'agent' || profile.role === 'super_agent')) {
-    // If agent is a sub-agent, use parent agent storefront; else use their own
     if (profile.parent_agent_id) {
       agentId = profile.parent_agent_id;
     } else {
@@ -45,7 +42,6 @@ export default async function FindAPeptidePage() {
 
   let agent = null;
 
-  // Resolve the agent profile using active flag
   if (agentId) {
     const { data: ap } = await supabase
       .from('agent_profiles')
@@ -56,7 +52,6 @@ export default async function FindAPeptidePage() {
     agent = ap;
   }
 
-  // Fallback to first active agent profile if no agent context could be resolved
   if (!agent) {
     const { data: fallbackAgent } = await supabase
       .from('agent_profiles')
@@ -82,7 +77,6 @@ export default async function FindAPeptidePage() {
     );
   }
 
-  // Query products for this agent storefront
   const { data: products } = await supabase
     .from('agent_products')
     .select(`
@@ -112,7 +106,6 @@ export default async function FindAPeptidePage() {
 
   const productList = products || [];
 
-  // Query compound details for these products
   const compoundsBySlug = await getCompoundsBySlugs(
     productList.map((p: any) => p.products?.compound_slug)
   );

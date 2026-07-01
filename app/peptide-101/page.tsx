@@ -46,7 +46,6 @@ export default function Peptide101LandingPage() {
   const landingState = Math.min(completedModules + 1, 14);
   const CONTENT = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s11','s12','s13','s14'];
 
-  // "Continue Learning" / "Continue To Module" -> always goes to real saved progress
   const routeToNext = () => {
     let lastScreen = '';
     try {
@@ -67,12 +66,10 @@ export default function Peptide101LandingPage() {
   };
 
   const handleModuleClick = (modId: string, index: number) => {
-    // Always reset per-module page so it starts from page 1
     try {
       localStorage.removeItem(`p101_m${index + 1}_page`);
       localStorage.removeItem(`p101_v14_cur_${modId}`);
     } catch(e) {}
-    // Navigate -- always, no lock check for now
     window.location.href = `/peptide-101/course#${modId}`;
   };
 
@@ -85,28 +82,24 @@ export default function Peptide101LandingPage() {
           style={{ width: '100%', height: 'auto', display: 'block' }}
         />
 
-        {/* Top Nav Hotspots */}
         <div onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} style={{ position: 'absolute', top: '0%', left: '0%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Overview"></div>
         <div onClick={() => window.location.href='/peptide-101/course#s1'} style={{ position: 'absolute', top: '0%', left: '20%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Roadmap"></div>
         <div onClick={() => window.location.href='/peptide-101/course#s6'} style={{ position: 'absolute', top: '0%', left: '40%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Families"></div>
         <div onClick={() => window.location.href='/peptide-101/course#s8'} style={{ position: 'absolute', top: '0%', left: '60%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Reconstitution"></div>
         <div onClick={() => window.location.href='/peptide-101/course#s10'} style={{ position: 'absolute', top: '0%', left: '80%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Certificate"></div>
 
-        {/* Main CTA Button (Top) */}
         <div
           onClick={routeToNext}
           style={{ position: 'absolute', top: '28%', left: '2%', width: '58%', height: '6%', cursor: 'pointer', zIndex: 10 }}
           title={landingState === 1 ? "Start Learning" : "Continue Learning"}
         ></div>
 
-        {/* 60+ Peptides (Glossary) */}
         <div
           onClick={() => window.location.href='/peptide-101/course#glossary'}
           style={{ position: 'absolute', top: '12%', left: '5%', width: '40%', height: '8%', cursor: 'pointer', zIndex: 10 }}
           title="60+ Peptides (Glossary)"
         ></div>
 
-        {/* Roadmap Module Hitboxes */}
         {CONTENT.concat(['s15']).map((modId, index) => {
           const ROADMAP_START = 54.9;
           const ROADMAP_STEP  = 1.84;
@@ -130,7 +123,7 @@ export default function Peptide101LandingPage() {
               }}
               title={
                 isLocked
-                  ? `Locked: Module ${index + 1} - Complete previous modules to unlock`
+                  ? `Locked: Module ${index + 1} - Complete Previous Modules To Unlock`
                   : isCurrent
                   ? `Continue: Module ${index + 1}`
                   : `Review: Module ${index + 1}`
@@ -139,21 +132,18 @@ export default function Peptide101LandingPage() {
           );
         })}
 
-        {/* View Roadmap Button */}
         <div
           onClick={routeToRoadmap}
           style={{ position: 'absolute', top: '28%', left: '61%', width: '37%', height: '6%', cursor: 'pointer', zIndex: 10 }}
           title="View Roadmap"
         ></div>
 
-        {/* Bottom CTA Button */}
         <div
           onClick={routeToNext}
           style={{ position: 'absolute', bottom: '2%', left: '3%', width: '94%', height: '6%', cursor: 'pointer', zIndex: 10 }}
           title={landingState === 1 ? "Start Learning" : "Continue To Module"}
         ></div>
 
-        {/* Locked Module Toast */}
         {lockedToast && (
           <div style={{
             position: 'fixed',
@@ -184,7 +174,7 @@ export default function Peptide101LandingPage() {
             </div>
             <div>
               <div style={{ fontSize: '14px', fontWeight: '700', color: '#ef4444', marginBottom: '2px' }}>Module Locked</div>
-              <div style={{ fontSize: '12px', color: '#9ca3af' }}>Complete previous modules to unlock this one.</div>
+              <div style={{ fontSize: '12px', color: '#9ca3af' }}>Complete Previous Modules To Unlock This One.</div>
             </div>
           </div>
         )}
