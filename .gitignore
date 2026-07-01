@@ -62,3 +62,7 @@ components/.asg_b64_part*.txt
 components/.asg_p*.txt
 components/.b*.txt
 components/.full_b64.txt
+
+# Additional push-script b64 scratch files
+*_b64.txt
+*.b64.txt
