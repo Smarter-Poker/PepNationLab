@@ -1735,7 +1735,17 @@ export default function AgentStorefrontGrid({
     // Apply activeCardIndex filters
     if (activeCardIndex === 1 && !deferredSearch.trim()) {
       result.sort((a, b) => getProductRankScore(b.g, b.search.score) - getProductRankScore(a.g, a.search.score));
-      result = result.slice(0, 10);
+      // Deduplicate by base name (strip trailing parenthetical) so the same peptide/stack
+      // can't appear twice just because it has variants sold as separate named products
+      // e.g. "The Wolverine Stack (BPC 10mg + TB 10mg)" and "The Wolverine Stack (BPC 5mg + TB 5mg)"
+      const seenBaseNames = new Map<string, typeof result[0]>();
+      for (const item of result) {
+        const baseName = item.g.name.replace(/\s*\(.*\)\s*$/, '').trim().toUpperCase();
+        if (!seenBaseNames.has(baseName)) {
+          seenBaseNames.set(baseName, item);
+        }
+      }
+      result = Array.from(seenBaseNames.values()).slice(0, 10);
     } else if (activeCardIndex !== null && activeCardIndex > 1 && !deferredSearch.trim()) {
       const activeCard = CARD_MAPPINGS.find(m => m.index === activeCardIndex);
       if (activeCard) {
