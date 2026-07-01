@@ -65,8 +65,9 @@ export async function GET(req: Request) {
       if (updErr) continue;
       changed++;
 
-      // Only celebrate an actual climb (old known and lower); skip first-seed + demotions.
-      if (oldLevel != null && newLevel > oldLevel) {
+      // Only celebrate an actual climb (old known and lower numerical level); skip first-seed + demotions.
+      // Note: Level 1 (Premium) is better than Level 3 (Rookie), so climb means newLevel < oldLevel.
+      if (oldLevel != null && newLevel < oldLevel) {
         leveledUp++;
         await notifyTierLevelUp(svc, id, nameByLevel.get(newLevel) ?? `Level ${newLevel}`);
       }
