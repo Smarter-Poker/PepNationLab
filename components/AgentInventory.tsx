@@ -405,7 +405,6 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
         </div>
       )}
 
-      {/* Smart Alerts Banner */}
       {alerts.length > 0 && (
         <div className="glass-panel">
           <div className="" style={{ borderLeft: '4px solid var(--orange)' }}>
@@ -446,7 +445,6 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
         </div>
       )}
 
-      {/* Header */}
       <div className="glass-panel">
         <div className="" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
@@ -496,7 +494,6 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
         </div>
       </div>
 
-      {/* Search Bar */}
       <input
         type="search"
         placeholder="Search Inventory By Name..."
@@ -521,7 +518,6 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
         </div>
       )}
 
-      {/* Flat list */}
       {effectiveViewMode === 'flat' && (
         <div className="glass-panel">
           <div className="" style={{ padding: 0, overflow: 'hidden' }}>
@@ -538,7 +534,6 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
         </div>
       )}
 
-      {/* Category list */}
       {effectiveViewMode === 'category' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
           {sortedCategories.length === 0 && (

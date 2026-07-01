@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Use the true RLS-bypassing admin client for all DB writes
   const admin = createAdminClient();
 
   const { data: callerProfile, error: profileErr } = await admin
