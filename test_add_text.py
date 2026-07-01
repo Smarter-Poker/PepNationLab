@@ -16,10 +16,10 @@ preview_dir = os.path.join(src_dir, 'preview')
 os.makedirs(preview_dir, exist_ok=True)
 
 try:
-    font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 20)
+    font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 16)
 except:
     try:
-        font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 20)
+        font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 16)
     except:
         font = ImageFont.load_default()
 
@@ -34,18 +34,16 @@ def draw_centered_text(draw, text, font, x, y):
 for filename, type_ in images:
     path = os.path.join(src_dir, filename)
     if not os.path.exists(path):
-        print(f"Missing {filename}")
         continue
         
     img = Image.open(path).convert('RGBA')
     draw = ImageDraw.Draw(img)
     
     if type_ == 'single':
-        draw_centered_text(draw, text, font, 512, 805)
+        draw_centered_text(draw, text, font, 512, 810)
     else:
-        draw_centered_text(draw, text, font, 330, 785)
-        draw_centered_text(draw, text, font, 694, 785)
+        draw_centered_text(draw, text, font, 330, 805)
+        draw_centered_text(draw, text, font, 694, 805)
         
     out_path = os.path.join(preview_dir, filename)
     img.save(out_path)
-    print(f"Saved {out_path}")
