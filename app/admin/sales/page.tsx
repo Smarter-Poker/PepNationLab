@@ -311,7 +311,7 @@ export default function AdminSalesPage() {
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', maxHeight: '60vh', overflowY: 'auto' }}>
                     {ledger.map((tx: any) => {
-                      const isCredit = ['credit', 'initial_deposit', 'statement_payment'].includes(tx.type);
+                      const isCredit = tx.type === 'adjustment' ? Number(tx.amount) >= 0 : ['credit', 'initial_deposit', 'statement_payment'].includes(tx.type);
                       const color = TX_TYPE_COLORS[tx.type] ?? 'var(--grey-400)';
                       return (
                         <div key={tx.id} style={{ padding: 'var(--space-3)', background: 'var(--surface-1)', borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)' }}>

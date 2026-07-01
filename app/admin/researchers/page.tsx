@@ -447,7 +447,7 @@ function ResearchersAdminPageInner() {
       if (outstandingOnly && !unpaidAgentIds.has(p.id)) return false;
       return true;
     });
-  }, [profiles, searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly, unpaidAgentIds]);
+  }, [profiles, searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly, unpaidAgentIds, viewingDownlineFor]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredProfiles.length / PAGE_SIZE));
@@ -500,306 +500,250 @@ function ResearchersAdminPageInner() {
             Create Researcher
           </button>
           <button
-            onClick={() => openCreateModal('agent')}
+            onClick={openCreateAgentModal}
             className="btn-neon-cyan"
             style={{ display: 'flex', alignItems: 'center', gap: 8 }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Create New Agent
+            Create Agent
           </button>
         </div>
       </div>
 
-      {/* Tabs & Search */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
-        <div style={{ display: 'flex', gap: 'var(--space-2)', padding: 8, borderRadius: 24, background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)' }}>
-          {[
-            { id: 'researchers', label: 'Researchers' },
-            { id: 'agents', label: 'Agents & Super Agents' },
-            { id: 'admins', label: 'Admins' },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              style={{
-                padding: 'var(--space-2) var(--space-4)',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                color: activeTab === tab.id ? '#fff' : 'var(--grey-400)',
-                background: activeTab === tab.id ? 'var(--teal)' : 'transparent',
-                border: 'none',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        <div style={{ position: 'relative', width: '100%', maxWidth: 320 }}>
-          <input
-            type="text"
-            className="form-input"
-            placeholder="Search Name, Username, Email, Or Phone..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{ 
-              paddingLeft: 'var(--space-8)', 
-              fontSize: '1.25rem', /* 33% larger than default ~0.95rem */
-              paddingBottom: '14px', /* moves text up */
-              paddingTop: '6px',
-              height: '48px'
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: 'var(--space-6)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        {(['researchers', 'agents', 'admins'] as const).map(tab => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => { setActiveTab(tab); setPage(1); }}
+            style={{
+              padding: 'var(--space-3) var(--space-5)',
+              fontSize: '0.85rem',
+              fontWeight: activeTab === tab ? 700 : 500,
+              color: activeTab === tab ? 'var(--teal)' : 'var(--grey-400)',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === tab ? '2px solid var(--teal)' : '2px solid transparent',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+              marginBottom: -1,
+              textTransform: 'capitalize',
             }}
-          />
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-            style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--grey-500)' }}>
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-        </div>
+          >
+            {tab === 'researchers' ? 'Researchers' : tab === 'agents' ? 'Agents' : 'Admins'}
+          </button>
+        ))}
       </div>
 
-      {/* Advanced Filters */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 'var(--space-3)',
-          marginBottom: 'var(--space-6)',
-          padding: 'var(--space-6)',
-          borderRadius: 24,
-          background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)',
-          boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)',
-          alignItems: 'flex-end',
-        }}
-      >
-        <div style={{ flex: '1 1 160px', minWidth: 140 }}>
-          <label className="form-label" style={{ fontSize: '0.7rem' }}>Role</label>
-          <select className="form-input" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
-            <option value="all">All Roles</option>
-            <option value="researcher">Researcher</option>
-            <option value="agent">Agent</option>
-            <option value="super_agent">Super Agent</option>
-            <option value="admin">Admin</option>
-            <option value="shipping">Shipping</option>
-          </select>
-        </div>
-        <div style={{ flex: '1 1 140px', minWidth: 130 }}>
-          <label className="form-label" style={{ fontSize: '0.7rem' }}>Activation</label>
-          <select className="form-input" value={activeFilter} onChange={e => setActiveFilter(e.target.value)}>
-            <option value="all">All</option>
-            <option value="active">Active</option>
+      {/* Filters */}
+      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-5)', flexWrap: 'wrap', alignItems: 'center' }}>
+        <input
+          type="text"
+          className="form-input"
+          placeholder="Search By Name, Username, Email, Or Phone"
+          value={searchQuery}
+          onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
+          style={{ maxWidth: 300, flex: '1 1 200px' }}
+        />
+        {activeTab !== 'admins' && (
+          <select className="form-input" value={activeFilter} onChange={e => { setActiveFilter(e.target.value); setPage(1); }} style={{ maxWidth: 160 }}>
+            <option value="all">All Status</option>
+            <option value="active">Active Only</option>
             <option value="deactivated">Deactivated</option>
           </select>
-        </div>
-        <div style={{ flex: '1 1 140px', minWidth: 130 }}>
-          <label className="form-label" style={{ fontSize: '0.7rem' }}>Tier (Agents)</label>
-          <select className="form-input" value={tierFilter} onChange={e => setTierFilter(e.target.value)}>
-            <option value="all">All Tiers</option>
-            <option value="tier_1">Tier 1</option>
-            <option value="tier_2">Tier 2</option>
-            <option value="tier_3">Tier 3</option>
-          </select>
-        </div>
-        <div style={{ flex: '1 1 140px', minWidth: 130 }}>
-          <label className="form-label" style={{ fontSize: '0.7rem' }}>Account Type</label>
-          <select className="form-input" value={accountTypeFilter} onChange={e => setAccountTypeFilter(e.target.value)}>
-            <option value="all">All Types</option>
-            <option value="credit">Credit</option>
-            <option value="prepaid">Prepaid</option>
-          </select>
-        </div>
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            fontSize: '0.78rem',
-            color: 'var(--silver)',
-            cursor: 'pointer',
-            padding: 'var(--space-2) var(--space-3)',
-            background: 'var(--surface-2)',
-            border: 'var(--border-subtle)',
-            borderRadius: 'var(--radius-sm)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={outstandingOnly}
-            onChange={e => setOutstandingOnly(e.target.checked)}
-            style={{ accentColor: 'var(--teal)' }}
-          />
-          Outstanding Statement Only
-        </label>
-        <button
-          type="button"
-          onClick={resetResearcherFilters}
-          className="btn-silver btn-sm"
-          style={{ fontSize: '0.78rem' }}
-        >
-          Reset
-        </button>
+        )}
+        {activeTab === 'agents' && (
+          <>
+            <select className="form-input" value={tierFilter} onChange={e => { setTierFilter(e.target.value); setPage(1); }} style={{ maxWidth: 160 }}>
+              <option value="all">All Tiers</option>
+              <option value="tier_1">Tier 1</option>
+              <option value="tier_2">Tier 2</option>
+              <option value="tier_3">Tier 3</option>
+            </select>
+            <select className="form-input" value={accountTypeFilter} onChange={e => { setAccountTypeFilter(e.target.value); setPage(1); }} style={{ maxWidth: 180 }}>
+              <option value="all">All Account Types</option>
+              <option value="credit">Credit</option>
+              <option value="prepaid">Prepaid</option>
+            </select>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: 'var(--silver)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              <input type="checkbox" checked={outstandingOnly} onChange={e => { setOutstandingOnly(e.target.checked); setPage(1); }} style={inputStyle} />
+              Outstanding Only
+            </label>
+          </>
+        )}
+        {(searchQuery || roleFilter !== 'all' || activeFilter !== 'all' || tierFilter !== 'all' || accountTypeFilter !== 'all' || outstandingOnly) && (
+          <button type="button" onClick={resetResearcherFilters}
+            style={{ fontSize: '0.78rem', color: 'var(--grey-400)', background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer' }}>
+            Clear Filters
+          </button>
+        )}
+        <span style={{ marginLeft: 'auto', fontSize: '0.78rem', color: 'var(--grey-500)' }}>
+          {filteredProfiles.length} Result{filteredProfiles.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
       {/* Downline Breadcrumb */}
       {viewingDownlineFor && activeTab === 'agents' && (
-        <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)', background: 'rgba(0,196,188,0.05)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <span style={{ color: 'var(--silver)' }}>Viewing Downline Agents For:</span>{' '}
-            <span style={{ fontWeight: 700, color: 'var(--teal)', fontSize: '1.05rem' }}>{viewingDownlineFor.full_name || viewingDownlineFor.username}</span>
-          </div>
-          <button onClick={() => setViewingDownlineFor(null)} className="btn-secondary btn-sm" style={{ padding: '6px 12px' }}>
-            &larr; Back To Top-Level Agents
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)', background: 'rgba(0,196,188,0.06)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,196,188,0.18)' }}>
+          <button type="button" onClick={() => setViewingDownlineFor(null)}
+            style={{ fontSize: '0.78rem', color: 'var(--teal)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            All Agents
           </button>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--grey-500)" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
+          <span style={{ fontWeight: 700, color: 'var(--teal)', fontSize: '1.05rem' }}>{viewingDownlineFor.full_name || viewingDownlineFor.username}</span>
+          <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>Sub-Agents</span>
         </div>
       )}
 
-      {/* Profile List */}
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12)' }}>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-16)' }}>
+          <div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
         </div>
       ) : error ? (
-        <div className="disclaimer-warning" style={{ padding: 'var(--space-6)' }}>
-          <p style={{ color: 'var(--red)', fontSize: '0.9rem' }}>{error}</p>
+        <div className="disclaimer-warning" style={{ padding: 'var(--space-5)' }}>
+          <p style={{ color: 'var(--red)' }}>{error}</p>
         </div>
       ) : filteredProfiles.length === 0 ? (
-        <div className="hover-lift stagger-fade-in" style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', animationDelay: '0.1s' }}>
-          <div className="" style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
-            <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem' }}>No Matching Profiles Found</p>
-          </div>
+        <div style={{ textAlign: 'center', padding: 'var(--space-16)', color: 'var(--grey-400)', fontSize: '0.9rem' }}>
+          No Profiles Match Your Current Filters.
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          {paginatedProfiles.map((profile, index) => {
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          {paginatedProfiles.map((profile, idx) => {
             const ap = Array.isArray(profile.agent_profiles) ? profile.agent_profiles[0] : profile.agent_profiles;
+            const isAgent = profile.role === 'agent' || profile.role === 'super_agent';
+            const isUnpaid = unpaidAgentIds.has(profile.id);
             return (
-              <div key={profile.id} className="hover-lift stagger-fade-in" style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', opacity: profile.is_active ? 1 : 0.6, animationDelay: `${0.1 + Math.min(index, 5) * 0.1}s` }}>
-                <div className="" style={{
-                  padding: 'var(--space-5)',
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: 'var(--space-4)',
-                }}>
-                {/* Avatar + Info */}
-                <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
-                  <div style={{
-                    width: 44, height: 44, borderRadius: '50%',
-                    background: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' ? 'var(--silver)' : 'var(--teal)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 700, color: '#fff', fontSize: '1rem',
-                  }}>
-                    {profile.full_name ? profile.full_name[0].toUpperCase() : '?'}
+              <div key={profile.id} className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: `${idx * 0.03}s` }}>
+                <div className="" style={{ padding: 'var(--space-4) var(--space-5)' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+                    {/* Avatar */}
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, var(--teal) 0%, #007A75 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff', fontSize: '1.1rem', flexShrink: 0 }}>
+                      {(profile.full_name || profile.email || '?')[0].toUpperCase()}
+                    </div>
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--white)' }}>
+                          {profile.full_name || profile.email}
+                        </span>
+                        {ap?.slug && <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>(@{ap.slug})</span>}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: 2 }}>
+                        {profile.username ? `@${profile.username}` : (profile.email ?? '').split('@')[0]}
+                        {profile.phone && ` • ${profile.phone}`}
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--grey-500)', marginTop: 4 }}>
+                        Joined {new Date(profile.created_at).toLocaleDateString()} • Disclaimer:{' '}
+                        <span style={{ color: profile.disclaimer_v1_accepted ? 'var(--teal)' : 'var(--red)' }}>
+                          {profile.disclaimer_v1_accepted ? 'Accepted' : 'Pending'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.74rem', marginTop: 4, color: profile.last_sign_in_at ? 'var(--silver)' : 'var(--grey-500)', fontStyle: profile.last_sign_in_at ? 'normal' : 'italic' }}>
+                        Last Logged In:{' '}
+                        <span style={{ fontWeight: 600 }}>
+                          {profile.last_sign_in_at ? new Date(profile.last_sign_in_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never Logged In'}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Badges */}
+                    <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: profile.role === 'admin' ? 'rgba(229,62,62,0.15)' : profile.role === 'super_agent' || profile.is_super_agent ? 'rgba(0,196,188,0.15)' : 'rgba(192,184,168,0.1)', color: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' || profile.is_super_agent ? 'var(--teal)' : 'var(--silver)', border: `1px solid ${profile.role === 'admin' ? 'rgba(229,62,62,0.3)' : profile.role === 'super_agent' || profile.is_super_agent ? 'rgba(0,196,188,0.3)' : 'rgba(192,184,168,0.2)'}` }}>
+                        {profile.is_super_agent ? 'Super Agent' : ROLE_LABELS[profile.role] ?? profile.role}
+                      </span>
+                      {profile.tier && (
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(0,196,188,0.1)', color: 'var(--teal)', border: '1px solid rgba(0,196,188,0.25)' }}>
+                          {TIER_LABELS[profile.tier] ?? profile.tier}
+                        </span>
+                      )}
+                      {!profile.is_active && (
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(229,62,62,0.12)', color: 'var(--red)', border: '1px solid rgba(229,62,62,0.25)' }}>
+                          Deactivated
+                        </span>
+                      )}
+                      {isUnpaid && (
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(229,62,62,0.12)', color: 'var(--red)', border: '1px solid rgba(229,62,62,0.25)' }}>
+                          Outstanding Balance
+                        </span>
+                      )}
+                    </div>
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', alignItems: 'center' }}>
+                      {isAgent && (
+                        <>
+                          <ViewAsButton agentId={profile.id} />
+                          <button onClick={() => openEditModal(profile)}
+                            style={{ fontSize: '0.75rem', padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(192,184,168,0.3)', background: 'none', color: 'var(--silver)', cursor: 'pointer' }}>
+                            Edit
+                          </button>
+                          <button onClick={() => openQrModal(profile)}
+                            style={{ fontSize: '0.75rem', padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(0,196,188,0.3)', background: 'none', color: 'var(--teal)', cursor: 'pointer' }}>
+                            QR
+                          </button>
+                          {profile.is_super_agent && (
+                            <button onClick={() => setViewingDownlineFor(profile)}
+                              style={{ fontSize: '0.75rem', padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(0,196,188,0.3)', background: 'none', color: 'var(--teal)', cursor: 'pointer' }}>
+                              Sub-Agents
+                            </button>
+                          )}
+                        </>
+                      )}
+                      {!isAgent && profile.role !== 'admin' && (
+                        <button onClick={() => openUpgradeModal(profile)}
+                          style={{ fontSize: '0.75rem', padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(0,196,188,0.3)', background: 'none', color: 'var(--teal)', cursor: 'pointer' }}>
+                          Upgrade
+                        </button>
+                      )}
+                      <button onClick={() => openBalanceModal(profile)}
+                        style={{ fontSize: '0.75rem', padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(192,184,168,0.3)', background: 'none', color: 'var(--silver)', cursor: 'pointer' }}>
+                        Balance
+                      </button>
+                      {profile.role !== 'admin' && (
+                        <button onClick={() => handleToggleActive(profile)}
+                          style={{ fontSize: '0.75rem', padding: '5px 12px', borderRadius: 6, border: `1px solid ${profile.is_active ? 'rgba(229,62,62,0.3)' : 'rgba(0,196,188,0.3)'}`, background: 'none', color: profile.is_active ? 'var(--red)' : 'var(--teal)', cursor: 'pointer' }}>
+                          {profile.is_active ? 'Deactivate' : 'Reactivate'}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                      <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--silver)' }}>
-                        {profile.full_name || 'No Name Provided'}
-                      </span>
-                      <span className="badge" style={{
-                        background: profile.role === 'admin' ? 'rgba(229,62,62,0.15)' : profile.role === 'super_agent' ? 'rgba(192,184,168,0.15)' : 'rgba(192,184,168,0.15)',
-                        color: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' ? 'var(--silver)' : 'var(--teal)',
-                        borderColor: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' ? 'var(--silver)' : 'var(--teal)',
-                      }}>
-                        {ROLE_LABELS[profile.role] ?? profile.role}
-                      </span>
-                      {ap?.slug && <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>(@{ap.slug})</span>}
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: 2 }}>
-                      {profile.username ? `@${profile.username}` : (profile.email ?? '').split('@')[0]}
-                      {profile.phone && ` • ${profile.phone}`}
-                    </div>
-                    <div style={{ fontSize: '0.74rem', color: 'var(--grey-500)', marginTop: 4 }}>
-                      Joined {new Date(profile.created_at).toLocaleDateString()} • Disclaimer:{' '}
-                      <span style={{ color: profile.disclaimer_v1_accepted ? 'var(--teal)' : 'var(--red)' }}>
-                        {profile.disclaimer_v1_accepted ? 'ACCEPTED' : 'PENDING'}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '0.74rem', marginTop: 4, color: profile.last_sign_in_at ? 'var(--silver)' : 'var(--grey-500)', fontStyle: profile.last_sign_in_at ? 'normal' : 'italic' }}>
-                      Last Logged In:{' '}
-                      <span style={{ fontWeight: 600 }}>
-                        {profile.last_sign_in_at ? new Date(profile.last_sign_in_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never Logged In'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right side: tier info + actions */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-6)' }}>
-                  {(profile.role === 'agent' || profile.role === 'super_agent') && (
-                    <div style={{ display: 'flex', gap: 'var(--space-6)' }}>
+                  {/* Agent Financial Summary */}
+                  {isAgent && (
+                    <div style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
                       <div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'uppercase' }}>Pricing Tier</div>
-                        <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--silver)' }}>
-                          {profile.tier ? (TIER_LABELS[profile.tier] ?? profile.tier) : 'None'}
+                        <div style={{ fontSize: '0.68rem', color: 'var(--grey-500)', marginBottom: 2 }}>Account Type</div>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--silver)' }}>
+                          {profile.account_type === 'credit' ? 'Credit' : 'Prepaid'}
                         </div>
                       </div>
-                      <div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'uppercase' }}>Balance / Limit</div>
-                        <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--silver)' }}>
-                          {profile.account_type === 'credit'
-                            ? `Credit $${(profile.credit_limit ?? 0).toFixed(2)}`
-                            : `Prepaid $${(profile.prepaid_balance ?? 0).toFixed(2)}`}
+                      {profile.account_type === 'prepaid' && (
+                        <div>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--grey-500)', marginBottom: 2 }}>Prepaid Balance</div>
+                          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: profile.prepaid_balance > 0 ? 'var(--teal)' : 'var(--red)', fontFamily: 'var(--font-brand)' }}>
+                            ${Number(profile.prepaid_balance || 0).toFixed(2)}
+                          </div>
                         </div>
-                      </div>
+                      )}
+                      {profile.account_type === 'credit' && (
+                        <div>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--grey-500)', marginBottom: 2 }}>Credit Limit</div>
+                          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>
+                            ${Number(profile.credit_limit || 0).toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+                      {profile.custom_markup_override != null && (
+                        <div>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--grey-500)', marginBottom: 2 }}>Custom Markup</div>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--teal)' }}>
+                            {Math.round(profile.custom_markup_override * 100)}%
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
-
-                  {/* Action Buttons */}
-                  <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <button
-                      onClick={() => handleToggleActive(profile)}
-                      style={{
-                        padding: 'var(--space-2) var(--space-3)',
-                        fontSize: '0.78rem', fontWeight: 600,
-                        background: profile.is_active ? 'rgba(229,62,62,0.1)' : 'rgba(192,184,168,0.1)',
-                        color: profile.is_active ? 'var(--red)' : 'var(--teal)',
-                        border: '1px solid currentColor',
-                        borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                      }}
-                    >
-                      {profile.is_active ? 'Deactivate' : 'Activate'}
-                    </button>
-
-                    <ViewAsButton
-                      targetUserId={profile.id}
-                      targetLabel={profile.full_name ?? profile.email}
-                    />
-
-                    {profile.is_super_agent === true && (
-                      <button onClick={() => setViewingDownlineFor(profile)} className="btn-secondary" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem' }}>
-                        View Downline
-                      </button>
-                    )}
-
-                    {profile.role === 'researcher' ? (
-                      <button onClick={() => openUpgradeModal(profile)} className="btn-neon-cyan" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem' }}>
-                        Upgrade To Agent
-                      </button>
-                    ) : (profile.role === 'agent' || profile.role === 'super_agent') ? (
-                      <>
-                        <button onClick={() => openEditModal(profile)} className="btn-silver" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem' }}>
-                          Configure
-                        </button>
-                        {profile.account_type === 'prepaid' && (
-                          <button onClick={() => openBalanceModal(profile)} className="btn-silver" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem', borderColor: '#68D391', color: '#68D391' }}>
-                            Adjust Balance
-                          </button>
-                        )}
-                        {ap?.slug && (
-                          <button onClick={() => openQrModal(profile)} className="btn-silver" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem', borderColor: 'var(--teal)', color: 'var(--teal)' }}>
-                            QR Code
-                          </button>
-                        )}
-                      </>
-                    ) : null}
-                  </div>
-                </div>
                 </div>
               </div>
             );
@@ -808,18 +752,21 @@ function ResearchersAdminPageInner() {
         </div>
       )}
 
-      {/* CREATE NEW AGENT MODAL */}
+      {/* CREATE AGENT / RESEARCHER MODAL */}
       {modalMode === 'create_agent' && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 'var(--space-4)' }}>
-          <div className="hover-lift stagger-fade-in" style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', width: '100%', maxWidth: 580, maxHeight: '92vh', overflowY: 'auto' }}>
+          <div className="hover-lift stagger-fade-in" style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="" style={{ padding: 'var(--space-2)' }}>
-              <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>
-                {createRole === 'researcher' ? 'Create New Researcher' : 'Create New Agent'}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
+              <h2 style={{ fontSize: '1.2rem' }}>
+                {createRole === 'researcher' ? 'Create Researcher Account' : 'Create Agent Account'}
               </h2>
-            <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
+              <button type="button" onClick={closeModal} style={{ background: 'none', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1 }}>x</button>
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
               {createRole === 'researcher'
-                ? 'Creates A Researcher Account Tied To The Agent You Select Below. No Storefront Or Pricing Tier Required.'
-                : 'Creates A Supabase Auth Account + Agent Profile Directly. No Registration Required.'}
+                ? 'Creates A New Researcher Account And Assigns Them To An Agent.'
+                : 'Creates A New Agent With A Full Storefront Configuration.'}
             </p>
 
             {modalError && (
@@ -829,174 +776,94 @@ function ResearchersAdminPageInner() {
             )}
 
             <form onSubmit={createRole === 'researcher' ? handleCreateResearcher : handleCreateAgent}>
-              <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Account Credentials</h4>
-              {/* R31: first/last on top row, username + password below. The
-                  globals.css rule `.form-group + .form-group { margin-top: var(--space-5); }`
-                  was pushing Last Name ~20px lower than First Name even though
-                  they sit side-by-side in the grid. Override marginTop on both
-                  so the two fields line up. */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
-                <div className="form-group" style={{ marginTop: 0 }}>
+              {/* Role Toggle */}
+              <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-5)', background: 'var(--black-2)', padding: 4, borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)' }}>
+                {(['agent', 'researcher'] as const).map(r => (
+                  <button key={r} type="button" onClick={() => setCreateRole(r)}
+                    style={{ flex: 1, padding: '8px 0', fontSize: '0.82rem', fontWeight: 600, color: createRole === r ? '#fff' : 'var(--grey-400)', background: createRole === r ? 'var(--teal)' : 'transparent', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}>
+                    {r === 'agent' ? 'Agent' : 'Researcher'}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                <div className="form-group">
                   <label className="form-label">First Name</label>
-                  <input type="text" className="form-input" placeholder="E.g. John" value={newFirstName}
+                  <input type="text" className="form-input" placeholder="First Name" value={newFirstName}
                     onChange={e => {
-                      const v = e.target.value;
-                      setNewFirstName(v);
-                      // Auto-populate the storefront display name + slug from the
-                      // first name only - far cleaner than dragging the last name
-                      // through .toLowerCase().replace(...) and getting hyphenated
-                      // surnames in the URL.
-                      const combined = `${v} ${newLastName}`.trim();
-                      setNewDisplayName(combined);
-                      setNewSlug(v.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, ''));
-                      // Auto-mirror the login username from the first name until
-                      // the operator manually edits it. This is the root-cause
-                      // guard: it stops the login handle from silently diverging
-                      // from the name via a typo (e.g. "Danimal" -> "dainimal").
+                      setNewFirstName(e.target.value);
                       if (!usernameDirty) {
-                        setNewUsername(v.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+                        const sanitized = e.target.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+                        setNewUsername(sanitized);
                       }
                     }} required />
                 </div>
-                <div className="form-group" style={{ marginTop: 0 }}>
+                <div className="form-group">
                   <label className="form-label">Last Name</label>
-                  <input type="text" className="form-input" placeholder="E.g. Smith" value={newLastName}
-                    onChange={e => {
-                      const v = e.target.value;
-                      setNewLastName(v);
-                      const combined = `${newFirstName} ${v}`.trim();
-                      setNewDisplayName(combined);
-                    }} />
+                  <input type="text" className="form-input" placeholder="Last Name" value={newLastName}
+                    onChange={e => setNewLastName(e.target.value)} />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Username</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="E.g. midway"
-                    value={newUsername}
-                    onChange={e => { setUsernameDirty(true); setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); }}
-                    required
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    aria-invalid={newUsernameBlocked || undefined}
-                    aria-describedby="admin-cr-username-status"
-                    style={{
-                      borderColor: newUsernameCheck.status === 'available'
-                        ? '#34D399'
-                        : newUsernameBlocked
-                          ? '#FC8181'
-                          : undefined,
-                    }}
-                  />
-                  {newUsernameMsg && (
-                    <div
-                      id="admin-cr-username-status"
-                      role="status"
-                      aria-live="polite"
-                      style={{
-                        marginTop: 6,
-                        fontSize: '0.78rem',
-                        color: newUsernameMsg.color,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {newUsernameMsg.tone === 'success' && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={newUsernameMsg.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
-                      {newUsernameMsg.tone === 'error' && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={newUsernameMsg.color} strokeWidth="3" strokeLinecap="round" aria-hidden>
-                          <line x1="18" y1="6" x2="6" y2="18" />
-                          <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                      )}
-                      {newUsernameMsg.tone === 'warn' && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={newUsernameMsg.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                          <line x1="12" y1="9" x2="12" y2="13" />
-                          <circle cx="12" cy="17" r="0.5" />
-                        </svg>
-                      )}
-                      {newUsernameMsg.tone === 'info' && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={newUsernameMsg.color} strokeWidth="2" strokeLinecap="round" aria-hidden>
-                          <circle cx="12" cy="12" r="9" />
-                          <line x1="12" y1="7" x2="12" y2="13" />
-                          <circle cx="12" cy="17" r="0.5" />
-                        </svg>
-                      )}
-                      <span>{newUsernameMsg.text}</span>
-                    </div>
-                  )}
-                </div>
+
+              <div className="form-group">
+                <label className="form-label">Login Username</label>
+                <input type="text" className="form-input" placeholder="E.g. john_doe (Login Handle)" value={newUsername}
+                  onChange={e => { setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); setUsernameDirty(true); }} required />
+                {newUsernameMsg && (
+                  <p style={{ fontSize: '0.72rem', marginTop: 4, color: newUsernameCheck.status === 'available' ? 'var(--teal)' : newUsernameCheck.status === 'checking' ? 'var(--grey-400)' : 'var(--red)' }}>
+                    {newUsernameMsg}
+                  </p>
+                )}
               </div>
-              <div className="form-group" style={{ marginBottom: 'var(--space-5)' }}>
-                <label className="form-label">Temporary Password (Min 8 Characters)</label>
-                <input type="text" className="form-input" placeholder="They Can Change This After First Login"
-                  value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={8} />
+
+              <div className="form-group">
+                <label className="form-label">Temporary Password</label>
+                <input type="password" className="form-input" placeholder="Set Initial Password" value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)} required minLength={6} />
               </div>
 
               {createRole === 'researcher' && (
-                <>
-                  <div style={{ marginBottom: 'var(--space-6)' }}></div>
-                  <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Account Owner</h4>
-                  <div className="form-group" style={{ marginBottom: 'var(--space-5)' }}>
-                    <label className="form-label">Assign To Account Owner</label>
-                    <select className="form-input" value={newParentAgentId} onChange={e => setNewParentAgentId(e.target.value)} required>
-                      <option value="">Select The Account Owner For This Researcher</option>
-                      {profiles
-                        .filter(p => p.role === 'agent' || p.role === 'super_agent' || p.role === 'admin')
-                        .sort((a, b) => (a.full_name || a.username || '').localeCompare(b.full_name || b.username || ''))
-                        .map(a => (
-                          <option key={a.id} value={a.id}>
-                            {(a.full_name || a.username || (a.role === 'admin' ? 'Admin' : 'Agent'))}{a.username ? ` (@${a.username})` : ''}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                </>
+                <div className="form-group">
+                  <label className="form-label">Assign To Agent (Account Owner)</label>
+                  <select className="form-input" value={newParentAgentId} onChange={e => setNewParentAgentId(e.target.value)} required>
+                    <option value="">Select Agent...</option>
+                    {profiles.filter(p => p.role === 'agent' || p.role === 'super_agent').map(a => (
+                      <option key={a.id} value={a.id}>{a.full_name || a.email}</option>
+                    ))}
+                  </select>
+                </div>
               )}
 
               {createRole === 'agent' && (
               <>
-              <div style={{ marginBottom: 'var(--space-6)' }}></div>
-
-              <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Pricing & Billing</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
                 <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">Pricing Tier</label>
                   <select className="form-input" value={newTier} onChange={e => setNewTier(e.target.value as any)} required>
-                    <option value="tier_1">Tier 1 - Best Pricing (50% House)</option>
-                    <option value="tier_2">Tier 2 - Standard Pricing (60% House)</option>
-                    <option value="tier_3">Tier 3 - Entry Pricing (70% House)</option>
+                    <option value="tier_1">Tier 1 - Best Pricing</option>
+                    <option value="tier_2">Tier 2 - Standard Pricing</option>
+                    <option value="tier_3">Tier 3 - Entry Pricing</option>
                   </select>
                 </div>
                 <div className="form-group" style={{ marginTop: 0 }}>
-                  <label className="form-label">Billing Mode</label>
+                  <label className="form-label">Billing Account Mode</label>
                   <select className="form-input" value={newAccountType} onChange={e => setNewAccountType(e.target.value as any)} required>
-                    <option value="prepaid">Prepaid (Pays Before Orders Ship)</option>
-                    <option value="credit">Credit (Weekly Statement Billing)</option>
+                    <option value="prepaid">Prepaid</option>
+                    <option value="credit">Credit (Weekly Statement)</option>
                   </select>
                 </div>
               </div>
-              {newAccountType === 'credit' && (
-                <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+              {newAccountType === 'credit' ? (
+                <div className="form-group">
                   <label className="form-label">Credit Limit ($)</label>
                   <input type="number" className="form-input" placeholder="E.g. 5000" value={newCreditLimit}
-                    onChange={e => setNewCreditLimit(e.target.value)} min="0" required />
+                    onChange={e => setNewCreditLimit(e.target.value)} required min="0" />
                 </div>
-              )}
-              {newAccountType === 'prepaid' && (
-                <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                  <label className="form-label">Starting Prepaid Balance ($) - Optional</label>
-                  <input type="number" className="form-input" placeholder="0.00" value={newPrepaidBalance}
-                    onChange={e => setNewPrepaidBalance(e.target.value)} min="0" step="0.01" />
+              ) : (
+                <div className="form-group">
+                  <label className="form-label">Initial Prepaid Balance ($)</label>
+                  <input type="number" className="form-input" placeholder="E.g. 1000" value={newPrepaidBalance}
+                    onChange={e => setNewPrepaidBalance(e.target.value)} min="0" />
                 </div>
               )}
 
@@ -1004,7 +871,7 @@ function ResearchersAdminPageInner() {
 
               <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Storefront Setup</h4>
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label">User Name</label>
+                <label className="form-label">Display Name</label>
                 <input type="text" className="form-input" placeholder="E.g. Pep Nation Orlando" value={newDisplayName}
                   onChange={e => setNewDisplayName(e.target.value)} required />
               </div>
@@ -1041,7 +908,7 @@ function ResearchersAdminPageInner() {
                     : newUsernameBlocked
                       ? 'Pick A Different Username'
                       : newUsernameCheck.status === 'checking'
-                        ? 'Checking Username…'
+                        ? 'Checking Username...'
                         : (createRole === 'researcher' ? 'Create Researcher Account' : 'Create Agent Account')}
                 </button>
               </div>
@@ -1113,7 +980,7 @@ function ResearchersAdminPageInner() {
                   <div style={{ marginBottom: 'var(--space-6)' }}></div>
                   <h4 style={{ fontSize: '0.9rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Agent Storefront Configuration</h4>
                   <div className="form-group">
-                    <label className="form-label">User Name</label>
+                    <label className="form-label">Display Name</label>
                     <input type="text" className="form-input" placeholder="E.g. Pep Nation Orlando"
                       value={formDisplayName} onChange={e => setFormDisplayName(e.target.value)} required />
                   </div>
@@ -1130,7 +997,7 @@ function ResearchersAdminPageInner() {
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-6)' }}>
                 <button type="button" className="btn-silver" onClick={closeModal} disabled={submitting}>Cancel</button>
                 <button type="submit" className="btn-neon-cyan" disabled={submitting}>
-                  {submitting ? 'Processing...' : modalMode === 'upgrade' ? 'Complete Upgrade' : 'Save Changes'}
+                  {submitting ? 'Saving...' : modalMode === 'upgrade' ? 'Upgrade To Agent' : 'Save Changes'}
                 </button>
               </div>
             </form>
@@ -1139,102 +1006,74 @@ function ResearchersAdminPageInner() {
         </div>
       )}
 
-      {/* BALANCE ADJUSTMENT MODAL */}
+      {/* BALANCE MODAL */}
       {modalMode === 'balance' && selectedProfile && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 'var(--space-4)' }}>
-          <div style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', width: '100%', maxWidth: 400 }}>
+          <div className="hover-lift stagger-fade-in" style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', width: '100%', maxWidth: 420 }}>
             <div className="" style={{ padding: 'var(--space-2)' }}>
-              <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Adjust Prepaid Balance</h2>
-            <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)' }}>
-              {selectedProfile.full_name}{selectedProfile.username ? ` (@${selectedProfile.username})` : ''}
-            </p>
-            <div style={{ padding: 'var(--space-3) var(--space-4)', background: 'rgba(192,184,168,0.06)', border: '1px solid rgba(192,184,168,0.2)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-5)' }}>
-              <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', marginBottom: 4 }}>Current Balance</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
-                ${(selectedProfile.prepaid_balance ?? 0).toFixed(2)}
-              </div>
-            </div>
-
-            {modalError && (
-              <div className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3)' }}>
-                <p style={{ color: 'var(--red)', fontSize: '0.82rem' }}>{modalError}</p>
-              </div>
-            )}
-            {modalSuccess && (
-              <div style={{ background: 'rgba(104,211,145,0.1)', border: '1px solid rgba(104,211,145,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-                <p style={{ color: '#68D391', fontSize: '0.85rem', margin: 0 }}>{modalSuccess}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleBalanceSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-                {(['add', 'deduct'] as const).map(type => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setBalanceType(type)}
-                    style={{
-                      padding: 'var(--space-3)',
-                      fontSize: '0.85rem',
-                      fontWeight: 600,
-                      border: `2px solid ${balanceType === type ? (type === 'add' ? '#68D391' : 'var(--red)') : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: 'var(--radius-md)',
-                      background: balanceType === type ? (type === 'add' ? 'rgba(104,211,145,0.1)' : 'rgba(229,62,62,0.1)') : 'transparent',
-                      color: balanceType === type ? (type === 'add' ? '#68D391' : 'var(--red)') : 'var(--grey-400)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {type === 'add' ? '+ Add Funds' : '− Deduct Funds'}
+              <h2 style={{ fontSize: '1.15rem', marginBottom: 'var(--space-2)' }}>Adjust Prepaid Balance</h2>
+              <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
+                {selectedProfile.full_name} — Current Balance: <strong style={{ color: 'var(--teal)' }}>${Number(selectedProfile.prepaid_balance || 0).toFixed(2)}</strong>
+              </p>
+              {modalError && (
+                <div className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3)' }}>
+                  <p style={{ color: 'var(--red)', fontSize: '0.82rem' }}>{modalError}</p>
+                </div>
+              )}
+              {modalSuccess && (
+                <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3)', background: 'rgba(0,196,188,0.1)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,196,188,0.25)' }}>
+                  <p style={{ color: 'var(--teal)', fontSize: '0.82rem' }}>{modalSuccess}</p>
+                </div>
+              )}
+              <form onSubmit={handleBalanceSubmit}>
+                <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                  {(['add', 'deduct'] as const).map(t => (
+                    <button key={t} type="button" onClick={() => setBalanceType(t)}
+                      style={{ flex: 1, padding: 'var(--space-3)', fontSize: '0.85rem', fontWeight: 600, color: balanceType === t ? '#fff' : 'var(--grey-400)', background: balanceType === t ? (t === 'add' ? 'var(--teal)' : 'var(--red)') : 'var(--black-2)', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer' }}>
+                      {t === 'add' ? 'Add Funds' : 'Deduct Funds'}
+                    </button>
+                  ))}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Amount ($)</label>
+                  <input type="number" className="form-input" placeholder="Enter Amount" value={balanceDelta}
+                    onChange={e => setBalanceDelta(e.target.value)} required min="0.01" step="0.01" autoFocus />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-5)' }}>
+                  <button type="button" className="btn-silver" onClick={closeModal} disabled={submitting}>Cancel</button>
+                  <button type="submit" className={balanceType === 'add' ? 'btn-neon-cyan' : 'btn-danger'} disabled={submitting}>
+                    {submitting ? 'Updating...' : balanceType === 'add' ? 'Add Funds' : 'Deduct Funds'}
                   </button>
-                ))}
-              </div>
-              <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
-                <label className="form-label">Amount ($)</label>
-                <input type="number" className="form-input" placeholder="0.00" step="0.01" min="0.01"
-                  value={balanceDelta} onChange={e => setBalanceDelta(e.target.value)} required />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
-                <button type="button" className="btn-silver" onClick={closeModal} disabled={submitting}>Close</button>
-                <button type="submit" className="btn-neon-cyan" disabled={submitting}
-                  style={{ background: balanceType === 'add' ? undefined : 'var(--red)', borderColor: balanceType === 'add' ? undefined : 'var(--red)' }}>
-                  {submitting ? 'Updating...' : balanceType === 'add' ? 'Add To Balance' : 'Deduct From Balance'}
-                </button>
-              </div>
-            </form>
+                </div>
+              </form>
             </div>
           </div>
         </div>
       )}
 
       {/* QR CODE MODAL */}
-      {modalMode === 'qr' && selectedProfile && resolvedAgentProfile && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 'var(--space-4)' }}>
-          <div style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', width: '100%', maxWidth: 420 }}>
-            <div className="" style={{ padding: 'var(--space-2)', textAlign: 'center' }}>
-              <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Storefront QR Code</h2>
-            <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
-              {resolvedAgentProfile.display_name} (@{resolvedAgentProfile.slug})
-            </p>
-            {resolvedAgentProfile.qr_code_url ? (
-              <div style={{ background: '#0a1018', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', border: 'var(--border-silver)', display: 'inline-block', marginBottom: 'var(--space-6)', width: 250, height: 250 }}>
-                <Image src={resolvedAgentProfile.qr_code_url} alt={`${resolvedAgentProfile.display_name} QR`} width={240} height={240} unoptimized style={{ width: '100%', height: '100%', borderRadius: 'var(--radius-md)' }} />
-              </div>
-            ) : (
-              <p style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 'var(--space-6)' }}>No QR Code Generated Yet</p>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              <a href={resolvedAgentProfile.qr_code_url || '#'} download={`${resolvedAgentProfile.slug}-qr.png`} target="_blank" rel="noopener noreferrer" className="btn-neon-cyan" style={{ width: '100%', justifyContent: 'center' }}>
-                Download QR Code
-              </a>
-              <a href={`/${resolvedAgentProfile.slug}`} rel="noreferrer" className="btn-silver" style={{ width: '100%', justifyContent: 'center' }}>
-                Visit Storefront
-              </a>
-              <button type="button" className="btn-silver" onClick={closeModal}>Close</button>
-            </div>
+      {modalMode === 'qr' && selectedProfile && (() => {
+        const ap = Array.isArray(selectedProfile.agent_profiles) ? selectedProfile.agent_profiles[0] : selectedProfile.agent_profiles;
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 'var(--space-4)' }}>
+            <div className="hover-lift stagger-fade-in" style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85)', width: '100%', maxWidth: 400, textAlign: 'center' }}>
+              <h2 style={{ fontSize: '1.15rem', marginBottom: 'var(--space-2)' }}>Agent QR Code</h2>
+              <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
+                {ap?.display_name || selectedProfile.full_name}
+              </p>
+              {ap?.qr_code_url ? (
+                <Image src={ap.qr_code_url} alt="QR Code" width={200} height={200} style={{ borderRadius: 12, margin: '0 auto var(--space-4)' }} />
+              ) : (
+                <p style={{ color: 'var(--grey-400)', marginBottom: 'var(--space-4)' }}>No QR Code Generated Yet</p>
+              )}
+              {ap?.slug && (
+                <p style={{ fontSize: '0.8rem', color: 'var(--grey-500)' }}>pepnationlab.com/{ap.slug}</p>
+              )}
+              <button type="button" className="btn-silver" onClick={closeModal} style={{ marginTop: 'var(--space-5)' }}>Close</button>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
@@ -1243,12 +1082,9 @@ function ResearchersAdminPageInner() {
 
 export default function ResearchersAdminPage() {
   return (
-    <Suspense fallback={
-      <div style={{ padding: 'var(--space-8)' }}>
-        <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>Loading Profiles...</p>
-      </div>
-    }>
+    <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-16)' }}><div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} /></div>}>
       <ResearchersAdminPageInner />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </Suspense>
   );
 }
