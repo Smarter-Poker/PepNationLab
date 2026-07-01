@@ -156,7 +156,7 @@ export default function PricingTiersPage() {
                         <span style={{ color: "var(--silver)", fontWeight: 600 }}>${Number(sampleBaseCost).toFixed(2)}</span>{" "}
                         = Retail Price Per Unit{" "}
                         <span style={{ color: "var(--teal)", fontWeight: 700 }}>
-                          ${(Number(sampleBaseCost) * tier.multiplier / 10).toFixed(2)}
+                          ${(Number(sampleBaseCost) * tier.multiplier).toFixed(2)}
                         </span>
                       </div>
                       <button onClick={() => startEdit(tier)} className="btn-silver" style={{ padding: "var(--space-2) var(--space-4)", fontSize: "0.76rem" }}>
@@ -230,7 +230,7 @@ export default function PricingTiersPage() {
                   Live Multiplier Preview:{" "}
                   <span style={{ color: "var(--silver)", fontWeight: 600 }}>${Number(sampleBaseCost).toFixed(2)}</span>{" "}
                   * {isNaN(Number(editMultiplier)) ? "0" : Number(editMultiplier).toFixed(2)}x ={" "}
-                  <span style={{ color: "var(--teal)", fontWeight: 700 }}>${(Number(sampleBaseCost) * (Number(editMultiplier) || 0) / 10).toFixed(2)}</span>
+                  <span style={{ color: "var(--teal)", fontWeight: 700 }}>${(Number(sampleBaseCost) * (Number(editMultiplier) || 0)).toFixed(2)}</span>
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)" }}>
