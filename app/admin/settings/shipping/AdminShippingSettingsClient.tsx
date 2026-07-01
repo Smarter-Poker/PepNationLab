@@ -124,6 +124,8 @@ export default function AdminShippingSettingsClient() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
   const [agentAssignLoading, setAgentAssignLoading] = useState<string | null>(null);
+  // Controlled state for each agent's origin dropdown — keyed by agent.id.
+  // Initialized from agentWarehouses on load so the select reflects the saved value.
   const [agentOriginSelections, setAgentOriginSelections] = useState<Record<string, string>>({});
   const [webhookActivity, setWebhookActivity] = useState<WebhookActivity | null>(null);
 
@@ -149,6 +151,10 @@ export default function AdminShippingSettingsClient() {
   const [testAddr, setTestAddr] = useState('');
   const [testResult, setTestResult] = useState<string | null>(null);
   const [testLoading, setTestLoading] = useState(false);
+
+  // ---------------------------------------------------------------------------
+  // Data fetching
+  // ---------------------------------------------------------------------------
 
   const showToast = useCallback((msg: string, type: 'ok' | 'err') => {
     setToast({ msg, type });
@@ -192,6 +198,7 @@ export default function AdminShippingSettingsClient() {
         const d = await r.json();
         const agents = d.agents ?? [];
         setAgentWarehouses(agents);
+        // Seed the controlled select state from the saved warehouse_origin_id.
         const selections: Record<string, string> = {};
         for (const a of agents) selections[a.id] = a.warehouse_origin_id ?? '';
         setAgentOriginSelections(selections);
@@ -209,6 +216,10 @@ export default function AdminShippingSettingsClient() {
     })();
     return () => { cancelled = true; };
   }, [fetchStatus, fetchOrigins, fetchAgentWarehouses, fetchWebhookActivity]);
+
+  // ---------------------------------------------------------------------------
+  // Connect / Disconnect / Rotate
+  // ---------------------------------------------------------------------------
 
   async function handleConnect(e: React.FormEvent) {
     e.preventDefault();
@@ -270,12 +281,17 @@ export default function AdminShippingSettingsClient() {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Test address
+  // ---------------------------------------------------------------------------
+
   async function handleTestAddress(e: React.FormEvent) {
     e.preventDefault();
     if (!testAddr.trim()) return;
     setTestLoading(true);
     setTestResult(null);
     try {
+      // Parse a simple "street, city, state zip" string into an address object.
       const parts = testAddr.split(',').map((p) => p.trim());
       const street1 = parts[0] ?? '';
       const cityState = parts[1] ?? '';
@@ -302,6 +318,10 @@ export default function AdminShippingSettingsClient() {
       setTestLoading(false);
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Origins CRUD
+  // ---------------------------------------------------------------------------
 
   function startAddOrigin() {
     setEditingOrigin(null);
@@ -395,6 +415,10 @@ export default function AdminShippingSettingsClient() {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Render helpers
+  // ---------------------------------------------------------------------------
+
   const modePill = (mode: 'test' | 'live' | null) => {
     if (!mode) return null;
     const bg = mode === 'live' ? 'var(--teal)' : '#f59e0b';
@@ -452,6 +476,9 @@ export default function AdminShippingSettingsClient() {
         Shipping Settings
       </h1>
 
+      {/* ------------------------------------------------------------------ */}
+      {/* CARD 1 - Account Status                                             */}
+      {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           {status?.connected ? (
@@ -610,6 +637,9 @@ export default function AdminShippingSettingsClient() {
         )}
       </section>
 
+      {/* ------------------------------------------------------------------ */}
+      {/* CARD 2 - Warehouse Origins                                          */}
+      {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -768,6 +798,9 @@ export default function AdminShippingSettingsClient() {
         )}
       </section>
 
+      {/* ------------------------------------------------------------------ */}
+      {/* CARD 3 - Shipping Defaults / Test Address                           */}
+      {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           <Shield size={20} color="var(--teal)" />
@@ -809,6 +842,9 @@ export default function AdminShippingSettingsClient() {
         )}
       </section>
 
+      {/* ------------------------------------------------------------------ */}
+      {/* CARD 4 - Rate Cards (informational)                                 */}
+      {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           <Truck size={20} color="var(--teal)" />
@@ -828,6 +864,9 @@ export default function AdminShippingSettingsClient() {
         </div>
       </section>
 
+      {/* ------------------------------------------------------------------ */}
+      {/* CARD 4.5 - Agent Warehouses                                          */}
+      {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           <Package size={20} color="var(--teal)" />
@@ -917,6 +956,7 @@ export default function AdminShippingSettingsClient() {
                           if (!r.ok) throw new Error(d.error ?? 'Assign Failed');
                           showToast(`${agent.display_name} Now Ships From ${d.origin_label}.`, 'ok');
                         } else {
+                          // Clear the assignment - call DELETE on whichever origin they currently have.
                           if (!agent.warehouse_origin_id) {
                             showToast('Agent Already Has No Assignment.', 'ok');
                             return;
@@ -958,6 +998,9 @@ export default function AdminShippingSettingsClient() {
         )}
       </section>
 
+      {/* ------------------------------------------------------------------ */}
+      {/* CARD 5 - Webhook Status                                             */}
+      {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           <Shield size={20} color={status?.webhook_configured ? 'var(--teal)' : '#e53e3e'} />
@@ -998,6 +1041,7 @@ export default function AdminShippingSettingsClient() {
           )}
         </div>
 
+        {/* Inbound Webhook Activity (last 7 days) */}
         {webhookActivity && (
           <div style={{ marginTop: 'var(--space-4)', borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 'var(--space-4)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
@@ -1045,6 +1089,9 @@ export default function AdminShippingSettingsClient() {
         )}
       </section>
 
+      {/* ------------------------------------------------------------------ */}
+      {/* CARD 6 - Reconciliation                                             */}
+      {/* ------------------------------------------------------------------ */}
       <section className="card">
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           <DollarSign size={20} color="var(--teal)" />
