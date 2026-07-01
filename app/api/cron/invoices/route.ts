@@ -164,49 +164,22 @@ export async function GET(req: Request) {
         // Skip $0 invoices.
         if (totalOwed <= 0) continue;
 
-        // Only insert if no row exists yet for this agent+week.
-        // Never overwrite an existing row (paid OR open) — the UPSERT approach
-        // had a TOCTOU race where an agent payment between SELECT and UPSERT
-        // would flip a paid invoice back to open.
-        if (existingInvoice) {
-          // Row already exists (open, pending, etc.) — update amounts only,
-          // never touching the status column.
-          await supabase
-            .from('agent_invoices')
-            .update({
-              total_cogs: cogsRound,
-              total_shipping: shippingRound,
-              total_owed: totalOwed,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', existingInvoice.id)
-            .neq('status', 'paid'); // hard guard: never touch a paid invoice
-          // Don't send another notification — invoice already exists.
-          continue;
-        }
-
-        const { data: invoice, error: invoiceErr } = await supabase
-          .from('agent_invoices')
-          .insert({
-            super_agent_id: subAgent.parent_agent_id,
-            agent_id: subAgent.id,
-            week_start: weekStart,
-            week_end: weekEnd,
-            total_cogs: cogsRound,
-            total_shipping: shippingRound,
-            total_owed: totalOwed,
-            status: 'open',
-            updated_at: new Date().toISOString(),
-          })
-          .select('id')
-          .single();
+        const { data: invoiceId, error: invoiceErr } = await supabase.rpc('upsert_agent_invoice_atomic', {
+          p_super_agent_id: subAgent.parent_agent_id,
+          p_agent_id: subAgent.id,
+          p_week_start: weekStart,
+          p_week_end: weekEnd,
+          p_total_cogs: cogsRound,
+          p_total_shipping: shippingRound,
+          p_total_owed: totalOwed,
+        });
 
         if (invoiceErr) {
-          console.error('[invoices-cron] invoice insert failed for sub-agent', subAgent.id, invoiceErr.message);
+          console.error('[invoices-cron] invoice upsert failed for sub-agent', subAgent.id, invoiceErr.message);
           continue;
         }
 
-        if (invoice) {
+        if (invoiceId && !existingInvoice) {
           invoicesGenerated++;
           await supabase.from('internal_messages').insert({
             sender_id: subAgent.parent_agent_id,

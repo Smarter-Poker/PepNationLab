@@ -44,30 +44,13 @@ export async function GET(req: Request) {
       const amt = Number(ref.referrer_reward_amount) || 0;
       if (amt <= 0) continue;
 
-      // Atomically credit the referrer's prepaid balance
-      const { error: creditErr } = await supabase.rpc('credit_prepaid_balance', {
-        p_user_id: ref.referrer_id,
-        p_amount: amt,
-        p_reference_id: ref.id,
-        p_description: 'Referral Reward Credit',
+      // Atomically mark as rewarded and credit the referrer's prepaid balance
+      const { error: fulfillErr } = await supabase.rpc('fulfil_researcher_referral', {
+        p_referral_id: ref.id,
       });
 
-      if (creditErr) {
-        console.error('[referrals-fulfil] balance credit error for referral', ref.id, creditErr);
-        failed.push(ref.id);
-        continue;
-      }
-
-      // Atomically mark rewarded only if still pending — prevents double-credit
-      // if two concurrent invocations somehow both pass the claimCronRun gate.
-      const { error: updErr } = await supabase
-        .from('researcher_referrals')
-        .update({ status: 'rewarded', rewarded_at: new Date().toISOString() })
-        .eq('id', ref.id)
-        .eq('status', 'pending'); // guard: only update if still pending
-
-      if (updErr) {
-        console.error('[referrals-fulfil] status update error for referral', ref.id, updErr);
+      if (fulfillErr) {
+        console.error('[referrals-fulfil] fulfillment error for referral', ref.id, fulfillErr);
         failed.push(ref.id);
         continue;
       }
