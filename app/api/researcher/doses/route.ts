@@ -44,14 +44,43 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    if (typeof compound_slug !== 'string' || compound_slug.length > 100) {
+      return NextResponse.json({ error: 'compound_slug too long' }, { status: 400 });
+    }
+    if (typeof unit !== 'string' || unit.length > 20) {
+      return NextResponse.json({ error: 'unit too long' }, { status: 400 });
+    }
+    if (notes && (typeof notes !== 'string' || notes.length > 2000)) {
+      return NextResponse.json({ error: 'notes too long' }, { status: 400 });
+    }
+
+    const numericDose = Number(dose_amount);
+    if (!Number.isFinite(numericDose) || numericDose <= 0 || numericDose > 100_000) {
+      return NextResponse.json({ error: 'dose_amount must be a positive finite number under 100,000' }, { status: 400 });
+    }
+
+    const parsedDate = dosed_at ? new Date(dosed_at) : new Date();
+    if (isNaN(parsedDate.getTime())) {
+      return NextResponse.json({ error: 'Invalid dosed_at date' }, { status: 400 });
+    }
+
+    const { count } = await supabase
+      .from('researcher_doses')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user!.id);
+
+    if ((count ?? 0) >= 5000) {
+      return NextResponse.json({ error: 'Dose log limit reached (5000)' }, { status: 429 });
+    }
+
     const { data, error } = await supabase
       .from('researcher_doses')
       .insert({
         user_id: user!.id,
         compound_slug,
-        dose_amount,
+        dose_amount: numericDose,
         unit,
-        dosed_at: dosed_at || new Date().toISOString(),
+        dosed_at: parsedDate.toISOString(),
         notes
       })
       .select()

@@ -44,14 +44,43 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    if (typeof metric_name !== 'string' || metric_name.length > 100) {
+      return NextResponse.json({ error: 'metric_name too long' }, { status: 400 });
+    }
+    if (unit && (typeof unit !== 'string' || unit.length > 50)) {
+      return NextResponse.json({ error: 'unit too long' }, { status: 400 });
+    }
+    if (notes && (typeof notes !== 'string' || notes.length > 2000)) {
+      return NextResponse.json({ error: 'notes too long' }, { status: 400 });
+    }
+
+    const numericValue = Number(metric_value);
+    if (!Number.isFinite(numericValue) || numericValue < -1e9 || numericValue > 1e9) {
+      return NextResponse.json({ error: 'metric_value must be a finite number within safe range' }, { status: 400 });
+    }
+
+    const parsedDate = measured_at ? new Date(measured_at) : new Date();
+    if (isNaN(parsedDate.getTime())) {
+      return NextResponse.json({ error: 'Invalid measured_at date' }, { status: 400 });
+    }
+
+    const { count } = await supabase
+      .from('researcher_biometrics')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user!.id);
+
+    if ((count ?? 0) >= 1000) {
+      return NextResponse.json({ error: 'Biometric record limit reached (1000)' }, { status: 429 });
+    }
+
     const { data, error } = await supabase
       .from('researcher_biometrics')
       .insert({
         user_id: user!.id,
         metric_name,
-        metric_value: Number(metric_value),
+        metric_value: numericValue,
         unit,
-        measured_at: measured_at || new Date().toISOString(),
+        measured_at: parsedDate.toISOString(),
         notes
       })
       .select()

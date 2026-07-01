@@ -41,20 +41,28 @@ export async function POST(req: NextRequest) {
 
   // Rate limit per user to prevent Grok API cost abuse
   const ip = getClientIp(req);
-  const rl = await rateLimit({ key: 'ai_protocol', limit: 5, windowSeconds: 60, identifier: user.id || ip });
-  if (!rl.allowed) {
-    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  const rlMinute = await rateLimit({ key: 'ai_protocol_min', limit: 5, windowSeconds: 60, identifier: user.id || ip });
+  const rlDaily = await rateLimit({ key: 'ai_protocol_daily', limit: 20, windowSeconds: 86400, identifier: user.id || ip });
+  if (!rlMinute.allowed || !rlDaily.allowed) {
+    return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
   }
 
   try {
-    const { compounds, goal, experienceLevel, subjectMetrics } = await req.json();
+    const body = await req.json();
+    const { compounds, goal, experienceLevel, subjectMetrics } = body;
 
-    if (!compounds || !Array.isArray(compounds) || compounds.length === 0) {
-      return NextResponse.json({ error: 'At least one compound is required' }, { status: 400 });
+    if (!Array.isArray(compounds) || compounds.length === 0 || compounds.length > 10) {
+      return NextResponse.json({ error: 'Valid compounds array required (max 10)' }, { status: 400 });
     }
-    if (!goal) {
-      return NextResponse.json({ error: 'A research goal is required' }, { status: 400 });
+    const safeCompounds = compounds.filter(c => typeof c === 'string').map(c => String(c).slice(0, 100));
+
+    if (typeof goal !== 'string' || !goal.trim() || goal.length > 500) {
+      return NextResponse.json({ error: 'Goal must be a string under 500 characters' }, { status: 400 });
     }
+    const safeGoal = goal.trim();
+
+    const safeExperience = typeof experienceLevel === 'string' ? experienceLevel.slice(0, 100) : 'Not specified';
+    const safeMetrics = typeof subjectMetrics === 'string' ? subjectMetrics.slice(0, 500) : 'Not specified';
 
     if (!process.env.GROK_API_KEY) {
       return NextResponse.json({ error: 'AI service not configured' }, { status: 503 });
@@ -62,12 +70,12 @@ export async function POST(req: NextRequest) {
 
     const prompt = `
 You are an advanced expert in peptide and research compound protocols. 
-The researcher wants a protocol for the following goal: "${goal}"
-Using the following compounds: ${compounds.join(', ')}
+The researcher wants a protocol for the following goal: "${safeGoal}"
+Using the following compounds: ${safeCompounds.join(', ')}
 
 Subject Details (for dosage calibration and safety considerations):
-- Experience Level: ${experienceLevel || 'Not specified'}
-- Subject Metrics: ${subjectMetrics || 'Not specified'}
+- Experience Level: ${safeExperience}
+- Subject Metrics: ${safeMetrics}
 
 Please generate a detailed protocol formatted as a clean Markdown document. 
 Structure the response STRICTLY into two phases:
@@ -93,7 +101,7 @@ Keep it highly professional, structured, and easy to read. Do not use generic AI
       .from('researcher_notes')
       .insert({
         user_id: user.id,
-        title: `AI Protocol: ${goal}`,
+        title: `AI Protocol: ${safeGoal}`.slice(0, 255),
         note_text: protocolMarkdown
       })
       .select()

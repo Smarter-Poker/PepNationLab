@@ -43,6 +43,28 @@ export async function POST(req: NextRequest) {
     if (!product_ids || !Array.isArray(product_ids) || product_ids.length === 0) {
       return NextResponse.json({ error: 'Product IDs are required' }, { status: 400 });
     }
+    if (product_ids.length > 20) {
+      return NextResponse.json({ error: 'Cannot compare more than 20 products at once' }, { status: 400 });
+    }
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!product_ids.every((id: unknown) => typeof id === 'string' && UUID_RE.test(id))) {
+      return NextResponse.json({ error: 'Invalid product_ids format' }, { status: 400 });
+    }
+    if (folder_name && (typeof folder_name !== 'string' || folder_name.length > 100)) {
+      return NextResponse.json({ error: 'folder_name too long' }, { status: 400 });
+    }
+    if (notes && (typeof notes !== 'string' || notes.length > 2000)) {
+      return NextResponse.json({ error: 'notes too long' }, { status: 400 });
+    }
+
+    const { count } = await supabase
+      .from('researcher_comparisons')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user!.id);
+      
+    if ((count ?? 0) >= 100) {
+      return NextResponse.json({ error: 'Comparisons limit reached (100)' }, { status: 429 });
+    }
 
     const { data, error } = await supabase
       .from('researcher_comparisons')

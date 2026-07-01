@@ -85,9 +85,22 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const productId = typeof body?.productId === 'string' ? body.productId : null;
-  if (!productId) return NextResponse.json({ error: 'Missing productId' }, { status: 400 });
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!productId || !UUID_RE.test(productId)) {
+    return NextResponse.json({ error: 'Invalid productId' }, { status: 400 });
+  }
 
   const service = await createServiceClient();
+
+  const { count } = await service
+    .from('researcher_favorites')
+    .select('product_id', { count: 'exact', head: true })
+    .eq('user_id', user.id);
+    
+  if ((count ?? 0) >= 200) {
+    return NextResponse.json({ error: 'Favorites limit reached (200)' }, { status: 429 });
+  }
+
   const { error } = await service.from('researcher_favorites').upsert(
     { user_id: user.id, product_id: productId },
     { onConflict: 'user_id,product_id' }
@@ -106,7 +119,10 @@ export async function DELETE(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const productId = typeof body?.productId === 'string' ? body.productId : null;
-  if (!productId) return NextResponse.json({ error: 'Missing productId' }, { status: 400 });
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!productId || !UUID_RE.test(productId)) {
+    return NextResponse.json({ error: 'Invalid productId' }, { status: 400 });
+  }
 
   const service = await createServiceClient();
   const { error } = await service.from('researcher_favorites').delete()

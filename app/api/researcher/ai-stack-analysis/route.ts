@@ -16,9 +16,10 @@ export async function POST(req: NextRequest) {
   }
 
   const ip = getClientIp(req);
-  const rl = await rateLimit({ key: 'ai_stack_analysis', limit: 10, windowSeconds: 60, identifier: user.id || ip });
-  if (!rl.allowed) {
-    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  const rlMin = await rateLimit({ key: 'ai_stack_analysis_min', limit: 10, windowSeconds: 60, identifier: user.id || ip });
+  const rlDaily = await rateLimit({ key: 'ai_stack_analysis_daily', limit: 30, windowSeconds: 86400, identifier: user.id || ip });
+  if (!rlMin.allowed || !rlDaily.allowed) {
+    return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
   }
 
   try {
@@ -27,10 +28,20 @@ export async function POST(req: NextRequest) {
     }
 
     const { slugs, names } = await req.json();
-    const identifiers: string[] = slugs || names || [];
-    if (!identifiers || !Array.isArray(identifiers) || identifiers.length < 2) {
-      return NextResponse.json({ error: 'At least 2 compounds are required for stack analysis' }, { status: 400 });
+    if (!slugs && !names) {
+      return NextResponse.json({ error: 'Provide either slugs or names' }, { status: 400 });
     }
+    const rawIdentifiers = Array.isArray(slugs) ? slugs : Array.isArray(names) ? names : [];
+    
+    if (rawIdentifiers.length < 2 || rawIdentifiers.length > 10) {
+      return NextResponse.json({ error: 'Requires 2 to 10 compounds for stack analysis' }, { status: 400 });
+    }
+
+    const SAFE_RE = /^[a-zA-Z0-9 _\-\.]+$/;
+    if (!rawIdentifiers.every((id: unknown): id is string => typeof id === 'string' && id.length <= 100 && SAFE_RE.test(id))) {
+      return NextResponse.json({ error: 'Invalid compound identifier format' }, { status: 400 });
+    }
+    const identifiers = rawIdentifiers as string[];
 
     const supabase = await createServiceClient();
     
@@ -52,8 +63,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to load compounds for analysis' }, { status: 404 });
     }
 
+    const safeStr = (s: string | null, max = 500) => (s ?? '').replace(/[`${}\\]/g, '').slice(0, max);
     const compoundContext = compounds.map(c => 
-      `Name: ${c.display_name}\nTarget: ${c.molecular_target}\nMechanism: ${c.mechanism}\nSide Effects: ${c.side_effects}`
+      `Name: ${safeStr(c.display_name, 100)}\nTarget: ${safeStr(c.molecular_target)}\nMechanism: ${safeStr(c.mechanism)}\nSide Effects: ${safeStr(c.side_effects)}`
     ).join('\n---\n');
 
     const systemPrompt = `You are an expert peptide research pharmacologist. 

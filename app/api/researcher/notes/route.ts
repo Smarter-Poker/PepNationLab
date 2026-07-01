@@ -48,8 +48,26 @@ export async function POST(req: NextRequest) {
   try {
     const { compound_slug, title, note_text } = await req.json();
 
-    if (!note_text) {
+    if (!note_text || typeof note_text !== 'string') {
       return NextResponse.json({ error: 'Note text is required' }, { status: 400 });
+    }
+    if (note_text.length > 50_000) {
+      return NextResponse.json({ error: 'Note text exceeds maximum length (50,000 chars)' }, { status: 400 });
+    }
+    if (title && (typeof title !== 'string' || title.length > 255)) {
+      return NextResponse.json({ error: 'Title too long' }, { status: 400 });
+    }
+    if (compound_slug && (typeof compound_slug !== 'string' || compound_slug.length > 100)) {
+      return NextResponse.json({ error: 'compound_slug too long' }, { status: 400 });
+    }
+
+    const { count } = await supabase
+      .from('researcher_notes')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user!.id);
+
+    if ((count ?? 0) >= 500) {
+      return NextResponse.json({ error: 'Notes limit reached (500)' }, { status: 429 });
     }
 
     const { data, error } = await supabase
@@ -85,8 +103,14 @@ export async function PATCH(req: NextRequest) {
   try {
     const { id, title, note_text } = await req.json();
 
-    if (!id || !note_text) {
+    if (!id || !note_text || typeof note_text !== 'string') {
       return NextResponse.json({ error: 'ID and Note text are required' }, { status: 400 });
+    }
+    if (note_text.length > 50_000) {
+      return NextResponse.json({ error: 'Note text exceeds maximum length (50,000 chars)' }, { status: 400 });
+    }
+    if (title && (typeof title !== 'string' || title.length > 255)) {
+      return NextResponse.json({ error: 'Title too long' }, { status: 400 });
     }
 
     const { data, error } = await supabase
