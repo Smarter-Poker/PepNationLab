@@ -66,7 +66,7 @@ export default function AdminPaymentsPage() {
         body: JSON.stringify({ agentId: selected.id, amount: amt, note: note.trim() || undefined }),
       });
       const j = await res.json();
-      if (!res.ok) throw new Error(j.error || 'failed');
+      if (!res.ok) throw new Error(j.error || 'Payment Failed');
       const r = j.result || {};
       const paid = Number(r.statements_paid || 0);
       toast.success(paid > 0

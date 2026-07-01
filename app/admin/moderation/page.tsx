@@ -17,10 +17,10 @@ export default async function AdminModerationPage() {
   const service = await createServiceClient();
   const { data: me } = await service
     .from('profiles')
-    .select('role')
+    .select('role, is_active')
     .eq('id', user.id)
     .maybeSingle();
-  if (me?.role !== 'admin') redirect('/dashboard');
+  if (me?.role !== 'admin' || me?.is_active === false) redirect('/dashboard');
 
   return <AdminMessengerClient />;
 }

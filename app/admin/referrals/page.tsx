@@ -92,16 +92,21 @@ export default async function AdminReferralsPage() {
     'use server';
     const gate = await requireAdmin();
     if (!gate.ok) throw new Error('Unauthorized');
-    const admin = createAdminClient();
-    await admin.from('referral_settings').upsert({
-      id: 1,
-      is_active: formData.get('is_active') === 'on',
-      referrer_reward: Number(formData.get('referrer_reward') || 0),
-      referee_reward: Number(formData.get('referee_reward') || 0),
-      min_order_total: Number(formData.get('min_order_total') || 0),
-      updated_at: new Date().toISOString(),
-      updated_by: gate.userId,
-    });
+    const admin = await createAdminClient();
+    try {
+      await admin.from('referral_settings').upsert({
+        id: 1,
+        is_active: formData.get('is_active') === 'on',
+        referrer_reward: Number(formData.get('referrer_reward') || 0),
+        referee_reward: Number(formData.get('referee_reward') || 0),
+        min_order_total: Number(formData.get('min_order_total') || 0),
+        updated_at: new Date().toISOString(),
+        updated_by: gate.userId,
+      });
+    } catch (err) {
+      console.error('[saveSettings] referral_settings upsert failed:', err);
+      return;
+    }
     revalidatePath('/admin/referrals');
   }
 

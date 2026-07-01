@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import ReparentControl from '@/components/admin/ReparentControl';
 
+export const dynamic = 'force-dynamic';
+
 interface TreeRow {
   id: string;
   parent_id: string | null;
@@ -25,16 +27,17 @@ function fmtMoney(n: number): string {
 function roleBadge(row: TreeRow): { label: string; color: string } {
   if (row.role === 'admin') return { label: 'Admin', color: 'var(--red, #E53E3E)' };
   if (row.role === 'agent' && row.is_super_agent) return { label: 'Super Agent', color: 'var(--teal, #00C4BC)' };
+  if (row.role === 'super_agent') return { label: 'Super Agent', color: 'var(--teal, #00C4BC)' };
   if (row.role === 'agent') return { label: 'Agent', color: 'var(--silver, #A8B4C0)' };
-  return { label: row.role, color: 'var(--grey-400, #A8B4C0)' };
+  return { label: 'Agent', color: 'var(--grey-400, #A8B4C0)' };
 }
 
 export default async function AdminNetworkPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') redirect('/dashboard');
+  const { data: profile } = await supabase.from('profiles').select('role, is_active').eq('id', user.id).maybeSingle();
+  if (profile?.role !== 'admin' || profile?.is_active === false) redirect('/dashboard');
 
   const svc = await createServiceClient();
   const { data, error } = await svc.rpc('fn_admin_downline_tree', { p_days: 30 });
@@ -88,7 +91,7 @@ export default async function AdminNetworkPage() {
                     </span>
                     <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 999, border: `1px solid ${badge.color}`, color: badge.color, fontWeight: 700, flexShrink: 0 }}>{badge.label}</span>
                     <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: 160, flexShrink: 0 }}>
-                      <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--teal, #00C4BC)' }}>{fmtMoney(row.gmv)} <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 500 }}>own</span></span>
+                      <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--teal, #00C4BC)' }}>{fmtMoney(row.gmv)} <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 500 }}>Own</span></span>
                       <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Leg Total: {fmtMoney(leg)}{row.order_count > 0 ? ` - ${row.order_count} Orders` : ''}</span>
                     </span>
                   </Link>

@@ -63,7 +63,7 @@ export default function AdminCreditIncreasesPage() {
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || 'failed');
-      toast.success(decision === 'approved' ? `Approved - New Limit ${money(j.result?.new_limit || r.requested_limit)}` : 'Request Denied');
+      toast.success(decision === 'approved' ? `Approved - New Limit ${money(j.result?.new_limit ?? r.requested_limit)}` : 'Request Denied');
       await load();
     } catch (e: any) {
       toast.error(e.message || 'Failed');
@@ -99,7 +99,7 @@ export default function AdminCreditIncreasesPage() {
                     <div style={{ color: 'var(--grey-500)', fontSize: '0.76rem' }}>{r.agent_email} · {fmtDate(r.created_at)}</div>
                   </div>
                   <span style={{ color: STATUS_COLOR[r.status] || 'var(--grey-400)', fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase' }}>
-                    {r.status}
+                    {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
                   </span>
                 </div>
 

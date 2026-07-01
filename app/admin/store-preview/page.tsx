@@ -25,5 +25,5 @@ export default async function AdminStorePreviewRedirect() {
     redirect(`/${data.slug}`);
   }
 
-  redirect('/dashboard/agent?tab=Storefront+Config');
+  redirect('/admin');
 }
