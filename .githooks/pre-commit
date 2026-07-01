@@ -1,0 +1,49 @@
+#!/bin/sh
+# Git pre-commit hook: block base64-encoded source files from being committed.
+# This prevents the .push-asg.js script (and similar tools) from accidentally
+# committing binary/base64-encoded .tsx/.ts/.js files that break the build.
+
+ERRORS=0
+
+# Get list of staged .tsx/.ts/.js files
+staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(tsx|ts|js|css)$')
+
+for f in $staged_files; do
+  # Skip node_modules and .next
+  case "$f" in
+    node_modules/*|.next/*|_tmp_push/*) continue ;;
+  esac
+
+  # Count newlines in staged version
+  line_count=$(git show ":$f" 2>/dev/null | wc -l)
+  byte_count=$(git show ":$f" 2>/dev/null | wc -c)
+
+  # If file has 0 newlines but significant content, it's likely base64-encoded
+  if [ "$line_count" -eq 0 ] && [ "$byte_count" -gt 500 ]; then
+    # Try to verify it's base64 by checking if it decodes to valid TS
+    decoded_head=$(git show ":$f" 2>/dev/null | base64 --decode 2>/dev/null | head -c 50)
+    if echo "$decoded_head" | grep -qE "'use client'|import|export|function|const "; then
+      echo "ERROR: $f appears to be base64-encoded (${byte_count} bytes, 0 newlines)."
+      echo "       This is a push-script corruption bug. Decode it before committing:"
+      echo "       base64 --decode $f > /tmp/fixed.tsx && mv /tmp/fixed.tsx $f"
+      ERRORS=$((ERRORS + 1))
+    fi
+  fi
+
+  # Also block known scratch artifact paths
+  case "$f" in
+    components/.asg_*.txt|components/.b*.txt|components/.full_b64.txt|.push-asg.js)
+      echo "ERROR: Scratch artifact '$f' must not be committed. Add to .gitignore."
+      ERRORS=$((ERRORS + 1))
+      ;;
+  esac
+done
+
+if [ "$ERRORS" -gt 0 ]; then
+  echo ""
+  echo "Commit blocked: $ERRORS base64-corrupted or scratch file(s) detected."
+  echo "Fix the files above, then re-stage and commit."
+  exit 1
+fi
+
+exit 0

@@ -1,1 +1,65 @@
-aW1wb3J0IHsgTWF0Y2hlZFByb2R1Y3QgfSBmcm9tICcuLi9zdG9yZWZyb250L1N0b3JlZnJvbnREaXNjb3ZlcnknOwppbXBvcnQgeyBDYWxlbmRhciwgRHJvcGxldCwgUGlsbCwgWmFwIH0gZnJvbSAnbHVjaWRlLXJlYWN0JzsKCmV4cG9ydCBmdW5jdGlvbiBQcm90b2NvbFNjaGVkdWxlcih7IHJlc3VsdHMsIHByaW1hcnlDb2xvciB9OiB7IHJlc3VsdHM6IE1hdGNoZWRQcm9kdWN0W107IHByaW1hcnlDb2xvcjogc3RyaW5nIH0pIHsKICAvLyBFeHRyYWN0IGNvbXBvdW5kcyB3aXRoIGtub3duIGhhbGYtbGl2ZXMKICBjb25zdCBzY2hlZHVsZWQgPSByZXN1bHRzLmZpbHRlcihyID0+IHIuaGFsZkxpZmUgJiYgci5oYWxmTGlmZS50b0xvd2VyQ2FzZSgpICE9PSAnbi9hJyk7CgogIGlmIChzY2hlZHVsZWQubGVuZ3RoID09PSAwKSB7CiAgICByZXR1cm4gKAogICAgICA8ZGl2IHN0eWxlPXt7IHBhZGRpbmc6IDI0LCB0ZXh0QWxpZ246ICdjZW50ZXInLCBjb2xvcjogJyNBOEI0QzAnIH19PgogICAgICAgIE5vIFNjaGVkdWxpbmcgRGF0YSBBdmFpbGFibGUgRm9yIFRoaXMgUHJvdG9jb2wuCiAgICAgIDwvZGl2PgogICAgKTsKICB9CgogIC8vIFZlcnkgbmFpdmUgaGV1cmlzdGljIHBhcnNlciBmb3IgZGVtb25zdHJhdGlvbgogIC8vIFJlYWwgaW1wbGVtZW50YXRpb24gd291bGQgdXNlIGV4YWN0IGhvdXJzL2RheXMgbWFwcGVkIGZyb20gdGhlIERCCiAgY29uc3QgZ2V0RnJlcXVlbmN5ID0gKGhhbGZMaWZlOiBzdHJpbmcpID0+IHsKICAgIGNvbnN0IGhsID0gaGFsZkxpZmUudG9Mb3dlckNhc2UoKTsKICAgIGlmIChobC5pbmNsdWRlcygnbWluJykgfHwgaGwuaW5jbHVkZXMoJ2hvdXInKSAmJiBwYXJzZUludChobCkgPCAyNCkgcmV0dXJuICdEYWlseSAoQU0vUE0pJzsKICAgIGlmIChobC5pbmNsdWRlcygnZGF5JykgJiYgcGFyc2VJbnQoaGwpIDwgMykgcmV0dXJuICdEYWlseSc7CiAgICBpZiAoaGwuaW5jbHVkZXMoJ2RheScpICYmIHBhcnNlSW50KGhsKSA+PSAzKSByZXR1cm4gJzJ4IFdlZWtseSc7CiAgICBpZiAoaGwuaW5jbHVkZXMoJ3dlZWsnKSB8fCAoaGwuaW5jbHVkZXMoJ2RheScpICYmIHBhcnNlSW50KGhsKSA+PSA3KSkgcmV0dXJuICdXZWVrbHknOwogICAgcmV0dXJuICdEYWlseSc7IC8vIEZhbGxiYWNrCiAgfTsKCiAgY29uc3QgZ2V0SWNvbiA9IChmcmVxOiBzdHJpbmcpID0+IHsKICAgIGlmIChmcmVxLmluY2x1ZGVzKCdBTS9QTScpKSByZXR1cm4gPFphcCBzaXplPXsxNn0gY29sb3I9e3ByaW1hcnlDb2xvcn0gLz47CiAgICBpZiAoZnJlcSA9PT0gJ1dlZWtseScgfHwgZnJlcSA9PT0gJzJ4IFdlZWtseScpIHJldHVybiA8RHJvcGxldCBzaXplPXsxNn0gY29sb3I9e3ByaW1hcnlDb2xvcn0gLz47CiAgICByZXR1cm4gPFBpbGwgc2l6ZT17MTZ9IGNvbG9yPXtwcmltYXJ5Q29sb3J9IC8+OwogIH07CgogIHJldHVybiAoCiAgICA8ZGl2IHN0eWxlPXt7IG1hcmdpblRvcDogMjQsIHBhZGRpbmc6IDIwLCBiYWNrZ3JvdW5kOiAncmdiYSgyNTUsMjU1LDI1NSwwLjAzKScsIGJvcmRlclJhZGl1czogMjAsIGJvcmRlcjogJzFweCBzb2xpZCByZ2JhKDI1NSwyNTUsMjU1LDAuMDgpJyB9fT4KICAgICAgPGgzIHN0eWxlPXt7IGZvbnRTaXplOiAnMS4ycmVtJywgZm9udFdlaWdodDogOTAwLCBtYXJnaW5Cb3R0b206IDE2LCBkaXNwbGF5OiAnZmxleCcsIGFsaWduSXRlbXM6ICdjZW50ZXInLCBnYXA6IDggfX0+CiAgICAgICAgPENhbGVuZGFyIHNpemU9ezIwfSBjb2xvcj17cHJpbWFyeUNvbG9yfSAvPgogICAgICAgIFN1Z2dlc3RlZCBBZG1pbmlzdHJhdGlvbiBTY2hlZHVsZQogICAgICA8L2gzPgogICAgICA8cCBzdHlsZT17eyBjb2xvcjogJyNBOEI0QzAnLCBmb250U2l6ZTogJzAuODVyZW0nLCBtYXJnaW5Cb3R0b206IDIwLCBsaW5lSGVpZ2h0OiAxLjUgfX0+CiAgICAgICAgQmFzZWQgT24gVGhlIFBoYXJtYWNva2luZXRpYyBIYWxmLUxpZmUgT2YgVGhlc2UgQ29tcG91bmRzLCBIZXJlIElzIEEgVGhlb3JldGljYWwgUmVzZWFyY2ggU2NoZWR1bGUgVG8gTWFpbnRhaW4gU3RhYmxlIEJsb29kIFNlcnVtIExldmVscy4gCiAgICAgICAgPHN0cm9uZyBzdHlsZT17eyBjb2xvcjogJyNGQzgxODEnIH19PiBSZXNlYXJjaCBVc2UgT25seS48L3N0cm9uZz4KICAgICAgPC9wPgoKICAgICAgPGRpdiBzdHlsZT17eyBkaXNwbGF5OiAnZmxleCcsIGZsZXhEaXJlY3Rpb246ICdjb2x1bW4nLCBnYXA6IDEyIH19PgogICAgICAgIHtzY2hlZHVsZWQubWFwKChpdGVtLCBpZHgpID0+IHsKICAgICAgICAgIGNvbnN0IGZyZXEgPSBnZXRGcmVxdWVuY3koaXRlbS5oYWxmTGlmZSEpOwogICAgICAgICAgcmV0dXJuICgKICAgICAgICAgICAgPGRpdiBrZXk9e2lkeH0gc3R5bGU9e3sgZGlzcGxheTogJ2ZsZXgnLCBhbGlnbkl0ZW1zOiAnY2VudGVyJywgcGFkZGluZzogMTYsIGJhY2tncm91bmQ6ICdyZ2JhKDAsMCwwLDAuMiknLCBib3JkZXJSYWRpdXM6IDEyIH19PgogICAgICAgICAgICAgIDxkaXYgc3R5bGU9e3sgcGFkZGluZzogMTIsIGJhY2tncm91bmQ6ICdyZ2JhKDI1NSwyNTUsMjU1LDAuMDUpJywgYm9yZGVyUmFkaXVzOiAxMiwgbWFyZ2luUmlnaHQ6IDE2IH19PgogICAgICAgICAgICAgICAge2dldEljb24oZnJlcSl9CiAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgPGRpdiBzdHlsZT17eyBmbGV4OiAxIH19PgogICAgICAgICAgICAgICAgPGRpdiBzdHlsZT17eyBmb250V2VpZ2h0OiA4MDAsIGZvbnRTaXplOiAnMXJlbScsIGNvbG9yOiAnI0ZGRicgfX0+e2l0ZW0uZGlzcGxheV9uYW1lfTwvZGl2PgogICAgICAgICAgICAgICAgPGRpdiBzdHlsZT17eyBjb2xvcjogJyNBOEI0QzAnLCBmb250U2l6ZTogJzAuODVyZW0nLCBtYXJnaW5Ub3A6IDQgfX0+SGFsZi1MaWZlOiB7aXRlbS5oYWxmTGlmZX08L2Rpdj4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICA8ZGl2IHN0eWxlPXt7IHRleHRBbGlnbjogJ3JpZ2h0JyB9fT4KICAgICAgICAgICAgICAgIDxkaXYgc3R5bGU9e3sgZm9udFdlaWdodDogOTAwLCBjb2xvcjogcHJpbWFyeUNvbG9yLCBmb250U2l6ZTogJzAuOTVyZW0nIH19PntmcmVxfTwvZGl2PgogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICk7CiAgICAgICAgfSl9CiAgICAgIDwvZGl2PgogICAgPC9kaXY+CiAgKTsKfQo=
+import { MatchedProduct } from '../storefront/StorefrontDiscovery';
+import { Calendar, Droplet, Pill, Zap } from 'lucide-react';
+
+export function ProtocolScheduler({ results, primaryColor }: { results: MatchedProduct[]; primaryColor: string }) {
+  // Extract compounds with known half-lives
+  const scheduled = results.filter(r => r.halfLife && r.halfLife.toLowerCase() !== 'n/a');
+
+  if (scheduled.length === 0) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center', color: '#A8B4C0' }}>
+        No Scheduling Data Available For This Protocol.
+      </div>
+    );
+  }
+
+  // Very naive heuristic parser for demonstration
+  // Real implementation would use exact hours/days mapped from the DB
+  const getFrequency = (halfLife: string) => {
+    const hl = halfLife.toLowerCase();
+    if (hl.includes('min') || hl.includes('hour') && parseInt(hl) < 24) return 'Daily (AM/PM)';
+    if (hl.includes('day') && parseInt(hl) < 3) return 'Daily';
+    if (hl.includes('day') && parseInt(hl) >= 3) return '2x Weekly';
+    if (hl.includes('week') || (hl.includes('day') && parseInt(hl) >= 7)) return 'Weekly';
+    return 'Daily'; // Fallback
+  };
+
+  const getIcon = (freq: string) => {
+    if (freq.includes('AM/PM')) return <Zap size={16} color={primaryColor} />;
+    if (freq === 'Weekly' || freq === '2x Weekly') return <Droplet size={16} color={primaryColor} />;
+    return <Pill size={16} color={primaryColor} />;
+  };
+
+  return (
+    <div style={{ marginTop: 24, padding: 20, background: 'rgba(255,255,255,0.03)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.08)' }}>
+      <h3 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Calendar size={20} color={primaryColor} />
+        Suggested Administration Schedule
+      </h3>
+      <p style={{ color: '#A8B4C0', fontSize: '0.85rem', marginBottom: 20, lineHeight: 1.5 }}>
+        Based On The Pharmacokinetic Half-Life Of These Compounds, Here Is A Theoretical Research Schedule To Maintain Stable Blood Serum Levels. 
+        <strong style={{ color: '#FC8181' }}> Research Use Only.</strong>
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {scheduled.map((item, idx) => {
+          const freq = getFrequency(item.halfLife!);
+          return (
+            <div key={idx} style={{ display: 'flex', alignItems: 'center', padding: 16, background: 'rgba(0,0,0,0.2)', borderRadius: 12 }}>
+              <div style={{ padding: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 12, marginRight: 16 }}>
+                {getIcon(freq)}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: '1rem', color: '#FFF' }}>{item.display_name}</div>
+                <div style={{ color: '#A8B4C0', fontSize: '0.85rem', marginTop: 4 }}>Half-Life: {item.halfLife}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontWeight: 900, color: primaryColor, fontSize: '0.95rem' }}>{freq}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
