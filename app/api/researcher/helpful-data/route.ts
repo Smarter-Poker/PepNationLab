@@ -44,7 +44,12 @@ export async function GET(req: NextRequest) {
     }
 
     if (purchasedProducts.size === 0) {
-      return NextResponse.json({ helpfulData: { message: "You Haven't Made Any Purchases Yet. Start Exploring Compounds To Unlock Personalized Research Data!", insights: [] } });
+      return NextResponse.json({
+        helpfulData: {
+          message: "You Haven't Made Any Purchases Yet. Start Exploring Compounds To Unlock Personalized Research Data!",
+          insights: []
+        }
+      });
     }
 
     const { data: products, error: pError } = await supabase
@@ -54,16 +59,21 @@ export async function GET(req: NextRequest) {
 
     if (pError) throw pError;
 
-    const slugs = Array.from(new Set((products || []).map(p => p.slug).filter(Boolean)));
+    const slugs = Array.from(new Set((products || []).map((p: any) => p.slug).filter(Boolean)));
     const compoundsBySlug: Record<string, { slug: string; half_life: string | null; mechanism: string | null; best_stacked_with: string[] | null }> = {};
     if (slugs.length > 0) {
-      const { data: compounds } = await supabase.from('compounds').select('slug, half_life, mechanism, best_stacked_with').in('slug', slugs);
-      for (const c of compounds || []) compoundsBySlug[c.slug] = c;
+      const { data: compounds } = await supabase
+        .from('compounds')
+        .select('slug, half_life, mechanism, best_stacked_with')
+        .in('slug', slugs);
+      for (const c of compounds || []) {
+        compoundsBySlug[c.slug] = c;
+      }
     }
 
-    const insights = (products || []).map(p => {
+    const insights = (products || []).map((p: any) => {
       const compound = p.slug ? compoundsBySlug[p.slug] : null;
-      let insight = ``;
+      let insight = '';
       const purchasedAt = purchasedProducts.get(p.id);
       if (purchasedAt) {
         const daysAgo = Math.floor((Date.now() - new Date(purchasedAt).getTime()) / (1000 * 60 * 60 * 24));
@@ -75,12 +85,11 @@ export async function GET(req: NextRequest) {
         if (!isNaN(mg) && mg > 0) insight += `Reconstitution Guide: Adding 2ml Of Bacteriostatic Water To This ${mg}mg Vial Yields A Concentration Of ${mg/2}mg Per Ml (Or ${mg/20}mg Per 10 Units). `;
       }
       if (compound?.best_stacked_with && compound.best_stacked_with.length > 0) insight += `Synergy: Known To Stack Well With ${compound.best_stacked_with.join(', ')}.`;
-      if (!insight) insight = `Review Past Orders Or Compare History For Further Research Tracking.`;
+      if (!insight) insight = 'Review Past Orders Or Compare History For Further Research Tracking.';
       return { compoundId: p.id, compoundName: p.name, slug: p.slug, insightText: insight.trim(), category: p.category };
     });
 
     return NextResponse.json({ helpfulData: { message: "Here Is Your Personalized Research Data Based On Your Past Orders.", insights } });
-
   } catch (error) {
     console.error('Error fetching helpful data:', error);
     return NextResponse.json({ error: 'Failed To Fetch Helpful Data' }, { status: 500 });

@@ -1,26 +1,3 @@
-/**
- * Google-style query parser for the Research Library FTS engine.
- *
- * Supports:
- *   - "quoted phrase"          -> exact phrase match
- *   - field:value             -> scoped filter (mechanism:GLP-1, tier:approved_drug,
- *                                mw:>3000, area:weight_management,
- *                                class:peptide, risk:low, half_life:<2)
- *   - +required  -term        -> Google +/- operators
- *   - AND, OR, NOT            -> boolean operators (case-insensitive)
- *   - prefix*                 -> wildcard suffix
- *   - bare token              -> plain term, ANDed with everything else
- *
- * Pure module - no IO, safe in client or server.
- *
- * Consumers (new in v3):
- *   - app/api/research/search/route.ts
- *   - app/api/research/suggest/route.ts
- *   - app/api/research/instant-answer/route.ts
- *   - components/research/SearchResults.tsx
- *   - components/research/AutocompleteDropdown.tsx
- */
-
 export type FilterOp = 'eq' | 'gt' | 'lt' | 'gte' | 'lte' | 'in';
 
 export interface FieldFilter {
@@ -83,7 +60,7 @@ function parseFieldValue(raw: string): FieldFilter | null {
 
 function tokenize(raw: string): string[] {
   const tokens: string[] = [];
-  const re = /"([^"]*)"|([\S]+)/g;
+  const re = /"([^"]*)"|( \S+)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(raw)) !== null) {
     if (m[1] !== undefined) tokens.push(`"${m[1]}"`);
@@ -129,10 +106,7 @@ export function parseQuery(raw: string): ParsedQuery {
     }
     if (tokRaw.includes(':')) {
       const filter = parseFieldValue(tokRaw);
-      if (filter) {
-        parsed.filters.push(filter);
-        continue;
-      }
+      if (filter) { parsed.filters.push(filter); continue; }
     }
     parsed.terms.push(tokRaw.toLowerCase());
   }
@@ -141,14 +115,7 @@ export function parseQuery(raw: string): ParsedQuery {
 
 const STOP_WORDS = new Set(['for', 'the', 'and', 'in', 'to', 'with', 'a', 'an', 'of', 'is', 'it', 'on', 'peptides', 'peptide', 'best']);
 
-// Lay-term -> concept expansion for the FTS engine. Each key is a singular base
-// form (the term expander generates plural/singular variants before lookup) and
-// each value is a list of natural-language terms that actually appear in compound
-// names, aliases, mechanisms, research areas, and benefit prose. These are ORed
-// alternatives only - the user's original token is ALWAYS kept, so adding entries
-// can only widen recall (then re-ranked by ts_rank_cd), never drop a valid match.
 const SYNONYMS: Record<string, string[]> = {
-  // body-system / goal lay terms (original 15)
   fat: ['weight loss', 'lipolysis', 'obesity', 'adipose', 'slimming', 'lean', 'weight'],
   muscle: ['hypertrophy', 'bodybuilding', 'mass', 'strength', 'growth', 'anabolic', 'gains'],
   sleep: ['insomnia', 'circadian', 'rest', 'recovery', 'rem', 'melatonin', 'dsip'],
@@ -164,8 +131,6 @@ const SYNONYMS: Record<string, string[]> = {
   immune: ['immunity', 'infection', 'virus', 'bacteria', 'autoimmune', 'sick'],
   stress: ['anxiety', 'cortisol', 'calm', 'relax', 'mood', 'depression', 'panic'],
   aging: ['longevity', 'senescence', 'lifespan', 'youth', 'telomere', 'anti-aging'],
-
-  // weight / metabolic intent
   weight: ['weight loss', 'weight management', 'obesity', 'lipolysis', 'appetite', 'slimming', 'fat loss'],
   obesity: ['weight management', 'glp-1', 'semaglutide', 'tirzepatide', 'appetite', 'metabolic', 'lipolysis'],
   diet: ['weight management', 'appetite', 'obesity', 'metabolic', 'fat loss'],
@@ -173,8 +138,6 @@ const SYNONYMS: Record<string, string[]> = {
   glp1: ['glp-1', 'semaglutide', 'tirzepatide', 'retatrutide', 'incretin', 'weight management', 'appetite'],
   metabolism: ['metabolic', 'energy', 'fat loss', 'mitochondrial', 'insulin', 'glucose'],
   mitochondria: ['mitochondrial', 'mots-c', 'ss-31', 'energy', 'nad', 'cellular energy'],
-
-  // healing / recovery / tissue
   recovery: ['healing', 'tissue repair', 'injury', 'tendon', 'bpc-157', 'tb-500', 'soft tissue'],
   healing: ['tissue repair', 'recovery', 'wound', 'regeneration', 'bpc-157', 'tb-500'],
   wound: ['healing', 'tissue repair', 'regeneration', 'collagen', 'angiogenesis'],
@@ -182,29 +145,21 @@ const SYNONYMS: Record<string, string[]> = {
   joint: ['cartilage', 'tendon', 'bone joint', 'healing', 'repair', 'arthritis'],
   tendon: ['ligament', 'cartilage', 'healing', 'tissue repair', 'bone joint'],
   inflammation: ['anti-inflammatory', 'pain', 'immune', 'kpv', 'arthritis', 'swelling'],
-
-  // cognition / mood
   focus: ['cognitive', 'nootropic', 'memory', 'attention', 'concentration', 'semax'],
   memory: ['cognitive', 'nootropic', 'recall', 'learning', 'neuroprotective'],
   nootropic: ['cognitive', 'focus', 'memory', 'semax', 'selank', 'neuroprotective'],
   cognition: ['cognitive', 'nootropic', 'memory', 'focus', 'brain'],
   anxiety: ['anxiolytic', 'stress', 'mood', 'calm', 'selank', 'gaba'],
   mood: ['depression', 'anxiety', 'stress', 'wellbeing', 'oxytocin'],
-
-  // hormonal / sexual
   hair: ['follicle', 'alopecia', 'regrowth', 'ghk-cu', 'ahk-cu', 'dermal', 'scalp', 'cosmetic'],
   libido: ['sexual health', 'arousal', 'erectile', 'desire', 'pt-141', 'testosterone'],
   testosterone: ['hormonal', 'hcg', 'trt', 'luteinizing', 'fertility', 'androgen'],
   trt: ['testosterone', 'hcg', 'hormonal', 'fertility', 'luteinizing'],
   fertility: ['hcg', 'hmg', 'gonadotropin', 'kisspeptin', 'reproductive', 'hormonal'],
   tan: ['melanotan', 'melanocortin', 'tanning', 'pigmentation', 'melanin'],
-
-  // growth hormone axis
   growth: ['growth hormone', 'ghrh', 'ghrp', 'secretagogue', 'igf', 'performance'],
   hgh: ['growth hormone', 'igf', 'ghrh', 'ghrp', 'secretagogue', 'fragment'],
   gh: ['growth hormone', 'ghrh', 'ghrp', 'secretagogue', 'igf'],
-
-  // longevity / antioxidant
   antioxidant: ['glutathione', 'oxidative', 'free radical', 'longevity', 'mitochondrial'],
   longevity: ['anti-aging', 'senescence', 'lifespan', 'epithalon', 'nad', 'telomere'],
 };
@@ -212,21 +167,15 @@ const SYNONYMS: Record<string, string[]> = {
 function getTermExpansions(term: string): string[] {
   const cleanTerm = term.replace(/[^a-z0-9_\-]/gi, '');
   if (!cleanTerm || STOP_WORDS.has(cleanTerm)) return [];
-  
   const expansions = [cleanTerm];
   if (cleanTerm.endsWith('ies')) expansions.push(cleanTerm.slice(0, -3) + 'y');
   else if (cleanTerm.endsWith('es')) expansions.push(cleanTerm.slice(0, -2));
   else if (cleanTerm.endsWith('s')) expansions.push(cleanTerm.slice(0, -1));
   if (!cleanTerm.endsWith('s')) expansions.push(cleanTerm + 's');
-
   const finalExpansions = new Set<string>();
   for (const exp of expansions) {
     finalExpansions.add(exp);
-    if (SYNONYMS[exp]) {
-      for (const syn of SYNONYMS[exp]) {
-        finalExpansions.add(syn);
-      }
-    }
+    if (SYNONYMS[exp]) { for (const syn of SYNONYMS[exp]) finalExpansions.add(syn); }
   }
   return Array.from(finalExpansions);
 }
@@ -238,36 +187,25 @@ function formatExpansionForPg(exp: string): string {
 }
 
 export function buildTsquery(parsed: ParsedQuery): string {
-  function clean(t: string): string {
-    return t.replace(/[^a-z0-9_\-]/gi, '');
-  }
+  function clean(t: string): string { return t.replace(/[^a-z0-9_\-]/gi, ''); }
   const atoms: string[] = [];
-  
   for (const phrase of parsed.phrases) {
     const words = phrase.split(/\s+/).map(clean).filter(Boolean);
     if (words.length === 0) continue;
     atoms.push('(' + words.join(' <-> ') + ')');
   }
-  
   for (const term of parsed.required) {
     const exps = getTermExpansions(term);
-    if (exps.length > 0) {
-      atoms.push('(' + exps.map(formatExpansionForPg).join(' | ') + ')');
-    }
+    if (exps.length > 0) atoms.push('(' + exps.map(formatExpansionForPg).join(' | ') + ')');
   }
-  
   for (const term of parsed.terms) {
     const exps = getTermExpansions(term);
-    if (exps.length > 0) {
-      atoms.push('(' + exps.map(formatExpansionForPg).join(' | ') + ')');
-    }
+    if (exps.length > 0) atoms.push('(' + exps.map(formatExpansionForPg).join(' | ') + ')');
   }
-  
   for (const w of parsed.wildcards) {
     const c = clean(w);
     if (c && !STOP_WORDS.has(c)) atoms.push(`${c}:*`);
   }
-  
   let q = atoms.join(' & ');
   for (const excl of parsed.excluded) {
     const c = clean(excl);
@@ -278,16 +216,10 @@ export function buildTsquery(parsed: ParsedQuery): string {
 
 export function buildAutoWildcardTsquery(parsed: ParsedQuery): string {
   const base = buildTsquery(parsed);
-  if (
-    parsed.phrases.length === 0 &&
-    parsed.wildcards.length === 0 &&
-    parsed.terms.length + parsed.required.length === 1
-  ) {
+  if (parsed.phrases.length === 0 && parsed.wildcards.length === 0 && parsed.terms.length + parsed.required.length === 1) {
     const lone = [...parsed.required, ...parsed.terms][0];
     const cleanLone = lone.replace(/[^a-z0-9_\-]/gi, '');
-    if (cleanLone && !STOP_WORDS.has(cleanLone)) {
-       return base ? `${base} | ${cleanLone}:*` : `${cleanLone}:*`;
-    }
+    if (cleanLone && !STOP_WORDS.has(cleanLone)) return base ? `${base} | ${cleanLone}:*` : `${cleanLone}:*`;
   }
   return base;
 }
