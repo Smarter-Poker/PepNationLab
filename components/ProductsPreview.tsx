@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
 
 const SAMPLE_PRODUCTS = [
@@ -109,7 +108,7 @@ export default function ProductsPreview() {
         {/* CTA */}
         <div style={{ textAlign: 'center', marginTop: 'var(--space-10)' }}>
           <p style={{ marginTop: 'var(--space-4)', fontSize: '0.8rem', color: 'var(--grey-400)' }}>
-            50+ Research Compounds Available • Wholesale Pricing For Qualified Researchers
+            50+ Research Compounds Available - Wholesale Pricing For Qualified Researchers
           </p>
         </div>
       </div>
