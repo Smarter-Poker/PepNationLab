@@ -1,190 +1,168 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import AgentManualOrder from './AgentManualOrder';
+import { carrierInfo } from '@/lib/carrier';
 import AgentPaymentProofs from './AgentPaymentProofs';
-import IframeModal from '@/components/IframeModal';
+import { paymentMethodLabel } from '@/lib/payment-method-labels';
+import IframeLink from '@/components/ui/IframeLink';
+import IframeModal from '@/components/ui/IframeModal';
+
+interface Order {
+  id: string;
+  buyer_id: string;
+  status: string;
+  fulfillment_method: string;
+  payment_method: string;
+  shipping_address: any;
+  shipping_cost: number;
+  subtotal: number;
+  total: number;
+  discount_amount?: number | null;
+  coupon_code?: string | null;
+  created_at: string;
+  buyer_name: string;
+  buyer_email: string;
+  tracking_number?: string | null;
+  label_url?: string | null;
+  agent_id?: string;
+  is_sub_agent_order?: boolean;
+}
+
+interface OrderItem {
+  id: string;
+  product_name: string;
+  quantity: number;
+  unit_retail_price: number;
+  unit_cost_price: number | null;
+  stackData?: {
+    isPreBlended: boolean;
+    components: string[];
+  };
+}
+
+interface AgentOrdersProps {
+  orders: Order[];
+  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+}
 
 const STATUS_LABEL: Record<string, string> = {
-  pending_customer_payment: 'Pending Customer Payment',
-  agent_approval_pending: 'Pending Approval',
-  approved_ship: 'Approved — Ship',
-  approved_pickup: 'Approved — Pickup',
+  pending_customer_payment: 'Pending Payment',
+  agent_approval_pending: 'Agent Approval Pending',
+  admin_approval_pending: 'Awaiting Admin Approval',
+  approved_ship: 'Approved Ship',
+  approved_pickup: 'Approved Pickup',
   in_fulfillment: 'In Fulfillment',
   shipped: 'Shipped',
   delivered: 'Delivered',
   cancelled: 'Cancelled',
 };
 
-const PAGE_SIZE = 25;
-
-function carrierInfo(trackingNumber: string | null | undefined): { label: string; url: string } | null {
-  if (!trackingNumber) return null;
-  const t = trackingNumber.trim().toUpperCase();
-  if (/^1Z/i.test(t)) return { label: 'UPS', url: `https://www.ups.com/track?tracknum=${encodeURIComponent(t)}` };
-  if (/^(94|93|92|94)[0-9]{18,}/.test(t) || /^[0-9]{20,22}$/.test(t))
-    return { label: 'USPS', url: `https://tools.usps.com/go/TrackConfirmAction?qtc_tLabels1=${encodeURIComponent(t)}` };
-  if (/^[0-9]{12,15}$/.test(t) || /^6129[0-9]+$/.test(t))
-    return { label: 'FedEx', url: `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(t)}` };
-  if (/^JD/i.test(t))
-    return { label: 'DHL', url: `https://www.dhl.com/us-en/home/tracking.html?tracking-id=${encodeURIComponent(t)}` };
-  return { label: 'Track', url: `https://www.google.com/search?q=${encodeURIComponent(t)}+tracking` };
-}
-
-function paymentMethodLabel(method: string | null | undefined): string {
-  if (!method) return 'Unknown';
-  switch (method) {
-    case 'zelle': return 'Zelle';
-    case 'cashapp': return 'Cash App';
-    case 'venmo': return 'Venmo';
-    case 'apple_cash': return 'Apple Cash';
-    default: return method.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-  }
-}
-
-function IframeLink({ href, children, style }: { href: string; children: React.ReactNode; style?: React.CSSProperties }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button onClick={() => setOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, ...style }}>
-        {children}
-      </button>
-      {open && <IframeModal url={href} onClose={() => setOpen(false)} />}
-    </>
-  );
-}
 
 function formatAddress(address: any): string {
-  if (!address) return 'Not Provided';
-  if (typeof address === 'string') {
-    try {
-      const parsed = JSON.parse(address);
-      return formatAddress(parsed);
-    } catch {
-      return address;
-    }
-  }
-  if (typeof address === 'object') {
-    const { fullName, street, suite, city, state, zip } = address;
-    const parts = [fullName, street, suite, [city, state, zip].filter(Boolean).join(' ')].filter(Boolean);
-    return parts.join(', ');
-  }
-  return String(address);
+  if (!address) return 'No Shipping Address Provided';
+  if (typeof address === 'string') return address;
+  const parts = [
+    address.street || address.line1,
+    address.line2,
+    address.city,
+    [address.state, address.zip || address.postal_code].filter(Boolean).join(' '),
+    address.country,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(', ') : 'No Shipping Address Provided';
 }
 
-export default function AgentOrders({ agentId }: { agentId?: string }) {
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [detailOrder, setDetailOrder] = useState<any | null>(null);
-  const [detailItems, setDetailItems] = useState<any[]>([]);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [showManualOrder, setShowManualOrder] = useState(false);
-  const [labelModalUrl, setLabelModalUrl] = useState<string | null>(null);
-
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-
-  // Filters
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Action loading states
-  const [approvingId, setApprovingId] = useState<string | null>(null);
-  const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
+export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
+  const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
   const [buyingLabelId, setBuyingLabelId] = useState<string | null>(null);
-  const [fulfillmentMode, setFulfillmentMode] = useState<'ship' | 'pickup'>('ship');
+  const [labelModalUrl, setLabelModalUrl] = useState<string | null>(null);
+  const [trackingNumbers, setTrackingNumbers] = useState<Record<string, string>>({});
+  const [showManualOrder, setShowManualOrder] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  // Pagination Logic
+  const PAGE_SIZE = 25;
+  const totalPages = Math.ceil(orders.length / PAGE_SIZE);
   const safeCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
+  const paginatedOrders = orders.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
 
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: String(safeCurrentPage),
-        limit: String(PAGE_SIZE),
-      });
-      if (statusFilter !== 'all') params.set('status', statusFilter);
-      if (searchQuery.trim()) params.set('search', searchQuery.trim());
-      const res = await fetch(`/api/agent/orders?${params}`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Fetch Orders');
-      setOrders(json.data || []);
-      setTotalCount(json.total || 0);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Detail modal state
+  const [detailOrder, setDetailOrder] = useState<Order | null>(null);
+  const [detailItems, setDetailItems] = useState<OrderItem[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
 
-  useEffect(() => { fetchOrders(); }, [safeCurrentPage, statusFilter]);
-
-  // Sync detailOrder with updated orders list
+  // Keep detailOrder synchronized with the parent orders array so the modal updates optimistically
+  // or when WebSockets push new status changes (e.g. customer pays while modal is open).
   useEffect(() => {
     if (detailOrder) {
-      const updated = orders.find((o) => o.id === detailOrder.id);
-      if (updated) setDetailOrder(updated);
+      const updatedOrder = orders.find(o => o.id === detailOrder.id);
+      if (updatedOrder && JSON.stringify(updatedOrder) !== JSON.stringify(detailOrder)) {
+        setDetailOrder(updatedOrder);
+      }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orders]);
+  }, [orders, detailOrder]);
 
-  const openDetail = async (order: any) => {
-    setDetailOrder(order);
-    setDetailLoading(true);
-    try {
-      const res = await fetch(`/api/agent/orders/items?orderId=${order.id}`);
-      const json = await res.json();
-      if (res.ok) setDetailItems(json.data || []);
-    } catch {
-      // non-critical
-    } finally {
-      setDetailLoading(false);
+  useEffect(() => {
+    if (!detailOrder) {
+      setDetailItems([]);
+      setDetailError('');
+      return;
     }
-  };
+    let cancelled = false;
+    (async () => {
+      setDetailLoading(true);
+      setDetailError('');
+      try {
+        const res = await fetch(
+          `/api/agent/orders/items?orderId=${encodeURIComponent(detailOrder.id)}&t=${Date.now()}`
+        );
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed To Load Line Items');
+        if (!cancelled) setDetailItems(json.data ?? []);
+      } catch (err: any) {
+        if (!cancelled) setDetailError(err.message || 'Failed To Load Line Items');
+      } finally {
+        if (!cancelled) setDetailLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [detailOrder]);
 
-  const handleApprove = async (orderId: string, mode: 'ship' | 'pickup') => {
-    setApprovingId(orderId);
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+    setLoadingOrderId(orderId);
     try {
+      const tracking = trackingNumbers[orderId] || null;
       const res = await fetch('/api/agent/orders/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, fulfillmentMode: mode }),
+        body: JSON.stringify({ orderId, newStatus, tracking_number: tracking }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Approve Order');
-      toast.success(mode === 'pickup' ? 'Order Approved For Pickup' : 'Order Approved For Shipping');
-      fetchOrders();
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed To Transition Order.');
+      }
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? { ...o, status: newStatus, tracking_number: tracking || o.tracking_number }
+            : o
+        )
+      );
+      toast.success(`Order Status Shifted To ${STATUS_LABEL[newStatus] ?? newStatus.replace(/_/g, ' ').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`);
     } catch (err: any) {
-      toast.error(err.message || 'Failed To Approve Order');
+      toast.error(err.message ?? 'An Error Occurred Updating Order Status.');
     } finally {
-      setApprovingId(null);
+      setLoadingOrderId(null);
     }
   };
 
-  const handleMarkPaid = async (orderId: string) => {
-    setMarkingPaidId(orderId);
-    try {
-      const res = await fetch('/api/agent/orders/mark-paid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Mark Order As Paid');
-      toast.success('Order Marked As Paid');
-      fetchOrders();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed To Mark Order As Paid');
-    } finally {
-      setMarkingPaidId(null);
-    }
-  };
-
-  const handleBuyLabel = async (orderId: string) => {
+  const handleBuyShippingLabel = async (orderId: string) => {
     setBuyingLabelId(orderId);
     try {
       const res = await fetch('/api/agent/shipping/purchase', {
@@ -192,368 +170,1064 @@ export default function AgentOrders({ agentId }: { agentId?: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Purchase Label');
-      toast.success('Shipping Label Purchased');
-      if (json.label_url) setLabelModalUrl(json.label_url);
-      fetchOrders();
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed To Purchase Shipping Label.');
+      }
+
+      toast.success('Shipping Label Purchased Successfully');
+      if (data.labelUrl) {
+        setLabelModalUrl(data.labelUrl);
+      }
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                status: 'shipped',
+                tracking_number: data.trackingNumber,
+                label_url: data.labelUrl,
+              }
+            : o
+        )
+      );
     } catch (err: any) {
-      toast.error(err.message || 'Failed To Purchase Label');
+      toast.error(err.message ?? 'An Error Occurred Purchasing Shipping Label.');
     } finally {
       setBuyingLabelId(null);
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCurrentPage(1);
-    fetchOrders();
+  const handleMarkPaid = async (orderId: string) => {
+    setLoadingOrderId(orderId);
+    try {
+      const res = await fetch('/api/agent/orders/mark-paid', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed To Mark Order As Paid.');
+      }
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? { ...o, status: data.newStatus }
+            : o
+        )
+      );
+      toast.success('Order Marked As Paid!');
+    } catch (err: any) {
+      toast.error(err.message ?? 'An Error Occurred Marking Order As Paid.');
+    } finally {
+      setLoadingOrderId(null);
+    }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  if (loading && orders.length === 0) return <div style={{ color: 'var(--silver)' }}>Loading Orders...</div>;
-  if (error) return <div style={{ color: 'var(--red)' }}>Error: {error}</div>;
+  const detailSubtotal = detailItems.reduce(
+    (sum, it) => sum + Number(it.unit_retail_price || 0) * Number(it.quantity || 0),
+    0
+  );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-      {/* Header */}
-      <div className="glass-panel stagger-fade-in" style={{ padding: 'var(--space-6)', borderRadius: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-          <div>
-            <h2 style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', fontWeight: 800, margin: 0 }}>Order Manager</h2>
-            <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginTop: 4 }}>{totalCount} Order{totalCount !== 1 ? 's' : ''} Total</p>
-          </div>
-          <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-            <button className="btn-neon-cyan" onClick={() => setShowManualOrder(true)}>Create Manual Order</button>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', marginBottom: 'var(--space-4)' }}>
-          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 'var(--space-2)', flex: 1, minWidth: 200 }}>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="Search By Order ID Or Buyer..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ flex: 1, margin: 0, fontSize: '0.85rem' }}
-            />
-            <button type="submit" className="btn-silver" style={{ fontSize: '0.85rem' }}>Search</button>
-          </form>
-          <select
-            className="form-input"
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-            style={{ margin: 0, fontSize: '0.85rem', minWidth: 180 }}
-          >
-            <option value="all">All Statuses</option>
-            {Object.entries(STATUS_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
-        </div>
-
-        {/* Orders Table */}
-        {orders.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 'var(--space-8)', opacity: 0.5 }}>No Orders Found.</div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            {orders.map((order) => {
-              const canApprove = order.status === 'agent_approval_pending' ||
-                (order.is_sub_agent_order && order.status === 'agent_approval_pending');
-              const tracking = order.tracking_number;
-              const carrier = carrierInfo(tracking);
-
-              return (
-                <div
-                  key={order.id}
-                  className="glass-panel hover-lift"
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: 'var(--space-4)', cursor: 'pointer' }}
-                  onClick={() => openDetail(order)}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 200px', minWidth: 0 }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Order ID</span>
-                    <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#00E5FF', fontWeight: 700 }}>{order.id?.slice(0, 8)}...</span>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>{new Date(order.created_at).toLocaleDateString()}</span>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 120 }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Buyer</span>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--white)', fontWeight: 600 }}>{order.buyer_name || order.profiles?.full_name || 'Unknown'}</span>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 100 }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Status</span>
-                    <span style={{
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                      color: order.status === 'delivered' ? '#00FF9D' :
-                             order.status === 'cancelled' ? '#FFAAAA' :
-                             order.status === 'shipped' ? 'var(--teal)' : 'var(--silver)'
-                    }}>
-                      {STATUS_LABEL[order.status] || order.status}
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 80 }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Total</span>
-                    <span style={{ color: 'var(--teal)', fontWeight: 800, fontFamily: 'monospace' }}>${Number(order.total || 0).toFixed(2)}</span>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
-                    {canApprove && (
-                      <>
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <select
-                            value={fulfillmentMode}
-                            onChange={(e) => setFulfillmentMode(e.target.value as 'ship' | 'pickup')}
-                            className="form-input"
-                            style={{ margin: 0, fontSize: '0.75rem', padding: '4px 8px', minWidth: 90 }}
-                          >
-                            <option value="ship">Ship</option>
-                            <option value="pickup">Pickup</option>
-                          </select>
-                          <button
-                            className="btn-neon-cyan"
-                            style={{ fontSize: '0.78rem', padding: '4px 12px' }}
-                            onClick={() => handleApprove(order.id, fulfillmentMode)}
-                            disabled={approvingId === order.id}
-                          >
-                            {approvingId === order.id ? 'Approving...' : 'Approve'}
-                          </button>
-                        </div>
-                      </>
-                    )}
-                    {order.status === 'pending_customer_payment' && (
-                      <button
-                        className="btn-silver"
-                        style={{ fontSize: '0.78rem', padding: '4px 12px' }}
-                        onClick={() => handleMarkPaid(order.id)}
-                        disabled={markingPaidId === order.id}
-                      >
-                        {markingPaidId === order.id ? 'Marking...' : 'Mark Paid'}
-                      </button>
-                    )}
-                    {(order.status === 'approved_ship' || order.status === 'in_fulfillment') && !order.label_url && (
-                      <button
-                        className="btn-silver"
-                        style={{ fontSize: '0.78rem', padding: '4px 12px' }}
-                        onClick={() => handleBuyLabel(order.id)}
-                        disabled={buyingLabelId === order.id}
-                      >
-                        {buyingLabelId === order.id ? 'Buying...' : 'Buy Label'}
-                      </button>
-                    )}
-                    {order.label_url && (
-                      <button
-                        className="btn-silver"
-                        style={{ fontSize: '0.78rem', padding: '4px 12px' }}
-                        onClick={() => setLabelModalUrl(order.label_url)}
-                      >
-                        View Label
-                      </button>
-                    )}
-                    {carrier && (
-                      <IframeLink
-                        href={carrier.url}
-                        style={{ fontSize: '0.78rem', color: 'var(--teal)', textDecoration: 'underline', padding: '4px 0' }}
-                      >
-                        Track ({carrier.label})
-                      </IframeLink>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
-            <button className="btn-silver" disabled={safeCurrentPage <= 1} onClick={() => setCurrentPage(1)} style={{ fontSize: '0.8rem' }}>First</button>
-            <button className="btn-silver" disabled={safeCurrentPage <= 1} onClick={() => setCurrentPage((p) => p - 1)} style={{ fontSize: '0.8rem' }}>Previous</button>
-            <span style={{ color: 'var(--silver)', fontSize: '0.85rem', lineHeight: '32px' }}>Page {safeCurrentPage} Of {totalPages}</span>
-            <button className="btn-silver" disabled={safeCurrentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)} style={{ fontSize: '0.8rem' }}>Next</button>
-            <button className="btn-silver" disabled={safeCurrentPage >= totalPages} onClick={() => setCurrentPage(totalPages)} style={{ fontSize: '0.8rem' }}>Last</button>
-          </div>
-        )}
+    <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
+      {labelModalUrl && (
+        <IframeModal url={labelModalUrl} title="Shipping Label" onClose={() => setLabelModalUrl(null)} />
+      )}
+      <div className="">
+      <h3
+        className="metal-text"
+        style={{
+          fontSize: '1.25rem',
+          marginBottom: 'var(--space-6)',
+          fontFamily: 'var(--font-brand)',
+        }}
+      >
+        Completed Sales & Profit
+      </h3>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: 'var(--space-6)',
+        }}
+      >
+        <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', maxWidth: 600 }}>
+          Manage Orders Registered By Your Clients. Click A Row To Open The Detail View. Coordinate
+          Cash Settlements Offline And Release For System Fulfillment.
+        </p>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={() => setShowManualOrder(!showManualOrder)}
+        >
+          {showManualOrder ? 'View Order Ledger' : 'Create Manual Order'}
+        </button>
       </div>
 
-      {/* Detail Drawer */}
+      {showManualOrder ? (
+        <AgentManualOrder
+          onOrderCreated={(newOrder) => {
+            setShowManualOrder(false);
+            if (newOrder) {
+              setOrders([newOrder, ...orders]);
+              setCurrentPage(1); // Jump to page 1 to see the new order
+            }
+          }}
+        />
+      ) : orders.length > 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          {paginatedOrders.map((order) => {
+            const isPendingPayment = order.status === 'pending_customer_payment';
+            const isPendingApproval = order.status === 'agent_approval_pending';
+            
+            let canApprove = false;
+            let approveText = 'Approve Order';
+
+            if (order.is_sub_agent_order) {
+              if (isPendingApproval) {
+                canApprove = true;
+                approveText = 'Approve Sub-Agent Order';
+              }
+            } else {
+              if (isPendingPayment || isPendingApproval) {
+                canApprove = true;
+              }
+            }
+
+            return (
+              <div
+                key={order.id}
+                onClick={() => setDetailOrder(order)}
+                style={{
+                  padding: '3px', // Thick brushed nickel border
+                  borderRadius: '18px',
+                  background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  marginBottom: '16px',
+                }}
+                className="message-card-hover hover-lift"
+              >
+                <div style={{
+                  background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
+                  borderRadius: '15px',
+                  padding: '24px',
+                  boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                  height: '100%',
+                }}>
+                {/* Header row: Order ID, Date, and Status */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <span style={{ 
+                        fontSize: '1.2rem', 
+                        fontWeight: 800,
+                        background: 'linear-gradient(90deg, #FFFFFF 0%, #A8B4C0 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        textShadow: '0 2px 10px rgba(255,255,255,0.1)'
+                      }}>
+                        {order.is_sub_agent_order ? `Sub-Agent Order #${order.id.slice(0, 8).toUpperCase()}` : `Order #${order.id.slice(0, 8).toUpperCase()}`}
+                      </span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', fontWeight: 600 }}>
+                        &bull;
+                      </span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', fontWeight: 500 }}>
+                        {new Date(order.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <span style={{ 
+                        fontSize: '0.8rem', 
+                        color: 'var(--teal)', 
+                        fontFamily: 'monospace', 
+                        letterSpacing: '0.05em',
+                        background: 'rgba(0,196,188,0.1)',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        border: '1px solid rgba(0,196,188,0.2)'
+                      }}>
+                        ID: {order.id}
+                      </span>
+                    </div>
+                  </div>
+                  <span
+                    style={{ 
+                      fontSize: '0.85rem', 
+                      padding: '6px 14px', 
+                      fontWeight: 800, 
+                      borderRadius: '8px',
+                      background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 10px rgba(0,0,0,0.3)',
+                      textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+                      backdropFilter: 'blur(8px)',
+                      color: order.status === 'cancelled' ? '#fc8181' : order.status.startsWith('approved_') || order.status === 'delivered' || order.status === 'shipped' ? '#00E5FF' : '#E2E8F0',
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    {STATUS_LABEL[order.status] || order.status.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                  </span>
+                </div>
+
+                {/* Main Content Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginTop: '8px' }}>
+                  
+                  {/* Buyer Info */}
+                  <div style={{ 
+                    background: 'var(--bg-metal-dark)', 
+                    padding: '16px 20px', 
+                    borderRadius: '12px', 
+                    borderTop: '1px solid rgba(0,0,0,0.8)',
+                    borderBottom: '1px solid rgba(255,255,255,0.08)',
+                    borderLeft: '1px solid rgba(0,0,0,0.5)',
+                    borderRight: '1px solid rgba(255,255,255,0.03)',
+                    boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)'
+                  }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', fontWeight: 600 }}>Buyer</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--white)' }}>
+                      {order.buyer_name || 'Anonymous Researcher'}
+                    </div>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--teal)', marginTop: '4px', fontWeight: 500 }}>
+                      {order.buyer_email || 'No Email Provided'}
+                    </div>
+                  </div>
+
+                  {/* Order Details */}
+                  <div style={{ 
+                    background: 'var(--bg-metal-dark)', 
+                    padding: '16px 20px', 
+                    borderRadius: '12px', 
+                    borderTop: '1px solid rgba(0,0,0,0.8)',
+                    borderBottom: '1px solid rgba(255,255,255,0.08)',
+                    borderLeft: '1px solid rgba(0,0,0,0.5)',
+                    borderRight: '1px solid rgba(255,255,255,0.03)',
+                    boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)'
+                  }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', fontWeight: 600 }}>Details</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>Method</span>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {order.fulfillment_method === 'agent_pickup' ? (
+                          <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Agent Pickup</>
+                        ) : (
+                          <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg> Delivery</>
+                        )}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>Payment</span>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                        {paymentMethodLabel(order.payment_method)}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <span style={{ fontSize: '0.95rem', color: 'var(--silver)' }}>Total</span>
+                      <strong style={{ fontSize: '1.1rem', color: 'var(--teal)' }}>
+                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.total) || 0)}
+                      </strong>
+                    </div>
+                  </div>
+                  
+                  {/* Tracking / Fulfillment */}
+                  {order.tracking_number && (
+                    <div style={{ background: 'rgba(0,196,188,0.06)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(0,196,188,0.2)' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', fontWeight: 700 }}>Tracking</div>
+                      <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--white)', fontFamily: 'monospace', marginBottom: '12px', wordBreak: 'break-all' }}>
+                        {order.tracking_number}
+                      </div>
+                      {order.label_url && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLabelModalUrl(order.label_url!);
+                          }}
+                          className="btn btn-secondary"
+                          style={{
+                            padding: '8px 16px',
+                            fontSize: '0.85rem',
+                            background: 'rgba(0,196,188,0.15)',
+                            border: '1px solid var(--teal)',
+                            color: 'var(--teal)',
+                            width: '100%',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            fontWeight: 600
+                          }}
+                        >
+                          Print PDF Label
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                </div>
+
+                {/* Actions row */}
+                {canApprove && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      marginTop: '8px',
+                      paddingTop: '20px',
+                      borderTop: '1px solid rgba(255,255,255,0.06)',
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '12px',
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
+                    }}
+                  >
+                    {order.fulfillment_method === 'ship' && isPendingApproval && (
+                      <input
+                        type="text"
+                        placeholder="Tracking Number (USPS/UPS)"
+                        className="form-input"
+                        value={trackingNumbers[order.id] || ''}
+                        onChange={(e) =>
+                          setTrackingNumbers((prev) => ({
+                            ...prev,
+                            [order.id]: e.target.value,
+                          }))
+                        }
+                        style={{ padding: '10px 16px', fontSize: '0.95rem', height: 44, width: '100%', maxWidth: 300, borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}
+                      />
+                    )}
+                    
+                      <button
+                      onClick={(e) => { e.stopPropagation(); handleUpdateOrderStatus(order.id, 'cancelled'); }}
+                      className="btn btn-secondary"
+                      style={{
+                        border: 'none',
+                        color: '#FFAAAA',
+                        background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
+                        fontSize: '0.9rem',
+                        padding: '10px 20px',
+                        fontWeight: 700,
+                        borderRadius: '10px',
+                        boxShadow: '0 4px 15px rgba(252, 129, 129, 0.2), inset 0 1px 0 rgba(255,160,160,0.2), inset 0 -2px 0 rgba(0,0,0,0.4)',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                      disabled={loadingOrderId === order.id}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                      Cancel
+                    </button>
+                    
+                    {isPendingPayment && !order.is_sub_agent_order && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleMarkPaid(order.id); }}
+                        className="btn btn-primary pulse-primary"
+                        style={{ 
+                          fontSize: '0.9rem', 
+                          padding: '10px 24px', 
+                          fontWeight: 700,
+                          background: 'linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%)',
+                          color: '#0A1018',
+                          border: 'none',
+                          borderRadius: '10px',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                        disabled={loadingOrderId === order.id || buyingLabelId === order.id}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        {loadingOrderId === order.id ? 'Processing...' : 'Mark As Paid'}
+                      </button>
+                    )}
+                    
+                    {canApprove && (
+                      <button
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          handleUpdateOrderStatus(order.id, order.fulfillment_method === 'agent_pickup' ? 'approved_pickup' : 'approved_ship'); 
+                        }}
+                        className="btn btn-primary pulse-primary"
+                        style={{
+                          fontSize: '0.9rem',
+                          padding: '10px 24px',
+                          fontWeight: 700,
+                          background: 'linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%)',
+                          color: '#0A1018',
+                          border: 'none',
+                          borderRadius: '10px',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                        disabled={loadingOrderId === order.id}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        {loadingOrderId === order.id ? 'Approving...' : approveText}
+                      </button>
+                    )}
+
+                    {/* Buy-label removed: agents no longer purchase labels before
+                        the admin-approval gate. After an admin releases the order to
+                        approved_ship, the label is auto-enqueued (shippo_enqueue_label_job)
+                        and drained by the label-jobs cron, or bought by admin/shipping. */}
+                  </div>
+                )}
+              </div>
+            </div>
+            );
+          })}
+          
+          {totalPages > 1 && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: 'var(--space-4)',
+              padding: '12px 24px',
+              borderRadius: '16px',
+              background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)'
+            }}>
+              <div style={{
+                background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
+                borderRadius: '12px',
+                padding: '8px',
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6)'
+              }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={safeCurrentPage === 1}
+                  style={{
+                    opacity: safeCurrentPage === 1 ? 0.5 : 1,
+                    cursor: safeCurrentPage === 1 ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  &larr; Previous
+                </button>
+                <div style={{
+                  color: 'var(--white)',
+                  fontFamily: 'var(--font-brand)',
+                  fontSize: '0.9rem',
+                  letterSpacing: '0.05em'
+                }}>
+                  PAGE {safeCurrentPage} OF {totalPages}
+                </div>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={safeCurrentPage === totalPages}
+                  style={{
+                    opacity: safeCurrentPage === totalPages ? 0.5 : 1,
+                    cursor: safeCurrentPage === totalPages ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Next &rarr;
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '80px 20px', 
+              color: 'var(--grey-400)',
+              background: 'linear-gradient(180deg, rgba(11,15,22,0.5) 0%, rgba(18,24,34,0.5) 100%)',
+              borderRadius: '21px',
+              border: '1px solid rgba(255,255,255,0.03)',
+              boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.5)'
+            }}>
+              <div style={{ 
+                marginBottom: 20, 
+                display: 'flex', 
+                justifyContent: 'center', 
+                filter: 'drop-shadow(0 0 20px rgba(0, 196, 188, 0.4))'
+              }}>
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="url(#teal-glow-grad)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+                  <defs>
+                    <linearGradient id="teal-glow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#00E5FF" />
+                      <stop offset="100%" stopColor="#00C4BC" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                  <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8, letterSpacing: '0.05em' }}>No Pending Ledgers</div>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', maxWidth: 400, margin: '0 auto', lineHeight: 1.5 }}>
+                Orders Registered By Your Clients Will Appear Here For You To Fulfill And Manage.
+              </p>
+            </div>
+      )}
+
+      {/* Order Detail Modal */}
       {detailOrder && (
         <div
+          onClick={() => setDetailOrder(null)}
+          className="agent-order-modal-overlay"
           style={{
             position: 'fixed',
-            top: 0, right: 0, bottom: 0,
-            width: 420,
-            maxWidth: '100vw',
-            background: 'var(--black-2)',
-            borderLeft: '1px solid rgba(255,255,255,0.06)',
-            zIndex: 500,
+            inset: 0,
+            background: 'rgba(0,0,0,0.85)',
             display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '-8px 0 40px rgba(0,0,0,0.5)',
-            overflowY: 'auto',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: 'max(var(--space-6), env(safe-area-inset-top, 0px)) var(--space-6) max(var(--space-6), env(safe-area-inset-bottom, 0px))',
+            backdropFilter: 'blur(8px)',
           }}
         >
-          <div style={{ padding: 'var(--space-5)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>Order Details</h3>
-            <button className="btn-silver" onClick={() => setDetailOrder(null)}>Close</button>
-          </div>
-
-          <div style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', flex: 1 }}>
-            <div>
-              <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order ID</span>
-              <p style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: '#00E5FF', margin: '4px 0 0' }}>{detailOrder.id}</p>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="agent-order-modal glass-panel"
+            style={{
+              width: '100%',
+              maxWidth: 820,
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: 'var(--space-8)',
+              background: 'linear-gradient(180deg, #162230 0%, #0d1520 100%)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+              borderRadius: '24px',
+            }}
+          >
+            <div
+              className="print-only-header"
+              style={{ display: 'none', marginBottom: 'var(--space-4)' }}
+            >
+              <h2 style={{ fontSize: '1.4rem', color: '#000' }}>PepNationLab Packing Slip</h2>
+              <p style={{ fontSize: '0.85rem', color: '#333' }}>Order {detailOrder.id}</p>
             </div>
 
-            <div>
-              <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</span>
-              <p style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--teal)', margin: '4px 0 0' }}>{STATUS_LABEL[detailOrder.status] || detailOrder.status}</p>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                marginBottom: 'var(--space-6)',
+                gap: 'var(--space-4)',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                paddingBottom: 'var(--space-4)'
+              }}
+            >
+              <div>
+                <h2
+                  style={{
+                    fontSize: '1.4rem',
+                    color: 'var(--white)',
+                    marginBottom: 8,
+                    fontFamily: 'var(--font-brand)',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    fontWeight: 800
+                  }}
+                >
+                  Order Detail
+                </h2>
+                <div
+                  style={{
+                    fontSize: '0.9rem',
+                    color: 'var(--grey-400)',
+                    fontFamily: 'monospace',
+                    marginBottom: 4
+                  }}
+                >
+                  ID: {detailOrder.id}
+                </div>
+                <div style={{ fontSize: '0.9rem', color: 'var(--grey-400)' }}>
+                  Placed {new Date(detailOrder.created_at).toLocaleString()}
+                </div>
+              </div>
+              <span
+                className={`badge ${
+                  detailOrder.status === 'cancelled'
+                    ? 'badge-red'
+                    : detailOrder.status.startsWith('approved_') ||
+                      detailOrder.status === 'delivered' ||
+                      detailOrder.status === 'shipped'
+                    ? 'badge-teal'
+                    : 'badge-silver'
+                }`}
+                style={{ fontSize: '0.85rem', padding: '6px 14px', borderRadius: '8px', fontWeight: 700 }}
+              >
+                {STATUS_LABEL[detailOrder.status] || detailOrder.status.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+              </span>
             </div>
 
-            <div>
-              <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Buyer</span>
-              <p style={{ fontSize: '0.88rem', color: 'var(--white)', margin: '4px 0 0' }}>{detailOrder.buyer_name || detailOrder.profiles?.full_name || 'Unknown'}</p>
-              {detailOrder.buyer_email && (
-                <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: '2px 0 0' }}>{detailOrder.buyer_email}</p>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 'var(--space-5)',
+                marginBottom: 'var(--space-6)',
+              }}
+            >
+              <div
+                style={{
+                  background: 'rgba(0,0,0,0.2)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: '16px',
+                  padding: 'var(--space-5)',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.8rem',
+                    color: 'var(--grey-400)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    marginBottom: 8,
+                    fontWeight: 700
+                  }}
+                >
+                  Buyer
+                </div>
+                <div style={{ fontSize: '1.1rem', color: 'var(--white)', fontWeight: 700 }}>
+                  {detailOrder.buyer_name || 'Anonymous Researcher'}
+                </div>
+                <div
+                  style={{
+                    fontSize: '0.9rem',
+                    color: 'var(--teal)',
+                    marginTop: 6,
+                    wordBreak: 'break-all',
+                    fontWeight: 500
+                  }}
+                >
+                  {detailOrder.buyer_email || 'No Email Provided'}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: 'rgba(0,0,0,0.2)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: '16px',
+                  padding: 'var(--space-5)',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.8rem',
+                    color: 'var(--grey-400)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    marginBottom: 8,
+                    fontWeight: 700
+                  }}
+                >
+                  Shipping Address
+                </div>
+                <div style={{ fontSize: '0.95rem', color: 'var(--silver)', lineHeight: 1.5 }}>
+                  {formatAddress(detailOrder.shipping_address)}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 'var(--space-6)' }}>
+              <div
+                style={{
+                  fontSize: '0.85rem',
+                  color: 'var(--teal)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  marginBottom: 'var(--space-4)',
+                  fontWeight: 700
+                }}
+              >
+                Line Items
+              </div>
+              {detailLoading ? (
+                <div
+                  style={{
+                    padding: 'var(--space-6)',
+                    textAlign: 'center',
+                    color: 'var(--silver)',
+                    background: 'rgba(0,0,0,0.1)',
+                    borderRadius: '12px'
+                  }}
+                >
+                  Loading Line Items...
+                </div>
+              ) : detailError ? (
+                <div className="disclaimer-warning" style={{ padding: 'var(--space-4)', borderRadius: '12px' }}>
+                  <p style={{ color: 'var(--red)', fontSize: '0.9rem', margin: 0, fontWeight: 500 }}>{detailError}</p>
+                </div>
+              ) : detailItems.length === 0 ? (
+                <div style={{ padding: 'var(--space-4)', background: 'rgba(0,0,0,0.1)', borderRadius: '12px' }}>
+                  <p style={{ color: 'var(--grey-400)', fontSize: '0.95rem', margin: 0, textAlign: 'center' }}>
+                    No Line Items Found For This Order.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ background: 'rgba(0,0,0,0.15)', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <table
+                    style={{
+                      width: '100%',
+                      fontSize: '0.95rem',
+                      color: 'var(--silver)',
+                      borderCollapse: 'collapse',
+                    }}
+                  >
+                    <thead>
+                      <tr
+                        style={{
+                          color: 'var(--grey-400)',
+                          background: 'rgba(0,0,0,0.2)',
+                          borderBottom: '1px solid rgba(255,255,255,0.06)',
+                        }}
+                      >
+                        <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Product</th>
+                        <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600 }}>Quantity</th>
+                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Unit Price</th>
+                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Line Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detailItems.map((item, idx) => {
+                        const unit = Number(item.unit_retail_price || 0);
+                        const qty = Number(item.quantity || 0);
+                        return (
+                          <tr
+                            key={item.id}
+                            style={{ borderBottom: idx < detailItems.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}
+                          >
+                            <td style={{ padding: '12px 16px', color: 'var(--white)', fontWeight: 500 }}>
+                              <div>{item.product_name}</div>
+                              {item.stackData && (
+                                <div style={{ fontSize: '0.8rem', color: 'var(--silver)', marginTop: '4px' }}>
+                                  {item.stackData.isPreBlended ? (
+                                    <span style={{ color: 'var(--teal)' }}>(Pre-Blended Stack - One Peptide Vial)</span>
+                                  ) : (
+                                    <div>
+                                      <span style={{ color: 'var(--brand-yellow)', fontWeight: 600 }}>Includes Vials:</span> {item.stackData.components.join(', ')}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ textAlign: 'center', padding: '12px 16px' }}>{qty}</td>
+                            <td style={{ textAlign: 'right', padding: '12px 16px' }}>
+                              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(unit) || 0)}
+                            </td>
+                            <td
+                              style={{
+                                textAlign: 'right',
+                                padding: '12px 16px',
+                                color: 'var(--teal)',
+                                fontWeight: 600
+                              }}
+                            >
+                              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(unit * qty) || 0)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
 
-            <div>
-              <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payment</span>
-              <p style={{ fontSize: '0.88rem', color: 'var(--silver)', margin: '4px 0 0' }}>{paymentMethodLabel(detailOrder.payment_method)}</p>
-            </div>
-
-            {detailOrder.shipping_address && (
-              <div>
-                <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Shipping Address</span>
-                <p style={{ fontSize: '0.82rem', color: 'var(--silver)', margin: '4px 0 0', lineHeight: 1.5 }}>{formatAddress(detailOrder.shipping_address)}</p>
-              </div>
-            )}
-
-            {detailLoading ? (
-              <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem' }}>Loading Items...</p>
-            ) : detailItems.length > 0 ? (
-              <div>
-                <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Line Items</span>
-                <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {detailItems.map((item: any, i: number) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                      <span style={{ color: 'var(--silver)' }}>{item.product_name || item.name} × {item.quantity}</span>
-                      <span style={{ color: 'var(--teal)', fontFamily: 'monospace' }}>${Number(item.unit_retail_price || 0).toFixed(2)}</span>
-                    </div>
-                  ))}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 'var(--space-5)',
+                marginBottom: 'var(--space-6)',
+              }}
+            >
+              <div
+                style={{
+                  background: 'rgba(0,0,0,0.2)',
+                  borderRadius: '16px',
+                  padding: 'var(--space-5)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.8rem',
+                    color: 'var(--grey-400)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    marginBottom: 10,
+                    fontWeight: 700
+                  }}
+                >
+                  Payment Method
                 </div>
-              </div>
-            ) : null}
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', fontWeight: 700, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <span style={{ color: 'var(--grey-400)' }}>Total</span>
-              <span style={{ color: 'var(--teal)', fontFamily: 'monospace' }}>${Number(detailOrder.total || 0).toFixed(2)}</span>
-            </div>
-
-            {detailOrder.label_url && (
-              <div>
-                <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Shipping Label</span>
-                <div style={{ marginTop: 4 }}>
-                  <button className="btn-silver" style={{ fontSize: '0.78rem' }} onClick={() => setLabelModalUrl(detailOrder.label_url)}>View Label</button>
+                <div style={{ color: 'var(--white)', fontSize: '1rem', fontWeight: 600 }}>
+                  {paymentMethodLabel(detailOrder.payment_method)}
                 </div>
-              </div>
-            )}
 
-            {detailOrder.tracking_number && (
-              <div>
-                <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tracking</span>
-                <p style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--silver)', margin: '4px 0 0' }}>{detailOrder.tracking_number}</p>
-                {(() => {
-                  const c = carrierInfo(detailOrder.tracking_number);
-                  if (!c) return null;
+                {detailOrder.tracking_number && (() => {
+                  const ci = carrierInfo(detailOrder.tracking_number);
                   return (
-                    <IframeLink href={c.url} style={{ fontSize: '0.78rem', color: 'var(--teal)', textDecoration: 'underline', marginTop: 4, display: 'block' }}>
-                      Track With {c.label}
-                    </IframeLink>
+                    <>
+                      <div
+                        style={{
+                          fontSize: '0.8rem',
+                          color: 'var(--grey-400)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          marginTop: 'var(--space-4)',
+                          marginBottom: 8,
+                          fontWeight: 700
+                        }}
+                      >
+                        Tracking Number
+                      </div>
+                      <div
+                        style={{
+                          color: 'var(--teal)',
+                          fontWeight: 700,
+                          fontSize: '1rem',
+                          wordBreak: 'break-all',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 'var(--space-3)',
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <span>{detailOrder.tracking_number}</span>
+                        {ci.carrier !== 'Unknown' && (
+                          <span
+                            style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 800,
+                              color: 'var(--white)',
+                              background: 'var(--teal)',
+                              padding: '4px 10px',
+                              borderRadius: 'var(--radius-full)',
+                              letterSpacing: '0.05em',
+                            }}
+                          >
+                            {ci.carrier}
+                          </span>
+                        )}
+                      </div>
+                      {ci.trackingUrl && (
+                        <IframeLink
+                          href={ci.trackingUrl}
+                          style={{
+                            display: 'inline-block',
+                            marginTop: 10,
+                            fontSize: '0.9rem',
+                            color: 'var(--teal)',
+                            textDecoration: 'underline',
+                            fontWeight: 600
+                          }}
+                        >
+                          Track With {ci.carrier}
+                        </IframeLink>
+                      )}
+                    </>
                   );
                 })()}
+
+                {detailOrder.label_url && (
+                  <IframeLink
+                    href={detailOrder.label_url}
+                    className="btn btn-secondary"
+                    style={{
+                      marginTop: 'var(--space-4)',
+                      display: 'inline-block',
+                      fontSize: '0.85rem',
+                      padding: '8px 16px',
+                      fontWeight: 600
+                    }}
+                  >
+                    View Shipping Label
+                  </IframeLink>
+                )}
+
+                <div
+                  style={{
+                    fontSize: '0.8rem',
+                    color: 'var(--grey-400)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    marginTop: 'var(--space-5)',
+                    marginBottom: 10,
+                    fontWeight: 700
+                  }}
+                >
+                  Payment Proofs
+                </div>
+                <AgentPaymentProofs orderId={detailOrder.id} />
               </div>
-            )}
 
-            <AgentPaymentProofs orderId={detailOrder.id} />
+              <div
+                style={{
+                  background: 'rgba(0,196,188,0.05)',
+                  borderRadius: '16px',
+                  padding: 'var(--space-5)',
+                  border: '1px solid rgba(0,196,188,0.15)',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.8rem',
+                    color: 'var(--teal)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    marginBottom: 'var(--space-4)',
+                    fontWeight: 700
+                  }}
+                >
+                  Totals
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '0.95rem',
+                    color: 'var(--silver)',
+                    marginBottom: 8,
+                  }}
+                >
+                  <span>Subtotal</span>
+                  <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(detailOrder.subtotal || detailSubtotal) || 0)}</span>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '0.95rem',
+                    color: 'var(--silver)',
+                    marginBottom: 8,
+                  }}
+                >
+                  <span>Shipping</span>
+                  <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(detailOrder.shipping_cost || 0))}</span>
+                </div>
+                {detailOrder.discount_amount != null && Number(detailOrder.discount_amount) > 0 && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: '0.95rem',
+                      color: 'var(--silver)',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <span>
+                      Discount{detailOrder.coupon_code ? ` (${detailOrder.coupon_code})` : ''}
+                    </span>
+                    <span style={{ color: 'var(--red)', fontWeight: 600 }}>
+                      -{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(detailOrder.discount_amount) || 0)}
+                    </span>
+                  </div>
+                )}
+                <div style={{ flex: 1 }} />
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontSize: '1.2rem',
+                    color: 'var(--white)',
+                    fontWeight: 800,
+                    marginTop: 'var(--space-3)',
+                    borderTop: '1px solid rgba(0,196,188,0.2)',
+                    paddingTop: 'var(--space-4)',
+                  }}
+                >
+                  <span>Total</span>
+                  <span style={{ color: 'var(--teal)', fontSize: '1.4rem' }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(detailOrder.total) || 0)}</span>
+                </div>
+              </div>
+            </div>
 
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {(detailOrder.status === 'agent_approval_pending') && (
-                <>
-                  <button
-                    className="btn-neon-cyan"
-                    style={{ fontSize: '0.82rem' }}
-                    onClick={() => handleApprove(detailOrder.id, 'ship')}
-                    disabled={approvingId === detailOrder.id}
-                  >
-                    {approvingId === detailOrder.id ? 'Approving...' : 'Approve For Ship'}
-                  </button>
-                  <button
-                    className="btn-silver"
-                    style={{ fontSize: '0.82rem' }}
-                    onClick={() => handleApprove(detailOrder.id, 'pickup')}
-                    disabled={approvingId === detailOrder.id}
-                  >
-                    Approve For Pickup
-                  </button>
-                </>
-              )}
-              {detailOrder.status === 'pending_customer_payment' && (
-                <button
-                  className="btn-silver"
-                  style={{ fontSize: '0.82rem' }}
-                  onClick={() => handleMarkPaid(detailOrder.id)}
-                  disabled={markingPaidId === detailOrder.id}
-                >
-                  {markingPaidId === detailOrder.id ? 'Marking...' : 'Mark Paid'}
-                </button>
-              )}
-              {(detailOrder.status === 'approved_ship' || detailOrder.status === 'in_fulfillment') && !detailOrder.label_url && (
-                <button
-                  className="btn-silver"
-                  style={{ fontSize: '0.82rem' }}
-                  onClick={() => handleBuyLabel(detailOrder.id)}
-                  disabled={buyingLabelId === detailOrder.id}
-                >
-                  {buyingLabelId === detailOrder.id ? 'Buying...' : 'Buy Shipping Label'}
-                </button>
-              )}
-              <button className="btn-silver" style={{ fontSize: '0.82rem' }} onClick={handlePrint}>
+            <div
+              className="agent-order-modal-actions"
+              style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}
+            >
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setDetailOrder(null)}
+                style={{ padding: '10px 24px', fontSize: '0.95rem', fontWeight: 600 }}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => window.print()}
+                style={{ padding: '10px 24px', fontSize: '0.95rem', fontWeight: 600 }}
+              >
                 Print Packing Slip
               </button>
             </div>
           </div>
+
+          <style>{`
+            @media print {
+              body * { visibility: hidden !important; }
+              .agent-order-modal, .agent-order-modal * { visibility: visible !important; }
+              .agent-order-modal {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                max-height: none !important;
+                background: #fff !important;
+                color: #000 !important;
+                box-shadow: none !important;
+                border: none !important;
+              }
+              .agent-order-modal, .agent-order-modal h2, .agent-order-modal h3, .agent-order-modal div, .agent-order-modal span, .agent-order-modal td, .agent-order-modal th, .agent-order-modal p, .agent-order-modal a {
+                color: #000 !important;
+                background: #fff !important;
+              }
+              .agent-order-modal-overlay {
+                background: #fff !important;
+                backdrop-filter: none !important;
+                position: static !important;
+                padding: 0 !important;
+              }
+              .agent-order-modal-actions, .agent-order-modal .badge {
+                display: none !important;
+              }
+              .print-only-header {
+                display: block !important;
+              }
+            }
+          `}</style>
         </div>
       )}
-
-      {/* Label IframeModal */}
-      {labelModalUrl && <IframeModal url={labelModalUrl} onClose={() => setLabelModalUrl(null)} />}
-
-      {/* Manual Order Modal */}
-      {showManualOrder && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }}>
-          <div className="glass-panel" style={{ maxWidth: 700, width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: 'var(--space-6)', borderRadius: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
-              <h3 style={{ margin: 0, color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>Create Manual Order</h3>
-              <button className="btn-silver" onClick={() => setShowManualOrder(false)}>Close</button>
-            </div>
-            <AgentManualOrder onSuccess={() => { setShowManualOrder(false); fetchOrders(); }} />
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        @media print {
-          body > *:not(.print-slip) { display: none !important; }
-          .print-slip { display: block !important; }
-        }
-      `}</style>
+      </div>
     </div>
   );
 }
