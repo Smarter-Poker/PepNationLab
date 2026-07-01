@@ -37,6 +37,9 @@ export default function QRCodeGenerator({
 
     // Dynamic import of qrcode library (works client-side only)
     import('qrcode').then((QRCode) => {
+      // Guard: component may have unmounted while the dynamic import was in flight.
+      if (!canvasRef.current) return;
+
       QRCode.toCanvas(canvasRef.current, url, {
         width: size,
         margin: 2,

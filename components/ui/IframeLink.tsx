@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import IframeModal from '@/components/ui/IframeModal';
-import { isSocialPlatformUrl } from '@/lib/ArticleProxyUtils';
 
 interface IframeLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   href: string;
@@ -24,7 +23,9 @@ export default function IframeLink({
         type="button"
         onClick={(e) => {
           if (onClick) onClick(e as any);
-          (isSocialPlatformUrl(href) ? window.open(href, '_blank') : setModalUrl(href));
+          // Omega Protocol: ALL external URLs must open inside IframeModal
+          // routed through /api/proxy. Never use window.open or target="_blank".
+          setModalUrl(href);
         }} 
         className={className}
         style={{ 
