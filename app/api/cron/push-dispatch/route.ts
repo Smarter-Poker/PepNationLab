@@ -198,6 +198,7 @@ export async function GET(req: NextRequest) {
             await supabase
               .from('push_outbox')
               .update({
+                status: 'pending',
                 attempts: nextAttempts,
                 failure_reason: (lastError ?? 'all_subs_failed').slice(0, 300),
               })

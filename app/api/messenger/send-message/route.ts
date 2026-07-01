@@ -235,51 +235,55 @@ export async function POST(req: NextRequest) {
       const tag = `msg-${parsed.data.conversationId}`;
 
       // Enqueue in-app notification + push for each recipient
-      await Promise.all(
+      await Promise.allSettled(
         participants.map(async (p: any) => {
-          // In-app notification (shows in bell immediately via Realtime)
-          await notifyNewMessage(svc, p.user_id, senderName, rawBody, parsed.data.conversationId);
+          try {
+            // In-app notification (shows in bell immediately via Realtime)
+            await notifyNewMessage(svc, p.user_id, senderName, rawBody, parsed.data.conversationId);
 
-          // Customer Support v2: extra dedicated support_message bell entry
-          // for admin recipients on is_support threads. Wrapped tightly so a
-          // failure here never blocks the rest of the notification fanout.
-          if (isSupport) {
-            try {
-              const { data: recipientProfile } = await svc
-                .from('profiles')
-                .select('role')
-                .eq('id', p.user_id)
-                .maybeSingle();
-              const recipientRole = (recipientProfile as { role?: string } | null)?.role ?? null;
-              if (recipientRole === 'admin') {
-                await notifySupportMessage(svc, p.user_id, senderName, rawBody, parsed.data.conversationId);
+            // Customer Support v2: extra dedicated support_message bell entry
+            // for admin recipients on is_support threads. Wrapped tightly so a
+            // failure here never blocks the rest of the notification fanout.
+            if (isSupport) {
+              try {
+                const { data: recipientProfile } = await svc
+                  .from('profiles')
+                  .select('role')
+                  .eq('id', p.user_id)
+                  .maybeSingle();
+                const recipientRole = (recipientProfile as { role?: string } | null)?.role ?? null;
+                if (recipientRole === 'admin') {
+                  await notifySupportMessage(svc, p.user_id, senderName, rawBody, parsed.data.conversationId);
+                }
+              } catch {
+                // notification is best-effort
               }
-            } catch {
-              // notification is best-effort
             }
-          }
 
-          // Web push (background, requires subscription + permission)
-          await enqueuePush(svc, {
-            userId: p.user_id,
-            title: senderName,
-            body,
-            url,
-            event: 'message',
-            tag,
-          });
-          // Broadcast to the user's personal channel (for OS notifications)
-          await sendBroadcast({
-            topic: `user_notify:${p.user_id}`,
-            event: 'new_message_notify',
-            payload: { message: inserted },
-          });
-          // Broadcast to the user's unread channel (for the red badge)
-          await sendBroadcast({
-            topic: `user_unread:${p.user_id}`,
-            event: 'participant_updated',
-            payload: { participant: p },
-          });
+            // Web push (background, requires subscription + permission)
+            await enqueuePush(svc, {
+              userId: p.user_id,
+              title: senderName,
+              body,
+              url,
+              event: 'message',
+              tag,
+            });
+            // Broadcast to the user's personal channel (for OS notifications)
+            await sendBroadcast({
+              topic: `user_notify:${p.user_id}`,
+              event: 'new_message_notify',
+              payload: { message: inserted },
+            });
+            // Broadcast to the user's unread channel (for the red badge)
+            await sendBroadcast({
+              topic: `user_unread:${p.user_id}`,
+              event: 'participant_updated',
+              payload: { participant: p },
+            });
+          } catch (err) {
+            console.error(`[send-message] failed to notify participant ${p.user_id}:`, err);
+          }
         })
       );
     }

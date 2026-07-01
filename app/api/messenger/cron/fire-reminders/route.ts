@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
       // any per-type category toggle (event 'messenger_reminder' maps to no
       // PushTypeKey in eventToTypeKey), so it always fires when push is on but
       // never for users who turned push off entirely.
-      await Promise.all(
+      await Promise.allSettled(
         fired.map((r) =>
           enqueuePush(svc, {
             userId: r.user_id as string,
