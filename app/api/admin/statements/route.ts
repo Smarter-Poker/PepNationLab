@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 
 /**
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
+  const supabase = createAdminClient();
   const status = req.nextUrl.searchParams.get('status');
 
   let dbQuery = supabase
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await dbQuery;
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
   return NextResponse.json({ data });
 }
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     key: readIdempotencyKey(req),
     request: body,
     handler: async () => {
-  const supabase = await createServiceClient();
+  const supabase = createAdminClient();
 
   if (action === 'generate') {
     const { agentId, weekStart } = body;
@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
       .eq('id', statementId);
 
     if (updateError) {
-      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+      return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     }
 
     // Audit the financial state change (paying out a weekly statement).

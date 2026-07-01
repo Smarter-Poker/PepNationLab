@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { computeStatement, persistStatement } from '@/lib/statements';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { computeSubAgentBaselineCost } from '@/lib/pricing';
@@ -32,7 +32,7 @@ export async function GET(req: Request) {
   let prepaidSkipped = 0;
 
   try {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
 
     // 1. Generate Admin Statements for all top-level Agents & Super Agents
     //    (parent_agent_id IS NULL - sub-agents are billed by their super
@@ -95,7 +95,7 @@ export async function GET(req: Request) {
     if (!subAgentsError && subAgents) {
       // CST/CDT-aware billing week. rangeStart = Mon 00:00 Chicago,
       // rangeEndExclusive = next Mon 00:00 Chicago - exactly the
-      // "Mon → Sun 23:59:59 CT" window the spec calls for.
+      // "Mon -> Sun 23:59:59 CT" window the spec calls for.
       const rangeStart = chicagoMidnightIso(weekStart);
       const weekEnd = addDays(weekStart, 6);
       const rangeEndExclusive = chicagoMidnightIso(addDays(weekStart, 7));

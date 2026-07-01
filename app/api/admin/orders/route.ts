@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireOrdersAccess } from '@/lib/admin-auth';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
 import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const gate = await requireOrdersAccess();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
+  const supabase = createAdminClient();
   const searchParams = req.nextUrl.searchParams;
   const status = searchParams.get('status');
   const query = searchParams.get('query');
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await dbQuery;
 
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   interface OrderRow {
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
   const gate = await requireOrdersAccess();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
+  const supabase = createAdminClient();
   const body = await req.json().catch(() => ({}));
 
   const {
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
     .from('orders')
     .select('status')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (fetchErr || !existingOrder) {
     return NextResponse.json({ error: 'Order Not Found' }, { status: 404 });
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (updateError) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   // NOTE: Shipping labels are created MANUALLY (on-demand) only - never auto-
@@ -208,7 +208,7 @@ export async function POST(req: NextRequest) {
     if (orderRow?.buyer_id) {
       const short = shortOrderId(id);
       const trk = orderRow.tracking_number || tracking_number || null;
-      // In-app notification - writes to notifications table → shows in bell immediately
+      // In-app notification - writes to notifications table -> shows in bell immediately
       await notifyAdminOrderStatusChange(supabase, orderRow.buyer_id, id, short, status, trk);
 
       // Web push for supported statuses
