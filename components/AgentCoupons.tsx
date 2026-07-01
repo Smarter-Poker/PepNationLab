@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
 
@@ -368,7 +369,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
       if (!res.ok) throw new Error('PATCH failed');
     } catch {
       setCoupons((prev) => prev.map((c) => (c.id === coupon.id ? { ...c, is_active: coupon.is_active } : c)));
-      alert('Failed To Update Coupon.');
+      toast.error('Failed To Update Coupon.');
     }
   }
 
@@ -381,7 +382,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
       if (!res.ok) throw new Error('DELETE failed');
     } catch {
       setCoupons(previous);
-      alert('Failed To Archive Coupon.');
+      toast.error('Failed To Archive Coupon.');
     }
   }
 
@@ -611,7 +612,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
             )}
 
             <div>
-              <div style={SECTION_LABEL}>1 · Identity</div>
+              <div style={SECTION_LABEL}>1 &middot; Identity</div>
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'minmax(0, 1fr) auto',
@@ -652,7 +653,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
             </div>
 
             <div>
-              <div style={SECTION_LABEL}>2 · Discount</div>
+              <div style={SECTION_LABEL}>2 &middot; Discount</div>
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
@@ -702,7 +703,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
             </div>
 
             <div>
-              <div style={SECTION_LABEL}>3 · Limits</div>
+              <div style={SECTION_LABEL}>3 &middot; Limits</div>
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -779,7 +780,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
             </div>
 
             <div>
-              <div style={SECTION_LABEL}>4 · Audience</div>
+              <div style={SECTION_LABEL}>4 &middot; Audience</div>
               <label style={{
                 display: 'flex',
                 alignItems: 'flex-start',
@@ -808,7 +809,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
             </div>
 
             <div>
-              <div style={SECTION_LABEL}>5 · Validity</div>
+              <div style={SECTION_LABEL}>5 &middot; Validity</div>
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -853,7 +854,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
               disabled={creating}
               style={{ minHeight: 48, fontSize: '0.95rem', fontWeight: 700, marginTop: 4 }}
             >
-              {creating ? 'Creating Coupon…' : 'Create Coupon'}
+              {creating ? 'Creating Coupon...' : 'Create Coupon'}
             </button>
           </form>
 
@@ -940,7 +941,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search Codes…"
+              placeholder="Search Codes..."
               aria-label="Search Coupon Codes"
               style={{ ...INPUT, minHeight: 40, padding: '8px 12px', fontSize: '0.85rem', maxWidth: 280 }}
             />
@@ -1027,7 +1028,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
               const usagePct = c.max_uses != null && c.max_uses > 0
                 ? Math.min(100, Math.round((c.uses_count / c.max_uses) * 100))
                 : null;
-              const toast = notifyToast && notifyToast.couponId === c.id ? notifyToast.text : null;
+              const toastMsg = notifyToast && notifyToast.couponId === c.id ? notifyToast.text : null;
               const linkCopied = linkCopiedId === c.id;
               return (
                 <div
@@ -1194,10 +1195,10 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
                       disabled={notifyingId === c.id}
                       style={{ fontSize: '0.74rem', padding: '6px 12px', minHeight: 32, opacity: notifyingId === c.id ? 0.6 : 1 }}
                     >
-                      {notifyingId === c.id ? 'Sending…' : 'Send To Researchers'}
+                      {notifyingId === c.id ? 'Sending...' : 'Send To Researchers'}
                     </button>
-                    {toast && (
-                      <span style={{ fontSize: '0.74rem', color: 'var(--teal)', fontWeight: 600 }}>{toast}</span>
+                    {toastMsg && (
+                      <span style={{ fontSize: '0.74rem', color: 'var(--teal)', fontWeight: 600 }}>{toastMsg}</span>
                     )}
                   </div>
                 </div>
@@ -1678,7 +1679,7 @@ function BulkGenerateModal({ onClose, onCreated }: { onClose: () => void; onCrea
             Cancel
           </button>
           <button type="submit" className="btn-neon-cyan" disabled={submitting} style={{ minHeight: 40, padding: '8px 16px', fontSize: '0.85rem', fontWeight: 700 }}>
-            {submitting ? 'Generating…' : 'Generate Codes'}
+            {submitting ? 'Generating...' : 'Generate Codes'}
           </button>
         </div>
       </form>
