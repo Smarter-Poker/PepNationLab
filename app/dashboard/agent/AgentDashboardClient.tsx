@@ -236,7 +236,7 @@ export default function AgentDashboardClient({
         setResearcherList(prev => prev.map(r => r.id === targetUserId ? { ...r, auto_approve_orders: data.auto_approve_orders } : r));
       }
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message || 'An Unexpected Error Occurred.');
     } finally {
       setTogglingTrust(null);
     }
@@ -303,7 +303,7 @@ export default function AgentDashboardClient({
       setResearcherList(prev => prev.filter(r => r.id !== promoteResearcher.id));
       setPromoteResearcher(null);
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message || 'An Unexpected Error Occurred.');
     } finally {
       setPromoteLoading(false);
     }
@@ -478,7 +478,7 @@ export default function AgentDashboardClient({
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="E.g. bioscience"
+                    placeholder="Your Storefront Slug"
                     value={setupSlug}
                     onChange={(e) => setSetupSlug(e.target.value)}
                     style={{ background: 'transparent', border: 'none', boxShadow: 'none', height: '100%', paddingTop: 0, paddingBottom: 0, flex: 1, minWidth: 0 }}
