@@ -1,4 +1,6 @@
 // Admin Dispute Queue - list disputed weekly statements and resolve them.
+// Resolving records dispute_resolved_at/resolution + an admin note (atomic RPC
+// resolve_statement_dispute). Unresolved disputes are surfaced first.
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -38,6 +40,7 @@ export async function GET() {
     };
   });
 
+  // Unresolved first.
   rows.sort((a, b) => {
     if (!a.resolved && b.resolved) return -1;
     if (a.resolved && !b.resolved) return 1;
@@ -79,6 +82,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 
+  // Fetch the agent to notify (best-effort).
   try {
     const { data: stmt } = await svc.from('weekly_statements').select('agent_id').eq('id', body.statementId).single();
     if (stmt?.agent_id) {
@@ -92,6 +96,7 @@ export async function POST(req: NextRequest) {
     }
   } catch { /* notify must not block */ }
 
+  // Audit (best-effort).
   try {
     await svc.from('admin_audit_log').insert({
       actor_id: gate.userId, action: 'statement_dispute_resolved',

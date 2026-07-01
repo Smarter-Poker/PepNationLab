@@ -66,6 +66,7 @@ export default async function AdminSearchAnalyticsPage() {
       <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', marginBottom: 'var(--space-5, 24px)' }}>
         <h2 style={headerStyle}>Latency Distribution</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3, 12px)' }}>
+          {(['P50', 50], ['P75', 75], ['P95', 95], ['P99', 99]) && (['P50', 50], ['P75', 75], ['P95', 95], ['P99', 99]) && (['P50', 50] as const) && null}
           {([['P50', 50], ['P75', 75], ['P95', 95], ['P99', 99]] as const).map(([label, p]) => (
             <div key={label} className="glass-panel" style={{ padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-md, 8px)' }}>
               <div style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)', fontWeight: 700, letterSpacing: '0.05em' }}>{label}</div>

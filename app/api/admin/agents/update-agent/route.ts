@@ -35,6 +35,8 @@ export async function PATCH(request: NextRequest) {
       updates.auto_approve_orders = account_type === 'credit';
     }
     
+    // Convert to number or null, ensuring safe defaults. Money fields are
+    // clamped to >= 0 so a stray negative can never persist a bad balance.
     const nonNeg = (v: number) => (Number.isFinite(v) ? Math.max(0, v) : 0);
     if (credit_limit !== undefined) updates.credit_limit = credit_limit === '' ? null : nonNeg(Number(credit_limit));
     if (prepaid_balance !== undefined) updates.prepaid_balance = prepaid_balance === '' ? 0 : nonNeg(Number(prepaid_balance));

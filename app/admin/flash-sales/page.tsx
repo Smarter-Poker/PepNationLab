@@ -23,6 +23,7 @@ export default function AdminFlashSalesPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
 
+  // Create form state
   const [name, setName] = useState('');
   const [bannerText, setBannerText] = useState('');
   const [discount, setDiscount] = useState('10');
@@ -144,7 +145,7 @@ export default function AdminFlashSalesPage() {
         </div>
       )}
 
-      {loading && <div style={{ color: 'var(--grey-400)', padding: 16 }}>Loading...</div>}
+      {loading && <div style={{ color: 'var(--grey-400)', padding: 16 }}>Loading…</div>}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         {sales.map((s) => (
@@ -158,7 +159,7 @@ export default function AdminFlashSalesPage() {
                   </span>
                 </div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--silver)' }}>
-                  {s.discount_pct}% Off - {fmtWhen(s.starts_at)} to {fmtWhen(s.ends_at)}
+                  {s.discount_pct}% Off · {fmtWhen(s.starts_at)} → {fmtWhen(s.ends_at)}
                 </div>
                 {s.banner_text && (
                   <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 4, fontStyle: 'italic' }}>

@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
     const messagesToInsert = [];
     const profilesToUpdate = [];
 
+    // Assuming the admin ID is the sender if there's no referring agent
     const adminId = gate.userId;
 
     for (const user of abandonedCarts) {
@@ -47,6 +48,9 @@ export async function POST(req: NextRequest) {
 
       if (!cartItems || cartItems.length === 0) continue;
 
+      // Throttle: skip anyone already reminded within the last 24h. We track this
+      // on last_cart_reminder_at so we never overwrite cart_updated_at (the real
+      // cart-age signal used to qualify abandoned carts in the first place).
       if (
         user.last_cart_reminder_at &&
         new Date(user.last_cart_reminder_at).getTime() > Date.now() - 24 * 60 * 60 * 1000
@@ -68,12 +72,15 @@ export async function POST(req: NextRequest) {
     }
 
     if (messagesToInsert.length > 0) {
+      // 1. Send the messages
       const { error: msgError } = await supabase.from('internal_messages').insert(messagesToInsert);
       if (msgError) {
         console.error('Failed to insert reminder messages:', msgError);
         return NextResponse.json({ error: 'Failed To Send Reminders' }, { status: 500 });
       }
 
+      // 2. Stamp last_cart_reminder_at (NOT cart_updated_at) so we throttle to
+      // one reminder per 24h without destroying the user's true cart-age signal.
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ last_cart_reminder_at: new Date().toISOString() })
