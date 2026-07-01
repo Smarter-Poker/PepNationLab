@@ -49,7 +49,6 @@ export default async function AdminAuditPage({
   const { data: rawRows } = await q;
   const baseRows = rawRows ?? [];
 
-  // admin_audit_log stores only actor_id - resolve actor emails in one batch.
   const actorIds = Array.from(
     new Set(baseRows.map((r) => r.actor_id).filter(Boolean)),
   ) as string[];

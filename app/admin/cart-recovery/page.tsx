@@ -120,10 +120,10 @@ export default function AdminCartRecoveryPage() {
 
       {creating && (
         <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
-          <div className="" style={{ padding: 'var(--space-5)' }}>
+          <div style={{ padding: 'var(--space-5)' }}>
             <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: 'var(--space-3)' }}>Create Variant</h3>
             <form onSubmit={createVariant} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Variant Name (e.g. discount_10pct)" required
+              <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Variant Name" required
                 className="form-input"
                 style={{ padding: '8px 12px', borderRadius: 8, background: 'var(--surface-1)', border: '1px solid var(--surface-3)', color: 'var(--white)', fontSize: '0.88rem', outline: 'none' }} />
               <textarea value={newSteps} onChange={(e) => setNewSteps(e.target.value)} rows={8}
@@ -142,28 +142,18 @@ export default function AdminCartRecoveryPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
         {variants.map((v) => (
           <div key={v.id} className="glass-panel">
-            <div className="" style={{ padding: 'var(--space-5)' }}>
+            <div style={{ padding: 'var(--space-5)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
                 <h3 style={{ fontSize: '1.05rem', margin: 0, color: 'var(--white)' }}>{v.name}</h3>
                 <span style={{ fontSize: '0.7rem', padding: '2px 10px', borderRadius: 999, background: v.enabled ? 'rgba(0,196,188,0.15)' : 'rgba(168,180,192,0.18)', color: v.enabled ? 'var(--teal)' : 'var(--grey-300)', fontWeight: 700, textTransform: 'uppercase' }}>
                   {v.enabled ? 'Enabled' : 'Disabled'}
                 </span>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--silver)' }}>
-                    Sent <strong style={{ color: 'var(--white)' }}>{v.sent}</strong>
-                  </span>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--silver)' }}>
-                    Recovered <strong style={{ color: 'var(--teal)' }}>{v.recovered}</strong>
-                  </span>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--silver)' }}>
-                    Win Rate <strong style={{ color: v.winRate >= 5 ? 'var(--teal)' : 'var(--silver)' }}>{v.winRate.toFixed(1)}%</strong>
-                  </span>
-                  <button type="button" onClick={() => toggleEnabled(v)} className="btn-silver" style={{ padding: '6px 12px', fontSize: '0.78rem' }}>
-                    {v.enabled ? 'Disable' : 'Enable'}
-                  </button>
-                  <button type="button" onClick={() => removeVariant(v)} style={{ background: 'transparent', border: 0, color: 'var(--red)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
-                    Delete
-                  </button>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--silver)' }}>Sent <strong style={{ color: 'var(--white)' }}>{v.sent}</strong></span>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--silver)' }}>Recovered <strong style={{ color: 'var(--teal)' }}>{v.recovered}</strong></span>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--silver)' }}>Win Rate <strong style={{ color: v.winRate >= 5 ? 'var(--teal)' : 'var(--silver)' }}>{v.winRate.toFixed(1)}%</strong></span>
+                  <button type="button" onClick={() => toggleEnabled(v)} className="btn-silver" style={{ padding: '6px 12px', fontSize: '0.78rem' }}>{v.enabled ? 'Disable' : 'Enable'}</button>
+                  <button type="button" onClick={() => removeVariant(v)} style={{ background: 'transparent', border: 0, color: 'var(--red)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>Delete</button>
                 </div>
               </div>
               <textarea
