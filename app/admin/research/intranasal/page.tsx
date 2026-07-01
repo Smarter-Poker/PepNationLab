@@ -1,1 +1,53 @@
-LyoqCiAqIEFkbWluOiBpbnRyYW5hc2FsIHJvdXRlIGNsYXNzaWZpY2F0aW9uIGVkaXRvci4gQWRtaW4tb25seSB2aWEgbWlkZGxld2FyZSArCiAqIGFuIGV4cGxpY2l0IHJlcXVpcmVBZG1pbiBnYXRlLiBMaXN0cyBldmVyeSBjb21wb3VuZCB3aXRoIGl0cyBjdXJyZW50IG5hc2FsCiAqIHRpZXIgc28gdGhlIHRlYW0gY2FuIHJlY2xhc3NpZnkgd2l0aG91dCBhIGRhdGFiYXNlIG1pZ3JhdGlvbi4KICovCmltcG9ydCB0eXBlIHsgTWV0YWRhdGEgfSBmcm9tICduZXh0JzsKaW1wb3J0IExpbmsgZnJvbSAnbmV4dC9saW5rJzsKaW1wb3J0IHsgcmVkaXJlY3QgfSBmcm9tICduZXh0L25hdmlnYXRpb24nOwppbXBvcnQgeyBBcnJvd0xlZnQgfSBmcm9tICdsdWNpZGUtcmVhY3QnOwppbXBvcnQgeyBjcmVhdGVTZXJ2aWNlQ2xpZW50IH0gZnJvbSAnQC9saWIvc3VwYWJhc2Uvc2VydmVyJzsKaW1wb3J0IHsgcmVxdWlyZUFkbWluIH0gZnJvbSAnQC9saWIvYWRtaW4tYXV0aCc7CmltcG9ydCBBZG1pbkludHJhbmFzYWxFZGl0b3IsIHsgdHlwZSBJbnRyYW5hc2FsUm93IH0gZnJvbSAnQC9jb21wb25lbnRzL2FkbWluL0FkbWluSW50cmFuYXNhbEVkaXRvcic7CgpleHBvcnQgY29uc3QgbWV0YWRhdGE6IE1ldGFkYXRhID0gewogIHRpdGxlOiAnSW50cmFuYXNhbCBSb3V0ZSB8IEFkbWluIHwgUGVwIE5hdGlvbiBMYWInLAogIHJvYm90czogeyBpbmRleDogZmFsc2UsIGZvbGxvdzogZmFsc2UgfSwKfTsKZXhwb3J0IGNvbnN0IGR5bmFtaWMgPSAnZm9yY2UtZHluYW1pYyc7CgpleHBvcnQgZGVmYXVsdCBhc3luYyBmdW5jdGlvbiBBZG1pbkludHJhbmFzYWxQYWdlKCkgewogIGNvbnN0IGdhdGUgPSBhd2FpdCByZXF1aXJlQWRtaW4oKTsKICBpZiAoIWdhdGUub2spIHJlZGlyZWN0KCcvbG9naW4nKTsKCiAgY29uc3Qgc3VwYWJhc2UgPSBhd2FpdCBjcmVhdGVTZXJ2aWNlQ2xpZW50KCk7CiAgY29uc3QgeyBkYXRhIH0gPSBhd2FpdCBzdXBhYmFzZQogICAgLmZyb20oJ2NvbXBvdW5kcycpCiAgICAuc2VsZWN0KCdzbHVnLCBkaXNwbGF5X25hbWUsIGNhdGVnb3J5LCBldmlkZW5jZV90aWVyLCBpbnRyYW5hc2FsX3N0YXR1cywgaW50cmFuYXNhbF9iaW9hdmFpbGFiaWxpdHlfcGN0LCBpbnRyYW5hc2FsX25vdGUnKQogICAgLm9yZGVyKCdkaXNwbGF5X25hbWUnLCB7IGFzY2VuZGluZzogdHJ1ZSB9KTsKCiAgY29uc3Qgcm93cyA9IChkYXRhID8/IFtdKSBhcyBJbnRyYW5hc2FsUm93W107CgogIGNvbnN0IGVzdGFibGlzaGVkID0gcm93cy5maWx0ZXIoKHIpID0+IHIuaW50cmFuYXNhbF9zdGF0dXMgPT09ICdlc3RhYmxpc2hlZCcpLmxlbmd0aDsKICBjb25zdCBlbWVyZ2luZyA9IHJvd3MuZmlsdGVyKChyKSA9PiByLmludHJhbmFzYWxfc3RhdHVzID09PSAnZW1lcmdpbmcnKS5sZW5ndGg7CgogIHJldHVybiAoCiAgICA8ZGl2IHN0eWxlPXt7IG1heFdpZHRoOiAxMTAwLCBtYXJnaW46ICcwIGF1dG8nLCBwYWRkaW5nOiAnMjRweCAxNnB4JyB9fT4KICAgICAgPG5hdiBzdHlsZT17eyBtYXJnaW5Cb3R0b206IDE2IH19PgogICAgICAgIDxMaW5rIGhyZWY9Ii9hZG1pbiIgc3R5bGU9e3sgY29sb3I6ICd2YXIoLS10ZWFsLCAjMDBDNEJDKScsIGZvbnRTaXplOiAnMC45cmVtJywgdGV4dERlY29yYXRpb246ICdub25lJywgZGlzcGxheTogJ2lubGluZS1mbGV4JywgYWxpZ25JdGVtczogJ2NlbnRlcicsIGdhcDogNiB9fT4KICAgICAgICAgIDxBcnJvd0xlZnQgc2l6ZT17MTZ9IC8+IEJhY2sgVG8gQWRtaW4KICAgICAgICA8L0xpbms+CiAgICAgIDwvbmF2PgogICAgICA8aGVhZGVyIHN0eWxlPXt7IG1hcmdpbkJvdHRvbTogMjQgfX0+CiAgICAgICAgPGgxIGNsYXNzTmFtZT0iYW5pbWF0ZWQtZ3JhZGllbnQtdGV4dCIgc3R5bGU9e3sgZm9udFNpemU6ICcxLjhyZW0nLCBtYXJnaW46IDAgfX0+SW50cmFuYXNhbCBSb3V0ZSBDbGFzc2lmaWNhdGlvbjwvaDE+CiAgICAgICAgPHAgc3R5bGU9e3sgY29sb3I6ICd2YXIoLS1zaWx2ZXIsICNBOEI0QzApJywgZm9udFNpemU6ICcxcmVtJywgbWFyZ2luVG9wOiA4LCBtYXhXaWR0aDogNzgwLCBsaW5lSGVpZ2h0OiAxLjYgfX0+CiAgICAgICAgICBTZXQgZWFjaCBjb21wb3VuZCZhcG9zO3MgbmFzYWwtcm91dGUgdGllci4gRXN0YWJsaXNoZWQgYW5kIEVtZXJnaW5nIHN1cmZhY2UgdGhlIG5hc2FsIGJhZGdlcyBhY3Jvc3MgdGhlIHN0b3JlIGFuZAogICAgICAgICAgcmVzZWFyY2ggbGlicmFyeTsgSW5qZWN0aW9uIE9ubHkgaGlkZXMgdGhlbS4gQ2hhbmdlcyBzYXZlIGltbWVkaWF0ZWx5IGFuZCByZWZyZXNoIHRoZSBwdWJsaWMgcGFnZXMuIEN1cnJlbnRseQogICAgICAgICAgeyAnICd9e2VzdGFibGlzaGVkfSBlc3RhYmxpc2hlZCBhbmQge2VtZXJnaW5nfSBlbWVyZ2luZy4KICAgICAgICA8L3A+CiAgICAgIDwvaGVhZGVyPgogICAgICA8QWRtaW5JbnRyYW5hc2FsRWRpdG9yIHJvd3M9e3Jvd3N9IC8+CiAgICA8L2Rpdj4KICApOwp9Cg==
+/**
+ * Admin: intranasal route classification editor. Admin-only via middleware +
+ * an explicit requireAdmin gate. Lists every compound with its current nasal
+ * tier so the team can reclassify without a database migration.
+ */
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
+import { createServiceClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/admin-auth';
+import AdminIntranasalEditor, { type IntranasalRow } from '@/components/admin/AdminIntranasalEditor';
+
+export const metadata: Metadata = {
+  title: 'Intranasal Route | Admin | Pep Nation Lab',
+  robots: { index: false, follow: false },
+};
+export const dynamic = 'force-dynamic';
+
+export default async function AdminIntranasalPage() {
+  const gate = await requireAdmin();
+  if (!gate.ok) redirect('/login');
+
+  const supabase = await createServiceClient();
+  const { data } = await supabase
+    .from('compounds')
+    .select('slug, display_name, category, evidence_tier, intranasal_status, intranasal_bioavailability_pct, intranasal_note')
+    .order('display_name', { ascending: true });
+
+  const rows = (data ?? []) as IntranasalRow[];
+
+  const established = rows.filter((r) => r.intranasal_status === 'established').length;
+  const emerging = rows.filter((r) => r.intranasal_status === 'emerging').length;
+
+  return (
+    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 16px' }}>
+      <nav style={{ marginBottom: 16 }}>
+        <Link href="/admin" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <ArrowLeft size={16} /> Back To Admin
+        </Link>
+      </nav>
+      <header style={{ marginBottom: 24 }}>
+        <h1 className="animated-gradient-text" style={{ fontSize: '1.8rem', margin: 0 }}>Intranasal Route Classification</h1>
+        <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1rem', marginTop: 8, maxWidth: 780, lineHeight: 1.6 }}>
+          Set each compound&apos;s nasal-route tier. Established and Emerging surface the nasal badges across the store and
+          research library; Injection Only hides them. Changes save immediately and refresh the public pages. Currently
+          {' '}{established} established and {emerging} emerging.
+        </p>
+      </header>
+      <AdminIntranasalEditor rows={rows} />
+    </div>
+  );
+}

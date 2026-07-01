@@ -1,1 +1,205 @@
-InVzZSBjbGllbnQiOwoKaW1wb3J0IHsgdXNlU3RhdGUgfSBmcm9tICJyZWFjdCI7CgpmdW5jdGlvbiBmb3JtYXRBY3Rpb24oYWN0aW9uOiBzdHJpbmcpOiBzdHJpbmcgewogIHJldHVybiBhY3Rpb24KICAgIC5yZXBsYWNlKC9bX1wuXS9nLCAiICIpCiAgICAucmVwbGFjZSgvXGJcdy9nLCAoYykgPT4gYy50b1VwcGVyQ2FzZSgpKTsKfQoKaW50ZXJmYWNlIEF1ZGl0Um93IHsKICBpZDogc3RyaW5nOwogIGFjdG9yX2lkOiBzdHJpbmcgfCBudWxsOwogIGFjdG9yX2VtYWlsOiBzdHJpbmcgfCBudWxsOwogIGFjdGlvbjogc3RyaW5nOwogIHRhcmdldF90eXBlOiBzdHJpbmcgfCBudWxsOwogIHRhcmdldF9pZDogc3RyaW5nIHwgbnVsbDsKICBzdW1tYXJ5OiBzdHJpbmcgfCBudWxsOwogIG1ldGFkYXRhOiBSZWNvcmQ8c3RyaW5nLCB1bmtub3duPiB8IG51bGw7CiAgY3JlYXRlZF9hdDogc3RyaW5nOwp9CgppbnRlcmZhY2UgUHJvcHMgewogIGluaXRpYWxSb3dzOiBBdWRpdFJvd1tdOwogIGluaXRpYWxGaWx0ZXJzOiB7IHE6IHN0cmluZzsgYWN0aW9uOiBzdHJpbmcgfTsKICBhdmFpbGFibGVBY3Rpb25zOiBzdHJpbmdbXTsKICBsaW1pdDogbnVtYmVyOwp9CgpleHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBBZG1pbkF1ZGl0Q2xpZW50KHsKICBpbml0aWFsUm93cywKICBpbml0aWFsRmlsdGVycywKICBhdmFpbGFibGVBY3Rpb25zLAogIGxpbWl0LAp9OiBQcm9wcykgewogIGNvbnN0IFtyb3dzLCBzZXRSb3dzXSA9IHVzZVN0YXRlPEF1ZGl0Um93W10+KGluaXRpYWxSb3dzKTsKICBjb25zdCBbcSwgc2V0UV0gPSB1c2VTdGF0ZShpbml0aWFsRmlsdGVycy5xKTsKICBjb25zdCBbYWN0aW9uLCBzZXRBY3Rpb25dID0gdXNlU3RhdGUoaW5pdGlhbEZpbHRlcnMuYWN0aW9uKTsKICBjb25zdCBbYnVzeSwgc2V0QnVzeV0gPSB1c2VTdGF0ZShmYWxzZSk7CiAgY29uc3QgW2hhc01vcmUsIHNldEhhc01vcmVdID0gdXNlU3RhdGUoaW5pdGlhbFJvd3MubGVuZ3RoID49IGxpbWl0KTsKICBjb25zdCBbbG9hZEVycm9yLCBzZXRMb2FkRXJyb3JdID0gdXNlU3RhdGU8c3RyaW5nIHwgbnVsbD4obnVsbCk7CgogIGFzeW5jIGZ1bmN0aW9uIGxvYWQob3B0czogeyByZXNldD86IGJvb2xlYW4gfSA9IHt9KSB7CiAgICBzZXRCdXN5KHRydWUpOwogICAgc2V0TG9hZEVycm9yKG51bGwpOwogICAgdHJ5IHsKICAgICAgY29uc3Qgc3AgPSBuZXcgVVJMU2VhcmNoUGFyYW1zKCk7CiAgICAgIGlmIChxKSBzcC5zZXQoInEiLCBxKTsKICAgICAgaWYgKGFjdGlvbikgc3Auc2V0KCJhY3Rpb24iLCBhY3Rpb24pOwogICAgICBpZiAoIW9wdHMucmVzZXQgJiYgcm93cy5sZW5ndGggPiAwKQogICAgICAgIHNwLnNldCgiY3Vyc29yIiwgcm93c1tyb3dzLmxlbmd0aCAtIDFdLmNyZWF0ZWRfYXQpOwogICAgICBjb25zdCByZXMgPSBhd2FpdCBmZXRjaChgL2FwaS9hZG1pbi9hdWRpdD8ke3NwLnRvU3RyaW5nKCl9YCwgewogICAgICAgIGNhY2hlOiAibm8tc3RvcmUiLAogICAgICB9KTsKICAgICAgaWYgKCFyZXMub2spIHsKICAgICAgICBzZXRMb2FkRXJyb3IoIkNvdWxkIE5vdCBMb2FkIEF1ZGl0IEVudHJpZXMuIFBsZWFzZSBUcnkgQWdhaW4uIik7CiAgICAgICAgcmV0dXJuOwogICAgICB9CiAgICAgIGNvbnN0IGpzb24gPSBhd2FpdCByZXMuanNvbigpOwogICAgICBjb25zdCBuZXh0OiBBdWRpdFJvd1tdID0ganNvbj8uZGF0YSA/PyBbXTsKICAgICAgc2V0Um93cyhvcHRzLnJlc2V0ID8gbmV4dCA6IFsuLi5yb3dzLCAuLi5uZXh0XSk7CiAgICAgIHNldEhhc01vcmUobmV4dC5sZW5ndGggPj0gbGltaXQpOwogICAgfSBjYXRjaCB7CiAgICAgIHNldExvYWRFcnJvcigiQ291bGQgTm90IExvYWQgQXVkaXQgRW50cmllcy4gUGxlYXNlIFRyeSBBZ2Fpbi4iKTsKICAgIH0gZmluYWxseSB7CiAgICAgIHNldEJ1c3koZmFsc2UpOwogICAgfQogIH0KCiAgZnVuY3Rpb24gYXBwbHlGaWx0ZXJzKCkgewogICAgbG9hZCh7IHJlc2V0OiB0cnVlIH0pOwogIH0KCiAgcmV0dXJuICgKICAgIDxkaXY+CiAgICAgIDxkaXYKICAgICAgICBzdHlsZT17ewogICAgICAgICAgZGlzcGxheTogImZsZXgiLAogICAgICAgICAgZ2FwOiAidmFyKC0tc3BhY2UtMykiLAogICAgICAgICAgZmxleFdyYXA6ICJ3cmFwIiwKICAgICAgICAgIG1hcmdpbkJvdHRvbTogInZhcigtLXNwYWNlLTQpIiwKICAgICAgICB9fQogICAgICA+CiAgICAgICAgPGlucHV0CiAgICAgICAgICB2YWx1ZT17cX0KICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0UShlLnRhcmdldC52YWx1ZSl9CiAgICAgICAgICBwbGFjZWhvbGRlcj0iU2VhcmNoIFN1bW1hcnnigKYiCiAgICAgICAgICBvbktleURvd249eyhlKSA9PiB7CiAgICAgICAgICAgIGlmIChlLmtleSA9PT0gIkVudGVyIikgYXBwbHlGaWx0ZXJzKCk7CiAgICAgICAgICB9fQogICAgICAgICAgc3R5bGU9e3sKICAgICAgICAgICAgYmFja2dyb3VuZDogInZhcigtLXN1cmZhY2UtMikiLAogICAgICAgICAgICBib3JkZXI6ICIxcHggc29saWQgcmdiYSgyNTUsMjU1LDI1NSwwLjA4KSIsCiAgICAgICAgICAgIGNvbG9yOiAidmFyKC0td2hpdGUpIiwKICAgICAgICAgICAgcGFkZGluZzogIjAuNTVyZW0gMC43NXJlbSIsCiAgICAgICAgICAgIGJvcmRlclJhZGl1czogInZhcigtLXJhZGl1cy1tZCkiLAogICAgICAgICAgICBmb250U2l6ZTogIjAuOXJlbSIsCiAgICAgICAgICAgIG1pbldpZHRoOiAyMjAsCiAgICAgICAgICB9fQogICAgICAgIC8+CiAgICAgICAgPHNlbGVjdAogICAgICAgICAgdmFsdWU9e2FjdGlvbn0KICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0QWN0aW9uKGUudGFyZ2V0LnZhbHVlKX0KICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgIGJhY2tncm91bmQ6ICJ2YXIoLS1zdXJmYWNlLTIpIiwKICAgICAgICAgICAgYm9yZGVyOiAiMXB4IHNvbGlkIHJnYmEoMjU1LDI1NSwyNTUsMC4wOCkiLAogICAgICAgICAgICBjb2xvcjogInZhcigtLXdoaXRlKSIsCiAgICAgICAgICAgIHBhZGRpbmc6ICIwLjU1cmVtIDAuNzVyZW0iLAogICAgICAgICAgICBib3JkZXJSYWRpdXM6ICJ2YXIoLS1yYWRpdXMtbWQpIiwKICAgICAgICAgICAgZm9udFNpemU6ICIwLjlyZW0iLAogICAgICAgICAgfX0KICAgICAgICA+CiAgICAgICAgICA8b3B0aW9uIHZhbHVlPSIiPkFsbCBBY3Rpb25zPC9vcHRpb24+CiAgICAgICAgICB7YXZhaWxhYmxlQWN0aW9ucy5tYXAoKGEpID0+ICgKICAgICAgICAgICAgPG9wdGlvbiBrZXk9e2F9IHZhbHVlPXthfT4KICAgICAgICAgICAgICB7Zm9ybWF0QWN0aW9uKGEpfQogICAgICAgICAgICA8L29wdGlvbj4KICAgICAgICAgICkpfQogICAgICAgIDwvc2VsZWN0PgogICAgICAgIDxidXR0b24KICAgICAgICAgIGNsYXNzTmFtZT0iYnRuLW5lb24tY3lhbiIKICAgICAgICAgIHN0eWxlPXt7IHBhZGRpbmc6ICI2cHggMTJweCIsIGZvbnRTaXplOiAiMC43NXJlbSIgfX0KICAgICAgICAgIGRpc2FibGVkPXtidXN5fQogICAgICAgICAgb25DbGljaz17YXBwbHlGaWx0ZXJzfQogICAgICAgID4KICAgICAgICAgIHtidXN5ID8gIkxvYWRpbmfigKYiIDogIkZpbHRlciJ9CiAgICAgICAgPC9idXR0b24+CiAgICAgIDwvZGl2PgoKICAgICAge2xvYWRFcnJvciAmJiAoCiAgICAgICAgPGRpdgogICAgICAgICAgc3R5bGU9e3sKICAgICAgICAgICAgYmFja2dyb3VuZDogInJnYmEoMjI5LDYyLDYyLDAuMTIpIiwKICAgICAgICAgICAgYm9yZGVyOiAiMXB4IHNvbGlkIHJnYmEoMjI5LDYyLDYyLDAuNCkiLAogICAgICAgICAgICBjb2xvcjogInZhcigtLWRhbmdlcikiLAogICAgICAgICAgICBwYWRkaW5nOiAiMC42cmVtIDAuODVyZW0iLAogICAgICAgICAgICBib3JkZXJSYWRpdXM6ICJ2YXIoLS1yYWRpdXMtbWQpIiwKICAgICAgICAgICAgbWFyZ2luQm90dG9tOiAidmFyKC0tc3BhY2UtNCkiLAogICAgICAgICAgICBmb250U2l6ZTogIjAuODVyZW0iLAogICAgICAgICAgfX0KICAgICAgICA+CiAgICAgICAgICB7bG9hZEVycm9yfQogICAgICAgIDwvZGl2PgogICAgICApfQoKICAgICAgPGRpdiBjbGFzc05hbWU9ImdsYXNzLXBhbmVsIGhvdmVyLWxpZnQgc3RhZ2dlci1mYWRlLWluIj4KICAgICAgICA8ZGl2CiAgICAgICAgICBjbGFzc05hbWU9IiIKICAgICAgICAgIHN0eWxlPXt7IHBhZGRpbmc6IDAsIG92ZXJmbG93WDogImF1dG8iIH19CiAgICAgICAgPgogICAgICAgICAgPHRhYmxlCiAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgd2lkdGg6ICIxMDAlIiwKICAgICAgICAgICAgICBib3JkZXJDb2xsYXBzZTogImNvbGxhcHNlIiwKICAgICAgICAgICAgICBmb250U2l6ZTogIjAuODVyZW0iLAogICAgICAgICAgICB9fQogICAgICAgICAgPgogICAgICAgICAgICA8dGhlYWQ+CiAgICAgICAgICAgICAgPHRyIHN0eWxlPXt7IH19PgogICAgICAgICAgICAgICAgPHRoCiAgICAgICAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgICAgICAgdGV4dEFsaWduOiAibGVmdCIsCiAgICAgICAgICAgICAgICAgICAgcGFkZGluZzogInZhcigtLXNwYWNlLTMpIiwKICAgICAgICAgICAgICAgICAgICBjb2xvcjogInZhcigtLXNpbHZlcikiLAogICAgICAgICAgICAgICAgICB9fQogICAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgICBXaGVuCiAgICAgICAgICAgICAgICA8L3RoPgogICAgICAgICAgICAgICAgPHRoCiAgICAgICAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgICAgICAgdGV4dEFsaWduOiAibGVmdCIsCiAgICAgICAgICAgICAgICAgICAgcGFkZGluZzogInZhcigtLXNwYWNlLTMpIiwKICAgICAgICAgICAgICAgICAgICBjb2xvcjogInZhcigtLXNpbHZlcikiLAogICAgICAgICAgICAgICAgICB9fQogICAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgICBBY3RvcgogICAgICAgICAgICAgICAgPC90aD4KICAgICAgICAgICAgICAgIDx0aAogICAgICAgICAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICAgICAgICAgIHRleHRBbGlnbjogImxlZnQiLAogICAgICAgICAgICAgICAgICAgIHBhZGRpbmc6ICJ2YXIoLS1zcGFjZS0zKSIsCiAgICAgICAgICAgICAgICAgICAgY29sb3I6ICJ2YXIoLS1zaWx2ZXIpIiwKICAgICAgICAgICAgICAgICAgfX0KICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAgQWN0aW9uCiAgICAgICAgICAgICAgICA8L3RoPgogICAgICAgICAgICAgICAgPHRoCiAgICAgICAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgICAgICAgdGV4dEFsaWduOiAibGVmdCIsCiAgICAgICAgICAgICAgICAgICAgcGFkZGluZzogInZhcigtLXNwYWNlLTMpIiwKICAgICAgICAgICAgICAgICAgICBjb2xvcjogInZhcigtLXNpbHZlcikiLAogICAgICAgICAgICAgICAgICB9fQogICAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgICBUYXJnZXQKICAgICAgICAgICAgICAgIDwvdGg+CiAgICAgICAgICAgICAgICA8dGgKICAgICAgICAgICAgICAgICAgc3R5bGU9e3sKICAgICAgICAgICAgICAgICAgICB0ZXh0QWxpZ246ICJsZWZ0IiwKICAgICAgICAgICAgICAgICAgICBwYWRkaW5nOiAidmFyKC0tc3BhY2UtMykiLAogICAgICAgICAgICAgICAgICAgIGNvbG9yOiAidmFyKC0tc2lsdmVyKSIsCiAgICAgICAgICAgICAgICAgIH19CiAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgIFN1bW1hcnkKICAgICAgICAgICAgICAgIDwvdGg+CiAgICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPC90aGVhZD4KICAgICAgICAgICAgPHRib2R5PgogICAgICAgICAgICAgIHtyb3dzLmxlbmd0aCA9PT0gMCA/ICgKICAgICAgICAgICAgICAgIDx0cj4KICAgICAgICAgICAgICAgICAgPHRkCiAgICAgICAgICAgICAgICAgICAgY29sU3Bhbj17NX0KICAgICAgICAgICAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICAgICAgICAgICAgcGFkZGluZzogInZhcigtLXNwYWNlLTUpIiwKICAgICAgICAgICAgICAgICAgICAgIGNvbG9yOiAidmFyKC0tc2lsdmVyKSIsCiAgICAgICAgICAgICAgICAgICAgICB0ZXh0QWxpZ246ICJjZW50ZXIiLAogICAgICAgICAgICAgICAgICAgIH19CiAgICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAgICBObyBBdWRpdCBFbnRyaWVzIE1hdGNoIFlvdXIgRmlsdGVycy4KICAgICAgICAgICAgICAgICAgPC90ZD4KICAgICAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgICAgKSA6ICgKICAgICAgICAgICAgICAgIHJvd3MubWFwKChyKSA9PiAoCiAgICAgICAgICAgICAgICAgIDx0cgogICAgICAgICAgICAgICAgICAgIGtleT17ci5pZH0KICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9InRhYmxlLXJvdy1ob3ZlciIKICAgICAgICAgICAgICAgICAgICBzdHlsZT17eyB9fQogICAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgICAgPHRkCiAgICAgICAgICAgICAgICAgICAgICBzdXBwcmVzc0h5ZHJhdGlvbldhcm5pbmcKICAgICAgICAgICAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgICAgICAgICAgIHBhZGRpbmc6ICJ2YXIoLS1zcGFjZS0zKSIsCiAgICAgICAgICAgICAgICAgICAgICAgIGNvbG9yOiAidmFyKC0tc2lsdmVyKSIsCiAgICAgICAgICAgICAgICAgICAgICAgIHdoaXRlU3BhY2U6ICJub3dyYXAiLAogICAgICAgICAgICAgICAgICAgICAgfX0KICAgICAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgICAgICB7bmV3IERhdGUoci5jcmVhdGVkX2F0KS50b0xvY2FsZVN0cmluZygpfQogICAgICAgICAgICAgICAgICAgIDwvdGQ+CiAgICAgICAgICAgICAgICAgICAgPHRkCiAgICAgICAgICAgICAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICAgICAgICAgICAgICBwYWRkaW5nOiAidmFyKC0tc3BhY2UtMykiLAogICAgICAgICAgICAgICAgICAgICAgICBjb2xvcjogInZhcigtLXdoaXRlKSIsCiAgICAgICAgICAgICAgICAgICAgICB9fQogICAgICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAgICAgIHtyLmFjdG9yX2VtYWlsCiAgICAgICAgICAgICAgICAgICAgICAgID8gci5hY3Rvcl9lbWFpbAogICAgICAgICAgICAgICAgICAgICAgICA6IHIuYWN0b3JfaWQKICAgICAgICAgICAgICAgICAgICAgICAgPyA8c3BhbiB0aXRsZT17ci5hY3Rvcl9pZH0gc3R5bGU9e3sgY29sb3I6ICJ2YXIoLS1ncmV5LTQwMCkiLCBmb250U3R5bGU6ICJpdGFsaWMiLCBmb250U2l6ZTogIjAuOHJlbSIgfX0+RGVsZXRlZCBVc2VyICh7ci5hY3Rvcl9pZC5zbGljZSgwLCA4KX0pPC9zcGFuPgogICAgICAgICAgICAgICAgICAgICAgICA6ICJzeXN0ZW0ifQogICAgICAgICAgICAgICAgICAgIDwvdGQ+CiAgICAgICAgICAgICAgICAgICAgPHRkIHN0eWxlPXt7IHBhZGRpbmc6ICJ2YXIoLS1zcGFjZS0zKSIgfX0+CiAgICAgICAgICAgICAgICAgICAgICA8c3BhbgogICAgICAgICAgICAgICAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICAgICAgICAgICAgICAgIGJhY2tncm91bmQ6ICJ2YXIoLS1zdXJmYWNlLTIpIiwKICAgICAgICAgICAgICAgICAgICAgICAgICBjb2xvcjogInZhcigtLXRlYWwpIiwKICAgICAgICAgICAgICAgICAgICAgICAgICBwYWRkaW5nOiAiMnB4IDhweCIsCiAgICAgICAgICAgICAgICAgICAgICAgICAgYm9yZGVyUmFkaXVzOiA5OTksCiAgICAgICAgICAgICAgICAgICAgICAgICAgZm9udFNpemU6ICIwLjc1cmVtIiwKICAgICAgICAgICAgICAgICAgICAgICAgfX0KICAgICAgICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAgICAgICAge2Zvcm1hdEFjdGlvbihyLmFjdGlvbil9CiAgICAgICAgICAgICAgICAgICAgICA8L3NwYW4+CiAgICAgICAgICAgICAgICAgICAgPC90ZD4KICAgICAgICAgICAgICAgICAgICA8dGQKICAgICAgICAgICAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgICAgICAgICAgIHBhZGRpbmc6ICJ2YXIoLS1zcGFjZS0zKSIsCiAgICAgICAgICAgICAgICAgICAgICAgIGNvbG9yOiAidmFyKC0tc2lsdmVyKSIsCiAgICAgICAgICAgICAgICAgICAgICB9fQogICAgICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAgICAgIHtyLnRhcmdldF90eXBlICYmIHIudGFyZ2V0X2lkCiAgICAgICAgICAgICAgICAgICAgICAgID8gYCR7Zm9ybWF0QWN0aW9uKHIudGFyZ2V0X3R5cGUpfToke3IudGFyZ2V0X2lkLnNsaWNlKDAsIDgpfWAKICAgICAgICAgICAgICAgICAgICAgICAgOiAiLSJ9CiAgICAgICAgICAgICAgICAgICAgPC90ZD4KICAgICAgICAgICAgICAgICAgICA8dGQKICAgICAgICAgICAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgICAgICAgICAgIHBhZGRpbmc6ICJ2YXIoLS1zcGFjZS0zKSIsCiAgICAgICAgICAgICAgICAgICAgICAgIGNvbG9yOiAidmFyKC0tc2lsdmVyKSIsCiAgICAgICAgICAgICAgICAgICAgICB9fQogICAgICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAgICAgIHtyLnN1bW1hcnkgfHwgIi0ifQogICAgICAgICAgICAgICAgICAgIDwvdGQ+CiAgICAgICAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgICAgICApKQogICAgICAgICAgICAgICl9CiAgICAgICAgICAgIDwvdGJvZHk+CiAgICAgICAgICA8L3RhYmxlPgogICAgICAgIDwvZGl2PgogICAgICA8L2Rpdj4KICAgICAge2hhc01vcmUgJiYgKAogICAgICAgIDxkaXYgc3R5bGU9e3sgbWFyZ2luVG9wOiAidmFyKC0tc3BhY2UtNCkiLCB0ZXh0QWxpZ246ICJjZW50ZXIiIH19PgogICAgICAgICAgPGJ1dHRvbgogICAgICAgICAgICBjbGFzc05hbWU9ImJ0bi1zaWx2ZXIiCiAgICAgICAgICAgIHN0eWxlPXt7IHBhZGRpbmc6ICI2cHggMTJweCIsIGZvbnRTaXplOiAiMC43NXJlbSIgfX0KICAgICAgICAgICAgZGlzYWJsZWQ9e2J1c3l9CiAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IGxvYWQoKX0KICAgICAgICAgID4KICAgICAgICAgICAge2J1c3kgPyAiTG9hZGluZ+KApiIgOiAiTG9hZCBNb3JlIn0KICAgICAgICAgIDwvYnV0dG9uPgogICAgICAgIDwvZGl2PgogICAgICApfQogICAgPC9kaXY+CiAgKTsKfQo=
+"use client";
+
+import { useState } from "react";
+
+function formatAction(action: string): string {
+  return action
+    .replace(/[_\.]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+interface AuditRow {
+  id: string;
+  actor_id: string | null;
+  actor_email: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  summary: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
+interface Props {
+  initialRows: AuditRow[];
+  initialFilters: { q: string; action: string };
+  availableActions: string[];
+  limit: number;
+}
+
+export default function AdminAuditClient({
+  initialRows,
+  initialFilters,
+  availableActions,
+  limit,
+}: Props) {
+  const [rows, setRows] = useState<AuditRow[]>(initialRows);
+  const [q, setQ] = useState(initialFilters.q);
+  const [action, setAction] = useState(initialFilters.action);
+  const [busy, setBusy] = useState(false);
+  const [hasMore, setHasMore] = useState(initialRows.length >= limit);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  async function load(opts: { reset?: boolean } = {}) {
+    setBusy(true);
+    setLoadError(null);
+    try {
+      const sp = new URLSearchParams();
+      if (q) sp.set("q", q);
+      if (action) sp.set("action", action);
+      if (!opts.reset && rows.length > 0)
+        sp.set("cursor", rows[rows.length - 1].created_at);
+      const res = await fetch(`/api/admin/audit?${sp.toString()}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        setLoadError("Could Not Load Audit Entries. Please Try Again.");
+        return;
+      }
+      const json = await res.json();
+      const next: AuditRow[] = json?.data ?? [];
+      setRows(opts.reset ? next : [...rows, ...next]);
+      setHasMore(next.length >= limit);
+    } catch {
+      setLoadError("Could Not Load Audit Entries. Please Try Again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function applyFilters() {
+    load({ reset: true });
+  }
+
+  return (
+    <div>
+      <div
+        style={{
+          display: "flex",
+          gap: "var(--space-3)",
+          flexWrap: "wrap",
+          marginBottom: "var(--space-4)",
+        }}
+      >
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search Summary…"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") applyFilters();
+          }}
+          style={{
+            background: "var(--surface-2)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            color: "var(--white)",
+            padding: "0.55rem 0.75rem",
+            borderRadius: "var(--radius-md)",
+            fontSize: "0.9rem",
+            minWidth: 220,
+          }}
+        />
+        <select
+          value={action}
+          onChange={(e) => setAction(e.target.value)}
+          style={{
+            background: "var(--surface-2)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            color: "var(--white)",
+            padding: "0.55rem 0.75rem",
+            borderRadius: "var(--radius-md)",
+            fontSize: "0.9rem",
+          }}
+        >
+          <option value="">All Actions</option>
+          {availableActions.map((a) => (
+            <option key={a} value={a}>
+              {formatAction(a)}
+            </option>
+          ))}
+        </select>
+        <button
+          className="btn-neon-cyan"
+          style={{ padding: "6px 12px", fontSize: "0.75rem" }}
+          disabled={busy}
+          onClick={applyFilters}
+        >
+          {busy ? "Loading…" : "Filter"}
+        </button>
+      </div>
+
+      {loadError && (
+        <div
+          style={{
+            background: "rgba(229,62,62,0.12)",
+            border: "1px solid rgba(229,62,62,0.4)",
+            color: "var(--danger)",
+            padding: "0.6rem 0.85rem",
+            borderRadius: "var(--radius-md)",
+            marginBottom: "var(--space-4)",
+            fontSize: "0.85rem",
+          }}
+        >
+          {loadError}
+        </div>
+      )}
+
+      <div className="glass-panel hover-lift stagger-fade-in">
+        <div className="" style={{ padding: 0, overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: "left", padding: "var(--space-3)", color: "var(--silver)" }}>When</th>
+                <th style={{ textAlign: "left", padding: "var(--space-3)", color: "var(--silver)" }}>Actor</th>
+                <th style={{ textAlign: "left", padding: "var(--space-3)", color: "var(--silver)" }}>Action</th>
+                <th style={{ textAlign: "left", padding: "var(--space-3)", color: "var(--silver)" }}>Target</th>
+                <th style={{ textAlign: "left", padding: "var(--space-3)", color: "var(--silver)" }}>Summary</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: "var(--space-5)", color: "var(--silver)", textAlign: "center" }}>
+                    No Audit Entries Match Your Filters.
+                  </td>
+                </tr>
+              ) : (
+                rows.map((r) => (
+                  <tr key={r.id} className="table-row-hover">
+                    <td suppressHydrationWarning style={{ padding: "var(--space-3)", color: "var(--silver)", whiteSpace: "nowrap" }}>
+                      {new Date(r.created_at).toLocaleString()}
+                    </td>
+                    <td style={{ padding: "var(--space-3)", color: "var(--white)" }}>
+                      {r.actor_email
+                        ? r.actor_email
+                        : r.actor_id
+                        ? <span title={r.actor_id} style={{ color: "var(--grey-400)", fontStyle: "italic", fontSize: "0.8rem" }}>Deleted User ({r.actor_id.slice(0, 8)})</span>
+                        : "system"}
+                    </td>
+                    <td style={{ padding: "var(--space-3)" }}>
+                      <span style={{ background: "var(--surface-2)", color: "var(--teal)", padding: "2px 8px", borderRadius: 999, fontSize: "0.75rem" }}>
+                        {formatAction(r.action)}
+                      </span>
+                    </td>
+                    <td style={{ padding: "var(--space-3)", color: "var(--silver)" }}>
+                      {r.target_type && r.target_id ? `${formatAction(r.target_type)}:${r.target_id.slice(0, 8)}` : "-"}
+                    </td>
+                    <td style={{ padding: "var(--space-3)", color: "var(--silver)" }}>
+                      {r.summary || "-"}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {hasMore && (
+        <div style={{ marginTop: "var(--space-4)", textAlign: "center" }}>
+          <button className="btn-silver" style={{ padding: "6px 12px", fontSize: "0.75rem" }} disabled={busy} onClick={() => load()}>
+            {busy ? "Loading…" : "Load More"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

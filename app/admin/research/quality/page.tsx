@@ -1,1 +1,98 @@
-LyoqCiAqIENvbXBvdW5kIHF1YWxpdHkgYmFja2xvZy4gQWRtaW4tb25seSB2aWEgbWlkZGxld2FyZSByb2xlIGdhdGUuCiAqIExpc3RzIGxvd2VzdC1zY29yaW5nIGNvbXBvdW5kcyB3aXRoIHBlci1maWVsZCBnYXAgcmVwb3J0IHNvIHRoZSBlbnJpY2htZW50CiAqIHF1ZXVlIGlzIGFsd2F5cyB2aXNpYmxlIHRvIHRoZSB0ZWFtLgogKi8KCmltcG9ydCB0eXBlIHsgTWV0YWRhdGEgfSBmcm9tICduZXh0JzsKaW1wb3J0IExpbmsgZnJvbSAnbmV4dC9saW5rJzsKaW1wb3J0IHsgcmVkaXJlY3QgfSBmcm9tICduZXh0L25hdmlnYXRpb24nOwppbXBvcnQgeyBjcmVhdGVTZXJ2aWNlQ2xpZW50IH0gZnJvbSAnQC9saWIvc3VwYWJhc2Uvc2VydmVyJzsKaW1wb3J0IHsgcmVxdWlyZUFkbWluIH0gZnJvbSAnQC9saWIvYWRtaW4tYXV0aCc7CgpleHBvcnQgY29uc3QgbWV0YWRhdGE6IE1ldGFkYXRhID0gewogIHRpdGxlOiAnQ29tcG91bmQgUXVhbGl0eSB8IEFkbWluIHwgUGVwIE5hdGlvbiBMYWInLAogIHJvYm90czogeyBpbmRleDogZmFsc2UsIGZvbGxvdzogZmFsc2UgfSwKfTsKZXhwb3J0IGNvbnN0IGR5bmFtaWMgPSAnZm9yY2UtZHluYW1pYyc7CgpmdW5jdGlvbiBxdWFsaXR5QnVja2V0KHNjb3JlOiBudW1iZXIpOiB7IGxhYmVsOiBzdHJpbmc7IGNvbG9yOiBzdHJpbmcgfSB7CiAgaWYgKHNjb3JlID49IDgwKSByZXR1cm4geyBsYWJlbDogJ1JpY2gnLCBjb2xvcjogJyM2OEQzOTEnIH07CiAgaWYgKHNjb3JlID49IDYwKSByZXR1cm4geyBsYWJlbDogJ1NvbGlkJywgY29sb3I6ICcjMDBFNUZGJyB9OwogIGlmIChzY29yZSA+PSAzMCkgcmV0dXJuIHsgbGFiZWw6ICdEZXZlbG9waW5nJywgY29sb3I6ICcjRjZBRDU1JyB9OwogIHJldHVybiB7IGxhYmVsOiAnU3BhcnNlJywgY29sb3I6ICcjRkY2QjZCJyB9Owp9CgpmdW5jdGlvbiBtaXNzaW5nRmllbGRzKGM6IFJlY29yZDxzdHJpbmcsIHVua25vd24+KTogc3RyaW5nW10gewogIGNvbnN0IGdhcHM6IHN0cmluZ1tdID0gW107CiAgaWYgKCFjLnBsYWluX3N1bW1hcnkgfHwgKGMucGxhaW5fc3VtbWFyeSBhcyBzdHJpbmcpLmxlbmd0aCA8IDUwKSBnYXBzLnB1c2goJ3BsYWluX3N1bW1hcnknKTsKICBpZiAoIWMubWVjaGFuaXNtIHx8IChjLm1lY2hhbmlzbSBhcyBzdHJpbmcpLmxlbmd0aCA8IDUwKSBnYXBzLnB1c2goJ21lY2hhbmlzbScpOwogIGlmICghYy5iZW5lZml0cyB8fCAoYy5iZW5lZml0cyBhcyBzdHJpbmcpLmxlbmd0aCA8IDUwKSBnYXBzLnB1c2goJ2JlbmVmaXRzJyk7CiAgaWYgKCFjLnNpZGVfZWZmZWN0cyB8fCAoYy5zaWRlX2VmZmVjdHMgYXMgc3RyaW5nKS5sZW5ndGggPCA1MCkgZ2Fwcy5wdXNoKCdzaWRlX2VmZmVjdHMnKTsKICBpZiAoIWMud2FybmluZ3MgfHwgKGMud2FybmluZ3MgYXMgc3RyaW5nKS5sZW5ndGggPCA1MCkgZ2Fwcy5wdXNoKCd3YXJuaW5ncycpOwogIGlmICghQXJyYXkuaXNBcnJheShjLnN0dWRpZWRfZm9yKSB8fCAoYy5zdHVkaWVkX2ZvciBhcyB1bmtub3duW10pLmxlbmd0aCA8IDMpIGdhcHMucHVzaCgnc3R1ZGllZF9mb3InKTsKICBpZiAoIUFycmF5LmlzQXJyYXkoYy5yZXNlYXJjaF9hcmVhcykgfHwgKGMucmVzZWFyY2hfYXJlYXMgYXMgdW5rbm93bltdKS5sZW5ndGggPCAxKSBnYXBzLnB1c2goJ3Jlc2VhcmNoX2FyZWFzJyk7CiAgaWYgKCFBcnJheS5pc0FycmF5KGMuc291cmNlcykgfHwgKGMuc291cmNlcyBhcyB1bmtub3duW10pLmxlbmd0aCA8IDMpIGdhcHMucHVzaCgnc291cmNlcycpOwogIGlmICghYy5zZXF1ZW5jZV9vbmVfbGV0dGVyKSBnYXBzLnB1c2goJ3NlcXVlbmNlX29uZV9sZXR0ZXInKTsKICBpZiAoIWMubW9sZWN1bGFyX3dlaWdodF9kYSkgZ2Fwcy5wdXNoKCdtb2xlY3VsYXJfd2VpZ2h0X2RhJyk7CiAgaWYgKCFjLm1lYXN1cmVkX2hhbGZfbGlmZV9ob3VycyAmJiAhYy5wcmVkaWN0ZWRfaGFsZl9saWZlX2hvdXJzKSBnYXBzLnB1c2goJ2hhbGZfbGlmZScpOwogIGlmICghYy51bmlwcm90X2lkICYmICFjLmNoZW1ibF9pZCAmJiAhYy51bmlpKSBnYXBzLnB1c2goJ2V4dGVybmFsX2lkJyk7CiAgaWYgKCFjLnllYXJfZGlzY292ZXJlZCkgZ2Fwcy5wdXNoKCd5ZWFyX2Rpc2NvdmVyZWQnKTsKICByZXR1cm4gZ2FwczsqfQoKZXhwb3J0IGRlZmF1bHQgYXN5bmMgZnVuY3Rpb24gQWRtaW5Db21wb3VuZFF1YWxpdHlQYWdlKCkgewogIGNvbnN0IGdhdGUgPSBhd2FpdCByZXF1aXJlQWRtaW4oKTsKICBpZiAoIWdhdGUub2spIHJlZGlyZWN0KCcvbG9naW4nKTsKCiAgY29uc3Qgc3VwYWJhc2UgPSBhd2FpdCBjcmVhdGVTZXJ2aWNlQ2xpZW50KCk7CiAgY29uc3QgeyBkYXRhOiByb3dzIH0gPSBhd2FpdCBzdXBhYmFzZQogICAgLmZyb20oJ2NvbXBvdW5kcycpCiAgICAuc2VsZWN0KCdzbHVnLCBkaXNwbGF5X25hbWUsIGV2aWRlbmNlX3RpZXIsIGNhdGVnb3J5LCBxdWFsaXR5X3Njb3JlLCBwbGFpbl9zdW1tYXJ5LCBtZWNoYW5pc20sIGJlbmVmaXRzLCBzaWRlX2VmZmVjdHMsIHdhcm5pbmdzLCBzdHVkaWVkX2ZvciwgcmVzZWFyY2hfYXJlYXMsIHNvdXJjZXMsIHNlcXVlbmNlX29uZV9sZXR0ZXIsIG1vbGVjdWxhcl93ZWlnaHRfZGEsIG1lYXN1cmVkX2hhbGZfbGlmZV9ob3VycywgbHJlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3Vycywgb3JlZGljdGVkX2hhbGZfbGlmZV9ob3VycywgdW5pcHJvdF9pZCwgY2hlbWJsX2lkLCB1bmlpLCB5ZWFyX2Rpc2NvdmVyZWQnKQogICAgLm9yZGVyKCdxdWFsaXR5X3Njb3JlJywgeyBhc2NlbmRpbmc6IHRydWUgfSkKICAgIC5saW1pdCg0MCk7CgogIGNvbnN0IGl0ZW1zID0gKHJvd3MgPz8gW10pIGFzIEFycmF5PFJlY29yZDxzdHJpbmcsIHVua25vd24+PjsKCiAgY29uc3QgY2VsbFN0eWxlOiBSZWFjdC5DU1NQcm9wZXJ0aWVzID0geyBwYWRkaW5nOiAnOHB4IDE0cHgnLCBjb2xvcjogJ3ZhcigtLXNpbHZlci1saWdodCwgI0QwREFFNCknLCBmb250U2l6ZTogJzAuODhyZW0nIH07CiAgY29uc3QgdGhTdHlsZTogUmVhY3QuQ1NTUHJvcGVydGllcyA9IHsgLi4uY2VsbFN0eWxlLCBjb2xvcjogJ3ZhcigtLXNpbHZlciwgI0E4QjRDMCknLCBmb250V2VpZ2h0OiA3MDAsIHRleHRUcmFuc2Zvcm06ICd1cHBlcmNhc2UnLCBmb250U2l6ZTogJzAuN3JlbScsIGxldHRlclNwYWNpbmc6ICcwLjA1ZW0nLCB0ZXh0QWxpZ246ICdsZWZ0JyB9OwoKICByZXR1cm4gKAogICAgPGRpdiBzdHlsZT17eyBtYXhXaWR0aDogJzExMDBweCcsIG1hcmdpbjogJzAgYXV0bycsIHBhZGRpbmc6ICd2YXIoLS1zcGFjZS02LCAzMnB4KSB2YXIoLS1zcGFjZS00LCAxNnB4KScgfX0+CiAgICAgIDxoZWFkZXIgc3R5bGU9e3sgbWFyZ2luQm90dG9tOiAndmFyKC0tc3BhY2UtNSwgMjRweCknIH19PgogICAgICAgIDxoMSBjbGFzc05hbWU9ImFuaW1hdGVkLWdyYWRpZW50LXRleHQiIHN0eWxlPXt7IGZvbnRTaXplOiAnMnJlbScsIG1hcmdpbjogMCB9fT5Db21wb3VuZCBRdWFsaXR5IEJhY2tsb2c8L2gxPgogICAgICAgIDxwIHN0eWxlPXt7IGNvbG9yOiAndmFyKC0tc2lsdmVyLCAjQThCNEMwKScsIGZvbnRTaXplOiAnMXJlbScsIG1hcmdpblRvcDogJ3ZhcigtLXNwYWNlLTIsIDhweCknIH19Pkxvd2VzdC1TY29yaW5nIENvbXBvdW5kcyBGaXJzdC4gU2NvcmUgSXMgMC0xMDAgQmFzZWQgT24gRmllbGQgQ292ZXJhZ2UuIENsaWNrIEFueSBSb3cgVG8gT3BlbiBUaGUgTW9ub2dyYXBoIEFuZCBFbnJpY2guPC9wPgogICAgICA8L2hlYWRlcj4KCiAgICAgIDxzZWN0aW9uIGNsYXNzTmFtZT0iZ2xhc3MtcGFuZWwiIHN0eWxlPXt7IHBhZGRpbmc6ICd2YXIoLS1zcGFjZS00LCAxNnB4KScsIGJvcmRlclJhZGl1czogJ3ZhcigtLXJhZGl1cy1sZywgMTJweCknIH19PgogICAgICAgIDx0YWJsZSBzdHlsZT17eyB3aWR0aDogJzEwMCUnLCBib3JkZXJDb2xsYXBzZTogJ2NvbGxhcHNlJyB9fT4KICAgICAgICAgIDx0aGVhZD4KICAgICAgICAgICAgPHRyPgogICAgICAgICAgICAgIDx0aCBzdHlsZT17dGhTdHlsZX0+Q29tcG91bmQ8L3RoPgogICAgICAgICAgICAgIDx0aCBzdHlsZT17dGhTdHlsZX0+U2NvcmU8L3RoPgogICAgICAgICAgICAgIDx0aCBzdHlsZT17dGhTdHlsZX0+QnVja2V0PC90aD4KICAgICAgICAgICAgICA8dGggc3R5bGU9e3RoU3R5bGV9Pk1pc3NpbmcgRmllbGRzPC90aD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgIDwvdGhlYWQ+CiAgICAgICAgICA8dGJvZHk+CiAgICAgICAgICAgIHtpdGVtcy5tYXAoKGMpID0+IHsKICAgICAgICAgICAgICBjb25zdCBzY29yZSA9IChjLnF1YWxpdHlfc2NvcmUgYXMgbnVtYmVyKSA/PyAwOwogICAgICAgICAgICAgIGNvbnN0IGIgPSBxdWFsaXR5QnVja2V0KHNjb3JlKTsKICAgICAgICAgICAgICBjb25zdCBnYXBzID0gbWlzc2luZ0ZpZWxkcyhjKTsKICAgICAgICAgICAgICByZXR1cm4gKAogICAgICAgICAgICAgICAgPHRyIGtleT17Yy5zbHVnIGFzIHN0cmluZ30+CiAgICAgICAgICAgICAgICAgIDx0ZCBzdHlsZT17Y2VsbFN0eWxlfT4KICAgICAgICAgICAgICAgICAgICA8TGluayBocmVmPXtgL3Jlc2VhcmNoLyR7Yy5zbHVnfWB9IHN0eWxlPXt7IGNvbG9yOiAndmFyKC0tdGVhbCwgIzAwQzRCQyknLCB0ZXh0RGVjb3JhdGlvbjogJ25vbmUnLCBmb250V2VpZ2h0OiA3MDAgfX0+e2MuZGlzcGxheV9uYW1lIGFzIHN0cmluZ308L0xpbms+CiAgICAgICAgICAgICAgICAgICAgPGRpdiBzdHlsZT17eyBmb250U2l6ZTogJzAuNzJyZW0nLCBjb2xvcjogJ3ZhcigtLXNpbHZlciwgI0E4QjRDMCknLCBtYXJnaW5Ub3A6ICcycHgnIH19PnsoYy5jYXRlZ29yeSBhcyBzdHJpbmcpID8/ICcnfTwvZGl2PgogICAgICAgICAgICAgICAgICA8L3RkPgogICAgICAgICAgICAgICAgICA8dGQgc3R5bGU9e2NlbGxTdHlsZX0+PHN0cm9uZyBzdHlsZT17eyBjb2xvcjogYi5jb2xvciB9fT57c2NvcmV9PC9zdHJvbmc+IC8gMTAwPC90ZD4KICAgICAgICAgICAgICAgICAgPHRkIHN0eWxlPXtjZWxsU3R5bGV9PjxzcGFuIHN0eWxlPXt7IGNvbG9yOiBiLmNvbG9yLCBmb250V2VpZ2h0OiA3MDAgfX0+e2IubGFiZWx9PC9zcGFuPjwvdGQ+CiAgICAgICAgICAgICAgICAgIDx0ZCBzdHlsZT17Y2VsbFN0eWxlfT57Z2Fwcy5sZW5ndGggPT09IDAgPyA8c3BhbiBzdHlsZT17eyBjb2xvcjogJyM2OEQzOTEnIH19PkFsbCBGaWVsZHMgUG9wdWxhdGVkPC9zcGFuPiA6IDxzcGFuIHN0eWxlPXt7IGZvbnRTaXplOiAnMC43OHJlbScgfX0+e2dhcHMuam9pbignLCAnKX08L3NwYW4+fTwvdGQ+CiAgICAgICAgICAgICAgICA8L3RyPgogICAgICAgICAgICAgICk7CiAgICAgICAgICAgIH0pfQogICAgICAgICAgPC90Ym9keT4KICAgICAgICA8L3RhYmxlPgogICAgICA8L3NlY3Rpb24+CiAgICA8L2Rpdj4KICApOwp9Cg==
+/**
+ * Compound quality backlog. Admin-only via middleware role gate.
+ * Lists lowest-scoring compounds with per-field gap report so the enrichment
+ * queue is always visible to the team.
+ */
+
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { createServiceClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/admin-auth';
+
+export const metadata: Metadata = {
+  title: 'Compound Quality | Admin | Pep Nation Lab',
+  robots: { index: false, follow: false },
+};
+export const dynamic = 'force-dynamic';
+
+function qualityBucket(score: number): { label: string; color: string } {
+  if (score >= 80) return { label: 'Rich', color: '#68D391' };
+  if (score >= 60) return { label: 'Solid', color: '#00E5FF' };
+  if (score >= 30) return { label: 'Developing', color: '#F6AD55' };
+  return { label: 'Sparse', color: '#FF6B6B' };
+}
+
+function missingFields(c: Record<string, unknown>): string[] {
+  const gaps: string[] = [];
+  if (!c.plain_summary || (c.plain_summary as string).length < 50) gaps.push('plain_summary');
+  if (!c.mechanism || (c.mechanism as string).length < 50) gaps.push('mechanism');
+  if (!c.benefits || (c.benefits as string).length < 50) gaps.push('benefits');
+  if (!c.side_effects || (c.side_effects as string).length < 50) gaps.push('side_effects');
+  if (!c.warnings || (c.warnings as string).length < 50) gaps.push('warnings');
+  if (!Array.isArray(c.studied_for) || (c.studied_for as unknown[]).length < 3) gaps.push('studied_for');
+  if (!Array.isArray(c.research_areas) || (c.research_areas as unknown[]).length < 1) gaps.push('research_areas');
+  if (!Array.isArray(c.sources) || (c.sources as unknown[]).length < 3) gaps.push('sources');
+  if (!c.sequence_one_letter) gaps.push('sequence_one_letter');
+  if (!c.molecular_weight_da) gaps.push('molecular_weight_da');
+  if (!c.measured_half_life_hours && !c.predicted_half_life_hours) gaps.push('half_life');
+  if (!c.uniprot_id && !c.chembl_id && !c.unii) gaps.push('external_id');
+  if (!c.year_discovered) gaps.push('year_discovered');
+  return gaps;
+}
+
+export default async function AdminCompoundQualityPage() {
+  const gate = await requireAdmin();
+  if (!gate.ok) redirect('/login');
+
+  const supabase = await createServiceClient();
+  const { data: rows } = await supabase
+    .from('compounds')
+    .select('slug, display_name, evidence_tier, category, quality_score, plain_summary, mechanism, benefits, side_effects, warnings, studied_for, research_areas, sources, sequence_one_letter, molecular_weight_da, measured_half_life_hours, predicted_half_life_hours, uniprot_id, chembl_id, unii, year_discovered')
+    .order('quality_score', { ascending: true })
+    .limit(40);
+
+  const items = (rows ?? []) as Array<Record<string, unknown>>;
+
+  const cellStyle: React.CSSProperties = { padding: '8px 14px', color: 'var(--silver-light, #D0DAE4)', fontSize: '0.88rem' };
+  const thStyle: React.CSSProperties = { ...cellStyle, color: 'var(--silver, #A8B4C0)', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em', textAlign: 'left' };
+
+  return (
+    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+      <header style={{ marginBottom: 'var(--space-5, 24px)' }}>
+        <h1 className="animated-gradient-text" style={{ fontSize: '2rem', margin: 0 }}>Compound Quality Backlog</h1>
+        <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1rem', marginTop: 'var(--space-2, 8px)' }}>Lowest-Scoring Compounds First. Score Is 0-100 Based On Field Coverage.</p>
+      </header>
+      <section className="glass-panel" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Compound</th>
+              <th style={thStyle}>Score</th>
+              <th style={thStyle}>Bucket</th>
+              <th style={thStyle}>Missing Fields</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((c) => {
+              const score = (c.quality_score as number) ?? 0;
+              const b = qualityBucket(score);
+              const gaps = missingFields(c);
+              return (
+                <tr key={c.slug as string}>
+                  <td style={cellStyle}>
+                    <Link href={`/research/${c.slug}`} style={{ color: 'var(--teal, #00C4BC)', textDecoration: 'none', fontWeight: 700 }}>{c.display_name as string}</Link>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)', marginTop: '2px' }}>{(c.category as string) ?? ''}</div>
+                  </td>
+                  <td style={cellStyle}><strong style={{ color: b.color }}>{score}</strong> / 100</td>
+                  <td style={cellStyle}><span style={{ color: b.color, fontWeight: 700 }}>{b.label}</span></td>
+                  <td style={cellStyle}>{gaps.length === 0 ? <span style={{ color: '#68D391' }}>All Fields Populated</span> : <span style={{ fontSize: '0.78rem' }}>{gaps.join(', ')}</span>}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
+    </div>
+  );
+}
