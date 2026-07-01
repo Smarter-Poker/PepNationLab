@@ -40,6 +40,11 @@ export async function POST(req: NextRequest) {
     if (cleanText === null) {
       return NextResponse.json({ error: 'Unsafe Text' }, { status: 400 });
     }
+    // BUG 3 fix: re-check length AFTER sanitization because HTML entity escaping
+    // (e.g., '<' → '&lt;') can expand the raw 2,000-char input significantly.
+    if (cleanText.length > 4_000) {
+      return NextResponse.json({ error: 'Message Too Long After Sanitization' }, { status: 400 });
+    }
     if (cleanText.length === 0 && !parsed.data.mediaUrl) {
       return NextResponse.json({ error: 'Empty Message' }, { status: 400 });
     }
@@ -195,22 +200,27 @@ export async function POST(req: NextRequest) {
           .eq('sender_id', user.id);
 
         if (count === 1 && participants && participants.length > 0) {
-          const adminParticipant = participants.find((p: any) => p.role === 'admin') || participants[0];
-          const autoAckText = "Thanks for reaching out to Help & Support. Someone from our customer service team will respond shortly. Average reply time is under an hour. If this is urgent, please include your order number or any other helpful information in your next message";
-          const { data: autoAckMsg } = await svc.from('messenger_messages').insert({
-            conversation_id: parsed.data.conversationId,
-            sender_id: adminParticipant.user_id,
-            text: autoAckText,
-            message_type: 'text',
-            metadata: { auto_ack: true }
-          }).select('*').maybeSingle();
+          // BUG 1 fix: only send auto-ACK if an admin participant is explicitly in the
+          // thread. The previous `|| participants[0]` fallback would impersonate the
+          // first non-admin participant (typically the agent) as the bot sender.
+          const adminParticipant = participants.find((p: any) => p.role === 'admin');
+          if (adminParticipant) {
+            const autoAckText = "Thanks for reaching out to Help & Support. Someone from our customer service team will respond shortly. Average reply time is under an hour. If this is urgent, please include your order number or any other helpful information in your next message";
+            const { data: autoAckMsg } = await svc.from('messenger_messages').insert({
+              conversation_id: parsed.data.conversationId,
+              sender_id: adminParticipant.user_id,
+              text: autoAckText,
+              message_type: 'text',
+              metadata: { auto_ack: true }
+            }).select('*').maybeSingle();
 
-          if (autoAckMsg) {
-            sendBroadcast({
-              topic: `conversation:${parsed.data.conversationId}`,
-              event: 'new_message',
-              payload: { message: autoAckMsg },
-            }).catch(() => {});
+            if (autoAckMsg) {
+              sendBroadcast({
+                topic: `conversation:${parsed.data.conversationId}`,
+                event: 'new_message',
+                payload: { message: autoAckMsg },
+              }).catch(() => {});
+            }
           }
         }
       }
