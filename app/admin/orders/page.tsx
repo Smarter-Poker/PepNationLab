@@ -97,6 +97,8 @@ function AdminOrdersPageInner() {
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "");
   const [statusFilter, setStatusFilter] = useState<string>(
+    // Default to "all" so the fulfillment center shows every order on landing
+    // instead of an empty list (most orders are not in approved_ship state).
     searchParams.get("status") ?? "all",
   );
   const [dateFrom, setDateFrom] = useState<string>(
@@ -108,21 +110,27 @@ function AdminOrdersPageInner() {
   );
   const [page, setPage] = useState(1);
 
+  // Selected Order details
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
 
+  // Processing form fields
   const [trackingNumber, setTrackingNumber] = useState("");
   const [approvalNotes, setApprovalNotes] = useState("");
   const [processing, setProcessing] = useState(false);
 
+  // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkRunning, setBulkRunning] = useState(false);
 
+  // User Auth
   const [userRole, setUserRole] = useState<string>("");
 
+  // Label modal state
   const [labelModalUrl, setLabelModalUrl] = useState<string | null>(null);
 
+  // Cancel modal state
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
@@ -144,6 +152,7 @@ function AdminOrdersPageInner() {
       const res = await fetch(`/api/admin/orders/${selectedOrder.id}/cancel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // All sales are final - no refund_type param. The API always uses 'none'.
         body: JSON.stringify({ reason: cancelReason.trim() }),
       });
       const json = await res.json();
@@ -245,7 +254,9 @@ function AdminOrdersPageInner() {
       const json = await res.json();
 
       if (res.ok) {
+        // Refresh live lists
         await fetchOrders();
+        // Update selected view
         setSelectedOrder((prev) =>
           prev
             ? {
@@ -323,6 +334,7 @@ function AdminOrdersPageInner() {
           `${labelMap[action]}: ${succeeded} Succeeded, ${failedCount} Failed.`,
           { id: progressToast },
         );
+        // Show first 5 failures for quick triage.
         for (const f of (
           json.failed as Array<{ id: string; reason: string }>
         ).slice(0, 5)) {
@@ -331,6 +343,9 @@ function AdminOrdersPageInner() {
       }
 
       if (action === "generate_labels" && Array.isArray(json.labels) && json.labels.length > 0) {
+        // Open the first label in IframeModal; remaining labels are accessible via
+        // the individual order detail view. IframeModal enforces the Omega Protocol
+        // (no navigation away from pepnationlab.com).
         setLabelModalUrl(json.labels[0].label_url);
       }
 
@@ -343,6 +358,7 @@ function AdminOrdersPageInner() {
     }
   }
 
+  // Persist filter state to URL params so refresh + share-URL works.
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchQuery) params.set("q", searchQuery);
@@ -356,8 +372,10 @@ function AdminOrdersPageInner() {
     router.replace(url, { scroll: false });
   }, [searchQuery, statusFilter, dateFrom, dateTo, wholesaleOnly, router]);
 
+  // Filters & Search
   const filteredOrders = useMemo(() => {
     const fromMs = dateFrom ? new Date(dateFrom).getTime() : null;
+    // end-of-day for "to" so YYYY-MM-DD matches the whole day
     const toMs = dateTo ? new Date(dateTo).getTime() + 86399999 : null;
     return orders.filter((order) => {
       if (statusFilter !== "all" && order.status !== statusFilter) return false;
@@ -393,6 +411,7 @@ function AdminOrdersPageInner() {
     });
   }, [orders, statusFilter, wholesaleOnly, dateFrom, dateTo, searchQuery]);
 
+  // Pagination: slice filtered set to the current page window
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paginatedOrders = filteredOrders.slice(
@@ -400,6 +419,7 @@ function AdminOrdersPageInner() {
     safePage * PAGE_SIZE,
   );
 
+  // Reset to page 1 when filter or search changes
   useEffect(() => {
     setPage(1);
   }, [searchQuery, statusFilter, dateFrom, dateTo, wholesaleOnly]);
@@ -417,6 +437,7 @@ function AdminOrdersPageInner() {
       {labelModalUrl && (
         <IframeModal url={labelModalUrl} title="Shipping Label" onClose={() => setLabelModalUrl(null)} />
       )}
+      {/* Header */}
       <div
         style={{
           marginBottom: "var(--space-8)",
@@ -489,7 +510,9 @@ function AdminOrdersPageInner() {
           alignItems: "start",
         }}
       >
+        {/* Left Side: Order List, Filter & Search */}
         <div>
+          {/* Controls */}
           <div
             style={{
               display: "flex",
@@ -602,6 +625,7 @@ function AdminOrdersPageInner() {
             </button>
           </div>
 
+          {/* Sticky Bulk Action Bar (visible when selection is non-empty) */}
           {selectedIds.size > 0 && (
             <div
               className="glass-header"
@@ -708,6 +732,7 @@ function AdminOrdersPageInner() {
             </div>
           )}
 
+          {/* Table list */}
           {loading ? (
             <div
               style={{
@@ -753,6 +778,7 @@ function AdminOrdersPageInner() {
                 gap: "var(--space-3)",
               }}
             >
+              {/* Master "Select All On Page" */}
               <div
                 style={{
                   display: "flex",
@@ -904,6 +930,7 @@ function AdminOrdersPageInner() {
           )}
         </div>
 
+        {/* Right Side: Order Detail Drawer */}
         <div>
           {selectedOrder ? (
             <div
@@ -956,6 +983,7 @@ function AdminOrdersPageInner() {
                   </button>
                 </div>
 
+                {/* Status Header */}
                 <div
                   style={{
                     display: "flex",
@@ -986,6 +1014,7 @@ function AdminOrdersPageInner() {
                   </span>
                 </div>
 
+                {/* Customer details */}
                 <div style={{ marginBottom: "var(--space-5)" }}>
                   <h4
                     style={{
@@ -1017,6 +1046,7 @@ function AdminOrdersPageInner() {
                   </div>
                 </div>
 
+                {/* Payment Details */}
                 <div style={{ marginBottom: "var(--space-5)" }}>
                   <h4
                     style={{
@@ -1035,6 +1065,7 @@ function AdminOrdersPageInner() {
                   </div>
                 </div>
 
+                {/* Shipping Address */}
                 {selectedOrder.fulfillment_method === "ship" &&
                   selectedOrder.shipping_address && (
                     <div style={{ marginBottom: "var(--space-5)" }}>
@@ -1072,6 +1103,7 @@ function AdminOrdersPageInner() {
                     </div>
                   )}
 
+                {/* Order Items */}
                 <div style={{ marginBottom: "var(--space-6)" }}>
                   <h4
                     style={{
@@ -1117,7 +1149,7 @@ function AdminOrdersPageInner() {
                             justifyContent: "space-between",
                             fontSize: "0.78rem",
                             padding: "4px 0",
-                          }}
+                            }}
                         >
                           <div style={{ color: "var(--grey-300)" }}>
                             {item.product_name}{" "}
@@ -1135,6 +1167,7 @@ function AdminOrdersPageInner() {
                           </div>
                         </div>
                       ))}
+                      {/* Totals */}
                       <div
                         style={{
                           display: "flex",
@@ -1142,7 +1175,7 @@ function AdminOrdersPageInner() {
                           gap: 4,
                           marginTop: "var(--space-3)",
                           paddingTop: "var(--space-3)",
-                        }}
+                          }}
                       >
                         <div
                           style={{
@@ -1209,6 +1242,7 @@ function AdminOrdersPageInner() {
                   )}
                 </div>
 
+                {/* Action Buttons Panel */}
                 <div
                   style={{
                     paddingTop: "var(--space-5)",
@@ -1411,6 +1445,7 @@ function AdminOrdersPageInner() {
                         </button>
                       )}
 
+                      {/* Tracking details display */}
                       {selectedOrder.tracking_number && (
                         <div
                           style={{
@@ -1432,6 +1467,7 @@ function AdminOrdersPageInner() {
                         </div>
                       )}
 
+                      {/* Cancellation (available for any status except cancelled/delivered) */}
                       {selectedOrder.status !== "cancelled" &&
                         selectedOrder.status !== "delivered" &&
                         userRole !== "shipping" && (
@@ -1471,6 +1507,7 @@ function AdminOrdersPageInner() {
           )}
         </div>
       </div>
+      {/* Cancel Modal */}
       {showCancelModal && selectedOrder && (
         <div
           onClick={() => !cancelSubmitting && setShowCancelModal(false)}
@@ -1537,7 +1574,6 @@ function AdminOrdersPageInner() {
                 }}
               >
                 <button
-                  type="button"
                   className="btn-silver"
                   onClick={() => setShowCancelModal(false)}
                   disabled={cancelSubmitting}
@@ -1545,7 +1581,6 @@ function AdminOrdersPageInner() {
                   Keep Order
                 </button>
                 <button
-                  type="button"
                   className="btn-neon-cyan"
                   onClick={submitCancel}
                   disabled={cancelSubmitting}
