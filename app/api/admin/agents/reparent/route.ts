@@ -50,6 +50,11 @@ export async function POST(req: NextRequest) {
 
   // Confirm new parent is valid (or null)
   if (parentAgentId !== null) {
+    // Trivial self-cycle: an agent cannot be its own parent.
+    if (parentAgentId === agentId) {
+      return NextResponse.json({ error: 'An Agent Cannot Be Its Own Parent.' }, { status: 400 });
+    }
+
     const { data: parent } = await svc
       .from('profiles')
       .select('id, role, full_name')
