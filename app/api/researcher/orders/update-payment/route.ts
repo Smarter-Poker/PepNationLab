@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { safeError } from '@/lib/api-error';
 
+const VALID_PAYMENT_METHODS = ['zelle', 'cashapp', 'venmo', 'apple_pay', 'apple_cash'] as const;
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -19,7 +21,14 @@ export async function POST(req: NextRequest) {
     const { orderId, paymentMethod } = body;
 
     if (!orderId || !paymentMethod) {
-      return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing Parameters' }, { status: 400 });
+    }
+
+    if (!VALID_PAYMENT_METHODS.includes(paymentMethod)) {
+      return NextResponse.json(
+        { error: `Invalid Payment Method. Allowed: ${VALID_PAYMENT_METHODS.join(', ')}` },
+        { status: 400 }
+      );
     }
 
     // Verify ownership and status

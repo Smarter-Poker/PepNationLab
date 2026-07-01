@@ -12,6 +12,7 @@ export interface RawProduct {
   category: string;
   base_cost: number;
   is_active: boolean;
+  is_banned: boolean | null;
   created_at: string;
   sku: string | null;
   unit_size: string | null;
