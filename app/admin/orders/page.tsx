@@ -897,8 +897,8 @@ function AdminOrdersPageInner() {
                             marginTop: 4,
                           }}
                         >
-                          {new Date(order.created_at).toLocaleDateString()} •{" "}
-                          {paymentMethodLabel(order.payment_method)} • $
+                          {new Date(order.created_at).toLocaleDateString()} &bull;{" "}
+                          {paymentMethodLabel(order.payment_method)} &bull; $
                           {Number(order.total).toFixed(2)}
                         </div>
                       </div>
