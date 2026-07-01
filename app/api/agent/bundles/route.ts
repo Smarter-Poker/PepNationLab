@@ -1,1 +1,180 @@
-aW1wb3J0IHsgTmV4dFJlcXVlc3QsIE5leHRSZXNwb25zZSB9IGZyb20gJ25leHQvc2VydmVyJzsKaW1wb3J0IHsgY3JlYXRlU2VydmljZUNsaWVudCB9IGZyb20gJ0AvbGliL3N1cGFiYXNlL3NlcnZlcic7CmltcG9ydCB7IHJlcXVpcmVBZ2VudCB9IGZyb20gJ0AvbGliL2FkbWluLWF1dGgnOwppbXBvcnQgeyBhc3NlcnRTYW1lT3JpZ2luIH0gZnJvbSAnQC9saWIvY3NyZic7CmltcG9ydCB7IHJhbmRvbVVVSUQgfSBmcm9tICdjcnlwdG8nOwoKaW50ZXJmYWNlIEJ1bmRsZSB7CiAgaWQ6IHN0cmluZzsKICBuYW1lOiBzdHJpbmc7CiAgZGVzY3JpcHRpb246IHN0cmluZzsKICBwcm9kdWN0X2lkczogc3RyaW5nW107CiAgZGlzY291bnRfcGVyY2VudDogbnVtYmVyOwogIGlzX2FjdGl2ZTogYm9vbGVhbjsKICBjcmVhdGVkX2F0OiBzdHJpbmc7Cn0KCi8vIEdFVCAvYXBpL2FnZW50L2J1bmRsZXMgLSBMaXN0IGFsbCBidW5kbGVzIGZvciB0aGUgY3VycmVudCBhZ2VudApleHBvcnQgYXN5bmMgZnVuY3Rpb24gR0VUKHJlcTogTmV4dFJlcXVlc3QpIHsKICB0cnkgewogICAgY29uc3QgZ2F0ZSA9IGF3YWl0IHJlcXVpcmVBZ2VudCgpOwogICAgaWYgKCFnYXRlLm9rKSByZXR1cm4gZ2F0ZS5yZXNwb25zZTsKCiAgICBjb25zdCBzdXBhYmFzZSA9IGF3YWl0IGNyZWF0ZVNlcnZpY2VDbGllbnQoKTsKICAgIGNvbnN0IHsgZGF0YTogcHJvZmlsZSB9ID0gYXdhaXQgc3VwYWJhc2UKICAgICAgLmZyb20oJ2FnZW50X3Byb2ZpbGVzJykKICAgICAgLnNlbGVjdCgnYnVuZGxlc19jb25maWcnKQogICAgICAuZXEoJ2lkJywgZ2F0ZS51c2VyLmlkKQogICAgICAuc2luZ2xlKCk7CgogICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgZGF0YTogcHJvZmlsZT8uYnVuZGxlc19jb25maWcgfHwgW10gfSk7CiAgfSBjYXRjaCB7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBlcnJvcjogJ0ludGVybmFsIFNlcnZlciBFcnJvcicgfSwgeyBzdGF0dXM6IDUwMCB9KTsKICB9Cn0KCi8vIFBPU1QgL2FwaS9hZ2VudC9idW5kbGVzIC0gQ3JlYXRlIGEgbmV3IGJ1bmRsZQpleHBvcnQgYXN5bmMgZnVuY3Rpb24gUE9TVChyZXE6IE5leHRSZXF1ZXN0KSB7CiAgY29uc3QgY3NyZiA9IGFzc2VydFNhbWVPcmlnaW4ocmVxKTsKICBpZiAoY3NyZikgcmV0dXJuIGNzcmY7CgogIGNvbnN0IGdhdGUgPSBhd2FpdCByZXF1aXJlQWdlbnQoKTsKICBpZiAoIWdhdGUub2spIHJldHVybiBnYXRlLnJlc3BvbnNlOwoKICB7CiAgICBjb25zdCBzdmMgPSBhd2FpdCBjcmVhdGVTZXJ2aWNlQ2xpZW50KCk7CiAgICBjb25zdCB7IGRhdGE6IGNhbGxlciB9ID0gYXdhaXQgc3ZjCiAgICAgIC5mcm9tKCdwcm9maWxlcycpCiAgICAgIC5zZWxlY3QoJ2lzX3N1Yl9hZ2VudCcpCiAgICAgIC5lcSgnaWQnLCBnYXRlLnVzZXIuaWQpCiAgICAgIC5tYXliZVNpbmdsZSgpOwogICAgaWYgKChjYWxsZXIgYXMgeyBpc19zdWJfYWdlbnQ/OiBib29sZWFuIHwgbnVsbCB9IHwgbnVsbCk/LmlzX3N1Yl9hZ2VudCA9PT0gdHJ1ZSkgewogICAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oCiAgICAgICAgeyBlcnJvcjogJ1N1Yi1BZ2VudHMgQ2Fubm90IENyZWF0ZSBCdW5kbGVzLiBCdW5kbGVzIEJlbG9uZyBUbyBUaGUgU3RvcmVmcm9udC1Pd25pbmcgQWdlbnQuJyB9LAogICAgICAgIHsgc3RhdHVzOiA0MDMgfSwKICAgICAgKTsKICAgIH0KICB9CgogIGNvbnN0IGJvZHkgPSBhd2FpdCByZXEuanNvbigpLmNhdGNoKCgpID0+ICh7fSkpOwogIGNvbnN0IHsgbmFtZSwgZGVzY3JpcHRpb24sIHByb2R1Y3RfaWRzLCBkaXNjb3VudF9wZXJjZW50IH0gPSBib2R5OwoKICBpZiAoIW5hbWUgfHwgIUFycmF5LmlzQXJyYXkocHJvZHVjdF9pZHMpIHx8IHByb2R1Y3RfaWRzLmxlbmd0aCA8IDIpIHsKICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiAnQnVuZGxlIE5hbWUgQW5kIEF0IExlYXN0IDIgUHJvZHVjdHMgQXJlIFJlcXVpcmVkJyB9LCB7IHN0YXR1czogNDAwIH0pOwogIH0KCiAgY29uc3Qgc3VwYWJhc2UgPSBhd2FpdCBjcmVhdGVTZXJ2aWNlQ2xpZW50KCk7CgogIGNvbnN0IHsgZGF0YTogcHJvZmlsZSB9ID0gYXdhaXQgc3VwYWJhc2UKICAgIC5mcm9tKCdhZ2VudF9wcm9maWxlcycpCiAgICAuc2VsZWN0KCdidW5kbGVzX2NvbmZpZycpCiAgICAuZXEoJ2lkJywgZ2F0ZS51c2VyLmlkKQogICAgLnNpbmdsZSgpOwoKICBjb25zdCBleGlzdGluZzogQnVuZGxlW10gPSBwcm9maWxlPy5idW5kbGVzX2NvbmZpZyB8fCBbXTsKCiAgY29uc3QgbmV3QnVuZGxlOiBCdW5kbGUgPSB7CiAgICBpZDogcmFuZG9tVVVJRCgpLAogICAgbmFtZTogbmFtZS50cmltKCksCiAgICBkZXNjcmlwdGlvbjogKGRlc2NyaXB0aW9uIHx8ICcnKS50cmltKCksCiAgICBwcm9kdWN0X2lkcywKICAgIGRpc2NvdW50X3BlcmNlbnQ6IE1hdGgubWluKE1hdGgubWF4KE51bWJlcihkaXNjb3VudF9wZXJjZW50KSB8fCAwLCAwKSwgOTApLAogICAgaXNfYWN0aXZlOiB0cnVlLAogICAgY3JlYXRlZF9hdDogbmV3IERhdGUoKS50b0lTT1N0cmluZygpLAogIH07CgogIGNvbnN0IHVwZGF0ZWQgPSBbLi4uZXhpc3RpbmcsIG5ld0J1bmRsZV07CgogIGNvbnN0IHsgZXJyb3IgfSA9IGF3YWl0IHN1cGFiYXNlCiAgICAuZnJvbSgnYWdlbnRfcHJvZmlsZXMnKQogICAgLnVwZGF0ZSh7IGJ1bmRsZXNfY29uZmlnOiB1cGRhdGVkLCB1cGRhdGVkX2F0OiBuZXcgRGF0ZSgpLnRvSVNPU3RyaW5nKCkgfSkKICAgIC5lcSgnaWQnLCBnYXRlLnVzZXIuaWQpOwoKICBpZiAoZXJyb3IpIHsKICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiAnQW4gVW5leHBlY3RlZCBFcnJvciBPY2N1cnJlZC4nIH0sIHsgc3RhdHVzOiA1MDAgfSk7CiAgfQoKICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBzdWNjZXNzOiB0cnVlLCBidW5kbGU6IG5ld0J1bmRsZSB9KTsKfQoKLy8gUEFUQ0ggL2FwaS9hZ2VudC9idW5kbGVzIC0gVG9nZ2xlIGEgYnVuZGxlIG9uL29mZgpleHBvcnQgYXN5bmMgZnVuY3Rpb24gUEFUQ0gocmVxOiBOZXh0UmVxdWVzdCkgewogIGNvbnN0IGNzcmYgPSBhc3NlcnRTYW1lT3JpZ2luKHJlcSk7CiAgaWYgKGNzcmYpIHJldHVybiBjc3JmOwoKICBjb25zdCBnYXRlID0gYXdhaXQgcmVxdWlyZUFnZW50KCk7CiAgaWYgKCFnYXRlLm9rKSByZXR1cm4gZ2F0ZS5yZXNwb25zZTsKCiAgY29uc3QgYm9keSA9IGF3YWl0IHJlcS5qc29uKCkuY2F0Y2goKCkgPT4gKHt9KSk7CiAgY29uc3QgeyBpZCwgYWN0aW9uIH0gPSBib2R5OwoKICBpZiAoIWlkKSB7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBlcnJvcjogJ0J1bmRsZSBJRCBSZXF1aXJlZCcgfSwgeyBzdGF0dXM6IDQwMCB9KTsKICB9CgogIGNvbnN0IHN1cGFiYXNlID0gYXdhaXQgY3JlYXRlU2VydmljZUNsaWVudCgpOwoKICBjb25zdCB7IGRhdGE6IHByb2ZpbGUgfSA9IGF3YWl0IHN1cGFiYXNlCiAgICAuZnJvbSgnYWdlbnRfcHJvZmlsZXMnKQogICAgLnNlbGVjdCgnYnVuZGxlc19jb25maWcnKQogICAgLmVxKCdpZCcsIGdhdGUudXNlci5pZCkKICAgIC5zaW5nbGUoKTsKCiAgY29uc3QgZXhpc3Rpbmc6IEJ1bmRsZVtdID0gcHJvZmlsZT8uYnVuZGxlc19jb25maWcgfHwgW107CiAgY29uc3QgdXBkYXRlZCA9IGV4aXN0aW5nLm1hcChiID0+CiAgICBiLmlkID09PSBpZCA/IHsgLi4uYiwgaXNfYWN0aXZlOiBhY3Rpb24gPT09ICd0b2dnbGUnID8gIWIuaXNfYWN0aXZlIDogYi5pc19hY3RpdmUgfSA6IGIKICApOwoKICBjb25zdCB7IGVycm9yIH0gPSBhd2FpdCBzdXBhYmFzZQogICAgLmZyb20oJ2FnZW50X3Byb2ZpbGVzJykKICAgIC51cGRhdGUoeyBidW5kbGVzX2NvbmZpZzogdXBkYXRlZCwgdXBkYXRlZF9hdDogbmV3IERhdGUoKS50b0lTT1N0cmluZygpIH0pCiAgICAuZXEoJ2lkJywgZ2F0ZS51c2VyLmlkKTsKCiAgaWYgKGVycm9yKSB7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBlcnJvcjogJ0FuIFVuZXhwZWN0ZWQgRXJyb3IgT2NjdXJyZWQuJyB9LCB7IHN0YXR1czogNTAwIH0pOwogIH0KCiAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgc3VjY2VzczogdHJ1ZSB9KTsKfQoKLy8gREVMRVRFIC9hcGkvYWdlbnQvYnVuZGxlcyAtIERlbGV0ZSBhIGJ1bmRsZQpleHBvcnQgYXN5bmMgZnVuY3Rpb24gREVMRVRFKHJlcTogTmV4dFJlcXVlc3QpIHsKICBjb25zdCBjc3JmID0gYXNzZXJ0U2FtZU9yaWdpbihyZXEpOwogIGlmIChjc3JmKSByZXR1cm4gY3NyZjsKCiAgY29uc3QgZ2F0ZSA9IGF3YWl0IHJlcXVpcmVBZ2VudCgpOwogIGlmICghZ2F0ZS5vaykgcmV0dXJuIGdhdGUucmVzcG9uc2U7CgogIGNvbnN0IGJvZHkgPSBhd2FpdCByZXEuanNvbigpLmNhdGNoKCgpID0+ICh7fSkpOwogIGNvbnN0IHsgaWQgfSA9IGJvZHk7CgogIGlmICghaWQpIHsKICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiAnQnVuZGxlIElEIFJlcXVpcmVkJyB9LCB7IHN0YXR1czogNDAwIH0pOwogIH0KCiAgY29uc3Qgc3VwYWJhc2UgPSBhd2FpdCBjcmVhdGVTZXJ2aWNlQ2xpZW50KCk7CgogIGNvbnN0IHsgZGF0YTogcHJvZmlsZSB9ID0gYXdhaXQgc3VwYWJhc2UKICAgIC5mcm9tKCdhZ2VudF9wcm9maWxlcycpCiAgICAuc2VsZWN0KCdidW5kbGVzX2NvbmZpZycpCiAgICAuZXEoJ2lkJywgZ2F0ZS51c2VyLmlkKQogICAgLnNpbmdsZSgpOwoKICBjb25zdCBleGlzdGluZzogQnVuZGxlW10gPSBwcm9maWxlPy5idW5kbGVzX2NvbmZpZyB8fCBbXTsKICBjb25zdCB1cGRhdGVkID0gZXhpc3RpbmcuZmlsdGVyKGIgPT4gYi5pZCAhPT0gaWQpOwoKICBjb25zdCB7IGVycm9yIH0gPSBhd2FpdCBzdXBhYmFzZQogICAgLmZyb20oJ2FnZW50X3Byb2ZpbGVzJykKICAgIC51cGRhdGUoeyBidW5kbGVzX2NvbmZpZzogdXBkYXRlZCwgdXBkYXRlZF9hdDogbmV3IERhdGUoKS50b0lTT1N0cmluZygpIH0pCiAgICAuZXEoJ2lkJywgZ2F0ZS51c2VyLmlkKTsKCiAgaWYgKGVycm9yKSB7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBlcnJvcjogJ0FuIFVuZXhwZWN0ZWQgRXJyb3IgT2NjdXJyZWQuJyB9LCB7IHN0YXR1czogNTAwIH0pOwogIH0KCiAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgc3VjY2VzczogdHJ1ZSB9KTsKfQo=
+import { NextRequest, NextResponse } from 'next/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import { requireAgent } from '@/lib/admin-auth';
+import { assertSameOrigin } from '@/lib/csrf';
+import { randomUUID } from 'crypto';
+
+interface Bundle {
+  id: string;
+  name: string;
+  description: string;
+  product_ids: string[];
+  discount_percent: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+// GET /api/agent/bundles - List all bundles for the current agent
+export async function GET(req: NextRequest) {
+  try {
+    const gate = await requireAgent();
+    if (!gate.ok) return gate.response;
+
+    const supabase = await createServiceClient();
+    const { data: profile } = await supabase
+      .from('agent_profiles')
+      .select('bundles_config')
+      .eq('id', gate.user.id)
+      .single();
+
+    return NextResponse.json({ data: profile?.bundles_config || [] });
+  } catch {
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+// POST /api/agent/bundles - Create a new bundle
+export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
+
+  // SACA: sub-agents have no agent_profiles row to store bundles_config on.
+  // Reject explicitly so the UI surfaces a useful error instead of a silent
+  // no-op or confusing 500.
+  {
+    const svc = await createServiceClient();
+    const { data: caller } = await svc
+      .from('profiles')
+      .select('is_sub_agent')
+      .eq('id', gate.user.id)
+      .maybeSingle();
+    if ((caller as { is_sub_agent?: boolean | null } | null)?.is_sub_agent === true) {
+      return NextResponse.json(
+        { error: 'Sub-Agents Cannot Create Bundles. Bundles Belong To The Storefront-Owning Agent.' },
+        { status: 403 },
+      );
+    }
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const { name, description, product_ids, discount_percent } = body;
+
+  if (!name || !Array.isArray(product_ids) || product_ids.length < 2) {
+    return NextResponse.json({ error: 'Bundle Name And At Least 2 Products Are Required' }, { status: 400 });
+  }
+
+  const supabase = await createServiceClient();
+
+  // Get current bundles
+  const { data: profile } = await supabase
+    .from('agent_profiles')
+    .select('bundles_config')
+    .eq('id', gate.user.id)
+    .single();
+
+  const existing: Bundle[] = profile?.bundles_config || [];
+
+  const newBundle: Bundle = {
+    id: randomUUID(),
+    name: name.trim(),
+    description: (description || '').trim(),
+    product_ids,
+    discount_percent: Math.min(Math.max(Number(discount_percent) || 0, 0), 90),
+    is_active: true,
+    created_at: new Date().toISOString(),
+  };
+
+  const updated = [...existing, newBundle];
+
+  const { error } = await supabase
+    .from('agent_profiles')
+    .update({ bundles_config: updated, updated_at: new Date().toISOString() })
+    .eq('id', gate.user.id);
+
+  if (error) {
+    return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true, bundle: newBundle });
+}
+
+// PATCH /api/agent/bundles - Toggle a bundle on/off
+export async function PATCH(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
+
+  const body = await req.json().catch(() => ({}));
+  const { id, action } = body;
+
+  if (!id) {
+    return NextResponse.json({ error: 'Bundle ID Required' }, { status: 400 });
+  }
+
+  const supabase = await createServiceClient();
+
+  const { data: profile } = await supabase
+    .from('agent_profiles')
+    .select('bundles_config')
+    .eq('id', gate.user.id)
+    .single();
+
+  const existing: Bundle[] = profile?.bundles_config || [];
+  const updated = existing.map(b =>
+    b.id === id ? { ...b, is_active: action === 'toggle' ? !b.is_active : b.is_active } : b
+  );
+
+  const { error } = await supabase
+    .from('agent_profiles')
+    .update({ bundles_config: updated, updated_at: new Date().toISOString() })
+    .eq('id', gate.user.id);
+
+  if (error) {
+    return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}
+
+// DELETE /api/agent/bundles - Delete a bundle
+export async function DELETE(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
+
+  const body = await req.json().catch(() => ({}));
+  const { id } = body;
+
+  if (!id) {
+    return NextResponse.json({ error: 'Bundle ID Required' }, { status: 400 });
+  }
+
+  const supabase = await createServiceClient();
+
+  const { data: profile } = await supabase
+    .from('agent_profiles')
+    .select('bundles_config')
+    .eq('id', gate.user.id)
+    .single();
+
+  const existing: Bundle[] = profile?.bundles_config || [];
+  const updated = existing.filter(b => b.id !== id);
+
+  const { error } = await supabase
+    .from('agent_profiles')
+    .update({ bundles_config: updated, updated_at: new Date().toISOString() })
+    .eq('id', gate.user.id);
+
+  if (error) {
+    return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}

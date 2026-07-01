@@ -41,7 +41,6 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Resolve caller role so admin can print any invoice for support / audit.
   const { data: callerProfile } = await supabase
     .from('profiles')
     .select('role')
@@ -49,11 +48,6 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
     .maybeSingle();
   const isAdmin = callerProfile?.role === 'admin';
 
-  // Load the target row. We let RLS see all rows the caller is entitled to
-  // (admin everywhere; agent on own statements; sub-agent + super-agent on
-  // shared agent_invoices) and then enforce the print-visibility ACL in
-  // JS so the "Invoice Not Found" message doesn't leak which side of the
-  // pair the caller is on.
   let row: any = null;
   let billsFrom = '';
   if (type === 'statement') {
@@ -145,8 +139,7 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
       </head>
       <body>
         <div className="no-print" style={{ marginBottom: 20, display: 'flex', gap: 8 }}>
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-          <a href="/wallet" style={{ color: '#555', textDecoration: 'none', fontSize: 13, alignSelf: 'center' }}>← Back To Wallet</a>
+          <a href="/wallet" style={{ color: '#555', textDecoration: 'none', fontSize: 13, alignSelf: 'center' }}>Back To Wallet</a>
           <span style={{ flex: 1 }} />
           <PrintButton />
         </div>
@@ -175,7 +168,7 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
           </div>
           <div className="meta-box">
             <div className="meta-label">Week Of</div>
-            <div className="meta-value">{fmtDate(row.week_start)} → {fmtDate(row.week_end)}</div>
+            <div className="meta-value">{fmtDate(row.week_start)} To {fmtDate(row.week_end)}</div>
           </div>
           <div className="meta-box">
             <div className="meta-label">{row.status === 'paid' ? 'Paid On' : 'Due Date'}</div>
@@ -208,7 +201,7 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
           Use Invoice Number <strong>{invoiceNumber}</strong> as the memo. Payment posts to your Wallet once recorded by the
           billing party. No automated billing or late fees are applied.
           <br /><br />
-          Pep Nation Lab • Research Use Only • Not For Human Consumption
+          Pep Nation Lab - Research Use Only - Not For Human Consumption
         </div>
       </body>
     </html>

@@ -1,1 +1,188 @@
-aW1wb3J0IHsgTmV4dFJlcXVlc3QsIE5leHRSZXNwb25zZSB9IGZyb20gJ25leHQvc2VydmVyJzsKaW1wb3J0IHsgY3JlYXRlQ2xpZW50LCBjcmVhdGVBZG1pbkNsaWVudCB9IGZyb20gJ0AvbGliL3N1cGFiYXNlL3NlcnZlcic7CmltcG9ydCB7IHNhbml0aXplVXNlcm5hbWUgfSBmcm9tICdAL2xpYi91c2VybmFtZXMnOwppbXBvcnQgeyBhc3NlcnRTYW1lT3JpZ2luIH0gZnJvbSAnQC9saWIvY3NyZic7CmltcG9ydCB7IG5vdGlmeU5ld1Jlc2VhcmNoZXIgfSBmcm9tICdAL2xpYi9ub3RpZnknOwoKZXhwb3J0IGFzeW5jIGZ1bmN0aW9uIFBPU1QocmVxOiBOZXh0UmVxdWVzdCkgewogIGNvbnN0IGNzcmYgPSBhc3NlcnRTYW1lT3JpZ2luKHJlcSk7CiAgaWYgKGNzcmYpIHJldHVybiBjc3JmOwoKICBjb25zdCB1c2VyU3VwYWJhc2UgPSBhd2FpdCBjcmVhdGVDbGllbnQoKTsKICBjb25zdCB7IGRhdGE6IHsgdXNlciB9LCBlcnJvcjogYXV0aEVyciB9ID0gYXdhaXQgdXNlclN1cGFiYXNlLmF1dGguZ2V0VXNlcigpOwogIGlmIChhdXRoRXJyIHx8ICF1c2VyKSB7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBlcnJvcjogJ1VuYXV0aG9yaXplZCcgfSwgeyBzdGF0dXM6IDQwMSB9KTsKICB9CgogIGNvbnN0IGFkbWluID0gY3JlYXRlQWRtaW5DbGllbnQoKTsKCiAgY29uc3QgeyBkYXRhOiBjYWxsZXJQcm9maWxlLCBlcnJvcjogcHJvZmlsZUVyciB9ID0gYXdhaXQgYWRtaW4KICAgIC5mcm9tKCdwcm9maWxlcycpCiAgICAuc2VsZWN0KCdpZCwgcm9sZSwgaXNfYWN0aXZlLCBmdWxsX25hbWUsIGlzX3N1Yl9hZ2VudCwgcGFyZW50X2FnZW50X2lkLCBpc19zdXBlcl9hZ2VudCcpCiAgICAuZXEoJ2lkJywgdXNlci5pZCkKICAgIC5zaW5nbGUoKTsKCiAgaWYgKHByb2ZpbGVFcnIgfHwgIWNhbGxlclByb2ZpbGUpIHsKICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiAnQWdlbnQgUHJvZmlsZSBOb3QgRm91bmQnIH0sIHsgc3RhdHVzOiA0MDMgfSk7CiAgfQoKICBjb25zdCBpc0FnZW50ID0gWydhZ2VudCcsICdzdXBlcl9hZ2VudCcsICdhZG1pbiddLmluY2x1ZGVzKGNhbGxlclByb2ZpbGUucm9sZSk7CiAgaWYgKCFpc0FnZW50IHx8ICFjYWxsZXJQcm9maWxlLmlzX2FjdGl2ZSkgewogICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgZXJyb3I6ICdPbmx5IEFjdGl2ZSBBZ2VudHMgQ2FuIENyZWF0ZSBSZXNlYXJjaGVyIEFjY291bnRzJyB9LCB7IHN0YXR1czogNDAzIH0pOwogIH0KCiAgbGV0IHJlZmVycmluZ0FnZW50SWQ6IHN0cmluZyA9IHVzZXIuaWQ7CiAgbGV0IHJlZmVycmluZ1N1YkFnZW50SWQ6IHN0cmluZyB8IG51bGwgPSBudWxsOwoKICBpZiAoY2FsbGVyUHJvZmlsZS5pc19zdWJfYWdlbnQgPT09IHRydWUpIHsKICAgIGlmICghY2FsbGVyUHJvZmlsZS5wYXJlbnRfYWdlbnRfaWQpIHsKICAgICAgY29uc29sZS5lcnJvcignW2NyZWF0ZS1yZXNlYXJjaGVyXSBzdWItYWdlbnQgY2FsbGVyIGhhcyBubyBwYXJlbnRfYWdlbnRfaWQ6JywgdXNlci5pZCk7CiAgICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbigKICAgICAgICB7IGVycm9yOiAnU3ViLUFnZW50IEFjY291bnQgSXMgTm90IFByb3Blcmx5IExpbmtlZC4gQ29udGFjdCBZb3VyIEFnZW50LicgfSwKICAgICAgICB7IHN0YXR1czogNDAwIH0sCiAgICAgICk7CiAgICB9CiAgICByZWZlcnJpbmdBZ2VudElkID0gY2FsbGVyUHJvZmlsZS5wYXJlbnRfYWdlbnRfaWQ7CiAgICByZWZlcnJpbmdTdWJBZ2VudElkID0gdXNlci5pZDsKICB9CgogIGxldCBjcmVhdGVkQnlSb2xlOiBzdHJpbmcgPSBjYWxsZXJQcm9maWxlLnJvbGU7CiAgaWYgKGNhbGxlclByb2ZpbGUuaXNfc3ViX2FnZW50ID09PSB0cnVlKSB7CiAgICBjcmVhdGVkQnlSb2xlID0gJ3N1Yl9hZ2VudCc7CiAgfSBlbHNlIGlmIChjYWxsZXJQcm9maWxlLnJvbGUgPT09ICdhZ2VudCcgJiYgY2FsbGVyUHJvZmlsZS5pc19zdXBlcl9hZ2VudCA9PT0gdHJ1ZSkgewogICAgY3JlYXRlZEJ5Um9sZSA9ICdzdXBlcl9hZ2VudCc7CiAgfQoKICBjb25zdCBib2R5ID0gYXdhaXQgcmVxLmpzb24oKS5jYXRjaCgoKSA9PiAoe30pKTsKICBjb25zdCB7IHVzZXJuYW1lLCBwYXNzd29yZCwgZmlyc3ROYW1lLCBsYXN0TmFtZSB9ID0gYm9keSB8fCB7fTsKCiAgaWYgKCF1c2VybmFtZSB8fCAhcGFzc3dvcmQgfHwgIWZpcnN0TmFtZSB8fCAhbGFzdE5hbWUpIHsKICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiAnVXNlcm5hbWUsIFBhc3N3b3JkLCBGaXJzdCBOYW1lLCBBbmQgTGFzdCBOYW1lIEFyZSBSZXF1aXJlZC4nIH0sIHsgc3RhdHVzOiA0MDAgfSk7CiAgfQoKICBpZiAocGFzc3dvcmQubGVuZ3RoIDwgOCkgewogICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgZXJyb3I6ICdQYXNzd29yZCBNdXN0IEJlIEF0IExlYXN0IDggQ2hhcmFjdGVycycgfSwgeyBzdGF0dXM6IDQwMCB9KTsKICB9CgogIGNvbnN0IHVzZXJuYW1lQ2xlYW4gPSBzYW5pdGl6ZVVzZXJuYW1lKHVzZXJuYW1lKTsKICBpZiAoIXVzZXJuYW1lQ2xlYW4gfHwgdXNlcm5hbWVDbGVhbi5sZW5ndGggPCAyKSB7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBlcnJvcjogJ1VzZXJuYW1lIE11c3QgQmUgQXQgTGVhc3QgMiBDaGFyYWN0ZXJzIChMZXR0ZXJzLCBOdW1iZXJzLCBVbmRlcnNjb3JlcyknIH0sIHsgc3RhdHVzOiA0MDAgfSk7CiAgfQoKICBjb25zdCB7IGRhdGE6IGV4aXN0aW5nVXNlciB9ID0gYXdhaXQgYWRtaW4KICAgIC5mcm9tKCdwcm9maWxlcycpCiAgICAuc2VsZWN0KCdpZCcpCiAgICAuaWxpa2UoJ3VzZXJuYW1lJywgdXNlcm5hbWVDbGVhbikKICAgIC5tYXliZVNpbmdsZSgpOwoKICBpZiAoZXhpc3RpbmdVc2VyKSB7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBlcnJvcjogJ1RoYXQgVXNlcm5hbWUgSXMgQWxyZWFkeSBUYWtlbicgfSwgeyBzdGF0dXM6IDQwMCB9KTsKICB9CgogIGNvbnN0IGludGVybmFsRW1haWwgPSBgJHt1c2VybmFtZUNsZWFufUBpbnRlcm5hbC5hdXRoYDsKICBjb25zdCBmdWxsTmFtZSA9IGAke1N0cmluZyhmaXJzdE5hbWUpLnRyaW0oKX0gJHtTdHJpbmcobGFzdE5hbWUpLnRyaW0oKX1gOwoKICBjb25zdCB7IGRhdGE6IGF1dGhEYXRhLCBlcnJvcjogYXV0aEVycm9yIH0gPSBhd2FpdCBhZG1pbi5hdXRoLmFkbWluLmNyZWF0ZVVzZXIoewogICAgZW1haWw6IGludGVybmFsRW1haWwsCiAgICBwYXNzd29yZCwKICAgIGVtYWlsX2NvbmZpcm06IHRydWUsCiAgICB1c2VyX21ldGFkYXRhOiB7IHVzZXJuYW1lOiB1c2VybmFtZUNsZWFuLCBmdWxsX25hbWU6IGZ1bGxOYW1lIH0sCiAgfSk7CgogIGlmIChhdXRoRXJyb3IgfHwgIWF1dGhEYXRhPy51c2VyKSB7CiAgICBjb25zb2xlLmVycm9yKCdbY3JlYXRlLXJlc2VhcmNoZXJdIGF1dGguYWRtaW4uY3JlYXRlVXNlciBlcnJvcjonLCBhdXRoRXJyb3IpOwogICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKAogICAgICB7IGVycm9yOiBhdXRoRXJyb3I/Lm1lc3NhZ2UgfHwgJ0ZhaWxlZCBUbyBDcmVhdGUgQXV0aCBBY2NvdW50JyB9LAogICAgICB7IHN0YXR1czogNTAwIH0KICAgICk7CiAgfQoKICBjb25zdCBuZXdVc2VySWQgPSBhdXRoRGF0YS51c2VyLmlkOwoKICBjb25zdCBwcm9maWxlUGF5bG9hZDogUmVjb3JkPHN0cmluZywgdW5rbm93bj4gPSB7CiAgICBpZDogbmV3VXNlcklkLAogICAgZW1haWw6IG51bGwsCiAgICB1c2VybmFtZTogdXNlcm5hbWVDbGVhbiwKICAgIGZ1bGxfbmFtZTogZnVsbE5hbWUsCiAgICBmaXJzdF9uYW1lOiBTdHJpbmcoZmlyc3ROYW1lKS50cmltKCksCiAgICBsYXN0X25hbWU6IFN0cmluZyhsYXN0TmFtZSkudHJpbSgpLAogICAgcm9sZTogJ3Jlc2VhcmNoZXInLAogICAgcmVmZXJyaW5nX2FnZW50X2lkOiByZWZlcnJpbmdBZ2VudElkLAogICAgY3JlYXRlZF9ieV9hZ2VudF9pZDogdXNlci5pZCwKICAgIGNyZWF0ZWRfYnlfcm9sZTogY3JlYXRlZEJ5Um9sZSwKICAgIGRpc2NsYWltZXJfdjFfYWNjZXB0ZWQ6IGZhbHNlLAogICAgaXNfYWN0aXZlOiB0cnVlLAogICAgbXVzdF9jaGFuZ2VfcGFzc3dvcmQ6IHRydWUsCiAgICBwcm92aXNpb25lZF9wYXNzd29yZDogcGFzc3dvcmQsCiAgICB1cGRhdGVkX2F0OiBuZXcgRGF0ZSgpLnRvSVNPU3RyaW5nKCksCiAgfTsKICBpZiAocmVmZXJyaW5nU3ViQWdlbnRJZCkgewogICAgcHJvZmlsZVBheWxvYWQucmVmZXJyaW5nX3N1Yl9hZ2VudF9pZCA9IHJlZmVycmluZ1N1YkFnZW50SWQ7CiAgfQoKICBjb25zdCB7IGRhdGE6IHVwc2VydGVkUm93cywgZXJyb3I6IHByb2ZpbGVFcnJvciB9ID0gYXdhaXQgYWRtaW4KICAgIC5mcm9tKCdwcm9maWxlcycpCiAgICAudXBzZXJ0KHByb2ZpbGVQYXlsb2FkLCB7IG9uQ29uZmxpY3Q6ICdpZCcgfSkKICAgIC5zZWxlY3QoJ2lkLCByZWZlcnJpbmdfYWdlbnRfaWQsIHJlZmVycmluZ19zdWJfYWdlbnRfaWQsIGNyZWF0ZWRfYnlfYWdlbnRfaWQnKTsKCiAgaWYgKHByb2ZpbGVFcnJvcikgewogICAgY29uc29sZS5lcnJvcignW2NyZWF0ZS1yZXNlYXJjaGVyXSBwcm9maWxlIHVwc2VydCBlcnJvcjonLCBwcm9maWxlRXJyb3IpOwogICAgYXdhaXQgYWRtaW4uYXV0aC5hZG1pbi5kZWxldGVVc2VyKG5ld1VzZXJJZCk7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oCiAgICAgIHsgZXJyb3I6IGBQcm9maWxlIFNldHVwIEZhaWxlZDogJHtwcm9maWxlRXJyb3IubWVzc2FnZX1gIH0sCiAgICAgIHsgc3RhdHVzOiA1MDAgfQogICAgKTsKICB9CgogIGNvbnN0IHdyaXR0ZW4gPSB1cHNlcnRlZFJvd3M/LlswXTsKICBpZiAoIXdyaXR0ZW4/LnJlZmVycmluZ19hZ2VudF9pZCB8fCB3cml0dGVuLnJlZmVycmluZ19hZ2VudF9pZCAhPT0gcmVmZXJyaW5nQWdlbnRJZCkgewogICAgY29uc29sZS5lcnJvcignW2NyZWF0ZS1yZXNlYXJjaGVyXSByZWZlcnJpbmdfYWdlbnRfaWQgbm90IHNldCBjb3JyZWN0bHkgYWZ0ZXIgdXBzZXJ0IC0gcm9sbGluZyBiYWNrJyk7CiAgICBhd2FpdCBhZG1pbi5hdXRoLmFkbWluLmRlbGV0ZVVzZXIobmV3VXNlcklkKTsKICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbigKICAgICAgeyBlcnJvcjogJ1Byb2ZpbGUgU2V0dXAgRmFpbGVkOiBDb3VsZCBOb3QgTGluayBSZXNlYXJjaGVyIFRvIEFnZW50JyB9LAogICAgICB7IHN0YXR1czogNTAwIH0KICAgICk7CiAgfQogIGlmIChyZWZlcnJpbmdTdWJBZ2VudElkICYmIHdyaXR0ZW4ucmVmZXJyaW5nX3N1Yl9hZ2VudF9pZCAhPT0gcmVmZXJyaW5nU3ViQWdlbnRJZCkgewogICAgY29uc29sZS5lcnJvcignW2NyZWF0ZS1yZXNlYXJjaGVyXSByZWZlcnJpbmdfc3ViX2FnZW50X2lkIG5vdCBzZXQgY29ycmVjdGx5IC0gcm9sbGluZyBiYWNrJyk7CiAgICBhd2FpdCBhZG1pbi5hdXRoLmFkbWluLmRlbGV0ZVVzZXIobmV3VXNlcklkKTsKICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbigKICAgICAgeyBlcnJvcjogJ1Byb2ZpbGUgU2V0dXAgRmFpbGVkOiBDb3VsZCBOb3QgVGFnIFN1Yi1BZ2VudCBDb21taXNzaW9uJyB9LAogICAgICB7IHN0YXR1czogNTAwIH0KICAgICk7CiAgfQoKICBpZiAocmVmZXJyaW5nU3ViQWdlbnRJZCkgewogICAgdHJ5IHsKICAgICAgYXdhaXQgYWRtaW4uZnJvbSgnYWRtaW5fYXVkaXRfbG9nJykuaW5zZXJ0KHsKICAgICAgICBhY3Rvcl9pZDogdXNlci5pZCwKICAgICAgICBhY3Rpb246ICdyZXNlYXJjaGVyX2NyZWF0ZWRfYnlfc3ViX2FnZW50JywKICAgICAgICBlbnRpdHlfdHlwZTogJ3Byb2ZpbGVzJywKICAgICAgICBlbnRpdHlfaWQ6IG5ld1VzZXJJZCwKICAgICAgICBjaGFuZ2VzOiB7CiAgICAgICAgICByZWZlcnJpbmdfYWdlbnRfaWQ6IHJlZmVycmluZ0FnZW50SWQsCiAgICAgICAgICByZWZlcnJpbmdfc3ViX2FnZW50X2lkOiByZWZlcnJpbmdTdWJBZ2VudElkLAogICAgICAgICAgdXNlcm5hbWU6IHVzZXJuYW1lQ2xlYW4sCiAgICAgICAgICBmdWxsX25hbWU6IGZ1bGxOYW1lLAogICAgICAgICAgZmlyc3RfbmFtZTogU3RyaW5nKGZpcnN0TmFtZSkudHJpbSgpLAogICAgICAgICAgbGFzdF9uYW1lOiBTdHJpbmcobGFzdE5hbWUpLnRyaW0oKSwKICAgICAgICB9LAogICAgICB9KTsKICAgIH0gY2F0Y2ggKGUpIHsKICAgICAgY29uc29sZS5lcnJvcignW2NyZWF0ZS1yZXNlYXJjaGVyXSBhdWRpdCBsb2cgaW5zZXJ0IGZhaWxlZCAobm9uLWZhdGFsKTonLCBlKTsKICAgIH0KICB9CgogIGF3YWl0IG5vdGlmeU5ld1Jlc2VhcmNoZXIoYWRtaW4sIHJlZmVycmluZ0FnZW50SWQsIGZ1bGxOYW1lKS5jYXRjaCgoKSA9PiB7IC8qIGlnbm9yZSAqLyB9KTsKCiAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsKICAgIHN1Y2Nlc3M6IHRydWUsCiAgICB1c2VySWQ6IG5ld1VzZXJJZCwKICAgIHVzZXJuYW1lOiB1c2VybmFtZUNsZWFuLAogICAgZnVsbF9uYW1lOiBmdWxsTmFtZSwKICAgIHJlZmVycmluZ19hZ2VudF9pZDogcmVmZXJyaW5nQWdlbnRJZCwKICAgIHJlZmVycmluZ19zdWJfYWdlbnRfaWQ6IHJlZmVycmluZ1N1YkFnZW50SWQsCiAgICBzdWJfYWdlbnRfdGFnZ2VkOiAhIXJlZmVycmluZ1N1YkFnZW50SWQsCiAgICBjcmVhdGVkX2J5X3JvbGU6IGNyZWF0ZWRCeVJvbGUsCiAgfSk7Cn0K
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { sanitizeUsername } from '@/lib/usernames';
+import { assertSameOrigin } from '@/lib/csrf';
+import { notifyNewResearcher } from '@/lib/notify';
+
+export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
+  const userSupabase = await createClient();
+  const { data: { user }, error: authErr } = await userSupabase.auth.getUser();
+  if (authErr || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const admin = createAdminClient();
+
+  const { data: callerProfile, error: profileErr } = await admin
+    .from('profiles')
+    .select('id, role, is_active, full_name, is_sub_agent, parent_agent_id, is_super_agent')
+    .eq('id', user.id)
+    .single();
+
+  if (profileErr || !callerProfile) {
+    return NextResponse.json({ error: 'Agent Profile Not Found' }, { status: 403 });
+  }
+
+  const isAgent = ['agent', 'super_agent', 'admin'].includes(callerProfile.role);
+  if (!isAgent || !callerProfile.is_active) {
+    return NextResponse.json({ error: 'Only Active Agents Can Create Researcher Accounts' }, { status: 403 });
+  }
+
+  let referringAgentId: string = user.id;
+  let referringSubAgentId: string | null = null;
+
+  if (callerProfile.is_sub_agent === true) {
+    if (!callerProfile.parent_agent_id) {
+      console.error('[create-researcher] sub-agent caller has no parent_agent_id:', user.id);
+      return NextResponse.json(
+        { error: 'Sub-Agent Account Is Not Properly Linked. Contact Your Agent.' },
+        { status: 400 },
+      );
+    }
+    referringAgentId = callerProfile.parent_agent_id;
+    referringSubAgentId = user.id;
+  }
+
+  let createdByRole: string = callerProfile.role;
+  if (callerProfile.is_sub_agent === true) {
+    createdByRole = 'sub_agent';
+  } else if (callerProfile.role === 'agent' && callerProfile.is_super_agent === true) {
+    createdByRole = 'super_agent';
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const { username, password, firstName, lastName, phone } = body || {};
+
+  if (!username || !password || !firstName || !lastName) {
+    return NextResponse.json({ error: 'Username, Password, First Name, And Last Name Are Required.' }, { status: 400 });
+  }
+
+  if (password.length < 8) {
+    return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
+  }
+
+  const usernameClean = sanitizeUsername(username);
+  if (!usernameClean || usernameClean.length < 2) {
+    return NextResponse.json({ error: 'Username Must Be At Least 2 Characters (Letters, Numbers, Underscores)' }, { status: 400 });
+  }
+
+  const { data: existingUser } = await admin
+    .from('profiles')
+    .select('id')
+    .ilike('username', usernameClean)
+    .maybeSingle();
+
+  if (existingUser) {
+    return NextResponse.json({ error: 'That Username Is Already Taken' }, { status: 400 });
+  }
+
+  const internalEmail = `${usernameClean}@internal.auth`;
+  const fullName = `${String(firstName).trim()} ${String(lastName).trim()}`;
+
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    email: internalEmail,
+    password,
+    email_confirm: true,
+    user_metadata: { username: usernameClean, full_name: fullName },
+  });
+
+  if (authError || !authData?.user) {
+    console.error('[create-researcher] auth.admin.createUser error:', authError);
+    return NextResponse.json(
+      { error: authError?.message || 'Failed To Create Auth Account' },
+      { status: 500 }
+    );
+  }
+
+  const newUserId = authData.user.id;
+
+  const profilePayload: Record<string, unknown> = {
+    id: newUserId,
+    email: null,
+    username: usernameClean,
+    full_name: fullName,
+    first_name: String(firstName).trim(),
+    last_name: String(lastName).trim(),
+    role: 'researcher',
+    referring_agent_id: referringAgentId,
+    created_by_agent_id: user.id,
+    created_by_role: createdByRole,
+    disclaimer_v1_accepted: false,
+    is_active: true,
+    must_change_password: true,
+    provisioned_password: password,
+    updated_at: new Date().toISOString(),
+  };
+  if (referringSubAgentId) {
+    profilePayload.referring_sub_agent_id = referringSubAgentId;
+  }
+
+  const { data: upsertedRows, error: profileError } = await admin
+    .from('profiles')
+    .upsert(profilePayload, { onConflict: 'id' })
+    .select('id, referring_agent_id, referring_sub_agent_id, created_by_agent_id');
+
+  if (profileError) {
+    console.error('[create-researcher] profile upsert error:', profileError);
+    await admin.auth.admin.deleteUser(newUserId);
+    return NextResponse.json(
+      { error: `Profile Setup Failed: ${profileError.message}` },
+      { status: 500 }
+    );
+  }
+
+  const written = upsertedRows?.[0];
+  if (!written?.referring_agent_id || written.referring_agent_id !== referringAgentId) {
+    console.error('[create-researcher] referring_agent_id not set correctly after upsert - rolling back');
+    await admin.auth.admin.deleteUser(newUserId);
+    return NextResponse.json(
+      { error: 'Profile Setup Failed: Could Not Link Researcher To Agent' },
+      { status: 500 }
+    );
+  }
+  if (referringSubAgentId && written.referring_sub_agent_id !== referringSubAgentId) {
+    console.error('[create-researcher] referring_sub_agent_id not set correctly - rolling back');
+    await admin.auth.admin.deleteUser(newUserId);
+    return NextResponse.json(
+      { error: 'Profile Setup Failed: Could Not Tag Sub-Agent Commission' },
+      { status: 500 }
+    );
+  }
+
+  if (referringSubAgentId) {
+    try {
+      await admin.from('admin_audit_log').insert({
+        actor_id: user.id,
+        action: 'researcher_created_by_sub_agent',
+        entity_type: 'profiles',
+        entity_id: newUserId,
+        changes: {
+          referring_agent_id: referringAgentId,
+          referring_sub_agent_id: referringSubAgentId,
+          username: usernameClean,
+          full_name: fullName,
+          first_name: String(firstName).trim(),
+          last_name: String(lastName).trim(),
+        },
+      });
+    } catch (e) {
+      console.error('[create-researcher] audit log insert failed (non-fatal):', e);
+    }
+  }
+
+  await notifyNewResearcher(admin, referringAgentId, fullName).catch(() => { /* ignore */ });
+
+  return NextResponse.json({
+    success: true,
+    userId: newUserId,
+    username: usernameClean,
+    full_name: fullName,
+    referring_agent_id: referringAgentId,
+    referring_sub_agent_id: referringSubAgentId,
+    sub_agent_tagged: !!referringSubAgentId,
+    created_by_role: createdByRole,
+  });
+}
