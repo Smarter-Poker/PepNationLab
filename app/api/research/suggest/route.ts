@@ -81,6 +81,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ suggestions: [], latencyMs: 0 });
   }
 
+  // Autocomplete: cap query length to prevent unbounded tsquery construction.
+  if (q.length > 200) {
+    return NextResponse.json({ suggestions: [], latencyMs: 0 }, { status: 400 });
+  }
+
   const ip = ipOf(req);
   if (rateLimited(ip)) {
     return NextResponse.json({ suggestions: [], latencyMs: 0 }, { status: 429 });
