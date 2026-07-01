@@ -110,7 +110,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
       if (!res.ok) throw new Error(data.error || 'Failed To Create Manual Order');
 
       toast.success('Manual Order Created Successfully');
-      onOrderCreated(data.order);
+      onOrderCreated(data.order); // Trigger parent refresh or view toggle
     } catch (err: any) {
       toast.error(err.message || 'An Error Occurred');
     } finally {
@@ -131,8 +131,9 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
         
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           
+          {/* Customer Details */}
           <div className="glass-panel" style={{ padding: '24px' }}>
-            <h4 style={{ fontSize: '1rem', color: '#00E5FF', marginBottom: '20px', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(0,229,255,0.2)', paddingBottom: '10px' }}>Customer And Shipping Details</h4>
+            <h4 style={{ fontSize: '1rem', color: '#00E5FF', marginBottom: '20px', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(0,229,255,0.2)', paddingBottom: '10px' }}>Customer &amp; Shipping Details</h4>
             <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
               <div className="form-group">
                 <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Full Name</label>
@@ -172,6 +173,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
             </div>
           </div>
 
+          {/* Order Items */}
           <div className="glass-panel" style={{ padding: '24px' }}>
             <h4 style={{ fontSize: '1rem', color: '#00E5FF', marginBottom: '20px', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(0,229,255,0.2)', paddingBottom: '10px' }}>Order Items</h4>
             
@@ -233,6 +235,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
             )}
           </div>
 
+          {/* Payment & Submit */}
           <div className="glass-panel" style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
               <div className="form-group" style={{ width: 180, marginBottom: 0 }}>
