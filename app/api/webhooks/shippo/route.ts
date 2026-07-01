@@ -116,6 +116,18 @@ export async function POST(req: NextRequest) {
   const authorised = verifyShared(req, rawBody, secret);
   const signatureValid = authorised; // true only when a secret matched
 
+  // If no secret is configured at all, reject in production to prevent forged
+  // tracking events from being accepted (fail-closed). The only exception is
+  // during initial setup when NEXT_PUBLIC_VERCEL_ENV is not set or is 'development'.
+  const isDev = !process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV === 'development';
+  if (!secret) {
+    if (!isDev) {
+      // No secret configured in a live environment → refuse; forces operator to configure the webhook secret.
+      return NextResponse.json({ error: 'Webhook Secret Not Configured.' }, { status: 503 });
+    }
+    // Dev/setup mode: accept but flag as unverified so the audit log is honest.
+  }
+
   // A secret is configured but the caller did not present it -> reject (and
   // leave a forensic row). Without this, anyone could POST forged tracking.
   if (secret && !authorised) {

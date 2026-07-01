@@ -11,41 +11,25 @@
  * the client. Public route; rate-limited per IP.
  */
 
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
-
-const FIVE_MIN_MS = 5 * 60 * 1000;
-
-const CLICK_BUCKETS = new Map<string, { count: number; resetAt: number }>();
-const CLICK_RATE_WINDOW_MS = 10_000;
-const CLICK_RATE_MAX = 30;
-
-function ipOf(req: NextRequest): string {
-  const fwd = req.headers.get('x-forwarded-for');
-  if (fwd) return fwd.split(',')[0].trim();
-  return req.headers.get('x-real-ip') ?? 'unknown';
-}
-
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const b = CLICK_BUCKETS.get(ip);
-  if (!b || b.resetAt < now) {
-    CLICK_BUCKETS.set(ip, { count: 1, resetAt: now + CLICK_RATE_WINDOW_MS });
-    return false;
-  }
-  b.count += 1;
-  return b.count > CLICK_RATE_MAX;
-}
 
 function normalize(s: string): string {
   return s.toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
+const FIVE_MIN_MS = 5 * 60 * 1000;
+
 export async function POST(req: NextRequest) {
-  const ip = ipOf(req);
-  if (rateLimited(ip)) {
+  // Persistent per-IP rate limit: 30 req / 10s.
+  // Uses the shared Redis-backed rateLimit() so it works correctly on Vercel
+  // serverless (in-process Maps reset on cold start and provide zero protection).
+  const ip = getClientIp(req);
+  const rl = await rateLimit({ key: 'research_click', limit: 30, windowSeconds: 10, identifier: ip });
+  if (!rl.allowed) {
     return new NextResponse(null, { status: 204 });
   }
 

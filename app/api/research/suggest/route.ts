@@ -27,28 +27,7 @@ interface Suggestion {
   blurb?: string;
 }
 
-// Per-IP rate limit: 30 req / 10s. Suggest is hammered on every keystroke
-// so this is intentionally generous.
-const BUCKETS = new Map<string, { count: number; resetAt: number }>();
-const RATE_WINDOW_MS = 10_000;
-const RATE_MAX = 30;
-
-function ipOf(req: NextRequest): string {
-  const fwd = req.headers.get('x-forwarded-for');
-  if (fwd) return fwd.split(',')[0].trim();
-  return req.headers.get('x-real-ip') ?? 'unknown';
-}
-
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const b = BUCKETS.get(ip);
-  if (!b || b.resetAt < now) {
-    BUCKETS.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return false;
-  }
-  b.count += 1;
-  return b.count > RATE_MAX;
-}
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 function normalize(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -81,14 +60,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ suggestions: [], latencyMs: 0 });
   }
 
+  // Persistent per-IP rate limit: 30 req / 10s. Suggest is hammered on every
+  // keystroke so this is intentionally generous. Uses the shared Redis-backed
+  // rateLimit() so it works correctly on Vercel serverless (in-process Maps
+  // reset on every cold start and provide zero protection).
+  const ip = getClientIp(req);
+  const rl = await rateLimit({ key: 'research_suggest', limit: 30, windowSeconds: 10, identifier: ip });
+  if (!rl.allowed) {
+    return NextResponse.json({ suggestions: [], latencyMs: 0 }, { status: 429 });
+  }
+
   // Autocomplete: cap query length to prevent unbounded tsquery construction.
   if (q.length > 200) {
     return NextResponse.json({ suggestions: [], latencyMs: 0 }, { status: 400 });
-  }
-
-  const ip = ipOf(req);
-  if (rateLimited(ip)) {
-    return NextResponse.json({ suggestions: [], latencyMs: 0 }, { status: 429 });
   }
 
   const parsed = parseQuery(q);

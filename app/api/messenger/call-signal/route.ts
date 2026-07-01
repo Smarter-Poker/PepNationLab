@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant, isBlockedEither, broadcastCallSignalServer } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
+import { getClientIp } from '@/lib/rate-limit';
 import { StartCallSchema } from '@/lib/messenger/schemas';
 import { recordCallTelemetry } from '@/lib/messenger/callTelemetry';
 import { enqueueCallRingPush, sendCallRingPushNow } from '@/lib/messenger/callPush';
@@ -39,13 +40,7 @@ function callsConfigured(): boolean {
   );
 }
 
-function ipFrom(req: NextRequest): string | null {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    null
-  );
-}
+
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -68,7 +63,7 @@ export async function POST(req: NextRequest) {
   }
 
   const svc = await createServiceClient();
-  const ip = ipFrom(req);
+  const ip = getClientIp(req);
   const ua = req.headers.get('user-agent');
 
   if (parsed.data.action === 'start') {

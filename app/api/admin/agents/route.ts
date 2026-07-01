@@ -315,17 +315,20 @@ export async function POST(req: NextRequest) {
     // Seed the agent's product catalog so the storefront isn't empty. Mirrors
     // POST /api/agent/agents. Non-fatal: the account exists regardless.
     try {
-      const { data: tier1 } = await supabase.from('pricing_tiers').select('multiplier').eq('tier_name', 'tier_1').maybeSingle();
-      if (!tier1?.multiplier) {
-        console.warn('[admin/agents] tier_1 multiplier not found; skipping catalog seed');
+      // Seed at Rookie pricing (house_tiers level 3) — the most conservative starting point.
+      // New agents are always Rookie until they earn volume. We read directly from house_tiers
+      // to stay in sync with the V2 pricing engine (avoids tier_1.multiplier * 1.2 drift).
+      const { data: rookieTier } = await supabase.from('house_tiers').select('markup').eq('level', 3).maybeSingle();
+      const rookieMultiplier = rookieTier?.markup != null ? 1 + Number(rookieTier.markup) : 3.50;
+      if (!rookieMultiplier) {
+        console.warn('[admin/agents] house_tiers rookie level not found; skipping catalog seed');
       } else {
         const { data: products } = await supabase.from('products').select('id, base_cost').eq('is_active', true);
         if (products && products.length > 0) {
-          const agentMultiplier = Number(tier1.multiplier) * 1.2;
           const agentProductsToInsert = products.map((p) => ({
             agent_id: userId,
             product_id: p.id,
-            retail_price: Math.round((Number(p.base_cost) * agentMultiplier) * 100) / 100,
+            retail_price: Math.round((Number(p.base_cost) * rookieMultiplier) * 100) / 100,
             margin_percent: 50,
             is_visible: true,
             sort_order: 0,

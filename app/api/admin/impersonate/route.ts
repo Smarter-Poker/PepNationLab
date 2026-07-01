@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { createServiceClient } from '@/lib/supabase/server';
+import { getClientIp } from '@/lib/rate-limit';
 import {
   IMPERSONATION_COOKIE,
   IMPERSONATION_TTL_SECONDS,
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
     .is('ended_at', null);
 
   const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    getClientIp(req) ??
     req.headers.get('x-real-ip') ??
     null;
   const ua = req.headers.get('user-agent') ?? null;
@@ -142,7 +143,7 @@ export async function DELETE(req: NextRequest) {
       entity_id: ctx.targetUserId,
       changes: { session_id: ctx.sessionId },
       ip_address:
-        req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+        getClientIp(req) ??
         req.headers.get('x-real-ip') ??
         null,
       user_agent: req.headers.get('user-agent') ?? null,

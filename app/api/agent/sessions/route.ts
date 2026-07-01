@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
   }
 
   const ua = req.headers.get('user-agent') || 'Unknown';
-  const ip = req.headers.get('x-forwarded-for') || null;
+  const ip = getClientIp(req);
 
   let deviceName = 'Unknown Device';
   if (ua.includes('Macintosh')) deviceName = 'Mac';

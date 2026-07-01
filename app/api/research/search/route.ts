@@ -16,6 +16,7 @@ import { NextResponse, type NextRequest, after } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { parseQuery, buildAutoWildcardTsquery, type ParsedQuery } from '@/lib/research/search-parser';
 import { classifyIntent, type IntentMatch } from '@/lib/research/intent';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 
 export const dynamic = 'force-dynamic';
@@ -32,11 +33,7 @@ interface SearchResultRow {
   knowledge_panel_url: string;
 }
 
-function firstClientIp(req: NextRequest): string | null {
-  const fwd = req.headers.get('x-forwarded-for');
-  if (fwd) return fwd.split(',')[0].trim();
-  return req.headers.get('x-real-ip');
-}
+
 
 async function runRankedSearch(
   supabase: Awaited<ReturnType<typeof createServiceClient>>,
@@ -261,6 +258,16 @@ async function handle(req: NextRequest, q: string, limit: number, offset: number
     return NextResponse.json(
       { results: [], total: 0, latencyMs: 0, note: RESEARCH_NOTE, filters_applied: [] },
       { status: 400 },
+    );
+  }
+
+  // Per-IP rate limit: 30 req / 10s. Protects the FTS RPC from scripted abuse.
+  const ip = getClientIp(req);
+  const rl = await rateLimit({ key: 'research_search', limit: 30, windowSeconds: 10, identifier: ip });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { results: [], total: 0, latencyMs: 0, note: RESEARCH_NOTE, filters_applied: [] },
+      { status: 429 },
     );
   }
 

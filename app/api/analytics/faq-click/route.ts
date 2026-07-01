@@ -16,7 +16,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import crypto from 'crypto';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { FAQ_ITEMS } from '@/lib/help-faq';
 
 export const runtime = 'nodejs';
@@ -38,10 +38,7 @@ function hashIp(ip: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown';
+  const ip = getClientIp(req) ?? 'unknown';
   const rl = await rateLimit({
     key: 'faq_click',
     limit: 60,

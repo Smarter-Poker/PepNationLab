@@ -70,22 +70,22 @@ async function provisionAgentStorefront(
       .eq('agent_id', agentId);
 
     if (!prodCount) {
-      const { data: tier1 } = await admin
-        .from('pricing_tiers')
-        .select('multiplier')
-        .eq('tier_name', 'tier_1')
+      const { data: rookieTier } = await admin
+        .from('house_tiers')
+        .select('markup')
+        .eq('level', 3)
         .single();
       const { data: products } = await admin
         .from('products')
         .select('id, base_cost')
         .eq('is_active', true);
 
-      if (tier1 && products && products.length > 0) {
-        const mult = (Number(tier1.multiplier) || 1.3) * 1.2;
+      if (rookieTier && products && products.length > 0) {
+        const rookieMultiplier = 1 + Number(rookieTier.markup);
         const rows = products.map((p) => ({
           agent_id: agentId,
           product_id: p.id,
-          retail_price: Math.round(Number(p.base_cost) * mult * 100) / 100,
+          retail_price: Math.round(Number(p.base_cost) * rookieMultiplier * 100) / 100,
           margin_percent: 50,
           is_visible: true,
           sort_order: 0,

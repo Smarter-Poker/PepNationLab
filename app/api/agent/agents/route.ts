@@ -257,13 +257,15 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const { data: tier1 } = await supabase.from('pricing_tiers').select('multiplier').eq('tier_name', 'tier_1').single();
+      // Seed at Rookie pricing (house_tiers level 3) — most conservative starting point.
+      // V2 engine is live; use house_tiers directly instead of pricing_tiers.
+      const { data: rookieTier } = await supabase.from('house_tiers').select('markup').eq('level', 3).single();
       const { data: products } = await supabase.from('products').select('id, base_cost').eq('is_active', true);
       
-      if (tier1 && products && products.length > 0) {
-        const agentMultiplier = (Number(tier1.multiplier) || 1.3) * 1.2;
+      if (rookieTier && products && products.length > 0) {
+        const rookieMultiplier = 1 + Number(rookieTier.markup);
         const agentProductsToInsert = products.map((p) => {
-          const retailPrice = Math.round((Number(p.base_cost) * agentMultiplier) * 100) / 100;
+          const retailPrice = Math.round((Number(p.base_cost) * rookieMultiplier) * 100) / 100;
           return {
             agent_id: userId,
             product_id: p.id,
