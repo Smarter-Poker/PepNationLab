@@ -44,7 +44,8 @@ export async function POST(request: NextRequest) {
   if (csrf) return csrf;
   try {
     const supabase = await createClient();
-    const serviceSupabase = createAdminClient();
+    // Fix 1: createAdminClient() must be awaited
+    const serviceSupabase = await createAdminClient();
 
     // Authenticate the user session
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -108,10 +109,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get researcher profile
+    // Get researcher profile (full_name added for buyer_name on order insert)
     const { data: profile, error: profileError } = await serviceSupabase
       .from('profiles')
-      .select('id, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id')
+      .select('id, full_name, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id')
       .eq('id', user.id)
       .single();
 
@@ -219,23 +220,7 @@ export async function POST(request: NextRequest) {
       const localAgentStock = useLocal ? (agentStockMap[cartItem.id] || 0) : 0;
       const { localQty, chinaQty } = computeLineSplit(qty, localAgentStock, useLocal);
 
-      // availableStock only gates the (currently always-bypassed) inventory check.
-      const availableStock =
-        useLocal && localAgentStock > 0 && localAgentStock < qty
-          ? localAgentStock + Number(dbProduct.inventory_count)
-          : useLocal && localAgentStock >= qty
-            ? localAgentStock
-            : Number(dbProduct.inventory_count);
-      const bypassInventoryCheck = true;
-
       itemSplits[idx] = { localQty, chinaQty };
-
-      if (!bypassInventoryCheck && availableStock < qty) {
-        return NextResponse.json(
-          { error: `Insufficient inventory for "${dbProduct.name}". Available: ${availableStock}.` },
-          { status: 400 }
-        );
-      }
     }
 
     // CLOSED-LOOP RESEARCHER OWNERSHIP + CATALOG GUARD
@@ -398,7 +383,11 @@ export async function POST(request: NextRequest) {
       } else if (agentCustomRetail[dbProduct.id]) {
         retailPrice = agentCustomRetail[dbProduct.id];
       } else {
-        const retailMultiplier = tierMultipliers['tier_3'] ?? 1.7;
+        // Fix 7: return 500 if tier multipliers cannot be loaded instead of using hardcoded fallback
+        const retailMultiplier = tierMultipliers['tier_3'];
+        if (retailMultiplier === undefined || retailMultiplier === null) {
+          return NextResponse.json({ error: 'Pricing Configuration Unavailable. Please Try Again.' }, { status: 500 });
+        }
         retailPrice = baseCost * retailMultiplier / 10;
       }
 
@@ -420,11 +409,12 @@ export async function POST(request: NextRequest) {
 
       if (agentProfile) {
         if (superAgentProfile) {
-          const saMultiplier = superAgentOverrides[dbProduct.id] ?? tierMultipliers[superAgentProfile.tier || 'tier_3'] ?? 1.7;
+          // Fix 7: removed ?? 1.7 hardcoded fallback
+          const saMultiplier = superAgentOverrides[dbProduct.id] ?? tierMultipliers[superAgentProfile.tier || 'tier_3'];
           superAgentCost = isWholesalePurchase
-            ? (baseCost * saMultiplier / 10)
+            ? (baseCost * (saMultiplier ?? 0) / 10)
             : applyBulkPrice(
-                baseCost * saMultiplier / 10,
+                baseCost * (saMultiplier ?? 0) / 10,
                 itemQty,
                 dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
                 dbProduct.admin_bulk_threshold
@@ -448,17 +438,18 @@ export async function POST(request: NextRequest) {
           if (agentProfile && !agentProfile.is_sub_agent) {
              const { data: markupData } = await serviceSupabase.rpc('fn_agent_effective_markup', { p_agent: agentProfile.id });
              const markupPct = Number(markupData) || 0;
-             costPrice = superAgentCost * (1 + (markupPct / 100));
+             costPrice = (superAgentCost ?? 0) * (1 + (markupPct / 100));
           }
 
         } else {
-          const agentMultiplier = agentOverrides[dbProduct.id] ?? tierMultipliers[agentTier] ?? 1.7;
+          // Fix 7: removed ?? 1.7 hardcoded fallback
+          const agentMultiplier = agentOverrides[dbProduct.id] ?? tierMultipliers[agentTier];
           // Agent self-buy at a regular agent's storefront: skip bulk pricing.
           // Researcher buying through the agent: keep bulk pricing.
           costPrice = isWholesalePurchase
-            ? (baseCost * agentMultiplier / 10)
+            ? (baseCost * (agentMultiplier ?? 0) / 10)
             : applyBulkPrice(
-                baseCost * agentMultiplier / 10,
+                baseCost * (agentMultiplier ?? 0) / 10,
                 itemQty,
                 dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
                 dbProduct.admin_bulk_threshold
@@ -714,9 +705,16 @@ export async function POST(request: NextRequest) {
       if (saProfile.account_type === 'prepaid') {
         const bal = Number(saProfile.prepaid_balance) || 0;
         if (bal < amount) {
-          return { error: `Insufficient Prepaid Balance. Requires $${amount.toFixed(2)}, but balance is $${bal.toFixed(2)}. Please Recharge Your Account.`, status: 402 };
+          // Fix 3: Title Case in error message
+          return { error: `Insufficient Prepaid Balance. Requires $${amount.toFixed(2)}, But Balance Is $${bal.toFixed(2)}. Please Recharge Your Account.`, status: 402 };
         }
-        const { data: deductSuccess } = await serviceSupabase.rpc('deduct_prepaid_balance', { agent_id: saProfile.id, amount });
+        // Fix 2: deduct_prepaid_balance called with correct p_ prefixed parameter names and all required params
+        const { data: deductSuccess } = await serviceSupabase.rpc('deduct_prepaid_balance', {
+          p_agent_id: saProfile.id,
+          p_amount: amount,
+          p_order_id: null,
+          p_description: 'Order Payment',
+        });
         if (!deductSuccess) return { error: 'Failed To Deduct Prepaid Balance.', status: 500 };
         return { success: true, prepaidDeducted: true, amount, agentId: saProfile.id };
       } else if (saProfile.account_type === 'credit') {
@@ -755,7 +753,8 @@ export async function POST(request: NextRequest) {
         const creditLimit = Number(saProfile.credit_limit) || 0;
         const projected = currentUnbilled + inFlight + amount;
         if (projected > creditLimit) {
-          return { error: `Credit Limit Exceeded. Your order of $${amount.toFixed(2)} pushes your balance to $${projected.toFixed(2)} (Limit: $${creditLimit.toFixed(2)}). Please pay your pending weekly statements.`, status: 403 };
+          // Fix 3: Title Case in error message
+          return { error: `Credit Limit Exceeded. Your Order Of $${amount.toFixed(2)} Pushes Your Balance To $${projected.toFixed(2)} (Limit: $${creditLimit.toFixed(2)}). Please Pay Your Pending Weekly Statements.`, status: 403 };
         }
         return { success: true, prepaidDeducted: false };
       } else {
@@ -853,6 +852,9 @@ export async function POST(request: NextRequest) {
       .from('orders')
       .insert({
         buyer_id: user.id,
+        // Fix 5: include buyer_name and buyer_email on order insert
+        buyer_name: (profile as any).full_name || null,
+        buyer_email: user.email || null,
         agent_id: isAgentSelfBuy ? (superAgentProfile ? superAgentProfile.id : null) : (agentProfile ? agentProfile.id : null),
         is_wholesale_restock: isWholesaleRestock,
         status: initialStatus,
@@ -1044,11 +1046,12 @@ export async function POST(request: NextRequest) {
           tag: `new-order-${order.id}`,
         });
       }
+      // Fix 4: Title Case in notify() body
       await notify(serviceSupabase, {
         userId: user.id,
         type: 'order_placed',
         title: `Order #${short} Placed`,
-        body: 'Your order has been placed. You will be notified when it is approved.',
+        body: 'Your Order Has Been Placed. You Will Be Notified When It Is Approved.',
         url: `/orders/${order.id}`,
       });
       await enqueuePush(serviceSupabase, {
