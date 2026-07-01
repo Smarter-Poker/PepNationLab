@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!senderProfile) {
     return NextResponse.json({ error: 'Sender Profile Not Found' }, { status: 400 });
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       .from('profiles')
       .select('role, referring_agent_id, parent_agent_id')
       .eq('id', receiverId)
-      .single();
+      .maybeSingle();
 
     if (!receiverProfile) {
       return NextResponse.json({ error: 'Receiver Not Found' }, { status: 404 });
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
         .from('profiles')
         .select('parent_agent_id')
         .eq('id', receiverProfile.referring_agent_id)
-        .single();
+        .maybeSingle();
       if (!referringAgent || referringAgent.parent_agent_id !== user.id) {
         return NextResponse.json({ error: 'Not Authorized To Message This User' }, { status: 403 });
       }
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
       .from('profiles')
       .select('auto_responder_enabled, auto_responder_message')
       .eq('id', receiverId)
-      .single();
+      .maybeSingle();
 
     if (receiverProfile?.auto_responder_enabled && receiverProfile?.auto_responder_message) {
       await service.from('internal_messages').insert({
@@ -196,7 +196,7 @@ export async function PATCH(req: NextRequest) {
   const { messageIds } = body;
 
   if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
-    return NextResponse.json({ error: 'Missing messageIds' }, { status: 400 });
+    return NextResponse.json({ error: 'Missing Message IDs' }, { status: 400 });
   }
 
   const { error } = await service

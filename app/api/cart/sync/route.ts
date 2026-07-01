@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
-import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const { cart } = body;
 
     if (!Array.isArray(cart)) {
-      return NextResponse.json({ error: 'Invalid cart format' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid Cart Format' }, { status: 400 });
     }
 
     if (cart.length > 50) {
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error('Cart Sync Error:', error);
-      return NextResponse.json({ error: 'Failed to sync cart' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed To Sync Cart' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

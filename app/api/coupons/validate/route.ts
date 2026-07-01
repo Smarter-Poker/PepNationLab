@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     .from('profiles')
     .select('referring_agent_id')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   const result = await validateCoupon(service, {
     code,
