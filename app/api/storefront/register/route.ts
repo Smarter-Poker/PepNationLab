@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { sanitizeUsername } from '@/lib/usernames';
 import { assertSameOrigin } from '@/lib/csrf';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { notifyNewResearcher } from '@/lib/notify';
 
 /**
@@ -15,32 +16,22 @@ import { notifyNewResearcher } from '@/lib/notify';
  * Uses createAdminClient (raw supabase-js) to bypass RLS on profile writes.
  */
 
-// In-process rate limit store: ip -> list of timestamps
-const rateLimitStore = new Map<string, number[]>();
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const RATE_LIMIT_MAX = 10;
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const timestamps = (rateLimitStore.get(ip) || []).filter(
-    (t) => now - t < RATE_LIMIT_WINDOW_MS
-  );
-  if (timestamps.length >= RATE_LIMIT_MAX) {
-    return false;
-  }
-  timestamps.push(now);
-  rateLimitStore.set(ip, timestamps);
-  return true;
-}
-
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  // Rate limiting by IP
-  const forwarded = req.headers.get('x-forwarded-for');
-  const ip = forwarded ? forwarded.split(',')[0].trim() : 'unknown';
-  if (!checkRateLimit(ip)) {
+  // Rate limiting by IP — use the shared persistent store (Supabase-backed) so
+  // the limit holds across Vercel serverless invocations. An in-process Map
+  // was previously used here but is always empty on cold starts, making the
+  // limit completely ineffective.
+  const ip = getClientIp(req);
+  const limited = await rateLimit({
+    key: 'storefront_register',
+    limit: 10,
+    windowSeconds: 3600, // 1 hour
+    identifier: ip,
+  });
+  if (!limited.allowed) {
     return NextResponse.json(
       { error: 'Too Many Registrations. Please Try Again Later.' },
       { status: 429 }
@@ -59,6 +50,14 @@ export async function POST(req: NextRequest) {
       { error: 'Username, Password, First Name, And Last Name Are Required.' },
       { status: 400 }
     );
+  }
+
+  // Field length caps — prevent oversized profile inserts.
+  if (String(firstName).trim().length > 100 || String(lastName).trim().length > 100) {
+    return NextResponse.json({ error: 'Name Must Be 100 Characters Or Fewer.' }, { status: 400 });
+  }
+  if (phone && String(phone).trim().length > 30) {
+    return NextResponse.json({ error: 'Phone Number Is Too Long.' }, { status: 400 });
   }
 
   if (password.length < 8) {
