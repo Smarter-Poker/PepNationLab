@@ -37,13 +37,13 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
 
   // Fetch PNL pricing configuration to pass down
   // Use service client so researcher-level RLS does not block the read
-  const supabaseService = createServiceClient();
+  const supabaseService = await createServiceClient();
   const { data: tiers } = await supabaseService
     .from('pricing_tiers')
     .select('tier_name, multiplier');
 
   const tierMultipliers: Record<string, number> = {};
-  tiers?.forEach(t => {
+  (tiers ?? []).forEach((t: any) => {
     tierMultipliers[t.tier_name] = Number(t.multiplier);
   });
 
