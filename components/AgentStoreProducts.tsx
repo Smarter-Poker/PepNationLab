@@ -17,6 +17,8 @@ interface ProductInfo {
   unit_size: string | null;
   unit_measure: string | null;
   base_cost?: number | null;
+  min_retail_price?: number | null;
+  max_margin_percent?: number | null;
 }
 
 interface AgentProduct {
@@ -166,8 +168,20 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
     const listedPrice = Number((editForm as any).retail_price);
     const currentProduct = products.find(p => p.id === editingId);
     const agentCostPer10 = currentProduct?.agent_cost ?? 0;
+    const minRetailPrice = currentProduct?.products?.min_retail_price ?? agentCostPer10;
+    const maxMarginPercent = currentProduct?.products?.max_margin_percent ?? 300;
+
+    if (listedPrice < minRetailPrice) {
+      toast.error(`Listed Price Cannot Be Below The Minimum Advertised Price ($${(minRetailPrice / (/bac\.?\s*water/i.test(currentProduct?.products?.name || "") ? 1 : 10)).toFixed(2)} / Vial).`);
+      return;
+    }
     if (listedPrice < agentCostPer10) {
-      toast.error(`Listed Price Cannot Be Below Your Cost ($${(agentCostPer10 / (/bac\.?\s*water/i.test(currentProduct?.products?.name || "") ? 1 : 10)).toFixed(2)} / Vial). Please Increase Your Price.`);
+      toast.error(`Listed Price Cannot Be Below Your Cost ($${(agentCostPer10 / (/bac\.?\s*water/i.test(currentProduct?.products?.name || "") ? 1 : 10)).toFixed(2)} / Vial).`);
+      return;
+    }
+    
+    if (Number((editForm as any).margin_percent) > maxMarginPercent) {
+      toast.error(`Requested margin exceeds the platform maximum of ${maxMarginPercent}%.`);
       return;
     }
 
@@ -316,6 +330,8 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
           <h4 style={{ fontSize: '0.9rem', color: '#00E5FF', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Master Reset (Bulk Margin)</h4>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem', marginBottom: 'var(--space-4)', lineHeight: 1.4 }}>
             Apply a universal bulk margin percentage to all products. This will override existing custom margins and automatically mark up your direct cost, increasing the final displayed retail prices inside your store by this exact percentage.
+            <br/><br/>
+            <strong style={{ color: '#00E5FF' }}>Note:</strong> Any products that hit a Minimum Advertised Price (MAP) or Margin Ceiling will be automatically skipped to protect brand integrity.
           </p>
           <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)' }}>Apply +</span>
@@ -467,6 +483,9 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               />
                               <span style={{ fontSize: '0.65rem', color: '#00E5FF', fontWeight: 700 }}>%</span>
                             </div>
+                            <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)' }}>
+                              Max: {p.products?.max_margin_percent ?? 300}%
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -668,6 +687,9 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               />
                               <span style={{ fontSize: '0.65rem', color: '#00E5FF', fontWeight: 700 }}>%</span>
                             </div>
+                            <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)' }}>
+                              Max: {p.products?.max_margin_percent ?? 300}%
+                            </span>
                           </div>
                         </div>
                       </div>

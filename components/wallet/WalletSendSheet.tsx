@@ -148,9 +148,15 @@ export default function WalletSendSheet({
         amount: amountNumber,
         note: note.trim() || undefined,
       };
+      
+      const idempotencyKey = crypto.randomUUID();
+      
       const res = await fetch('/api/credits/send', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
+        },
         credentials: 'include',
         body: JSON.stringify(payload),
       });

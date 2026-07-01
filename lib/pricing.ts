@@ -61,7 +61,9 @@ export async function computeAgentCost(supabase: ServiceClient, productId: strin
     getProductBaseCost(supabase, productId),
     getTierMultiplier(supabase, productId, tier),
   ]);
-  return Math.round(base * multiplier * 100) / 100;
+  const safeBase = Number.isFinite(base) && base > 0 ? base : 0;
+  const safeMult = Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1.7;
+  return Math.round(safeBase * safeMult * 100) / 100;
 }
 
 export async function computeSubAgentBaselineCost(supabase: ServiceClient, productId: string, superAgentId: string): Promise<number> {
@@ -152,7 +154,10 @@ export async function computeAgentCostV2(supabase: ServiceClient, productId: str
       ? tier.markup
       : (tiers.length ? Math.max(...tiers.map((t) => t.markup)) : 0.7);
   }
-  return Math.round(base * (1 + markup) * 100) / 100;
+  
+  if (!Number.isFinite(markup) || markup < 0) markup = 0.7; // Hard fail-safe
+  const safeBase = Number.isFinite(base) && base > 0 ? base : 0;
+  return Math.round(safeBase * (1 + markup) * 100) / 100;
 }
 
 /**

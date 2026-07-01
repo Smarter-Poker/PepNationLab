@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     const { data: agentProducts } = await supabase
       .from('agent_products')
-      .select('id, product_id, products!inner(base_cost)')
+      .select('id, product_id, products!inner(base_cost, min_retail_price, max_margin_percent)')
       .eq('agent_id', agentId)
       .not('product_id', 'is', null);
 
@@ -89,7 +89,17 @@ export async function POST(req: NextRequest) {
         if (!Number.isFinite(baseCost) || baseCost <= 0) return null;
 
         const agentCostPer10 = await computeAgentCostForAgent(supabase, productId, agentId, tier);
+        const maxMargin = Number((ap.products as any)?.max_margin_percent || 300);
+        const minRetailPrice = Number((ap.products as any)?.min_retail_price || agentCostPer10);
+
+        if (marginPercent > maxMargin) {
+          return null; // Skip if it exceeds ceiling (or we could reject, but skipping allows the rest to update)
+        }
+
         const retailPrice = agentCostPer10 * (1 + marginPercent / 100);
+        if (retailPrice < minRetailPrice) {
+           return null; // Skip if it falls below MAP
+        }
 
         const { error: updateErr } = await supabase
           .from('agent_products')

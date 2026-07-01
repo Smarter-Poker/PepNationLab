@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
+import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,8 +59,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const service = await createServiceClient();
-
   let body: any;
   try {
     body = await req.json();
@@ -67,7 +66,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid Request Body.' }, { status: 400 });
   }
 
-  const recipientIdRaw = typeof body?.recipientId === 'string' ? body.recipientId.trim() : '';
+  return withIdempotency({
+    userId: issuerId,
+    route: '/api/credits/send',
+    key: readIdempotencyKey(req),
+    request: body,
+    handler: async () => {
+      const service = await createServiceClient();
+      const recipientIdRaw = typeof body?.recipientId === 'string' ? body.recipientId.trim() : '';
   const recipientEmailRaw = typeof body?.recipientEmail === 'string' ? body.recipientEmail.trim().toLowerCase() : '';
   const note = typeof body?.note === 'string' ? body.note.trim().slice(0, 200) : '';
 
@@ -187,5 +193,7 @@ export async function POST(req: NextRequest) {
     amount,
     newBalance: typeof newBalance === 'number' ? newBalance : Number(newBalance) || null,
     recipient: { id: recipient.id, name: recipient.full_name || recipient.email },
+  });
+    }
   });
 }

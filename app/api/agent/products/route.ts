@@ -90,7 +90,10 @@ export async function PATCH(req: NextRequest) {
 
   const { data: check } = await supabase
     .from('agent_products')
-    .select('id, retail_price, margin_percent, product_id, agent_id, sale_price, is_on_sale')
+    .select(`
+      id, retail_price, margin_percent, product_id, agent_id, sale_price, is_on_sale,
+      products ( min_retail_price, max_margin_percent )
+    `)
     .eq('id', id)
     .eq('agent_id', gate.user.id)
     .single();
@@ -123,10 +126,31 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
+  const minRetailPrice = Number((check.products as any)?.min_retail_price || agentCostPer10);
+  const maxMargin = Number((check.products as any)?.max_margin_percent || 300);
+
+  if (resolvedRetailPrice !== undefined && resolvedRetailPrice < minRetailPrice) {
+    return NextResponse.json(
+      {
+        error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below the Minimum Advertised Price ($${(minRetailPrice / 10).toFixed(2)}/vial).`,
+      },
+      { status: 422 }
+    );
+  }
+
   if (resolvedRetailPrice !== undefined && resolvedRetailPrice < agentCostPer10) {
     return NextResponse.json(
       {
         error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
+      },
+      { status: 422 }
+    );
+  }
+
+  if (resolvedMarginPercent !== undefined && resolvedMarginPercent > maxMargin) {
+    return NextResponse.json(
+      {
+        error: `Requested margin (${resolvedMarginPercent}%) exceeds the platform maximum of ${maxMargin}%.`,
       },
       { status: 422 }
     );
@@ -140,6 +164,15 @@ export async function PATCH(req: NextRequest) {
   const activeIsOnSale = is_on_sale !== undefined ? Boolean(is_on_sale) : Boolean(check.is_on_sale);
 
   if (activeIsOnSale) {
+    if (activeSalePrice < minRetailPrice) {
+      return NextResponse.json(
+        {
+          error: `Sale price ($${(activeSalePrice / 10).toFixed(2)}/vial) cannot be below the Minimum Advertised Price ($${(minRetailPrice / 10).toFixed(2)}/vial).`,
+        },
+        { status: 422 }
+      );
+    }
+    
     if (activeSalePrice < agentCostPer10) {
       return NextResponse.json(
         {

@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { computeAgentCostForAgent, computeSubAgentBaselineCost, type AgentTier } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
+import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 interface ManualOrderItemInput {
   product_id?: string;
@@ -14,14 +15,20 @@ export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
+  const agentId = gate.user.id;
+
+  const body = await req.json().catch(() => ({}));
+  
+  return withIdempotency({
+    userId: agentId,
+    route: '/api/agent/orders/new',
+    key: readIdempotencyKey(req),
+    request: body,
+    handler: async () => {
   try {
-    const gate = await requireAgent();
-    if (!gate.ok) return gate.response;
-
     const supabase = createAdminClient();
-    const agentId = gate.user.id;
-
-    const body = await req.json().catch(() => ({}));
     const { buyerName, buyerEmail, street, city, state, zip, items, subtotal: clientSubtotal, shippingCost, paymentMethod, fulfillmentMethod } = body as {
       buyerName?: string; buyerEmail?: string; street?: string; city?: string; state?: string; zip?: string;
       items?: ManualOrderItemInput[]; subtotal?: number; shippingCost?: number; paymentMethod?: string; fulfillmentMethod?: string;
