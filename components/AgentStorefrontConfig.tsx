@@ -1,1 +1,361 @@
-J3VzZSBjbGllbnQnOwoKaW1wb3J0IFJlYWN0IGZyb20gJ3JlYWN0JzsKaW1wb3J0IEltYWdlIGZyb20gJ25leHQvaW1hZ2UnOwppbXBvcnQgeyB0b2FzdCB9IGZyb20gJ3Nvbm5lcic7CmltcG9ydCB7IGNyZWF0ZUNsaWVudCB9IGZyb20gJ0AvbGliL3N1cGFiYXNlL2NsaWVudCc7CmltcG9ydCBVbmlxdWVGaWVsZCBmcm9tICdAL2NvbXBvbmVudHMvVW5pcXVlRmllbGQnOwppbXBvcnQgQWRkcmVzc0F1dG9jb21wbGV0ZUlucHV0IGZyb20gJ0AvY29tcG9uZW50cy9BZGRyZXNzQXV0b2NvbXBsZXRlSW5wdXQnOwoKaW50ZXJmYWNlIEFnZW50U3RvcmVmcm9udENvbmZpZ1Byb3BzIHsKICBkaXNwbGF5TmFtZTogc3RyaW5nOwogIHNldERpc3BsYXlOYW1lOiAodmFsOiBzdHJpbmcpID0+IHZvaWQ7CiAgc2x1Zzogc3RyaW5nOwogIHNldFNsdWc6ICh2YWw6IHN0cmluZykgPT4gdm9pZDsKICBsb2dvVXJsOiBzdHJpbmc7CiAgc2V0TG9nb1VybDogKHZhbDogc3RyaW5nKSA9PiB2b2lkOwogIC8vIFdhcmVob3VzZSBhZGRyZXNzIChKU09OQikgLSByZWFkL3dyaXRlIGRpcmVjdGx5IHRvIGFnZW50X3Byb2ZpbGVzLgogIHdhcmVob3VzZUFkZHJlc3M/OiBSZWNvcmQ8c3RyaW5nLCBhbnk+IHwgbnVsbDsKICBhZ2VudElkOiBzdHJpbmc7CiAgZGlzcGxheU5hbWVDaGFuZ2VkQXQ/OiBzdHJpbmcgfCBudWxsOwogIG9uU2F2ZVN1Y2Nlc3M/OiAodXBkYXRlZERhdGE6IGFueSkgPT4gdm9pZDsKICBwYXltZW50TWV0aG9kc05vZGU/OiBSZWFjdC5SZWFjdE5vZGU7Cn0KCi8qKiBEZXJpdmUgYSBzbHVnLXNoYXBlZCBzdWdnZXN0aW9uIGZyb20gYSBmcmVlLWZvcm0gZGlzcGxheSBuYW1lLiAqLwpmdW5jdGlvbiBkZXJpdmVTbHVnRnJvbU5hbWUobmFtZTogc3RyaW5nKTogc3RyaW5nIHsKICByZXR1cm4gbmFtZQogICAgLnRvTG93ZXJDYXNlKCkKICAgIC5ub3JtYWxpemUoJ05GS0QnKQogICAgLnJlcGxhY2UoL1vMgC3Nr10vZywgJycpIC8vIHN0cmlwIGRpYWNyaXRpY3MKICAgIC5yZXBsYWNlKC9bXmEtejAtOV0rL2csICctJykKICAgIC5yZXBsYWNlKC8tKy9nLCAnLScpCiAgICAucmVwbGFjZSgvXi18LSQvZywgJycpCiAgICAuc2xpY2UoMCwgMzApOwp9CgpleHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBBZ2VudFN0b3JlZnJvbnRDb25maWcoewogIGRpc3BsYXlOYW1lLCBzZXREaXNwbGF5TmFtZSwKICBzbHVnLCBzZXRTbHVnLAogIGxvZ29VcmwsIHNldExvZ29VcmwsCiAgd2FyZWhvdXNlQWRkcmVzcywKICBhZ2VudElkLAogIGRpc3BsYXlOYW1lQ2hhbmdlZEF0LAogIG9uU2F2ZVN1Y2Nlc3MsCiAgcGF5bWVudE1ldGhvZHNOb2RlLAp9OiBBZ2VudFN0b3JlZnJvbnRDb25maWdQcm9wcykgewogIGNvbnN0IFtsb2FkaW5nLCBzZXRMb2FkaW5nXSA9IFJlYWN0LnVzZVN0YXRlKGZhbHNlKTsKCiAgLy8gUmVzZXJ2YXRpb24gdG9rZW5zIGlzc3VlZCBieSB0aGUgbGl2ZSBhdmFpbGFiaWxpdHkgY2hlY2suIFNlbnQgb24gc2F2ZS4KICBjb25zdCBbc2x1Z1Jlc2VydmF0aW9uVG9rZW4sIHNldFNsdWdSZXNlcnZhdGlvblRva2VuXSA9IFJlYWN0LnVzZVN0YXRlPHN0cmluZyB8IG51bGw+KG51bGwpOwogIGNvbnN0IFtkaXNwbGF5TmFtZVJlc2VydmF0aW9uVG9rZW4sIHNldERpc3BsYXlOYW1lUmVzZXJ2YXRpb25Ub2tlbl0gPSBSZWFjdC51c2VTdGF0ZTxzdHJpbmcgfCBudWxsPihudWxsKTsKCiAgLy8gT25lLXNob3Qgc2x1ZyBhdXRvLXN1Z2dlc3Rpb24uIFRyaWdnZXJzIG9ubHkgd2hlbiBzbHVnIGlzIGVtcHR5IGFuZCB0aGUKICAvLyB1c2VyIHN0YXJ0cyB0eXBpbmcgYSBkaXNwbGF5IG5hbWUgLSBvbmNlIGFjY2VwdGVkIChvciBvbmNlIHRoZXkgdG91Y2gKICAvLyB0aGUgc2x1ZyBmaWVsZCksIHdlIG5ldmVyIG92ZXJ3cml0ZSBhZ2Fpbi4KICBjb25zdCBzbHVnV2FzQXV0b0ZpbGxlZFJlZiA9IFJlYWN0LnVzZVJlZihmYWxzZSk7CiAgUmVhY3QudXNlRWZmZWN0KCgpID0+IHsKICAgIGNvbnN0IGRlcml2ZWQgPSBkZXJpdmVTbHVnRnJvbU5hbWUoZGlzcGxheU5hbWUpOwogICAgaWYgKCFzbHVnICYmICFzbHVnV2FzQXV0b0ZpbGxlZFJlZi5jdXJyZW50ICYmIGRlcml2ZWQgJiYgZGVyaXZlZC5sZW5ndGggPj0gMykgewogICAgICBzbHVnV2FzQXV0b0ZpbGxlZFJlZi5jdXJyZW50ID0gdHJ1ZTsKICAgICAgc2V0U2x1ZyhkZXJpdmVkKTsKICAgIH0KICAgIC8vIGVzbGludC1kaXNhYmxlLW5leHQtbGluZSByZWFjdC1ob29rcy9leGhhdXN0aXZlLWRlcHMKICB9LCBbZGlzcGxheU5hbWVdKTsKCiAgLy8gV2FyZWhvdXNlIGFkZHJlc3MgbG9jYWwgc3RhdGUgLSBtaXJyb3JzIGFnZW50X3Byb2ZpbGVzLndhcmVob3VzZV9hZGRyZXNzLgogIGNvbnN0IFt3aE5hbWUsIHNldFdoTmFtZV0gPSBSZWFjdC51c2VTdGF0ZSh3YXJlaG91c2VBZGRyZXNzPy5uYW1lID8/ICcnKTsKICBjb25zdCBbd2hTdHJlZXQxLCBzZXRXaFN0cmVldDFdID0gUmVhY3QudXNlU3RhdGUod2FyZWhvdXNlQWRkcmVzcz8uc3RyZWV0MSA/PyAnJyk7CiAgY29uc3QgW3doU3RyZWV0Miwgc2V0V2hTdHJlZXQyXSA9IFJlYWN0LnVzZVN0YXRlKHdhcmVob3VzZUFkZHJlc3M/LnN0cmVldDIgPz8gJycpOwogIGNvbnN0IFt3aENpdHksIHNldFdoQ2l0eV0gPSBSZWFjdC51c2VTdGF0ZSh3YXJlaG91c2VBZGRyZXNzPy5jaXR5ID8/ICcnKTsKICBjb25zdCBbd2hTdGF0ZSwgc2V0V2hTdGF0ZV0gPSBSZWFjdC51c2VTdGF0ZSh3YXJlaG91c2VBZGRyZXNzPy5zdGF0ZSA/PyAnJyk7CiAgY29uc3QgW3doWmlwLCBzZXRXaFppcF0gPSBSZWFjdC51c2VTdGF0ZSh3YXJlaG91c2VBZGRyZXNzPy56aXAgPz8gJycpOwoKICAvLyBDaGVjayBpZiBVc2VyIE5hbWUgaXMgaW4gNi1tb250aCBjb29sZG93bgogIGNvbnN0IGNhbkNoYW5nZURpc3BsYXlOYW1lID0gUmVhY3QudXNlTWVtbygoKSA9PiB7CiAgICBpZiAoIWRpc3BsYXlOYW1lQ2hhbmdlZEF0KSByZXR1cm4gdHJ1ZTsKICAgIGNvbnN0IGxhc3RDaGFuZ2UgPSBuZXcgRGF0ZShkaXNwbGF5TmFtZUNoYW5nZWRBdCkuZ2V0VGltZSgpOwogICAgY29uc3QgQ09PTERPV05fTVMgPSAxODAgKiAyNCAqIDYwICogNjAgKiAxMDAwOwogICAgcmV0dXJuIERhdGUubm93KCkgLSBsYXN0Q2hhbmdlID49IENPT0xET1dOX01TOwogIH0sIFtkaXNwbGF5TmFtZUNoYW5nZWRBdF0pOwoKICBjb25zdCBoYW5kbGVVcGRhdGVQcm9maWxlID0gYXN5bmMgKGU6IFJlYWN0LkZvcm1FdmVudCkgPT4gewogICAgZS5wcmV2ZW50RGVmYXVsdCgpOwogICAgY29uc3QgY2xlYW5TbHVnID0gc2x1Zy50cmltKCkudG9Mb3dlckNhc2UoKTsKCiAgICBpZiAoIS9eW2EtejAtOVwtXSskLy50ZXN0KGNsZWFuU2x1ZykpIHsKICAgICAgdG9hc3QuZXJyb3IoJ1NsdWcgTXVzdCBDb250YWluIE9ubHkgTG93ZXJjYXNlIExldHRlcnMsIE51bWJlcnMsIEFuZCBIeXBoZW5zLicpOwogICAgICByZXR1cm47CiAgICB9CgogICAgc2V0TG9hZGluZyh0cnVlKTsKICAgIGNvbnN0IHN1cGFiYXNlID0gY3JlYXRlQ2xpZW50KCk7CgogICAgdHJ5IHsKICAgICAgLy8gMSkgU2x1ZyB1cGRhdGUgZ29lcyB0aHJvdWdoIHRoZSBzZXJ2ZXIgZW5kcG9pbnQgc28gaXQgY2FuIGVuZm9yY2UKICAgICAgLy8gICAgdGhlIERCIFVOSVFVRSArIHJlc2VydmVkLXdvcmQgQ0hFQ0sgd2l0aCBhIGNsZWFuIDQwOSBzdXJmYWNlLAogICAgICAvLyAgICBhbmQgbm93IGFsc28gY29uc3VtZSB0aGUgc29mdCByZXNlcnZhdGlvbiB0b2tlbi4KICAgICAgY29uc3Qgc2x1Z1JlcyA9IGF3YWl0IGZldGNoKCcvYXBpL2FnZW50L3N0b3JlZnJvbnQtc2x1ZycsIHsKICAgICAgICBtZXRob2Q6ICdQT1NUJywKICAgICAgICBoZWFkZXJzOiB7ICdDb250ZW50LVR5cGUnOiAnYXBwbGljYXRpb24vanNvbicgfSwKICAgICAgICBib2R5OiBKU09OLnN0cmluZ2lmeSh7CiAgICAgICAgICBzbHVnOiBjbGVhblNsdWcsCiAgICAgICAgICByZXNlcnZhdGlvblRva2VuOiBzbHVnUmVzZXJ2YXRpb25Ub2tlbiwKICAgICAgICB9KSwKICAgICAgfSk7CiAgICAgIGNvbnN0IHNsdWdKc29uID0gYXdhaXQgc2x1Z1Jlcy5qc29uKCkuY2F0Y2goKCkgPT4gKHt9KSk7CiAgICAgIGlmICghc2x1Z1Jlcy5vaykgewogICAgICAgIGlmIChzbHVnUmVzLnN0YXR1cyA9PT0gNDA5KSB7CiAgICAgICAgICB0aHJvdyBuZXcgRXJyb3Ioc2x1Z0pzb24/LmVycm9yIHx8ICdTbHVnIElzIFJlc2VydmVkIE9yIEFscmVhZHkgSW4gVXNlJyk7CiAgICAgICAgfQogICAgICAgIHRocm93IG5ldyBFcnJvcihzbHVnSnNvbj8uZXJyb3IgfHwgJ0ZhaWxlZCBUbyBVcGRhdGUgU2x1ZycpOwogICAgICB9CgogICAgICAvLyAyKSBUaGUgbmV3IERpc3BsYXkgTmFtZSAoVXNlciBOYW1lKSBnb2VzIHRocm91Z2ggYSBkZWRpY2F0ZWQgZW5kcG9pbnQKICAgICAgLy8gICAgdG8gaGFuZGxlIHRoZSBjb29sZG93biBsb2dpYyBhbmQgbm90aWZpY2F0aW9ucy4KICAgICAgY29uc3QgbmFtZVJlcyA9IGF3YWl0IGZldGNoKCcvYXBpL2FnZW50L3N0b3JlZnJvbnQtbmFtZScsIHsKICAgICAgICBtZXRob2Q6ICdQT1NUJywKICAgICAgICBoZWFkZXJzOiB7ICdDb250ZW50LVR5cGUnOiAnYXBwbGljYXRpb24vanNvbicgfSwKICAgICAgICBib2R5OiBKU09OLnN0cmluZ2lmeSh7CiAgICAgICAgICB1c2VyX25hbWU6IGRpc3BsYXlOYW1lLnRyaW0oKSwKICAgICAgICB9KSwKICAgICAgfSk7CiAgICAgIGNvbnN0IG5hbWVKc29uID0gYXdhaXQgbmFtZVJlcy5qc29uKCkuY2F0Y2goKCkgPT4gKHt9KSk7CiAgICAgIGlmICghbmFtZVJlcy5vaykgewogICAgICAgIHRocm93IG5ldyBFcnJvcihuYW1lSnNvbj8uZXJyb3IgfHwgJ0ZhaWxlZCBUbyBVcGRhdGUgVXNlciBOYW1lJyk7CiAgICAgIH0KCiAgICAgIC8vIDMpIEV2ZXJ5dGhpbmcgZWxzZSB1cGRhdGVzIGlubGluZS4KICAgICAgY29uc3QgdXBkYXRlUGF5bG9hZDogUmVjb3JkPHN0cmluZywgYW55PiA9IHsKICAgICAgICBzbHVnOiBjbGVhblNsdWcsCiAgICAgICAgbG9nb191cmw6IGxvZ29VcmwudHJpbSgpIHx8IG51bGwsCiAgICAgICAgd2FyZWhvdXNlX2FkZHJlc3M6IHsKICAgICAgICAgIG5hbWU6IHdoTmFtZS50cmltKCksCiAgICAgICAgICBzdHJlZXQxOiB3aFN0cmVldDEudHJpbSgpLAogICAgICAgICAgc3RyZWV0Mjogd2hTdHJlZXQyLnRyaW0oKSB8fCBudWxsLAogICAgICAgICAgY2l0eTogd2hDaXR5LnRyaW0oKSwKICAgICAgICAgIHN0YXRlOiB3aFN0YXRlLnRyaW0oKSwKICAgICAgICAgIHppcDogd2haaXAudHJpbSgpLAogICAgICAgIH0sCiAgICAgIH07CgogICAgICBjb25zdCB7IGVycm9yOiB1cGRhdGVFcnJvciB9ID0gYXdhaXQgc3VwYWJhc2UKICAgICAgICAuZnJvbSgnYWdlbnRfcHJvZmlsZXMnKQogICAgICAgIC51cGRhdGUodXBkYXRlUGF5bG9hZCkKICAgICAgICAuZXEoJ2lkJywgYWdlbnRJZCk7CgogICAgICBpZiAodXBkYXRlRXJyb3IpIHsKICAgICAgICB0aHJvdyBuZXcgRXJyb3IodXBkYXRlRXJyb3IubWVzc2FnZSk7CiAgICAgIH0KICAgICAgdG9hc3Quc3VjY2VzcygnU3RvcmVmcm9udCBDb25maWd1cmF0aW9uIFVwZGF0ZWQgU3VjY2Vzc2Z1bGx5Jyk7CiAgICAgIGlmIChvblNhdmVTdWNjZXNzKSB7CiAgICAgICAgb25TYXZlU3VjY2Vzcyh7IAogICAgICAgICAgLi4udXBkYXRlUGF5bG9hZCwgCiAgICAgICAgICBkaXNwbGF5X25hbWU6IGRpc3BsYXlOYW1lLnRyaW0oKSwKICAgICAgICAgIGRpc3BsYXlfbmFtZV9jaGFuZ2VkX2F0OiBuYW1lSnNvbi5kaXNwbGF5X25hbWVfY2hhbmdlZF9hdCB8fCBkaXNwbGF5TmFtZUNoYW5nZWRBdAogICAgICAgIH0pOwogICAgICB9CiAgICB9IGNhdGNoIChlcnI6IGFueSkgewogICAgICB0b2FzdC5lcnJvcihlcnIubWVzc2FnZSA/PyAnRmFpbGVkIFRvIFVwZGF0ZSBTdG9yZWZyb250IENvbmZpZ3VyYXRpb24uJyk7CiAgICB9IGZpbmFsbHkgewogICAgICBzZXRMb2FkaW5nKGZhbHNlKTsKICAgIH0KICB9OwoKICByZXR1cm4gKAogICAgPGRpdiBzdHlsZT17eyBtYXhXaWR0aDogOTAwLCB3aWR0aDogJzEwMCUnIH19PgogICAgICB7LyogSGVhZGVyIFNlY3Rpb24gKi99CiAgICAgIDxkaXYgc3R5bGU9e3sgbWFyZ2luQm90dG9tOiAndmFyKC0tc3BhY2UtNiknIH19PgogICAgICAgIDxoMyBjbGFzc05hbWU9Im1ldGFsLXRleHQiIHN0eWxlPXt7IGZvbnRTaXplOiAnMS40cmVtJywgbWFyZ2luQm90dG9tOiAndmFyKC0tc3BhY2UtMiknLCBmb250RmFtaWx5OiAndmFyKC0tZm9udC1icmFuZCknLCB0ZXh0VHJhbnNmb3JtOiAndXBwZXJjYXNlJywgbGV0dGVyU3BhY2luZzogJzAuMDRlbScgfX0+U3RvcmVmcm9udCBDb25maWd1cmF0aW9uPC9oMz4KICAgICAgICA8cCBzdHlsZT17eyBjb2xvcjogJ3ZhcigtLXNpbHZlciknLCBmb250U2l6ZTogJzAuOTVyZW0nLCBsaW5lSGVpZ2h0OiAxLjUsIG1heFdpZHRoOiA2MDAgfX0+CiAgICAgICAgICBNYW5hZ2UgWW91ciBQdWJsaWMtRmFjaW5nIFN0b3JlZnJvbnQgSWRlbnRpdHksIFdhcmVob3VzZSBEZXRhaWxzLCBBbmQgUGF5bWVudCBPcHRpb25zLiBDaGFuZ2VzIEFyZSBSZWZsZWN0ZWQgSW5zdGFudGx5LgogICAgICAgIDwvcD4KICAgICAgPC9kaXY+CgogICAgICA8ZGl2IHN0eWxlPXt7IGRpc3BsYXk6ICdmbGV4JywgZmxleERpcmVjdGlvbjogJ2NvbHVtbicsIGdhcDogJ3ZhcigtLXNwYWNlLTYpJyB9fT4KICAgICAgICAKICAgICAgICB7LyogSWRlbnRpdHkgJiBCcmFuZGluZyBTZWN0aW9uICovfQogICAgICAgIDxzZWN0aW9uIGNsYXNzTmFtZT0iZ2xhc3MtcGFuZWwiIHN0eWxlPXt7IHBhZGRpbmc6ICd2YXIoLS1zcGFjZS02KScsIHBvc2l0aW9uOiAncmVsYXRpdmUnLCBvdmVyZmxvdzogJ2hpZGRlbicgfX0+CiAgICAgICAgICA8ZGl2IHN0eWxlPXt7IHBvc2l0aW9uOiAnYWJzb2x1dGUnLCB0b3A6IDAsIGxlZnQ6IDAsIHdpZHRoOiA0LCBoZWlnaHQ6ICcxMDAlJywgYmFja2dyb3VuZDogJ2xpbmVhci1ncmFkaWVudCgxODBkZWcsICMwMEM0QkMgMCUsICMwMEU1RkYgMTAwJSknIH19IC8+CiAgICAgICAgICA8aDQgc3R5bGU9e3sgZm9udFNpemU6ICcxLjFyZW0nLCBjb2xvcjogJ3ZhcigtLXdoaXRlKScsIGZvbnRXZWlnaHQ6IDYwMCwgbWFyZ2luQm90dG9tOiAndmFyKC0tc3BhY2UtNSknLCBkaXNwbGF5OiAnZmxleCcsIGFsaWduSXRlbXM6ICdjZW50ZXInLCBnYXA6IDggfX0+CiAgICAgICAgICAgIDxzdmcgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0idmFyKC0tdGVhbCkiIHN0cm9rZVdpZHRoPSIyIj48cGF0aCBkPSJNMjAgMjF2LTJhNCA0IDAgMCAwLTQtNEg4YTQgNCAwIDAgMC00IDR2MiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iNyIgcj0iNCIvPjwvc3ZnPgogICAgICAgICAgICBCcmFuZCBJZGVudGl0eQogICAgICAgICAgPC9oND4KCiAgICAgICAgICA8ZGl2IHN0eWxlPXt7IGRpc3BsYXk6ICdncmlkJywgZ3JpZFRlbXBsYXRlQ29sdW1uczogJ3JlcGVhdChhdXRvLWZpdCwgbWlubWF4KDMwMHB4LCAxZnIpKScsIGdhcDogJ3ZhcigtLXNwYWNlLTUpJyB9fT4KICAgICAgICAgICAgPGRpdj4KICAgICAgICAgICAgICA8VW5pcXVlRmllbGQKICAgICAgICAgICAgICAgIGZpZWxkPSJkaXNwbGF5X25hbWUiCiAgICAgICAgICAgICAgICBsYWJlbD0iVXNlciBOYW1lIgogICAgICAgICAgICAgICAgdmFsdWU9e2Rpc3BsYXlOYW1lfQogICAgICAgICAgICAgICAgb25DaGFuZ2U9e3NldERpc3BsYXlOYW1lfQogICAgICAgICAgICAgICAgb25Ub2tlbkNoYW5nZT17c2V0RGlzcGxheU5hbWVSZXNlcnZhdGlvblRva2VufQogICAgICAgICAgICAgICAgZXhjbHVkZUlkPXthZ2VudElkfQogICAgICAgICAgICAgICAgcmVxdWlyZWQKICAgICAgICAgICAgICAgIGRpc2FibGVkPXshY2FuQ2hhbmdlRGlzcGxheU5hbWV9CiAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgICB7IWNhbkNoYW5nZURpc3BsYXlOYW1lICYmICgKICAgICAgICAgICAgICAgIDxkaXYgc3R5bGU9e3sgbWFyZ2luVG9wOiA4LCBmb250U2l6ZTogJzAuOHJlbScsIGNvbG9yOiAnI0Y1OUUwQicsIGRpc3BsYXk6ICdmbGV4JywgYWxpZ25JdGVtczogJ2NlbnRlcicsIGdhcDogNCB9fT4KICAgICAgICAgICAgICAgICAgPHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZVdpZHRoPSIyIj48cGF0aCBkPSJNMTAuMjkgMy44NkwxLjgyIDE4YTIgMiAwIDAgMCAxLjcxIDNoMTYuOTRhMiAyIDAgMCAwIDEuNzEtM0wxMy43MSAzLjg2YTIgMiAwIDAgMC0zLjQyIDB6Ii8+PGxpbmUgeDE9IjEyIiB5MT0iOSIgeDI9IjEyIiB5Mj0iMTMiLz48bGluZSB4MT0iMTIiIHkxPSIxNyIgeDI9IjEyLjAxIiB5Mj0iMTciLz48L3N2Zz4KICAgICAgICAgICAgICAgICAgVXNlciBOYW1lIENhbiBPbmx5IEJlIENoYW5nZWQgT25jZSBFdmVyeSA2IE1vbnRocy4KICAgICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgICl9CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAKICAgICAgICAgICAgPFVuaXF1ZUZpZWxkCiAgICAgICAgICAgICAgZmllbGQ9InNsdWciCiAgICAgICAgICAgICAgbGFiZWw9IlVSTCBTbHVnIgogICAgICAgICAgICAgIHZhbHVlPXtzbHVnfQogICAgICAgICAgICAgIG9uQ2hhbmdlPXtzZXRTbHVnfQogICAgICAgICAgICAgIG9uVG9rZW5DaGFuZ2U9e3NldFNsdWdSZXNlcnZhdGlvblRva2VufQogICAgICAgICAgICAgIGV4Y2x1ZGVJZD17YWdlbnRJZH0KICAgICAgICAgICAgICB1cmxQcmVmaXg9InBlcG5hdGlvbmxhYi5jb20vIgogICAgICAgICAgICAgIHJlcXVpcmVkCiAgICAgICAgICAgIC8+CiAgICAgICAgICA8L2Rpdj4KCiAgICAgICAgICA8ZGl2IHN0eWxlPXt7IG1hcmdpblRvcDogJ3ZhcigtLXNwYWNlLTUpJyB9fT4KICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT0iZm9ybS1sYWJlbCIgc3R5bGU9e3sgZGlzcGxheTogJ2Jsb2NrJywgbWFyZ2luQm90dG9tOiA4LCBjb2xvcjogJ3ZhcigtLWdyZXktNDAwKScsIGZvbnRTaXplOiAnMC44NXJlbScgfX0+U3RvcmUgTG9nbzwvbGFiZWw+CiAgICAgICAgICAgIDxkaXYgc3R5bGU9e3sgZGlzcGxheTogJ2ZsZXgnLCBhbGlnbkl0ZW1zOiAnY2VudGVyJywgZ2FwOiAndmFyKC0tc3BhY2UtNCknIH19PgogICAgICAgICAgICAgIDxkaXYgc3R5bGU9e3sgCiAgICAgICAgICAgICAgICB3aWR0aDogNzIsIGhlaWdodDogNzIsIGJvcmRlclJhZGl1czogMTIsIGJhY2tncm91bmQ6ICd2YXIoLS1zdXJmYWNlLTMpJywgCiAgICAgICAgICAgICAgICBib3JkZXI6ICcxcHggZGFzaGVkIHJnYmEoMjU1LDI1NSwyNTUsMC4xNSknLCBkaXNwbGF5OiAnZmxleCcsIGFsaWduSXRlbXM6ICdjZW50ZXInLCBqdXN0aWZ5Q29udGVudDogJ2NlbnRlcicsCiAgICAgICAgICAgICAgICBvdmVyZmxvdzogJ2hpZGRlbicsIHBvc2l0aW9uOiAncmVsYXRpdmUnCiAgICAgICAgICAgICAgfX0+CiAgICAgICAgICAgICAgICB7bG9nb1VybCA/ICgKICAgICAgICAgICAgICAgICAgPEltYWdlIHNyYz17bG9nb1VybH0gYWx0PSJTdG9yZSBMb2dvIiB3aWR0aD17MjAwfSBoZWlnaHQ9ezIwMH0gdW5vcHRpbWl6ZWQgc3R5bGU9e3sgd2lkdGg6ICcxMDAlJywgaGVpZ2h0OiAnMTAwJScsIG9iamVjdEZpdDogJ2NvbnRhaW4nLCBiYWNrZ3JvdW5kOiAndmFyKC0td2hpdGUpJyB9fSAvPgogICAgICAgICAgICAgICAgKSA6ICgKICAgICAgICAgICAgICAgICAgPHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ2YXIoLS1ncmV5LTUwMCkiIHN0cm9rZVdpZHRoPSIxLjUiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+CiAgICAgICAgICAgICAgICApfQogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgIDxkaXYgc3R5bGU9e3sgZGlzcGxheTogJ2ZsZXgnLCBmbGV4RGlyZWN0aW9uOiAnY29sdW1uJywgZ2FwOiA4IH19PgogICAgICAgICAgICAgICAgPGxhYmVsIHN0eWxlPXt7CiAgICAgICAgICAgICAgICAgIGRpc3BsYXk6ICdpbmxpbmUtZmxleCcsIGFsaWduSXRlbXM6ICdjZW50ZXInLCBnYXA6IDYsIGhlaWdodDogMzYsIHBhZGRpbmc6ICcwIDE2cHgnLCAKICAgICAgICAgICAgICAgICAgYm9yZGVyUmFkaXVzOiAndmFyKC0tcmFkaXVzLW1kKScsIGJhY2tncm91bmQ6ICd2YXIoLS10ZWFsKScsIGNvbG9yOiAndmFyKC0tYmFja2dyb3VuZCknLAogICAgICAgICAgICAgICAgICBmb250V2VpZ2h0OiA2MDAsIGZvbnRTaXplOiAnMC44NXJlbScsIGN1cnNvcjogJ3BvaW50ZXInLCB0cmFuc2l0aW9uOiAnZmlsdGVyIDAuMnMnCiAgICAgICAgICAgICAgICB9fSBjbGFzc05hbWU9ImhvdmVyLWJyaWdodG5lc3MtMTEwIj4KICAgICAgICAgICAgICAgICAgPHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZVdpZHRoPSIyIj48cGF0aCBkPSJNMjEgMTV2NGEyIDIgMCAwMS0yIDJINWEyIDIgMCAwMS0yLTJ2LTQiLz48cG9seWxpbmUgcG9pbnRzPSIxNyA4IDEyIDMgNyA4Ii8+PGxpbmUgeDE9IjEyIiB5MT0iMyIgeDI9IjEyIiB5Mj0iMTUiLz48L3N2Zz4KICAgICAgICAgICAgICAgICAge2xvZ29VcmwgPyAnUmVwbGFjZSBMb2dvJyA6ICdVcGxvYWQgTG9nbyd9CiAgICAgICAgICAgICAgICAgIDxpbnB1dAogICAgICAgICAgICAgICAgICAgIHR5cGU9ImZpbGUiIGFjY2VwdD0iaW1hZ2UvKiIgc3R5bGU9e3sgZGlzcGxheTogJ25vbmUnIH19CiAgICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9e2FzeW5jIChlKSA9PiB7CiAgICAgICAgICAgICAgICAgICAgICBjb25zdCBmaWxlID0gZS50YXJnZXQuZmlsZXM/LlswXTsKICAgICAgICAgICAgICAgICAgICAgIGlmICghZmlsZSkgcmV0dXJuOwogICAgICAgICAgICAgICAgICAgICAgY29uc3Qgc3VwYWJhc2UgPSBjcmVhdGVDbGllbnQoKTsKICAgICAgICAgICAgICAgICAgICAgIGNvbnN0IGV4dCA9IGZpbGUubmFtZS5zcGxpdCgnLicpLnBvcCgpIHx8ICdwbmcnOwogICAgICAgICAgICAgICAgICAgICAgY29uc3QgcGF0aCA9IGBhZ2VudC1sb2dvcy8ke2FnZW50SWR9LSR7RGF0ZS5ub3coKX0uJHtleHR9YDsKICAgICAgICAgICAgICAgICAgICAgIGNvbnN0IHsgZXJyb3I6IHVwbG9hZEVycm9yIH0gPSBhd2FpdCBzdXBhYmFzZS5zdG9yYWdlLmZyb20oJ3B1YmxpYy1hc3NldHMnKS51cGxvYWQocGF0aCwgZmlsZSwgeyB1cHNlcnQ6IHRydWUgfSk7CiAgICAgICAgICAgICAgICAgICAgICBpZiAodXBsb2FkRXJyb3IpIHsgdG9hc3QuZXJyb3IoJ0ZhaWxlZCBUbyBVcGxvYWQgTG9nbzogJyArIHVwbG9hZEVycm9yLm1lc3NhZ2UpOyByZXR1cm47IH0KICAgICAgICAgICAgICAgICAgICAgIGNvbnN0IHsgZGF0YTogcHViIH0gPSBzdXBhYmFzZS5zdG9yYWdlLmZyb20oJ3B1YmxpYy1hc3NldHMnKS5nZXRQdWJsaWNVcmwocGF0aCk7CiAgICAgICAgICAgICAgICAgICAgICBpZiAocHViPy5wdWJsaWNVcmwpIHsKICAgICAgICAgICAgICAgICAgICAgICAgc2V0TG9nb1VybChwdWIucHVibGljVXJsKTsKICAgICAgICAgICAgICAgICAgICAgICAgdG9hc3Quc3VjY2VzcygnTG9nbyBVcGxvYWRlZC4gQ2xpY2sgU2F2ZSBUbyBBcHBseS4nKTsKICAgICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICAgICB9fQogICAgICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgICAgPC9sYWJlbD4KICAgICAgICAgICAgICAgIHtsb2dvVXJsICYmICgKICAgICAgICAgICAgICAgICAgPGJ1dHRvbiB0eXBlPSJidXR0b24iIG9uQ2xpY2s9eygpID0+IHNldExvZ29VcmwoJycpfSBzdHlsZT17eyBmb250U2l6ZTogJzAuNzVyZW0nLCBjb2xvcjogJ3ZhcigtLXJlZCknLCBiYWNrZ3JvdW5kOiAnbm9uZScsIGJvcmRlcjogJ25vbmUnLCBjdXJzb3I6ICdwb2ludGVyJywgdGV4dEFsaWduOiAnbGVmdCcsIHBhZGRpbmc6IDAgfX0+CiAgICAgICAgICAgICAgICAgICAgUmVtb3ZlIEltYWdlCiAgICAgICAgICAgICAgICAgIDwvYnV0dG9uPgogICAgICAgICAgICAgICAgKX0KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICA8L2Rpdj4KICAgICAgICA8L3NlY3Rpb24+CgogICAgICAgIHsvKiBXYXJlaG91c2UgTG9jYXRpb24gU2VjdGlvbiAqL30KICAgICAgICA8c2VjdGlvbiBjbGFzc05hbWU9ImdsYXNzLXBhbmVsIiBzdHlsZT17eyBwYWRkaW5nOiAndmFyKC0tc3BhY2UtNiknLCBwb3NpdGlvbjogJ3JlbGF0aXZlJywgb3ZlcmZsb3c6ICdoaWRkZW4nIH19PgogICAgICAgICAgPGRpdiBzdHlsZT17eyBwb3NpdGlvbjogJ2Fic29sdXRlJywgdG9wOiAwLCBsZWZ0OiAwLCB3aWR0aDogNCwgaGVpZ2h0OiAnMTAwJScsIGJhY2tncm91bmQ6ICdsaW5lYXItZ3JhZGllbnQoMTgwZGVnLCAjQTg1NUY3IDAlLCAjRDhCNEZFIDEwMCUpJyB9fSAvPgogICAgICAgICAgPGg0IHN0eWxlPXt7IGZvbnRTaXplOiAnMS4xcmVtJywgY29sb3I6ICd2YXIoLS13aGl0ZSknLCBmb250V2VpZ2h0OiA2MDAsIG1hcmdpbkJvdHRvbTogJ3ZhcigtLXNwYWNlLTUpJywgZGlzcGxheTogJ2ZsZXgnLCBhbGlnbkl0ZW1zOiAnY2VudGVyJywgZ2FwOiA4IH19PgogICAgICAgICAgICA8c3ZnIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNBODU1RjciIHN0cm9rZVdpZHRoPSIyIj48cGF0aCBkPSJNMjEgMTBjMCA3LTkgMTMtOSAxM3MtOS02LTktMTNhOSA5IDAgMCAxIDE4IDB6Ii8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMCIgcj0iMyIvPjwvc3ZnPgogICAgICAgICAgICBXYXJlaG91c2UgTG9jYXRpb24KICAgICAgICAgIDwvaDQ+CiAgICAgICAgICA8cCBzdHlsZT17eyBmb250U2l6ZTogJzAuODVyZW0nLCBjb2xvcjogJ3ZhcigtLXNpbHZlciknLCBtYXJnaW5Cb3R0b206ICd2YXIoLS1zcGFjZS00KScsIG1hcmdpblRvcDogJy04cHgnIH19PgogICAgICAgICAgICBXaGVyZSBZb3VyIEludmVudG9yeSBJcyBTaGlwcGVkIEZyb20uIFRoaXMgRW5zdXJlcyBBY2N1cmF0ZSBTaGlwcGluZyBSYXRlcyBGb3IgWW91ciBDdXN0b21lcnMuCiAgICAgICAgICA8L3A+CgogICAgICAgICAgPGRpdiBzdHlsZT17eyBkaXNwbGF5OiAnZ3JpZCcsIGdyaWRUZW1wbGF0ZUNvbHVtbnM6ICcxZnInLCBnYXA6ICd2YXIoLS1zcGFjZS00KScgfX0+CiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmb3JtLWdyb3VwIiBzdHlsZT17eyBtYXJnaW46IDAgfX0+CiAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT0iZm9ybS1sYWJlbCIgc3R5bGU9e3sgY29sb3I6ICd2YXIoLS1ncmV5LTQwMCknIH19PldhcmVob3VzZSBOYW1lPC9sYWJlbD4KICAgICAgICAgICAgICA8aW5wdXQgY2xhc3NOYW1lPSJmb3JtLWlucHV0IiB2YWx1ZT17d2hOYW1lfSBvbkNoYW5nZT17ZSA9PiBzZXRXaE5hbWUoZS50YXJnZXQudmFsdWUpfSBwbGFjZWhvbGRlcj0iZS5nLiBQcmltYXJ5IEZ1bGZpbGxtZW50IENlbnRlciIgLz4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmb3JtLWdyb3VwIiBzdHlsZT17eyBtYXJnaW46IDAgfX0+CiAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT0iZm9ybS1sYWJlbCIgc3R5bGU9e3sgY29sb3I6ICd2YXIoLS1ncmV5LTQwMCknIH19PlN0cmVldCBBZGRyZXNzPC9sYWJlbD4KICAgICAgICAgICAgICA8QWRkcmVzc0F1dG9jb21wbGV0ZUlucHV0CiAgICAgICAgICAgICAgICBjbGFzc05hbWU9ImZvcm0taW5wdXQiCiAgICAgICAgICAgICAgICB2YWx1ZT17d2hTdHJlZXQxfQogICAgICAgICAgICAgICAgb25DaGFuZ2U9e3NldFdoU3RyZWV0MX0KICAgICAgICAgICAgICAgIG9uU2VsZWN0PXsoYSkgPT4geyBzZXRXaFN0cmVldDEoYS5zdHJlZXQxKTsgaWYgKGEuY2l0eSkgc2V0V2hDaXR5KGEuY2l0eSk7IGlmIChhLnN0YXRlKSBzZXRXaFN0YXRlKGEuc3RhdGUpOyBpZiAoYS56aXApIHNldFdoWmlwKGEuemlwKTsgfX0KICAgICAgICAgICAgICAgIHBsYWNlaG9sZGVyPSIxMjMgU2NpZW5jZSBXYXkiCiAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDxkaXYgc3R5bGU9e3sgZGlzcGxheTogJ2dyaWQnLCBncmlkVGVtcGxhdGVDb2x1bW5zOiAnMWZyIDFmcicsIGdhcDogJ3ZhcigtLXNwYWNlLTQpJyB9fT4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZm9ybS1ncm91cCIgc3R5bGU9e3sgbWFyZ2luOiAwIH19PgogICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT0iZm9ybS1sYWJlbCIgc3R5bGU9e3sgY29sb3I6ICd2YXIoLS1ncmV5LTQwMCknIH19PkFwdCAvIFN1aXRlIChPcHRpb25hbCk8L2xhYmVsPgogICAgICAgICAgICAgICAgPGlucHV0IGNsYXNzTmFtZT0iZm9ybS1pbnB1dCIgdmFsdWU9e3doU3RyZWV0Mn0gb25DaGFuZ2U9e2UgPT4gc2V0V2hTdHJlZXQyKGUudGFyZ2V0LnZhbHVlKX0gcGxhY2Vob2xkZXI9IlN1aXRlIDEwMCIgLz4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZm9ybS1ncm91cCIgc3R5bGU9e3sgbWFyZ2luOiAwIH19PgogICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT0iZm9ybS1sYWJlbCIgc3R5bGU9e3sgY29sb3I6ICd2YXIoLS1ncmV5LTQwMCknIH19PkNpdHk8L2xhYmVsPgogICAgICAgICAgICAgICAgPGlucHV0IGNsYXNzTmFtZT0iZm9ybS1pbnB1dCIgdmFsdWU9e3doQ2l0eX0gb25DaGFuZ2U9e2UgPT4gc2V0V2hDaXR5KGUudGFyZ2V0LnZhbHVlKX0gcGxhY2Vob2xkZXI9IkF1c3RpbiIgLz4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDxkaXYgc3R5bGU9e3sgZGlzcGxheTogJ2dyaWQnLCBncmlkVGVtcGxhdGVDb2x1bW5zOiAnMWZyIDFmcicsIGdhcDogJ3ZhcigtLXNwYWNlLTQpJyB9fT4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZm9ybS1ncm91cCIgc3R5bGU9e3sgbWFyZ2luOiAwIH19PgogICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT0iZm9ybS1sYWJlbCIgc3R5bGU9e3sgY29sb3I6ICd2YXIoLS1ncmV5LTQwMCknIH19PlN0YXRlIC8gUmVnaW9uPC9sYWJlbD4KICAgICAgICAgICAgICAgIDxpbnB1dCBjbGFzc05hbWU9ImZvcm0taW5wdXQiIHZhbHVlPXt3aFN0YXRlfSBvbkNoYW5nZT17ZSA9PiBzZXRXaFN0YXRlKGUudGFyZ2V0LnZhbHVlKX0gcGxhY2Vob2xkZXI9IlRYIiAvPgogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmb3JtLWdyb3VwIiBzdHlsZT17eyBtYXJnaW46IDAgfX0+CiAgICAgICAgICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPSJmb3JtLWxhYmVsIiBzdHlsZT17eyBjb2xvcjogJ3ZhcigtLWdyZXktNDAwKScgfX0+WklQIC8gUG9zdGFsIENvZGU8L2xhYmVsPgogICAgICAgICAgICAgICAgPGlucHV0IGNsYXNzTmFtZT0iZm9ybS1pbnB1dCIgdmFsdWU9e3doWmlwfSBvbkNoYW5nZT17ZSA9PiBzZXRXaFppcChlLnRhcmdldC52YWx1ZSl9IHBsYWNlaG9sZGVyPSI3ODcwMSIgLz4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICA8L2Rpdj4KICAgICAgICA8L3NlY3Rpb24+CgogICAgICAgIHsvKiBQYXltZW50IE1ldGhvZHMgU2VjdGlvbiAoUmVuZGVyZWQgZXh0ZXJuYWxseSBieSBBZ2VudERhc2hib2FyZENsaWVudCkgKi99CiAgICAgICAge3BheW1lbnRNZXRob2RzTm9kZSAmJiAoCiAgICAgICAgICA8c2VjdGlvbiBjbGFzc05hbWU9ImdsYXNzLXBhbmVsIiBzdHlsZT17eyBwYWRkaW5nOiAndmFyKC0tc3BhY2UtNiknLCBwb3NpdGlvbjogJ3JlbGF0aXZlJywgb3ZlcmZsb3c6ICdoaWRkZW4nIH19PgogICAgICAgICAgICA8ZGl2IHN0eWxlPXt7IHBvc2l0aW9uOiAnYWJzb2x1dGUnLCB0b3A6IDAsIGxlZnQ6IDAsIHdpZHRoOiA0LCBoZWlnaHQ6ICcxMDAlJywgYmFja2dyb3VuZDogJ2xpbmVhci1ncmFkaWVudCgxODBkZWcsICNGNTlFMEIgMCUsICNGQ0QzNEQgMTAwJSknIH19IC8+CiAgICAgICAgICAgIDxoNCBzdHlsZT17eyBmb250U2l6ZTogJzEuMXJlbScsIGNvbG9yOiAndmFyKC0td2hpdGUpJywgZm9udFdlaWdodDogNjAwLCBtYXJnaW5Cb3R0b206ICd2YXIoLS1zcGFjZS01KScsIGRpc3BsYXk6ICdmbGV4JywgYWxpZ25JdGVtczogJ2NlbnRlcicsIGdhcDogOCB9fT4KICAgICAgICAgICAgICA8c3ZnIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNGNTlFMEIiIHN0cm9rZVdpZHRoPSIyIj48cmVjdCB4PSIyIiB5PSI1IiB3aWR0aD0iMjAiIGhlaWdodD0iMTQiIHJ4PSIyIi8+PGxpbmUgeDE9IjIiIHkxPSIxMCIgeDI9IjIyIiB5Mj0iMTAiLz48L3N2Zz4KICAgICAgICAgICAgICBQYXltZW50IE1ldGhvZHMKICAgICAgICAgICAgPC9oND4KICAgICAgICAgICAgPHAgc3R5bGU9e3sgZm9udFNpemU6ICcwLjg1cmVtJywgY29sb3I6ICd2YXIoLS1zaWx2ZXIpJywgbWFyZ2luQm90dG9tOiAndmFyKC0tc3BhY2UtNCknLCBtYXJnaW5Ub3A6ICctOHB4JyB9fT4KICAgICAgICAgICAgICBDb25maWd1cmUgSG93IFlvdXIgQ3VzdG9tZXJzIENhbiBQYXkgWW91LgogICAgICAgICAgICA8L3A+CiAgICAgICAgICAgIHtwYXltZW50TWV0aG9kc05vZGV9CiAgICAgICAgICA8L3NlY3Rpb24+CiAgICAgICAgKX0KCiAgICAgIDwvZGl2PgoKICAgICAgPGRpdiBzdHlsZT17eyBkaXNwbGF5OiAnZmxleCcsIGp1c3RpZnlDb250ZW50OiAnZmxleC1lbmQnLCBtYXJnaW5Ub3A6ICd2YXIoLS1zcGFjZS02KScsIHBhZGRpbmdCb3R0b206ICd2YXIoLS1zcGFjZS04KScgfX0+CiAgICAgICAgPGJ1dHRvbgogICAgICAgICAgdHlwZT0iYnV0dG9uIgogICAgICAgICAgb25DbGljaz17aGFuZGxlVXBkYXRlUHJvZmlsZX0KICAgICAgICAgIGRpc2FibGVkPXtsb2FkaW5nfQogICAgICAgICAgY2xhc3NOYW1lPSJidG4tbmVvbi1jeWFuIgogICAgICAgICAgc3R5bGU9e3sKICAgICAgICAgICAgbWluV2lkdGg6IDIwMCwKICAgICAgICAgICAgcGFkZGluZzogJzEycHggMzJweCcsCiAgICAgICAgICAgIGZvbnRTaXplOiAnMXJlbScsCiAgICAgICAgICAgIGN1cnNvcjogbG9hZGluZyA/ICdub3QtYWxsb3dlZCcgOiAncG9pbnRlcicsCiAgICAgICAgICAgIG9wYWNpdHk6IGxvYWRpbmcgPyAwLjcgOiAxLAogICAgICAgICAgICBkaXNwbGF5OiAnZmxleCcsIGFsaWduSXRlbXM6ICdjZW50ZXInLCBqdXN0aWZ5Q29udGVudDogJ2NlbnRlcicsIGdhcDogOAogICAgICAgICAgfX0KICAgICAgICA+CiAgICAgICAgICB7bG9hZGluZyA/ICgKICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJzcGlubmVyIiBzdHlsZT17eyB3aWR0aDogMTYsIGhlaWdodDogMTYsIGJvcmRlcjogJzJweCBzb2xpZCByZ2JhKDAsMCwwLDAuMiknLCBib3JkZXJUb3BDb2xvcjogJyMwMDAnLCBib3JkZXJSYWRpdXM6ICc1MCUnLCBhbmltYXRpb246ICdzcGluIDAuOHMgbGluZWFyIGluZmluaXRlJyB9fSAvPgogICAgICAgICAgKSA6ICgKICAgICAgICAgICAgPHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZVdpZHRoPSIyIj48cGF0aCBkPSJNMTkgMjFINWEyIDIgMCAwIDEtMi0yVjVhMiAyIDAgMCAxIDItMmgxMWw1IDV2MTFhMiAyIDAgMCAxLTIgMnoiLz48cG9seWxpbmUgcG9pbnRzPSIxNyAyMSAxNyAxMyA3IDEzIDcgMjEiLz48cG9seWxpbmUgcG9pbnRzPSI3IDMgNyA4IDE1IDgiLz48L3N2Zz4KICAgICAgICAgICl9CiAgICAgICAgICB7bG9hZGluZyA/ICdTYXZpbmcuLi4nIDogJ1NhdmUgQ29uZmlndXJhdGlvbid9CiAgICAgICAgPC9idXR0b24+CiAgICAgIDwvZGl2PgogICAgICA8c3R5bGUgZGFuZ2Vyb3VzbHlTZXRJbm5lckhUTUw9e3sgX19odG1sOiBgCiAgICAgICAgQGtleWZyYW1lcyBzcGluIHsgMTAwJSB7IHRyYW5zZm9ybTogcm90YXRlKDM2MGRlZyk7IH0gfQogICAgICBgfX0gLz4KICAgIDwvZGl2PgogICk7Cn0K
+'use client';
+
+import React from 'react';
+import Image from 'next/image';
+import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
+import UniqueField from '@/components/UniqueField';
+import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
+
+interface AgentStorefrontConfigProps {
+  displayName: string;
+  setDisplayName: (val: string) => void;
+  slug: string;
+  setSlug: (val: string) => void;
+  logoUrl: string;
+  setLogoUrl: (val: string) => void;
+  // Warehouse address (JSONB) - read/write directly to agent_profiles.
+  warehouseAddress?: Record<string, any> | null;
+  agentId: string;
+  displayNameChangedAt?: string | null;
+  onSaveSuccess?: (updatedData: any) => void;
+  paymentMethodsNode?: React.ReactNode;
+}
+
+/** Derive a slug-shaped suggestion from a free-form display name. */
+function deriveSlugFromName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '') // strip diacritics
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 30);
+}
+
+export default function AgentStorefrontConfig({
+  displayName, setDisplayName,
+  slug, setSlug,
+  logoUrl, setLogoUrl,
+  warehouseAddress,
+  agentId,
+  displayNameChangedAt,
+  onSaveSuccess,
+  paymentMethodsNode,
+}: AgentStorefrontConfigProps) {
+  const [loading, setLoading] = React.useState(false);
+
+  // Reservation tokens issued by the live availability check. Sent on save.
+  const [slugReservationToken, setSlugReservationToken] = React.useState<string | null>(null);
+  const [displayNameReservationToken, setDisplayNameReservationToken] = React.useState<string | null>(null);
+
+  // One-shot slug auto-suggestion. Triggers only when slug is empty and the
+  // user starts typing a display name - once accepted (or once they touch
+  // the slug field), we never overwrite again.
+  const slugWasAutoFilledRef = React.useRef(false);
+  React.useEffect(() => {
+    const derived = deriveSlugFromName(displayName);
+    if (!slug && !slugWasAutoFilledRef.current && derived && derived.length >= 3) {
+      slugWasAutoFilledRef.current = true;
+      setSlug(derived);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayName]);
+
+  // Warehouse address local state - mirrors agent_profiles.warehouse_address.
+  const [whName, setWhName] = React.useState(warehouseAddress?.name ?? '');
+  const [whStreet1, setWhStreet1] = React.useState(warehouseAddress?.street1 ?? '');
+  const [whStreet2, setWhStreet2] = React.useState(warehouseAddress?.street2 ?? '');
+  const [whCity, setWhCity] = React.useState(warehouseAddress?.city ?? '');
+  const [whState, setWhState] = React.useState(warehouseAddress?.state ?? '');
+  const [whZip, setWhZip] = React.useState(warehouseAddress?.zip ?? '');
+
+  // Check if User Name is in 6-month cooldown
+  const canChangeDisplayName = React.useMemo(() => {
+    if (!displayNameChangedAt) return true;
+    const lastChange = new Date(displayNameChangedAt).getTime();
+    const COOLDOWN_MS = 180 * 24 * 60 * 60 * 1000;
+    return Date.now() - lastChange >= COOLDOWN_MS;
+  }, [displayNameChangedAt]);
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanSlug = slug.trim().toLowerCase();
+
+    if (!/^[a-z0-9\-]+$/.test(cleanSlug)) {
+      toast.error('Slug Must Contain Only Lowercase Letters, Numbers, And Hyphens.');
+      return;
+    }
+
+    setLoading(true);
+    const supabase = createClient();
+
+    try {
+      // 1) Slug update goes through the server endpoint so it can enforce
+      //    the DB UNIQUE + reserved-word CHECK with a clean 409 surface,
+      //    and now also consume the soft reservation token.
+      const slugRes = await fetch('/api/agent/storefront-slug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: cleanSlug,
+          reservationToken: slugReservationToken,
+        }),
+      });
+      const slugJson = await slugRes.json().catch(() => ({}));
+      if (!slugRes.ok) {
+        if (slugRes.status === 409) {
+          throw new Error(slugJson?.error || 'Slug Is Reserved Or Already In Use');
+        }
+        throw new Error(slugJson?.error || 'Failed To Update Slug');
+      }
+
+      // 2) The new Display Name (User Name) goes through a dedicated endpoint
+      //    to handle the cooldown logic and notifications.
+      const nameRes = await fetch('/api/agent/storefront-name', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_name: displayName.trim(),
+        }),
+      });
+      const nameJson = await nameRes.json().catch(() => ({}));
+      if (!nameRes.ok) {
+        throw new Error(nameJson?.error || 'Failed To Update User Name');
+      }
+
+      // 3) Everything else updates inline.
+      const updatePayload: Record<string, any> = {
+        slug: cleanSlug,
+        logo_url: logoUrl.trim() || null,
+        warehouse_address: {
+          name: whName.trim(),
+          street1: whStreet1.trim(),
+          street2: whStreet2.trim() || null,
+          city: whCity.trim(),
+          state: whState.trim(),
+          zip: whZip.trim(),
+        },
+      };
+
+      const { error: updateError } = await supabase
+        .from('agent_profiles')
+        .update(updatePayload)
+        .eq('id', agentId);
+
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+      toast.success('Storefront Configuration Updated Successfully');
+      if (onSaveSuccess) {
+        onSaveSuccess({ 
+          ...updatePayload, 
+          display_name: displayName.trim(),
+          display_name_changed_at: nameJson.display_name_changed_at || displayNameChangedAt
+        });
+      }
+    } catch (err: any) {
+      toast.error(err.message ?? 'Failed To Update Storefront Configuration.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 900, width: '100%' }}>
+      {/* Header Section */}
+      <div style={{ marginBottom: 'var(--space-6)' }}>
+        <h3 className="metal-text" style={{ fontSize: '1.4rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Storefront Configuration</h3>
+        <p style={{ color: 'var(--silver)', fontSize: '0.95rem', lineHeight: 1.5, maxWidth: 600 }}>
+          Manage Your Public-Facing Storefront Identity, Warehouse Details, And Payment Options. Changes Are Reflected Instantly.
+        </p>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+        
+        {/* Identity & Branding Section */}
+        <section className="glass-panel" style={{ padding: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #00C4BC 0%, #00E5FF 100%)' }} />
+          <h4 style={{ fontSize: '1.1rem', color: 'var(--white)', fontWeight: 600, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Brand Identity
+          </h4>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-5)' }}>
+            <div>
+              <UniqueField
+                field="display_name"
+                label="User Name"
+                value={displayName}
+                onChange={setDisplayName}
+                onTokenChange={setDisplayNameReservationToken}
+                excludeId={agentId}
+                required
+                disabled={!canChangeDisplayName}
+              />
+              {!canChangeDisplayName && (
+                <div style={{ marginTop: 8, fontSize: '0.8rem', color: '#F59E0B', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  User Name Can Only Be Changed Once Every 6 Months.
+                </div>
+              )}
+            </div>
+            
+            <UniqueField
+              field="slug"
+              label="URL Slug"
+              value={slug}
+              onChange={setSlug}
+              onTokenChange={setSlugReservationToken}
+              excludeId={agentId}
+              urlPrefix="pepnationlab.com/"
+              required
+            />
+          </div>
+
+          <div style={{ marginTop: 'var(--space-5)' }}>
+            <label className="form-label" style={{ display: 'block', marginBottom: 8, color: 'var(--grey-400)', fontSize: '0.85rem' }}>Store Logo</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+              <div style={{ 
+                width: 72, height: 72, borderRadius: 12, background: 'var(--surface-3)', 
+                border: '1px dashed rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                overflow: 'hidden', position: 'relative'
+              }}>
+                {logoUrl ? (
+                  <Image src={logoUrl} alt="Store Logo" width={200} height={200} unoptimized style={{ width: '100%', height: '100%', objectFit: 'contain', background: 'var(--white)' }} />
+                ) : (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--grey-500)" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 16px', 
+                  borderRadius: 'var(--radius-md)', background: 'var(--teal)', color: 'var(--background)',
+                  fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'filter 0.2s'
+                }} className="hover-brightness-110">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  {logoUrl ? 'Replace Logo' : 'Upload Logo'}
+                  <input
+                    type="file" accept="image/*" style={{ display: 'none' }}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const supabase = createClient();
+                      const ext = file.name.split('.').pop() || 'png';
+                      const path = `agent-logos/${agentId}-${Date.now()}.${ext}`;
+                      const { error: uploadError } = await supabase.storage.from('public-assets').upload(path, file, { upsert: true });
+                      if (uploadError) { toast.error('Failed To Upload Logo: ' + uploadError.message); return; }
+                      const { data: pub } = supabase.storage.from('public-assets').getPublicUrl(path);
+                      if (pub?.publicUrl) {
+                        setLogoUrl(pub.publicUrl);
+                        toast.success('Logo Uploaded. Click Save To Apply.');
+                      }
+                    }}
+                  />
+                </label>
+                {logoUrl && (
+                  <button type="button" onClick={() => setLogoUrl('')} style={{ fontSize: '0.75rem', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}>
+                    Remove Image
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Warehouse Location Section */}
+        <section className="glass-panel" style={{ padding: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #A855F7 0%, #D8B4FE 100%)' }} />
+          <h4 style={{ fontSize: '1.1rem', color: 'var(--white)', fontWeight: 600, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A855F7" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Warehouse Location
+          </h4>
+          <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-4)', marginTop: '-8px' }}>
+            Where Your Inventory Is Shipped From. This Ensures Accurate Shipping Rates For Your Customers.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-4)' }}>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label" style={{ color: 'var(--grey-400)' }}>Warehouse Name</label>
+              <input className="form-input" value={whName} onChange={e => setWhName(e.target.value)} placeholder="e.g. Primary Fulfillment Center" />
+            </div>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label" style={{ color: 'var(--grey-400)' }}>Street Address</label>
+              <AddressAutocompleteInput
+                className="form-input"
+                value={whStreet1}
+                onChange={setWhStreet1}
+                onSelect={(a) => { setWhStreet1(a.street1); if (a.city) setWhCity(a.city); if (a.state) setWhState(a.state); if (a.zip) setWhZip(a.zip); }}
+                placeholder="123 Science Way"
+              />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ color: 'var(--grey-400)' }}>Apt / Suite (Optional)</label>
+                <input className="form-input" value={whStreet2} onChange={e => setWhStreet2(e.target.value)} placeholder="Suite 100" />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ color: 'var(--grey-400)' }}>City</label>
+                <input className="form-input" value={whCity} onChange={e => setWhCity(e.target.value)} placeholder="Austin" />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ color: 'var(--grey-400)' }}>State / Region</label>
+                <input className="form-input" value={whState} onChange={e => setWhState(e.target.value)} placeholder="TX" />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ color: 'var(--grey-400)' }}>ZIP / Postal Code</label>
+                <input className="form-input" value={whZip} onChange={e => setWhZip(e.target.value)} placeholder="78701" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Payment Methods Section (Rendered externally by AgentDashboardClient) */}
+        {paymentMethodsNode && (
+          <section className="glass-panel" style={{ padding: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #F59E0B 0%, #FCD34D 100%)' }} />
+            <h4 style={{ fontSize: '1.1rem', color: 'var(--white)', fontWeight: 600, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              Payment Methods
+            </h4>
+            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-4)', marginTop: '-8px' }}>
+              Configure How Your Customers Can Pay You.
+            </p>
+            {paymentMethodsNode}
+          </section>
+        )}
+
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-6)', paddingBottom: 'var(--space-8)' }}>
+        <button
+          type="button"
+          onClick={handleUpdateProfile}
+          disabled={loading}
+          className="btn-neon-cyan"
+          style={{
+            minWidth: 200,
+            padding: '12px 32px',
+            fontSize: '1rem',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.7 : 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+          }}
+        >
+          {loading ? (
+            <span className="spinner" style={{ width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          )}
+          {loading ? 'Saving...' : 'Save Configuration'}
+        </button>
+      </div>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+      `}} />
+    </div>
+  );
+}
