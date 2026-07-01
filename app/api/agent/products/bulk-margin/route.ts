@@ -79,25 +79,32 @@ export async function POST(req: NextRequest) {
     const tier = (profData?.tier as AgentTier | null) ?? 'tier_3';
 
     let updatedCount = 0;
-    const updates = agentProducts.map(async ap => {
-       const productId = ap.product_id as string;
-       const baseCost = Number((ap.products as any).base_cost);
-       
-       let agentCostPer10 = 0;
-       if (baseCost > 0) {
-         agentCostPer10 = await computeAgentCostForAgent(supabase, productId, agentId, tier);
-       }
-       const retailPrice = agentCostPer10 * (1 + marginPercent / 100);
+    const updateResults = await Promise.all(
+      agentProducts.map(async ap => {
+        const productId = ap.product_id as string;
+        const rawCost = (ap.products as any)?.base_cost;
+        const baseCost = rawCost != null ? Number(rawCost) : NaN;
+        // Skip products with missing or zero cost — writing $0 retail would
+        // make the product free. Agent must set price manually for these.
+        if (!Number.isFinite(baseCost) || baseCost <= 0) return null;
 
-       return supabase
-         .from('agent_products')
-         .update({ margin_percent: marginPercent, retail_price: retailPrice })
-         .eq('id', ap.id)
-         .eq('agent_id', agentId);
-    });
+        const agentCostPer10 = await computeAgentCostForAgent(supabase, productId, agentId, tier);
+        const retailPrice = agentCostPer10 * (1 + marginPercent / 100);
 
-    await Promise.all(updates);
-    updatedCount = updates.length;
+        const { error: updateErr } = await supabase
+          .from('agent_products')
+          .update({ margin_percent: marginPercent, retail_price: retailPrice })
+          .eq('id', ap.id)
+          .eq('agent_id', agentId);
+
+        if (updateErr) {
+          console.error('[bulk-margin] update failed for ap', ap.id, ':', updateErr.message);
+          return null;
+        }
+        return ap.id;
+      })
+    );
+    updatedCount = updateResults.filter(r => r !== null).length;
 
     return NextResponse.json({ success: true, updated: updatedCount });
   } catch (error) {

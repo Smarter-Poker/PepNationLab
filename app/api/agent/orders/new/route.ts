@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     if (!Array.isArray(items) || items.length === 0) return NextResponse.json({ error: 'Order Must Contain Items.' }, { status: 400 });
 
-    const safeShipping = Number(shippingCost) || 0;
+    const safeShipping = Math.max(0, Number(shippingCost) || 0);
     const fulfillment = fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'ship';
 
     const { data: agentProfile, error: agentProfileError } = await supabase.from('profiles').select('tier, parent_agent_id, role, is_sub_agent, account_type, max_auto_approve_limit').eq('id', agentId).single();
