@@ -162,8 +162,11 @@ export async function POST(req: NextRequest) {
     if (approvalError) {
       console.error('Manual Order Approval Error:', approvalError);
       if (prepaidCharged) {
-        try { await supabase.rpc('refund_prepaid_balance', { p_agent_id: agentId, p_amount: manualCogs }); }
-        catch (refundErr) { console.error('[CRITICAL] prepaid refund failed after manual order approval failure', newOrder.id, refundErr); }
+        try {
+          await supabase.rpc('refund_prepaid_balance', { p_agent_id: agentId, p_amount: manualCogs });
+        } catch (refundErr) {
+          console.error('[CRITICAL] prepaid refund failed after manual order approval failure', newOrder.id, refundErr);
+        }
       }
       await supabase.from('order_items').delete().eq('order_id', newOrder.id);
       await supabase.from('orders').delete().eq('id', newOrder.id);
@@ -172,7 +175,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (finalAutoStatus === 'approved_ship' || finalAutoStatus === 'approved_pickup') {
-      try { await supabase.rpc('charge_order_credit_line', { p_order_id: newOrder.id, p_created_by: agentId }); } catch {}
+      try {
+        await supabase.rpc('charge_order_credit_line', { p_order_id: newOrder.id, p_created_by: agentId });
+      } catch {}
     }
 
     try {
@@ -184,7 +189,7 @@ export async function POST(req: NextRequest) {
         const notifications = admins.map((admin) => ({
           user_id: admin.id,
           title: finalAutoStatus === 'admin_approval_pending' ? 'Manual Order Needs Admin Approval' : 'Manual Order Auto-Approved',
-          body: finalAutoStatus === 'admin_approval_pending'
+          body: finalAutoStatus === 'admin_approval_pending' 
             ? `Order #${short} ($${totalStr}) - Agent Created & Approved. Needs Admin Release (${fulfillmentMsg}).`
             : `Order #${short} ($${totalStr}) - Agent Created & Auto-Approved On Credit Line. (${fulfillmentMsg}).`,
           type: 'system',
@@ -192,7 +197,9 @@ export async function POST(req: NextRequest) {
         }));
         await supabase.from('notifications').insert(notifications);
       }
-    } catch (err) { console.error('Failed to notify admins of manual order', err); }
+    } catch (err) {
+      console.error('Failed to notify admins of manual order', err);
+    }
 
     return NextResponse.json({ success: true, orderId: newOrder.id });
   } catch (error) {

@@ -8,18 +8,6 @@ import { notifyOrderApproved } from '@/lib/notify';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/**
- * POST /api/agent/orders/mark-paid
- *
- * Agent confirms payment receipt for a researcher's order.
- * - Validates the caller is the order's agent (or an ancestor).
- * - Moves status: pending_customer_payment -> agent_approval_pending.
- * - For agent_pickup fulfillment (in-stock items): moves directly to
- *   approved_pickup without requiring admin review.
- * - Finds (or creates) the direct messenger conversation between the
- *   researcher and agent, then posts a status notification message.
- * - Notifies all admins so they can action agent_approval_pending orders.
- */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -37,7 +25,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'orderId Is Required.' }, { status: 400 });
   }
 
-  // -- 1. Fetch the order
   const { data: order, error: orderErr } = await svc
     .from('orders')
     .select('id, agent_id, buyer_id, status, fulfillment_method, total, payment_method, created_at')
@@ -48,7 +35,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Order Not Found.' }, { status: 404 });
   }
 
-  // -- 2. Authorize
   const isDirectAgent = order.agent_id === callerId;
   const isAncestor = !isDirectAgent && order.agent_id
     ? await isAgentAncestorOf(svc, callerId, order.agent_id)
@@ -58,7 +44,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden. You Do Not Manage This Order.' }, { status: 403 });
   }
 
-  // -- 3. Validate current status
   if (order.status !== 'pending_customer_payment') {
     return NextResponse.json(
       { error: `Order Is Already At Status "${order.status}". Only Pending Payment Orders Can Be Marked Paid.` },
@@ -66,12 +51,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // All orders must go to agent_approval_pending so the agent can approve them
-  // and have their COGS deducted in the approve route.
   const isAgentPickup = order.fulfillment_method === 'agent_pickup';
   const nextStatus = 'agent_approval_pending';
 
-  // -- 5. Update order status
   const { error: updateErr } = await svc
     .from('orders')
     .update({
@@ -85,7 +67,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed To Update Order Status. Please Try Again.' }, { status: 500 });
   }
 
-  // -- 6. Messenger notification
   try {
     if (order.buyer_id && order.agent_id) {
       const conversationId = await findOrCreateDirectConversation(svc, order.buyer_id, order.agent_id);

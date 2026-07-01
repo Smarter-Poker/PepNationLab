@@ -70,9 +70,21 @@ export async function PATCH(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   const body = await req.json().catch(() => ({}));
-  const { id, custom_name, custom_description, custom_image_url, retail_price, margin_percent, is_visible, is_on_sale, sale_price } = body;
+  const {
+    id,
+    custom_name,
+    custom_description,
+    custom_image_url,
+    retail_price,
+    margin_percent,
+    is_visible,
+    is_on_sale,
+    sale_price,
+  } = body;
 
-  if (!id) return NextResponse.json({ error: 'Missing Agent Product ID' }, { status: 400 });
+  if (!id) {
+    return NextResponse.json({ error: 'Missing Agent Product ID' }, { status: 400 });
+  }
 
   const supabase = await createServiceClient();
 
@@ -83,11 +95,17 @@ export async function PATCH(req: NextRequest) {
     .eq('agent_id', gate.user.id)
     .single();
 
-  if (!check) return NextResponse.json({ error: 'Unauthorized Or Not Found' }, { status: 403 });
+  if (!check) {
+    return NextResponse.json({ error: 'Unauthorized Or Not Found' }, { status: 403 });
+  }
 
   let agentCostPer10 = 0;
   {
-    const { data: profData } = await supabase.from('profiles').select('tier').eq('id', gate.user.id).single();
+    const { data: profData } = await supabase
+      .from('profiles')
+      .select('tier')
+      .eq('id', gate.user.id)
+      .single();
     if (profData?.tier) {
       agentCostPer10 = await computeAgentCostForAgent(supabase, check.product_id, gate.user.id, profData.tier as AgentTier);
     }
@@ -107,7 +125,9 @@ export async function PATCH(req: NextRequest) {
 
   if (resolvedRetailPrice !== undefined && resolvedRetailPrice < agentCostPer10) {
     return NextResponse.json(
-      { error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).` },
+      {
+        error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
+      },
       { status: 422 }
     );
   }
@@ -119,31 +139,52 @@ export async function PATCH(req: NextRequest) {
   const activeSalePrice = sale_price !== undefined && sale_price !== null ? Number(sale_price) : Number(check.sale_price);
   const activeIsOnSale = is_on_sale !== undefined ? Boolean(is_on_sale) : Boolean(check.is_on_sale);
 
-  if (activeIsOnSale && activeSalePrice < agentCostPer10) {
-    return NextResponse.json(
-      { error: `Sale price ($${(activeSalePrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).` },
-      { status: 422 }
-    );
+  if (activeIsOnSale) {
+    if (activeSalePrice < agentCostPer10) {
+      return NextResponse.json(
+        {
+          error: `Sale price ($${(activeSalePrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
+        },
+        { status: 422 }
+      );
+    }
   }
 
   const checkRetailPrice = activeIsOnSale ? activeSalePrice : (resolvedRetailPrice !== undefined ? resolvedRetailPrice : Number(check.retail_price));
   if (checkRetailPrice > 0 && agentCostPer10 > 0) {
     const newMarginPct = ((checkRetailPrice - agentCostPer10) / checkRetailPrice) * 100;
-    const { data: subAgents } = await supabase.from('profiles').select('commission_pct, commission_max_pct').eq('parent_agent_id', gate.user.id).eq('is_sub_agent', true);
+
+    const { data: subAgents } = await supabase
+      .from('profiles')
+      .select('commission_pct, commission_max_pct')
+      .eq('parent_agent_id', gate.user.id)
+      .eq('is_sub_agent', true);
+
     if (subAgents && subAgents.length > 0) {
       let maxExisting = 0;
       for (const sa of subAgents) {
         const val = Math.max(Number(sa.commission_pct || 0), Number(sa.commission_max_pct || 0));
         if (val > maxExisting) maxExisting = val;
       }
+
       if (maxExisting > 0) {
         const netMarginPct = newMarginPct - maxExisting;
+
         if (netMarginPct < 10) {
           const minRequiredGross = maxExisting + 10;
           return NextResponse.json(
             { error: `Cannot lower price to $${(checkRetailPrice / 10).toFixed(2)}/vial. You have sub-agents earning up to ${maxExisting}% commission, which requires this product's margin to be at least ${minRequiredGross}% to maintain a 10% Net Profit.` },
             { status: 422 }
           );
+        }
+
+        if (maxExisting > netMarginPct) {
+          import('@/lib/notify').then(({ notifyMarginWarning }) => {
+            const admin = require('@/lib/supabase/server').createAdminClient();
+            notifyMarginWarning(admin, gate.user.id).catch((err: Error) => {
+              console.error('[products/route] Failed to fire margin warning:', err);
+            });
+          });
         }
       }
     }
@@ -163,14 +204,22 @@ export async function PATCH(req: NextRequest) {
 
   if (resolvedRetailPrice !== undefined) {
     updatePayload.retail_price = resolvedRetailPrice;
-    if (resolvedMarginPercent !== undefined) updatePayload.margin_percent = resolvedMarginPercent;
+    if (resolvedMarginPercent !== undefined) {
+      updatePayload.margin_percent = resolvedMarginPercent;
+    }
   } else if (resolvedMarginPercent !== undefined) {
     updatePayload.margin_percent = resolvedMarginPercent;
   }
 
-  const { error } = await supabase.from('agent_products').update(updatePayload).eq('id', id).eq('agent_id', gate.user.id);
+  const { error } = await supabase
+    .from('agent_products')
+    .update(updatePayload)
+    .eq('id', id)
+    .eq('agent_id', gate.user.id);
 
-  if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
+  if (error) {
+    return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
+  }
 
   return NextResponse.json({ success: true });
 }
