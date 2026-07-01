@@ -123,7 +123,7 @@ export default function AdminSalesPage() {
                 tier: a.tier || '',
                 order_count: a.order_count,
                 pending_count: a.pending_count,
-                total_revenue: Number(a.total_revenue).toFixed(2),
+                total_revenue: Number(a.total_revenue || 0).toFixed(2),
               }));
               const csv = exportCSV(rows, [
                 { key: 'full_name', label: 'Agent' },
@@ -168,10 +168,10 @@ export default function AdminSalesPage() {
           {/* Summary Cards */}
           <div className="grid-4" style={{ marginBottom: 'var(--space-8)' }}>
             {[
-              { label: 'Total Revenue', value: `$${data.totals.revenue.toFixed(2)}`, color: 'var(--teal)' },
+              { label: 'Total Revenue', value: `$${Number(data.totals.revenue || 0).toFixed(2)}`, color: 'var(--teal)' },
               { label: 'Total Orders', value: data.totals.orders, color: 'var(--silver)' },
               { label: 'Active Agents', value: data.agents.length, color: 'var(--silver)' },
-              { label: 'Direct Revenue', value: `$${data.direct.revenue.toFixed(2)}`, color: 'var(--grey-400)' },
+              { label: 'Direct Revenue', value: `$${Number(data.direct.revenue || 0).toFixed(2)}`, color: 'var(--grey-400)' },
             ].map(({ label, value, color }, index) => (
               <div key={label} className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: `${0.1 + index * 0.1}s` }}>
                 <div className="" style={{ padding: 'var(--space-5)' }}>
