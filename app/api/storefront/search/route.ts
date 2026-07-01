@@ -78,9 +78,9 @@ function asTrimmedString(v: unknown, maxLen = 200): string | null {
 }
 
 function escapeIlike(text: string): string {
-  // Escape PostgREST/PostgreSQL ILIKE special characters so user input cannot
-  // run wildcard injections like '%' or '_'.
-  return text.replace(/[\\%_]/g, m => `\\${m}`);
+  // Escape PostgreSQL ILIKE special characters so user input cannot run wildcard
+  // injections. Escapes: \ % _ and [ (POSIX character-class delimiter).
+  return text.replace(/[\\%_[]/g, m => `\\${m}`);
 }
 
 const SORT_OPTIONS: ReadonlySet<SortKey> = new Set<SortKey>([
@@ -144,10 +144,13 @@ export async function POST(req: NextRequest) {
   // Keyword ILIKE search is the active fallback.
   const matchedProductIds: string[] = [];
 
+  // BUG 6 fix: use exact equality (with lowercase normalisation) instead of
+  // .ilike() for slug resolution. ILIKE allows wildcard chars like _ and %,
+  // which could match a different agent's slug. Slugs are stored lowercase.
   const { data: agent, error: agentErr } = await supabase
     .from('agent_profiles')
     .select('id, slug, is_active')
-    .ilike('slug', slug)
+    .eq('slug', slug.toLowerCase())
     .maybeSingle();
 
   if (agentErr || !agent) {

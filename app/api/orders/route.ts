@@ -3,7 +3,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { calculateShippingCost, getCarrierName } from '@/lib/shipping';
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 import { computeLineSplit, type ItemFulfillmentSplit } from '@/lib/order-line-splits';
@@ -463,15 +463,17 @@ export async function POST(request: NextRequest) {
         retailPrice = costPrice;
       }
 
-      // fix-57 #2: Flash sale discount applies to retail buyers, not wholesale.
-      if (flashSaleDiscountPct > 0 && !isAgentSelfBuy) {
+      // fix-57 #2: Flash sale discount applies to retail buyers, not wholesale or sub-agents.
+      // Guard matches the eligibility check at line 290 (!isSubAgent).
+      if (flashSaleDiscountPct > 0 && !isAgentSelfBuy && !isSubAgent) {
         retailPrice = retailPrice * flashMultiplier;
       }
 
-      // Stack discount: 10% off for items purchased as part of an individually packaged stack
+      // Stack discount: 10% off for items purchased as part of an individually packaged stack.
+      // Floors ensure a pricing bug upstream can't drive prices negative.
       if (cartItem.bundleName) {
-        retailPrice = retailPrice * 0.9;
-        costPrice = costPrice * 0.9;
+        retailPrice = Math.max(0, retailPrice * 0.9);
+        costPrice = Math.max(0, costPrice * 0.9);
       }
 
       // Round unit prices to exact cents
@@ -681,12 +683,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Record the Layer 4 (checkout) disclaimer audit row
+    // Record the Layer 4 (checkout) disclaimer audit row.
+    // Use getClientIp() which reads Vercel's trusted x-vercel-forwarded-for header
+    // rather than the attacker-controllable X-Forwarded-For header.
     const disclaimerVersion = process.env.NEXT_PUBLIC_DISCLAIMER_VERSION || 'v1.0';
-    const checkoutIp =
-      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-      request.headers.get('x-real-ip') ||
-      null;
+    const checkoutIp = getClientIp(request);
     const checkoutUserAgent = request.headers.get('user-agent') || null;
 
     const { data: disclaimerRow, error: disclaimerError } = await serviceSupabase
