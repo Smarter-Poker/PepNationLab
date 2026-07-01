@@ -305,7 +305,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 key={order.id}
                 onClick={() => setDetailOrder(order)}
                 style={{
-                  padding: '3px', // Thick brushed nickel border
+                  padding: '3px',
                   borderRadius: '18px',
                   background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
                   boxShadow: '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)',
@@ -326,7 +326,6 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   gap: '16px',
                   height: '100%',
                 }}>
-                {/* Header row: Order ID, Date, and Status */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -386,10 +385,8 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   </span>
                 </div>
 
-                {/* Main Content Grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginTop: '8px' }}>
                   
-                  {/* Buyer Info */}
                   <div style={{ 
                     background: 'var(--bg-metal-dark)', 
                     padding: '16px 20px', 
@@ -409,7 +406,6 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     </div>
                   </div>
 
-                  {/* Order Details */}
                   <div style={{ 
                     background: 'var(--bg-metal-dark)', 
                     padding: '16px 20px', 
@@ -446,7 +442,6 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     </div>
                   </div>
                   
-                  {/* Tracking / Fulfillment */}
                   {order.tracking_number && (
                     <div style={{ background: 'rgba(0,196,188,0.06)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(0,196,188,0.2)' }}>
                       <div style={{ fontSize: '0.75rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', fontWeight: 700 }}>Tracking</div>
@@ -480,7 +475,6 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
 
                 </div>
 
-                {/* Actions row */}
                 {canApprove && (
                   <div
                     onClick={(e) => e.stopPropagation()}
@@ -584,11 +578,6 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         {loadingOrderId === order.id ? 'Approving...' : approveText}
                       </button>
                     )}
-
-                    {/* Buy-label removed: agents no longer purchase labels before
-                        the admin-approval gate. After an admin releases the order to
-                        approved_ship, the label is auto-enqueued (shippo_enqueue_label_job)
-                        and drained by the label-jobs cron, or bought by admin/shipping. */}
                   </div>
                 )}
               </div>
@@ -686,7 +675,6 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             </div>
       )}
 
-      {/* Order Detail Modal */}
       {detailOrder && (
         <div
           onClick={() => setDetailOrder(null)}
