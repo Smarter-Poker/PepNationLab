@@ -19,10 +19,6 @@ import {
   DollarSign,
 } from 'lucide-react';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 interface ShippoStatus {
   connected: boolean;
   mode: 'test' | 'live' | null;
@@ -113,10 +109,6 @@ const EMPTY_ORIGIN: OriginFormData = {
   is_default: false,
 };
 
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
-
 export default function AdminShippingSettingsClient() {
   const [status, setStatus] = useState<ShippoStatus | null>(null);
   const [origins, setOrigins] = useState<ShippingOrigin[]>([]);
@@ -124,37 +116,27 @@ export default function AdminShippingSettingsClient() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
   const [agentAssignLoading, setAgentAssignLoading] = useState<string | null>(null);
-  // Controlled state for each agent's origin dropdown — keyed by agent.id.
-  // Initialized from agentWarehouses on load so the select reflects the saved value.
   const [agentOriginSelections, setAgentOriginSelections] = useState<Record<string, string>>({});
   const [webhookActivity, setWebhookActivity] = useState<WebhookActivity | null>(null);
 
-  // Connect form state
   const [connectKey, setConnectKey] = useState('');
   const [connectMode, setConnectMode] = useState<'test' | 'live'>('test');
   const [connectWebhook, setConnectWebhook] = useState('');
   const [connectLoading, setConnectLoading] = useState(false);
 
-  // Rotate form state
   const [rotateKey, setRotateKey] = useState('');
   const [rotateWebhook, setRotateWebhook] = useState('');
   const [rotateLoading, setRotateLoading] = useState(false);
   const [showRotate, setShowRotate] = useState(false);
 
-  // Origin form state
   const [showOriginForm, setShowOriginForm] = useState(false);
   const [editingOrigin, setEditingOrigin] = useState<string | null>(null);
   const [originForm, setOriginForm] = useState<OriginFormData>(EMPTY_ORIGIN);
   const [originLoading, setOriginLoading] = useState(false);
 
-  // Test address state
   const [testAddr, setTestAddr] = useState('');
   const [testResult, setTestResult] = useState<string | null>(null);
   const [testLoading, setTestLoading] = useState(false);
-
-  // ---------------------------------------------------------------------------
-  // Data fetching
-  // ---------------------------------------------------------------------------
 
   const showToast = useCallback((msg: string, type: 'ok' | 'err') => {
     setToast({ msg, type });
@@ -198,7 +180,6 @@ export default function AdminShippingSettingsClient() {
         const d = await r.json();
         const agents = d.agents ?? [];
         setAgentWarehouses(agents);
-        // Seed the controlled select state from the saved warehouse_origin_id.
         const selections: Record<string, string> = {};
         for (const a of agents) selections[a.id] = a.warehouse_origin_id ?? '';
         setAgentOriginSelections(selections);
@@ -216,10 +197,6 @@ export default function AdminShippingSettingsClient() {
     })();
     return () => { cancelled = true; };
   }, [fetchStatus, fetchOrigins, fetchAgentWarehouses, fetchWebhookActivity]);
-
-  // ---------------------------------------------------------------------------
-  // Connect / Disconnect / Rotate
-  // ---------------------------------------------------------------------------
 
   async function handleConnect(e: React.FormEvent) {
     e.preventDefault();
@@ -281,17 +258,12 @@ export default function AdminShippingSettingsClient() {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Test address
-  // ---------------------------------------------------------------------------
-
   async function handleTestAddress(e: React.FormEvent) {
     e.preventDefault();
     if (!testAddr.trim()) return;
     setTestLoading(true);
     setTestResult(null);
     try {
-      // Parse a simple "street, city, state zip" string into an address object.
       const parts = testAddr.split(',').map((p) => p.trim());
       const street1 = parts[0] ?? '';
       const cityState = parts[1] ?? '';
@@ -318,10 +290,6 @@ export default function AdminShippingSettingsClient() {
       setTestLoading(false);
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Origins CRUD
-  // ---------------------------------------------------------------------------
 
   function startAddOrigin() {
     setEditingOrigin(null);
@@ -415,10 +383,6 @@ export default function AdminShippingSettingsClient() {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Render helpers
-  // ---------------------------------------------------------------------------
-
   const modePill = (mode: 'test' | 'live' | null) => {
     if (!mode) return null;
     const bg = mode === 'live' ? 'var(--teal)' : '#f59e0b';
@@ -452,7 +416,6 @@ export default function AdminShippingSettingsClient() {
 
   return (
     <div style={{ padding: 'var(--space-6)', maxWidth: 900 }}>
-      {/* Toast */}
       {toast && (
         <div style={{
           position: 'fixed',
@@ -476,9 +439,6 @@ export default function AdminShippingSettingsClient() {
         Shipping Settings
       </h1>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* CARD 1 - Account Status                                             */}
-      {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           {status?.connected ? (
@@ -530,6 +490,7 @@ export default function AdminShippingSettingsClient() {
             )}
             <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
               <button
+                id="btn-shippo-rotate-toggle"
                 className="btn-secondary"
                 style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
                 onClick={() => setShowRotate(!showRotate)}
@@ -538,6 +499,7 @@ export default function AdminShippingSettingsClient() {
                 Rotate Key
               </button>
               <button
+                id="btn-shippo-disconnect"
                 className="btn-danger"
                 style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
                 onClick={handleDisconnect}
@@ -553,6 +515,7 @@ export default function AdminShippingSettingsClient() {
                   Enter New API Key (MFA Will Be Verified)
                 </div>
                 <input
+                  id="rotate-api-key"
                   className="input"
                   type="password"
                   placeholder="shippo_test_... or shippo_live_..."
@@ -561,6 +524,7 @@ export default function AdminShippingSettingsClient() {
                   required
                 />
                 <input
+                  id="rotate-webhook-secret"
                   className="input"
                   type="password"
                   placeholder="Webhook Secret (Optional)"
@@ -568,7 +532,7 @@ export default function AdminShippingSettingsClient() {
                   onChange={(e) => setRotateWebhook(e.target.value)}
                 />
                 <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                  <button className="btn-primary" type="submit" disabled={rotateLoading} style={{ fontSize: '0.85rem' }}>
+                  <button id="btn-rotate-submit" className="btn-primary" type="submit" disabled={rotateLoading} style={{ fontSize: '0.85rem' }}>
                     {rotateLoading ? 'Rotating...' : 'Confirm Rotation'}
                   </button>
                   <button type="button" className="btn-ghost" style={{ fontSize: '0.85rem' }} onClick={() => setShowRotate(false)}>
@@ -589,6 +553,7 @@ export default function AdminShippingSettingsClient() {
                   API Key
                 </label>
                 <input
+                  id="connect-api-key"
                   className="input"
                   type="password"
                   placeholder="shippo_test_... or shippo_live_..."
@@ -602,6 +567,7 @@ export default function AdminShippingSettingsClient() {
                   Mode
                 </label>
                 <select
+                  id="connect-mode"
                   className="input"
                   value={connectMode}
                   onChange={(e) => setConnectMode(e.target.value as 'test' | 'live')}
@@ -616,6 +582,7 @@ export default function AdminShippingSettingsClient() {
                 Webhook Signing Secret (Optional)
               </label>
               <input
+                id="connect-webhook-secret"
                 className="input"
                 type="password"
                 placeholder="HMAC Signing Secret From Shippo Dashboard"
@@ -623,16 +590,13 @@ export default function AdminShippingSettingsClient() {
                 onChange={(e) => setConnectWebhook(e.target.value)}
               />
             </div>
-            <button className="btn-primary" type="submit" disabled={connectLoading} style={{ alignSelf: 'flex-start' }}>
+            <button id="btn-connect-submit" className="btn-primary" type="submit" disabled={connectLoading} style={{ alignSelf: 'flex-start' }}>
               {connectLoading ? 'Connecting...' : 'Connect Shippo'}
             </button>
           </form>
         )}
       </section>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* CARD 2 - Warehouse Origins                                          */}
-      {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -645,6 +609,7 @@ export default function AdminShippingSettingsClient() {
             </span>
           </div>
           <button
+            id="btn-add-origin"
             className="btn-secondary"
             style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
             onClick={startAddOrigin}
@@ -671,19 +636,20 @@ export default function AdminShippingSettingsClient() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Label</label>
-                <input className="input" placeholder="Main Warehouse" value={originForm.label} onChange={(e) => setOriginForm(f => ({ ...f, label: e.target.value }))} required />
+                <input id="origin-label" className="input" placeholder="Main Warehouse" value={originForm.label} onChange={(e) => setOriginForm(f => ({ ...f, label: e.target.value }))} required />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Contact Name</label>
-                <input className="input" placeholder="Fulfillment Dept" value={originForm.name} onChange={(e) => setOriginForm(f => ({ ...f, name: e.target.value }))} required />
+                <input id="origin-name" className="input" placeholder="Fulfillment Dept" value={originForm.name} onChange={(e) => setOriginForm(f => ({ ...f, name: e.target.value }))} required />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Company</label>
-                <input className="input" placeholder="PepNationLab" value={originForm.company} onChange={(e) => setOriginForm(f => ({ ...f, company: e.target.value }))} />
+                <input id="origin-company" className="input" placeholder="PepNationLab" value={originForm.company} onChange={(e) => setOriginForm(f => ({ ...f, company: e.target.value }))} />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Street 1</label>
                 <AddressAutocompleteInput
+                  id="origin-street1"
                   className="input"
                   placeholder="123 Warehouse Blvd"
                   required
@@ -694,35 +660,35 @@ export default function AdminShippingSettingsClient() {
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Street 2</label>
-                <input className="input" placeholder="Suite 100" value={originForm.street2} onChange={(e) => setOriginForm(f => ({ ...f, street2: e.target.value }))} />
+                <input id="origin-street2" className="input" placeholder="Suite 100" value={originForm.street2} onChange={(e) => setOriginForm(f => ({ ...f, street2: e.target.value }))} />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>City</label>
-                <input className="input" placeholder="Los Angeles" value={originForm.city} onChange={(e) => setOriginForm(f => ({ ...f, city: e.target.value }))} required />
+                <input id="origin-city" className="input" placeholder="Los Angeles" value={originForm.city} onChange={(e) => setOriginForm(f => ({ ...f, city: e.target.value }))} required />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>State</label>
-                <input className="input" placeholder="CA" maxLength={2} value={originForm.state} onChange={(e) => setOriginForm(f => ({ ...f, state: e.target.value.toUpperCase() }))} required />
+                <input id="origin-state" className="input" placeholder="CA" maxLength={2} value={originForm.state} onChange={(e) => setOriginForm(f => ({ ...f, state: e.target.value.toUpperCase() }))} required />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>ZIP</label>
-                <input className="input" placeholder="90001" value={originForm.zip} onChange={(e) => setOriginForm(f => ({ ...f, zip: e.target.value }))} required />
+                <input id="origin-zip" className="input" placeholder="90001" value={originForm.zip} onChange={(e) => setOriginForm(f => ({ ...f, zip: e.target.value }))} required />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Phone</label>
-                <input className="input" type="tel" placeholder="3105551234" value={originForm.phone} onChange={(e) => setOriginForm(f => ({ ...f, phone: e.target.value }))} required />
+                <input id="origin-phone" className="input" type="tel" placeholder="3105551234" value={originForm.phone} onChange={(e) => setOriginForm(f => ({ ...f, phone: e.target.value }))} required />
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Email</label>
-                <input className="input" type="email" placeholder="support@pepnationlab.com" value={originForm.email} onChange={(e) => setOriginForm(f => ({ ...f, email: e.target.value }))} required />
+                <input id="origin-email" className="input" type="email" placeholder="support@pepnationlab.com" value={originForm.email} onChange={(e) => setOriginForm(f => ({ ...f, email: e.target.value }))} required />
               </div>
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', color: 'var(--silver)', fontSize: '0.88rem' }}>
-              <input type="checkbox" checked={originForm.is_default} onChange={(e) => setOriginForm(f => ({ ...f, is_default: e.target.checked }))} />
+              <input id="origin-is-default" type="checkbox" checked={originForm.is_default} onChange={(e) => setOriginForm(f => ({ ...f, is_default: e.target.checked }))} />
               Set As Default Origin
             </label>
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-              <button className="btn-primary" type="submit" disabled={originLoading} style={{ fontSize: '0.85rem' }}>
+              <button id="btn-save-origin" className="btn-primary" type="submit" disabled={originLoading} style={{ fontSize: '0.85rem' }}>
                 {originLoading ? 'Saving...' : editingOrigin ? 'Update Origin' : 'Create Origin'}
               </button>
               <button type="button" className="btn-ghost" style={{ fontSize: '0.85rem' }} onClick={() => setShowOriginForm(false)}>
@@ -767,6 +733,7 @@ export default function AdminShippingSettingsClient() {
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
                   <button
+                    id={`btn-edit-origin-${o.id}`}
                     className="btn-ghost"
                     style={{ padding: '6px 10px', fontSize: '0.82rem' }}
                     onClick={() => startEditOrigin(o)}
@@ -774,6 +741,7 @@ export default function AdminShippingSettingsClient() {
                     <Edit2 size={13} />
                   </button>
                   <button
+                    id={`btn-delete-origin-${o.id}`}
                     className="btn-ghost"
                     style={{ padding: '6px 10px', fontSize: '0.82rem', color: '#e53e3e' }}
                     onClick={() => handleDeleteOrigin(o.id)}
@@ -787,9 +755,6 @@ export default function AdminShippingSettingsClient() {
         )}
       </section>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* CARD 3 - Shipping Defaults / Test Address                           */}
-      {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           <Shield size={20} color="var(--teal)" />
@@ -799,13 +764,14 @@ export default function AdminShippingSettingsClient() {
         </div>
         <form onSubmit={handleTestAddress} style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
           <input
+            id="test-address-input"
             className="input"
             style={{ flex: 1, minWidth: 260 }}
             placeholder="e.g. 100 Main St, Los Angeles CA 90001"
             value={testAddr}
             onChange={(e) => setTestAddr(e.target.value)}
           />
-          <button className="btn-secondary" type="submit" disabled={testLoading || !status?.connected} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}>
+          <button id="btn-test-address" className="btn-secondary" type="submit" disabled={testLoading || !status?.connected} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}>
             <RefreshCw size={14} />
             {testLoading ? 'Validating...' : 'Validate'}
           </button>
@@ -830,9 +796,6 @@ export default function AdminShippingSettingsClient() {
         )}
       </section>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* CARD 4 - Rate Cards (informational)                                 */}
-      {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           <Truck size={20} color="var(--teal)" />
@@ -852,9 +815,6 @@ export default function AdminShippingSettingsClient() {
         </div>
       </section>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* CARD 4.5 - Agent Warehouses                                          */}
-      {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           <Package size={20} color="var(--teal)" />
@@ -929,6 +889,7 @@ export default function AdminShippingSettingsClient() {
                     ))}
                   </select>
                   <button
+                    type="button"
                     disabled={agentAssignLoading === agent.id}
                     onClick={async () => {
                       const newOriginId = agentOriginSelections[agent.id] ?? '';
@@ -944,7 +905,6 @@ export default function AdminShippingSettingsClient() {
                           if (!r.ok) throw new Error(d.error ?? 'Assign Failed');
                           showToast(`${agent.display_name} Now Ships From ${d.origin_label}.`, 'ok');
                         } else {
-                          // Clear the assignment - call DELETE on whichever origin they currently have.
                           if (!agent.warehouse_origin_id) {
                             showToast('Agent Already Has No Assignment.', 'ok');
                             return;
@@ -986,9 +946,6 @@ export default function AdminShippingSettingsClient() {
         )}
       </section>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* CARD 5 - Webhook Status                                             */}
-      {/* ------------------------------------------------------------------ */}
       <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           <Shield size={20} color={status?.webhook_configured ? 'var(--teal)' : '#e53e3e'} />
@@ -1029,7 +986,6 @@ export default function AdminShippingSettingsClient() {
           )}
         </div>
 
-        {/* Inbound Webhook Activity (last 7 days) */}
         {webhookActivity && (
           <div style={{ marginTop: 'var(--space-4)', borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 'var(--space-4)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
@@ -1077,9 +1033,6 @@ export default function AdminShippingSettingsClient() {
         )}
       </section>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* CARD 6 - Reconciliation                                             */}
-      {/* ------------------------------------------------------------------ */}
       <section className="card">
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           <DollarSign size={20} color="var(--teal)" />
