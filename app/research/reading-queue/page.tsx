@@ -27,6 +27,19 @@ export default async function ReadingQueuePage() {
     .limit(100);
 
   const items = (rows ?? []) as Array<{ id: string; compound_slug: string | null; reference_id: string | null; position: number; read_at: string | null; created_at: string }>;
+
+  // Resolve display names for all compound slugs in one query
+  const slugs = items.map((r) => r.compound_slug).filter(Boolean) as string[];
+  const displayNames: Record<string, string> = {};
+  if (slugs.length > 0) {
+    const { data: compounds } = await service
+      .from('compounds')
+      .select('slug, display_name')
+      .in('slug', slugs);
+    for (const c of compounds ?? []) {
+      displayNames[c.slug] = c.display_name;
+    }
+  }
   const unread = items.filter((r) => !r.read_at);
   const read = items.filter((r) => !!r.read_at);
 
@@ -55,7 +68,7 @@ export default async function ReadingQueuePage() {
                 {unread.map((row) => (
                   row.compound_slug ? (
                     <Link key={row.id} href={`/research/${row.compound_slug}`} className="glass-panel" style={{ padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>{row.compound_slug}</span>
+                      <span>{displayNames[row.compound_slug ?? ''] || row.compound_slug}</span>
                       <span style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>Position {row.position}</span>
                     </Link>
                   ) : null
@@ -70,7 +83,7 @@ export default async function ReadingQueuePage() {
                 {read.map((row) => (
                   row.compound_slug ? (
                     <Link key={row.id} href={`/research/${row.compound_slug}`} className="glass-panel" style={{ padding: 'var(--space-2, 8px) var(--space-4, 16px)', borderRadius: 'var(--radius-md, 8px)', textDecoration: 'none', color: 'var(--silver, #A8B4C0)', fontSize: '0.88rem', display: 'flex', justifyContent: 'space-between' }}>
-                      <span>{row.compound_slug}</span>
+                      <span>{displayNames[row.compound_slug ?? ''] || row.compound_slug}</span>
                       <span>Read {row.read_at ? new Date(row.read_at).toLocaleDateString() : ''}</span>
                     </Link>
                   ) : null

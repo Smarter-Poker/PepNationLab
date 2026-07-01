@@ -159,8 +159,10 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [key]: inputValue }) 
       });
-      onProfileChange({ ...profile, [key]: inputValue } as AccountProfile);
-    } catch(err) {}
+      if (profile) onProfileChange({ ...profile, [key]: inputValue } as AccountProfile);
+    } catch(err) {
+      toast.error(err instanceof Error ? err.message : 'Failed To Save. Please Try Again.');
+    }
     setSavingTask(false);
     setExpandedTask(null);
   };
@@ -417,9 +419,11 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
                             try {
                               const res = await fetch('/api/agent/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatar_url: 'default' }) });
                               if (res.ok) {
-                                onProfileChange?.({ ...profile, avatar_url: 'default' } as any);
+                                if (profile) onProfileChange?.({ ...profile, avatar_url: 'default' } as any);
                               }
-                            } catch(err) {}
+                            } catch(err) {
+                              toast.error(err instanceof Error ? err.message : 'Failed To Reset Avatar.');
+                            }
                           }}
                         >
                           Use Default
@@ -466,8 +470,10 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
                             onUploadSuccess={async (url) => {
                               try {
                                 await fetch('/api/agent/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatar_url: url }) });
-                                onProfileChange({ ...profile, avatar_url: url } as AccountProfile);
-                              } catch(err) {}
+                                if (profile) onProfileChange({ ...profile, avatar_url: url } as AccountProfile);
+                              } catch(err) {
+                                toast.error(err instanceof Error ? err.message : 'Failed To Save Avatar.');
+                              }
                               setExpandedTask(null);
                             }}
                           />

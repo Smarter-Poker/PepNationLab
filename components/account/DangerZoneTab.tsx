@@ -8,6 +8,7 @@ interface ExportJob {
   id: string;
   status: 'queued' | 'running' | 'completed' | 'failed';
   file_path: string | null;
+  download_url: string | null;
   requested_at: string;
   completed_at: string | null;
 }
@@ -126,8 +127,8 @@ export default function DangerZoneTab() {
                       {j.completed_at && ` • Completed ${new Date(j.completed_at).toLocaleString()}`}
                     </div>
                   </div>
-                  {j.file_path && j.status === 'completed' && (
-                    <a className="btn btn-secondary btn-sm" href={j.file_path} download>
+                  {j.download_url && j.status === 'completed' && (
+                    <a className="btn btn-secondary btn-sm" href={j.download_url} download>
                       Download
                     </a>
                   )}

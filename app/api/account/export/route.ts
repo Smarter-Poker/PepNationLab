@@ -24,7 +24,18 @@ export async function GET() {
     return NextResponse.json({ error: 'export_list_failed' }, { status: 500 });
   }
 
-  return NextResponse.json({ jobs: data ?? [] });
+  // Generate signed download URLs for completed jobs that have a stored filename
+  const jobs = await Promise.all((data ?? []).map(async (job) => {
+    if (job.status === 'completed' && job.file_path && !job.file_path.startsWith('http')) {
+      const { data: signed } = await supabase.storage
+        .from('account-exports')
+        .createSignedUrl(job.file_path, 60 * 60); // 1 hour expiry
+      return { ...job, download_url: signed?.signedUrl ?? null };
+    }
+    return { ...job, download_url: job.file_path ?? null };
+  }));
+
+  return NextResponse.json({ jobs });
 }
 
 export async function POST(req: NextRequest) {

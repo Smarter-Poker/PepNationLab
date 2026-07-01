@@ -27,6 +27,14 @@ export default async function SavedCompoundsPage() {
 
   const items = (rows ?? []) as Array<{ compound_slug: string; collection_name: string; notes: string | null; created_at: string }>;
 
+  // Resolve display names in one query
+  const slugs = [...new Set(items.map((r) => r.compound_slug).filter(Boolean))];
+  const displayNames: Record<string, string> = {};
+  if (slugs.length > 0) {
+    const { data: compounds } = await service.from('compounds').select('slug, display_name').in('slug', slugs);
+    for (const c of compounds ?? []) { displayNames[c.slug] = c.display_name; }
+  }
+
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
@@ -47,7 +55,7 @@ export default async function SavedCompoundsPage() {
           {items.map((row) => (
             <Link key={`${row.collection_name}-${row.compound_slug}`} href={`/research/${row.compound_slug}`} className="glass-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3, 12px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{row.compound_slug}</span>
+                <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{displayNames[row.compound_slug] || row.compound_slug}</span>
                 <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)' }}>
                   Collection: {row.collection_name}{row.notes ? ` · ${row.notes}` : ''}
                 </span>

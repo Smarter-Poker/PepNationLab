@@ -52,3 +52,13 @@ pepnationrx
 # they are not re-staged; remove from history with `git rm --cached <file>`.
 cookies.txt
 .r8-push.json
+
+# Push-script scratch artifacts (base64 chunked files used by .push-asg.js).
+# These must NEVER be committed — they corrupt the repo when merged.
+_tmp_push/
+.push-asg.js
+components/.asg_*.txt
+components/.asg_b64_part*.txt
+components/.asg_p*.txt
+components/.b*.txt
+components/.full_b64.txt

@@ -1,1 +1,226 @@
-J3VzZSBjbGllbnQnOwoKLyoqCiAqIFBpblRvQ29tcGFyZUJ1dHRvbiAtIHdyaXRlcyBhIGNvbXBvdW5kIHRvIHRoZSBgcG5sOmNvbXBhcmVgIGxvY2FsU3RvcmFnZQogKiBrZXkgc2hhcmVkIHdpdGggU3RvcmVmcm9udENvbXBhcmVEcmF3ZXIuIFBpbiBmcm9tIGFueXdoZXJlIGluIHRoZSBSZXNlYXJjaAogKiBMaWJyYXJ5IGFuZCB0aGUgYm90dG9tIGNvbXBhcmUgZHJhd2VyIGFjdGl2YXRlcyBhdXRvbWF0aWNhbGx5LgogKgogKiBQcm9wczoKICogICBjb21wb3VuZFNsdWcgICAtIHRoZSBjb21wb3VuZCdzIHNsdWcgKHVzZWQgYXMgY29tcG91bmRTbHVnIGluIHBpbm5lZCBpdGVtcykKICogICBjb21wb3VuZE5hbWUgICAtIGRpc3BsYXkgbmFtZQogKiAgIGV2aWRlbmNlVGllcktleSAtIG9wdGlvbmFsIHRpZXIga2V5IGZvciB0aGUgc2NvcmUgZW5naW5lCiAqICAgcHJvZHVjdE5hbWUgICAgLSBvcHRpb25hbCBwcm9kdWN0IG5hbWUgKGZhbGxzIGJhY2sgdG8gY29tcG91bmROYW1lKQogKiAgIGltYWdlVXJsICAgICAgIC0gb3B0aW9uYWwgcHJvZHVjdCBpbWFnZSB1cmwKICogICBwcmljZVBlclZpYWxEb2xsYXJzIC0gb3B0aW9uYWwgcHJpY2UKICovCgppbXBvcnQgSW1hZ2UgZnJvbSAnbmV4dC9pbWFnZSc7CmltcG9ydCB7IHVzZVN0YXRlLCB1c2VFZmZlY3QsIHVzZUNhbGxiYWNrIH0gZnJvbSAncmVhY3QnOwppbXBvcnQgeyBHaXRDb21wYXJlLCBDaGVjaywgWCB9IGZyb20gJ2x1Y2lkZS1yZWFjdCc7CmltcG9ydCB7IHRvYXN0IH0gZnJvbSAnc29ubmVyJzsKCmNvbnN0IFNUT1JBR0VfS0VZID0gJ3BubDpjb21wYXJlJzsKY29uc3QgTUFYX1BJTk5FRCA9IDQ7CgppbnRlcmZhY2UgUGlubmVkSXRlbSB7CiAgcHJvZHVjdE5hbWU6IHN0cmluZzsKICBpbWFnZVVybDogc3RyaW5nIHwgbnVsbDsKICBwcmljZVBlclZpYWxEb2xsYXJzOiBudW1iZXIgfCBudWxsOwogIGNvbXBvdW5kU2x1Zzogc3RyaW5nIHwgbnVsbDsKICBldmlkZW5jZVRpZXJLZXk6IHN0cmluZyB8IG51bGw7CiAgY2F0ZWdvcnk/OiBzdHJpbmcgfCBudWxsOwogIHBpbm5lZEF0OiBudW1iZXI7Cn0KCmZ1bmN0aW9uIHJlYWRQaW5uZWQoKTogUGlubmVkSXRlbVtdIHsKICBpZiAodHlwZW9mIHdpbmRvdyA9PT0gJ3VuZGVmaW5lZCcpIHJldHVybiBbXTsKICB0cnkgewogICAgY29uc3QgcmF3ID0gd2luZG93LmxvY2FsU3RvcmFnZS5nZXRJdGVtKFNUT1JBR0VfS0VZKSB8fCAnW10nOwogICAgY29uc3QgbGlzdCA9IEpTT04ucGFyc2UocmF3KTsKICAgIHJldHVybiBBcnJheS5pc0FycmF5KGxpc3QpID8gbGlzdC5zbGljZSgtTUFYX1BJTk5FRCkgOiBbXTsKICB9IGNhdGNoIHsgcmV0dXJuIFtdOyB9Cn0KCmZ1bmN0aW9uIHdyaXRlUGlubmVkKGxpc3Q6IFBpbm5lZEl0ZW1bXSkgewogIGlmICh0eXBlb2Ygd2luZG93ID09PSAndW5kZWZpbmVkJykgcmV0dXJuOwogIHRyeSB7CiAgICB3aW5kb3cubG9jYWxTdG9yYWdlLnNldEl0ZW0oU1RPUkFHRV9LRVksIEpTT04uc3RyaW5naWZ5KGxpc3Quc2xpY2UoLU1BWF9QSU5ORUQpKSk7CiAgICAvLyBOb3RpZnkgU3RvcmVmcm9udENvbXBhcmVEcmF3ZXIgYWNyb3NzIHRoZSBwYWdlCiAgICB3aW5kb3cuZGlzcGF0Y2hFdmVudChuZXcgU3RvcmFnZUV2ZW50KCdzdG9yYWdlJywgeyBrZXk6IFNUT1JBR0VfS0VZIH0pKTsKICAgIHdpbmRvdy5kaXNwYXRjaEV2ZW50KG5ldyBDdXN0b21FdmVudCgncG5sOmNvbXBhcmUtY2hhbmdlZCcpKTsKICB9IGNhdGNoIHsgLyogaWdub3JlICovIH0KfQoKaW50ZXJmYWNlIFByb3BzIHsKICBjb21wb3VuZFNsdWc6IHN0cmluZzsKICBjb21wb3VuZE5hbWU6IHN0cmluZzsKICBldmlkZW5jZVRpZXJLZXk/OiBzdHJpbmc7CiAgcHJvZHVjdE5hbWU/OiBzdHJpbmc7CiAgaW1hZ2VVcmw/OiBzdHJpbmcgfCBudWxsOwogIHByaWNlUGVyVmlhbERvbGxhcnM/OiBudW1iZXIgfCBudWxsOwogIGNhdGVnb3J5Pzogc3RyaW5nIHwgbnVsbDsKICBzaXplPzogJ3NtJyB8ICdtZCc7CiAgY2xhc3NOYW1lPzogc3RyaW5nOwogIHN0eWxlPzogUmVhY3QuQ1NTUHJvcGVydGllczsKfQoKZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gUGluVG9Db21wYXJlQnV0dG9uKHsKICBjb21wb3VuZFNsdWcsCiAgY29tcG91bmROYW1lLAogIGV2aWRlbmNlVGllcktleSwKICBwcm9kdWN0TmFtZSwKICBpbWFnZVVybCwKICBwcmljZVBlclZpYWxEb2xsYXJzLAogIGNhdGVnb3J5LAogIHNpemUgPSAnbWQnLAogIHN0eWxlID0ge30sCn06IFByb3BzKSB7CiAgY29uc3QgW3Bpbm5lZCwgc2V0UGlubmVkXSA9IHVzZVN0YXRlKGZhbHNlKTsKICBjb25zdCBbZnVsbCwgc2V0RnVsbF0gPSB1c2VTdGF0ZShmYWxzZSk7CgogIGNvbnN0IHN5bmMgPSB1c2VDYWxsYmFjaygoKSA9PiB7CiAgICBjb25zdCBsaXN0ID0gcmVhZFBpbm5lZCgpOwogICAgY29uc3QgaXNQaW5uZWQgPSBsaXN0LnNvbWUocCA9PiBwLmNvbXBvdW5kU2x1ZyA9PT0gY29tcG91bmRTbHVnKTsKICAgIGNvbnN0IGlzRnVsbCA9IGxpc3QubGVuZ3RoID49IE1BWF9QSU5ORUQgJiYgIWlzUGlubmVkOwogICAgc2V0UGlubmVkKGlzUGlubmVkKTsKICAgIHNldEZ1bGwoaXNGdWxsKTsKICB9LCBbY29tcG91bmRTbHVnXSk7CgogIHVzZUVmZmVjdCgoKSA9PiB7CiAgICAvLyBlc2xpbnQtZGlzYWJsZS1uZXh0LWxpbmUgcmVhY3QtaG9va3Mvc2V0LXN0YXRlLWluLWVmZmVjdAogICAgc3luYygpOwogICAgd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3BubDpjb21wYXJlLWNoYW5nZWQnLCBzeW5jKTsKICAgIHdpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdzdG9yYWdlJywgc3luYyk7CiAgICByZXR1cm4gKCkgPT4gewogICAgICB3aW5kb3cucmVtb3ZlRXZlbnRMaXN0ZW5lcigncG5sOmNvbXBhcmUtY2hhbmdlZCcsIHN5bmMpOwogICAgICB3aW5kb3cucmVtb3ZlRXZlbnRMaXN0ZW5lcignc3RvcmFnZScsIHN5bmMpOwogICAgfTsKICB9LCBbc3luY10pOwoKICBjb25zdCB0b2dnbGUgPSB1c2VDYWxsYmFjaygoKSA9PiB7CiAgICBjb25zdCBsaXN0ID0gcmVhZFBpbm5lZCgpOwogICAgY29uc3QgaWR4ID0gbGlzdC5maW5kSW5kZXgocCA9PiBwLmNvbXBvdW5kU2x1ZyA9PT0gY29tcG91bmRTbHVnKTsKICAgIGlmIChpZHggPj0gMCkgewogICAgICAvLyBVbnBpbgogICAgICBsaXN0LnNwbGljZShpZHgsIDEpOwogICAgICB3cml0ZVBpbm5lZChsaXN0KTsKICAgIH0gZWxzZSBpZiAobGlzdC5sZW5ndGggPCBNQVhfUElOTkVEKSB7CiAgICAgIC8vIFBpbgogICAgICBpZiAobGlzdC5sZW5ndGggPiAwKSB7CiAgICAgICAgY29uc3QgZmlyc3RDYXRlZ29yeSA9IGxpc3RbMF0uY2F0ZWdvcnk7CiAgICAgICAgaWYgKGZpcnN0Q2F0ZWdvcnkgJiYgY2F0ZWdvcnkgJiYgZmlyc3RDYXRlZ29yeSAhPT0gY2F0ZWdvcnkpIHsKICAgICAgICAgIHRvYXN0LmVycm9yKGBPbmx5IFBlcHRpZGVzIFdpdGhpbiBUaGUgU2FtZSBDYXRlZ29yeSBDYW4gQmUgQ29tcGFyZWQgKCIke2ZpcnN0Q2F0ZWdvcnl9IikuYCk7CiAgICAgICAgICByZXR1cm47CiAgICAgICAgfQogICAgICB9CiAgICAgIGNvbnN0IGl0ZW06IFBpbm5lZEl0ZW0gPSB7CiAgICAgICAgcHJvZHVjdE5hbWU6IHByb2R1Y3ROYW1lID8/IGNvbXBvdW5kTmFtZSwKICAgICAgICBpbWFnZVVybDogaW1hZ2VVcmwgPz8gbnVsbCwKICAgICAgICBwcmljZVBlclZpYWxEb2xsYXJzOiBwcmljZVBlclZpYWxEb2xsYXJzID8/IG51bGwsCiAgICAgICAgY29tcG91bmRTbHVnLAogICAgICAgIGV2aWRlbmNlVGllcktleTogZXZpZGVuY2VUaWVyS2V5ID8/IG51bGwsCiAgICAgICAgY2F0ZWdvcnk6IGNhdGVnb3J5ID8/IG51bGwsCiAgICAgICAgcGlubmVkQXQ6IERhdGUubm93KCksCiAgICAgIH07CiAgICAgIHdyaXRlUGlubmVkKFsuLi5saXN0LCBpdGVtXSk7CiAgICB9IGVsc2UgewogICAgICB0b2FzdC5lcnJvcignVXAgVG8gNCBDb21wb3VuZHMgQ2FuIEJlIENvbXBhcmVkIEF0IEEgVGltZS4nKTsKICAgIH0KICAgIHN5bmMoKTsKICB9LCBbY29tcG91bmRTbHVnLCBjb21wb3VuZE5hbWUsIGV2aWRlbmNlVGllcktleSwgcHJvZHVjdE5hbWUsIGltYWdlVXJsLCBwcmljZVBlclZpYWxEb2xsYXJzLCBjYXRlZ29yeSwgc3luY10pOwoKICBjb25zdCBpc1NtYWxsID0gc2l6ZSA9PT0gJ3NtJzsKICBjb25zdCBidXR0b25XaWR0aCA9IGlzU21hbGwgPyAnMTIwcHgnIDogJzE4MHB4JzsKCiAgaWYgKHBpbm5lZCkgewogICAgcmV0dXJuICgKICAgICAgPGJ1dHRvbgogICAgICAgIHR5cGU9ImJ1dHRvbiIKICAgICAgICBvbkNsaWNrPXt0b2dnbGV9CiAgICAgICAgdGl0bGU9IlJlbW92ZSBGcm9tIENvbXBhcmUiCiAgICAgICAgc3R5bGU9e3sKICAgICAgICAgIGJhY2tncm91bmQ6ICdub25lJywKICAgICAgICAgIGJvcmRlcjogJ25vbmUnLAogICAgICAgICAgcGFkZGluZzogMCwKICAgICAgICAgIGN1cnNvcjogJ3BvaW50ZXInLAogICAgICAgICAgb3V0bGluZTogJ25vbmUnLAogICAgICAgICAgcG9zaXRpb246ICdyZWxhdGl2ZScsCiAgICAgICAgICBkaXNwbGF5OiAnaW5saW5lLWZsZXgnLAogICAgICAgICAgYWxpZ25JdGVtczogJ2NlbnRlcicsCiAgICAgICAgICBqdXN0aWZ5Q29udGVudDogJ2NlbnRlcicsCiAgICAgICAgICB3aWR0aDogYnV0dG9uV2lkdGgsCiAgICAgICAgICB0cmFuc2l0aW9uOiAndHJhbnNmb3JtIDAuMTVzJywKICAgICAgICAgIC4uLnN0eWxlLAogICAgICAgIH19CiAgICAgICAgb25Nb3VzZU92ZXI9e2UgPT4gZS5jdXJyZW50VGFyZ2V0LnN0eWxlLnRyYW5zZm9ybSA9ICdzY2FsZSgxLjAyKSd9CiAgICAgICAgb25Nb3VzZU91dD17ZSA9PiBlLmN1cnJlbnRUYXJnZXQuc3R5bGUudHJhbnNmb3JtID0gJ25vbmUnfQogICAgICA+CiAgICAgICAgPEltYWdlCiAgICAgICAgICBzcmM9Ii9pbWFnZXMvcGluLXRvLWNvbXBhcmUtYnRuLnBuZyIKICAgICAgICAgIGFsdD0iUGlubmVkIHRvIENvbXBhcmUiCiAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICB3aWR0aDogJzEwMCUnLAogICAgICAgICAgICBoZWlnaHQ6ICcxMDAlJywKICAgICAgICAgICAgb2JqZWN0Rml0OiAnY29udGFpbicsCiAgICAgICAgICAgIGRpc3BsYXk6ICdibG9jaycsCiAgICAgICAgICAgIGZpbHRlcjogJ2Ryb3Atc2hhZG93KDAgMCA2cHggIzAwQzRCQykgYnJpZ2h0bmVzcygxLjEpJywKICAgICAgICAgIH19CiAgICAgICAgIHdpZHRoPXsyMDB9IGhlaWdodD17MjAwfSB1bm9wdGltaXplZCAvPgogICAgICAgIHsvKiBBIHNtYWxsIGFic29sdXRlIGNoZWNrIGljb24gaW4gdGhlIHRvcCByaWdodCB0byBjbGVhcmx5IHNpZ25hbCBwaW5uZWQgKi99CiAgICAgICAgPGRpdiBzdHlsZT17ewogICAgICAgICAgcG9zaXRpb246ICdhYnNvbHV0ZScsCiAgICAgICAgICB0b3A6IC00LAogICAgICAgICAgcmlnaHQ6IC00LAogICAgICAgICAgYmFja2dyb3VuZDogJyMwMEM0QkMnLAogICAgICAgICAgYm9yZGVyUmFkaXVzOiAnNTAlJywKICAgICAgICAgIHdpZHRoOiAxOCwKICAgICAgICAgIGhlaWdodDogMTgsCiAgICAgICAgICBkaXNwbGF5OiAnZmxleCcsCiAgICAgICAgICBhbGlnbkl0ZW1zOiAnY2VudGVyJywKICAgICAgICAgIGp1c3RpZnlDb250ZW50OiAnY2VudGVyJywKICAgICAgICAgIGJveFNoYWRvdzogJzAgMnB4IDRweCByZ2JhKDAsMCwwLDAuNSknLAogICAgICAgICAgYm9yZGVyOiAnMXB4IHNvbGlkICNGRkYnLAogICAgICAgICAgekluZGV4OiAxMCwKICAgICAgICB9fT4KICAgICAgICAgIDxDaGVjayBzaXplPXsxMH0gY29sb3I9IiMwNDIyMUYiIHN0cm9rZVdpZHRoPXszfSAvPgogICAgICAgIDwvZGl2PgogICAgICA8L2J1dHRvbj4KICAgICk7CiAgfQoKICByZXR1cm4gKAogICAgPGJ1dHRvbgogICAgICB0eXBlPSJidXR0b24iCiAgICAgIG9uQ2xpY2s9e3RvZ2dsZX0KICAgICAgZGlzYWJsZWQ9e2Z1bGx9CiAgICAgIHRpdGxlPXtmdWxsID8gJ0NvbXBhcmUgVHJheSBJcyBGdWxsIChNYXggNCknIDogYEFkZCAke2NvbXBvdW5kTmFtZX0gVG8gQ29tcGFyZWB9CiAgICAgIHN0eWxlPXt7CiAgICAgICAgYmFja2dyb3VuZDogJ25vbmUnLAogICAgICAgIGJvcmRlcjogJ25vbmUnLAogICAgICAgIHBhZGRpbmc6IDAsCiAgICAgICAgY3Vyc29yOiBmdWxsID8gJ25vdC1hbGxvd2VkJyA6ICdwb2ludGVyJywKICAgICAgICBvcGFjaXR5OiBmdWxsID8gMC40IDogMSwKICAgICAgICBvdXRsaW5lOiAnbm9uZScsCiAgICAgICAgZGlzcGxheTogJ2lubGluZS1mbGV4JywKICAgICAgICBhbGlnbkl0ZW1zOiAnY2VudGVyJywKICAgICAgICBqdXN0aWZ5Q29udGVudDogJ2NlbnRlcicsCiAgICAgICAgd2lkdGg6IGJ1dHRvbldpZHRoLAogICAgICAgIHRyYW5zaXRpb246ICd0cmFuc2Zvcm0gMC4xNXMnLAogICAgICAgIC4uLnN0eWxlLAogICAgICB9fQogICAgICBvbk1vdXNlT3Zlcj17ZSA9PiB7IGlmKCFmdWxsKSBlLmN1cnJlbnRUYXJnZXQuc3R5bGUudHJhbnNmb3JtID0gJ3NjYWxlKDEuMDIpJzsgfX0KICAgICAgb25Nb3VzZU91dD17ZSA9PiBlLmN1cnJlbnRUYXJnZXQuc3R5bGUudHJhbnNmb3JtID0gJ25vbmUnfQogICAgPgogICAgICA8SW1hZ2UKICAgICAgICBzcmM9Ii9pbWFnZXMvcGluLXRvLWNvbXBhcmUtYnRuLnBuZyIKICAgICAgICBhbHQ9IlBpbiB0byBDb21wYXJlIgogICAgICAgIHN0eWxlPXt7CiAgICAgICAgICB3aWR0aDogJzEwMCUnLAogICAgICAgICAgaGVpZ2h0OiAnMTAwJScsCiAgICAgICAgICBvYmplY3RGaXQ6ICdjb250YWluJywKICAgICAgICAgIGRpc3BsYXk6ICdibG9jaycsCiAgICAgICAgfX0KICAgICAgIHdpZHRoPXsyMDB9IGhlaWdodD17MjAwfSB1bm9wdGltaXplZCAvPgogICAgPC9idXR0b24+CiAgKTsKfQo=
+'use client';
+
+/**
+ * PinToCompareButton - writes a compound to the `pnl:compare` localStorage
+ * key shared with StorefrontCompareDrawer. Pin from anywhere in the Research
+ * Library and the bottom compare drawer activates automatically.
+ *
+ * Props:
+ *   compoundSlug   - the compound's slug (used as compoundSlug in pinned items)
+ *   compoundName   - display name
+ *   evidenceTierKey - optional tier key for the score engine
+ *   productName    - optional product name (falls back to compoundName)
+ *   imageUrl       - optional product image url
+ *   pricePerVialDollars - optional price
+ */
+
+import Image from 'next/image';
+import { useState, useEffect, useCallback } from 'react';
+import { GitCompare, Check, X } from 'lucide-react';
+import { toast } from 'sonner';
+
+const STORAGE_KEY = 'pnl:compare';
+const MAX_PINNED = 4;
+
+interface PinnedItem {
+  productName: string;
+  imageUrl: string | null;
+  pricePerVialDollars: number | null;
+  compoundSlug: string | null;
+  evidenceTierKey: string | null;
+  category?: string | null;
+  pinnedAt: number;
+}
+
+function readPinned(): PinnedItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY) || '[]';
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list.slice(-MAX_PINNED) : [];
+  } catch { return []; }
+}
+
+function writePinned(list: PinnedItem[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(-MAX_PINNED)));
+    // Notify StorefrontCompareDrawer across the page
+    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
+    window.dispatchEvent(new CustomEvent('pnl:compare-changed'));
+  } catch { /* ignore */ }
+}
+
+interface Props {
+  compoundSlug: string;
+  compoundName: string;
+  evidenceTierKey?: string;
+  productName?: string;
+  imageUrl?: string | null;
+  pricePerVialDollars?: number | null;
+  category?: string | null;
+  size?: 'sm' | 'md';
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+export default function PinToCompareButton({
+  compoundSlug,
+  compoundName,
+  evidenceTierKey,
+  productName,
+  imageUrl,
+  pricePerVialDollars,
+  category,
+  size = 'md',
+  style = {},
+}: Props) {
+  const [pinned, setPinned] = useState(false);
+  const [full, setFull] = useState(false);
+
+  const sync = useCallback(() => {
+    const list = readPinned();
+    const isPinned = list.some(p => p.compoundSlug === compoundSlug);
+    const isFull = list.length >= MAX_PINNED && !isPinned;
+    setPinned(isPinned);
+    setFull(isFull);
+  }, [compoundSlug]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    sync();
+    window.addEventListener('pnl:compare-changed', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener('pnl:compare-changed', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, [sync]);
+
+  const toggle = useCallback(() => {
+    const list = readPinned();
+    const idx = list.findIndex(p => p.compoundSlug === compoundSlug);
+    if (idx >= 0) {
+      // Unpin
+      list.splice(idx, 1);
+      writePinned(list);
+    } else if (list.length < MAX_PINNED) {
+      // Pin
+      if (list.length > 0) {
+        const firstCategory = list[0].category;
+        if (firstCategory && category && firstCategory !== category) {
+          toast.error(`Only Peptides Within The Same Category Can Be Compared ("${firstCategory}").`);
+          return;
+        }
+      }
+      const item: PinnedItem = {
+        productName: productName ?? compoundName,
+        imageUrl: imageUrl ?? null,
+        pricePerVialDollars: pricePerVialDollars ?? null,
+        compoundSlug,
+        evidenceTierKey: evidenceTierKey ?? null,
+        category: category ?? null,
+        pinnedAt: Date.now(),
+      };
+      writePinned([...list, item]);
+    } else {
+      toast.error('Up To 4 Compounds Can Be Compared At A Time.');
+    }
+    sync();
+  }, [compoundSlug, compoundName, evidenceTierKey, productName, imageUrl, pricePerVialDollars, category, sync]);
+
+  const isSmall = size === 'sm';
+  const buttonWidth = isSmall ? '120px' : '180px';
+
+  if (pinned) {
+    return (
+      <button
+        type="button"
+        onClick={toggle}
+        title="Remove From Compare"
+        style={{
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+          outline: 'none',
+          position: 'relative',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: buttonWidth,
+          transition: 'transform 0.15s',
+          ...style,
+        }}
+        onMouseOver={e => e.currentTarget.style.transform = 'scale(1.02)'}
+        onMouseOut={e => e.currentTarget.style.transform = 'none'}
+      >
+        <Image
+          src="/images/pin-to-compare-btn.png"
+          alt="Pinned to Compare"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            display: 'block',
+            filter: 'drop-shadow(0 0 6px #00C4BC) brightness(1.1)',
+          }}
+         width={200} height={200} unoptimized />
+        {/* A small absolute check icon in the top right to clearly signal pinned */}
+        <div style={{
+          position: 'absolute',
+          top: -4,
+          right: -4,
+          background: '#00C4BC',
+          borderRadius: '50%',
+          width: 18,
+          height: 18,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
+          border: '1px solid #FFF',
+          zIndex: 10,
+        }}>
+          <Check size={10} color="#04221F" strokeWidth={3} />
+        </div>
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      disabled={full}
+      title={full ? 'Compare Tray Is Full (Max 4)' : `Add ${compoundName} To Compare`}
+      style={{
+        background: 'none',
+        border: 'none',
+        padding: 0,
+        cursor: full ? 'not-allowed' : 'pointer',
+        opacity: full ? 0.4 : 1,
+        outline: 'none',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: buttonWidth,
+        transition: 'transform 0.15s',
+        ...style,
+      }}
+      onMouseOver={e => { if(!full) e.currentTarget.style.transform = 'scale(1.02)'; }}
+      onMouseOut={e => e.currentTarget.style.transform = 'none'}
+    >
+      <Image
+        src="/images/pin-to-compare-btn.png"
+        alt="Pin to Compare"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          display: 'block',
+        }}
+       width={200} height={200} unoptimized />
+    </button>
+  );
+}

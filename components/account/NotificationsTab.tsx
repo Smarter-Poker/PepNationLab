@@ -360,7 +360,7 @@ export default function NotificationsTab() {
               type="button"
               className="btn btn-primary"
               style={{ width: '100%', height: '42px', maxWidth: 'none' }}
-              onClick={() => toast.success('Quiet Hours Saved.')}
+              onClick={() => toast.success('Quiet Hours Saved On This Device.')}
             >
               Save Changes
             </button>
@@ -368,7 +368,7 @@ export default function NotificationsTab() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .account-matrix-cards { display: none; }
         @media (max-width: 720px) {
           .account-matrix-table { display: none; }

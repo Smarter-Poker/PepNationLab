@@ -1,1 +1,138 @@
-J3VzZSBjbGllbnQnOwoKaW1wb3J0IHsgdXNlU3RhdGUgfSBmcm9tICdyZWFjdCc7CmltcG9ydCBMaW5rIGZyb20gJ25leHQvbGluayc7CmltcG9ydCBJbWFnZSBmcm9tICduZXh0L2ltYWdlJzsKaW1wb3J0IHsgS2V5IH0gZnJvbSAnbHVjaWRlLXJlYWN0JzsKaW1wb3J0IHsgY3JlYXRlQ2xpZW50IH0gZnJvbSAnQC9saWIvc3VwYWJhc2UvY2xpZW50JzsKCmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIEZvcmdvdFBhc3N3b3JkUGFnZSgpIHsKICBjb25zdCBbZW1haWwsIHNldEVtYWlsXSA9IHVzZVN0YXRlKCcnKTsKICBjb25zdCBbbG9hZGluZywgc2V0TG9hZGluZ10gPSB1c2VTdGF0ZShmYWxzZSk7CiAgY29uc3QgW2Vycm9yLCBzZXRFcnJvcl0gPSB1c2VTdGF0ZSgnJyk7CiAgY29uc3QgW3NlbnQsIHNldFNlbnRdID0gdXNlU3RhdGUoZmFsc2UpOwoKICBhc3luYyBmdW5jdGlvbiBoYW5kbGVTdWJtaXQoZTogUmVhY3QuRm9ybUV2ZW50KSB7CiAgICBlLnByZXZlbnREZWZhdWx0KCk7CiAgICBzZXRFcnJvcignJyk7CgogICAgaWYgKCFlbWFpbC50cmltKCkpIHsKICAgICAgc2V0RXJyb3IoJ1BsZWFzZSBFbnRlciBZb3VyIEVtYWlsIEFkZHJlc3MuJyk7CiAgICAgIHJldHVybjsKICAgIH0KCiAgICBzZXRMb2FkaW5nKHRydWUpOwogICAgY29uc3Qgc3VwYWJhc2UgPSBjcmVhdGVDbGllbnQoKTsKCiAgICBjb25zdCByZWRpcmVjdFRvID0KICAgICAgdHlwZW9mIHdpbmRvdyAhPT0gJ3VuZGVmaW5lZCcgPyBgJHt3aW5kb3cubG9jYXRpb24ub3JpZ2lufS9sb2dpbmAgOiB1bmRlZmluZWQ7CgogICAgY29uc3QgeyBlcnJvcjogcmVzZXRFcnJvciB9ID0gYXdhaXQgc3VwYWJhc2UuYXV0aC5yZXNldFBhc3N3b3JkRm9yRW1haWwoCiAgICAgIGVtYWlsLnRyaW0oKSwKICAgICAgcmVkaXJlY3RUbyA/IHsgcmVkaXJlY3RUbyB9IDogdW5kZWZpbmVkCiAgICApOwoKICAgIHNldExvYWRpbmcoZmFsc2UpOwoKICAgIGlmIChyZXNldEVycm9yKSB7CiAgICAgIHNldEVycm9yKHJlc2V0RXJyb3IubWVzc2FnZSk7CiAgICAgIHJldHVybjsKICAgIH0KCiAgICBzZXRTZW50KHRydWUpOwogIH0KCiAgcmV0dXJuICgKICAgIDxkaXYKICAgICAgc3R5bGU9e3sKICAgICAgICBtaW5IZWlnaHQ6ICcxMDBkdmgnLAogICAgICAgIGRpc3BsYXk6ICdmbGV4JywKICAgICAgICBhbGlnbkl0ZW1zOiAnY2VudGVyJywKICAgICAgICBqdXN0aWZ5Q29udGVudDogJ2NlbnRlcicsCiAgICAgICAgYmFja2dyb3VuZDogJ3ZhcigtLWJsYWNrKScsCiAgICAgICAgcGFkZGluZzogJ3ZhcigtLXNwYWNlLTYpJywKICAgICAgfX0KICAgID4KICAgICAgPGRpdgogICAgICAgIHN0eWxlPXt7CiAgICAgICAgICBwb3NpdGlvbjogJ2ZpeGVkJywKICAgICAgICAgIHRvcDogMCwKICAgICAgICAgIGxlZnQ6IDAsCiAgICAgICAgICByaWdodDogMCwKICAgICAgICAgIGJvdHRvbTogMCwKICAgICAgICAgIGJhY2tncm91bmQ6ICdyYWRpYWwtZ3JhZGllbnQoZWxsaXBzZSBhdCA1MCUgMCUsIHJnYmEoMTkyLDE4NCwxNjgsMC4wNikgMCUsIHRyYW5zcGFyZW50IDYwJSknLAogICAgICAgICAgcG9pbnRlckV2ZW50czogJ25vbmUnLAogICAgICAgIH19CiAgICAgIC8+CgogICAgICA8ZGl2IHN0eWxlPXt7IHdpZHRoOiAnMTAwJScsIG1heFdpZHRoOiA0NDAsIHBvc2l0aW9uOiAncmVsYXRpdmUnIH19PgogICAgICAgIDxkaXYgc3R5bGU9e3sgdGV4dEFsaWduOiAnY2VudGVyJywgbWFyZ2luQm90dG9tOiAndmFyKC0tc3BhY2UtOCknIH19PgogICAgICAgICAgPExpbmsgaHJlZj0iLyIgc3R5bGU9e3sgZGlzcGxheTogJ2lubGluZS1ibG9jaycgfX0gYXJpYS1sYWJlbD0iUGVwIE5hdGlvbiBMYWIgSG9tZSI+CiAgICAgICAgICAgIDxJbWFnZSBzcmM9Ii9sb2dvLnN2ZyIgYWx0PSJQZXAgTmF0aW9uIExhYiIgd2lkdGg9ezEwOH0gaGVpZ2h0PXsxMDh9IHVub3B0aW1pemVkIHN0eWxlPXt7IGhlaWdodDogMTA4LCB3aWR0aDogJ2F1dG8nLCBkaXNwbGF5OiAnaW5saW5lLWJsb2NrJyB9fSAvPgogICAgICAgICAgPC9MaW5rPgogICAgICAgICAgPHAgc3R5bGU9e3sgbWFyZ2luVG9wOiAndmFyKC0tc3BhY2UtMiknLCBmb250U2l6ZTogJzAuODVyZW0nLCBjb2xvcjogJ3ZhcigtLWdyZXktNDAwKScgfX0+CiAgICAgICAgICAgIFJlc2V0IFlvdXIgUGFzc3dvcmQKICAgICAgICAgIDwvcD4KICAgICAgICA8L2Rpdj4KCiAgICAgICAgPGRpdiBjbGFzc05hbWU9ImdsYXNzLXBhbmVsIGhvdmVyLWxpZnQgc3RhZ2dlci1mYWRlLWluIiBzdHlsZT17eyBwYWRkaW5nOiAndmFyKC0tc3BhY2UtOCknLCBib3hTaGFkb3c6ICcwIDAgNDBweCByZ2JhKDEwNCwyMTEsMTQ1LDAuMDUpJyB9fT4KICAgICAgICAgIHtzZW50ID8gKAogICAgICAgICAgICA8ZGl2IHN0eWxlPXt7IHRleHRBbGlnbjogJ2NlbnRlcicgfX0+CiAgICAgICAgICAgICAgPGRpdgogICAgICAgICAgICAgICAgc3R5bGU9e3sKICAgICAgICAgICAgICAgICAgZGlzcGxheTogJ2lubGluZS1mbGV4JywKICAgICAgICAgICAgICAgICAgYWxpZ25JdGVtczogJ2NlbnRlcicsCiAgICAgICAgICAgICAgICAgIGp1c3RpZnlDb250ZW50OiAnY2VudGVyJywKICAgICAgICAgICAgICAgICAgd2lkdGg6IDU2LAogICAgICAgICAgICAgICAgICBoZWlnaHQ6IDU2LAogICAgICAgICAgICAgICAgICBib3JkZXJSYWRpdXM6ICc1MCUnLAogICAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kOiAncmdiYSgxOTIsMTg0LDE2OCwwLjEpJywKICAgICAgICAgICAgICAgICAgYm9yZGVyOiAnMnB4IHNvbGlkIHZhcigtLXRlYWwpJywKICAgICAgICAgICAgICAgICAgY29sb3I6ICd2YXIoLS10ZWFsKScsCiAgICAgICAgICAgICAgICAgIG1hcmdpbkJvdHRvbTogJ3ZhcigtLXNwYWNlLTQpJywKICAgICAgICAgICAgICAgIH19CiAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgPHN2ZyB3aWR0aD0iMjYiIGhlaWdodD0iMjYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZVdpZHRoPSIyIiBzdHJva2VMaW5lY2FwPSJyb3VuZCIgc3Ryb2tlTGluZWpvaW49InJvdW5kIj4KICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTQgNGgxNmMxLjEgMCAyIC45IDIgMnYxMmMwIDEuMS0uOSAyLTIgMkg0Yy0xLjEgMC0yLS45LTItMlY2YzAtMS4xLjktMiAyLTJ6IiAvPgogICAgICAgICAgICAgICAgICA8cG9seWxpbmUgcG9pbnRzPSIyMiw2IDEyLDEzIDIsNiIgLz4KICAgICAgICAgICAgICAgIDwvc3ZnPgogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgIDxoMiBjbGFzc05hbWU9ImFuaW1hdGVkLWdyYWRpZW50LXRleHQiIHN0eWxlPXt7IGZvbnRTaXplOiAnMS4ycmVtJywgbWFyZ2luQm90dG9tOiAndmFyKC0tc3BhY2UtMyknIH19PkNoZWNrIFlvdXIgRW1haWw8L2gyPgogICAgICAgICAgICAgIDxwIHN0eWxlPXt7IGZvbnRTaXplOiAnMC44NXJlbScsIGNvbG9yOiAndmFyKC0tc2lsdmVyKScsIGxpbmVIZWlnaHQ6IDEuNywgbWFyZ2luQm90dG9tOiAndmFyKC0tc3BhY2UtNiknIH19PgogICAgICAgICAgICAgICAgSWYgQW4gQWNjb3VudCBFeGlzdHMgRm9yIDxzdHJvbmcgc3R5bGU9e3sgY29sb3I6ICd2YXIoLS13aGl0ZSknIH19PntlbWFpbC50cmltKCl9PC9zdHJvbmc+LAogICAgICAgICAgICAgICAgQSBQYXNzd29yZCBSZXNldCBMaW5rIEhhcyBCZWVuIFNlbnQuIFBsZWFzZSBDaGVjayBZb3VyIEluYm94IEFuZCBTcGFtIEZvbGRlci4KICAgICAgICAgICAgICA8L3A+CiAgICAgICAgICAgICAgPExpbmsgaHJlZj0iL2xvZ2luIiBjbGFzc05hbWU9ImJ0biBidG4tcHJpbWFyeSIgc3R5bGU9e3sgd2lkdGg6ICcxMDAlJywganVzdGlmeUNvbnRlbnQ6ICdjZW50ZXInIH19PgogICAgICAgICAgICAgICAgUmV0dXJuIFRvIFNpZ24gSW4KICAgICAgICAgICAgICA8L0xpbms+CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgKSA6ICgKICAgICAgICAgICAgPD4KICAgICAgICAgICAgICA8ZGl2IHN0eWxlPXt7CiAgICAgICAgICAgICAgICB3aWR0aDogNDgsIGhlaWdodDogNDgsCiAgICAgICAgICAgICAgICBib3JkZXJSYWRpdXM6ICc1MCUnLAogICAgICAgICAgICAgICAgYmFja2dyb3VuZDogJ3JnYmEoMTkyLDE4NCwxNjgsMC4xMiknLAogICAgICAgICAgICAgICAgYm9yZGVyOiAnMXB4IHNvbGlkIHJnYmEoMTkyLDE4NCwxNjgsMC4zKScsCiAgICAgICAgICAgICAgICBkaXNwbGF5OiAnZmxleCcsIGFsaWduSXRlbXM6ICdjZW50ZXInLCBqdXN0aWZ5Q29udGVudDogJ2NlbnRlcicsCiAgICAgICAgICAgICAgICBtYXJnaW46ICcwIGF1dG8gdmFyKC0tc3BhY2UtNCknLAogICAgICAgICAgICAgICAgY29sb3I6ICd2YXIoLS10ZWFsKScsCiAgICAgICAgICAgICAgfX0+CiAgICAgICAgICAgICAgICA8S2V5IHNpemU9ezIyfSBhcmlhLWhpZGRlbj0idHJ1ZSIgLz4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICA8aDIgY2xhc3NOYW1lPSJhbmltYXRlZC1ncmFkaWVudC10ZXh0IiBzdHlsZT17eyBmb250U2l6ZTogJzEuMnJlbScsIG1hcmdpbkJvdHRvbTogJ3ZhcigtLXNwYWNlLTIpJywgdGV4dEFsaWduOiAnY2VudGVyJyB9fT5QYXNzd29yZCBSZXNldDwvaDI+CiAgICAgICAgICAgICAgPHAgc3R5bGU9e3sgZm9udFNpemU6ICcwLjlyZW0nLCBjb2xvcjogJ3ZhcigtLWdyZXktMzAwKScsIGxpbmVIZWlnaHQ6IDEuNiwgdGV4dEFsaWduOiAnY2VudGVyJywgbWFyZ2luQm90dG9tOiAndmFyKC0tc3BhY2UtNiknIH19PgogICAgICAgICAgICAgICAgUGxlYXNlIENvbnRhY3QgWW91ciBSZXNlYXJjaCBBZ2VudCBEaXJlY3RseSBJZiBZb3UgRm9yZ290IFlvdXIgUGFzc3dvcmQgT3IgTmVlZCBJdCBSZXNldC4KICAgICAgICAgICAgICA8L3A+CgogICAgICAgICAgICAgIDxkaXYgc3R5bGU9e3sgZGlzcGxheTogJ2ZsZXgnLCBqdXN0aWZ5Q29udGVudDogJ2NlbnRlcicgfX0+CiAgICAgICAgICAgICAgICA8TGluayBocmVmPSIvbG9naW4iIGNsYXNzTmFtZT0iYnRuIGJ0bi1wcmltYXJ5IiBzdHlsZT17eyB3aWR0aDogJzEwMCUnLCBqdXN0aWZ5Q29udGVudDogJ2NlbnRlcicgfX0+CiAgICAgICAgICAgICAgICAgIFJldHVybiBUbyBTaWduIEluCiAgICAgICAgICAgICAgICA8L0xpbms+CiAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDwvPgogICAgICAgICAgKX0KICAgICAgICA8L2Rpdj4KICAgICAgPC9kaXY+CiAgICA8L2Rpdj4KICApOwp9Cg==
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Key } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+
+export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [sent, setSent] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+
+    if (!email.trim()) {
+      setError('Please Enter Your Email Address.');
+      return;
+    }
+
+    setLoading(true);
+    const supabase = createClient();
+
+    const redirectTo =
+      typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined;
+
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      email.trim(),
+      redirectTo ? { redirectTo } : undefined
+    );
+
+    setLoading(false);
+
+    if (resetError) {
+      setError(resetError.message);
+      return;
+    }
+
+    setSent(true);
+  }
+
+  return (
+    <div
+      style={{
+        minHeight: '100dvh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--black)',
+        padding: 'var(--space-6)',
+      }}
+    >
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'radial-gradient(ellipse at 50% 0%, rgba(192,184,168,0.06) 0%, transparent 60%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <div style={{ width: '100%', maxWidth: 440, position: 'relative' }}>
+        <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
+          <Link href="/" style={{ display: 'inline-block' }} aria-label="Pep Nation Lab Home">
+            <Image src="/logo.svg" alt="Pep Nation Lab" width={108} height={108} unoptimized style={{ height: 108, width: 'auto', display: 'inline-block' }} />
+          </Link>
+          <p style={{ marginTop: 'var(--space-2)', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
+            Reset Your Password
+          </p>
+        </div>
+
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', boxShadow: '0 0 40px rgba(104,211,145,0.05)' }}>
+          {sent ? (
+            <div style={{ textAlign: 'center' }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 56,
+                  height: 56,
+                  borderRadius: '50%',
+                  background: 'rgba(192,184,168,0.1)',
+                  border: '2px solid var(--teal)',
+                  color: 'var(--teal)',
+                  marginBottom: 'var(--space-4)',
+                }}
+              >
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+              </div>
+              <h2 className="animated-gradient-text" style={{ fontSize: '1.2rem', marginBottom: 'var(--space-3)' }}>Check Your Email</h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--silver)', lineHeight: 1.7, marginBottom: 'var(--space-6)' }}>
+                If An Account Exists For <strong style={{ color: 'var(--white)' }}>{email.trim()}</strong>,
+                A Password Reset Link Has Been Sent. Please Check Your Inbox And Spam Folder.
+              </p>
+              <Link href="/login" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                Return To Sign In
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div style={{
+                width: 48, height: 48,
+                borderRadius: '50%',
+                background: 'rgba(192,184,168,0.12)',
+                border: '1px solid rgba(192,184,168,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto var(--space-4)',
+                color: 'var(--teal)',
+              }}>
+                <Key size={22} aria-hidden="true" />
+              </div>
+              <h2 className="animated-gradient-text" style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)', textAlign: 'center' }}>Password Reset</h2>
+              <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.6, textAlign: 'center', marginBottom: 'var(--space-6)' }}>
+                Please Contact Your Research Agent Directly If You Forgot Your Password Or Need It Reset.
+              </p>
+
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <Link href="/login" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                  Return To Sign In
+                </Link>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
