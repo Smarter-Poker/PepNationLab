@@ -126,9 +126,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const next: CartItem[] = [];
         const removed: string[] = [];
         for (const item of items) {
-          // Cart items may be keyed by agent_product id (by-name / quick-add)
-          // or product_id (reorder / research catalog). The refresh API resolves
-          // both, so match on either identifier to avoid false "Item Removed".
           const fresh = data.items.find(d => d.id === item.id || d.productId === item.id);
           if (!fresh) { if (data.missing?.includes(item.id)) removed.push(item.name); continue; }
           if (!fresh.available) { removed.push(fresh.name ?? item.name); continue; }
@@ -202,7 +199,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const detail = (e as CustomEvent<{ name?: string; handled?: boolean }>).detail;
       if (!detail || !detail.name) return;
 
-      // Allow local storefront grids to handle it first (they run in the same event tick)
       setTimeout(async () => {
         if (detail.handled) return;
         detail.handled = true;
@@ -238,10 +234,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
 
-  // Two cart entries are the same line when they share a bundle and resolve to
-  // the same product - either the same raw id, or the same underlying productId
-  // (so an item added by-name [agent_product id] merges with the same product
-  // added via product id instead of forming a duplicate split line).
   const sameLine = (
     item: CartItem,
     id: string,
@@ -667,9 +659,6 @@ function SmartRecommendationStrip({
     abortRef.current = ctrl;
     setLoading(true);
 
-    // Recommendations are keyed by product id; cart items may be keyed by
-    // agent_product id, so compare against both id and productId to avoid
-    // re-recommending something already in the cart.
     const cartIdSet = new Set(cart.flatMap(i => [i.id, i.productId].filter(Boolean) as string[]));
 
     fetch('/api/cart/recommendations', {
