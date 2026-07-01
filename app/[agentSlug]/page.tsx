@@ -199,7 +199,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
       min_overall_qty,
       storefront_renamed_at
     `)
-    .ilike('slug', agentSlug)
+    .eq('slug', agentSlug)
     .maybeSingle();
 
   if (error) {
@@ -342,7 +342,7 @@ export async function generateMetadata({ params }: Props) {
   const { data: agent } = await supabase
     .from('agent_profiles')
     .select('display_name')
-    .ilike('slug', agentSlug)
+    .eq('slug', agentSlug)
     .maybeSingle();
 
   if (!agent) return { title: 'Store Not Found | Pep Nation Lab' };
