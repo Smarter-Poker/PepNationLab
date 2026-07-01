@@ -35,9 +35,10 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
     redirect('/login');
   }
 
-  // Fetch PNL pricing configuration using service client - pricing_tiers RLS blocks researcher reads
-  const adminClient = await createServiceClient();
-  const { data: tiers } = await adminClient
+  // Fetch PNL pricing configuration to pass down
+  // Use service client so researcher-level RLS does not block the read
+  const supabaseService = createServiceClient();
+  const { data: tiers } = await supabaseService
     .from('pricing_tiers')
     .select('tier_name, multiplier');
 
@@ -48,7 +49,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
 
   // Resolve the agent's payment handles so CheckoutForm shows only the
   // handles this specific agent has configured (not hardcoded platform handles).
-  // Prefer agentSlug (storefront URL) -> then researcher's referring_agent_id.
+  // Prefer agentSlug (storefront URL) → then researcher's referring_agent_id.
   let agentPaymentHandles: Record<string, string> = {};
   let minOverallQty = 1;
   let minOrderQty = 1;

@@ -76,7 +76,7 @@ export default async function AdminProductsPage() {
             Product Catalog
           </h1>
           <p style={{ fontSize: "0.85rem", color: "var(--grey-400)" }}>
-            {products?.length ?? 0} SKUs - Manage Research Compound Listings
+            {products?.length ?? 0} SKUs • Manage Research Compound Listings
           </p>
         </div>
         <Link href="/admin/products/new" className="btn-neon-cyan">
