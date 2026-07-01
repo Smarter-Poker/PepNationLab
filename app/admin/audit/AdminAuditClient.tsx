@@ -84,7 +84,7 @@ export default function AdminAuditClient({
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search Summary"
+          placeholder="Search Summary…"
           onKeyDown={(e) => {
             if (e.key === "Enter") applyFilters();
           }}
@@ -123,7 +123,7 @@ export default function AdminAuditClient({
           disabled={busy}
           onClick={applyFilters}
         >
-          {busy ? "Loading" : "Filter"}
+          {busy ? "Loading…" : "Filter"}
         </button>
       </div>
 
@@ -156,12 +156,52 @@ export default function AdminAuditClient({
             }}
           >
             <thead>
-              <tr>
-                <th style={{ textAlign: "left", padding: "var(--space-3)", color: "var(--silver)" }}>When</th>
-                <th style={{ textAlign: "left", padding: "var(--space-3)", color: "var(--silver)" }}>Actor</th>
-                <th style={{ textAlign: "left", padding: "var(--space-3)", color: "var(--silver)" }}>Action</th>
-                <th style={{ textAlign: "left", padding: "var(--space-3)", color: "var(--silver)" }}>Target</th>
-                <th style={{ textAlign: "left", padding: "var(--space-3)", color: "var(--silver)" }}>Summary</th>
+              <tr style={{ }}>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "var(--space-3)",
+                    color: "var(--silver)",
+                  }}
+                >
+                  When
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "var(--space-3)",
+                    color: "var(--silver)",
+                  }}
+                >
+                  Actor
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "var(--space-3)",
+                    color: "var(--silver)",
+                  }}
+                >
+                  Action
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "var(--space-3)",
+                    color: "var(--silver)",
+                  }}
+                >
+                  Target
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "var(--space-3)",
+                    color: "var(--silver)",
+                  }}
+                >
+                  Summary
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -183,6 +223,7 @@ export default function AdminAuditClient({
                   <tr
                     key={r.id}
                     className="table-row-hover"
+                    style={{ }}
                   >
                     <td
                       suppressHydrationWarning
@@ -194,7 +235,12 @@ export default function AdminAuditClient({
                     >
                       {new Date(r.created_at).toLocaleString()}
                     </td>
-                    <td style={{ padding: "var(--space-3)", color: "var(--white)" }}>
+                    <td
+                      style={{
+                        padding: "var(--space-3)",
+                        color: "var(--white)",
+                      }}
+                    >
                       {r.actor_email
                         ? r.actor_email
                         : r.actor_id
@@ -214,12 +260,22 @@ export default function AdminAuditClient({
                         {formatAction(r.action)}
                       </span>
                     </td>
-                    <td style={{ padding: "var(--space-3)", color: "var(--silver)" }}>
+                    <td
+                      style={{
+                        padding: "var(--space-3)",
+                        color: "var(--silver)",
+                      }}
+                    >
                       {r.target_type && r.target_id
                         ? `${formatAction(r.target_type)}:${r.target_id.slice(0, 8)}`
                         : "-"}
                     </td>
-                    <td style={{ padding: "var(--space-3)", color: "var(--silver)" }}>
+                    <td
+                      style={{
+                        padding: "var(--space-3)",
+                        color: "var(--silver)",
+                      }}
+                    >
                       {r.summary || "-"}
                     </td>
                   </tr>
@@ -237,7 +293,7 @@ export default function AdminAuditClient({
             disabled={busy}
             onClick={() => load()}
           >
-            {busy ? "Loading" : "Load More"}
+            {busy ? "Loading…" : "Load More"}
           </button>
         </div>
       )}

@@ -66,26 +66,27 @@ export default async function AdminSearchAnalyticsPage() {
       <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', marginBottom: 'var(--space-5, 24px)' }}>
         <h2 style={headerStyle}>Latency Distribution</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3, 12px)' }}>
-          {(['P50', 'P75', 'P95', 'P99'] as const).map((label, idx) => {
-            const pVal = [50, 75, 95, 99][idx];
-            return (
-              <div key={label} className="glass-panel" style={{ padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-md, 8px)' }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)', fontWeight: 700, letterSpacing: '0.05em' }}>{label}</div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--teal, #00C4BC)', marginTop: '4px' }}>{pct(pVal)}<span style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}> ms</span></div>
-              </div>
-            );
-          })}
+          {([['P50', 50], ['P75', 75], ['P95', 95], ['P99', 99]] as const).map(([label, p]) => (
+            <div key={label} className="glass-panel" style={{ padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-md, 8px)' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)', fontWeight: 700, letterSpacing: '0.05em' }}>{label}</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--teal, #00C4BC)', marginTop: '4px' }}>{pct(p)}<span style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}> ms</span></div>
+            </div>
+          ))}
         </div>
       </section>
 
       <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', marginBottom: 'var(--space-5, 24px)' }}>
         <h2 style={headerStyle}>Top Searches</h2>
         {ranked.length === 0 ? (
-          <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem' }}>No Queries Logged Yet.</p>
+          <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem' }}>No Queries Logged Yet. The Search Engine Will Populate This Table As Users Visit /research/search.</p>
         ) : (
           <table style={tableStyle}>
             <thead><tr><th style={thStyle}>Query</th><th style={thStyle}>Count</th><th style={thStyle}>CTR</th></tr></thead>
-            <tbody>{ranked.slice(0, 20).map((r) => (<tr key={r.q}><td style={cellStyle}>{r.q}</td><td style={cellStyle}>{r.count}</td><td style={cellStyle}>{(r.ctr * 100).toFixed(1)}%</td></tr>))}</tbody>
+            <tbody>
+              {ranked.slice(0, 20).map((r) => (
+                <tr key={r.q}><td style={cellStyle}>{r.q}</td><td style={cellStyle}>{r.count}</td><td style={cellStyle}>{(r.ctr * 100).toFixed(1)}%</td></tr>
+              ))}
+            </tbody>
           </table>
         )}
       </section>
@@ -93,11 +94,15 @@ export default async function AdminSearchAnalyticsPage() {
       <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', marginBottom: 'var(--space-5, 24px)', borderLeft: '3px solid var(--red-600, #E53E3E)' }}>
         <h2 style={headerStyle}>No-Result Queries (Content Gaps)</h2>
         {noResultRanked.length === 0 ? (
-          <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem' }}>No No-Result Queries Logged.</p>
+          <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem' }}>No No-Result Queries Logged. The Catalog Coverage Is Holding.</p>
         ) : (
           <table style={tableStyle}>
             <thead><tr><th style={thStyle}>Query</th><th style={thStyle}>No-Result Hits</th></tr></thead>
-            <tbody>{noResultRanked.slice(0, 10).map((r) => (<tr key={r.q}><td style={cellStyle}>{r.q}</td><td style={cellStyle}>{r.noResult}</td></tr>))}</tbody>
+            <tbody>
+              {noResultRanked.slice(0, 10).map((r) => (
+                <tr key={r.q}><td style={cellStyle}>{r.q}</td><td style={cellStyle}>{r.noResult}</td></tr>
+              ))}
+            </tbody>
           </table>
         )}
       </section>
@@ -109,7 +114,11 @@ export default async function AdminSearchAnalyticsPage() {
         ) : (
           <table style={tableStyle}>
             <thead><tr><th style={thStyle}>Query</th><th style={thStyle}>Count</th><th style={thStyle}>Clicks</th><th style={thStyle}>CTR</th></tr></thead>
-            <tbody>{ctrRanked.slice(0, 10).map((r) => (<tr key={r.q}><td style={cellStyle}>{r.q}</td><td style={cellStyle}>{r.count}</td><td style={cellStyle}>{r.clicks}</td><td style={cellStyle}>{(r.ctr * 100).toFixed(1)}%</td></tr>))}</tbody>
+            <tbody>
+              {ctrRanked.slice(0, 10).map((r) => (
+                <tr key={r.q}><td style={cellStyle}>{r.q}</td><td style={cellStyle}>{r.count}</td><td style={cellStyle}>{r.clicks}</td><td style={cellStyle}>{(r.ctr * 100).toFixed(1)}%</td></tr>
+              ))}
+            </tbody>
           </table>
         )}
       </section>
