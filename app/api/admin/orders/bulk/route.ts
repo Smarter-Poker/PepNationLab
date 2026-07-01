@@ -169,6 +169,19 @@ export async function POST(req: NextRequest) {
       } catch { /* webhook must not break bulk response */ }
     }
 
+    // Audit every bulk status change (mirrors the generate_labels audit path).
+    if (succeeded.length > 0) {
+      try {
+        await supabase.from('admin_audit_log').insert({
+          actor_id: gate.userId,
+          action: 'bulk_order_status_change',
+          entity_type: 'orders',
+          entity_id: succeeded.join(','),
+          changes: { target_status: target, count: succeeded.length, order_ids: succeeded },
+        });
+      } catch { /* audit failures must not block response */ }
+    }
+
     return NextResponse.json({
       processed: ids.length,
       succeeded: succeeded.length,
