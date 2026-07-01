@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AdminAgents from '@/components/AdminAgents';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Agents Management | Admin | Pep Nation Lab',
 };

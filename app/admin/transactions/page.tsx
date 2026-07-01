@@ -120,7 +120,7 @@ function AdminTransactionsPageInner() {
     try {
       const res = await fetch("/api/admin/transactions?limit=250");
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to load ledger");
+      if (!res.ok) throw new Error(json.error || "Failed To Load Ledger");
       setTransactions(json.data || []);
     } catch (err: any) {
       setError(err.message);
