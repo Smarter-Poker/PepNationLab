@@ -280,26 +280,31 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ kind: 'none', note: RESEARCH_NOTE }, { status: 400 });
   }
 
-  const parsed = parseQuery(q);
-  const supabase = await createServiceClient();
+  try {
+    const parsed = parseQuery(q);
+    const supabase = await createServiceClient();
 
-  const { data: catalogData } = await supabase
-    .from('compounds')
-    .select('slug, display_name, aliases, research_areas, category');
-  const catalog = (catalogData ?? []) as Array<{
-    slug: string;
-    display_name: string;
-    aliases: string[] | null;
-    research_areas: string[] | null;
-    category: string | null;
-  }>;
+    const { data: catalogData } = await supabase
+      .from('compounds')
+      .select('slug, display_name, aliases, research_areas, category');
+    const catalog = (catalogData ?? []) as Array<{
+      slug: string;
+      display_name: string;
+      aliases: string[] | null;
+      research_areas: string[] | null;
+      category: string | null;
+    }>();
 
-  const intent = classifyIntent(parsed, { catalog });
-  const { payload } = await buildPayload(supabase, intent);
+    const intent = classifyIntent(parsed, { catalog });
+    const { payload } = await buildPayload(supabase, intent);
 
-  return NextResponse.json({
-    ...payload,
-    intent,
-    note: RESEARCH_NOTE,
-  });
+    return NextResponse.json({
+      ...payload,
+      intent,
+      note: RESEARCH_NOTE,
+    });
+  } catch (err) {
+    console.error('[instant-answer] error:', err);
+    return NextResponse.json({ kind: 'none', note: RESEARCH_NOTE });
+  }
 }

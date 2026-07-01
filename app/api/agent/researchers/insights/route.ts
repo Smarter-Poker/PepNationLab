@@ -32,10 +32,10 @@ interface CohortBucket {
  * GET /api/agent/researchers/insights
  *
  * Derived datasets that power the Charts and Acquisition tabs:
- *   - dow_heatmap: 7×HEATMAP_WEEKS matrix of order counts (Sun→Sat × week)
+ *   - dow_heatmap: 7xHEATMAP_WEEKS matrix of order counts (Sun->Sat x week)
  *   - top_customers: top 10 researchers by collected lifetime value
- *   - cohort_retention: monthly signup cohorts × month-by-month retention
- *   - funnel: visits → signups → first orders → repeat orders
+ *   - cohort_retention: monthly signup cohorts x month-by-month retention
+ *   - funnel: visits -> signups -> first orders -> repeat orders
  *
  * Visit counts read agent_storefront_events.event_type='pageview' rather
  * than a hypothetical 'storefront_events' table; that's the real
@@ -49,6 +49,7 @@ export async function GET() {
   if (!gate.ok) return gate.response;
   const agentId = gate.user.id;
   const svc = await createServiceClient();
+  try {
 
   const now = new Date();
   const startOfHeatmap = new Date(now);
@@ -86,7 +87,7 @@ export async function GET() {
       .eq('agent_id', agentId),
   ]);
 
-  // Day-of-week × week heatmap (7×HEATMAP_WEEKS)
+  // Day-of-week x week heatmap (7xHEATMAP_WEEKS)
   const heatmap: number[][] = Array.from({ length: 7 }, () =>
     Array(HEATMAP_WEEKS).fill(0),
   );
@@ -145,7 +146,7 @@ export async function GET() {
     .sort((a, b) => b.lifetime_value - a.lifetime_value)
     .slice(0, 10);
 
-  // Cohort retention: signup month → retention[i] for i=0..5 months after signup
+  // Cohort retention: signup month -> retention[i] for i=0..5 months after signup
   const COHORT_MONTHS = 6;
   const cohortMap = new Map<string, { ids: Set<string>; signupAt: Date }>();
   for (const r of researchers ?? []) {
@@ -186,16 +187,20 @@ export async function GET() {
   const firstOrderCount = [...buyerAgg.values()].filter((a) => a.count >= 1).length;
   const repeatCount = [...buyerAgg.values()].filter((a) => a.count >= 2).length;
 
-  return NextResponse.json({
-    dow_heatmap: heatmap,
-    heatmap_weeks: HEATMAP_WEEKS,
-    top_customers,
-    cohort_retention,
-    funnel: {
-      visits: visitCount,
-      signups: signupCount,
-      first_orders: firstOrderCount,
-      repeat_orders: repeatCount,
-    },
-  });
+    return NextResponse.json({
+      dow_heatmap: heatmap,
+      heatmap_weeks: HEATMAP_WEEKS,
+      top_customers,
+      cohort_retention,
+      funnel: {
+        visits: visitCount,
+        signups: signupCount,
+        first_orders: firstOrderCount,
+        repeat_orders: repeatCount,
+      },
+    });
+  } catch (err) {
+    console.error('[researchers/insights] error:', err);
+    return NextResponse.json({ error: 'Failed To Load Insights' }, { status: 500 });
+  }
 }
