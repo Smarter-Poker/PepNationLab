@@ -23,7 +23,7 @@ export default function AgentOverview({
   onNavigate,
 }: AgentOverviewProps) {
   const router = useRouter();
-  const isSubAgent = explicitIsSubAgent ?? (userProfile?.is_sub_agent === true);
+  const isSubAgent = explicitIsSubAgent ?? (userProfile?.is_super_agent !== true);
 
   const handleNav = (href: string) => {
     if (!href) return;
@@ -47,48 +47,48 @@ export default function AgentOverview({
   const cardZones = isSubAgent ? [
     // --- SUB-AGENT (6 Rows) ---
     // Left Column
-    { id: 'visit_storefront', left: '4%', width: '44.5%', top: '3%', height: '14.5%', action: () => handleNav(storefrontUrl) },
-    { id: 'messenger', left: '4%', width: '44.5%', top: '19%', height: '14.5%', action: () => handleNav('/messenger') },
-    { id: 'orders', left: '4%', width: '44.5%', top: '35%', height: '14.5%', action: () => onNavigate?.('Orders') },
-    { id: 'products', left: '4%', width: '44.5%', top: '51%', height: '14.5%', action: () => onNavigate?.('Store Products') },
-    { id: 'researchers', left: '4%', width: '44.5%', top: '67%', height: '14.5%', action: () => onNavigate?.('Researchers') },
-    { id: 'sales', left: '4%', width: '44.5%', top: '83%', height: '14.5%', action: () => onNavigate?.('Sales & Accounting') },
+    { id: 'visit_storefront', label: 'Visit Storefront', left: '4%', width: '44.5%', top: '3%', height: '14.5%', action: () => handleNav(storefrontUrl) },
+    { id: 'messenger', label: 'Messenger', left: '4%', width: '44.5%', top: '19%', height: '14.5%', action: () => handleNav('/messenger') },
+    { id: 'orders', label: 'Orders', left: '4%', width: '44.5%', top: '35%', height: '14.5%', action: () => onNavigate?.('Orders') },
+    { id: 'products', label: 'Store Products', left: '4%', width: '44.5%', top: '51%', height: '14.5%', action: () => onNavigate?.('Store Products') },
+    { id: 'researchers', label: 'Researchers', left: '4%', width: '44.5%', top: '67%', height: '14.5%', action: () => onNavigate?.('Researchers') },
+    { id: 'sales', label: 'Sales And Accounting', left: '4%', width: '44.5%', top: '83%', height: '14.5%', action: () => onNavigate?.('Sales & Accounting') },
     
     // Right Column
-    { id: 'wallet', left: '51.5%', width: '44.5%', top: '3%', height: '14.5%', action: () => handleNav('/wallet') },
-    { id: 'lab_journal', left: '51.5%', width: '44.5%', top: '19%', height: '14.5%', action: () => handleNav('/lab-journal') },
-    { id: 'research_library', left: '51.5%', width: '44.5%', top: '35%', height: '14.5%', action: () => handleNav('/research') },
-    { id: 'account_settings', left: '51.5%', width: '44.5%', top: '51%', height: '14.5%', action: () => handleNav('/account') },
-    { id: 'lab_tools', left: '51.5%', width: '44.5%', top: '67%', height: '14.5%', action: () => handleNav('/lab-tools') },
-    { id: 'help_support', left: '51.5%', width: '44.5%', top: '83%', height: '14.5%', action: () => handleNav('/dashboard/agent/help') },
+    { id: 'wallet', label: 'Wallet', left: '51.5%', width: '44.5%', top: '3%', height: '14.5%', action: () => handleNav('/wallet') },
+    { id: 'lab_journal', label: 'Lab Journal', left: '51.5%', width: '44.5%', top: '19%', height: '14.5%', action: () => handleNav('/lab-journal') },
+    { id: 'research_library', label: 'Research Library', left: '51.5%', width: '44.5%', top: '35%', height: '14.5%', action: () => handleNav('/research') },
+    { id: 'account_settings', label: 'Account Settings', left: '51.5%', width: '44.5%', top: '51%', height: '14.5%', action: () => handleNav('/account') },
+    { id: 'lab_tools', label: 'Lab Tools', left: '51.5%', width: '44.5%', top: '67%', height: '14.5%', action: () => handleNav('/lab-tools') },
+    { id: 'help_support', label: 'Help And Support', left: '51.5%', width: '44.5%', top: '83%', height: '14.5%', action: () => handleNav('/dashboard/agent/help') },
   ] : [
     // --- SUPER AGENT (8 Rows) ---
     // LEFT COLUMN
-    { id: 'visit_storefront', left: '4%', width: '44.5%', top: '3%', height: '10.5%', action: () => handleNav(storefrontUrl) },
-    { id: 'messenger', left: '4%', width: '44.5%', top: '15%', height: '10.5%', action: () => handleNav('/messenger') },
-    { id: 'orders', left: '4%', width: '44.5%', top: '27%', height: '10.5%', action: () => onNavigate?.('Orders') },
-    { id: 'products', left: '4%', width: '44.5%', top: '39%', height: '10.5%', action: () => onNavigate?.('Store Products') },
-    { id: 'researchers', left: '4%', width: '44.5%', top: '51%', height: '10.5%', action: () => onNavigate?.('Researchers') },
-    { id: 'sales', left: '4%', width: '44.5%', top: '63%', height: '10.5%', action: () => onNavigate?.('Sales & Accounting') },
-    { id: 'coupons', left: '4%', width: '44.5%', top: '75%', height: '10.5%', action: () => onNavigate?.('Coupons') },
-    { id: 'lab_tools', left: '4%', width: '44.5%', top: '87%', height: '10.5%', action: () => handleNav('/lab-tools') },
+    { id: 'visit_storefront', label: 'Visit Storefront', left: '4%', width: '44.5%', top: '3%', height: '10.5%', action: () => handleNav(storefrontUrl) },
+    { id: 'messenger', label: 'Messenger', left: '4%', width: '44.5%', top: '15%', height: '10.5%', action: () => handleNav('/messenger') },
+    { id: 'orders', label: 'Orders', left: '4%', width: '44.5%', top: '27%', height: '10.5%', action: () => onNavigate?.('Orders') },
+    { id: 'products', label: 'Store Products', left: '4%', width: '44.5%', top: '39%', height: '10.5%', action: () => onNavigate?.('Store Products') },
+    { id: 'researchers', label: 'Researchers', left: '4%', width: '44.5%', top: '51%', height: '10.5%', action: () => onNavigate?.('Researchers') },
+    { id: 'sales', label: 'Sales And Accounting', left: '4%', width: '44.5%', top: '63%', height: '10.5%', action: () => onNavigate?.('Sales & Accounting') },
+    { id: 'coupons', label: 'Coupons', left: '4%', width: '44.5%', top: '75%', height: '10.5%', action: () => onNavigate?.('Coupons') },
+    { id: 'lab_tools', label: 'Lab Tools', left: '4%', width: '44.5%', top: '87%', height: '10.5%', action: () => handleNav('/lab-tools') },
 
     // RIGHT COLUMN
-    { id: 'wallet', left: '51.5%', width: '44.5%', top: '3%', height: '10.5%', action: () => handleNav('/wallet') },
-    { id: 'lab_journal', left: '51.5%', width: '44.5%', top: '15%', height: '10.5%', action: () => handleNav('/lab-journal') },
-    { id: 'storefront_config', left: '51.5%', width: '44.5%', top: '27%', height: '10.5%', action: () => onNavigate?.('Storefront Config') },
-    { id: 'my_agents', left: '51.5%', width: '44.5%', top: '39%', height: '10.5%', action: () => onNavigate?.(userProfile?.is_super_agent ? 'My Agent Accounts' : 'My Sub-Agents') },
-    { id: 'inventory', left: '51.5%', width: '44.5%', top: '51%', height: '10.5%', action: () => onNavigate?.('Inventory') },
-    { id: 'research_library', left: '51.5%', width: '44.5%', top: '63%', height: '10.5%', action: () => handleNav('/research') },
-    { id: 'account_settings', left: '51.5%', width: '44.5%', top: '75%', height: '10.5%', action: () => handleNav('/account') },
-    { id: 'help_support', left: '51.5%', width: '44.5%', top: '87%', height: '10.5%', action: () => handleNav('/dashboard/agent/help') },
+    { id: 'wallet', label: 'Wallet', left: '51.5%', width: '44.5%', top: '3%', height: '10.5%', action: () => handleNav('/wallet') },
+    { id: 'lab_journal', label: 'Lab Journal', left: '51.5%', width: '44.5%', top: '15%', height: '10.5%', action: () => handleNav('/lab-journal') },
+    { id: 'storefront_config', label: 'Storefront Config', left: '51.5%', width: '44.5%', top: '27%', height: '10.5%', action: () => onNavigate?.('Storefront Config') },
+    { id: 'my_agents', label: 'My Agent Accounts', left: '51.5%', width: '44.5%', top: '39%', height: '10.5%', action: () => onNavigate?.(userProfile?.is_super_agent ? 'My Agent Accounts' : 'My Sub-Agents') },
+    { id: 'inventory', label: 'Inventory', left: '51.5%', width: '44.5%', top: '51%', height: '10.5%', action: () => onNavigate?.('Inventory') },
+    { id: 'research_library', label: 'Research Library', left: '51.5%', width: '44.5%', top: '63%', height: '10.5%', action: () => handleNav('/research') },
+    { id: 'account_settings', label: 'Account Settings', left: '51.5%', width: '44.5%', top: '75%', height: '10.5%', action: () => handleNav('/account') },
+    { id: 'help_support', label: 'Help And Support', left: '51.5%', width: '44.5%', top: '87%', height: '10.5%', action: () => handleNav('/dashboard/agent/help') },
   ];
 
   return (
     <>
       <style dangerouslySetInnerHTML={{__html: `
 
-        /* ── Outer wrapper ────────────────────────────────────────────────── */
+        /* -- Outer wrapper ------------------------------------------------ */
         .dash-hero-wrap {
           width: 100%;
           display: flex;
@@ -102,24 +102,24 @@ export default function AgentOverview({
           background: #0a0a0a;
         }
 
-        /* ── Hero panel ───────────────────────────────────────────────────── *
+        /* -- Hero panel --------------------------------------------------- *
          *
          * Width drives height (aspect-ratio derives height from width).
          * 4 px total horizontal inset (2 px each side) - shows full brushed-
          * nickel frame with minimal dark border.
          *
-         * background-size: 100% 100% → image fills the container exactly with
+         * background-size: 100% 100% -> image fills the container exactly with
          * ZERO clipping because the container matches the image's own ratio.
          */
         .dash-hero {
           position: relative;
           flex-shrink: 0;
 
-          /* 2 px gutter each side → full visible frame */
+          /* 2 px gutter each side -> full visible frame */
           width: calc(100% - 4px);
           max-width: 480px;           /* cap on wide desktop */
 
-          /* Height auto-calculated by browser: width × (1672/941) */
+          /* Height auto-calculated by browser: width x (1672/941) */
           aspect-ratio: 941 / 1672;
 
           overflow: hidden;
@@ -130,7 +130,7 @@ export default function AgentOverview({
           background-size: 100% 100%;   /* pixel-perfect: container = image */
         }
 
-        /* ── Click zones ─────────────────────────────────────────────────── */
+        /* -- Click zones -------------------------------------------------- */
         .dash-zone {
           position: absolute;
           cursor: pointer;
@@ -161,7 +161,7 @@ export default function AgentOverview({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') zone.action();
               }}
-              aria-label={zone.id}
+              aria-label={zone.label}
               style={{ left: zone.left, width: zone.width, top: zone.top, height: zone.height }}
             />
           ))}

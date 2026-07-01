@@ -44,7 +44,35 @@ export default async function AdminDashboard() {
     return redirect('/dashboard');
   }
 
-  const metrics = await fetchAdminMetrics(user.id);
+  let metrics;
+  try {
+    metrics = await fetchAdminMetrics(user.id);
+  } catch (err) {
+    console.error('[admin/page] fetchAdminMetrics failed:', err);
+    metrics = {
+      gmvToday: 0,
+      gmvLast7: 0,
+      gmvPrior7: 0,
+      pendingAdminApproval: 0,
+      pendingAgentApproval: 0,
+      awaitingAdminApproval: 0,
+      readyToShip: 0,
+      readyForPickup: 0,
+      awaitingTracking: 0,
+      lowStockCount: 0,
+      outOfStockCount: 0,
+      unpaidStatementsCount: 0,
+      unpaidStatementsTotal: 0,
+      newResearchers24h: 0,
+      activeAgents: 0,
+      lowStockList: [],
+      topAgents: [],
+      topSkus: [],
+      auditLog: [],
+      sparkline: [],
+    };
+  }
+
   const delta = computeGmvDelta(metrics.gmvLast7, metrics.gmvPrior7);
   const impersonation = await getImpersonationContext();
   const activeImpersonation =
@@ -88,7 +116,7 @@ export default async function AdminDashboard() {
       label: 'Awaiting My Approval',
       value: String(metrics.awaitingAdminApproval),
       sub: 'Agent-Approved, Needs Admin Release',
-      href: '/admin/orders?status=admin_approval_pending',
+      href: '/admin/orders?status=approved_ship',
       color: metrics.awaitingAdminApproval > 0 ? 'var(--red)' : 'var(--grey-400)',
       icon: <svg {...ICON_PROPS}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
     },
@@ -265,13 +293,13 @@ export default async function AdminDashboard() {
               <h3 style={{ fontSize: '1rem', margin: 0 }}>Low Stock Items</h3>
               <Link href="/admin/products" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>Manage Products</Link>
             </div>
-            {metrics.lowStockList.length === 0 ? (
+            {(metrics.lowStockList ?? []).length === 0 ? (
               <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
                 No Items At Or Below Low Stock Threshold
               </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                {metrics.lowStockList.map((p) => (
+                {(metrics.lowStockList ?? []).map((p) => (
                   <div
                     key={p.id}
                     style={{
@@ -299,7 +327,7 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      {metrics.topAgents.length > 0 && (
+      {(metrics.topAgents ?? []).length > 0 && (
         <div className="glass-panel" style={{ marginBottom: 'var(--space-8)' }}>
           <div className="" style={{ padding: 'var(--space-6)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
@@ -316,7 +344,7 @@ export default async function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {metrics.topAgents.map((a, idx) => (
+                {(metrics.topAgents ?? []).map((a, idx) => (
                   <tr key={a.id} style={{ }}>
                     <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)', fontWeight: 700 }}>#{idx + 1}</td>
                     <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.85rem', color: 'var(--white)' }}>
@@ -341,7 +369,7 @@ export default async function AdminDashboard() {
               <h3 style={{ fontSize: '1rem', margin: 0 }}>Top SKUs (30 Days)</h3>
               <Link href="/admin/sales" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>Full Sales</Link>
             </div>
-            {metrics.topSkus.length === 0 ? (
+            {(metrics.topSkus ?? []).length === 0 ? (
               <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
                 No Sales In The Last 30 Days
               </p>
@@ -355,7 +383,7 @@ export default async function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {metrics.topSkus.map((sku) => (
+                  {(metrics.topSkus ?? []).map((sku) => (
                     <tr key={sku.name} style={{ }}>
                       <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)' }}>{sku.name}</td>
                       <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--white)', textAlign: 'right', fontWeight: 600 }}>{sku.quantity}</td>
@@ -371,13 +399,13 @@ export default async function AdminDashboard() {
         <div className="glass-panel">
           <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '1rem', marginBottom: 'var(--space-5)' }}>Recent Admin Activity</h3>
-            {metrics.auditLog.length === 0 ? (
+            {(metrics.auditLog ?? []).length === 0 ? (
               <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
                 No Recorded Admin Activity
               </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxHeight: 380, overflowY: 'auto' }}>
-                {metrics.auditLog.map((entry) => {
+                {(metrics.auditLog ?? []).map((entry) => {
                   const actor = entry.actor_name || entry.actor_email || 'System';
                   return (
                     <div
