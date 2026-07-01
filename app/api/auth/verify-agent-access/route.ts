@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { rateLimit } from '@/lib/rate-limit';
+import { getClientIp } from '@/lib/get-client-ip';
 
 /**
  * POST /api/auth/verify-agent-access
@@ -25,6 +27,17 @@ export async function POST(req: NextRequest) {
 
   if (!agentSlug) {
     return NextResponse.json({ allowed: false, reason: 'Missing Parameters' }, { status: 400 });
+  }
+
+  // Rate-limit to prevent enumeration of user-agent relationships via the
+  // body-userId fallback path (used on mobile incognito after sign-in).
+  const ip = getClientIp(req);
+  const rl = await rateLimit({ key: 'verify_agent_access', limit: 20, windowSeconds: 60, identifier: ip });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { allowed: false, reason: 'Too Many Requests' },
+      { status: 429, headers: { 'Retry-After': String(Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000))) } }
+    );
   }
 
   const supabase = await createServiceClient();
