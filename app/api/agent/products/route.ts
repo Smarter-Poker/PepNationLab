@@ -191,6 +191,16 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
+  if (custom_name !== undefined && typeof custom_name === 'string' && custom_name.length > 200) {
+    return NextResponse.json({ error: 'Custom Name Too Long (Max 200)' }, { status: 400 });
+  }
+  if (custom_description !== undefined && typeof custom_description === 'string' && custom_description.length > 5000) {
+    return NextResponse.json({ error: 'Custom Description Too Long (Max 5,000)' }, { status: 400 });
+  }
+  if (custom_image_url !== undefined && typeof custom_image_url === 'string' && custom_image_url.length > 500) {
+    return NextResponse.json({ error: 'Custom Image URL Too Long (Max 500)' }, { status: 400 });
+  }
+
   const updatePayload: Record<string, unknown> = {
     custom_name: custom_name !== undefined ? (custom_name || null) : undefined,
     custom_description: custom_description !== undefined ? (custom_description || null) : undefined,

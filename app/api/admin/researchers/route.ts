@@ -31,7 +31,8 @@ export async function GET(req: NextRequest) {
 
   if (rawQuery) {
     // P0 1.23: PostgREST .or() injection - sanitize syntax-significant chars.
-    const sanitized = rawQuery.replace(/[%,():"'\\]/g, '').trim().slice(0, 60);
+    // Also strip _ and [ to prevent ILIKE wildcard injection.
+    const sanitized = rawQuery.replace(/[%,():"'\\_[\]]/g, '').trim().slice(0, 60);
     if (sanitized) {
       dbQuery = dbQuery.or(
         `full_name.ilike.%${sanitized}%,username.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`
@@ -176,6 +177,7 @@ export async function POST(req: NextRequest) {
 
   if (role === 'agent' || role === 'super_agent') {
     if (!slug || !display_name) return NextResponse.json({ error: 'Slug And User Name Are Required For Agents' }, { status: 400 });
+    if (typeof display_name !== 'string' || display_name.length > 100) return NextResponse.json({ error: 'User Name Length Must Be 100 Characters Or Less' }, { status: 400 });
     const slugRegex = /^[a-z0-9\-]+$/;
     if (!slugRegex.test(slug)) return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
     if (slug.length < 2 || slug.length > 50) return NextResponse.json({ error: 'Slug Length Must Be Between 2 And 50 Characters' }, { status: 400 });

@@ -17,9 +17,9 @@ function isValidScope(v: string | null): v is Scope {
 // fix-49 / fix-52: tokenize on whitespace and strip characters that would
 // break PostgREST's `.or()` mini-grammar (it uses commas as separators and
 // parentheses for grouping). A token with one of those would silently
-// malform the request.
+// malform the request. Also strip _ and [ to prevent ILIKE wildcards.
 function sanitizeToken(t: string): string {
-  return t.replace(/[,()*]/g, '').trim();
+  return t.replace(/[,()*_[\]\\]/g, '').trim();
 }
 
 function tokenize(q: string): string[] {

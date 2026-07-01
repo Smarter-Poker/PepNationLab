@@ -136,7 +136,7 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
           <optgroup label="Lock To A Gamification Tier">
             {LEVELS.map((l) => (
               <option key={`tier_${l.level}`} value={`tier_${l.level}`}>
-                Tier {l.level}: {l.name} ({[0.5, 0.6, 0.7][l.level - 1] * 100}% Markup)
+                Tier {l.level}: {l.name} ({[1.5, 2.0, 2.5][l.level - 1] * 100}% Markup)
               </option>
             ))}
           </optgroup>
