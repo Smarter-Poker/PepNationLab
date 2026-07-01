@@ -14,7 +14,8 @@ export const dynamic = 'force-dynamic';
 type Field = 'slug' | 'username' | 'display_name';
 
 function escapeLike(v: string): string {
-  return v.replace(/[\\%_]/g, (m) => `\\${m}`);
+  // Escape PostgreSQL ILIKE special characters: \ % _ and [ (POSIX char-class).
+  return v.replace(/[\\%_[]/g, (m) => `\\${m}`);
 }
 
 async function loadReservedSlugs(supabase: Awaited<ReturnType<typeof createServiceClient>>): Promise<Set<string>> {

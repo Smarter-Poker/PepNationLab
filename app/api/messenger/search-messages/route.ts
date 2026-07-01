@@ -33,7 +33,8 @@ export async function POST(req: NextRequest) {
   if (!participant) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const svc = await createServiceClient();
-  const term = parsed.data.q.replace(/[\\%_]/g, (c) => '\\' + c);
+  // Escape PostgreSQL ILIKE special characters: \ % _ and [ (POSIX char-class).
+  const term = parsed.data.q.replace(/[\\%_[]/g, (c) => '\\' + c);
   const { data, error: qErr } = await svc
     .from('messenger_messages')
     .select('id, conversation_id, sender_id, text, message_type, created_at')

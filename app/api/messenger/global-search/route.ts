@@ -58,7 +58,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ messages: [], conversations: [] });
   }
 
-  const term = parsed.data.q.replace(/[\\%_]/g, (c) => '\\' + c);
+  // Escape PostgreSQL ILIKE special characters: \ % _ and [ (POSIX char-class).
+  const term = parsed.data.q.replace(/[\\%_[]/g, (c) => '\\' + c);
 
   const [messagesRes, convsRes] = await Promise.all([
     svc
