@@ -1,1 +1,36 @@
-aW1wb3J0IHsgTmV4dFJlc3BvbnNlLCB0eXBlIE5leHRSZXF1ZXN0IH0gZnJvbSAnbmV4dC9zZXJ2ZXInOwppbXBvcnQgeyBjcmVhdGVTZXJ2aWNlQ2xpZW50IH0gZnJvbSAnQC9saWIvc3VwYWJhc2Uvc2VydmVyJzsKaW1wb3J0IHsgcmVxdWlyZUFnZW50IH0gZnJvbSAnQC9saWIvYWRtaW4tYXV0aCc7CmltcG9ydCB7IHogfSBmcm9tICd6b2QnOwoKZXhwb3J0IGNvbnN0IGR5bmFtaWMgPSAnZm9yY2UtZHluYW1pYyc7Cgpjb25zdCBHb2FsU2NoZW1hID0gei5vYmplY3QoewogIHJlc2VhcmNoZXJJZDogei5zdHJpbmcoKS51dWlkKCksCiAgcGVyaW9kOiB6LmVudW0oWyd3ZWVrbHknLCAnbW9udGhseScsICdxdWFydGVybHknXSksCiAgdGFyZ2V0X29yZGVyczogei5udW1iZXIoKS5pbnQoKS5taW4oMCkub3B0aW9uYWwoKSwKICB0YXJnZXRfc3BlbmQ6IHoubnVtYmVyKCkubWluKDApLm9wdGlvbmFsKCksCiAgbm90ZXM6IHouc3RyaW5nKCkubWF4KDUwMCkub3B0aW9uYWwoKSwKfSk7CgpleHBvcnQgYXN5bmMgZnVuY3Rpb24gUE9TVChyZXE6IE5leHRSZXF1ZXN0KSB7CiAgY29uc3QgZ2F0ZSA9IGF3YWl0IHJlcXVpcmVBZ2VudCgpOwogIGlmICghZ2F0ZS5vaykgcmV0dXJuIGdhdGUucmVzcG9uc2U7CiAgY29uc3QgYm9keSA9IGF3YWl0IHJlcS5qc29uKCkuY2F0Y2goKCkgPT4gKHt9KSk7CiAgY29uc3QgcGFyc2VkID0gR29hbFNjaGVtYS5zYWZlUGFyc2UoYm9keSk7CiAgaWYgKCFwYXJzZWQuc3VjY2VzcykgewogICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgZXJyb3I6ICdJbnZhbGlkIEdvYWwgRGF0YScgfSwgeyBzdGF0dXM6IDQyMiB9KTsKICB9CiAgdHJ5IHsKICAgIGNvbnN0IHsgcmVzZWFyY2hlcklkLCAuLi5yZXN0IH0gPSBwYXJzZWQuZGF0YTsKICAgIGNvbnN0IHN2YyA9IGF3YWl0IGNyZWF0ZVNlcnZpY2VDbGllbnQoKTsKICAgIGF3YWl0IHN2Yy5mcm9tKCdhZ2VudF9yZXNlYXJjaGVyX2dyb3d0aF9nb2Fscycp.dXBzZXJ0KAogICAgICB7IGFnZW50X2lkOiBnYXRlLnVzZXIuaWQsIHJlc2VhcmNoZXJfaWQ6IHJlc2VhcmNoZXJJZCwgLi4ucmVzdCwgdXBkYXRlZF9hdDogbmV3IERhdGUoKS50b0lTT1N0cmluZygpIH0sCiAgICAgIHsgb25Db25mbGljdDogJ2FnZW50X2lkLHJlc2VhcmNoZXJfaWQscGVyaW9kJyB9LAogICAgKTsKICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IG9rOiB0cnVlIH0pOwogIH0gY2F0Y2ggKGVycikgewogICAgY29uc29sZS5lcnJvcignW3Jlc2VhcmNoZXJzL2dvYWxzXSBQT1NUIGVycm9yOicsIGVycik7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBlcnJvcjogJ0ZhaWxlZCBUbyBTYXZlIEdvYWwnIH0sIHsgc3RhdHVzOiA1MDAgfSk7CiAgfQp9Cg==
+import { NextResponse, type NextRequest } from 'next/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import { requireAgent } from '@/lib/admin-auth';
+import { z } from 'zod';
+
+export const dynamic = 'force-dynamic';
+
+const GoalSchema = z.object({
+  researcherId: z.string().uuid(),
+  period: z.enum(['weekly', 'monthly', 'quarterly']),
+  target_orders: z.number().int().min(0).optional(),
+  target_spend: z.number().min(0).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+export async function POST(req: NextRequest) {
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
+  const body = await req.json().catch(() => ({}));
+  const parsed = GoalSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid Goal Data' }, { status: 422 });
+  }
+  try {
+    const { researcherId, ...rest } = parsed.data;
+    const svc = await createServiceClient();
+    await svc.from('agent_researcher_growth_goals').upsert(
+      { agent_id: gate.user.id, researcher_id: researcherId, ...rest, updated_at: new Date().toISOString() },
+      { onConflict: 'agent_id,researcher_id,period' },
+    );
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error('[researchers/goals] POST error:', err);
+    return NextResponse.json({ error: 'Failed To Save Goal' }, { status: 500 });
+  }
+}

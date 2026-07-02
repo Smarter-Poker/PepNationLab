@@ -1,1 +1,47 @@
-aW1wb3J0IHsgTmV4dFJlc3BvbnNlLCB0eXBlIE5leHRSZXF1ZXN0IH0gZnJvbSAnbmV4dC9zZXJ2ZXInOwppbXBvcnQgeyBjcmVhdGVTZXJ2aWNlQ2xpZW50IH0gZnJvbSAnQC9saWIvc3VwYWJhc2Uvc2VydmVyJzsKaW1wb3J0IHsgcmVxdWlyZUFnZW50IH0gZnJvbSAnQC9saWIvYWRtaW4tYXV0aCc7CmltcG9ydCB7IHogfSBmcm9tICd6b2QnOwoKZXhwb3J0IGNvbnN0IGR5bmFtaWMgPSAnZm9yY2UtZHluYW1pYyc7Cgpjb25zdCBQaW5TY2hlbWEgPSB6Lm9iamVjdCh7IHJlc2VhcmNoZXJJZDogei5zdHJpbmcoKS51dWlkKCkgfSk7CgpleHBvcnQgYXN5bmMgZnVuY3Rpb24gUE9TVChyZXE6IE5leHRSZXF1ZXN0KSB7CiAgY29uc3QgZ2F0ZSA9IGF3YWl0IHJlcXVpcmVBZ2VudCgpOwogIGlmICghZ2F0ZS5vaykgcmV0dXJuIGdhdGUucmVzcG9uc2U7CiAgY29uc3QgYm9keSA9IGF3YWl0IHJlcS5qc29uKCkuY2F0Y2goKCkgPT4gKHt9KSk7CiAgY29uc3QgcGFyc2VkID0gUGluU2NoZW1hLnNhZmVQYXJzZShib2R5KTsKICBpZiAoIXBhcnNlZC5zdWNjZXNzKSB7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBlcnJvcjogJ0ludmFsaWQgUmVzZWFyY2hlciBJZCcgfSwgeyBzdGF0dXM6IDQyMiB9KTsKICB9CiAgdHJ5IHsKICAgIGNvbnN0IHN2YyA9IGF3YWl0IGNyZWF0ZVNlcnZpY2VDbGllbnQoKTsKICAgIGF3YWl0IHN2Yy5mcm9tKCdhZ2VudF9yZXNlYXJjaGVyX3BpbnMnKS51cHNlcnQoCiAgICAgIHsgYWdlbnRfaWQ6IGdhdGUudXNlci5pZCwgcmVzZWFyY2hlcl9pZDogcGFyc2VkLmRhdGEucmVzZWFyY2hlcklkIH0sCiAgICAgIHsgb25Db25mbGljdDogJ2FnZW50X2lkLHJlc2VhcmNoZXJfaWQnIH0sCiAgICApOwogICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgb2s6IHRydWUgfSk7CiAgfSBjYXRjaCAoZXJyKSB7CiAgICBjb25zb2xlLmVycm9yKCdbcmVzZWFyY2hlcnMvcGluc10gUE9TVCBlcnJvcjonLCBlcnIpOwogICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgZXJyb3I6ICdGYWlsZWQgVG8gVXBkYXRlIFBpbicgfSwgeyBzdGF0dXM6IDUwMCB9KTsKICB9Cn0KCmV4cG9ydCBhc3luYyBmdW5jdGlvbiBERUxFVEUocmVxOiBOZXh0UmVxdWVzdCkgewogIGNvbnN0IGdhdGUgPSBhd2FpdCByZXF1aXJlQWdlbnQoKTsKICBpZiAoIWdhdGUub2spIHJldHVybiBnYXRlLnJlc3BvbnNlOwogIGNvbnN0IGJvZHkgPSBhd2FpdCByZXEuanNvbigpLmNhdGNoKCgpID0+ICh7fSkpOwogIGNvbnN0IHBhcnNlZCA9IFBpblNjaGVtYS5zYWZlUGFyc2UoYm9keSk7CiAgaWYgKCFwYXJzZWQuc3VjY2VzcykgewogICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgZXJyb3I6ICdJbnZhbGlkIFJlc2VhcmNoZXIgSWQnIH0sIHsgc3RhdHVzOiA0MjIgfSk7CiAgfQogIHRyeSB7CiAgICBjb25zdCBzdmMgPSBhd2FpdCBjcmVhdGVTZXJ2aWNlQ2xpZW50KCk7CiAgICBhd2FpdCBzdmMuZnJvbSgnYWdlbnRfcmVzZWFyY2hlcl9waW5zJykuZGVsZXRlKCkuZXEoJ2FnZW50X2lkJywgZ2F0ZS51c2VyLmlkKS5lcSgncmVzZWFyY2hlcl9pZCcsIHBhcnNlZC5kYXRhLnJlc2VhcmNoZXJJZCk7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBvazogdHJ1ZSB9KTsKICB9IGNhdGNoIChlcnIpIHsKICAgIGNvbnNvbGUuZXJyb3IoJ1tyZXNlYXJjaGVycy9waW5zXSBERUxFVEUgZXJyb3I6JywgZXJyKTsKICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiAnRmFpbGVkIFRvIFJlbW92ZSBQaW4nIH0sIHsgc3RhdHVzOiA1MDAgfSk7CiAgfQp9Cg==
+import { NextResponse, type NextRequest } from 'next/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import { requireAgent } from '@/lib/admin-auth';
+import { z } from 'zod';
+
+export const dynamic = 'force-dynamic';
+
+const PinSchema = z.object({ researcherId: z.string().uuid() });
+
+export async function POST(req: NextRequest) {
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
+  const body = await req.json().catch(() => ({}));
+  const parsed = PinSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid Researcher Id' }, { status: 422 });
+  }
+  try {
+    const svc = await createServiceClient();
+    await svc.from('agent_researcher_pins').upsert(
+      { agent_id: gate.user.id, researcher_id: parsed.data.researcherId },
+      { onConflict: 'agent_id,researcher_id' },
+    );
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error('[researchers/pins] POST error:', err);
+    return NextResponse.json({ error: 'Failed To Update Pin' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
+  const body = await req.json().catch(() => ({}));
+  const parsed = PinSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid Researcher Id' }, { status: 422 });
+  }
+  try {
+    const svc = await createServiceClient();
+    await svc.from('agent_researcher_pins').delete().eq('agent_id', gate.user.id).eq('researcher_id', parsed.data.researcherId);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error('[researchers/pins] DELETE error:', err);
+    return NextResponse.json({ error: 'Failed To Remove Pin' }, { status: 500 });
+  }
+}

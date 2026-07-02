@@ -1,1 +1,40 @@
-aW1wb3J0IHsgTmV4dFJlcXVlc3QsIE5leHRSZXNwb25zZSB9IGZyb20gJ25leHQvc2VydmVyJzsKaW1wb3J0IHsgY3JlYXRlU2VydmljZUNsaWVudCB9IGZyb20gJ0AvbGliL3N1cGFiYXNlL3NlcnZlcic7CmltcG9ydCB7IHJlcXVpcmVBZ2VudCB9IGZyb20gJ0AvbGliL2FkbWluLWF1dGgnOwppbXBvcnQgeyBhc3NlcnRTYW1lT3JpZ2luIH0gZnJvbSAnQC9saWIvY3NyZic7CgpleHBvcnQgY29uc3QgcnVudGltZSA9ICdub2RlanMnOwpleHBvcnQgY29uc3QgZHluYW1pYyA9ICdmb3JjZS1keW5hbWljJzsKCmV4cG9ydCBhc3luYyBmdW5jdGlvbiBQT1NUKHJlcTogTmV4dFJlcXVlc3QpIHsKICBjb25zdCBjc3JmID0gYXNzZXJ0U2FtZU9yaWdpbihyZXEpOwogIGlmIChjc3JmKSByZXR1cm4gY3NyZjsKICBjb25zdCBnYXRlID0gYXdhaXQgcmVxdWlyZUFnZW50KCk7CiAgaWYgKCFnYXRlLm9rKSByZXR1cm4gZ2F0ZS5yZXNwb25zZTsKICBjb25zdCBhZ2VudElkID0gZ2F0ZS51c2VyLmlkOwogIGNvbnN0IGJvZHkgPSBhd2FpdCByZXEuanNvbigpLmNhdGNoKCgpID0+ICh7fSkpOwogIGNvbnN0IHJlc2VhcmNoZXJJZCA9IHR5cGVvZiBib2R5LnJlc2VhcmNoZXJJZCA9PT0gJ3N0cmluZycgPyBib2R5LnJlc2VhcmNoZXJJZCA6ICcnOwogIGNvbnN0IG5vdGVSYXcgPSB0eXBlb2YgYm9keS5ub3RlID09PSAnc3RyaW5nJyA/IGJvZHkubm90ZSA6ICcnOwogIGlmICghcmVzZWFyY2hlcklkKSB7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBlcnJvcjogJ1Jlc2VhcmNoZXIgSXMgUmVxdWlyZWQuJyB9LCB7IHN0YXR1czogNDAwIH0pOwogIH0KICBjb25zdCBub3RlID0gbm90ZVJhdy5zbGljZSgwLCA0MDAwKTsKICB0cnkgewogICAgY29uc3Qgc3ZjID0gYXdhaXQgY3JlYXRlU2VydmljZUNsaWVudCgpOwogICAgY29uc3QgeyBkYXRhOiByZXNlYXJjaGVyIH0gPSBhd2FpdCBzdmMuZnJvbSgncHJvZmlsZXMnKS5zZWxlY3QoJ2lkLCByZWZlcnJpbmdfYWdlbnRfaWQnKS5lcSgnaWQnLCByZXNlYXJjaGVySWQpLmVxKCdyb2xlJywgJ3Jlc2VhcmNoZXInKS5tYXliZVNpbmdsZSgpOwogICAgaWYgKCFyZXNlYXJjaGVyIHx8IHJlc2VhcmNoZXIucmVmZXJyaW5nX2FnZW50X2lkICE9PSBhZ2VudElkKSB7CiAgICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiAnUmVzZWFyY2hlciBOb3QgRm91bmQuJyB9LCB7IHN0YXR1czogNDA0IH0pOwogICAgfQogICAgY29uc3QgeyBlcnJvciB9ID0gYXdhaXQgc3ZjLmZyb20oJ2FnZW50X3Jlc2VhcmNoZXJfbm90ZXMnKS51cHNlcnQoCiAgICAgIHsgYWdlbnRfaWQ6IGFnZW50SWQsIHJlc2VhcmNoZXJfaWQ6IHJlc2VhcmNoZXJJZCwgbm90ZSwgdXBkYXRlZF9hdDogbmV3IERhdGUoKS50b0lTT1N0cmluZygpIH0sCiAgICAgIHsgb25Db25mbGljdDogJ2FnZW50X2lkLHJlc2VhcmNoZXJfaWQnIH0sCiAgICApOwogICAgaWYgKGVycm9yKSB7CiAgICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiAnRmFpbGVkIFRvIFNhdmUgTm90ZS4nIH0sIHsgc3RhdHVzOiA1MDAgfSk7CiAgICB9CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBzdWNjZXNzOiB0cnVlLCBub3RlIH0pOwogIH0gY2F0Y2ggKGVycikgewogICAgY29uc29sZS5lcnJvcignW3Jlc2VhcmNoZXJzL25vdGVzXSBQT1NUIGVycm9yOicsIGVycik7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBlcnJvcjogJ0ZhaWxlZCBUbyBTYXZlIE5vdGUuJyB9LCB7IHN0YXR1czogNTAwIH0pOwogIH0KfQo=
+import { NextRequest, NextResponse } from 'next/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import { requireAgent } from '@/lib/admin-auth';
+import { assertSameOrigin } from '@/lib/csrf';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
+  const agentId = gate.user.id;
+  const body = await req.json().catch(() => ({}));
+  const researcherId = typeof body.researcherId === 'string' ? body.researcherId : '';
+  const noteRaw = typeof body.note === 'string' ? body.note : '';
+  if (!researcherId) {
+    return NextResponse.json({ error: 'Researcher Is Required.' }, { status: 400 });
+  }
+  const note = noteRaw.slice(0, 4000);
+  try {
+    const svc = await createServiceClient();
+    const { data: researcher } = await svc.from('profiles').select('id, referring_agent_id').eq('id', researcherId).eq('role', 'researcher').maybeSingle();
+    if (!researcher || researcher.referring_agent_id !== agentId) {
+      return NextResponse.json({ error: 'Researcher Not Found.' }, { status: 404 });
+    }
+    const { error } = await svc.from('agent_researcher_notes').upsert(
+      { agent_id: agentId, researcher_id: researcherId, note, updated_at: new Date().toISOString() },
+      { onConflict: 'agent_id,researcher_id' },
+    );
+    if (error) {
+      return NextResponse.json({ error: 'Failed To Save Note.' }, { status: 500 });
+    }
+    return NextResponse.json({ success: true, note });
+  } catch (err) {
+    console.error('[researchers/notes] POST error:', err);
+    return NextResponse.json({ error: 'Failed To Save Note.' }, { status: 500 });
+  }
+}

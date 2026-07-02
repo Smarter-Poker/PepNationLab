@@ -1,1 +1,81 @@
-LyoqCiAqIEdFVCAvYXBpL3Jlc2VhcmNoL3dpZGdldC86c2x1ZwogKiBTZWxmLWNvbnRhaW5lZCBIVE1MIGtub3dsZWRnZSBjYXJkIGZvciBlbWJlZGRpbmcgaW4gdGhpcmQtcGFydHkgc2l0ZXMuCiAqIFJldHVybnMgdGV4dC9odG1sIHdpdGggaW5saW5lIENTUyBhbmQgYSAnUG93ZXJlZCBCeSBQZXAgTmF0aW9uIExhYicgbGluay4KICovCmltcG9ydCB7IHR5cGUgTmV4dFJlcXVlc3QgfSBmcm9tICduZXh0L3NlcnZlcic7CmltcG9ydCB7IGNyZWF0ZVNlcnZpY2VDbGllbnQgfSBmcm9tICdAL2xpYi9zdXBhYmFzZS9zZXJ2ZXInOwoKZXhwb3J0IGNvbnN0IGR5bmFtaWMgPSAnZm9yY2UtZHluYW1pYyc7Cgpjb25zdCBSRVNFQVJDSF9OT1RFID0KICAnRm9yIFJlc2VhcmNoIFVzZSBPbmx5LiBUaGlzIFJlc3RhdGVzIFN0b3JlZCBMYWJvcmF0b3J5IEZhY3RzIEFuZCBJcyBOb3QgRG9zaW5nIE9yIE1lZGljYWwgQWR2aWNlLic7CgpmdW5jdGlvbiBlc2Moczogc3RyaW5nIHwgbnVsbCB8IHVuZGVmaW5lZCk6IHN0cmluZyB7CiAgaWYgKCFzKSByZXR1cm4gJyc7CiAgcmV0dXJuIFN0cmluZyhzKQogICAgLnJlcGxhY2UoLyYvZywgJyZhbXA7JykKICAgIC5yZXBsYWNlKC88L2csICcmbHQ7JykKICAgIC5yZXBsYWNlKC8+L2csICcmZ3Q7JykKICAgIC5yZXBsYWNlKC8iL2csICcmcXVvdDsnKQogICAgLnJlcGxhY2UoLycvZywgJyYjMzk7Jyk7Cn0KCmV4cG9ydCBhc3luYyBmdW5jdGlvbiBHRVQoCiAgX3JlcTogTmV4dFJlcXVlc3QsCiAgeyBwYXJhbXMgfTogeyBwYXJhbXM6IFByb21pc2U8eyBzbHVnOiBzdHJpbmcgfT4gfSwKKSB7CiAgY29uc3QgeyBzbHVnIH0gPSBhd2FpdCBwYXJhbXM7CiAgY29uc3QgY2xlYW5lZCA9IChzbHVnIHx8ICcnKS50b0xvd2VyQ2FzZSgpLnRyaW0oKTsKICBpZiAoIWNsZWFuZWQpIHsKICAgIHJldHVybiBuZXcgUmVzcG9uc2UoJ05vdCBGb3VuZCcsIHsgc3RhdHVzOiA0MDQsIGhlYWRlcnM6IHsgJ0NvbnRlbnQtVHlwZSc6ICd0ZXh0L2h0bWwnIH0gfSk7CiAgfQogIHRyeSB7CiAgICBjb25zdCBzdXBhYmFzZSA9IGF3YWl0IGNyZWF0ZVNlcnZpY2VDbGllbnQoKTsKICAgIGNvbnN0IHsgZGF0YSB9ID0gYXdhaXQgc3VwYWJhc2UKICAgICAgLmZyb20oJ2NvbXBvdW5kcycpCiAgICAgIC5zZWxlY3QoJ3NsdWcsIGRpc3BsYXlfbmFtZSwgYWxpYXNlcywgY2F0ZWdvcnksIHJlc2VhcmNoX2FyZWFzLCBldmlkZW5jZV90aWVyLCBwbGFpbl9zdW1tYXJ5LCBtZWNoYW5pc20sIGhhbGZfbGlmZScpCiAgICAgIC5lcSgnc2x1ZycsIGNsZWFuZWQpCiAgICAgIC5tYXliZVNpbmdsZSgpOwogICAgaWYgKCFkYXRhKSB7CiAgICAgIHJldHVybiBuZXcgUmVzcG9uc2UoJzxodG1sPjxib2R5PjxwPkNvbXBvdW5kIE5vdCBGb3VuZC48L3A+PC9ib2R5PjwvaHRtbD4nLCB7CiAgICAgICAgc3RhdHVzOiA0MDQsCiAgICAgICAgaGVhZGVyczogeyAnQ29udGVudC1UeXBlJzogJ3RleHQvaHRtbDsgY2hhcnNldD11dGYtOCcgfSwKICAgICAgfSk7CiAgICB9CiAgICBjb25zdCBhbGlhc2VzID0gQXJyYXkuaXNBcnJheShkYXRhLmFsaWFzZXMpID8gKGRhdGEuYWxpYXNlcyBhcyBzdHJpbmdbXSkuc2xpY2UoMCwgNCkuam9pbignLCAnKSA6ICcnOwogICAgY29uc3QgYXJlYXMgPSBBcnJheS5pc0FycmF5KGRhdGEucmVzZWFyY2hfYXJlYXMpID8gKGRhdGEucmVzZWFyY2hfYXJlYXMgYXMgc3RyaW5nW10pLnNsaWNlKDAsIDMpLmpvaW4oJyDCtyAnKSA6ICcnOwogICAgY29uc3QgdGllciA9IFN0cmluZyhkYXRhLmV2aWRlbmNlX3RpZXIgPz8gJycpLnJlcGxhY2UoL18vZywgJyAnKTsKICAgIGNvbnN0IGh0bWwgPSBgPCFkb2N0eXBlIGh0bWw+PGh0bWwgbGFuZz0iZW4iPjxoZWFkPjxtZXRhIGNoYXJzZXQ9InV0Zi04Ij48bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLGluaXRpYWwtc2NhbGU9MSI+PHRpdGxlPiR7ZXNjKGRhdGEuZGlzcGxheV9uYW1lKX0gLSBQZXAgTmF0aW9uIExhYjwvdGl0bGU+PHN0eWxlPgogICAgOnJvb3QgeyAtLWJnOiMwNTBBMEY7IC0tc3VyZmFjZTojMEYxOTIzOyAtLXN1cmZhY2UtMjojMTYyMjMwOyAtLXRlYWw6IzAwQzRCQzsgLS13aGl0ZTojRkZGRkZGOyAtLXNpbHZlcjojQThCNEMwOyAtLXNpbHZlci0yOiNEMERBRTQ7IC0tcmVkOiNFNTNFM0U7IH0KICAgICp7Ym94LXNpemluZzpib3JkZXItYm94fSBodG1sLGJvZHl7bWFyZ2luOjA7cGFkZGluZzowO2JhY2tncm91bmQ6dmFyKC0tYmcpO2NvbG9yOnZhcigtLXdoaXRlKTtmb250LWZhbWlseTpJbnRlcixzeXN0ZW0tdWksc2Fucy1zZXJpZjtmb250LXNpemU6MTRweDtsaW5lLWhlaWdodDoxLjV9CiAgICAuY2FyZHtwYWRkaW5nOjE4cHggMjBweDtiYWNrZ3JvdW5kOmxpbmVhci1ncmFkaWVudCgxODBkZWcsdmFyKC0tc3VyZmFjZSkgMCUsdmFyKC0tc3VyZmFjZS0yKSAxMDAlKTtib3JkZXI6MXB4IHNvbGlkIHJnYmEoMjU1LDI1NSwyNTUsMC4wOCk7Ym9yZGVyLXJhZGl1czoxNHB4O21heC13aWR0aDo1MjBweDttYXJnaW46OHB4fQogICAgLmgxe2ZvbnQtc2l6ZToxOHB4O2ZvbnQtd2VpZ2h0OjcwMDttYXJnaW46MCAwIDRweCAwO2NvbG9yOnZhcigtLXdoaXRlKTt0ZXh0LXRyYW5zZm9ybTpjYXBpdGFsaXplfQogICAgLmFsaWFzZXN7Zm9udC1zaXplOjExcHg7Y29sb3I6dmFyKC0tc2lsdmVyKTttYXJnaW4tYm90dG9tOjEwcHg7dGV4dC10cmFuc2Zvcm06Y2FwaXRhbGl6ZX0KICAgIC5yb3d7ZGlzcGxheTpmbGV4O2dhcDo4cHg7ZmxleC13cmFwOndyYXA7bWFyZ2luLWJvdHRvbToxMnB4fQogICAgLnBpbGx7Zm9udC1zaXplOjExcHg7cGFkZGluZzozcHggOHB4O2JvcmRlci1yYWRpdXM6OTk5cHg7YmFja2dyb3VuZDpyZ2JhKDAsMTk2LDE4OCwwLjEyKTtjb2xvcjp2YXIoLS10ZWFsKTt0ZXh0LXRyYW5zZm9ybTpjYXBpdGFsaXplO2xldHRlci1zcGFjaW5nOjAuMDJlbX0KICAgIC5waWxsLndhcm57YmFja2dyb3VuZDpyZ2JhKDIyOSw2Miw2MiwwLjEyKTtjb2xvcjp2YXIoLS1yZWQpfQogICAgLnN1bW1hcnl7Y29sb3I6dmFyKC0tc2lsdmVyLTIpO21hcmdpbi1ib3R0b206MTBweH0KICAgIC5tZWNoe2NvbG9yOnZhcigtLXNpbHZlcik7Zm9udC1zaXplOjEycHg7bWFyZ2luLWJvdHRvbToxMnB4O2JvcmRlci1sZWZ0OjJweCBzb2xpZCB2YXIoLS10ZWFsKTtwYWRkaW5nLWxlZnQ6MTBweH0KICAgIC5ub3Rle2NvbG9yOnZhcigtLXNpbHZlcik7Zm9udC1zaXplOjEwcHg7cGFkZGluZy10b3A6OHB4O21hcmdpbi10b3A6OHB4fQogICAgLmZvb3Rlcntmb250LXNpemU6MTBweDtjb2xvcjp2YXIoLS1zaWx2ZXIpO21hcmdpbi10b3A6NnB4O3RleHQtYWxpZ246cmlnaHR9CiAgICAuZm9vdGVyIGF7Y29sb3I6dmFyKC0tdGVhbCk7dGV4dC1kZWNvcmF0aW9uOm5vbmV9CiAgPC9zdHlsZT48L2hlYWQ+PGJvZHk+PGRpdiBjbGFzcz0iY2FyZCI+PGgxIGNsYXNzPSJoMSI+JHtlc2MoZGF0YS5kaXNwbGF5X25hbWUpfTwvaDE+JHthbGlhc2VzID8gYDxkaXYgY2xhc3M9ImFsaWFzZXMiPkFsc28gS25vd24gQXMgJHtlc2MoYWxpYXNlcyl9PC9kaXY+YCA6ICcnfTxkaXYgY2xhc3M9InJvdyI+JHt0aWVyID8gYDxzcGFuIGNsYXNzPSJwaWxsIj5FdmlkZW5jZTogJHtlc2ModGllcil9PC9zcGFuPmAgOiAiIn0ke2FyZWFzID8gYDxzcGFuIGNsYXNzPSJwaWxsIj4ke2VzYyhhcmVhcyl9PC9zcGFuPmAgOiAiIn08L2Rpdj4ke2RhdGEucGxhaW5fc3VtbWFyeSA/IGA8cCBjbGFzcz0ic3VtbWFyeSI+JHtlc2MoZGF0YS5wbGFpbl9zdW1tYXJ5KX08L3A+YCA6ICcnfSR7ZGF0YS5tZWNoYW5pc20gPyBgPGRpdiBjbGFzcz0ibWVjaCI+PHN0cm9uZz5NZWNoYW5pc206PC9zdHJvbmc+ICR7ZXNjKGRhdGEubWVjaGFuaXNtKX08L2Rpdj5gIDogJyd9PGRpdiBjbGFzcz0ibm90ZSI+JHtlc2MoUkVTRUFSQ0hfTk9URSl9PC9kaXY+PGRpdiBjbGFzcz0iZm9vdGVyIj5Qb3dlcmVkIEJ5IDxhIGhyZWY9Imh0dHBzOi8vcGVwbmF0aW9ubGFiLmNvbS9yZXNlYXJjaC9jb21wb3VuZHMvJHtlc2MoY2xlYW5lZCl9IiB0YXJnZXQ9Il9ibGFuayIgcmVsPSJub29wZW5lciI+UGVwIE5hdGlvbiBMYWI8L2E+PC9kaXY+PC9kaXY+PC9ib2R5PjwvaHRtbD5gOwogICAgcmV0dXJuIG5ldyBSZXNwb25zZShodG1sLCB7CiAgICAgIHN0YXR1czogMjAwLAogICAgICBoZWFkZXJzOiB7CiAgICAgICAgJ0NvbnRlbnQtVHlwZSc6ICd0ZXh0L2h0bWw7IGNoYXJzZXQ9dXRmLTgnLAogICAgICAgICdDYWNoZS1Db250cm9sJzogJ3B1YmxpYywgbWF4LWFnZT0zMDAnLAogICAgICAgICdBY2Nlc3MtQ29udHJvbC1BbGxvdy1PcmlnaW4nOiAnKicsCiAgICAgICAgJ1gtRnJhbWUtT3B0aW9ucyc6ICdBTExPV0FMTCcsCiAgICAgICAgJ0NvbnRlbnQtU2VjdXJpdHktUG9saWN5JzogImZyYW1lLWFuY2VzdG9ycyAqIiwKICAgICAgfSwKICAgIH0pOwogIH0gY2F0Y2ggKGVycikgewogICAgY29uc29sZS5lcnJvcignW3Jlc2VhcmNoL3dpZGdldF0gZXJyb3I6JywgZXJyKTsKICAgIHJldHVybiBuZXcgUmVzcG9uc2UoJzxodG1sPjxib2R5PjxwPkFuIEVycm9yIE9jY3VycmVkLjwvcD48L2JvZHk+PC9odG1sPicsIHsKICAgICAgc3RhdHVzOiA1MDAsCiAgICAgIGhlYWRlcnM6IHsgJ0NvbnRlbnQtVHlwZSc6ICd0ZXh0L2h0bWw7IGNoYXJzZXQ9dXRmLTgnIH0sCiAgICB9KTsKICB9Cn0K
+/**
+ * GET /api/research/widget/:slug
+ * Self-contained HTML knowledge card for embedding in third-party sites.
+ * Returns text/html with inline CSS and a 'Powered By Pep Nation Lab' link.
+ */
+import { type NextRequest } from 'next/server';
+import { createServiceClient } from '@/lib/supabase/server';
+
+export const dynamic = 'force-dynamic';
+
+const RESEARCH_NOTE =
+  'For Research Use Only. This Restates Stored Laboratory Facts And Is Not Dosing Or Medical Advice.';
+
+function esc(s: string | null | undefined): string {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> },
+) {
+  const { slug } = await params;
+  const cleaned = (slug || '').toLowerCase().trim();
+  if (!cleaned) {
+    return new Response('Not Found', { status: 404, headers: { 'Content-Type': 'text/html' } });
+  }
+  try {
+    const supabase = await createServiceClient();
+    const { data } = await supabase
+      .from('compounds')
+      .select('slug, display_name, aliases, category, research_areas, evidence_tier, plain_summary, mechanism, half_life')
+      .eq('slug', cleaned)
+      .maybeSingle();
+    if (!data) {
+      return new Response('<html><body><p>Compound Not Found.</p></body></html>', {
+        status: 404,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      });
+    }
+    const aliases = Array.isArray(data.aliases) ? (data.aliases as string[]).slice(0, 4).join(', ') : '';
+    const areas = Array.isArray(data.research_areas) ? (data.research_areas as string[]).slice(0, 3).join(' · ') : '';
+    const tier = String(data.evidence_tier ?? '').replace(/_/g, ' ');
+    const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(data.display_name)} - Pep Nation Lab</title><style>
+    :root { --bg:#050A0F; --surface:#0F1923; --surface-2:#162230; --teal:#00C4BC; --white:#FFFFFF; --silver:#A8B4C0; --silver-2:#D0DAE4; --red:#E53E3E; }
+    *{box-sizing:border-box} html,body{margin:0;padding:0;background:var(--bg);color:var(--white);font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.5}
+    .card{padding:18px 20px;background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%);border:1px solid rgba(255,255,255,0.08);border-radius:14px;max-width:520px;margin:8px}
+    .h1{font-size:18px;font-weight:700;margin:0 0 4px 0;color:var(--white);text-transform:capitalize}
+    .aliases{font-size:11px;color:var(--silver);margin-bottom:10px;text-transform:capitalize}
+    .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .pill{font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(0,196,188,0.12);color:var(--teal);text-transform:capitalize;letter-spacing:0.02em}
+    .pill.warn{background:rgba(229,62,62,0.12);color:var(--red)}
+    .summary{color:var(--silver-2);margin-bottom:10px}
+    .mech{color:var(--silver);font-size:12px;margin-bottom:12px;border-left:2px solid var(--teal);padding-left:10px}
+    .note{color:var(--silver);font-size:10px;padding-top:8px;margin-top:8px}
+    .footer{font-size:10px;color:var(--silver);margin-top:6px;text-align:right}
+    .footer a{color:var(--teal);text-decoration:none}
+  </style></head><body><div class="card"><h1 class="h1">${esc(data.display_name)}</h1>${aliases ? `<div class="aliases">Also Known As ${esc(aliases)}</div>` : ''}<div class="row">${tier ? `<span class="pill">Evidence: ${esc(tier)}</span>` : ""}${areas ? `<span class="pill">${esc(areas)}</span>` : ""}</div>${data.plain_summary ? `<p class="summary">${esc(data.plain_summary)}</p>` : ''}${data.mechanism ? `<div class="mech"><strong>Mechanism:</strong> ${esc(data.mechanism)}</div>` : ''}<div class="note">${esc(RESEARCH_NOTE)}</div><div class="footer">Powered By <a href="https://pepnationlab.com/research/compounds/${esc(cleaned)}" target="_blank" rel="noopener">Pep Nation Lab</a></div></div></body></html>`;
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        'Access-Control-Allow-Origin': '*',
+        'X-Frame-Options': 'ALLOWALL',
+        'Content-Security-Policy': "frame-ancestors *",
+      },
+    });
+  } catch (err) {
+    console.error('[research/widget] error:', err);
+    return new Response('<html><body><p>An Error Occurred.</p></body></html>', {
+      status: 500,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
+  }
+}
