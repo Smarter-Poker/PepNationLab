@@ -114,24 +114,30 @@ async function mapbox(q: string, token: string): Promise<Suggestion[]> {
 }
 
 export async function GET(req: NextRequest) {
-  // Any authenticated user may use address autocomplete: researchers fill
-  // checkout/saved-address forms, agents fill warehouse, admins fill origins.
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-
-  const q = (new URL(req.url).searchParams.get('q') || '').trim();
-  // Only start once "enough data" is typed, so we don't fire on a few letters.
-  if (q.length < 4) return NextResponse.json({ suggestions: [] });
-  // Cap query length to prevent unbounded payloads being forwarded to geocoders.
-  if (q.length > 200) return NextResponse.json({ suggestions: [] }, { status: 400 });
-
   try {
-    const token = process.env.MAPBOX_TOKEN;
-    const suggestions = token ? await mapbox(q, token) : await photon(q);
-    return NextResponse.json({ suggestions });
-  } catch {
-    // Never block the form on an autocomplete hiccup.
+    // Any authenticated user may use address autocomplete: researchers fill
+    // checkout/saved-address forms, agents fill warehouse, admins fill origins.
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+    const q = (new URL(req.url).searchParams.get('q') || '').trim();
+    // Only start once "enough data" is typed, so we don't fire on a few letters.
+    if (q.length < 4) return NextResponse.json({ suggestions: [] });
+    // Cap query length to prevent unbounded payloads being forwarded to geocoders.
+    if (q.length > 200) return NextResponse.json({ suggestions: [] }, { status: 400 });
+
+    try {
+      const token = process.env.MAPBOX_TOKEN;
+      const suggestions = token ? await mapbox(q, token) : await photon(q);
+      return NextResponse.json({ suggestions });
+    } catch {
+      // Never block the form on an autocomplete hiccup.
+      return NextResponse.json({ suggestions: [] });
+    }
+  } catch (err) {
+    console.error('[shipping/address-autocomplete] GET error:', err);
+    // Best-effort: never block the address form on an internal error.
     return NextResponse.json({ suggestions: [] });
   }
 }
