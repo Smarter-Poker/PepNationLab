@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { requireSession } from '@/lib/admin-auth';
+import { requireAgent } from '@/lib/admin-auth';
 
 export async function GET(req: Request) {
   try {
-    const gate = await requireSession();
+    const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
     const agentId = gate.user.id;
@@ -15,7 +15,8 @@ export async function GET(req: Request) {
       .from('weekly_statements')
       .select('id, week_start, week_end, total_cogs, total_shipping, total_owed, status, due_date, paid_at, payment_method')
       .eq('agent_id', agentId)
-      .order('week_start', { ascending: false });
+      .order('week_start', { ascending: false })
+      .limit(100);
     if (stmtErr) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
     }
@@ -25,7 +26,8 @@ export async function GET(req: Request) {
       .from('agent_invoices')
       .select('id, super_agent_id, week_start, week_end, total_cogs, total_shipping, total_owed, status, due_date, paid_at, payment_method')
       .eq('agent_id', agentId)
-      .order('week_start', { ascending: false });
+      .order('week_start', { ascending: false })
+      .limit(100);
     if (invErr) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
     }

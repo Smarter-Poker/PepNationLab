@@ -16,7 +16,8 @@ export async function GET(req: NextRequest) {
       .from('profiles')
       .select('id, full_name, email, cart_state, cart_updated_at')
       .eq('referring_agent_id', agentId)
-      .eq('role', 'researcher');
+      .eq('role', 'researcher')
+      .limit(1000);
 
     if (researchersError) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
@@ -42,7 +43,8 @@ export async function GET(req: NextRequest) {
       // Exclude wholesale restock orders from the sales view.
       // Restocks were appearing as zero-profit 'sales' in the agent dashboard.
       .eq('is_wholesale_restock', false)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(2500);
 
     if (ordersError) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
