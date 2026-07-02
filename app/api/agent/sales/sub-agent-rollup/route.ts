@@ -13,65 +13,70 @@ export async function GET(req: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const svc = await createServiceClient();
-  const { data: profile } = await svc
-    .from('profiles')
-    .select('id, is_super_agent, role')
-    .eq('id', user.id)
-    .single();
-  if (!profile?.is_super_agent && profile?.role !== 'admin') {
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
-  }
-
-  const { data: subAgents } = await svc
-    .from('profiles')
-    .select('id, full_name, email, username')
-    .eq('parent_agent_id', user.id);
-  const subIds = (subAgents ?? []).map((s: any) => s.id);
-  if (subIds.length === 0) return NextResponse.json({ rows: [] });
-
-  const { start, end } = parseRange(new URL(req.url).searchParams);
-
-  // Pull COLLECTED orders for the sub-agent set with line items, aggregate in JS.
-  // Mirrors agent_sales_kpis exactly: collected statuses only (not pending), and
-  // profit = retail - discount - product COGS - shipping (COGS was previously
-  // omitted here, overstating sub-agent profit).
-  const COLLECTED = ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'];
-  const { data: orders } = await svc
-    .from('orders')
-    .select('agent_id, total, discount_amount, shipping_cost, is_wholesale_restock, order_items(unit_retail_price, unit_cost_price, quantity)')
-    .in('agent_id', subIds)
-    .gte('created_at', start.toISOString())
-    .lt('created_at', end.toISOString())
-    .in('status', COLLECTED);
-
-  const agg: Record<string, { revenue: number; profit: number; orders: number }> = {};
-  for (const id of subIds) agg[id] = { revenue: 0, profit: 0, orders: 0 };
-  (orders ?? []).forEach((o: any) => {
-    if (o.is_wholesale_restock) return;
-    const a = agg[o.agent_id];
-    if (!a) return;
-    const total = Number(o.total || 0);
-    const discount = Number(o.discount_amount || 0);
-    const ship = Number(o.shipping_cost || 0);
-    let retail = 0;
-    let cogs = 0;
-    for (const it of (o.order_items || [])) {
-      retail += Number(it.unit_retail_price || 0) * Number(it.quantity || 0);
-      cogs += Number(it.unit_cost_price || 0) * Number(it.quantity || 0);
+  try {
+    const svc = await createServiceClient();
+    const { data: profile } = await svc
+      .from('profiles')
+      .select('id, is_super_agent, role')
+      .eq('id', user.id)
+      .single();
+    if (!profile?.is_super_agent && profile?.role !== 'admin') {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
-    a.revenue += total;
-    a.profit += retail - discount - cogs - ship;
-    a.orders += 1;
-  });
 
-  const rows = (subAgents ?? []).map((s: any) => ({
-    sub_agent_id: s.id,
-    name: s.full_name ?? s.username ?? s.email,
-    revenue_cents: Math.round(agg[s.id].revenue * 100),
-    profit_cents: Math.round(agg[s.id].profit * 100),
-    orders_count: agg[s.id].orders,
-  })).sort((a, b) => b.revenue_cents - a.revenue_cents);
+    const { data: subAgents } = await svc
+      .from('profiles')
+      .select('id, full_name, email, username')
+      .eq('parent_agent_id', user.id);
+    const subIds = (subAgents ?? []).map((s: { id: string }) => s.id);
+    if (subIds.length === 0) return NextResponse.json({ rows: [] });
 
-  return NextResponse.json({ rows });
+    const { start, end } = parseRange(new URL(req.url).searchParams);
+
+    // Pull COLLECTED orders for the sub-agent set with line items, aggregate in JS.
+    // Mirrors agent_sales_kpis exactly: collected statuses only (not pending), and
+    // profit = retail - discount - product COGS - shipping (COGS was previously
+    // omitted here, overstating sub-agent profit).
+    const COLLECTED = ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'];
+    const { data: orders } = await svc
+      .from('orders')
+      .select('agent_id, total, discount_amount, shipping_cost, is_wholesale_restock, order_items(unit_retail_price, unit_cost_price, quantity)')
+      .in('agent_id', subIds)
+      .gte('created_at', start.toISOString())
+      .lt('created_at', end.toISOString())
+      .in('status', COLLECTED);
+
+    const agg: Record<string, { revenue: number; profit: number; orders: number }> = {};
+    for (const id of subIds) agg[id] = { revenue: 0, profit: 0, orders: 0 };
+    (orders ?? []).forEach((o: { agent_id: string; is_wholesale_restock: boolean; total: number; discount_amount: number; shipping_cost: number; order_items?: { unit_retail_price: number; unit_cost_price: number; quantity: number }[] }) => {
+      if (o.is_wholesale_restock) return;
+      const a = agg[o.agent_id];
+      if (!a) return;
+      const total = Number(o.total || 0);
+      const discount = Number(o.discount_amount || 0);
+      const ship = Number(o.shipping_cost || 0);
+      let retail = 0;
+      let cogs = 0;
+      for (const it of (o.order_items || [])) {
+        retail += Number(it.unit_retail_price || 0) * Number(it.quantity || 0);
+        cogs += Number(it.unit_cost_price || 0) * Number(it.quantity || 0);
+      }
+      a.revenue += total;
+      a.profit += retail - discount - cogs - ship;
+      a.orders += 1;
+    });
+
+    const rows = (subAgents ?? []).map((s: { id: string; full_name?: string; username?: string; email?: string }) => ({
+      sub_agent_id: s.id,
+      name: s.full_name ?? s.username ?? s.email,
+      revenue_cents: Math.round(agg[s.id].revenue * 100),
+      profit_cents: Math.round(agg[s.id].profit * 100),
+      orders_count: agg[s.id].orders,
+    })).sort((a, b) => b.revenue_cents - a.revenue_cents);
+
+    return NextResponse.json({ rows });
+  } catch (err) {
+    console.error('[sales/sub-agent-rollup] GET error:', err);
+    return NextResponse.json({ error: 'Failed To Load Sub-Agent Sales' }, { status: 500 });
+  }
 }

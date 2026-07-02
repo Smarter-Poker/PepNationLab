@@ -12,13 +12,18 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  const svc = await createServiceClient();
-  const { data } = await svc
-    .from('agent_domains')
-    .select('id, hostname, status, verified_at, created_at')
-    .eq('agent_id', user.id)
-    .order('created_at', { ascending: false });
-  return NextResponse.json({ domains: data ?? [] });
+  try {
+    const svc = await createServiceClient();
+    const { data } = await svc
+      .from('agent_domains')
+      .select('id, hostname, status, verified_at, created_at')
+      .eq('agent_id', user.id)
+      .order('created_at', { ascending: false });
+    return NextResponse.json({ domains: data ?? [] });
+  } catch (err) {
+    console.error('[storefront/domains] GET error:', err);
+    return NextResponse.json({ error: 'Failed To Load Domains' }, { status: 500 });
+  }
 }
 
 const Body = z.object({
@@ -33,16 +38,21 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   let body: z.infer<typeof Body>;
   try { body = Body.parse(await req.json()); }
-  catch (e: any) { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
-  const svc = await createServiceClient();
-  const { data, error } = await svc
-    .from('agent_domains')
-    .insert({ agent_id: user.id, hostname: body.hostname.toLowerCase(), status: 'pending' })
-    .select()
-    .single();
-  if (error) {
-    if (error.code === '23505') return NextResponse.json({ error: 'hostname_taken' }, { status: 409 });
-    return safeError('storefront.domains', error, 400);
+  catch (e: any) /* eslint-disable-line @typescript-eslint/no-explicit-any */ { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
+  try {
+    const svc = await createServiceClient();
+    const { data, error } = await svc
+      .from('agent_domains')
+      .insert({ agent_id: user.id, hostname: body.hostname.toLowerCase(), status: 'pending' })
+      .select()
+      .single();
+    if (error) {
+      if (error.code === '23505') return NextResponse.json({ error: 'hostname_taken' }, { status: 409 });
+      return safeError('storefront.domains', error, 400);
+    }
+    return NextResponse.json({ ok: true, domain: data });
+  } catch (err) {
+    console.error('[storefront/domains] POST error:', err);
+    return NextResponse.json({ error: 'Failed To Add Domain' }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, domain: data });
 }

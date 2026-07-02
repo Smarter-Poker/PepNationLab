@@ -35,7 +35,7 @@ export async function GET(_req: NextRequest) {
     stats.set(name, cur);
   }
 
-  const out = (variants ?? []).map((v: any) => ({
+  const out = (variants ?? []).map((v: { id: string; name: string; enabled: boolean; steps: unknown[] }) => ({
     id: v.id,
     name: v.name,
     enabled: v.enabled,
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
   if (!admin.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any = {};
+  let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
   const name = String(body.name ?? '').trim();
@@ -89,10 +89,10 @@ export async function PATCH(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id') || '';
   if (!UUID_RE.test(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
 
-  let body: any = {};
+  let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-  const updates: any = {};
+  const updates: Record<string, unknown> = {};
   if (body.enabled !== undefined) updates.enabled = body.enabled === true;
   if (body.steps !== undefined) {
     if (!Array.isArray(body.steps) || body.steps.length === 0 || body.steps.length > 5) {

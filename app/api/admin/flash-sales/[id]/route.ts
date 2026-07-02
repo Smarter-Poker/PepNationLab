@@ -18,10 +18,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   if (!UUID_RE.test(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
 
-  let body: any = {};
+  let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-  const updates: any = {};
+  const updates: Record<string, unknown> = {};
   if (body.is_active !== undefined) updates.is_active = body.is_active === true;
   if (body.banner_text !== undefined) updates.banner_text = String(body.banner_text).trim() || null;
   if (body.discount_pct !== undefined) {

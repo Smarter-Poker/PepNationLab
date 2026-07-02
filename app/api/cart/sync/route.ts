@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Cart Exceeds Maximum Item Limit (50).' }, { status: 400 });
     }
 
-    const strippedCart = cart.map((item: any) => ({
+    const strippedCart = cart.map((item: Record<string, unknown>) => ({
       id: item.id,
       name: item.name,
       sku: item.sku ?? null,

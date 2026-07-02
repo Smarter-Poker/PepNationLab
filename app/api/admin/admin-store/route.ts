@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid Payment Method' }, { status: 400 });
   }
 
-  const productIds = items.map((i: any) => String(i.product_id)).filter(Boolean);
+  const productIds = items.map((i: { product_id: string | number }) => String(i.product_id)).filter(Boolean);
 
   const { data: products, error: prodError } = await supabase
     .from('products')
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   }
 
   const prodMap = new Map(products.map(p => [p.id, p]));
-  const orderLines: any[] = [];
+  const orderLines: { product_id: string; product_name: string; quantity: number; unit_retail_price: number; unit_cost_price: number; unit_super_agent_cost: number; }[] = [];
   let subtotal = 0;
 
   for (const item of items) {

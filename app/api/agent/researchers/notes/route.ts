@@ -29,39 +29,42 @@ export async function POST(req: NextRequest) {
   if (!researcherId) {
     return NextResponse.json({ error: 'Researcher Is Required.' }, { status: 400 });
   }
-  // Cap note length defensively.
   const note = noteRaw.slice(0, 4000);
 
-  const svc = await createServiceClient();
+  try {
+    const svc = await createServiceClient();
 
-  // Ownership check: the researcher must have been referred by this agent and must still be a researcher.
-  const { data: researcher } = await svc
-    .from('profiles')
-    .select('id, referring_agent_id')
-    .eq('id', researcherId)
-    .eq('role', 'researcher')
-    .maybeSingle();
+    const { data: researcher } = await svc
+      .from('profiles')
+      .select('id, referring_agent_id')
+      .eq('id', researcherId)
+      .eq('role', 'researcher')
+      .maybeSingle();
 
-  if (!researcher || researcher.referring_agent_id !== agentId) {
-    return NextResponse.json({ error: 'Researcher Not Found.' }, { status: 404 });
-  }
+    if (!researcher || researcher.referring_agent_id !== agentId) {
+      return NextResponse.json({ error: 'Researcher Not Found.' }, { status: 404 });
+    }
 
-  const { error } = await svc
-    .from('agent_researcher_notes')
-    .upsert(
-      {
-        agent_id: agentId,
-        researcher_id: researcherId,
-        note,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'agent_id,researcher_id' },
-    );
+    const { error } = await svc
+      .from('agent_researcher_notes')
+      .upsert(
+        {
+          agent_id: agentId,
+          researcher_id: researcherId,
+          note,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'agent_id,researcher_id' },
+      );
 
-  if (error) {
-    console.error('[crm notes] upsert error:', error.message);
+    if (error) {
+      console.error('[crm notes] upsert error:', error.message);
+      return NextResponse.json({ error: 'Failed To Save Note.' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, note });
+  } catch (err) {
+    console.error('[researchers/notes] POST error:', err);
     return NextResponse.json({ error: 'Failed To Save Note.' }, { status: 500 });
   }
-
-  return NextResponse.json({ success: true, note });
 }

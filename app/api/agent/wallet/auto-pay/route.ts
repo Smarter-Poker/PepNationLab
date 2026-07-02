@@ -38,7 +38,7 @@ export async function PATCH(req: Request) {
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   let body: z.infer<typeof Body>;
   try { body = Body.parse(await req.json()); }
-  catch (e: any) { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
+  catch (e: any) /* eslint-disable-line @typescript-eslint/no-explicit-any */ { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
   const svc = await createServiceClient();
   const updates: any = { auto_pay_enabled: body.enabled };
   if (body.handle) updates.preferred_payout_handle = body.handle;

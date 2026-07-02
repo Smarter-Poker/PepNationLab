@@ -27,7 +27,7 @@ export async function PATCH(request: NextRequest) {
 
     if (!id) return NextResponse.json({ error: 'Missing Agent ID' }, { status: 400 });
 
-    const updates: any = {};
+    const updates: Record<string, unknown> = {};
     if (full_name !== undefined) updates.full_name = full_name;
     if (is_active !== undefined) updates.is_active = is_active;
     if (account_type !== undefined) {

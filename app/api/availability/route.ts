@@ -132,7 +132,7 @@ async function logFailedAttempt(
   // route's primary job is to answer the user; the log is best-effort.
   try {
     await supabase.from('availability_failed_attempts').insert(payload);
-  } catch (err: any) {
+  } catch (err: any) /* eslint-disable-line @typescript-eslint/no-explicit-any */ {
     console.warn('[availability] audit insert failed:', err?.message || err);
   }
 }

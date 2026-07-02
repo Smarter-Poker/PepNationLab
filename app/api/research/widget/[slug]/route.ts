@@ -30,22 +30,23 @@ export async function GET(
   if (!cleaned) {
     return new Response('Not Found', { status: 404, headers: { 'Content-Type': 'text/html' } });
   }
-  const supabase = await createServiceClient();
-  const { data } = await supabase
-    .from('compounds')
-    .select('slug, display_name, aliases, category, research_areas, evidence_tier, plain_summary, mechanism, half_life')
-    .eq('slug', cleaned)
-    .maybeSingle();
-  if (!data) {
-    return new Response('<html><body><p>Compound Not Found.</p></body></html>', {
-      status: 404,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
-    });
-  }
-  const aliases = Array.isArray(data.aliases) ? (data.aliases as string[]).slice(0, 4).join(', ') : '';
-  const areas = Array.isArray(data.research_areas) ? (data.research_areas as string[]).slice(0, 3).join(' · ') : '';
-  const tier = String(data.evidence_tier ?? '').replace(/_/g, ' ');
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(data.display_name)} - Pep Nation Lab</title><style>
+  try {
+    const supabase = await createServiceClient();
+    const { data } = await supabase
+      .from('compounds')
+      .select('slug, display_name, aliases, category, research_areas, evidence_tier, plain_summary, mechanism, half_life')
+      .eq('slug', cleaned)
+      .maybeSingle();
+    if (!data) {
+      return new Response('<html><body><p>Compound Not Found.</p></body></html>', {
+        status: 404,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      });
+    }
+    const aliases = Array.isArray(data.aliases) ? (data.aliases as string[]).slice(0, 4).join(', ') : '';
+    const areas = Array.isArray(data.research_areas) ? (data.research_areas as string[]).slice(0, 3).join(' · ') : '';
+    const tier = String(data.evidence_tier ?? '').replace(/_/g, ' ');
+    const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(data.display_name)} - Pep Nation Lab</title><style>
     :root { --bg:#050A0F; --surface:#0F1923; --surface-2:#162230; --teal:#00C4BC; --white:#FFFFFF; --silver:#A8B4C0; --silver-2:#D0DAE4; --red:#E53E3E; }
     *{box-sizing:border-box} html,body{margin:0;padding:0;background:var(--bg);color:var(--white);font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.5}
     .card{padding:18px 20px;background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%);border:1px solid rgba(255,255,255,0.08);border-radius:14px;max-width:520px;margin:8px}
@@ -60,14 +61,21 @@ export async function GET(
     .footer{font-size:10px;color:var(--silver);margin-top:6px;text-align:right}
     .footer a{color:var(--teal);text-decoration:none}
   </style></head><body><div class="card"><h1 class="h1">${esc(data.display_name)}</h1>${aliases ? `<div class="aliases">Also Known As ${esc(aliases)}</div>` : ''}<div class="row">${tier ? `<span class="pill">Evidence: ${esc(tier)}</span>` : ""}${areas ? `<span class="pill">${esc(areas)}</span>` : ""}</div>${data.plain_summary ? `<p class="summary">${esc(data.plain_summary)}</p>` : ''}${data.mechanism ? `<div class="mech"><strong>Mechanism:</strong> ${esc(data.mechanism)}</div>` : ''}<div class="note">${esc(RESEARCH_NOTE)}</div><div class="footer">Powered By <a href="https://pepnationlab.com/research/compounds/${esc(cleaned)}" target="_blank" rel="noopener">Pep Nation Lab</a></div></div></body></html>`;
-  return new Response(html, {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=300',
-      'Access-Control-Allow-Origin': '*',
-      'X-Frame-Options': 'ALLOWALL',
-      'Content-Security-Policy': "frame-ancestors *",
-    },
-  });
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        'Access-Control-Allow-Origin': '*',
+        'X-Frame-Options': 'ALLOWALL',
+        'Content-Security-Policy': "frame-ancestors *",
+      },
+    });
+  } catch (err) {
+    console.error('[research/widget] error:', err);
+    return new Response('<html><body><p>An Error Occurred.</p></body></html>', {
+      status: 500,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
+  }
 }

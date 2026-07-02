@@ -67,7 +67,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
+  } catch (err: any) /* eslint-disable-line @typescript-eslint/no-explicit-any */ {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 }

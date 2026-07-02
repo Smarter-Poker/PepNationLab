@@ -25,7 +25,7 @@ export async function GET() {
 
   // Normalize a `date` field (settled rows show settled_at, otherwise accrued_at)
   // so the client renders one consistent column regardless of bucket.
-  const norm = (r: any) => ({
+  const norm = (r: Record<string, unknown>) => ({
     id: r.id,
     order_id: r.order_id,
     commission_pct: r.commission_pct,
@@ -36,8 +36,8 @@ export async function GET() {
   });
 
   const all = (rows ?? []).map(norm);
-  const pending = all.filter((r: any) => r.status === 'pending');
-  const settled = all.filter((r: any) => r.status === 'settled');
+  const pending = all.filter((r: Record<string, unknown>) => r.status === 'pending');
+  const settled = all.filter((r: Record<string, unknown>) => r.status === 'settled');
   const totalPending = pending.reduce((s: number, r: any) => s + Number(r.commission_amount ?? 0), 0);
   const totalSettled = settled.reduce((s: number, r: any) => s + Number(r.commission_amount ?? 0), 0);
 

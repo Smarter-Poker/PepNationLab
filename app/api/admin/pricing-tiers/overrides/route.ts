@@ -30,7 +30,7 @@ export async function GET() {
   const rows = (data ?? []).map((r: any) => ({
     id: r.id,
     product_id: r.product_id,
-    product_name: r.products?.name ?? 'Unknown Product',
+    product_name: Array.isArray(r.products) ? r.products[0]?.name : r.products?.name ?? 'Unknown Product',
     tier_name: r.tier_name,
     custom_multiplier: r.custom_multiplier,
   }));

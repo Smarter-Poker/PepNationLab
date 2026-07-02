@@ -39,7 +39,7 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   let body: z.infer<typeof PostBody>;
   try { body = PostBody.parse(await req.json()); }
-  catch (e: any) { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
+  catch (e: any) /* eslint-disable-line @typescript-eslint/no-explicit-any */ { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
   const { start, end } = currentMonthBoundary();
   const svc = await createServiceClient();
   const { data, error } = await svc

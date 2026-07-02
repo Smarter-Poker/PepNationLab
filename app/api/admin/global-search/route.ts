@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
   const tokens = q.length >= 2 ? tokenize(q) : [];
 
   // USERS - AND-of-tokens, each token OR-matches across name/username/email
-  let usersP: any;
+  let usersP: PromiseLike<{ data: Record<string, unknown>[] | null }>;
   if (wants('users') && tokens.length > 0) {
     let builder = svc
       .from('profiles')
@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
   }
 
   // PRODUCTS
-  let productsP: any;
+  let productsP: PromiseLike<{ data: Record<string, unknown>[] | null }>;
   if (wants('products') && tokens.length > 0) {
     let builder = svc.from('products').select('id, name, slug, sku, base_cost, is_active');
     builder = applyTokenAndOr(builder, ['name', 'slug', 'sku'], tokens);
@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
   }
 
   // STOREFRONTS
-  let storefrontsP: any;
+  let storefrontsP: PromiseLike<{ data: Record<string, unknown>[] | null }>;
   if (wants('storefronts') && tokens.length > 0) {
     let builder = svc.from('agent_profiles').select('id, slug, display_name, is_active');
     builder = applyTokenAndOr(builder, ['slug', 'display_name'], tokens);
@@ -137,7 +137,7 @@ export async function GET(req: NextRequest) {
   }
 
   // ORDERS - RPC owns the search logic (fuzzy + structured filters)
-  let ordersP: any;
+  let ordersP: PromiseLike<{ data: Record<string, unknown>[] | null }>;
   if (wants('orders') && (tokens.length > 0 || hasOrderFilters)) {
     ordersP = svc.rpc('fn_admin_search_orders', {
       p_query: q.length >= 2 ? q : null,
@@ -149,13 +149,13 @@ export async function GET(req: NextRequest) {
       p_min_total: filterMinTotal,
       p_max_total: filterMaxTotal,
       p_limit: limitPer,
-    }) as unknown as Promise<{ data: any[] | null }>;
+    }) as unknown as Promise<{ data: Record<string, unknown>[] | null }>;
   } else {
     ordersP = Promise.resolve({ data: [] });
   }
 
   // COUPONS
-  let couponsP: any;
+  let couponsP: PromiseLike<{ data: Record<string, unknown>[] | null }>;
   if (wants('coupons') && tokens.length > 0) {
     let builder = svc
       .from('coupons')
@@ -167,7 +167,7 @@ export async function GET(req: NextRequest) {
   }
 
   // TRANSACTIONS
-  let transactionsP: any;
+  let transactionsP: PromiseLike<{ data: Record<string, unknown>[] | null }>;
   if (wants('transactions') && tokens.length > 0) {
     let builder = svc
       .from('balance_transactions')

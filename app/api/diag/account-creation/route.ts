@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
       duration_ms: Date.now() - startedAt,
       steps,
     });
-  } catch (err: any) {
+  } catch (err: any) /* eslint-disable-line @typescript-eslint/no-explicit-any */ {
     errorMessage = err?.message ?? String(err);
     failed_at = steps.length > 0 ? `after_step_${steps[steps.length - 1].name}` : 'pre_first_step';
     if (createdUserId) {

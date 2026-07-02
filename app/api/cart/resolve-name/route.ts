@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       .eq('products.is_banned', false);
 
     const rows = matchedRows || [];
-    const matches = rows.filter((r: any) => {
+    const matches = rows.filter((r: Record<string, unknown>) => {
       const p = Array.isArray(r.products) ? r.products[0] : r.products;
       if (!p) return false;
       const pName = (p.name || '').toLowerCase();

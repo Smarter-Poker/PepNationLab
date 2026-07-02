@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
       .select('id, full_name, email')
       .in('id', authorIds);
     authorMap = new Map(
-      (authors ?? []).map((a: any) => [a.id as string, { name: a.full_name as string | null, email: a.email as string | null }])
+      (authors ?? []).map((a: { id: string; full_name: string | null; email: string | null }) => [a.id, { name: a.full_name, email: a.email }])
     );
   }
 
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
   const limited = await rateLimit({ key: 'admin_shadow_notes_post', limit: 60, windowSeconds: 60, identifier: admin.userId || ip });
   if (!limited.allowed) return NextResponse.json({ error: 'Rate Limit Exceeded' }, { status: 429 });
 
-  let body: any = {};
+  let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
   const subjectId = String(body.subjectId ?? '').trim();

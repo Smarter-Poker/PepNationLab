@@ -26,11 +26,11 @@ export async function GET(req: Request) {
 
   // 7 dows x 24 hours = 168 buckets
   const grid = Array.from({ length: 7 }, () => Array(24).fill(0));
-  (orders ?? []).forEach((o: any) => {
+  (orders ?? []).forEach((o: { created_at: string | Date }) => {
     const d = new Date(o.created_at);
     grid[d.getUTCDay()][d.getUTCHours()] += 1;
   });
-  const cells: any[] = [];
+  const cells: Record<string, unknown>[] = [];
   for (let dow = 0; dow < 7; dow++) {
     for (let h = 0; h < 24; h++) {
       cells.push({ dow, hour: h, orders: grid[dow][h] });

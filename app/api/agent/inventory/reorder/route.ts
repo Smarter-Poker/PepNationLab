@@ -37,7 +37,7 @@ export async function GET(req: Request) {
     }
 
     const orderIds = orders.map(o => o.id);
-    let orderItems: any[] = [];
+    let orderItems: { product_id: string; quantity: number }[] = [];
 
     if (orderIds.length > 0) {
       const { data: items } = await supabase

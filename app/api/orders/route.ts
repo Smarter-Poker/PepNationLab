@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
         .eq('is_visible', true)
         .in('product_id', items.map(i => i.id));
 
-      const visibleSet = new Set((visibleRows ?? []).map((r: any) => r.product_id as string));
+      const visibleSet = new Set((visibleRows ?? []).map((r: Record<string, unknown>) => r.product_id as string));
       const blocked = items.find(i => !visibleSet.has(i.id));
       if (blocked) {
         const blockedName = dbProducts?.find(p => p.id === blocked.id)?.name ?? blocked.id;
@@ -533,8 +533,8 @@ export async function POST(request: NextRequest) {
     }
 
     // STEP A: ATOMIC INVENTORY RESERVATION
-    const localItems = computedItems.filter((i: any) => i.isLocalFulfillment).map(i => ({ product_id: i.product_id, quantity: i.quantity }));
-    const chinaItems = computedItems.filter((i: any) => !i.isLocalFulfillment).map(i => ({ product_id: i.product_id, quantity: i.quantity }));
+    const localItems = computedItems.filter((i: Record<string, unknown>) => i.isLocalFulfillment).map(i => ({ product_id: i.product_id, quantity: i.quantity }));
+    const chinaItems = computedItems.filter((i: Record<string, unknown>) => !i.isLocalFulfillment).map(i => ({ product_id: i.product_id, quantity: i.quantity }));
 
     let localReserved = false;
     let chinaReserved = false;

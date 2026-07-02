@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
 
   let body: z.infer<typeof Body>;
   try { body = Body.parse(await req.json()); }
-  catch (e: any) { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
+  catch (e: any) /* eslint-disable-line @typescript-eslint/no-explicit-any */ { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
 
   const svc = await createServiceClient();
   const { error } = await svc.rpc('resolve_statement_dispute', {

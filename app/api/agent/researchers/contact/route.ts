@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
+  } catch (err: any) /* eslint-disable-line @typescript-eslint/no-explicit-any */ {
     console.error('[PATCH agent-researcher-contact] error:', err);
     return NextResponse.json({ error: 'Failed to update contact info' }, { status: 500 });
   }

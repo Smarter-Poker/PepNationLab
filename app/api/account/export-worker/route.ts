@@ -65,7 +65,7 @@ export async function GET(req: Request) {
     }).eq('id', job.id);
 
     return NextResponse.json({ ok: true, processed: 1, job_id: job.id, file: filename });
-  } catch (e: any) {
+  } catch (e: any) /* eslint-disable-line @typescript-eslint/no-explicit-any */ {
     await svc.from('account_export_jobs').update({ status: 'failed' }).eq('id', job.id);
     return NextResponse.json({ ok: false, error: e?.message ?? 'failed' }, { status: 500 });
   }

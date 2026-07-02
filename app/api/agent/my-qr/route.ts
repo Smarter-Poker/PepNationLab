@@ -94,7 +94,7 @@ export async function GET(_req: Request) {
         ? 'Anyone Who Scans This Will Register Under You And Their Orders Will Credit You.'
         : 'Customers Who Scan This Will Land On Your Storefront.',
     });
-  } catch (e: any) {
+  } catch (e: any) /* eslint-disable-line @typescript-eslint/no-explicit-any */ {
     console.error('[/api/agent/my-qr] uncaught:', e?.message, e?.stack);
     return NextResponse.json({
       error: 'unexpected',

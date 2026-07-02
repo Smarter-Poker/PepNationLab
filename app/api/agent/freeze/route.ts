@@ -29,7 +29,7 @@ export async function POST(req: Request) {
 
   let body: z.infer<typeof FreezeBody>;
   try { body = FreezeBody.parse(await req.json()); }
-  catch (e: any) { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
+  catch (e: any) /* eslint-disable-line @typescript-eslint/no-explicit-any */ { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
 
   const { data, error } = await supabase.rpc('freeze_account', {
     p_target_id: body.target_id,
@@ -54,7 +54,7 @@ export async function DELETE(req: Request) {
 
   let body: z.infer<typeof UnfreezeBody>;
   try { body = UnfreezeBody.parse(await req.json()); }
-  catch (e: any) { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
+  catch (e: any) /* eslint-disable-line @typescript-eslint/no-explicit-any */ { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
 
   const { data, error } = await supabase.rpc('unfreeze_account', {
     p_target_id: body.target_id,

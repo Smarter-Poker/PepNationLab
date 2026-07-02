@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Enrich with stack data
-  const enrichedData = await Promise.all((data || []).map(async (item: any) => {
+  const enrichedData = await Promise.all((data || []).map(async (item: Record<string, unknown>) => {
     let stackData = null;
     if (item.product_id) {
       const { data: product } = await supabase

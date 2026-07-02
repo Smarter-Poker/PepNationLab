@@ -147,7 +147,7 @@ async function runScenario(
 
     scenario.ok = true;
     return scenario;
-  } catch (e: any) {
+  } catch (e: any) /* eslint-disable-line @typescript-eslint/no-explicit-any */ {
     scenario.error = e?.message ?? String(e);
     return scenario;
   } finally {

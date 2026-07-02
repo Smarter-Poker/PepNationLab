@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await svc.rpc('agent_sales_tax_summary', { p_agent_id: user.id, p_year: year });
   if (error) return safeError('sales.export.tax', error, 400);
   const header = 'State,Orders,Gross Revenue USD\n';
-  const rows = (data ?? []).map((r: any) =>
+  const rows = (data ?? []).map((r: Record<string, unknown>) =>
     `${r.state},${r.orders_count},${(Number(r.gross_revenue_cents) / 100).toFixed(2)}`
   );
   const csv = header + rows.join('\n') + '\n';

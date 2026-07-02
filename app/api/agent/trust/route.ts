@@ -93,7 +93,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, auto_approve_orders });
-  } catch (err: any) {
+  } catch (err: any) /* eslint-disable-line @typescript-eslint/no-explicit-any */ {
     console.error('Trust Toggle Error:', err);
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }

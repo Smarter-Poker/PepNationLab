@@ -29,7 +29,7 @@ export async function GET(req: Request) {
   const svc = await createServiceClient();
   // Get all payment_proofs for orders where this user is the agent OR buyer
   const { data: agentOrders } = await svc.from('orders').select('id').eq('agent_id', user.id);
-  const orderIds = (agentOrders ?? []).map((o: any) => o.id);
+  const orderIds = (agentOrders ?? []).map((o: Record<string, unknown>) => o.id);
   if (orderIds.length === 0) return NextResponse.json({ receipts: [], count: 0 });
 
   const { data, count, error } = await svc

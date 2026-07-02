@@ -19,18 +19,22 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Missing Order Array' }, { status: 400 });
   }
 
-  const supabase = await createServiceClient();
+  try {
+    const supabase = await createServiceClient();
 
-  // Bulk update sort_order for each product
-  const updates = order.map(({ id, sort_order }: { id: string; sort_order: number }) =>
-    supabase
-      .from('agent_products')
-      .update({ sort_order, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .eq('agent_id', gate.user.id)
-  );
+    const updates = order.map(({ id, sort_order }: { id: string; sort_order: number }) =>
+      supabase
+        .from('agent_products')
+        .update({ sort_order, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('agent_id', gate.user.id)
+    );
 
-  await Promise.all(updates);
+    await Promise.all(updates);
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('[products/reorder] PUT error:', err);
+    return NextResponse.json({ error: 'Failed To Reorder Products' }, { status: 500 });
+  }
 }

@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
   if (!admin.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any = {};
+  let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
   const name = String(body.name ?? '').trim();
