@@ -38,17 +38,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Cart Exceeds Maximum Item Limit (50).' }, { status: 400 });
     }
 
-    const strippedCart = cart.map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      sku: item.sku ?? null,
-      quantity: item.quantity,
-      costPrice: item.costPrice,
-      retailPrice: item.retailPrice,
-      bulkCostPrice: item.bulkCostPrice,
-      bulkThreshold: item.bulkThreshold,
-      weightOz: item.weightOz ?? null,
-    }));
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const strippedCart = cart
+      .filter((item: any) => typeof item.id === 'string' && uuidRegex.test(item.id))
+      .map((item: any) => ({
+        id: item.id,
+        name: String(item.name || '').slice(0, 100),
+        sku: item.sku ? String(item.sku).slice(0, 50) : null,
+        quantity: Math.max(1, Math.min(9999, Math.floor(Number(item.quantity) || 1))),
+        costPrice: Math.max(0, Number(item.costPrice) || 0),
+        retailPrice: Math.max(0, Number(item.retailPrice) || 0),
+        bulkCostPrice: item.bulkCostPrice != null ? Math.max(0, Number(item.bulkCostPrice)) : null,
+        bulkThreshold: item.bulkThreshold != null ? Math.max(1, Math.floor(Number(item.bulkThreshold))) : null,
+        weightOz: item.weightOz != null ? Math.max(0, Number(item.weightOz)) : null,
+      }));
 
     const { error } = await supabase
       .from('profiles')

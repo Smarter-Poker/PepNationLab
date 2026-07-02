@@ -92,8 +92,9 @@ async function upstashRateLimit(
   const now = Date.now();
   const windowMs = windowSeconds * 1000;
   try {
-    // Single round trip: INCR then EXPIRE. INCR returns the new counter value;
-    // we use that to decide allow/deny without a second GET.
+    // Atomic script: INCR then EXPIRE only if it's a new window (counter == 1).
+    // This prevents a slow trickle of requests from keeping the window alive forever.
+    const script = 'local c=redis.call("INCR",KEYS[1]) if c==1 then redis.call("EXPIRE",KEYS[1],ARGV[1]) end return c';
     const resp = await fetch(`${url.replace(/\/$/, '')}/pipeline`, {
       method: 'POST',
       headers: {
@@ -101,10 +102,7 @@ async function upstashRateLimit(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify([
-        ['INCR', bucketKey],
-        // Always EXPIRE (makes it a sliding window, acceptable trade-off)
-        // to prevent a no-TTL key leak on the very first hit.
-        ['EXPIRE', bucketKey, String(windowSeconds)],
+        ['EVAL', script, '1', bucketKey, String(windowSeconds)]
       ]),
       // Don't let a slow Upstash request stall a checkout. Vercel functions
       // already have a ~10s budget; cap our share at 1.5s.
@@ -171,6 +169,8 @@ export async function rateLimit(input: RateLimitInput): Promise<RateLimitResult>
  * limiter still has a deterministic bucket name.
  */
 export function getClientIp(req: { headers: Headers }): string {
+  const vercel = req.headers.get('x-vercel-forwarded-for');
+  if (vercel) return vercel.split(',')[0]?.trim() || 'unknown';
   const fwd = req.headers.get('x-forwarded-for');
   if (fwd) return fwd.split(',')[0]?.trim() || 'unknown';
   const real = req.headers.get('x-real-ip');

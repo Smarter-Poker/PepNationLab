@@ -77,9 +77,16 @@ export function assertSameOrigin(req: NextRequest): NextResponse | null {
   // browser cases (notably navigations under certain Referrer-Policy values).
   // The Supabase auth cookie is SameSite=Lax, so a true cross-site attacker
   // still cannot ride along with credentials -- requireSession would fail.
-  // Treat the missing-headers case as allow so we do not lock out real users.
+  // However, anonymous POST endpoints (like /api/disclaimer-log) are exposed.
+  // A <form action="POST"> CSRF attack has no custom headers. We require it to be a JSON/fetch request.
+  const isJson = req.headers.get('content-type')?.includes('application/json');
+  const isCorsOrSame = req.headers.get('sec-fetch-mode') === 'cors' || req.headers.get('sec-fetch-mode') === 'same-origin';
+  if (!isJson && !isCorsOrSame) {
+    return NextResponse.json({ error: 'forbidden (missing origin + simple request)' }, { status: 403 });
+  }
+
   if (process.env.NODE_ENV === 'production') {
-    console.warn('[csrf] no Origin/Referer header — allowed by fallback', {
+    console.warn('[csrf] no Origin/Referer header — allowed by fallback (fetch/json)', {
       method: req.method,
       path: req.nextUrl.pathname,
     });

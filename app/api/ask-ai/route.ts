@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { createClient } from '@/lib/supabase/server';
 
 const GROK_API_KEY = process.env.GROK_API_KEY;
 
@@ -8,9 +9,19 @@ export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
+  // Auth gate: must be signed in to burn Grok API budget
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Rate limit per authenticated user ID (not just IP which is spoofable)
   const ip = getClientIp(req);
-  const rl = await rateLimit({ key: 'ask_ai_proxy', limit: 5, windowSeconds: 60, identifier: ip });
-  if (!rl.allowed) {
+  const rl = await rateLimit({ key: 'ask_ai_proxy', limit: 10, windowSeconds: 60, identifier: user.id });
+  // Secondary IP rate limit to catch credential stuffing / shared IPs
+  const rlIp = await rateLimit({ key: 'ask_ai_ip', limit: 20, windowSeconds: 60, identifier: ip });
+  if (!rl.allowed || !rlIp.allowed) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 

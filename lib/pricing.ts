@@ -46,7 +46,10 @@ async function getProductBaseCost(supabase: ServiceClient, productId: string): P
   const hit = getCached<number>(key);
   if (hit !== undefined) return hit;
   const { data } = await supabase.from('products').select('base_cost').eq('id', productId).maybeSingle();
-  const base = data?.base_cost != null ? Number(data.base_cost) : 0;
+  if (!data || data.base_cost == null) {
+    throw new Error(`Critical Pricing Error: Product ${productId} is missing a base_cost.`);
+  }
+  const base = Number(data.base_cost);
   return setCache(key, base);
 }
 
