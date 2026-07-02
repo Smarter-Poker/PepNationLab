@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
 import { requireAgent } from '@/lib/admin-auth';
 import { z } from 'zod';
 
@@ -14,6 +15,8 @@ const GoalSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
   const body = await req.json().catch(() => ({}));
