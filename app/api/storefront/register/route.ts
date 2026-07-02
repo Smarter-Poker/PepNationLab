@@ -75,96 +75,104 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const admin = createAdminClient();
+  try {
+    const admin = createAdminClient();
 
-  // Resolve agent by slug
-  const { data: agentProfile, error: agentErr } = await admin
-    .from('agent_profiles')
-    .select('id')
-    .eq('slug', agentSlug)
-    .maybeSingle();
+    // Resolve agent by slug
+    const { data: agentProfile, error: agentErr } = await admin
+      .from('agent_profiles')
+      .select('id')
+      .eq('slug', agentSlug)
+      .maybeSingle();
 
-  if (agentErr || !agentProfile) {
-    return NextResponse.json({ error: 'Storefront Not Found.' }, { status: 404 });
-  }
+    if (agentErr || !agentProfile) {
+      return NextResponse.json({ error: 'Storefront Not Found.' }, { status: 404 });
+    }
 
-  // Verify the agent is active
-  const { data: agentUser, error: agentUserErr } = await admin
-    .from('profiles')
-    .select('id, is_active')
-    .eq('id', agentProfile.id)
-    .maybeSingle();
+    // Verify the agent is active
+    const { data: agentUser, error: agentUserErr } = await admin
+      .from('profiles')
+      .select('id, is_active')
+      .eq('id', agentProfile.id)
+      .maybeSingle();
 
-  if (agentUserErr || !agentUser || !agentUser.is_active) {
-    return NextResponse.json({ error: 'This Storefront Is Not Currently Active.' }, { status: 403 });
-  }
+    if (agentUserErr || !agentUser || !agentUser.is_active) {
+      return NextResponse.json({ error: 'This Storefront Is Not Currently Active.' }, { status: 403 });
+    }
 
-  const referringAgentId: string = agentProfile.id;
+    const referringAgentId: string = agentProfile.id;
 
-  // Check username uniqueness — use .eq() not .ilike() (underscore is a LIKE wildcard).
-  const { data: existingUser } = await admin
-    .from('profiles')
-    .select('id')
-    .eq('username', usernameClean)
-    .maybeSingle();
+    // Check username uniqueness — use .eq() not .ilike() (underscore is a LIKE wildcard).
+    const { data: existingUser } = await admin
+      .from('profiles')
+      .select('id')
+      .eq('username', usernameClean)
+      .maybeSingle();
 
-  if (existingUser) {
-    return NextResponse.json({ error: 'That Username Is Already Taken.' }, { status: 400 });
-  }
+    if (existingUser) {
+      return NextResponse.json({ error: 'That Username Is Already Taken.' }, { status: 400 });
+    }
 
-  const internalEmail = `${usernameClean}@internal.auth`;
-  const fullName = `${String(firstName).trim()} ${String(lastName).trim()}`;
+    const internalEmail = `${usernameClean}@internal.auth`;
+    const fullName = `${String(firstName).trim()} ${String(lastName).trim()}`;
 
-  const { data: authData, error: authError } = await admin.auth.admin.createUser({
-    email: internalEmail,
-    password,
-    email_confirm: true,
-    user_metadata: { username: usernameClean, full_name: fullName },
-  });
+    const { data: authData, error: authError } = await admin.auth.admin.createUser({
+      email: internalEmail,
+      password,
+      email_confirm: true,
+      user_metadata: { username: usernameClean, full_name: fullName },
+    });
 
-  if (authError || !authData?.user) {
-    console.error('[storefront/register] auth.admin.createUser error:', authError);
+    if (authError || !authData?.user) {
+      console.error('[storefront/register] auth.admin.createUser error:', authError);
+      return NextResponse.json(
+        { error: authError?.message || 'Failed To Create Account. Please Try Again.' },
+        { status: 500 }
+      );
+    }
+
+    const newUserId = authData.user.id;
+
+    const profilePayload: Record<string, unknown> = {
+      id: newUserId,
+      email: null,
+      username: usernameClean,
+      full_name: fullName,
+      first_name: String(firstName).trim(),
+      last_name: String(lastName).trim(),
+      phone: phone ? String(phone).trim() : null,
+      role: 'researcher',
+      referring_agent_id: referringAgentId,
+      disclaimer_v1_accepted: false,
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error: profileError } = await admin
+      .from('profiles')
+      .upsert(profilePayload, { onConflict: 'id' });
+
+    if (profileError) {
+      console.error('[storefront/register] profile upsert error:', profileError);
+      await admin.auth.admin.deleteUser(newUserId);
+      return NextResponse.json(
+        { error: `Account Setup Failed. Please Try Again.` },
+        { status: 500 }
+      );
+    }
+
+    await notifyNewResearcher(admin, referringAgentId, fullName).catch(() => { /* ignore */ });
+
+    return NextResponse.json({
+      success: true,
+      userId: newUserId,
+      username: usernameClean,
+    });
+  } catch (err) {
+    console.error('[storefront/register] POST error:', err);
     return NextResponse.json(
-      { error: authError?.message || 'Failed To Create Account. Please Try Again.' },
+      { error: 'Internal Server Error.' },
       { status: 500 }
     );
   }
-
-  const newUserId = authData.user.id;
-
-  const profilePayload: Record<string, unknown> = {
-    id: newUserId,
-    email: null,
-    username: usernameClean,
-    full_name: fullName,
-    first_name: String(firstName).trim(),
-    last_name: String(lastName).trim(),
-    phone: phone ? String(phone).trim() : null,
-    role: 'researcher',
-    referring_agent_id: referringAgentId,
-    disclaimer_v1_accepted: false,
-    is_active: true,
-    updated_at: new Date().toISOString(),
-  };
-
-  const { error: profileError } = await admin
-    .from('profiles')
-    .upsert(profilePayload, { onConflict: 'id' });
-
-  if (profileError) {
-    console.error('[storefront/register] profile upsert error:', profileError);
-    await admin.auth.admin.deleteUser(newUserId);
-    return NextResponse.json(
-      { error: `Account Setup Failed. Please Try Again.` },
-      { status: 500 }
-    );
-  }
-
-  await notifyNewResearcher(admin, referringAgentId, fullName).catch(() => { /* ignore */ });
-
-  return NextResponse.json({
-    success: true,
-    userId: newUserId,
-    username: usernameClean,
-  });
 }

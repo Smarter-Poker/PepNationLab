@@ -41,28 +41,34 @@ export async function POST(req: NextRequest) {
   const parsed = EventSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
 
-  const svc = await createServiceClient();
-  const { data: agent } = await svc
-    .from('agent_profiles')
-    .select('id')
-    .eq('slug', parsed.data.agent_slug)
-    .maybeSingle();
-  if (!agent) {
+  try {
+    const svc = await createServiceClient();
+    const { data: agent } = await svc
+      .from('agent_profiles')
+      .select('id')
+      .eq('slug', parsed.data.agent_slug)
+      .maybeSingle();
+    if (!agent) {
+      return new Response(null, { status: 204 });
+    }
+
+    await svc.from('agent_storefront_events').insert({
+      agent_id: agent.id,
+      visitor_id: null,
+      session_id: parsed.data.session_id,
+      event_type: parsed.data.event_type,
+      path: parsed.data.path ?? null,
+      search_term: parsed.data.search_term ?? null,
+      product_id: parsed.data.product_id ?? null,
+      order_id: parsed.data.order_id ?? null,
+      amount_cents: parsed.data.amount_cents ?? null,
+      user_agent: parsed.data.user_agent ?? null,
+    });
+
+    return new Response(null, { status: 204 });
+  } catch (err) {
+    console.error('[storefront/events] POST error:', err);
+    // Best-effort analytics — return 204 so the client does not retry endlessly.
     return new Response(null, { status: 204 });
   }
-
-  await svc.from('agent_storefront_events').insert({
-    agent_id: agent.id,
-    visitor_id: null,
-    session_id: parsed.data.session_id,
-    event_type: parsed.data.event_type,
-    path: parsed.data.path ?? null,
-    search_term: parsed.data.search_term ?? null,
-    product_id: parsed.data.product_id ?? null,
-    order_id: parsed.data.order_id ?? null,
-    amount_cents: parsed.data.amount_cents ?? null,
-    user_agent: parsed.data.user_agent ?? null,
-  });
-
-  return new Response(null, { status: 204 });
 }
