@@ -136,172 +136,180 @@ export async function POST(req: NextRequest) {
       ? 50
       : Math.max(1, Math.min(500, Math.floor(limitRaw)));
 
-  // Service client because this is a public route with no caller session.
-  // RLS would otherwise hide most rows for an anonymous fetch.
-  const supabase = await createServiceClient();
+  try {
+    // Service client because this is a public route with no caller session.
+    // RLS would otherwise hide most rows for an anonymous fetch.
+    const supabase = await createServiceClient();
 
-  // Vector/semantic search is disabled (no embedding provider configured).
-  // Keyword ILIKE search is the active fallback.
-  const matchedProductIds: string[] = [];
+    // Vector/semantic search is disabled (no embedding provider configured).
+    // Keyword ILIKE search is the active fallback.
+    const matchedProductIds: string[] = [];
 
-  // BUG 6 fix: use exact equality (with lowercase normalisation) instead of
-  // .ilike() for slug resolution. ILIKE allows wildcard chars like _ and %,
-  // which could match a different agent's slug. Slugs are stored lowercase.
-  const { data: agent, error: agentErr } = await supabase
-    .from('agent_profiles')
-    .select('id, slug, is_active')
-    .eq('slug', slug.toLowerCase())
-    .maybeSingle();
+    // BUG 6 fix: use exact equality (with lowercase normalisation) instead of
+    // .ilike() for slug resolution. ILIKE allows wildcard chars like _ and %,
+    // which could match a different agent's slug. Slugs are stored lowercase.
+    const { data: agent, error: agentErr } = await supabase
+      .from('agent_profiles')
+      .select('id, slug, is_active')
+      .eq('slug', slug.toLowerCase())
+      .maybeSingle();
 
-  if (agentErr || !agent) {
-    return NextResponse.json({ products: [], total: 0 }, { status: 200 });
-  }
-  if (agent.is_active === false) {
-    return NextResponse.json({ products: [], total: 0 }, { status: 200 });
-  }
-
-  let query = supabase
-    .from('agent_products')
-    .select(`
-      id,
-      product_id,
-      custom_name,
-      custom_description,
-      custom_image_url,
-      retail_price,
-      is_on_sale,
-      sale_price,
-      sort_order,
-      created_at,
-      products!inner (
-        name,
-        description,
-        image_url,
-        category,
-        backorder_days,
-        unit_size,
-        unit_measure,
-        weight_oz,
-        inventory_count,
-        low_stock_threshold,
-        sku,
-        admin_bulk_price,
-        admin_bulk_threshold,
-        is_active,
-        is_banned
-      )
-    `)
-    .eq('agent_id', agent.id)
-    .eq('is_visible', true)
-    .eq('products.is_active', true)
-    .eq('products.is_banned', false);
-
-  if (typeof minPrice === 'number') query = query.gte('retail_price', minPrice);
-  if (typeof maxPrice === 'number') query = query.lte('retail_price', maxPrice);
-  if (category) query = query.eq('products.category', category);
-  if (q) {
-    if (matchedProductIds.length > 0) {
-      query = query.in('product_id', matchedProductIds);
-    } else {
-      const term = `%${escapeIlike(q)}%`;
-      query = query.or(`name.ilike.${term},description.ilike.${term},category.ilike.${term}`, { foreignTable: 'products' });
+    if (agentErr || !agent) {
+      return NextResponse.json({ products: [], total: 0 }, { status: 200 });
     }
-  }
-  if (typeof minWeight === 'number')
-    query = query.gte('products.weight_oz', minWeight);
-  if (typeof maxWeight === 'number')
-    query = query.lte('products.weight_oz', maxWeight);
-  if (bulk) query = query.not('products.admin_bulk_price', 'is', null);
+    if (agent.is_active === false) {
+      return NextResponse.json({ products: [], total: 0 }, { status: 200 });
+    }
 
-  switch (sort) {
-    case 'name_asc':
-      query = query.order('name', { foreignTable: 'products', ascending: true });
-      break;
-    case 'name_desc':
-      query = query.order('name', { foreignTable: 'products', ascending: false });
-      break;
-    case 'price_low':
-      query = query.order('retail_price', { ascending: true });
-      break;
-    case 'price_high':
-      query = query.order('retail_price', { ascending: false });
-      break;
-    case 'newest':
-      query = query.order('created_at', { ascending: false });
-      break;
-    case 'popular':
-    default:
-      query = query.order('sort_order', { ascending: true, nullsFirst: false });
-      break;
-  }
+    let query = supabase
+      .from('agent_products')
+      .select(`
+        id,
+        product_id,
+        custom_name,
+        custom_description,
+        custom_image_url,
+        retail_price,
+        is_on_sale,
+        sale_price,
+        sort_order,
+        created_at,
+        products!inner (
+          name,
+          description,
+          image_url,
+          category,
+          backorder_days,
+          unit_size,
+          unit_measure,
+          weight_oz,
+          inventory_count,
+          low_stock_threshold,
+          sku,
+          admin_bulk_price,
+          admin_bulk_threshold,
+          is_active,
+          is_banned
+        )
+      `)
+      .eq('agent_id', agent.id)
+      .eq('is_visible', true)
+      .eq('products.is_active', true)
+      .eq('products.is_banned', false);
 
-  query = query.limit(limit);
+    if (typeof minPrice === 'number') query = query.gte('retail_price', minPrice);
+    if (typeof maxPrice === 'number') query = query.lte('retail_price', maxPrice);
+    if (category) query = query.eq('products.category', category);
+    if (q) {
+      if (matchedProductIds.length > 0) {
+        query = query.in('product_id', matchedProductIds);
+      } else {
+        const term = `%${escapeIlike(q)}%`;
+        query = query.or(`name.ilike.${term},description.ilike.${term},category.ilike.${term}`, { foreignTable: 'products' });
+      }
+    }
+    if (typeof minWeight === 'number')
+      query = query.gte('products.weight_oz', minWeight);
+    if (typeof maxWeight === 'number')
+      query = query.lte('products.weight_oz', maxWeight);
+    if (bulk) query = query.not('products.admin_bulk_price', 'is', null);
 
-  const { data: rows, error } = await query;
-  if (error) {
+    switch (sort) {
+      case 'name_asc':
+        query = query.order('name', { foreignTable: 'products', ascending: true });
+        break;
+      case 'name_desc':
+        query = query.order('name', { foreignTable: 'products', ascending: false });
+        break;
+      case 'price_low':
+        query = query.order('retail_price', { ascending: true });
+        break;
+      case 'price_high':
+        query = query.order('retail_price', { ascending: false });
+        break;
+      case 'newest':
+        query = query.order('created_at', { ascending: false });
+        break;
+      case 'popular':
+      default:
+        query = query.order('sort_order', { ascending: true, nullsFirst: false });
+        break;
+    }
+
+    query = query.limit(limit);
+
+    const { data: rows, error } = await query;
+    if (error) {
+      return NextResponse.json(
+        { error: 'Search Failed.', products: [], total: 0 },
+        { status: 500 }
+      );
+    }
+
+    // Inventory map for the inStock filter. agent_inventory is the canonical
+    // per-agent count; we fall back to master inventory_count when the agent
+    // hasn't received any stock yet.
+    let inventoryByProductId: Record<string, number> = {};
+    const productIds = (rows ?? [])
+      .map(r => r.product_id)
+      .filter((v): v is string => !!v);
+    if (productIds.length > 0) {
+      const { data: inv } = await supabase
+        .from('agent_inventory')
+        .select('product_id, stock_count')
+        .eq('agent_id', agent.id)
+        .in('product_id', productIds);
+      inventoryByProductId = Object.fromEntries(
+        (inv ?? []).map(r => [r.product_id, Number(r.stock_count ?? 0)])
+      );
+    }
+
+    let products = rows ?? [];
+    if (inStock) {
+      products = products.filter(p => {
+        const localCount = Number(inventoryByProductId[p.product_id] ?? 0);
+        const masterRaw = (p as { products: unknown }).products;
+        const master = Array.isArray(masterRaw) ? masterRaw[0] : masterRaw;
+        const masterCount = Number(
+          (master as { inventory_count?: number } | undefined)?.inventory_count ?? 0
+        );
+        return localCount > 0 || masterCount > 0;
+      });
+    }
+
+    // Scrub private/internal fields before returning — these were needed for
+    // server-side filtering (bulk, inStock) but must not be exposed publicly.
+    const publicProducts = products.map(p => {
+      const productsRaw = (p as { products: unknown }).products;
+      const scrubProduct = (prod: unknown) => {
+        if (prod && typeof prod === 'object') {
+          const { admin_bulk_price, admin_bulk_threshold, inventory_count, low_stock_threshold, ...rest } = prod as Record<string, unknown>;
+          void admin_bulk_price; void admin_bulk_threshold; void inventory_count; void low_stock_threshold;
+          return rest;
+        }
+        return prod;
+      };
+      return {
+        ...p,
+        products: Array.isArray(productsRaw)
+          ? productsRaw.map(scrubProduct)
+          : scrubProduct(productsRaw),
+      };
+    });
+
+    return NextResponse.json(
+      {
+        products: publicProducts,
+        total: publicProducts.length,
+        agent: { id: agent.id, slug: agent.slug },
+      },
+      { status: 200 }
+    );
+  } catch (err) {
+    console.error('[storefront/search] POST error:', err);
     return NextResponse.json(
       { error: 'Search Failed.', products: [], total: 0 },
       { status: 500 }
     );
   }
-
-  // Inventory map for the inStock filter. agent_inventory is the canonical
-  // per-agent count; we fall back to master inventory_count when the agent
-  // hasn't received any stock yet.
-  let inventoryByProductId: Record<string, number> = {};
-  const productIds = (rows ?? [])
-    .map(r => r.product_id)
-    .filter((v): v is string => !!v);
-  if (productIds.length > 0) {
-    const { data: inv } = await supabase
-      .from('agent_inventory')
-      .select('product_id, stock_count')
-      .eq('agent_id', agent.id)
-      .in('product_id', productIds);
-    inventoryByProductId = Object.fromEntries(
-      (inv ?? []).map(r => [r.product_id, Number(r.stock_count ?? 0)])
-    );
-  }
-
-  let products = rows ?? [];
-  if (inStock) {
-    products = products.filter(p => {
-      const localCount = Number(inventoryByProductId[p.product_id] ?? 0);
-      const masterRaw = (p as { products: unknown }).products;
-      const master = Array.isArray(masterRaw) ? masterRaw[0] : masterRaw;
-      const masterCount = Number(
-        (master as { inventory_count?: number } | undefined)?.inventory_count ?? 0
-      );
-      return localCount > 0 || masterCount > 0;
-    });
-  }
-
-  // Scrub private/internal fields before returning — these were needed for
-  // server-side filtering (bulk, inStock) but must not be exposed publicly.
-  const publicProducts = products.map(p => {
-    const productsRaw = (p as { products: unknown }).products;
-    const scrubProduct = (prod: unknown) => {
-      if (prod && typeof prod === 'object') {
-        const { admin_bulk_price, admin_bulk_threshold, inventory_count, low_stock_threshold, ...rest } = prod as Record<string, unknown>;
-        void admin_bulk_price; void admin_bulk_threshold; void inventory_count; void low_stock_threshold;
-        return rest;
-      }
-      return prod;
-    };
-    return {
-      ...p,
-      products: Array.isArray(productsRaw)
-        ? productsRaw.map(scrubProduct)
-        : scrubProduct(productsRaw),
-    };
-  });
-
-  return NextResponse.json(
-    {
-      products: publicProducts,
-      total: publicProducts.length,
-      agent: { id: agent.id, slug: agent.slug },
-    },
-    { status: 200 }
-  );
 }
