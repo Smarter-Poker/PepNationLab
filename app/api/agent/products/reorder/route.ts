@@ -4,33 +4,25 @@ import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
 // PUT /api/agent/products/reorder
-// Bulk update sort_order for an agent's products
 export async function PUT(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
-
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
-
   const body = await req.json().catch(() => ({}));
   const { order } = body;
-
   if (!Array.isArray(order) || order.length === 0) {
     return NextResponse.json({ error: 'Missing Order Array' }, { status: 400 });
   }
-
-  const supabase = await createServiceClient();
-
-  // Bulk update sort_order for each product
-  const updates = order.map(({ id, sort_order }: { id: string; sort_order: number }) =>
-    supabase
-      .from('agent_products')
-      .update({ sort_order, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .eq('agent_id', gate.user.id)
-  );
-
-  await Promise.all(updates);
-
-  return NextResponse.json({ success: true });
+  try {
+    const supabase = await createServiceClient();
+    const updates = order.map(({ id, sort_order }: { id: string; sort_order: number }) =>
+      supabase.from('agent_products').update({ sort_order, updated_at: new Date().toISOString() }).eq('id', id).eq('agent_id', gate.user.id)
+    );
+    await Promise.all(updates);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('[products/reorder] PUT error:', err);
+    return NextResponse.json({ error: 'Failed To Update Product Order' }, { status: 500 });
+  }
 }
