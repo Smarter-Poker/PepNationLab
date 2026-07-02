@@ -1,1 +1,26 @@
-aW1wb3J0IHsgTmV4dFJlc3BvbnNlLCB0eXBlIE5leHRSZXF1ZXN0IH0gZnJvbSAnbmV4dC9zZXJ2ZXInOwppbXBvcnQgeyBjcmVhdGVTZXJ2aWNlQ2xpZW50LCBjcmVhdGVDbGllbnQgfSBmcm9tICdAL2xpYi9zdXBhYmFzZS9zZXJ2ZXInOwppbXBvcnQgeyBhc3NlcnRTYW1lT3JpZ2luIH0gZnJvbSAnQC9saWIvY3NyZic7CgpleHBvcnQgY29uc3QgZHluYW1pYyA9ICdmb3JjZS1keW5hbWljJzsKCmV4cG9ydCBhc3luYyBmdW5jdGlvbiBQQVRDSChyZXE6IE5leHRSZXF1ZXN0KSB7CiAgY29uc3QgY3NyZiA9IGFzc2VydFNhbWVPcmlnaW4ocmVxKTsKICBpZiAoY3NyZikgcmV0dXJuIGNzcmY7CiAgY29uc3Qgc3VwYWJhc2UgPSBhd2FpdCBjcmVhdGVDbGllbnQoKTsKICBjb25zdCB7IGRhdGE6IHsgdXNlciB9IH0gPSBhd2FpdCBzdXBhYmFzZS5hdXRoLmdldFVzZXIoKTsKICBpZiAoIXVzZXIpIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiAndW5hdXRob3JpemVkJyB9LCB7IHN0YXR1czogNDAxIH0pOwogIGNvbnN0IGJvZHkgPSBhd2FpdCByZXEuanNvbigpLmNhdGNoKCgpID0+IG51bGwpOwogIGlmICghYm9keSB8fCAhYm9keS5zdWJfYWdlbnRfaWQpIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiAnaW52YWxpZF9ib2R5JyB9LCB7IHN0YXR1czogNDAwIH0pOwogIHRyeSB7CiAgICBjb25zdCBhZG1pbkNsaWVudCA9IGF3YWl0IGNyZWF0ZVNlcnZpY2VDbGllbnQoKTsKICAgIGNvbnN0IHsgZGF0YTogc3ViQWdlbnQgfSA9IGF3YWl0IGFkbWluQ2xpZW50LmZyb20oJ3Byb2ZpbGVzJykuc2VsZWN0KCdwYXJlbnRfYWdlbnRfaWQnKS5lcSgnaWQnLCBib2R5LnN1Yl9hZ2VudF9pZCkuc2luZ2xlKCk7CiAgICBpZiAoc3ViQWdlbnQ/LnBhcmVudF9hZ2VudF9pZCAhPT0gdXNlci5pZCkgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgZXJyb3I6ICd1bmF1dGhvcml6ZWRfYWN0aW9uJyB9LCB7IHN0YXR1czogNDAzIH0pOwogICAgY29uc3QgeyBlcnJvciB9ID0gYXdhaXQgYWRtaW5DbGllbnQuZnJvbSgnYWdlbnRfcHJvZmlsZXMnKS51cGRhdGUoeyBwcmV2aW91c19kaXNwbGF5X25hbWVfZGlzbWlzc2VkOiB0cnVlIH0pLmVxKCdpZCcsIGJvZHkuc3ViX2FnZW50X2lkKTsKICAgIGlmIChlcnJvcikgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgZXJyb3I6ICdmYWlsZWRfdG9fZGlzbWlzcycgfSwgeyBzdGF0dXM6IDUwMCB9KTsKICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IHN1Y2Nlc3M6IHRydWUgfSk7CiAgfSBjYXRjaCAoZXJyKSB7CiAgICBjb25zb2xlLmVycm9yKCdbc3ViLWFnZW50cy9kaXNtaXNzLW5hbWVdIFBBVENIIGVycm9yOicsIGVycik7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBlcnJvcjogJ0ZhaWxlZCBUbyBEaXNtaXNzIE5hbWUgQ2hhbmdlJyB9LCB7IHN0YXR1czogNTAwIH0pOwogIH0KfQo=
+import { NextResponse, type NextRequest } from 'next/server';
+import { createServiceClient, createClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
+
+export const dynamic = 'force-dynamic';
+
+export async function PATCH(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const body = await req.json().catch(() => null);
+  if (!body || !body.sub_agent_id) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
+  try {
+    const adminClient = await createServiceClient();
+    const { data: subAgent } = await adminClient.from('profiles').select('parent_agent_id').eq('id', body.sub_agent_id).single();
+    if (subAgent?.parent_agent_id !== user.id) return NextResponse.json({ error: 'unauthorized_action' }, { status: 403 });
+    const { error } = await adminClient.from('agent_profiles').update({ previous_display_name_dismissed: true }).eq('id', body.sub_agent_id);
+    if (error) return NextResponse.json({ error: 'failed_to_dismiss' }, { status: 500 });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('[sub-agents/dismiss-name] PATCH error:', err);
+    return NextResponse.json({ error: 'Failed To Dismiss Name Change' }, { status: 500 });
+  }
+}
