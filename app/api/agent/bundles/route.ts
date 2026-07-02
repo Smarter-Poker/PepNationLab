@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       .from('agent_profiles')
       .select('bundles_config')
       .eq('id', gate.user.id)
-      .single();
+      .maybeSingle();
     return NextResponse.json({ data: profile?.bundles_config || [] });
   } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'A bundle cannot contain more than 20 products' }, { status: 400 });
   }
   const supabase = await createServiceClient();
-  const { data: profile } = await supabase.from('agent_profiles').select('bundles_config').eq('id', gate.user.id).single();
+  const { data: profile } = await supabase.from('agent_profiles').select('bundles_config').eq('id', gate.user.id).maybeSingle();
   const existing: Bundle[] = profile?.bundles_config || [];
   const newBundle: Bundle = {
     id: randomUUID(),
@@ -91,7 +91,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: `Invalid action. Must be one of: ${VALID_PATCH_ACTIONS.join(', ')}` }, { status: 400 });
   }
   const supabase = await createServiceClient();
-  const { data: profile } = await supabase.from('agent_profiles').select('bundles_config').eq('id', gate.user.id).single();
+  const { data: profile } = await supabase.from('agent_profiles').select('bundles_config').eq('id', gate.user.id).maybeSingle();
   const existing: Bundle[] = profile?.bundles_config || [];
   const updated = existing.map(b => b.id === id ? { ...b, is_active: action === 'toggle' ? !b.is_active : b.is_active } : b);
   const { error } = await supabase.from('agent_profiles').update({ bundles_config: updated, updated_at: new Date().toISOString() }).eq('id', gate.user.id);
@@ -108,7 +108,7 @@ export async function DELETE(req: NextRequest) {
   const { id } = body;
   if (!id) return NextResponse.json({ error: 'Bundle ID Required' }, { status: 400 });
   const supabase = await createServiceClient();
-  const { data: profile } = await supabase.from('agent_profiles').select('bundles_config').eq('id', gate.user.id).single();
+  const { data: profile } = await supabase.from('agent_profiles').select('bundles_config').eq('id', gate.user.id).maybeSingle();
   const existing: Bundle[] = profile?.bundles_config || [];
   const updated = existing.filter(b => b.id !== id);
   const { error } = await supabase.from('agent_profiles').update({ bundles_config: updated, updated_at: new Date().toISOString() }).eq('id', gate.user.id);
