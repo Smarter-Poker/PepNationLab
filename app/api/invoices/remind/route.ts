@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const service = await createServiceClient();
-  const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).single();
+  const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).maybeSingle();
   if (profile?.role !== 'admin') return NextResponse.json({ error: 'Admin Only' }, { status: 403 });
 
   const body = await req.json().catch(() => ({}));
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     .select('receiver_id, subject, invoice_amount, invoice_status')
     .eq('id', invoiceMessageId)
     .eq('type', 'invoice')
-    .single();
+    .maybeSingle();
 
   if (fetchError || !invoice) return NextResponse.json({ error: 'Invoice Not Found' }, { status: 404 });
   if (invoice.invoice_status === 'paid') return NextResponse.json({ error: 'Invoice Already Paid' }, { status: 400 });

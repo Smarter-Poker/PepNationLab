@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   const ALLOWED_ROLES = ['agent', 'super_agent', 'admin'];
   if (!profile || !ALLOWED_ROLES.includes(profile.role)) {

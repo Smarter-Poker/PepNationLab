@@ -42,7 +42,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .eq('id', id)
     .eq('user_id', user.id)
     .select(FIELDS)
-    .single();
+    .maybeSingle();
 
   if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   if (!data) return NextResponse.json({ error: 'not_found' }, { status: 404 });

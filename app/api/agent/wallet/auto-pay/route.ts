@@ -18,7 +18,7 @@ export async function GET() {
     .from('profiles')
     .select('auto_pay_enabled, preferred_payout_handle')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
   return NextResponse.json({
     enabled: !!data?.auto_pay_enabled,
     handle: data?.preferred_payout_handle ?? null,

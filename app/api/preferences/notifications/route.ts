@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     .from('notification_preferences')
     .select('*')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   // Return defaults if no prefs exist
   return NextResponse.json({

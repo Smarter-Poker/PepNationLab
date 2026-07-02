@@ -107,7 +107,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     .from('product_lots')
     .insert(insertRow)
     .select('*')
-    .single();
+    .maybeSingle();
 
   if (error) {
     if (error.code === '23505') {

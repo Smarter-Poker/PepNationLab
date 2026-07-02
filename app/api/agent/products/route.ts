@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       .from('profiles')
       .select('tier')
       .eq('id', agentId)
-      .single();
+      .maybeSingle();
 
     const tier = ((profile?.tier as AgentTier | null) ?? 'tier_3') as AgentTier;
 
@@ -102,7 +102,7 @@ export async function PATCH(req: NextRequest) {
       `)
       .eq('id', id)
       .eq('agent_id', gate.user.id)
-      .single();
+      .maybeSingle();
 
     if (!check) {
       return NextResponse.json({ error: 'Unauthorized Or Not Found' }, { status: 403 });
@@ -114,7 +114,7 @@ export async function PATCH(req: NextRequest) {
         .from('profiles')
         .select('tier')
         .eq('id', gate.user.id)
-        .single();
+        .maybeSingle();
       if (profData?.tier) {
         agentCostPer10 = await computeAgentCostForAgent(supabase, check.product_id, gate.user.id, profData.tier as AgentTier);
       }

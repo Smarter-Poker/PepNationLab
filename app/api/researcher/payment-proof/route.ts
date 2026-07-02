@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
       size_bytes: file.size,
     })
     .select('id, order_id, uploader_id, storage_key, mime_type, size_bytes, uploaded_at, verified_at, verified_by')
-    .single();
+    .maybeSingle();
 
   if (insertErr) {
     await service.storage.from('payment-proofs').remove([key]).catch(() => {});
@@ -299,7 +299,7 @@ async function findOrCreateDirectConversation(
       .from('messenger_conversations')
       .insert({ type: 'direct' })
       .select('id')
-      .single();
+      .maybeSingle();
 
     if (convoErr || !newConvo?.id) return null;
 

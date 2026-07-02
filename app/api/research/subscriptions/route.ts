@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     .from('user_compound_subscriptions')
     .upsert(row, { onConflict: 'user_id,compound_slug' })
     .select('compound_slug, notify_new_evidence, notify_wada_change, notify_recall, notify_trial_status')
-    .single();
+    .maybeSingle();
   if (error) return safeError('research.subscriptions', error);
   return NextResponse.json({ subscription: data });
 }
@@ -82,7 +82,7 @@ export async function PATCH(req: NextRequest) {
     .from('user_compound_subscriptions')
     .upsert(merged, { onConflict: 'user_id,compound_slug' })
     .select('compound_slug, notify_new_evidence, notify_wada_change, notify_recall, notify_trial_status')
-    .single();
+    .maybeSingle();
   if (error) return safeError('research.subscriptions', error);
   return NextResponse.json({ subscription: data });
 }

@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       { onConflict: 'user_id,slash_key' },
     )
     .select('id, slash_key, label, body, created_at, updated_at')
-    .single();
+    .maybeSingle();
   if (error) return NextResponse.json({ error: 'Failed To Save Quick Reply' }, { status: 500 });
   return NextResponse.json({ quick_reply: data });
 }

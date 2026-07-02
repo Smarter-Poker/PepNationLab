@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     .from('profiles')
     .select('role, referring_agent_id, parent_agent_id, id')
     .eq('id', resolvedUserId)
-    .single();
+    .maybeSingle();
 
   if (!profile) {
     return NextResponse.json({ allowed: false, reason: 'User Not Found' }, { status: 404 });

@@ -213,7 +213,7 @@ async function issueReservation(
         exclude_id: excludeId,
       })
       .select('token')
-      .single();
+      .maybeSingle();
     if (error || !data?.token) return null;
     return String(data.token);
   } catch {

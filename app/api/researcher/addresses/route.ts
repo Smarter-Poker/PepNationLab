@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       is_default: makeDefault,
     })
     .select('id, label, full_name, street1, street2, city, state, zip, country, is_default, created_at, updated_at')
-    .single();
+    .maybeSingle();
 
   if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ data });

@@ -21,7 +21,7 @@ export async function PATCH(request: NextRequest) {
       .from('profiles')
       .select('role, id, is_super_agent, is_sub_agent')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!callerProfile) {
       return NextResponse.json({ error: 'Caller profile not found' }, { status: 404 });
@@ -50,7 +50,7 @@ export async function PATCH(request: NextRequest) {
       .from('profiles')
       .select('id, role, parent_agent_id, referring_agent_id')
       .eq('id', targetUserId)
-      .single();
+      .maybeSingle();
 
     if (!targetProfile) {
       return NextResponse.json({ error: 'Target user not found' }, { status: 404 });

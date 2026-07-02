@@ -179,7 +179,7 @@ export async function POST(
       idempotency_key: idempotencyKey,
     })
     .select('id, total')
-    .single();
+    .maybeSingle();
 
   if (insertErr || !newOrder) {
     // eslint-disable-next-line no-console

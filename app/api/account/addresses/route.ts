@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       is_default_from: parsed.data.is_ship_from && !hasAnyShipFrom,
     })
     .select(FIELDS)
-    .single();
+    .maybeSingle();
 
   if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ data });

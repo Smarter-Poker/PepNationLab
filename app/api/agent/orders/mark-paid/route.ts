@@ -139,7 +139,7 @@ async function findOrCreateDirectConversation(
       .from('messenger_conversations')
       .insert({ type: 'direct' })
       .select('id')
-      .single();
+      .maybeSingle();
 
     if (convoErr || !newConvo?.id) return null;
 

@@ -42,7 +42,7 @@ export async function PATCH(
       .from('profiles')
       .select('role, is_super_agent, is_sub_agent')
       .eq('id', callerId)
-      .single();
+      .maybeSingle();
 
     if (!callerProfile || callerProfile.is_sub_agent === true) {
       return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
@@ -84,7 +84,7 @@ export async function PATCH(
       .from('profiles')
       .select('id, parent_agent_id, account_type, credit_limit, is_sub_agent')
       .eq('id', subAgentId)
-      .single();
+      .maybeSingle();
 
     if (!subAgent || subAgent.is_sub_agent !== true) {
       return NextResponse.json({ error: 'Sub-Agent Not Found.' }, { status: 404 });

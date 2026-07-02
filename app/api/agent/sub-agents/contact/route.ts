@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest) {
       .from('profiles')
       .select('parent_agent_id')
       .eq('id', subAgentId)
-      .single();
+      .maybeSingle();
 
     if (!profile) {
       return NextResponse.json({ error: 'Sub-Agent Not Found' }, { status: 404 });

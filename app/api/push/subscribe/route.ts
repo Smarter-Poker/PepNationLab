@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       { onConflict: 'user_id,endpoint' }
     )
     .select('id')
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
     return NextResponse.json(

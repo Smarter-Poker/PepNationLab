@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     .from('admin_shadow_notes')
     .insert({ subject_id: subjectId, author_id: admin.userId!, body: noteBody, pinned })
     .select('id, subject_id, author_id, body, pinned, created_at, updated_at')
-    .single();
+    .maybeSingle();
 
   if (error || !data) return NextResponse.json({ error: 'Failed To Save Note' }, { status: 500 });
 

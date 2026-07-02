@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest) {
       .from('profiles')
       .select('referring_agent_id')
       .eq('id', researcherId)
-      .single();
+      .maybeSingle();
 
     if (!profile) {
       return NextResponse.json({ error: 'Researcher Not Found' }, { status: 404 });

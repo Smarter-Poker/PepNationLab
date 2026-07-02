@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
         notes
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
 

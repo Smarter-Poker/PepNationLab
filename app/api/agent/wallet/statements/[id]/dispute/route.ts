@@ -30,7 +30,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     .from('weekly_statements')
     .select('id, agent_id, status, disputed_at')
     .eq('id', id)
-    .single();
+    .maybeSingle();
   if (!stmt) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   if (stmt.agent_id !== user.id) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   if (stmt.status === 'paid') return NextResponse.json({ error: 'already_paid' }, { status: 409 });

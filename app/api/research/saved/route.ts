@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     .from('user_saved_compounds')
     .upsert({ user_id: user.id, compound_slug, collection_name, notes }, { onConflict: 'user_id,compound_slug,collection_name' })
     .select('id, compound_slug, collection_name')
-    .single();
+    .maybeSingle();
   if (error) return safeError('research.saved', error);
   return NextResponse.json({ saved: data });
 }

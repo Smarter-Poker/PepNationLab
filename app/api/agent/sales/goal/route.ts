@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       target_cents: body.target_cents,
     }, { onConflict: 'agent_id,period_start' })
     .select()
-    .single();
+    .maybeSingle();
   if (error) return safeError('sales.goal', error, 400);
   return NextResponse.json({ ok: true, goal: data });
 }

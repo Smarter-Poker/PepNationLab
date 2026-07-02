@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .from('profiles')
       .select('is_super_agent, role')
       .eq('id', callerId)
-      .single();
+      .maybeSingle();
 
     if (!callerProfile?.is_super_agent && callerProfile?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -29,7 +29,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         agent:profiles!agent_id(full_name, email, username),
         super_agent:profiles!super_agent_id(full_name, email, username)`)
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (error || !invoice) {
       return NextResponse.json({ error: 'Invoice Not Found' }, { status: 404 });

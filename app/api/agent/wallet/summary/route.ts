@@ -17,7 +17,7 @@ export async function GET() {
     .from('profiles')
     .select('id, role, account_type, prepaid_balance, credit_limit, credit_used, preferred_payout_handle')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
   if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
 
   const ALLOWED_ROLES = ['agent', 'super_agent', 'admin'];

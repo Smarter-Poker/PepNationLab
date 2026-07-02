@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     .update({ slug: cleanSlug })
     .eq('id', agentId)
     .select('slug')
-    .single();
+    .maybeSingle();
 
   if (error) {
     // Postgres unique violation = 23505; CHECK violation = 23514.

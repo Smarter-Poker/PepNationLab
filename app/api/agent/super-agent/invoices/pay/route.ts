@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       .from('agent_invoices')
       .select('id, super_agent_id, status')
       .eq('id', invoice_id)
-      .single();
+      .maybeSingle();
 
     if (invoiceError || !invoice) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });

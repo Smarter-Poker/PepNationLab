@@ -52,7 +52,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
   if (updates.is_default === true) await supabase.from('shipping_origins').update({ is_default: false }).eq('is_default', true).neq('id', id);
 
-  const { data: updated, error: updateErr } = await supabase.from('shipping_origins').update(updates).eq('id', id).select().single();
+  const { data: updated, error: updateErr } = await supabase.from('shipping_origins').update(updates).eq('id', id).select().maybeSingle();
   if (updateErr || !updated) return NextResponse.json({ error: 'A database error occurred.' }, { status: 500 });
 
   await supabase.from('admin_audit_log').insert({ actor_id: gate.userId, action: 'shipping_origin_update', entity_type: 'shipping_origins', entity_id: id, changes: { fields_changed: Object.keys(updates) } });

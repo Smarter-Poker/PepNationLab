@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       .from('orders')
       .select('buyer_id, status')
       .eq('id', orderId)
-      .single();
+      .maybeSingle();
 
     if (orderError || !order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });

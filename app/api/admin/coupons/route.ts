@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
     .from('coupons')
     .insert(insertPayload)
     .select('id')
-    .single();
+    .maybeSingle();
 
   if (insertError) {
     const friendly = insertError.message.toLowerCase().includes('duplicate')

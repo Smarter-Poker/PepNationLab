@@ -104,7 +104,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     .eq('id', lotId)
     .eq('product_id', id)
     .select('*')
-    .single();
+    .maybeSingle();
 
   if (updateErr || !lot) {
     return NextResponse.json({ error: 'Failed To Record COA Upload.' }, { status: 500 });

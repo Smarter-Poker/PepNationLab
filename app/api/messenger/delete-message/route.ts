@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     })
     .eq('id', parsed.data.messageId)
     .select('*')
-    .single();
+    .maybeSingle();
   if (updErr || !updated) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   await sendBroadcast({

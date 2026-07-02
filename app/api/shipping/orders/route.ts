@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       .update(updateData)
       .eq('id', order_id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });

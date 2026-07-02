@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       shelf_days: shelfDays,
     })
     .select('*')
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
     return NextResponse.json({ error: 'Failed To Save Log' }, { status: 500 });

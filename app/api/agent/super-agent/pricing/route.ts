@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       .from('profiles')
       .select('is_super_agent')
       .eq('id', superAgentId)
-      .single();
+      .maybeSingle();
 
     if (!superAgentCheck?.is_super_agent) {
       return NextResponse.json({ error: 'Only Super Agents Can Access Pricing Configuration' }, { status: 403 });
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
       .from('profiles')
       .select('tier')
       .eq('id', superAgentId)
-      .single();
+      .maybeSingle();
       
     const tier = (superAgent?.tier as AgentTier | null) ?? 'tier_3';
 
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
       .from('profiles')
       .select('is_super_agent, tier')
       .eq('id', superAgentId)
-      .single();
+      .maybeSingle();
 
     if (!superAgentProfile?.is_super_agent) {
       return NextResponse.json({ error: 'Only Super Agents can configure baseline pricing' }, { status: 403 });

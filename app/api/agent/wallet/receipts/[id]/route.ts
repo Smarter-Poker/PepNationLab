@@ -18,7 +18,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     .from('payment_proofs')
     .select('id, order_id, storage_key, uploader_id, mime_type')
     .eq('id', id)
-    .single();
+    .maybeSingle();
   if (!proof) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   // Authorize: uploader, or the agent on the proof's order.
@@ -28,7 +28,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       .from('orders')
       .select('agent_id')
       .eq('id', proof.order_id)
-      .single();
+      .maybeSingle();
     allowed = order?.agent_id === user.id;
   }
   if (!allowed) return NextResponse.json({ error: 'forbidden' }, { status: 403 });

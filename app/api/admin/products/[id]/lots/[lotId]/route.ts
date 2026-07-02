@@ -63,7 +63,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     .eq('id', lotId)
     .eq('product_id', id)
     .select('*')
-    .single();
+    .maybeSingle();
 
   if (error || !lot) {
     if (error?.code === '23505') {

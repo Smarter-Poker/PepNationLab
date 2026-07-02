@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       created_by: admin.userId,
     })
     .select('id')
-    .single();
+    .maybeSingle();
 
   if (error || !data) return NextResponse.json({ error: error?.message || 'Failed To Create' }, { status: 500 });
   return NextResponse.json({ id: data.id, success: true });

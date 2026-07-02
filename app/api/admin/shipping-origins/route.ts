@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createServiceClient();
   if (isDefault) await supabase.from('shipping_origins').update({ is_default: false }).eq('is_default', true);
 
-  const { data: inserted, error: insertErr } = await supabase.from('shipping_origins').insert({ label, name, company: company || null, street1, street2: street2 || null, city, state, zip, country, phone, email, is_default: isDefault, is_active: true, shippo_address_id: shippoAddressId }).select().single();
+  const { data: inserted, error: insertErr } = await supabase.from('shipping_origins').insert({ label, name, company: company || null, street1, street2: street2 || null, city, state, zip, country, phone, email, is_default: isDefault, is_active: true, shippo_address_id: shippoAddressId }).select().maybeSingle();
   if (insertErr || !inserted) return NextResponse.json({ error: 'A database error occurred.' }, { status: 500 });
 
   await supabase.from('admin_audit_log').insert({ actor_id: gate.userId, action: 'shipping_origin_create', entity_type: 'shipping_origins', entity_id: inserted.id, changes: { label, is_default: isDefault, shippo_validated: !!shippoAddressId } });

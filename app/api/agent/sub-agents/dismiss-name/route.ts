@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest) {
   if (!body || !body.sub_agent_id) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   try {
     const adminClient = await createServiceClient();
-    const { data: subAgent } = await adminClient.from('profiles').select('parent_agent_id').eq('id', body.sub_agent_id).single();
+    const { data: subAgent } = await adminClient.from('profiles').select('parent_agent_id').eq('id', body.sub_agent_id).maybeSingle();
     if (subAgent?.parent_agent_id !== user.id) return NextResponse.json({ error: 'unauthorized_action' }, { status: 403 });
     const { error } = await adminClient.from('agent_profiles').update({ previous_display_name_dismissed: true }).eq('id', body.sub_agent_id);
     if (error) return NextResponse.json({ error: 'failed_to_dismiss' }, { status: 500 });

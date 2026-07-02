@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   const service = await createServiceClient();
   const { data, error } = await service.from('message_templates').insert({
     user_id: user.id, title, body: tplBody, category: category || 'general',
-  }).select().single();
+  }).select().maybeSingle();
 
   if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ success: true, template: data });

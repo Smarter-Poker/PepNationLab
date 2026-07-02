@@ -74,7 +74,7 @@ async function provisionAgentStorefront(
         .from('house_tiers')
         .select('markup')
         .eq('level', 3)
-        .single();
+        .maybeSingle();
       const { data: products } = await admin
         .from('products')
         .select('id, base_cost')

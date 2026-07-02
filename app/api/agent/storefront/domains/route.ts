@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     .from('agent_domains')
     .insert({ agent_id: user.id, hostname: body.hostname.toLowerCase(), status: 'pending' })
     .select()
-    .single();
+    .maybeSingle();
   if (error) {
     if (error.code === '23505') return NextResponse.json({ error: 'hostname_taken' }, { status: 409 });
     return safeError('storefront.domains', error, 400);

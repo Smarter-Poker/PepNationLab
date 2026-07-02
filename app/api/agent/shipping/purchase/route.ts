@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select('*, profiles!orders_agent_id_fkey(parent_agent_id), buyer:profiles!orders_buyer_id_fkey(full_name, email)')
-      .eq('id', orderId).single();
+      .eq('id', orderId).maybeSingle();
 
     if (orderError || !order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 

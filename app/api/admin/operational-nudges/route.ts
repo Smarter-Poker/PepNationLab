@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
   }
 
   const svc = await createServiceClient();
-  const { data, error } = await svc.rpc('fn_admin_operational_nudges').single();
+  const { data, error } = await svc.rpc('fn_admin_operational_nudges').maybeSingle();
   if (error) {
     return NextResponse.json({ error: 'Nudges Query Failed' }, { status: 500 });
   }

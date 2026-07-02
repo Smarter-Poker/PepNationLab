@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       .from('compounds')
       .select('display_name, mechanism, side_effects, warnings, molecular_target, plain_summary')
       .eq('slug', slug)
-      .single();
+      .maybeSingle();
 
     if (error || !compound) {
       return NextResponse.json({ error: 'Compound not found' }, { status: 404 });

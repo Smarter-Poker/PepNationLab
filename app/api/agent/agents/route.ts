@@ -21,7 +21,7 @@ export async function GET(_req: NextRequest) {
       .from('profiles')
       .select('role, is_super_agent, is_sub_agent')
       .eq('id', callerId)
-      .single();
+      .maybeSingle();
 
     if (!callerProfile || !callerProfile.is_super_agent) {
       return NextResponse.json({ error: 'Forbidden. Only Super Agents can have full Agent Accounts.' }, { status: 403 });
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       .from('profiles')
       .select('role, is_super_agent, is_sub_agent, default_agent_markup_pct, default_agent_pricing_mode')
       .eq('id', callerId)
-      .single();
+      .maybeSingle();
 
     if (!callerProfile || !callerProfile.is_super_agent) {
       return NextResponse.json({ error: 'Forbidden. Only Super Agents can create Agent Accounts.' }, { status: 403 });

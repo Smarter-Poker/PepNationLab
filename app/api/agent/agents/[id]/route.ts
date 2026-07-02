@@ -30,7 +30,7 @@ async function gateManager(): Promise<CallerCheck> {
     .from('profiles')
     .select('role, is_super_agent')
     .eq('id', gate.user.id)
-    .single();
+    .maybeSingle();
   const isAdmin = caller?.role === 'admin';
   const isSuperAgent = caller?.is_super_agent === true;
   const isAgent = caller?.role === 'agent';
@@ -72,7 +72,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         'id, full_name, username, email, phone, role, account_type, credit_limit, max_auto_approve_limit, prepaid_balance, commission_pct, commission_max_pct, velocity_cap, commission_active_since, is_active, is_sub_agent, is_super_agent, parent_agent_id, created_at, last_sign_in_at, first_sign_in_at, sign_in_count, agent_profiles(slug, display_name, is_active)',
       )
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (error || !agent) {
       return NextResponse.json({ error: 'Agent Account Not Found.' }, { status: 404 });
@@ -227,7 +227,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       .from('profiles')
       .select('id, parent_agent_id, account_type, credit_limit, is_active, full_name, commission_pct, commission_max_pct')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (!target) {
       return NextResponse.json({ error: 'Agent Account Not Found.' }, { status: 404 });

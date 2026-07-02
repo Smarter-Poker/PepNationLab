@@ -713,7 +713,7 @@ export async function POST(request: NextRequest) {
         ip_address: checkoutIp,
       })
       .select('id')
-      .single();
+      .maybeSingle();
 
     if (disclaimerError || !disclaimerRow) {
       console.error('Checkout Disclaimer Audit Insert Failed:', disclaimerError);
@@ -911,7 +911,7 @@ export async function POST(request: NextRequest) {
         idempotency_key: idempotencyKey ?? null,
       })
       .select('id, total')
-      .single();
+      .maybeSingle();
 
     if (orderError || !order) {
       // Handle unique constraint violation on idempotency_key (race between two

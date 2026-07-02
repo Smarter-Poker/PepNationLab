@@ -17,7 +17,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     .from('weekly_statements')
     .select('id, agent_id, week_start, week_end, total_cogs, total_shipping, total_owed, status, paid_at, payment_method, due_date, disputed_at, dispute_reason')
     .eq('id', id)
-    .single();
+    .maybeSingle();
   if (!stmt) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   // R24 hotfix: get_statement_detail requires auth.uid(); call via user-authed client.

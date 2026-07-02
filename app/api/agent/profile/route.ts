@@ -74,7 +74,7 @@ export async function PATCH(req: NextRequest) {
       .from('profiles')
       .select('first_name, last_name')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
       
     const currentFirst = currentProfile?.first_name || '';
     const currentLast = currentProfile?.last_name || '';

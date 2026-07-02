@@ -39,7 +39,7 @@ export async function GET(req: Request) {
     .from('profiles')
     .select('id, full_name, email, username')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   return NextResponse.json({
     year,

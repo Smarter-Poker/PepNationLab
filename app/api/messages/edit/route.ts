@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest) {
     .from('internal_messages')
     .select('sender_id, created_at, deleted_at')
     .eq('id', messageId)
-    .single();
+    .maybeSingle();
 
   if (fetchError || !msg) return NextResponse.json({ error: 'Message Not Found' }, { status: 404 });
   if (msg.sender_id !== user.id) return NextResponse.json({ error: 'Can Only Edit Own Messages' }, { status: 403 });
@@ -61,7 +61,7 @@ export async function DELETE(req: NextRequest) {
     .from('internal_messages')
     .select('sender_id, created_at, deleted_at')
     .eq('id', messageId)
-    .single();
+    .maybeSingle();
 
   if (fetchError || !msg) return NextResponse.json({ error: 'Message Not Found' }, { status: 404 });
   if (msg.sender_id !== user.id) return NextResponse.json({ error: 'Can Only Delete Own Messages' }, { status: 403 });

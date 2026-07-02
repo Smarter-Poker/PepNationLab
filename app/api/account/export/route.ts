@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     .from('account_export_jobs')
     .insert({ user_id: user.id, status: 'queued' })
     .select('id, status, file_path, requested_at, completed_at')
-    .single();
+    .maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: 'export_enqueue_failed' }, { status: 500 });

@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
   }
 
-  const { data: profile } = await svc.from('profiles').select('credit_limit, full_name, email, parent_agent_id').eq('id', user.id).single();
+  const { data: profile } = await svc.from('profiles').select('credit_limit, full_name, email, parent_agent_id').eq('id', user.id).maybeSingle();
   const current = Number(profile?.credit_limit ?? 0);
 
   if (body.requested_limit <= current) {
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
       status: 'pending',
     })
     .select()
-    .single();
+    .maybeSingle();
   if (error) return safeError('wallet.credit-increase', error, 400);
 
   // Notify the reviewers: every admin (who approve/deny on /admin/credit-increases)

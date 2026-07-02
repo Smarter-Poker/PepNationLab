@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       .from('profiles')
       .select('is_super_agent')
       .eq('id', agentId)
-      .single();
+      .maybeSingle();
 
     let query = supabase
       .from('agent_invoices')
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       .from('profiles')
       .select('is_super_agent, role')
       .eq('id', superAgentId)
-      .single();
+      .maybeSingle();
 
     const callerIsAdmin = callerProfile?.role === 'admin';
     if (!callerProfile?.is_super_agent && !callerIsAdmin) {
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       .select('id')
       .eq('id', sub_agent_id)
       .eq('parent_agent_id', superAgentId)
-      .single();
+      .maybeSingle();
 
     if (!subAgent) {
       return NextResponse.json({ error: 'Sub-Agent not found or does not belong to you' }, { status: 404 });
@@ -193,7 +193,7 @@ export async function POST(req: NextRequest) {
         { onConflict: 'agent_id,week_start' }
       )
       .select('id')
-      .single();
+      .maybeSingle();
 
     if (invoiceError) {
       return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });

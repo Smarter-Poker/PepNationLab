@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
         note_text
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
 
@@ -119,7 +119,7 @@ export async function PATCH(req: NextRequest) {
       .eq('id', id)
       .eq('user_id', user!.id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
 

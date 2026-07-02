@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     .from('messenger_support_internal_notes')
     .insert({ conversation_id: id, author_id: g.userId, body: parsed.data.body })
     .select('id, conversation_id, author_id, body, created_at')
-    .single();
+    .maybeSingle();
   if (error) return NextResponse.json({ error: 'Failed To Save Note' }, { status: 500 });
 
   await g.svc.from('admin_audit_log').insert({

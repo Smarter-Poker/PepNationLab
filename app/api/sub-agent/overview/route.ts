@@ -22,7 +22,7 @@ export async function GET() {
     .from('profiles')
     .select('id, full_name, username, email, is_sub_agent, commission_pct, commission_active_since, account_type, credit_limit, prepaid_balance, parent_agent_id')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile || profile.is_sub_agent !== true) {
     return NextResponse.json({ error: 'Forbidden - Sub-Agents Only.' }, { status: 403 });
@@ -42,7 +42,7 @@ export async function GET() {
       .from('profiles')
       .select('id, full_name, username, email')
       .eq('id', profile.parent_agent_id)
-      .single();
+      .maybeSingle();
     if (p) {
       const { data: ap } = await admin
         .from('agent_profiles')

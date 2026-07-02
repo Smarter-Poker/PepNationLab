@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     .from('profiles')
     .select('id, role')
     .eq('id', gate.user.id)
-    .single();
+    .maybeSingle();
 
   if (!callerProfile || !['agent', 'super_agent', 'admin'].includes(callerProfile.role)) {
     return NextResponse.json({ error: 'Only Agents Can Reset User Passwords' }, { status: 403 });
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     .from('profiles')
     .select('id, referring_agent_id, role')
     .eq('id', userId)
-    .single();
+    .maybeSingle();
 
   // Guard: target must be a researcher or sub-agent - NEVER an admin or another agent
   // at a different branch. The referring_agent_id check enforces ownership.

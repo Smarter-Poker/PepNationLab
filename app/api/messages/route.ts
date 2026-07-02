@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
       .from('internal_messages')
       .insert(insertRow)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
 

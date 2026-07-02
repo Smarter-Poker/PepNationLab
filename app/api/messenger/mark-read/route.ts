@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     .from('notification_preferences')
     .select('send_read_receipts')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   const updateReadId = prefs?.send_read_receipts !== false;
 
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     .select('*')
     .eq('conversation_id', parsed.data.conversationId)
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (updatedParticipant) {
     await Promise.all([

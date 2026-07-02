@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       { onConflict: 'product_id,tier_name' },
     )
     .select('id')
-    .single();
+    .maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });

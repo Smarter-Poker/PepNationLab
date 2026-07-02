@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
       })
       .eq('id', existing.id)
       .select('*')
-      .single();
+      .maybeSingle();
     if (reviveErr) return bad('Failed To Re-Activate Coupon.', 500);
     return NextResponse.json({ coupon: revived });
   }
@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
       is_active: true,
     })
     .select('*')
-    .single();
+    .maybeSingle();
 
   if (insertErr) {
     if ((insertErr.message ?? '').toLowerCase().includes('duplicate')) {

@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       .from('shared_research_protocols')
       .insert({ payload })
       .select('id')
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       console.error('[Share Protocol] Insert error', error);

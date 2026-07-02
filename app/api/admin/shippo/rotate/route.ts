@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       rotated_from: previousId,
     })
     .select('id, mode, api_key_last4, connected_at')
-    .single();
+    .maybeSingle();
 
   if (insertErr || !inserted) {
     console.error('Shippo rotate insert failed:', insertErr?.message);

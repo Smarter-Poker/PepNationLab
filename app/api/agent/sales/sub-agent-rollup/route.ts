@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     .from('profiles')
     .select('id, is_super_agent, role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
   if (!profile?.is_super_agent && profile?.role !== 'admin') {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }

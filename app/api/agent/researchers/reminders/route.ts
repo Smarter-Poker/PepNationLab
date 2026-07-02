@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const { data, error } = await svc
       .from('agent_researcher_reminders')
       .insert({ agent_id: gate.user.id, researcher_id: parsed.data.researcherId, title: parsed.data.title, remind_at: parsed.data.remindAt })
-      .select('id').single();
+      .select('id').maybeSingle();
     if (error) return NextResponse.json({ error: 'Could Not Save Reminder' }, { status: 500 });
     return NextResponse.json({ id: data.id });
   } catch (err) {

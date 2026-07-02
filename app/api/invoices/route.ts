@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const service = await createServiceClient();
-  const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).single();
+  const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).maybeSingle();
 
   const url = new URL(req.url);
   const status = url.searchParams.get('status');
@@ -45,7 +45,7 @@ export async function PATCH(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const service = await createServiceClient();
-  const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).single();
+  const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).maybeSingle();
   if (profile?.role !== 'admin') return NextResponse.json({ error: 'Admin Only' }, { status: 403 });
 
   const body = await req.json().catch(() => ({}));
@@ -61,7 +61,7 @@ export async function PATCH(req: NextRequest) {
     .select('invoice_status')
     .eq('id', messageId)
     .in('type', ['invoice', 'credit_memo'])
-    .single();
+    .maybeSingle();
   if (fetchErr || !current) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
 
   const currentStatus = current.invoice_status as string;
@@ -85,7 +85,7 @@ export async function PATCH(req: NextRequest) {
     .eq('id', messageId)
     .in('type', ['invoice', 'credit_memo'])
     .select('receiver_id, invoice_amount, subject')
-    .single();
+    .maybeSingle();
 
   if (updateError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 

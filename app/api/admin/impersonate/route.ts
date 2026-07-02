@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       user_agent: ua,
     })
     .select('id')
-    .single();
+    .maybeSingle();
 
   if (insertErr || !inserted) {
     return NextResponse.json({ error: 'Failed To Start Impersonation' }, { status: 500 });

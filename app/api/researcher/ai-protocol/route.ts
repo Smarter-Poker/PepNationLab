@@ -105,7 +105,7 @@ Keep it highly professional, structured, and easy to read. Do not use generic AI
         note_text: protocolMarkdown
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (noteError) throw noteError;
 

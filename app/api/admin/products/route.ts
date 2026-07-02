@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
         admin_bulk_threshold: admin_bulk_threshold ?? 100,
       })
       .select('id')
-      .single();
+      .maybeSingle();
 
     if (error) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });

@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
       idempotency_key: crypto.randomUUID(),
     })
     .select('id')
-    .single();
+    .maybeSingle();
 
   if (orderError || !order) {
     console.error('[admin-store POST] order insert failed:', orderError);

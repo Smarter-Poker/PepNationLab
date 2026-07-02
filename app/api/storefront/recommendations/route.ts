@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
       .from('products')
       .select('id, name, category')
       .eq('id', productId)
-      .single();
+      .maybeSingle();
 
     const seedCategory = seedProduct?.category;
     const seedName = seedProduct?.name;

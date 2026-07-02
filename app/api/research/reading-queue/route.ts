@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     .from('user_reading_queue')
     .insert({ user_id: user.id, compound_slug, reference_id, position: nextPosition })
     .select('id, compound_slug, reference_id, position')
-    .single();
+    .maybeSingle();
   if (error) return safeError('research.reading_queue', error);
   return NextResponse.json({ queued: data });
 }
