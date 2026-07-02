@@ -45,42 +45,47 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ email: username });
   }
 
-  const admin = createAdminClient();
-
-  // Use .eq() not .ilike() — attacker-supplied username; underscore in
-  // .ilike() is a LIKE wildcard that could match unintended accounts.
-  const { data } = await admin
-    .from('profiles')
-    .select('id, username')
-    .eq('username', username)
-    .eq('is_active', true)
-    .maybeSingle();
-
-  if (!data) {
-    // Do NOT reveal whether the username exists. Return a synthetic email so
-    // the downstream password check fails uniformly with the same shape as a
-    // wrong-password attempt on a real account.
-    const safeUsername = username.toLowerCase().replace(/[^a-z0-9_.-]/g, '');
-    return NextResponse.json({ email: `${safeUsername}@nodom.invalid` });
-  }
-
-  // The synthetic internal identity every username account is created with.
-  // Used as the fallback if the auth lookup is unavailable.
-  let resolvedEmail = `${data.username.toLowerCase()}@internal.auth`;
-
-  // Authoritative: whatever email auth.users actually holds for this account.
-  // This is the address signInWithPassword must receive. If a real email was
-  // genuinely set on the auth user, this returns it; if profiles.email drifted
-  // out of sync (e.g. a contact-info update that never reached auth), this
-  // still returns the correct, working login email.
   try {
-    const { data: authUser } = await admin.auth.admin.getUserById(data.id);
-    if (authUser?.user?.email) {
-      resolvedEmail = authUser.user.email;
-    }
-  } catch {
-    // Auth admin lookup unavailable - fall back to the synthetic identity.
-  }
+    const admin = createAdminClient();
 
-  return NextResponse.json({ email: resolvedEmail });
+    // Use .eq() not .ilike() — attacker-supplied username; underscore in
+    // .ilike() is a LIKE wildcard that could match unintended accounts.
+    const { data } = await admin
+      .from('profiles')
+      .select('id, username')
+      .eq('username', username)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!data) {
+      // Do NOT reveal whether the username exists. Return a synthetic email so
+      // the downstream password check fails uniformly with the same shape as a
+      // wrong-password attempt on a real account.
+      const safeUsername = username.toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+      return NextResponse.json({ email: `${safeUsername}@nodom.invalid` });
+    }
+
+    // The synthetic internal identity every username account is created with.
+    // Used as the fallback if the auth lookup is unavailable.
+    let resolvedEmail = `${data.username.toLowerCase()}@internal.auth`;
+
+    // Authoritative: whatever email auth.users actually holds for this account.
+    // This is the address signInWithPassword must receive. If a real email was
+    // genuinely set on the auth user, this returns it; if profiles.email drifted
+    // out of sync (e.g. a contact-info update that never reached auth), this
+    // still returns the correct, working login email.
+    try {
+      const { data: authUser } = await admin.auth.admin.getUserById(data.id);
+      if (authUser?.user?.email) {
+        resolvedEmail = authUser.user.email;
+      }
+    } catch {
+      // Auth admin lookup unavailable - fall back to the synthetic identity.
+    }
+
+    return NextResponse.json({ email: resolvedEmail });
+  } catch (err) {
+    console.error('[auth/resolve] POST error:', err);
+    return NextResponse.json({ error: 'Internal Server Error.' }, { status: 500 });
+  }
 }
