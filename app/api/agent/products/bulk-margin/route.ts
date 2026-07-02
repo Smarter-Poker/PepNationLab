@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, updated: 0 });
     }
 
-    const { data: profData } = await supabase.from('profiles').select('tier').eq('id', agentId).single();
+    const { data: profData } = await supabase.from('profiles').select('tier').eq('id', agentId).maybeSingle();
     const tier = (profData?.tier as AgentTier | null) ?? 'tier_3';
 
     let updatedCount = 0;

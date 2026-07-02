@@ -45,7 +45,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       .from('profiles')
       .select('role, is_super_agent, full_name, email')
       .eq('id', callerId)
-      .single();
+      .maybeSingle();
     const isAdmin = caller?.role === 'admin';
     if (!caller || (!caller.is_super_agent && !isAdmin)) {
       return NextResponse.json(
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       .from('profiles')
       .select('id, parent_agent_id, full_name, account_type')
       .eq('id', id)
-      .single();
+      .maybeSingle();
     if (!target) {
       return NextResponse.json({ error: 'Agent Account Not Found.' }, { status: 404 });
     }

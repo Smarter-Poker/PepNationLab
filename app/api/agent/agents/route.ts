@@ -260,7 +260,7 @@ export async function POST(req: NextRequest) {
     try {
       // Seed at Rookie pricing (house_tiers level 3) — most conservative starting point.
       // V2 engine is live; use house_tiers directly instead of pricing_tiers.
-      const { data: rookieTier } = await supabase.from('house_tiers').select('markup').eq('level', 3).single();
+      const { data: rookieTier } = await supabase.from('house_tiers').select('markup').eq('level', 3).maybeSingle();
       const { data: products } = await supabase.from('products').select('id, base_cost').eq('is_active', true);
       
       if (rookieTier && products && products.length > 0) {

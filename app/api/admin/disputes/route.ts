@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
   // Fetch the agent to notify (best-effort).
   try {
-    const { data: stmt } = await svc.from('weekly_statements').select('agent_id').eq('id', body.statementId).single();
+    const { data: stmt } = await svc.from('weekly_statements').select('agent_id').eq('id', body.statementId).maybeSingle();
     if (stmt?.agent_id) {
       await svc.from('notifications').insert({
         user_id: stmt.agent_id,

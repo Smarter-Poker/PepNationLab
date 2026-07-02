@@ -24,7 +24,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const { id } = await params;
   const supabase = await createServiceClient();
 
-  const { data: existing, error: fetchErr } = await supabase.from('shipping_origins').select('*').eq('id', id).single();
+  const { data: existing, error: fetchErr } = await supabase.from('shipping_origins').select('*').eq('id', id).maybeSingle();
   if (fetchErr || !existing) return NextResponse.json({ error: 'Shipping Origin Not Found.' }, { status: 404 });
 
   let body: Record<string, unknown>;
@@ -69,7 +69,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   const { id } = await params;
   const supabase = await createServiceClient();
 
-  const { data: existing } = await supabase.from('shipping_origins').select('id, label, is_default, is_active').eq('id', id).single();
+  const { data: existing } = await supabase.from('shipping_origins').select('id, label, is_default, is_active').eq('id', id).maybeSingle();
   if (!existing) return NextResponse.json({ error: 'Shipping Origin Not Found.' }, { status: 404 });
   if (existing.is_default) return NextResponse.json({ error: 'Cannot Deactivate The Default Shipping Origin. Set Another Origin As Default First.' }, { status: 409 });
 

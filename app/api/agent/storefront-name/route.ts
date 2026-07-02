@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     if (existing) return NextResponse.json({ error: 'User Name Is Already Taken - Try Another.' }, { status: 409 });
     const { error: updateErr } = await adminClient.from('agent_profiles').update({ display_name: newName, previous_display_name: currentProfile.display_name, display_name_changed_at: new Date().toISOString(), previous_display_name_dismissed: false }).eq('id', user.id);
     if (updateErr) return NextResponse.json({ error: 'Failed to update User Name.' }, { status: 500 });
-    const { data: userProfile } = await adminClient.from('profiles').select('parent_agent_id').eq('id', user.id).single();
+    const { data: userProfile } = await adminClient.from('profiles').select('parent_agent_id').eq('id', user.id).maybeSingle();
     if (userProfile?.parent_agent_id) {
       await adminClient.from('notifications').insert({ user_id: userProfile.parent_agent_id, type: 'system', title: 'Sub-Agent Name Change', body: `Your sub-agent "${currentProfile.display_name}" is now known as "${newName}".`, url: '/dashboard/agent/sub-agents' });
     }
