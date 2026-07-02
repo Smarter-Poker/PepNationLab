@@ -59,7 +59,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
       const { data: ap } = await supabase
         .from('agent_profiles')
         .select('payment_handles, min_overall_qty, min_order_qty')
-        .ilike('slug', agentSlug)
+        .eq('slug', agentSlug)
         .single();
       if (ap?.payment_handles) {
         if (typeof ap.payment_handles === 'string') {

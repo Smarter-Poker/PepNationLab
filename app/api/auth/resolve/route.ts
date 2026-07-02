@@ -40,9 +40,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Username Required' }, { status: 400 });
   }
 
-  // Fallback: If it's an email format, allow them to log in directly via email
+  // Fallback: If it's an email format, allow them to log in directly via email.
+  // Normalize to lowercase so Supabase auth gets a consistent email form.
   if (username.includes('@')) {
-    return NextResponse.json({ email: username });
+    return NextResponse.json({ email: username.toLowerCase() });
   }
 
   try {

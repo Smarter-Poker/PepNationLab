@@ -40,10 +40,13 @@ export default function SiteDisclaimerGate({
     }).catch(() => { /* logging is non-blocking */ });
   };
 
-  return (
-    <>
-      {children}
-      {ready && !accepted && <DisclaimerGate onAccept={handleAccept} />}
-    </>
-  );
+  // Block render until we've checked localStorage (one RAF after mount).
+  // This prevents a brief flash of site content before the disclaimer gate appears
+  // on a first-visit or after a version bump forces re-acknowledgment.
+  if (!ready) return null;
+
+  // Once ready: if accepted, show children; otherwise show the gate (no children behind it).
+  if (!accepted) return <DisclaimerGate onAccept={handleAccept} />;
+
+  return <>{children}</>;
 }

@@ -123,9 +123,10 @@ export async function POST(req: NextRequest) {
 
     const product = Array.isArray(pick.products) ? pick.products[0] : pick.products;
 
-    if (product.inventory_count <= 0) {
-      return NextResponse.json({ error: 'Product is currently out of stock' }, { status: 400 });
-    }
+    // NOTE: Do NOT block on products.inventory_count here. That column tracks global
+    // (China-origin) stock; agents maintain their own local inventory separately.
+    // The order route handles out-of-stock checks correctly via agent_inventory.
+    // Blocking here would incorrectly reject orderable products for agents with local stock.
 
     const item = {
       id: pick.id,

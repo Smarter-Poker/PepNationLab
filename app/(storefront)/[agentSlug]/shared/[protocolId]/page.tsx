@@ -27,7 +27,7 @@ export default async function SharedProtocolPage({
   const { data: config } = await supabase
     .from('agent_profiles')
     .select('id, name:display_name, slug, primary_color')
-    .ilike('slug', brandId)
+    .eq('slug', brandId)
     .single();
 
   if (!config) {

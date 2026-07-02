@@ -22,8 +22,18 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const code = String(body.code ?? '');
-  const subtotal = Number(body.subtotal) || 0;
+  // Normalize coupon code to match how orders/route.ts stores and redeems codes.
+  const code = String(body.code ?? '').trim().toUpperCase();
+  if (!code) {
+    return NextResponse.json({ valid: false, error: 'Coupon Code Is Required.' });
+  }
+  // Validate subtotal is a non-negative finite number; a missing/invalid subtotal
+  // could produce a false-positive if the coupon has a minimum-subtotal requirement.
+  const rawSubtotal = Number(body.subtotal);
+  if (!Number.isFinite(rawSubtotal) || rawSubtotal < 0) {
+    return NextResponse.json({ valid: false, error: 'Invalid Cart Total.' });
+  }
+  const subtotal = rawSubtotal;
 
   const service = await createServiceClient();
   const { data: profile } = await service

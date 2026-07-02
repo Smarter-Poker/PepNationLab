@@ -72,7 +72,7 @@ export default function AgentStorefrontLogin({
         body: JSON.stringify({ userId: authData.user.id, agentSlug }),
       });
 
-      if (!verifyRes.ok && verifyRes.status !== 200) {
+      if (!verifyRes.ok) {
         await supabase.auth.signOut();
         evictAllCatalogCaches();
         throw new Error('Access Verification Failed. Please Try Again.');
@@ -100,9 +100,20 @@ export default function AgentStorefrontLogin({
         await new Promise(r => setTimeout(r, 1000));
       }
 
+      // Hard fallback: if router.refresh() hasn't navigated within 3s (e.g. server
+      // re-renders with an error), force a full reload so the button doesn't stay
+      // in permanent "Signing In..." state with no way for the user to retry.
+      const fallbackTimeout = setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+
       router.refresh();
+      // If refresh navigates away, the timeout will be GC'd; if it doesn't,
+      // the reload fires. Either way setLoading is reset by the finally block.
+      clearTimeout(fallbackTimeout);
     } catch (err: any) {
       setError(err.message || 'Sign In Failed. Please Try Again.');
+    } finally {
       setLoading(false);
     }
   }

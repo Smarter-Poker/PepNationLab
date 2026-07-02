@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { Suspense } from 'react';
+import { notFound } from 'next/navigation';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
@@ -202,41 +203,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
     .eq('slug', agentSlug)
     .maybeSingle();
 
-  if (error) {
-    // DB error - show store not found
-    return (
-      <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
-        <div className="glass-panel hover-lift stagger-fade-in" style={{ maxWidth: 480, padding: 'var(--space-8)', textAlign: 'center', animationDelay: '0.1s' }}>
-          <h1 style={{ color: 'var(--white)', fontSize: '1.4rem', marginBottom: 'var(--space-3)' }}>
-            Store Not Found
-          </h1>
-          <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-4)' }}>
-            This Storefront Does Not Exist Or Is No Longer Available.
-          </p>
-          <Link href="/login" className="btn btn-primary" style={{ display: 'inline-flex', justifyContent: 'center' }}>
-            Return To Sign In
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (!agent) {
-    return (
-      <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
-        <div className="glass-panel hover-lift stagger-fade-in" style={{ maxWidth: 480, padding: 'var(--space-8)', textAlign: 'center', animationDelay: '0.1s' }}>
-          <h1 style={{ color: 'var(--white)', fontSize: '1.4rem', marginBottom: 'var(--space-3)' }}>
-            Store Not Found
-          </h1>
-          <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-4)' }}>
-            This Storefront Does Not Exist Or Is No Longer Available.
-          </p>
-          <Link href="/login" className="btn btn-primary" style={{ display: 'inline-flex', justifyContent: 'center' }}>
-            Return To Sign In
-          </Link>
-        </div>
-      </div>
-    );
+  if (error || !agent) {
+    notFound(); // returns HTTP 404; prevents bots indexing dead storefronts as valid pages
   }
 
   if (agent.is_active === false) {

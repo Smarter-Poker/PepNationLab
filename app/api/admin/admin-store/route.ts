@@ -6,19 +6,33 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
+/** Fetch the tier_1 multiplier from the database (admin buys at best rate). */
+async function getTier1Multiplier(supabase: ReturnType<typeof createAdminClient>): Promise<number> {
+  const { data } = await supabase
+    .from('pricing_tiers')
+    .select('multiplier')
+    .eq('tier_name', 'tier_1')
+    .maybeSingle();
+  const m = Number(data?.multiplier);
+  return Number.isFinite(m) && m > 0 ? m : 5; // fallback to 5x if table unavailable
+}
+
 export async function GET() {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
   const supabase = createAdminClient();
 
-  const { data, error } = await supabase
-    .from('products')
-    .select('id, name, slug, category, base_cost, weight_oz, inventory_count, sku')
-    .eq('is_active', true)
-    .eq('is_banned', false)
-    .order('category')
-    .order('name');
+  const [{ data, error }, tier1Multiplier] = await Promise.all([
+    supabase
+      .from('products')
+      .select('id, name, slug, category, base_cost, weight_oz, inventory_count, sku')
+      .eq('is_active', true)
+      .eq('is_banned', false)
+      .order('category')
+      .order('name'),
+    getTier1Multiplier(supabase),
+  ]);
 
   if (error) {
     console.error('[admin-store GET]', error);
@@ -27,7 +41,7 @@ export async function GET() {
 
   const products = (data ?? []).map(p => ({
     ...p,
-    admin_price: Math.round(Number(p.base_cost) * 5 * 100) / 100,
+    admin_price: Math.round(Number(p.base_cost) * tier1Multiplier * 100) / 100,
   }));
 
   return NextResponse.json({ products });
@@ -55,12 +69,15 @@ export async function POST(req: NextRequest) {
 
   const productIds = items.map((i: any) => String(i.product_id)).filter(Boolean);
 
-  const { data: products, error: prodError } = await supabase
-    .from('products')
-    .select('id, name, base_cost')
-    .in('id', productIds)
-    .eq('is_active', true)
-    .eq('is_banned', false);
+  const [{ data: products, error: prodError }, tier1Multiplier] = await Promise.all([
+    supabase
+      .from('products')
+      .select('id, name, base_cost')
+      .in('id', productIds)
+      .eq('is_active', true)
+      .eq('is_banned', false),
+    getTier1Multiplier(supabase),
+  ]);
 
   if (prodError || !products) {
     return NextResponse.json({ error: 'Failed To Load Products' }, { status: 500 });
@@ -76,7 +93,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Product Not Found: ${item.product_id}` }, { status: 400 });
     }
     const qty = Math.max(1, parseInt(String(item.quantity)) || 1);
-    const unitPrice = Math.round(Number(prod.base_cost) * 5 * 100) / 100;
+    const unitPrice = Math.round(Number(prod.base_cost) * tier1Multiplier * 100) / 100;
     subtotal += unitPrice * qty;
     orderLines.push({
       product_id: prod.id,
@@ -128,3 +145,4 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ success: true, orderId: order.id });
 }
+

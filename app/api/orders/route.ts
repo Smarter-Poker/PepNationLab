@@ -365,6 +365,14 @@ export async function POST(request: NextRequest) {
     let totalWeightOz = 0;
     const computedItems = [];
 
+    // Hoist the effective-markup RPC out of the per-item loop — the agent ID
+    // is constant for the entire checkout, calling it once saves N-1 round trips.
+    let agentEffectiveMarkupPct = 0;
+    if (agentProfile && !agentProfile.is_sub_agent) {
+      const { data: markupData } = await serviceSupabase.rpc('fn_agent_effective_markup', { p_agent: agentProfile.id });
+      agentEffectiveMarkupPct = Number(markupData) || 0;
+    }
+
     for (let idx = 0; idx < items.length; idx++) {
       const cartItem = items[idx];
       const dbProduct = dbProducts.find(p => p.id === cartItem.id);
@@ -437,9 +445,7 @@ export async function POST(request: NextRequest) {
           // Gamification Markup (Super Agent -> Agent)
           // The Agent pays the Super Agent's cost + Markup
           if (agentProfile && !agentProfile.is_sub_agent) {
-             const { data: markupData } = await serviceSupabase.rpc('fn_agent_effective_markup', { p_agent: agentProfile.id });
-             const markupPct = Number(markupData) || 0;
-             costPrice = (superAgentCost ?? 0) * (1 + (markupPct / 100));
+             costPrice = (superAgentCost ?? 0) * (1 + (agentEffectiveMarkupPct / 100));
           }
 
         } else {
@@ -497,8 +503,8 @@ export async function POST(request: NextRequest) {
           product_name: finalProductName,
           quantity: split.localQty,
           unit_retail_price: retailPrice,
-          unit_cost_price: 0,
-          unit_super_agent_cost: superAgentCost !== null ? 0 : null,
+          unit_cost_price: costPrice,                                           // use real cost, not 0 — zero corrupts COGS reporting
+          unit_super_agent_cost: superAgentCost,                               // use real super-agent cost, not 0
           isLocalFulfillment: true
         } as any);
       }
@@ -631,8 +637,14 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    // Calculate shipping costs
-    const actualShippingOption = shippingOption || (fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'usps');
+    // Calculate shipping costs.
+    // IMPORTANT: if fulfillmentMethod is 'agent_pickup', always use 'agent_pickup' as
+    // the shipping option regardless of what the client sent. A client could send
+    // fulfillmentMethod='agent_pickup' with shippingOption='fedex', causing a shipping
+    // charge on a pickup order. Server-side enforcement prevents this.
+    const actualShippingOption = fulfillmentMethod === 'agent_pickup'
+      ? 'agent_pickup'
+      : (shippingOption || 'usps');
     const shippingCost = calculateShippingCost(actualShippingOption, totalWeightOz);
 
     const grossTotal = Math.max(0, subtotal - discountAmount) + shippingCost;
@@ -864,6 +876,14 @@ export async function POST(request: NextRequest) {
         initialStatus = 'agent_approval_pending';
       }
     }
+    // GUARD: Ensure we actually have items to insert before creating the order row.
+    // This check MUST run before the INSERT — after the INSERT, a delete is lossy:
+    // it does NOT release reserved inventory, does NOT unredeem the coupon, and does
+    // NOT refund prepaid balance. Checking here lets rollbackPreOrder() clean up cleanly.
+    if (computedItems.length === 0) {
+      await rollbackPreOrder();
+      return NextResponse.json({ error: 'Cart Items Could Not Be Processed. Please Try Again.' }, { status: 400 });
+    }
 
     // Create checkout order
     const { data: order, error: orderError } = await serviceSupabase
@@ -929,15 +949,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed To Save Order Transaction.' }, { status: 500 });
     }
 
-    void serviceSupabase
+    // Back-fill order_id on the disclaimer acceptance row for compliance audit joins.
+    // Must not block the response — wrap in non-throwing promise chain.
+    serviceSupabase
       .from('disclaimer_acceptances')
       .update({ order_id: order.id })
-      .eq('id', disclaimerRow.id);
-
-    if (computedItems.length === 0) {
-      await serviceSupabase.from('orders').delete().eq('id', order.id);
-      return NextResponse.json({ error: 'Cart Items Could Not Be Processed. Please Try Again.' }, { status: 400 });
-    }
+      .eq('id', disclaimerRow.id)
+      .then(({ error: dErr }) => {
+        if (dErr) console.error('[orders] disclaimer order_id backfill failed:', dErr.message);
+      });
 
     const itemsToInsert = computedItems.map(item => ({
       order_id: order.id,

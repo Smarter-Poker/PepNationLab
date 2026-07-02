@@ -171,8 +171,9 @@ export async function GET(
     headers: {
       // Vercel edge + CDN: serve stale for 5 min, allow SWR for 10 min
       'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-      // CORS: allow the same-origin SW to fetch this without credentials
-      'Access-Control-Allow-Origin': '*',
+      // CORS: restrict to our own origin — the wildcard (*) combined with a service-role
+      // client is a security liability if this SELECT is ever expanded to include sensitive fields.
+      'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL ?? 'https://pepnationlab.com',
       'Vary': 'Accept-Encoding',
     },
   });

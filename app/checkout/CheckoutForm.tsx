@@ -303,7 +303,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         const { data: agentProfile } = await supabase
           .from('agent_profiles')
           .select('id')
-          .ilike('slug', agentSlug)
+          .eq('slug', agentSlug)
           .maybeSingle();
 
         if (agentProfile) {

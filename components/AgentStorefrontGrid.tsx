@@ -1699,17 +1699,24 @@ export default function AgentStorefrontGrid({
   const addToCart = useCallback((variantId: string) => {
     const item = products.find(p => p.id === variantId);
     if (!item) return;
-    const maxQty = item.products?.inventory_count ?? Infinity;
+    // Use the per-agent inventoryMap (not global inventory_count) for the cap.
+    // inventory_count is the China-origin master stock; agents hold their own
+    // local stock independently via agent_inventory. The inventoryMap RPC provides
+    // the correct agent-specific figure.
+    const agentStock = item.product_id ? (inventoryMap[item.product_id] ?? null) : null;
+    const globalStock = item.products?.inventory_count ?? null;
+    // Prefer agent stock; fall back to global stock; if neither is set, no cap.
+    const maxQty = agentStock !== null ? agentStock : (globalStock !== null ? globalStock : Infinity);
 
     setCartItems(prev => {
       const currentQty = prev[variantId] || 0;
-      if (currentQty >= maxQty) {
-        toast.error(maxQty === Infinity ? 'An Error Occurred Adding To Cart.' : `Maximum Available Stock (${maxQty}) Reached.`);
+      if (maxQty !== Infinity && currentQty >= maxQty) {
+        toast.error(`Maximum Available Stock (${maxQty}) Reached.`);
         return prev;
       }
       return { ...prev, [variantId]: currentQty + 1 };
     });
-  }, [products]);
+  }, [products, inventoryMap]);
 
   const totalCartItems = Object.values(cartItems).reduce((sum, qty) => sum + qty, 0);
   const totalSavedItems = Object.values(savedForLater).reduce((sum, qty) => sum + Number(qty || 0), 0);

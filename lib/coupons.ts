@@ -70,6 +70,7 @@ export async function validateCoupon(
 
   const discountValue = Number(coupon.discount_value);
   let discount = coupon.discount_type === 'percent' ? opts.subtotal * (discountValue / 100) : discountValue;
+  discount = Math.max(0, discount);      // guard against negative discount_value in DB (would inflate total)
   discount = Math.min(discount, opts.subtotal);
   discount = Math.round(discount * 100) / 100;
 

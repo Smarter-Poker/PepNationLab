@@ -66,6 +66,12 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+  if (password.length > 128) {
+    return NextResponse.json(
+      { error: 'Password Must Be 128 Characters Or Fewer.' },
+      { status: 400 }
+    );
+  }
 
   const usernameClean = sanitizeUsername(username);
   if (!usernameClean || usernameClean.length < 2) {

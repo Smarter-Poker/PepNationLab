@@ -64,7 +64,10 @@ function LoginPageInner() {
       // Record session
       fetch('/api/agent/sessions', { method: 'POST' }).catch(() => {});
 
-      const redirectTo = searchParams.get('redirect') ?? '/dashboard';
+      const rawRedirect = searchParams.get('redirect') ?? '/dashboard';
+      // Prevent open redirect: only allow relative paths starting with /
+      // Reject anything with a protocol, double-slash, or backslash.
+      const redirectTo = /^\/(?!\/|\\)/.test(rawRedirect) ? rawRedirect : '/dashboard';
 
       // Wait until Supabase confirms the session is readable locally (max 3s).
       // On mobile incognito the cookie write is async - navigating too soon

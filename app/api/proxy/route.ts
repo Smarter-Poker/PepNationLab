@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSsrfTarget, safeFetch } from '@/lib/ssrf-guard';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { createClient } from '@/lib/supabase/server';
 
 export const maxDuration = 10;
 export const dynamic = 'force-dynamic';
@@ -89,8 +90,16 @@ function rewriteHtml(html: string, originalUrl: string): string {
 }
 
 export async function GET(request: NextRequest) {
+  // Auth gate: require a valid session — the proxy must not be usable as an
+  // anonymous open web proxy that abuses server egress/bandwidth.
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
+
   const url = request.nextUrl.searchParams.get('url');
-  
+
   if (!url) {
     return new NextResponse('Missing url parameter', { status: 400 });
   }
