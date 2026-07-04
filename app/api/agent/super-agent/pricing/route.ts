@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { computeAgentCostForAgent } from '@/lib/pricing';
@@ -10,12 +10,12 @@ export async function GET(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const superAgentId = gate.user.id;
 
     // Only super-agents may view or configure sub-agent pricing.
     // Regular agents calling this endpoint would receive admin_cost
-    // (base_cost × multiplier) for all products - a wholesale cost leak.
+    // (base_cost x multiplier) for all products - a wholesale cost leak.
     const { data: superAgentCheck } = await supabase
       .from('profiles')
       .select('is_super_agent')
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const superAgentId = gate.user.id;
 
     const body = await req.json();
@@ -115,11 +115,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Only Super Agents can configure baseline pricing' }, { status: 403 });
     }
 
-    // ── Server-side baseline_cost floor ────────────────────────────────────────
+    // Server-side baseline_cost floor
     // A super-agent cannot price sub-agents below their own wholesale cost
     // (which would mean selling at a loss). computeAgentCost returns the
     // per-10-vial-pack cost; baseline_cost is also per-10-vial-pack.
-    const { computeAgentCostForAgent } = await import('@/lib/pricing');
     const ownCostPer10 = await computeAgentCostForAgent(supabase as any, product_id, superAgentId, (superAgentProfile.tier as 'tier_1' | 'tier_2' | 'tier_3') ?? 'tier_3');
     // Allow zero-cost items as explicitly requested.
     // Ensure that if ownCostPer10 is exactly 0, they can set baseline_cost >= 0.

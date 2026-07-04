@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const superAgentId = gate.user.id;
+    const callerId = gate.user.id;
     const body = await req.json();
     const { invoice_id } = body;
 
@@ -21,12 +21,21 @@ export async function POST(req: NextRequest) {
     }
 
     return withIdempotency({
-      userId: superAgentId,
+      userId: callerId,
       route: '/api/agent/super-agent/invoices/pay',
       key: readIdempotencyKey(req),
       request: { invoice_id },
       handler: async () => {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
+
+    // Fetch caller profile to check admin status
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('role, is_super_agent')
+      .eq('id', callerId)
+      .maybeSingle();
+
+    const isAdmin = callerProfile?.role === 'admin';
 
     // Verify the caller is the super_agent for this invoice, or an admin
     const { data: invoice, error: invoiceError } = await supabase
@@ -39,8 +48,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
-    // Only the super_agent who issued the invoice can mark it paid
-    if (invoice.super_agent_id !== superAgentId) {
+    // Only the super_agent who issued the invoice (or an admin) can mark it paid
+    if (invoice.super_agent_id !== callerId && !isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -62,7 +71,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to update invoice' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, message: 'Invoice marked as paid' });
+    return NextResponse.json({ success: true, message: 'Invoice Marked As Paid' });
       },
     });
 

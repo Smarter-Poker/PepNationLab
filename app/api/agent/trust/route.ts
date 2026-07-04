@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export async function PATCH(request: NextRequest) {
@@ -14,7 +14,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const serviceSupabase = await createServiceClient();
+    const serviceSupabase = createAdminClient();
 
     // Get caller's role and ID to verify permissions
     const { data: callerProfile } = await serviceSupabase
