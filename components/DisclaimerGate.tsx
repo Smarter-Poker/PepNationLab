@@ -148,7 +148,7 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
           </button>
           <button
             className="btn btn-ghost w-full"
-            onClick={() => window.location.href = 'https://www.google.com'}
+            onClick={() => { try { window.close(); } catch (_) { /* browser may block */ } window.location.href = 'about:blank'; }}
             style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}
           >
             I Do Not Agree - Exit
