@@ -24,7 +24,7 @@ export default function AgentOverview({
   onNavigate,
 }: AgentOverviewProps) {
   const router = useRouter();
-  const isSubAgent = explicitIsSubAgent ?? (userProfile?.is_super_agent !== true);
+  const isSubAgent = explicitIsSubAgent ?? (userProfile?.is_sub_agent === true);
 
   const handleNav = (href: string) => {
     if (!href) return;
