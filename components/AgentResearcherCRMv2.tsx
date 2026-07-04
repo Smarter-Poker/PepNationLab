@@ -33,9 +33,9 @@ import {
   type KanbanResearcher,
 } from './researcher-crm/views';
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* -----------------------------------------------------------------------
    Types
-───────────────────────────────────────────────────────────────────────────── */
+----------------------------------------------------------------------- */
 
 type Status = 'lead' | 'new' | 'first_order' | 'active' | 'vip' | 'at_risk' | 'churned';
 
@@ -92,9 +92,9 @@ export interface CRMExternalProps {
   onToggleAutoApprove?: (researcherId: string, currentStatus: boolean) => void;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* -----------------------------------------------------------------------
    Status config
-───────────────────────────────────────────────────────────────────────────── */
+----------------------------------------------------------------------- */
 
 const STATUS_STYLES: Record<Status, { label: string; bg: string; fg: string; border: string }> = {
   lead:        { label: 'Lead',        bg: 'rgba(168,180,192,0.10)', fg: '#A8B4C0', border: 'rgba(168,180,192,0.40)' },
@@ -106,9 +106,9 @@ const STATUS_STYLES: Record<Status, { label: string; bg: string; fg: string; bor
   churned:     { label: 'Churned',     bg: 'rgba(239,68,68,0.14)',   fg: '#EF4444', border: 'rgba(239,68,68,0.50)' },
 };
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* -----------------------------------------------------------------------
    Formatters
-───────────────────────────────────────────────────────────────────────────── */
+----------------------------------------------------------------------- */
 
 function safe(n: unknown): number {
   const v = Number(n);
@@ -132,9 +132,9 @@ function daysAgo(iso: string | null | undefined): string {
   return `${Math.floor(d / 365)}y Ago`;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* -----------------------------------------------------------------------
    Onboarding score
-───────────────────────────────────────────────────────────────────────────── */
+----------------------------------------------------------------------- */
 
 function onboardScore(r: Researcher): { score: number; label: string; color: string } {
   let score = 0;
@@ -148,9 +148,9 @@ function onboardScore(r: Researcher): { score: number; label: string; color: str
   return { score, label, color };
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* -----------------------------------------------------------------------
    Premium UI Micro-components
-───────────────────────────────────────────────────────────────────────────── */
+----------------------------------------------------------------------- */
 
 function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
   return (
@@ -251,9 +251,9 @@ function ToggleSwitch({ checked, onChange, disabled, id }: { checked: boolean; o
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* -----------------------------------------------------------------------
    KPI Card
-───────────────────────────────────────────────────────────────────────────── */
+----------------------------------------------------------------------- */
 
 function KpiCard({ label, value, spark, delta, color = '#00C4BC', onClick, subtitle }: {
   label: string; value: string; spark: number[]; delta: number;
@@ -285,9 +285,9 @@ function KpiCard({ label, value, spark, delta, color = '#00C4BC', onClick, subti
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* -----------------------------------------------------------------------
    Goal header (inline input, no prompt)
-───────────────────────────────────────────────────────────────────────────── */
+----------------------------------------------------------------------- */
 
 function GoalHeader({ goal, onSetGoal }: {
   goal: Payload['goal'];
@@ -360,9 +360,9 @@ function GoalHeader({ goal, onSetGoal }: {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* -----------------------------------------------------------------------
    Filter chip + Tab button
-───────────────────────────────────────────────────────────────────────────── */
+----------------------------------------------------------------------- */
 
 function FilterChip({ active, onClick, children, count }: { active: boolean; onClick: () => void; children: React.ReactNode; count?: number }) {
   return (
@@ -381,9 +381,9 @@ function TabBtn({ active, onClick, icon, label }: { active: boolean; onClick: ()
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* -----------------------------------------------------------------------
    Inline tag input
-───────────────────────────────────────────────────────────────────────────── */
+----------------------------------------------------------------------- */
 
 function InlineTagInput({ onAdd, onCancel }: { onAdd: (tag: string) => Promise<void>; onCancel: () => void }) {
   const [val, setVal] = useState('');
@@ -412,9 +412,9 @@ function InlineTagInput({ onAdd, onCancel }: { onAdd: (tag: string) => Promise<v
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* -----------------------------------------------------------------------
    Inline note editor
-───────────────────────────────────────────────────────────────────────────── */
+----------------------------------------------------------------------- */
 
 function NoteEditor({ researcherId, initialNote, onSave }: { researcherId: string; initialNote: string; onSave: (note: string) => void }) {
   const [val, setVal] = useState(initialNote);
@@ -464,9 +464,9 @@ function NoteEditor({ researcherId, initialNote, onSave }: { researcherId: strin
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* -----------------------------------------------------------------------
    Researcher row (table + expanded detail)
-───────────────────────────────────────────────────────────────────────────── */
+----------------------------------------------------------------------- */
 
 function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag, onAddReminder, onTogglePin, isSuperAgent, onResetPassword, onPromote, onToggleAutoApprove, onNoteUpdate }: {
   r: Researcher; expanded: boolean; onExpand: () => void;
@@ -698,9 +698,9 @@ function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* -----------------------------------------------------------------------
    Activity feed
-───────────────────────────────────────────────────────────────────────────── */
+----------------------------------------------------------------------- */
 
 function ActivityFeed({ items }: { items: ActivityItem[] }) {
   const [open, setOpen] = useState(false);
@@ -740,9 +740,9 @@ function ActivityFeed({ items }: { items: ActivityItem[] }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* -----------------------------------------------------------------------
    Empty state
-───────────────────────────────────────────────────────────────────────────── */
+----------------------------------------------------------------------- */
 
 function EmptyState({ slug }: { slug: string | null }) {
   const url = typeof window !== 'undefined' && slug ? `${window.location.origin}/${slug}` : slug ? `/${slug}` : null;
@@ -763,9 +763,9 @@ function EmptyState({ slug }: { slug: string | null }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* -----------------------------------------------------------------------
    Main component
-───────────────────────────────────────────────────────────────────────────── */
+----------------------------------------------------------------------- */
 
 export default function AgentResearcherCRMv2({
   isSuperAgent, onResetPassword, onPromote, onToggleAutoApprove,
@@ -813,7 +813,7 @@ export default function AgentResearcherCRMv2({
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  /* ── API actions ── */
+  /* -- API actions -- */
   const togglePin = useCallback(async (r: Researcher) => {
     const res = await fetch('/api/agent/researchers/pins', { method: r.is_pinned ? 'DELETE' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ researcherId: r.id }) });
     if (!res.ok) { toast.error('Could Not Update Pin'); return; }
@@ -893,7 +893,7 @@ export default function AgentResearcherCRMv2({
     router.push(`/messenger?participants=${encodeURIComponent(ids.join(','))}`);
   }, [data, router]);
 
-  /* ── Filtering + sorting ── */
+  /* -- Filtering + sorting -- */
   const filtered = useMemo(() => {
     if (!data) return [];
     const term = search.trim().toLowerCase();
@@ -936,7 +936,7 @@ export default function AgentResearcherCRMv2({
     );
   }
 
-  /* ── Render states ── */
+  /* -- Render states -- */
   if (loading && !data) {
     return (
       <div style={{ padding: '24px 0' }}>
@@ -989,7 +989,7 @@ export default function AgentResearcherCRMv2({
         <KpiCard label="Repeat Rate" value={`${Math.round(safe(k.repeat_rate.value))}%`} spark={k.repeat_rate.spark ?? []} delta={k.repeat_rate.delta_pct} color="#A78BFA" />
         <KpiCard label="New This Month" value={fmtInt(k.new_this_month.value)} spark={k.new_this_month.spark ?? []} delta={k.new_this_month.delta_pct} onClick={() => { setTab('list'); setFilter('new'); }} />
         <KpiCard label="At Risk" value={fmtInt(k.at_risk.value)} spark={k.at_risk.spark ?? []} delta={k.at_risk.delta_pct} color="#F59E0B" onClick={() => { setTab('list'); setFilter('at_risk'); }} />
-        <KpiCard label="Best Researcher" value={k.best_customer.label || '-'} spark={k.best_customer.spark ?? []} delta={k.best_customer.delta_pct} color="#FACC15" subtitle={k.best_customer.value > 0 ? fmtUSD(k.best_customer.value) : undefined} />
+        <KpiCard label="Best Researcher" value={k.best_customer?.label || '-'} spark={k.best_customer?.spark ?? []} delta={k.best_customer?.delta_pct} color="#FACC15" subtitle={(k.best_customer?.value ?? 0) > 0 ? fmtUSD(k.best_customer!.value) : undefined} />
         <KpiCard label="Commission Earned" value={fmtUSD(k.lifetime_commission.value)} spark={k.lifetime_commission.spark ?? []} delta={k.lifetime_commission.delta_pct} color="#2DD4BF" />
       </div>
 

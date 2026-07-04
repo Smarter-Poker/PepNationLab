@@ -121,7 +121,7 @@ export default function AgentDashboardClient({
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab') as any;
   
-  const defaultTab = (initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles).every((k) => !initialAgentProfile.payment_handles![k]))) ? 'Storefront Config' : 'Overview';
+  const defaultTab = (initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles || {}).every((k) => !(initialAgentProfile.payment_handles as any)?.[k]))) ? 'Storefront Config' : 'Overview';
 
   // Whitelist of valid tabs. Any unknown / malformed ?tab= value (e.g. a link
   // whose "&" terminated the query string, leaving "Sales ") must fall back to

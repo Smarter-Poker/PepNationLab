@@ -27,7 +27,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
   // volume up to a max cap via the house milestone ladder.
   const [caCommissionMode, setCaCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
   const [caCommissionPct, setCaCommissionPct] = useState('');
-  // 'default' = read-only house ladder (20% → 40%); 'custom' = fully adjustable.
+  // 'default' = read-only house ladder (20% -> 40%); 'custom' = fully adjustable.
   const [caScaleType, setCaScaleType] = useState<'default' | 'custom'>('default');
   const [caCustomSteps, setCaCustomSteps] = useState(freshDefaultLadder());
   const [showGamificationInfo, setShowGamificationInfo] = useState(false);
@@ -302,7 +302,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Password</label>
                   <input
-                    type="text"
+                    type="password"
                     required
                     minLength={8}
                     style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
@@ -486,7 +486,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 <div style={{ marginBottom: 'var(--space-6)' }}>
                   <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>New Password</label>
                   <input
-                    type="text"
+                    type="password"
                     style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={resetPwValue}
                     onChange={e => setResetPwValue(e.target.value)}

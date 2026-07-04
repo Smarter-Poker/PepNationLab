@@ -19,7 +19,7 @@ export default async function AgentDashboardPage() {
     .from('profiles')
     .select('id, email, full_name, role, tier, is_super_agent, is_sub_agent')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile) {
     redirect('/login');
