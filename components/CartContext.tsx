@@ -561,11 +561,11 @@ function BacWaterCalculator({
             lineHeight: 1.5,
           }}
         >
-          Your {totalPeptideVials} peptide vial{totalPeptideVials !== 1 ? 's' : ''} need{totalPeptideVials === 1 ? 's' : ''}{' '}
-          <strong style={{ color: 'var(--teal)' }}>~{totalMlNeeded} mL</strong> of BAC Water For Reconstitution.
+          Your {totalPeptideVials} Peptide Vial{totalPeptideVials !== 1 ? 's' : ''} Need{totalPeptideVials === 1 ? 's' : ''}{' '}
+          <strong style={{ color: 'var(--teal)' }}>~{totalMlNeeded} mL</strong> Of BAC Water For Reconstitution.
           {alreadyInCart && alreadyInCartQty > 0 && (
             <span style={{ color: 'rgba(255,255,255,0.5)' }}>
-              {' '}({alreadyInCartQty} vial{alreadyInCartQty !== 1 ? 's' : ''} Already In Cart.)
+              {' '}({alreadyInCartQty} Vial{alreadyInCartQty !== 1 ? 's' : ''} Already In Cart.)
             </span>
           )}
         </div>
@@ -581,12 +581,12 @@ function BacWaterCalculator({
             alignItems: 'center',
           }}
         >
-          <span>{totalPeptideVials} vials x 2 mL/vial</span>
+          <span>{totalPeptideVials} Vials x 2 mL/Vial</span>
           <span style={{ color: 'rgba(255,255,255,0.2)' }}>/</span>
-          <span>10 mL/bottle</span>
+          <span>10 mL/Bottle</span>
           <span style={{ color: 'rgba(255,255,255,0.2)' }}>=</span>
           <span style={{ color: 'var(--teal)', fontWeight: 700 }}>
-            {stillNeeded} bottle{stillNeeded !== 1 ? 's' : ''} needed (rounded up)
+            {stillNeeded} Bottle{stillNeeded !== 1 ? 's' : ''} Needed (Rounded Up)
           </span>
         </div>
 
