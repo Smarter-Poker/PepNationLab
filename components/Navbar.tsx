@@ -8,7 +8,6 @@ import { createClient } from '@/lib/supabase/client';
 import NavbarNotificationBell from '@/components/NavbarNotificationBell';
 import MessageBell from '@/components/MessageBell';
 import NavbarWalletBadge from '@/components/NavbarWalletBadge';
-import WalletCard from '@/components/WalletCard';
 import { getRoleNavLinks } from '@/components/roleNavLinks';
 import MyQRCodeModal from './MyQRCodeModal';
 import { useMessengerStore } from '@/stores/messengerStore';
