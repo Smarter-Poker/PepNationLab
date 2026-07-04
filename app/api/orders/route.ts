@@ -989,13 +989,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (initialStatus === 'approved_ship' || initialStatus === 'approved_pickup') {
-      try {
-        await serviceSupabase.rpc('charge_order_credit_line', { p_order_id: order.id, p_created_by: user.id });
-      } catch {}
+      const { error: creditErr } = await serviceSupabase.rpc('charge_order_credit_line', { p_order_id: order.id, p_created_by: user.id });
+      if (creditErr) {
+        console.error('[CRITICAL] charge_order_credit_line Failed For Order', order.id, creditErr);
+      }
       if (initialStatus === 'approved_ship') {
-        try {
-          await serviceSupabase.rpc('shippo_enqueue_label_job', { p_order_id: order.id });
-        } catch {}
+        const { error: labelErr } = await serviceSupabase.rpc('shippo_enqueue_label_job', { p_order_id: order.id });
+        if (labelErr) {
+          console.error('[WARNING] shippo_enqueue_label_job Failed For Order', order.id, labelErr);
+        }
       }
     }
 
