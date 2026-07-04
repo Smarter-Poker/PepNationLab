@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { pickOne } from '@/lib/relations';
-import SubAgentCommissionEditor from './SubAgentCommissionEditor';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
 import {
   exportCSV,
@@ -13,15 +12,6 @@ import {
   printableHTML,
   downloadPrintablePDF,
 } from '@/lib/export';
-
-function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
-  return (
-    <div className="tooltip-container">
-      {children}
-      <span className="tooltip-text">{text}</span>
-    </div>
-  );
-}
 
 function escapeHtml(value: string): string {
   return value
@@ -519,11 +509,6 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                         </span>
                       </label>
                       {togglingTrust === agent.id && <span style={{ fontSize: '0.7rem', color: 'var(--teal)' }}>Saving...</span>}
-                      {(agent.account_type === 'credit' || agent.account_type === 'prepaid') && (
-                        <span style={{ fontSize: '0.7rem', color: 'var(--silver)', fontStyle: 'italic' }} title="Locked by Account Type">
-                          (Locked)
-                        </span>
-                      )}
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '160px' }}>
