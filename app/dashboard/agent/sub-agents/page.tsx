@@ -24,6 +24,7 @@ type Row = {
   credit_limit: number | null;
   prepaid_balance: number | null;
   pending_commission: number;
+  volume_30d?: number | null;
   is_active: boolean | null;
   created_at: string | null;
 };
@@ -114,7 +115,7 @@ export default function SubAgentsPage() {
                   <td style={{ padding: '8px', textTransform: 'capitalize' }}>{r.account_type || '-'}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{fmtMoney(r.credit_limit)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{fmtMoney(r.prepaid_balance)}</td>
-                  <td style={{ padding: '8px', textAlign: 'right', color: '#00E5FF', fontWeight: 600 }}>{fmtMoney((r as any).volume_30d)}</td>
+                  <td style={{ padding: '8px', textAlign: 'right', color: '#00E5FF', fontWeight: 600 }}>{fmtMoney(r.volume_30d)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{fmtMoney(r.pending_commission)}</td>
                   <td style={{ padding: '8px' }}>{fmtDate(r.created_at)}</td>
                 </tr>
