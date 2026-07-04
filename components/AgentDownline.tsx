@@ -47,7 +47,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
       setLoading(true);
       const res = await fetch('/api/agent/agents');
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to fetch agent accounts');
+      if (!res.ok) throw new Error(json.error || 'Failed To Fetch Agent Accounts');
       setAgents(json.data || []);
     } catch (err: any) {
       setError(err.message);
@@ -102,9 +102,9 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
         })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create agent');
+      if (!res.ok) throw new Error(data.error || 'Failed To Create Agent');
 
-      toast.success('Agent Account created successfully!');
+      toast.success('Agent Account Created Successfully!');
       setShowCreateModal(false);
       setCaFirstName('');
       setCaLastName('');
