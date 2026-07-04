@@ -16,6 +16,7 @@ import { requireAgent } from '@/lib/admin-auth';
  *     account_type, credit_limit, prepaid_balance,
  *     created_at, is_active,
  *     last_sign_in_at, first_sign_in_at,
+ *     auto_approve_orders,
  *     pending_commission: number  (sum of pending ledger rows)
  *   }
  */
@@ -50,6 +51,7 @@ export async function GET(_req: NextRequest) {
         is_sub_agent, commission_pct, commission_active_since,
         account_type, credit_limit, prepaid_balance,
         created_at, is_active, last_sign_in_at, first_sign_in_at,
+        auto_approve_orders,
         agent_profiles ( slug, display_name, previous_display_name, previous_display_name_dismissed )
       `)
       .eq('parent_agent_id', callerId)
