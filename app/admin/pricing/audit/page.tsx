@@ -84,7 +84,7 @@ export default function PricingAuditLogsPage() {
               {logs.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--silver)' }}>
-                    No audit logs found.
+                    No Audit Logs Found.
                   </td>
                 </tr>
               )}
