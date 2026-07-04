@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     .update({ parent_agent_id: parentAgentId })
     .eq('id', agentId);
   if (updateErr) {
-    console.error('[admin/agents/reparent] update error:', updateErr.message);
+    console.error('[reparent] Failed to update parent_agent_id:', updateErr);
     return NextResponse.json({ error: 'Failed To Update Agent Parent' }, { status: 500 });
   }
 
