@@ -29,8 +29,8 @@ interface PdbRow {
   id: string;
   compound_slug: string;
   source: string | null;
-  identifier: string | null;
-  resolution_angstroms: number | null;
+  pdb_id: string | null;
+  resolution_a: number | null;
   experimental_method: string | null;
   title: string | null;
   release_year: number | null;
@@ -52,14 +52,14 @@ export default async function CompoundStructurePage({ params }: PageProps) {
 
   const { data: pdbRows } = await supabase
     .from('compound_pdb_structures')
-    .select('id, compound_slug, source, identifier, resolution_angstroms, experimental_method, title, release_year, url')
+    .select('id, compound_slug, source, pdb_id, resolution_a, experimental_method, title, release_year, url')
     .eq('compound_slug', slug)
     .order('release_year', { ascending: false, nullsFirst: false });
 
   const pdbs = (pdbRows ?? []) as PdbRow[];
 
-  const primaryPdb = (m.pdb_ids && m.pdb_ids[0]) || pdbs.find((p) => p.source?.toLowerCase().includes('rcsb'))?.identifier || null;
-  const primaryAf = m.alphafold_id || pdbs.find((p) => p.source?.toLowerCase().includes('alpha'))?.identifier || null;
+  const primaryPdb = (m.pdb_ids && m.pdb_ids[0]) || pdbs.find((p) => p.source?.toLowerCase().includes('rcsb'))?.pdb_id || null;
+  const primaryAf = m.alphafold_id || pdbs.find((p) => p.source?.toLowerCase().includes('alpha'))?.pdb_id || null;
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
@@ -97,12 +97,12 @@ export default async function CompoundStructurePage({ params }: PageProps) {
                 <span style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
                   {p.source ?? 'Source'}
                 </span>
-                <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--white, #FFFFFF)' }}>{p.identifier ?? '-'}</span>
+                <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--white, #FFFFFF)' }}>{p.pdb_id ?? '-'}</span>
                 {p.title && <span style={{ fontSize: '0.82rem', color: 'var(--silver-light, #D0DAE4)', lineHeight: 1.5 }}>{p.title}</span>}
                 <div style={{ display: 'flex', gap: 'var(--space-3, 12px)', fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)', marginTop: 4 }}>
                   {p.experimental_method && <span>{p.experimental_method}</span>}
-                  {p.resolution_angstroms !== null && p.resolution_angstroms !== undefined && (
-                    <span>{p.resolution_angstroms.toFixed(2)} Angstroms</span>
+                  {p.resolution_a !== null && p.resolution_a !== undefined && (
+                    <span>{p.resolution_a.toFixed(2)} Angstroms</span>
                   )}
                   {p.release_year && <span>{p.release_year}</span>}
                 </div>
