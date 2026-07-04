@@ -12,30 +12,21 @@ export async function POST(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const callerId = gate.user.id;
+    const superAgentId = gate.user.id;
     const body = await req.json();
     const { invoice_id } = body;
 
     if (!invoice_id) {
-      return NextResponse.json({ error: 'invoice_id is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Invoice ID Is Required.' }, { status: 400 });
     }
 
     return withIdempotency({
-      userId: callerId,
+      userId: superAgentId,
       route: '/api/agent/super-agent/invoices/pay',
       key: readIdempotencyKey(req),
       request: { invoice_id },
       handler: async () => {
-    const supabase = createAdminClient();
-
-    // Fetch caller profile to check admin status
-    const { data: callerProfile } = await supabase
-      .from('profiles')
-      .select('role, is_super_agent')
-      .eq('id', callerId)
-      .maybeSingle();
-
-    const isAdmin = callerProfile?.role === 'admin';
+    const supabase = await createAdminClient();
 
     // Verify the caller is the super_agent for this invoice, or an admin
     const { data: invoice, error: invoiceError } = await supabase
@@ -45,12 +36,12 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (invoiceError || !invoice) {
-      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Invoice Not Found.' }, { status: 404 });
     }
 
-    // Only the super_agent who issued the invoice (or an admin) can mark it paid
-    if (invoice.super_agent_id !== callerId && !isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // Only the super_agent who issued the invoice can mark it paid
+    if (invoice.super_agent_id !== superAgentId) {
+      return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }
 
     // B-07: Only open invoices can be marked paid - prevent re-paying settled/cancelled invoices
@@ -71,7 +62,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to update invoice' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, message: 'Invoice Marked As Paid' });
+    return NextResponse.json({ success: true, message: 'Invoice Marked As Paid.' });
       },
     });
 

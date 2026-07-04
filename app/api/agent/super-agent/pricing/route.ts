@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = createAdminClient();
+    const supabase = await createAdminClient();
     const superAgentId = gate.user.id;
 
     // Only super-agents may view or configure sub-agent pricing.
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = createAdminClient();
+    const supabase = await createAdminClient();
     const superAgentId = gate.user.id;
 
     const body = await req.json();
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (!superAgentProfile?.is_super_agent) {
-      return NextResponse.json({ error: 'Only Super Agents can configure baseline pricing' }, { status: 403 });
+      return NextResponse.json({ error: 'Only Super Agents Can Configure Baseline Pricing.' }, { status: 403 });
     }
 
     // Server-side baseline_cost floor
