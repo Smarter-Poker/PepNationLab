@@ -4,11 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import AgentOverview from '@/components/AgentOverview';
-import PushNotificationToggle from '@/components/PushNotificationToggle';
-import Link from 'next/link';
-import WalletCard from '@/components/WalletCard';
 import Navbar from '@/components/Navbar';
-import MyQRCodeModal from '@/components/MyQRCodeModal';
 
 type Overview = {
   profile: {
@@ -60,8 +56,6 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
   const activeTab = tabParam || defaultTab;
   
   const [copiedStorefront, setCopiedStorefront] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [showQRModal, setShowQRModal] = useState(false);
 
   const setActiveTab = (tab: string) => {
     const newParams = new URLSearchParams(searchParams.toString());
@@ -82,11 +76,6 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
     setTimeout(() => setCopiedStorefront(false), 2000);
   };
 
-  const isCredit = data.profile.account_type === 'credit';
-  const availableBalance = isCredit
-    ? Number(data.profile.credit_limit ?? 0) + Number(data.profile.prepaid_balance ?? 0)
-    : Number(data.profile.prepaid_balance ?? 0);
-  
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
       {/* Mobile Top Navbar (Global) */}
@@ -108,7 +97,7 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
                 <AgentOverview 
                   activeResearchersCount={data.referred_researchers_count}
                   activeOrdersCount={data.recent_orders.length}
-                  totalRevenue={0} // Not tracked directly on sub-agent overview API
+                  totalRevenue={0}
                   storefrontUrl={storefrontUrl}
                   copyStorefrontLink={copyStorefrontLink}
                   copiedStorefront={copiedStorefront}
@@ -121,7 +110,6 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
                       toast.info('This Feature Is Restricted For Sub-Agents.');
                     } else {
                       setActiveTab(tab);
-                      // setIsMobileMenuOpen(false);
                     }
                   }}
                 />
@@ -233,7 +221,6 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
           </div>
         </div>
       </div>
-      <MyQRCodeModal open={showQRModal} onClose={() => setShowQRModal(false)} />
     </div>
   );
 }
