@@ -127,7 +127,7 @@ export async function deliverWebhook(
       .from('webhook_deliveries')
       .select('id, endpoint_id, event_type, payload, attempts, status')
       .eq('id', deliveryId)
-      .single();
+      .maybeSingle();
 
     if (dErr || !delivery) return { ok: false };
     if ((delivery as DeliveryRow).status !== 'pending') {
@@ -138,7 +138,7 @@ export async function deliverWebhook(
       .from('webhook_endpoints')
       .select('id, owner_type, owner_id, url, secret, event_types, is_active, failure_count')
       .eq('id', (delivery as DeliveryRow).endpoint_id)
-      .single();
+      .maybeSingle();
 
     if (eErr || !endpoint) {
       await supabase

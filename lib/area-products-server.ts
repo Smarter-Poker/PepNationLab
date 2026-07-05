@@ -56,7 +56,7 @@ export async function getAreaProducts(
     .from('profiles')
     .select('id, role, referring_agent_id, parent_agent_id, tier')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile) {
     return { products: [], agentSlug: null, userRole: null, isStorefrontOwner: false, isAuthenticated: true };

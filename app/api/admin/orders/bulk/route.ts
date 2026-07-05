@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import {
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     key: readIdempotencyKey(req),
     request: { ids, action },
     handler: async () => {
-  const supabase = await createServiceClient();
+  const supabase = createAdminClient();
 
   const { data: orders, error: ordersErr } = await supabase
     .from('orders')
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
         upErr = error ? { message: error.message } : null;
       }
       if (upErr) {
-        failed.push({ id, reason: upErr.message });
+        failed.push({ id, reason: 'An Unexpected Error Occurred While Updating This Order.' });
         continue;
       }
       succeeded.push(id);

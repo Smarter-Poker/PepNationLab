@@ -17,7 +17,7 @@ export default async function SharedProtocolPage({
     .from('shared_research_protocols')
     .select('payload')
     .eq('id', protocolId)
-    .single();
+    .maybeSingle();
 
   if (error || !protocol || !protocol.payload) {
     return notFound();
@@ -28,7 +28,7 @@ export default async function SharedProtocolPage({
     .from('agent_profiles')
     .select('id, name:display_name, slug, primary_color')
     .eq('slug', brandId)
-    .single();
+    .maybeSingle();
 
   if (!config) {
     return notFound();
