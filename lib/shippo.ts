@@ -715,7 +715,7 @@ async function resolveShipmentContext(
     .from('orders')
     .select('id, agent_id, status, shipping_address, profiles!orders_agent_id_fkey(parent_agent_id), buyer:profiles!orders_buyer_id_fkey(full_name, email)')
     .eq('id', input.orderId)
-    .single();
+    .maybeSingle();
   if (orderErr || !order) {
     return { ok: false, status: 404, error: 'Order not found.', code: 'ORDER_NOT_FOUND' };
   }
@@ -843,7 +843,7 @@ async function resolveOrigin(
         .from('shipping_origins')
         .insert(insert)
         .select('id, name, company, street1, street2, city, state, zip, country, phone, email')
-        .single();
+        .maybeSingle();
       if (created) {
         await admin
           .from('agent_profiles')
