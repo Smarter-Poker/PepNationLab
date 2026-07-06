@@ -28,7 +28,7 @@ export async function GET() {
     if (!gate.ok) return gate.response;
 
     const callerId = gate.user.id;
-    const svc = await createAdminClient();
+    const svc = createAdminClient();
 
     // Caller must be a super-agent or agent (not sub-agent).
     const { data: caller } = await svc

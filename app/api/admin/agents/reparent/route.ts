@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Agent Cannot Be Its Own Parent' }, { status: 400 });
   }
 
-  const svc = await createAdminClient();
+  const svc = createAdminClient();
 
   // Confirm agentId is an agent / super_agent
   const { data: agent } = await svc

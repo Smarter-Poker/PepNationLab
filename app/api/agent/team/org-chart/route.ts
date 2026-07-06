@@ -12,7 +12,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   // Role gate: only agent, super_agent, or admin may access the org chart
-  const svc = await createAdminClient();
+  const svc = createAdminClient();
   const { data: profile } = await svc.from('profiles').select('role, is_super_agent').eq('id', user.id).maybeSingle();
   if (!profile || !['agent', 'super_agent', 'admin'].includes(profile.role)) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });

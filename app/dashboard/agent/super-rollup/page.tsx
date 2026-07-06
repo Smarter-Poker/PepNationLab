@@ -47,7 +47,7 @@ export default async function SuperAgentRollupPage() {
     redirect('/dashboard/agent');
   }
 
-  const svc = await createAdminClient();
+  const svc = createAdminClient();
 
   const { data: downline, error: downlineErr } = await svc
     .from('profiles')

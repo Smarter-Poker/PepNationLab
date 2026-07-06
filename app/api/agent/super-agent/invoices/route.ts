@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     const agentId = gate.user.id;
 
     // Verify caller is a Super Agent
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     const superAgentId = gate.user.id;
 
     const body = await req.json();

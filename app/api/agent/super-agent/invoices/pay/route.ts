@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       key: readIdempotencyKey(req),
       request: { invoice_id },
       handler: async () => {
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
 
     // Verify the caller is the super_agent for this invoice, or an admin
     const { data: invoice, error: invoiceError } = await supabase

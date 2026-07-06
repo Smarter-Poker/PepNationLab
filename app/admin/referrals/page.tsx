@@ -92,7 +92,7 @@ export default async function AdminReferralsPage() {
     'use server';
     const gate = await requireAdmin();
     if (!gate.ok) throw new Error('Unauthorized');
-    const admin = await createAdminClient();
+    const admin = createAdminClient();
     try {
       await admin.from('referral_settings').upsert({
         id: 1,

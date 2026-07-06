@@ -15,6 +15,13 @@ export async function PATCH(request: NextRequest) {
 
     const supabase = createAdminClient();
 
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+
     const {
       id,
       full_name,
@@ -23,7 +30,7 @@ export async function PATCH(request: NextRequest) {
       credit_limit,
       prepaid_balance,
       max_auto_approve_limit
-    } = await request.json();
+    } = body;
 
     if (!id) return NextResponse.json({ error: 'Missing Agent ID' }, { status: 400 });
 

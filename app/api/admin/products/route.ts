@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   try {
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   try {
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     const body = await req.json();
 
     const {
@@ -129,7 +129,7 @@ export async function PATCH(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   try {
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     const body = await req.json();
     const { id, ...raw } = body;
 

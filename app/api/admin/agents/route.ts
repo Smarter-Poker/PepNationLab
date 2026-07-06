@@ -16,7 +16,7 @@ export async function GET() {
   if (!gate.ok) return gate.response;
 
   try {
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from('profiles')
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   try {
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     const body = await req.json().catch(() => ({}));
 
     const {

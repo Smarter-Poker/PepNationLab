@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     const superAgentId = gate.user.id;
 
     // Only super-agents may view or configure sub-agent pricing.
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     const superAgentId = gate.user.id;
 
     const body = await req.json();
