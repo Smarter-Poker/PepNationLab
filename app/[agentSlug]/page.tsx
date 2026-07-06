@@ -5,12 +5,10 @@ import { notFound } from 'next/navigation';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
-import AgentStorefrontLogin from '@/components/AgentStorefrontLogin';
 import { getCompoundsBySlugs } from '@/lib/compounds-server';
 import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
 import CouponLinkCapture from '@/components/CouponLinkCapture';
 import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
-import PageLoader from '@/components/PageLoader';
 import Navbar from '@/components/Navbar';
 import StorefrontSkeleton from '@/components/StorefrontSkeleton';
 
@@ -77,7 +75,7 @@ async function AgentStorefrontDataLoader({
       .from('profiles')
       .select('role, id, tier, referring_agent_id, parent_agent_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
     userProfile = (viewerProfile as ViewerProfile | null) ?? null;
   }
   const isStorefrontOwner = !!user && userProfile?.id === agent.id;
@@ -244,18 +242,12 @@ export default async function AgentStorefrontPage({ params }: Props) {
       .from('profiles')
       .select('role, id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
     userProfile = data;
   }
   const isStorefrontOwner = userProfile?.id === agent.id;
-  const dashLink = userProfile?.role === 'admin'
-    ? '/admin'
-    : (userProfile?.role === 'agent' || userProfile?.role === 'super_agent')
-    ? '/dashboard/agent'
-    : '/dashboard';
 
   const primaryColor = agent.primary_color ?? '#00C4BC';
-  const displayName = agent.display_name;
   const showRenameBanner =
     isStorefrontOwner && (agent as { storefront_renamed_at?: string | null }).storefront_renamed_at == null;
 
