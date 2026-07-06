@@ -55,8 +55,11 @@ export async function POST(req: NextRequest) {
 
         // Soft Rule: Warning if sub-agent out-earns agent
         if (maxExisting > netMarginPct) {
-          import('@/lib/notify').then(({ notifyMarginWarning }) => {
-            const admin = require('@/lib/supabase/server').createAdminClient();
+          Promise.all([
+            import('@/lib/notify'),
+            import('@/lib/supabase/server'),
+          ]).then(([{ notifyMarginWarning }, { createAdminClient }]) => {
+            const admin = createAdminClient();
             notifyMarginWarning(admin, gate.user.id).catch(err => {
               console.error('[bulk-margin] Failed to fire margin warning:', err);
             });

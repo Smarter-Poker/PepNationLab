@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient, createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { sanitizeUsername, validateUsername } from '@/lib/usernames';
 
@@ -96,13 +96,15 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const adminAuth = (service as any).auth?.admin;
-    if (adminAuth?.updateUserById) {
-      await adminAuth.updateUserById(user.id, { email: syntheticEmail });
+    const adminClient = createAdminClient();
+    const { error: authUpErr } = await adminClient.auth.admin.updateUserById(user.id, { email: syntheticEmail });
+    if (authUpErr) {
+      console.error('[username] auth.admin.updateUserById failed:', authUpErr.message);
+      return NextResponse.json({ error: 'auth_email_sync_failed' }, { status: 500 });
     }
-  } catch {
-    // swallow - audit log captures the change
+  } catch (err) {
+    console.error('[username] auth email sync error:', err);
+    return NextResponse.json({ error: 'auth_email_sync_failed' }, { status: 500 });
   }
 
   await service
