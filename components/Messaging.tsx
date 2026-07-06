@@ -30,31 +30,39 @@ const EMOJI_QUICK = ['like', 'love', 'laugh', 'fire', 'eyes', 'done'];
 const EMOJI_FULL = ['like', 'love', 'laugh', 'fire', 'eyes', 'done', 'applause', 'pray', 'hundred', 'party', 'heart_eyes', 'think', 'sad', 'wow', 'dislike', 'money', 'clip', 'star', 'rocket', 'flex', 'cool', 'deal', 'sparkle', 'gem'];
 
 function normalizeReaction(emoji: string): string {
-  if (emoji === '\u{1F44D}') return 'like';
-  if (emoji === '\u{2764}' || emoji === '\u{2764}\u{FE0F}') return 'love';
-  if (emoji === '\u{1F602}') return 'laugh';
-  if (emoji === '\u{1F525}') return 'fire';
-  if (emoji === '\u{1F440}') return 'eyes';
-  if (emoji === '\u{2705}' || emoji === '\u{2705}\u{FE0F}') return 'done';
-  if (emoji === '\u{1F44F}') return 'applause';
-  if (emoji === '\u{1F64F}') return 'pray';
-  if (emoji === '\u{1F4AF}') return 'hundred';
-  if (emoji === '\u{1F389}') return 'party';
-  if (emoji === '\u{1F60D}') return 'heart_eyes';
-  if (emoji === '\u{1F914}') return 'think';
-  if (emoji === '\u{1F622}') return 'sad';
-  if (emoji === '\u{1F62E}') return 'wow';
-  if (emoji === '\u{1F44E}') return 'dislike';
-  if (emoji === '\u{1F4B0}') return 'money';
-  if (emoji === '\u{1F4CE}') return 'clip';
-  if (emoji === '\u{2B50}') return 'star';
-  if (emoji === '\u{1F680}') return 'rocket';
-  if (emoji === '\u{1F4AA}') return 'flex';
-  if (emoji === '\u{1F60E}') return 'cool';
-  if (emoji === '\u{1F91D}') return 'deal';
-  if (emoji === '\u{2728}') return 'sparkle';
-  if (emoji === '\u{1F48E}') return 'gem';
-  return emoji;
+  const REACTION_MAP: Record<string, string> = {
+    '+1': 'like',
+    'like': 'like',
+    'love': 'love',
+    'heart': 'love',
+    'laugh': 'laugh',
+    'ha': 'laugh',
+    'fire': 'fire',
+    'eyes': 'eyes',
+    'done': 'done',
+    'check': 'done',
+    'applause': 'applause',
+    'clap': 'applause',
+    'pray': 'pray',
+    'hundred': 'hundred',
+    '100': 'hundred',
+    'party': 'party',
+    'heart_eyes': 'heart_eyes',
+    'think': 'think',
+    'sad': 'sad',
+    'wow': 'wow',
+    'dislike': 'dislike',
+    'money': 'money',
+    'clip': 'clip',
+    'star': 'star',
+    'rocket': 'rocket',
+    'flex': 'flex',
+    'cool': 'cool',
+    'deal': 'deal',
+    'sparkle': 'sparkle',
+    'gem': 'gem',
+  };
+  return REACTION_MAP[emoji] ?? emoji;
 }
 
 function renderReactionIcon(emoji: string, size = 13) {

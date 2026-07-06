@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { pickOne } from '@/lib/relations';
+import SubAgentCommissionEditor from './SubAgentCommissionEditor';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
 import {
   exportCSV,
@@ -12,6 +13,15 @@ import {
   printableHTML,
   downloadPrintablePDF,
 } from '@/lib/export';
+
+function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  return (
+    <div className="tooltip-container">
+      {children}
+      <span className="tooltip-text">{text}</span>
+    </div>
+  );
+}
 
 function escapeHtml(value: string): string {
   return value

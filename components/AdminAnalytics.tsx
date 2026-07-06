@@ -89,8 +89,8 @@ export default function AdminAnalytics() {
       const statusLabels: Record<string, { label: string; color: string }> = {
         pending_customer_payment: { label: 'Pending Payment', color: '#FC8181' },
         agent_approval_pending: { label: 'Pending Approval', color: '#00E5FF' },
-        admin_approval_pending: { label: 'Admin Approval', color: '#FF5C5C' },
-        approved_ship: { label: 'Approved', color: '#63B3ED' },
+        approved_ship: { label: 'Approved Ship', color: '#63B3ED' },
+        approved_pickup: { label: 'Approved Pickup', color: '#68D391' },
         in_fulfillment: { label: 'Fulfilling', color: '#C0B8A8' },
         shipped: { label: 'Shipped', color: '#0099FF' },
         delivered: { label: 'Delivered', color: '#68D391' },
