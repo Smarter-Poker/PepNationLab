@@ -28,12 +28,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const supabase = await createClient();
-  const { data: exchangeData, error: exchangeError } =
-    await supabase.auth.exchangeCodeForSession(code);
-
-  if (exchangeError || !exchangeData?.user) {
-    console.error('[auth/callback] Code exchange failed:', exchangeError);
+  let exchangeData;
+  let supabase;
+  
+  try {
+    supabase = await createClient();
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    
+    if (error || !data?.session || !data?.user) {
+      console.error('[auth/callback] Code exchange failed:', error);
+      loginUrl.searchParams.set('error', 'oauth_failed');
+      return NextResponse.redirect(loginUrl);
+    }
+    
+    exchangeData = data;
+  } catch (err) {
+    console.error('[auth/callback] Unexpected error during code exchange:', err);
     loginUrl.searchParams.set('error', 'oauth_failed');
     return NextResponse.redirect(loginUrl);
   }

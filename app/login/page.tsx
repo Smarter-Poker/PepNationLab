@@ -21,23 +21,34 @@ function LoginPageInner() {
   const [showForgotPopup, setShowForgotPopup] = useState(false);
 
   async function handleGoogleLogin() {
+    if (googleLoading) return;
     setGoogleLoading(true);
     setError('');
     try {
       const supabase = createClient();
       const rawRedirect = searchParams.get('redirect') ?? '/dashboard';
       const redirectTo = /^\/(?!\/|\\)/.test(rawRedirect) ? rawRedirect : '/dashboard';
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`,
         },
       });
+      
       if (oauthError) {
+        console.error('[Google Login] OAuth Error:', oauthError);
+        setError('Google Sign-In Is Not Available Right Now. Please Use Your Username.');
+        setGoogleLoading(false);
+      } else if (!data?.url) {
+        // Fallback in case the provider URL wasn't returned
+        console.error('[Google Login] No provider URL returned.');
         setError('Google Sign-In Is Not Available Right Now. Please Use Your Username.');
         setGoogleLoading(false);
       }
-    } catch {
+      // If successful, the page will redirect automatically.
+    } catch (err) {
+      console.error('[Google Login] Unexpected Error:', err);
       setError('Google Sign-In Is Not Available Right Now. Please Use Your Username.');
       setGoogleLoading(false);
     }

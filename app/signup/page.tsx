@@ -102,6 +102,7 @@ export default function SignupPage() {
   }
 
   async function handleGoogleSignup() {
+    if (googleLoading) return;
     if (!allAcked) {
       setError('Please Confirm All Three Acknowledgments Before Continuing With Google.');
       return;
@@ -110,17 +111,25 @@ export default function SignupPage() {
     setError('');
     try {
       const supabase = createClient();
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback?redirect=/dashboard&ack=registration`,
         },
       });
+      
       if (oauthError) {
+        console.error('[Google Signup] OAuth Error:', oauthError);
+        setError('Google Sign-In Is Not Available Right Now. Please Use The Form Below.');
+        setGoogleLoading(false);
+      } else if (!data?.url) {
+        console.error('[Google Signup] No provider URL returned.');
         setError('Google Sign-In Is Not Available Right Now. Please Use The Form Below.');
         setGoogleLoading(false);
       }
-    } catch {
+      // If successful, redirect occurs automatically
+    } catch (err) {
+      console.error('[Google Signup] Unexpected Error:', err);
       setError('Google Sign-In Is Not Available Right Now. Please Use The Form Below.');
       setGoogleLoading(false);
     }
