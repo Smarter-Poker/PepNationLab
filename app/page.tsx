@@ -1,10 +1,19 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+import DisclaimerGate from '@/components/DisclaimerGate';
+import { isDisclaimerAccepted, recordDisclaimerAcceptance } from '@/lib/disclaimer-client';
 
 // Public Landing Page -- Renders The Supplied Artwork Exactly As Provided,
 // With Invisible Click Zones Layered On Top (Same Pattern As Peptide 101).
 // Image Is 941x1672; All Hitboxes Are Percentages Of That Canvas.
+//
+// Flow: The Landing Artwork Is ALWAYS The First Thing A Visitor Sees.
+// Clicking ANY Zone Checks The Layer-1 Disclaimer; First-Time Visitors
+// Get The Mandatory Research-Only Acknowledgment Before Being Taken To
+// Their Destination (Log In, Create Account, Guest, Etc.).
 
 type Zone = {
   href: string;
@@ -30,6 +39,26 @@ const ZONES: Zone[] = [
 ];
 
 export default function HomePage() {
+  const router = useRouter();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  const handleZoneClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    if (isDisclaimerAccepted()) {
+      router.push(href);
+      return;
+    }
+    // First-Time Visitor: Show The Mandatory Acknowledgment Before Navigating.
+    setPendingHref(href);
+  };
+
+  const handleAccept = () => {
+    recordDisclaimerAcceptance();
+    const destination = pendingHref;
+    setPendingHref(null);
+    if (destination) router.push(destination);
+  };
+
   return (
     <div style={{ backgroundColor: '#020617', minHeight: '100dvh', display: 'flex', justifyContent: 'center' }}>
       <div style={{ position: 'relative', width: '100%', maxWidth: '941px', margin: '0 auto' }}>
@@ -44,6 +73,7 @@ export default function HomePage() {
             href={zone.href}
             aria-label={zone.label}
             title={zone.label}
+            onClick={e => handleZoneClick(e, zone.href)}
             style={{
               position: 'absolute',
               top: zone.top,
@@ -56,6 +86,7 @@ export default function HomePage() {
           />
         ))}
       </div>
+      {pendingHref !== null && <DisclaimerGate onAccept={handleAccept} />}
     </div>
   );
 }

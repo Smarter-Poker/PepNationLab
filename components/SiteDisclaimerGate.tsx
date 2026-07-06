@@ -1,44 +1,44 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import DisclaimerGate from './DisclaimerGate';
-
-const DISCLAIMER_VERSION = process.env.NEXT_PUBLIC_DISCLAIMER_VERSION || 'v1.0';
-const STORAGE_KEY = `pnl_disclaimer_${DISCLAIMER_VERSION}`;
+import { isDisclaimerAccepted, recordDisclaimerAcceptance } from '@/lib/disclaimer-client';
 
 /**
  * Layer 1 of the mandatory 4-layer research-only disclaimer.
  *
  * Wraps the entire site so the Site Entry acknowledgment appears on ANY
- * first route a visitor lands on - not just the homepage. Acceptance is
- * recorded in localStorage under a version-scoped key so bumping the
- * disclaimer version forces re-acknowledgment.
+ * first route a visitor lands on. Acceptance is recorded in localStorage
+ * under a version-scoped key so bumping the disclaimer version forces
+ * re-acknowledgment.
+ *
+ * EXCEPTION: The Public Landing Page ("/") Renders Without The Gate.
+ * First-Time Visitors Must See The Landing Artwork First; The Landing
+ * Page Itself Intercepts Every Button Click And Shows This Same
+ * Disclaimer Before Navigating Anywhere (See app/page.tsx).
  */
 export default function SiteDisclaimerGate({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const [accepted, setAccepted] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setAccepted(localStorage.getItem(STORAGE_KEY) === 'true');
+    setAccepted(isDisclaimerAccepted());
     setReady(true);
-  }, []);
+  }, [pathname]);
 
   const handleAccept = () => {
-    localStorage.setItem(STORAGE_KEY, 'true');
+    recordDisclaimerAcceptance();
     setAccepted(true);
-    // Best-effort compliance log; failure must not block site entry.
-    // The 3-checkbox DisclaimerGate enforces 21+ research-only no-human-use
-    // confirmation before this handler fires, so we record both bits here.
-    fetch('/api/disclaimer-log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ layer: 'site_entry', age_verified: true, verified_age: 21 }),
-    }).catch(() => { /* logging is non-blocking */ });
   };
+
+  // The Landing Page Is Always Visible -- Its Click Zones Enforce The Gate.
+  if (pathname === '/') return <>{children}</>;
 
   // Block render until we've checked localStorage (one RAF after mount).
   // This prevents a brief flash of site content before the disclaimer gate appears
