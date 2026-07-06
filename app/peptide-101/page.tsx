@@ -27,6 +27,20 @@ export default function Peptide101LandingPage() {
     calculateProgress();
     setMounted(true);
 
+    // Auto-launch Module 1 for first-time visitors (no progress yet).
+    // Fires after 800ms so the landing image is visible briefly before navigating.
+    // Skipped if the user has already started the course (has any completed modules
+    // or has a last-viewed screen stored).
+    const autoLaunchTimer = setTimeout(() => {
+      try {
+        const hasProgress = !!localStorage.getItem('p101_progress_v3');
+        const hasLastScreen = !!localStorage.getItem('p101_screen');
+        if (!hasProgress && !hasLastScreen) {
+          window.location.href = '/peptide-101/course#s1';
+        }
+      } catch { /* storage unavailable — skip */ }
+    }, 800);
+
     const handleStorage = (e: StorageEvent) => {
       if (e.key === LS_KEY) calculateProgress();
     };
@@ -37,6 +51,7 @@ export default function Peptide101LandingPage() {
     window.addEventListener('storage', handleStorage);
     window.addEventListener('pageshow', handlePageShow);
     return () => {
+      clearTimeout(autoLaunchTimer);
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('pageshow', handlePageShow);
     };
