@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { getCronAuth } from '@/lib/messenger/server';
 
 export const runtime = 'nodejs';
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const auth = getCronAuth(req);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const svc = await createServiceClient();
+  const svc = createAdminClient();
   const cutoffIso = new Date(Date.now() - 5 * 60_000).toISOString();
 
   try {
