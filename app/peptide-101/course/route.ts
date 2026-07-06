@@ -24,6 +24,15 @@ export async function GET() {
     html = html.replace(/\/peptide-101\.v14\.js(\?v=\d+)?/g, `/peptide-101.v14.js?v=${v}`);
   }
 
+  // Inject the certificate upgrade (dynamic name entry + printable cert on s15).
+  // Loaded last so it runs after the course engines have registered s15.
+  if (!html.includes('<script src="/peptide-101.cert.js')) {
+    const certTag = `<script src="/peptide-101.cert.js?v=${v}"></script>`;
+    html = html.includes('</body>') ? html.replace('</body>', `${certTag}\n</body>`) : html + certTag;
+  } else {
+    html = html.replace(/\/peptide-101\.cert\.js(\?v=\d+)?/g, `/peptide-101.cert.js?v=${v}`);
+  }
+
   return new Response(html, {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
