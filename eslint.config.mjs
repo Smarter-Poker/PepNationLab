@@ -30,6 +30,12 @@ const eslintConfig = defineConfig([
       // (actual cascading render loops) are still visible but don't block builds.
       "react-hooks/set-state-in-effect": "warn",
 
+      // react-hooks/immutability fires false positives for hoisted async function
+      // declarations (`async function foo(){}`) called from useEffect above their
+      // textual position. JS `function` declarations ARE hoisted — the rule
+      // incorrectly treats them like `const` TDZ violations.
+      "react-hooks/immutability": "warn",
+
       // any types are being phased out incrementally — warn not error.
       "@typescript-eslint/no-explicit-any": "warn",
 
