@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const name = body?.name;
 
     if (!name || typeof name !== 'string') {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Name Is Required' }, { status: 400 });
     }
 
     const supabase = await createClient();
@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
         .from('agent_profiles')
         .select('id')
         .eq('is_active', true)
+        .order('created_at', { ascending: true })
         .limit(1)
         .maybeSingle();
       if (fallbackAgent) {
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!agentId) {
-      return NextResponse.json({ error: 'No active storefront available' }, { status: 404 });
+      return NextResponse.json({ error: 'No Active Storefront Available' }, { status: 404 });
     }
 
     // Query agent_products joined with products
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (matches.length === 0) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Product Not Found' }, { status: 404 });
     }
 
     // Pick the smallest unit size by default, or the first match
@@ -138,7 +139,7 @@ export async function POST(req: NextRequest) {
       bulkCostPrice: product.admin_bulk_price != null ? Number(product.admin_bulk_price) / 10 : null,
       bulkThreshold: product.admin_bulk_threshold != null ? Number(product.admin_bulk_threshold) : null,
       weightOz: 0, // Not strictly needed for UI Add to Cart, resolved at checkout
-      agentSelfBuy: user && user.id === agentId // Approximate
+      agentSelfBuy: !!user && user.id === agentId
     };
 
     const isBacWater = (product.name || '').toLowerCase().includes('bac') || (product.compound_slug || '') === 'bacteriostatic-water';

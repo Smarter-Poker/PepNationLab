@@ -20,6 +20,9 @@ export async function POST(req: NextRequest) {
   if (newPassword.length < 8) {
     return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
   }
+  if (newPassword.length > 128) {
+    return NextResponse.json({ error: 'Password Must Be 128 Characters Or Fewer' }, { status: 400 });
+  }
 
   // Block resetting another admin's password - prevents horizontal privilege escalation.
   // Admins should use the Supabase dashboard or their own account settings for self-reset.

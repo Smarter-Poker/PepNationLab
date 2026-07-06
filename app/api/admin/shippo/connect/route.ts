@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (!apiKey.startsWith('shippo_test_') && !apiKey.startsWith('shippo_live_')) return NextResponse.json({ error: 'api_key Must Start With shippo_test_ Or shippo_live_.' }, { status: 400 });
 
   let encrypted: ReturnType<typeof encryptSecret>;
-  try { encrypted = encryptSecret(apiKey); } catch (err) { const msg = err instanceof Error ? err.message : 'Encryption failed.'; return NextResponse.json({ error: `Encryption Error: ${msg}` }, { status: 500 }); }
+  try { encrypted = encryptSecret(apiKey); } catch (err) { console.error('[shippo/connect] encryption error:', err); return NextResponse.json({ error: 'Failed To Encrypt Credentials. Please Try Again.' }, { status: 500 }); }
 
   const webhookEnc = webhookSecret ? encryptSecret(webhookSecret) : null;
   const supabase = await createServiceClient();

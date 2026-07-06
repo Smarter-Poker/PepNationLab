@@ -40,7 +40,7 @@ export async function GET(req: Request) {
 
     if (error) {
       console.error('Audit log query error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
       offset,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[admin/pricing/audit] error:', err);
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 }

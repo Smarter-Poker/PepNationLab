@@ -93,8 +93,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, auto_approve_orders });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Trust Toggle Error:', err);
-    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 }

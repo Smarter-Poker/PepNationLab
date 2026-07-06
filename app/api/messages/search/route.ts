@@ -12,8 +12,15 @@ export async function GET(req: NextRequest) {
   const counterpartId = url.searchParams.get('counterpartId');
   if (!q || q.trim().length < 2) return NextResponse.json({ error: 'Query too short' }, { status: 400 });
 
-  // Sanitize inputs to prevent PostgREST filter injection
-  const safeQ = q.replace(/[.,()]/g, '');
+  // Sanitize inputs to prevent PostgREST filter injection and ILIKE wildcard abuse.
+  // Strip PostgREST grammar characters, then escape the ILIKE wildcards % and _
+  // so a user cannot submit "%%%%%" to force a full-table scan on every row.
+  const safeQ = q
+    .replace(/[.,()[\]\\*]/g, '')   // strip PostgREST grammar chars
+    .replace(/%/g, '\\%')           // escape literal percent
+    .replace(/_/g, '\\_')           // escape literal underscore
+    .trim()
+    .slice(0, 100);                  // cap length to prevent long-string CPU abuse
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (counterpartId && !uuidRegex.test(counterpartId)) {
     return NextResponse.json({ error: 'Invalid counterpartId' }, { status: 400 });
