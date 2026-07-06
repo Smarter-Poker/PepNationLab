@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, skipped: true, reason: 'already_ran_today' });
   }
 
-  const admin = await createServiceClient();
+  const admin = createAdminClient();
   let deleted = 0;
   try {
     const { data, error, count } = await admin
