@@ -5,7 +5,7 @@
  * defensible at this corpus size.
  */
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +21,7 @@ export async function GET(req: Request) {
   if (!claim) return NextResponse.json({ skipped: true, reason: 'already_ran_today' });
 
   try {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const { data } = await supabase
       .from('compound_pubmed_cache')
       .select('compound_slug, pmid_list');
