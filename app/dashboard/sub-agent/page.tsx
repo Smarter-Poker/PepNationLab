@@ -49,7 +49,6 @@ export default function SubAgentDashboardPage() {
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const load = async () => {
     try {
       const res = await fetch('/api/sub-agent/overview', { credentials: 'include', cache: 'no-store' });
