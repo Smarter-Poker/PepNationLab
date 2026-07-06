@@ -69,7 +69,7 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
       if (!res.ok) throw new Error(json.error || 'Failed To Save Override');
       setEnabled(nextEnabled);
       
-      if (resolvedMarkup !== '' && resolvedMarkup !== null) {
+      if (resolvedMarkup !== '') {
         toast.success(`Flat Markup Set To ${resolvedMarkup}%`);
       } else {
         toast.success(nextEnabled ? `Locked To ${LEVELS.find((l) => l.level === nextLevel)?.name ?? `Level ${nextLevel}`}` : 'Switched To Gamification Scale');
@@ -84,7 +84,7 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
   if (!loaded) return null;
 
   let selectValue = 'auto';
-  if (customMarkup !== '' && customMarkup !== null) {
+  if (customMarkup !== '') {
     selectValue = 'custom';
   } else if (enabled) {
     selectValue = `tier_${level}`;

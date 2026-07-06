@@ -22,7 +22,7 @@ export default function AdminDashboardRealtime() {
     let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
     const scheduleRefresh = () => {
-      if (refreshTimer) return;
+      if (refreshTimer) clearTimeout(refreshTimer);
       refreshTimer = setTimeout(() => {
         refreshTimer = null;
         router.refresh();
