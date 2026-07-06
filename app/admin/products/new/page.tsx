@@ -221,7 +221,7 @@ export default function NewProductPage() {
               <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label" htmlFor="admin_bulk_threshold">Threshold (Vials)</label>
-                  <input id="admin_bulk_threshold" type="number" min="1" className="form-input" placeholder="e.g. 100" value={form.admin_bulk_threshold} onChange={e => set('admin_bulk_threshold', e.target.value)} />
+                  <input id="admin_bulk_threshold" type="number" min="1" className="form-input" placeholder="E.g. 100" value={form.admin_bulk_threshold} onChange={e => set('admin_bulk_threshold', e.target.value)} />
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label" htmlFor="admin_bulk_price">Bulk Unit Cost ($)</label>
@@ -237,9 +237,9 @@ export default function NewProductPage() {
               <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(192,184,168,0.15)' }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Agent Sell Prices Per Unit (From DB Multipliers)</div>
                 <div style={{ display: 'flex', gap: 'var(--space-6)' }}>
-                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 1 ({multipliers.tier_1}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_1 / 10).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 2 ({multipliers.tier_2}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_2 / 10).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 3 ({multipliers.tier_3}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--grey-400)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_3 / 10).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 1 ({multipliers.tier_1}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_1).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 2 ({multipliers.tier_2}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_2).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 3 ({multipliers.tier_3}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--grey-400)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_3).toFixed(2)}</div></div>
                 </div>
               </div>
             )}
