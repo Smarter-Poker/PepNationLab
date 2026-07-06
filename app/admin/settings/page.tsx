@@ -18,7 +18,7 @@ export default async function AdminSettingsPage() {
     .from('profiles')
     .select('id, full_name, role, avatar_url')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile || profile.role !== 'admin') {
     redirect('/dashboard');

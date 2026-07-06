@@ -77,7 +77,7 @@ export async function enqueuePush(
         status: 'pending',
       })
       .select('id')
-      .single();
+      .maybeSingle();
 
     if (error || !data) return null;
 

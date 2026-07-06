@@ -94,7 +94,7 @@ export async function notify(
         status: 'pending',
       })
       .select('id')
-      .single();
+      .maybeSingle();
 
     if (outboxErr) {
       console.error('[notify] push_outbox insert failed — skipping push to preserve audit trail:', outboxErr);
@@ -574,4 +574,3 @@ export async function notifyAccountAlert(
     url: `/dashboard/agent?tab=balance`,
   });
 }
-

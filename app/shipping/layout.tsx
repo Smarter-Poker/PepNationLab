@@ -15,7 +15,7 @@ export default async function ShippingLayout({ children }: { children: React.Rea
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile || (profile.role !== 'shipping' && profile.role !== 'admin')) {
     redirect('/dashboard');
