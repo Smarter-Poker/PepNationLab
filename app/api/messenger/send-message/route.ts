@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unsafe Text' }, { status: 400 });
     }
     // BUG 3 fix: re-check length AFTER sanitization because HTML entity escaping
-    // (e.g., '<' → '&lt;') can expand the raw 2,000-char input significantly.
+    // (e.g., '<' -> '&lt;') can expand the raw 2,000-char input significantly.
     if (cleanText.length > 4_000) {
       return NextResponse.json({ error: 'Message Too Long After Sanitization' }, { status: 400 });
     }
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     expiresAt = new Date(t).toISOString();
   }
 
-  const svc = await createServiceClient();
+  const svc = createAdminClient();
 
   // Audit9: idempotent replay - same client_message_id from the same
   // (conversation_id, sender_id) returns the existing row instead of creating
@@ -230,7 +230,7 @@ export async function POST(req: NextRequest) {
       // Build notification body - truncate long messages
       const isMedia = !cleanText && parsed.data.mediaUrl;
       const rawBody = cleanText ?? (isMedia ? 'Media Attachment' : 'New Message');
-      const body = rawBody.length > 120 ? `${rawBody.slice(0, 117)}…` : rawBody;
+      const body = rawBody.length > 120 ? `${rawBody.slice(0, 117)}...` : rawBody;
       const url = `/messenger?conv=${parsed.data.conversationId}`;
       const tag = `msg-${parsed.data.conversationId}`;
 
