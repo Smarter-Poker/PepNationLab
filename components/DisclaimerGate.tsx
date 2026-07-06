@@ -51,18 +51,18 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
             <strong style={{ color: 'var(--white)' }}>Stop. Read Carefully Before Entering Pep Nation Lab.</strong>
           </p>
           <p className="disclaimer-text" style={{ marginBottom: 'var(--space-4)' }}>
-            By entering this site and purchasing products, you expressly acknowledge and warrant:
+            By Entering This Site And Purchasing Products, You Expressly Acknowledge And Warrant:
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             {[
-              { num: '1', text: <><strong style={{color:'var(--white)'}}>Research Use Only.</strong> All products are sold strictly for <em>in vitro</em> (outside the body) laboratory research and analytical science purposes only. They are <strong style={{color:'var(--red)'}}>NOT</strong> intended for human or animal consumption, ingestion, injection, or any clinical, therapeutic, diagnostic, or cosmetic use.</> },
-              { num: '2', text: <><strong style={{color:'var(--white)'}}>Not FDA Approved.</strong> None of our products have been evaluated or approved by the FDA for use in humans or animals. These are not drugs, supplements, food, or medical devices.</> },
-              { num: '3', text: <><strong style={{color:'var(--white)'}}>You Are a Qualified Researcher.</strong> You are at least <strong style={{color:'var(--white)'}}>21 years of age</strong> and a qualified scientist, researcher, or institutional purchaser with the training, facilities, and authority to handle research-grade chemical compounds.</> },
-              { num: '4', text: <><strong style={{color:'var(--white)'}}>No Human or Animal Use.</strong> You will NOT use these products for any human or veterinary purpose, and will NOT provide them to anyone for consumption or injection.</> },
-              { num: '5', text: <><strong style={{color:'var(--white)'}}>Banned Items.</strong> Pep Nation Lab <strong style={{color:'var(--red)'}}>NEVER</strong> sells needles, syringes, or any injection delivery devices - and neither do any of our agents. Period.</> },
-              { num: '6', text: <><strong style={{color:'var(--white)'}}>Indemnification.</strong> You assume full responsibility for safe handling, storage, and disposal of all products and agree to hold Pep Nation Lab LLC harmless from any claims arising from your use of these products.</> },
-              { num: '7', text: <><strong style={{color:'var(--white)'}}>Legal Compliance.</strong> You are solely responsible for ensuring your purchase and use complies with all applicable local, state, federal, and international laws.</> },
+              { num: '1', text: <><strong style={{color:'var(--white)'}}>Research Use Only.</strong> All Products Are Sold Strictly For <em>In Vitro</em> (Outside The Body) Laboratory Research And Analytical Science Purposes Only. They Are <strong style={{color:'var(--red)'}}>NOT</strong> Intended For Human Or Animal Consumption, Ingestion, Injection, Or Any Clinical, Therapeutic, Diagnostic, Or Cosmetic Use.</> },
+              { num: '2', text: <><strong style={{color:'var(--white)'}}>Not FDA Approved.</strong> None Of Our Products Have Been Evaluated Or Approved By The FDA For Use In Humans Or Animals. These Are Not Drugs, Supplements, Food, Or Medical Devices.</> },
+              { num: '3', text: <><strong style={{color:'var(--white)'}}>You Are A Qualified Researcher.</strong> You Are At Least <strong style={{color:'var(--white)'}}>21 Years Of Age</strong> And A Qualified Scientist, Researcher, Or Institutional Purchaser With The Training, Facilities, And Authority To Handle Research-Grade Chemical Compounds.</> },
+              { num: '4', text: <><strong style={{color:'var(--white)'}}>No Human Or Animal Use.</strong> You Will NOT Use These Products For Any Human Or Veterinary Purpose, And Will NOT Provide Them To Anyone For Consumption Or Injection.</> },
+              { num: '5', text: <><strong style={{color:'var(--white)'}}>Banned Items.</strong> Pep Nation Lab <strong style={{color:'var(--red)'}}>NEVER</strong> Sells Needles, Syringes, Or Any Injection Delivery Devices - And Neither Do Any Of Our Agents. Period.</> },
+              { num: '6', text: <><strong style={{color:'var(--white)'}}>Indemnification.</strong> You Assume Full Responsibility For Safe Handling, Storage, And Disposal Of All Products And Agree To Hold Pep Nation Lab LLC Harmless From Any Claims Arising From Your Use Of These Products.</> },
+              { num: '7', text: <><strong style={{color:'var(--white)'}}>Legal Compliance.</strong> You Are Solely Responsible For Ensuring Your Purchase And Use Complies With All Applicable Local, State, Federal, And International Laws.</> },
             ].map(({ num, text }) => (
               <div key={num} style={{ display: 'flex', gap: 'var(--space-3)' }}>
                 <div style={{
@@ -162,8 +162,8 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
           marginTop: 'var(--space-4)',
           lineHeight: 1.5
         }}>
-          By entering this site, you enter into a legally binding acknowledgment of the above terms.
-          Your acceptance is logged with timestamp and IP address.
+          By Entering This Site, You Enter Into A Legally Binding Acknowledgment Of The Above Terms.
+          Your Acceptance Is Logged With Timestamp And IP Address.
         </p>
       </div>
     </div>
