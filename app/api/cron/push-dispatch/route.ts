@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { sendWebPush, isWebPushConfigured } from '@/lib/web-push';
 
@@ -62,10 +62,10 @@ export async function GET(req: NextRequest) {
   let errorNote: string | null = null;
 
   try {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const pushOn = isWebPushConfigured();
 
-    // Atomically claim a batch by flipping status pending→processing.
+    // Atomically claim a batch by flipping status pending->processing.
     // Two concurrent invocations cannot claim the same row because the
     // UPDATE only touches rows with status='pending', and Postgres row-level
     // locks prevent double-claiming under concurrent writes.

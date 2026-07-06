@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { notifyCartReminder } from '@/lib/notify';
 
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const now = new Date();
 
     // Load enabled variants
@@ -161,7 +161,7 @@ export async function GET(req: Request) {
       });
 
       if (reminderErr) {
-        // Don't increment sent — without the reminder record, next run will
+        // Don't increment sent -- without the reminder record, next run will
         // re-send the same message (duplicate notification loop).
         console.error('[abandoned-cart-recovery] reminder insert failed for user', candidate.id, reminderErr);
         skipped++;
