@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import GuestCTA from '@/components/GuestCTA';
 
 export default function Peptide101LandingPage() {
   const [completedModules, setCompletedModules] = useState(0);
@@ -74,6 +75,7 @@ export default function Peptide101LandingPage() {
   };
 
   return (
+    <>
     <div style={{ backgroundColor: '#020617', minHeight: '100vh', display: 'flex', justifyContent: 'center' }}>
       <div style={{ position: 'relative', width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
         <img
@@ -180,5 +182,7 @@ export default function Peptide101LandingPage() {
         )}
       </div>
     </div>
+    <GuestCTA />
+    </>
   );
 }

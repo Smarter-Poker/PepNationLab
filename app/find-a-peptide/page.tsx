@@ -1,9 +1,11 @@
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { getCompoundsBySlugs } from '@/lib/compounds-server';
 import Navbar from '@/components/Navbar';
 import StorefrontCompareDrawer from '@/components/storefront/StorefrontCompareDrawer';
 import FindAPeptideClient from '@/components/storefront/FindAPeptideClient';
+import GuestCTA from '@/components/GuestCTA';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Find A Peptide | Pep Nation Lab',
@@ -13,37 +15,36 @@ export const metadata = {
 export default async function FindAPeptidePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const isGuest = !user;
 
-  if (!user) {
-    redirect('/login');
+  // Resolve profile for authenticated users to find their agent context
+  let profile: { role: string; id: string; referring_agent_id: string | null; parent_agent_id: string | null } | null = null;
+  if (user) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('role, id, referring_agent_id, parent_agent_id')
+      .eq('id', user.id)
+      .maybeSingle();
+    profile = data;
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, id, referring_agent_id, parent_agent_id')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (!profile) {
-    redirect('/login');
-  }
-
-  let agentId = null;
-
-  if (profile.role === 'researcher' && profile.referring_agent_id) {
-    agentId = profile.referring_agent_id;
-  } else if ((profile.role === 'agent' || profile.role === 'super_agent')) {
-    if (profile.parent_agent_id) {
-      agentId = profile.parent_agent_id;
-    } else {
-      agentId = profile.id;
+  // Resolve agent ID from user context (if signed in)
+  let agentId: string | null = null;
+  if (profile) {
+    if (profile.role === 'researcher' && profile.referring_agent_id) {
+      agentId = profile.referring_agent_id;
+    } else if ((profile.role === 'agent' || profile.role === 'super_agent')) {
+      agentId = profile.parent_agent_id ?? profile.id;
     }
   }
+
+  // Use service client for public product lookups (guests bypass RLS)
+  const svc = await createServiceClient();
 
   let agent = null;
 
   if (agentId) {
-    const { data: ap } = await supabase
+    const { data: ap } = await svc
       .from('agent_profiles')
       .select('id, slug, primary_color')
       .eq('id', agentId)
@@ -52,8 +53,9 @@ export default async function FindAPeptidePage() {
     agent = ap;
   }
 
+  // Fallback to default active agent for guests or users without an assigned agent
   if (!agent) {
-    const { data: fallbackAgent } = await supabase
+    const { data: fallbackAgent } = await svc
       .from('agent_profiles')
       .select('id, slug, primary_color')
       .eq('is_active', true)
@@ -77,7 +79,7 @@ export default async function FindAPeptidePage() {
     );
   }
 
-  const { data: products } = await supabase
+  const { data: products } = await svc
     .from('agent_products')
     .select(`
       id,
@@ -110,7 +112,7 @@ export default async function FindAPeptidePage() {
     productList.map((p: any) => p.products?.compound_slug).filter(Boolean) as string[]
   );
 
-  const isStorefrontOwner = profile.id === agent.id;
+  const isStorefrontOwner = !isGuest && profile?.id === agent.id;
   const primaryColor = agent.primary_color ?? '#00C4BC';
 
   return (
@@ -123,9 +125,11 @@ export default async function FindAPeptidePage() {
           primaryColor={primaryColor}
           compoundsBySlug={compoundsBySlug}
           isStorefrontOwner={isStorefrontOwner}
+          isGuest={isGuest}
         />
       </div>
       <StorefrontCompareDrawer primaryColor={primaryColor} compoundsBySlug={compoundsBySlug} />
+      <GuestCTA />
     </>
   );
 }

@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { vibrateLight, initHaptics } from '@/lib/messenger/haptics';
 import StorefrontCompareDrawer from '@/components/storefront/StorefrontCompareDrawer';
+import GuestCTA from '@/components/GuestCTA';
 
 export default function ResearchLayout({ children }: { children: React.ReactNode }) {
   // Global haptics for all clickables in the Research section
@@ -43,6 +44,7 @@ export default function ResearchLayout({ children }: { children: React.ReactNode
         {children}
       </div>
       <StorefrontCompareDrawer primaryColor="#00C4BC" />
+      <GuestCTA />
     </>
   );
 }

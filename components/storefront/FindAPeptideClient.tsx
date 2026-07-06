@@ -37,6 +37,8 @@ interface Props {
   primaryColor: string;
   compoundsBySlug: Record<string, Compound>;
   isStorefrontOwner: boolean;
+  /** When true the user is not authenticated — hide pricing/cart, show sign-in nudge */
+  isGuest?: boolean;
 }
 
 interface GroupedProduct {
@@ -55,6 +57,7 @@ export default function FindAPeptideClient({
   primaryColor,
   compoundsBySlug,
   isStorefrontOwner,
+  isGuest = false,
 }: Props) {
   const router = useRouter();
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
@@ -223,13 +226,87 @@ export default function FindAPeptideClient({
         onAlreadyKnowClicked={() => {
           router.push(`/${agentSlug}`);
         }}
-        onAddToCart={addToCart}
+        onAddToCart={isGuest ? () => { window.location.href = '/login'; } : addToCart}
         onOpenProduct={(productId) => {
           router.push(`/${agentSlug}?product=${encodeURIComponent(productId)}`);
         }}
         resolveProducts={resolveProducts}
       />
 
+      {/* Guest pricing nudge — shown below the discovery engine */}
+      {isGuest && (
+        <div
+          style={{
+            margin: '32px auto 80px',
+            maxWidth: 600,
+            background: 'linear-gradient(135deg, rgba(192,184,168,0.06) 0%, rgba(192,184,168,0.02) 100%)',
+            border: '1px solid rgba(192,184,168,0.18)',
+            borderRadius: 16,
+            padding: '28px 24px',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: '50%',
+              background: 'rgba(192,184,168,0.12)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal,#C0B8A8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </div>
+          <p style={{ margin: '0 0 6px', fontWeight: 700, fontSize: '1rem', color: '#FFFFFF' }}>
+            Wholesale Pricing Is Exclusive To Members
+          </p>
+          <p style={{ margin: '0 0 20px', fontSize: '0.82rem', color: 'var(--silver,#A8B4C0)', lineHeight: 1.6 }}>
+            Sign In Or Create An Account To See Wholesale Pricing, Add Items To Your Cart,
+            And Checkout With Your Agent&apos;s Exclusive Rates.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a
+              href="/login"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '10px 24px',
+                borderRadius: 8,
+                background: 'var(--teal,#C0B8A8)',
+                color: '#050A0F',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                textDecoration: 'none',
+              }}
+            >
+              Sign In
+            </a>
+            <a
+              href="/signup"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '10px 20px',
+                borderRadius: 8,
+                background: 'transparent',
+                border: '1px solid rgba(192,184,168,0.35)',
+                color: 'var(--silver,#A8B4C0)',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                textDecoration: 'none',
+              }}
+            >
+              Create Account
+            </a>
+          </div>
+        </div>
+      )}
       {totalCartItems > 0 && (
         <Link
           href={`/checkout?agent=${encodeURIComponent(agentSlug)}`}

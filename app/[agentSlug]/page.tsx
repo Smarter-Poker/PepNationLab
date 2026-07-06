@@ -11,6 +11,7 @@ import CouponLinkCapture from '@/components/CouponLinkCapture';
 import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
 import Navbar from '@/components/Navbar';
 import StorefrontSkeleton from '@/components/StorefrontSkeleton';
+import GuestCTA from '@/components/GuestCTA';
 
 interface Props {
   params: Promise<{ agentSlug: string }>;
@@ -291,6 +292,9 @@ export default async function AgentStorefrontPage({ params }: Props) {
           {' '}- Research Grade Peptides &amp; Authorized Laboratory Diluents.
         </p>
       </footer>
+
+      {/* Guest conversion banner — only visible to unauthenticated visitors */}
+      {!user && <GuestCTA />}
 
     </div>
   );
