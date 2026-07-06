@@ -41,13 +41,13 @@
  * Timeliness: Shippo expects a 2XX within ~3s and retries on 5xx/timeout. All
  * work here is a handful of indexed DB writes - no outbound Shippo re-fetch in
  * the hot path - so it returns well inside the window. All writes use the
- * service-role client (RLS bypass); these tables are otherwise admin-read-only.
+ * admin client (RLS bypass); these tables are otherwise admin-read-only.
  */
 
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import crypto from 'node:crypto';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { safeCompare } from '@/lib/shippo-crypto';
 import {
   resolveWebhookSecret,
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
   const event = asString(parsed.event) || 'unknown';
   const data = asRecord(parsed.data);
 
-  const supabase = await createServiceClient();
+  const supabase = createAdminClient();
   const { secret, source } = await resolveWebhookSecret(supabase);
 
   const authorised = verifyShared(req, rawBody, secret);
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
   const isDev = !process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV === 'development';
   if (!secret) {
     if (!isDev) {
-      // No secret configured in a live environment → refuse; forces operator to configure the webhook secret.
+      // No secret configured in a live environment -> refuse; forces operator to configure the webhook secret.
       return NextResponse.json({ error: 'Webhook Secret Not Configured.' }, { status: 503 });
     }
     // Dev/setup mode: accept but flag as unverified so the audit log is honest.
