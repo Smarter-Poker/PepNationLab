@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
   // participants receive the real-time update without polling.
   await sendBroadcast({
     topic: `conversation:${parent.conversation_id}`,
-    event: 'new_thread_reply',
+    event: 'new_message',
     payload: { message: inserted },
   });
 

@@ -4,6 +4,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { requireAdmin } from '@/lib/admin-auth';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { DeleteReportedMessageSchema } from '@/lib/messenger/schemas';
+import { sendBroadcast } from '@/lib/messenger/broadcast';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   const { data: existing } = await svc
     .from('messenger_messages')
-    .select('id')
+    .select('id, conversation_id')
     .eq('id', messageId)
     .maybeSingle();
   if (!existing) {
@@ -46,7 +47,9 @@ export async function POST(req: NextRequest) {
       media_metadata: {},
       updated_at: new Date().toISOString(),
     })
-    .eq('id', messageId);
+    .eq('id', messageId)
+    .select('*')
+    .maybeSingle();
 
   if (updErr) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
@@ -95,6 +98,14 @@ export async function POST(req: NextRequest) {
     entity_id: messageId,
     changes: { reportId: reportId ?? null },
   });
+
+  if (existing?.conversation_id) {
+    await sendBroadcast({
+      topic: `conversation:${existing.conversation_id}`,
+      event: 'message_deleted',
+      payload: { messageId },
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }
