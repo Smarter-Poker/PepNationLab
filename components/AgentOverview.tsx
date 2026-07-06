@@ -1,6 +1,5 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import AgentTierLadder from './AgentTierLadder';
 
 interface AgentOverviewProps {
   activeResearchersCount: number;
@@ -150,11 +149,6 @@ export default function AgentOverview({
 
       `}} />
 
-      {!isSubAgent && userProfile?.id && (
-        <div style={{ padding: '0 var(--container-px, var(--space-6))', marginBottom: 'var(--space-8)' }}>
-          <AgentTierLadder agentId={userProfile.id} />
-        </div>
-      )}
 
       <div className="dash-hero-wrap">
         <div className="dash-hero">

@@ -139,7 +139,7 @@ function agentLinks(isSuper: boolean, storefrontHref: string, pathname?: string)
     { href: '/research', label: 'Research Library', icon: ICON.book },
     { href: '/find-a-peptide', label: 'Find A Peptide', icon: ICON.search },
     { href: agentTab('Coupons'), label: 'Coupons', icon: <svg {...ip}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
-    { href: agentTab('Tier Ladder'), label: 'Tier Ladder', icon: <svg {...ip}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
+
     { href: '/account', label: 'Account Settings', icon: ICON.gear },
     { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
     { href: '/shelf-life', label: 'Reconstitution & Shelf Life', icon: ICON.clock },

@@ -26,7 +26,6 @@ import PaymentMethodsPanel from '@/components/PaymentMethodsPanel';
 import AvatarUpload from '@/components/AvatarUpload';
 import MyQRCodeModal from '@/components/MyQRCodeModal';
 import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
-import AgentTierLadder from '@/components/AgentTierLadder';
 
 
 interface Profile {
@@ -123,7 +122,7 @@ export default function AgentDashboardClient({
   // Whitelist of valid tabs. Any unknown / malformed ?tab= value (e.g. a link
   // whose "&" terminated the query string, leaving "Sales ") must fall back to
   // the default tab - otherwise the main panel renders blank and looks broken.
-  const VALID_TABS = ['Overview', 'Sales & Accounting', 'Orders', 'Researchers', 'My Sub-Agents', 'My Agent Accounts', 'Store Products', 'Research Bundles', 'Inventory', 'Coupons', 'Tier Ladder', 'Storefront Config'] as const;
+  const VALID_TABS = ['Overview', 'Sales & Accounting', 'Orders', 'Researchers', 'My Sub-Agents', 'My Agent Accounts', 'Store Products', 'Research Bundles', 'Inventory', 'Coupons', 'Storefront Config'] as const;
   type AgentTabName = typeof VALID_TABS[number];
   // If a super-agent lands on My Sub-Agents (bookmark, direct URL, etc.), remap to My Agent Accounts.
   const resolveTab = (t: unknown): AgentTabName => {
@@ -1149,8 +1148,7 @@ export default function AgentDashboardClient({
         {activeTab === 'Coupons' && <AgentCoupons />}
 
 
-        {/* TAB: Tier Ladder */}
-        {activeTab === 'Tier Ladder' && <div style={{ animation: 'fadeIn 0.3s ease-out' }}><AgentTierLadder agentId={userProfile.id} /></div>}
+
 
 
         {/* TAB: Storefront Configuration */}

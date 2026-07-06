@@ -14,7 +14,6 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { isTierLadderV2, getHouseTiers } from '@/lib/pricing';
-import { notifyTierLevelUp } from '@/lib/notify';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -101,18 +100,7 @@ export async function GET(req: Request) {
             house_tier_level: oldLevel // They keep their current level
           };
           needsUpdate = true;
-          // Notify agent that their tier grace period has started
-          try {
-            const tierName = nameByLevel.get(rawEarnedTier) ?? `Level ${rawEarnedTier}`;
-            const graceName = nameByLevel.get(oldLevel) ?? `Level ${oldLevel}`;
-            await svc.from('notifications').insert({
-              user_id: id,
-              type: 'system',
-              title: 'Tier Grace Period Started',
-              body: `Your volume has dropped to ${tierName} range. You have 30 days to recover before your pricing updates from ${graceName}. Keep selling to maintain your current tier!`,
-              url: '/dashboard',
-            });
-          } catch { /* notification is non-critical */ }
+          // Notifications disabled: Tier changes are strictly internal.
         } else if (now < graceExpires) {
           // 2. Active grace period continues
           // No DB update needed, but we ensure their house_tier_level reflects the grace tier
@@ -153,7 +141,7 @@ export async function GET(req: Request) {
 
         if (isPromotion) {
           leveledUp++;
-          await notifyTierLevelUp(svc, id, nameByLevel.get(rawEarnedTier) ?? `Level ${rawEarnedTier}`);
+          // Notifications disabled: Tier changes are strictly internal.
         }
       }
     }
