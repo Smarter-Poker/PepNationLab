@@ -21,7 +21,7 @@
  * the sent flag de-dupes within that window.
  */
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { notifyRefillReminder } from '@/lib/notify';
 import { sendBroadcast } from '@/lib/messenger/broadcast';
@@ -61,7 +61,7 @@ export async function GET(req: Request) {
   let ordersMarked = 0;
 
   try {
-    const svc = await createServiceClient();
+    const svc = createAdminClient();
 
     const { data: orders, error } = await svc
       .from('orders')
@@ -150,7 +150,7 @@ export async function GET(req: Request) {
  * Messenger / unread badge updates live. Returns true if the message landed.
  */
 async function sendAgentRefillDm(
-  svc: Awaited<ReturnType<typeof createServiceClient>>,
+  svc: ReturnType<typeof createAdminClient>,
   agentId: string,
   buyerId: string,
   body: string,
