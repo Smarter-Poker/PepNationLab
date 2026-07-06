@@ -10,7 +10,7 @@ export default function PricingAuditLogsPage() {
     const fetchLogs = async () => {
       try {
         const res = await fetch('/api/admin/pricing/audit');
-        if (!res.ok) throw new Error('Failed to fetch audit logs');
+        if (!res.ok) throw new Error('Failed To Fetch Audit Logs');
         const data = await res.json();
         setLogs(data.logs || []);
       } catch (err: any) {

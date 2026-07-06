@@ -145,7 +145,6 @@ export default function AdminAuditClient({
 
       <div className="glass-panel hover-lift stagger-fade-in">
         <div
-          className=""
           style={{ padding: 0, overflowX: "auto" }}
         >
           <table
@@ -245,7 +244,7 @@ export default function AdminAuditClient({
                         ? r.actor_email
                         : r.actor_id
                         ? <span title={r.actor_id} style={{ color: "var(--grey-400)", fontStyle: "italic", fontSize: "0.8rem" }}>Deleted User ({r.actor_id.slice(0, 8)})</span>
-                        : "system"}
+                        : "System"}
                     </td>
                     <td style={{ padding: "var(--space-3)" }}>
                       <span

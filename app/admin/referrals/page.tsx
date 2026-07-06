@@ -105,7 +105,7 @@ export default async function AdminReferralsPage() {
       });
     } catch (err) {
       console.error('[saveSettings] referral_settings upsert failed:', err);
-      return;
+      throw new Error('Failed To Save Referral Settings');
     }
     revalidatePath('/admin/referrals');
   }
