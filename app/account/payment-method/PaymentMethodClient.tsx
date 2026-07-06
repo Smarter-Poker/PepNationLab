@@ -19,7 +19,7 @@
  * 20260604000005_update_payment_methods.sql).
  */
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Edit2, Plus, Trash2, Check, Star } from 'lucide-react';
 import Image from 'next/image';

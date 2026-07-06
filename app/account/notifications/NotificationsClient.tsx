@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import AvatarUpload from '@/components/AvatarUpload';
 import {
   enablePush,
   disablePush,
@@ -84,8 +85,6 @@ function PushSwitch({
 /* ==============================================================================
    Notification Center Page
 ============================================================================== */
-import AvatarUpload from '@/components/AvatarUpload';
-
 export default function NotificationCenterClient({
   initialPrefs,
   initialTypeMap,

@@ -184,7 +184,7 @@ function AdminOrdersPageInner() {
         if (data) setUserRole(data.role);
       }
     } catch (err) {
-      console.error('[orders] checkRole failed — defaulting to empty role', err);
+      // non-fatal — default to empty role
     }
   }
 
@@ -224,11 +224,9 @@ function AdminOrdersPageInner() {
       if (res.ok) {
         setItems(json.data || []);
       } else {
-        console.error('Failed to load order items:', json.error);
         toast.error(json.error || 'Failed To Load Order Items.');
       }
     } catch (err) {
-      console.error('Failed to load items', err);
       toast.error('Failed To Load Order Items. Check Your Connection.');
     } finally {
       setLoadingItems(false);

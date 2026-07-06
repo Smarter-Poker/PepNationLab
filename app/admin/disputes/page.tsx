@@ -124,7 +124,7 @@ export default function AdminDisputesPage() {
                     style={{ width: '100%', padding: 10, borderRadius: 8, margin: '6px 0 10px', fontSize: 16,
                       background: 'rgba(255,255,255,0.04)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.1)' }}
                   />
-                  <button onClick={() => resolve(d)} disabled={busyId === d.id} style={{
+                  <button type="button" onClick={() => resolve(d)} disabled={busyId === d.id} style={{
                     padding: '11px 18px', borderRadius: 8, minHeight: 44, border: 'none', fontWeight: 800,
                     background: 'var(--teal)', color: 'var(--black)', cursor: busyId === d.id ? 'wait' : 'pointer',
                   }}>{busyId === d.id ? 'Resolving...' : 'Mark Resolved'}</button>

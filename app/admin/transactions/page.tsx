@@ -23,7 +23,7 @@ interface Transaction {
   profiles: {
     full_name: string | null;
     email: string;
-  };
+  } | null;
 }
 
 // Allowed values of `balance_transactions.type` (DB CHECK constraint):
@@ -128,7 +128,7 @@ function AdminTransactionsPageInner() {
     setPage(1);
   }, [typeFilter, agentFilter, dateFrom, dateTo]);
 
-  const getUsername = (email: string, fullName: string | null) => {
+  const getUsername = (email: string | undefined, fullName: string | null | undefined) => {
     if (fullName) return fullName;
     if (!email) return "Unknown";
     return `@${email.split("@")[0]}`;
@@ -186,7 +186,7 @@ function AdminTransactionsPageInner() {
                   agent:
                     tx.profiles?.full_name ||
                     (tx.profiles?.email
-                      ? `@${tx.profiles.email.split("@")[0]}`
+                      ? `@${tx.profiles?.email.split("@")[0]}`
                       : "Unknown"),
                   type: meta?.label || tx.type.replace(/_/g, " "),
                   description: tx.description || "",
