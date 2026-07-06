@@ -3,21 +3,25 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { sanitizeUsername } from '@/lib/usernames';
-import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+import { ensureOAuthResearcherProfile, logOAuthRegistrationAck } from '@/lib/oauth-profile';
+import { getClientIp } from '@/lib/rate-limit';
 
 /**
  * GET /auth/callback
  *
  * OAuth Callback For Google Sign-In. Exchanges The Auth Code For A Session,
- * Then Guarantees The Profile Is Complete: Every New OAuth Account Is A
- * Researcher Linked To The House Storefront (Daniel Bekavac's Store) So All
- * Sales And Pricing Derive From That Store.
+ * Then Guarantees The Profile Is Complete Via The Shared, Canary-Tested
+ * ensureOAuthResearcherProfile() Helper: Every New OAuth Account Is A
+ * Researcher Linked To The House Storefront, Profiles Are Self-Healed If The
+ * Database Trigger Ever Fails, And The Registration Disclaimer Acknowledgment
+ * Collected On /signup (ack=registration) Is Persisted To The Mandatory
+ * 4-Layer Audit Trail.
  */
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const rawRedirect = url.searchParams.get('redirect') ?? '/dashboard';
+  const ack = url.searchParams.get('ack');
   // Prevent Open Redirect: Relative Paths Only.
   const redirectTo = /^\/(?!\/|\\)/.test(rawRedirect) ? rawRedirect : '/dashboard';
 
@@ -30,17 +34,17 @@ export async function GET(req: NextRequest) {
 
   let exchangeData;
   let supabase;
-  
+
   try {
     supabase = await createClient();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-    
+
     if (error || !data?.session || !data?.user) {
       console.error('[auth/callback] Code exchange failed:', error);
       loginUrl.searchParams.set('error', 'oauth_failed');
       return NextResponse.redirect(loginUrl);
     }
-    
+
     exchangeData = data;
   } catch (err) {
     console.error('[auth/callback] Unexpected error during code exchange:', err);
@@ -53,59 +57,28 @@ export async function GET(req: NextRequest) {
   try {
     const admin = createAdminClient();
 
-    // Resolve The House Store.
-    const { data: houseStore } = await admin
-      .from('agent_profiles')
-      .select('id')
-      .eq('slug', DEFAULT_STORE_SLUG)
-      .maybeSingle();
+    const ensured = await ensureOAuthResearcherProfile(admin, user);
 
-    // Load The Profile Created By The on_auth_user_created Trigger.
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('id, role, username, referring_agent_id, is_active')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (profile && profile.is_active === false) {
+    if (ensured.disabled) {
       await supabase.auth.signOut();
       loginUrl.searchParams.set('error', 'account_disabled');
       return NextResponse.redirect(loginUrl);
     }
 
-    const updates: Record<string, unknown> = {};
-
-    // Link Brand-New OAuth Researchers To The House Store. Never Overwrite An
-    // Existing Referral (Agents, Admins, And Storefront Researchers Keep Theirs).
-    if (profile && !profile.referring_agent_id && profile.role === 'researcher' && houseStore?.id) {
-      updates.referring_agent_id = houseStore.id;
+    if (!ensured.ok) {
+      // Session Is Still Valid - Log Loudly For Follow-Up, Never Strand The User.
+      console.error('[auth/callback] ensureOAuthResearcherProfile failed:', ensured.error);
     }
 
-    // Derive A Username From The Google Email If The Profile Has None.
-    if (profile && !profile.username && user.email) {
-      const base = sanitizeUsername(user.email.split('@')[0]).slice(0, 24) || 'researcher';
-      let candidate = base;
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const { data: taken } = await admin
-          .from('profiles')
-          .select('id')
-          .eq('username', candidate)
-          .maybeSingle();
-        if (!taken || taken.id === user.id) break;
-        candidate = `${base}${Math.floor(1000 + Math.random() * 9000)}`;
-      }
-      updates.username = candidate;
-    }
-
-    if (profile && Object.keys(updates).length > 0) {
-      updates.updated_at = new Date().toISOString();
-      const { error: updateError } = await admin
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id);
-      if (updateError) {
-        console.error('[auth/callback] Profile update failed:', updateError);
-      }
+    // Persist The Registration Acknowledgment Collected On /signup Before The
+    // Google Redirect (Mandatory 4-Layer Disclaimer Audit Trail, Layer 2).
+    if (ack === 'registration') {
+      await logOAuthRegistrationAck(
+        admin,
+        user.id,
+        getClientIp(req),
+        req.headers.get('user-agent'),
+      );
     }
   } catch (err) {
     // Non-Fatal: The Session Is Valid Even If Linking Fails; Log For Follow-Up.
