@@ -222,7 +222,6 @@
     extendData();
     buildExplorer();
     addExplorerButtons();
-    buildComparison();
   }
   function boot(){
     if(ready()){ v4init(); return; }
