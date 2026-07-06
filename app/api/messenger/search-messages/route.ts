@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     .order('created_at', { ascending: false })
     .limit(50);
 
-  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
   const rawMessages = data ?? [];
   const messageIds = rawMessages.map((m) => m.id);

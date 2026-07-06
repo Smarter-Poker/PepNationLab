@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       .eq('id', existing.id)
       .select('*')
       .maybeSingle();
-    if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     return NextResponse.json({ theme: updated });
   }
 
@@ -59,6 +59,6 @@ export async function POST(req: NextRequest) {
     })
     .select('*')
     .maybeSingle();
-  if (insErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (insErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   return NextResponse.json({ theme: inserted });
 }

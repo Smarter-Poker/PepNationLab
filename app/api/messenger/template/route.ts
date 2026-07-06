@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       })
       .select('*')
       .maybeSingle();
-    if (insErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    if (insErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     return NextResponse.json({ template: inserted });
   }
 
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       .eq('id', parsed.data.id)
       .select('*')
       .maybeSingle();
-    if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     return NextResponse.json({ template: updated });
   }
 
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
       .from('messenger_templates')
       .update({ usage_count: nextCount })
       .eq('id', parsed.data.id);
-    if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     return NextResponse.json({ ok: true, usage_count: nextCount });
   }
 
@@ -102,6 +102,6 @@ export async function POST(req: NextRequest) {
     .from('messenger_templates')
     .delete()
     .eq('id', parsed.data.id);
-  if (delErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (delErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   return NextResponse.json({ ok: true, removed: 1 });
 }

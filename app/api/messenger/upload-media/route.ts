@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
   const svc = await createServiceClient();
   const { data, error: signErr } = await svc.storage.from('messenger_media').createSignedUploadUrl(path);
   if (signErr || !data) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
   const { data: pub } = svc.storage.from('messenger_media').getPublicUrl(path);
   return NextResponse.json({

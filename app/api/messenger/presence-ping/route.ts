@@ -33,6 +33,6 @@ export async function POST(req: NextRequest) {
     .update({ last_active_at: new Date().toISOString() })
     .eq('id', user.id);
 
-  if (updErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (updErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

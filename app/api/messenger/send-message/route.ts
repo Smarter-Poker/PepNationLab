@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
       if (existing) return NextResponse.json({ message: existing, idempotent: true });
     }
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
   if (!inserted) {
     return NextResponse.json({ error: 'Insert Failed' }, { status: 500 });

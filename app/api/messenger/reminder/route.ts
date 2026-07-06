@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (insErr || !inserted) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   return NextResponse.json({ reminder: inserted });

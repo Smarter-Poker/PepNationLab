@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (rpcErr || !newConvId) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   return NextResponse.json({ conversationId: newConvId });

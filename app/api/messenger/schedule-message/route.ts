@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       .from('messenger_scheduled')
       .update({ status: 'cancelled', updated_at: new Date().toISOString() })
       .eq('id', parsed.data.id);
-    if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
 
@@ -121,6 +121,6 @@ export async function POST(req: NextRequest) {
     })
     .select('*')
     .maybeSingle();
-  if (insErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (insErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   return NextResponse.json({ scheduled: inserted });
 }
