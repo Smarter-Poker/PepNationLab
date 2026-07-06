@@ -108,6 +108,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing Order ID Or New Status' }, { status: 400 });
     }
 
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_RE.test(String(id))) {
+      return NextResponse.json({ error: 'Invalid Order ID Format' }, { status: 400 });
+    }
+
     // Fetch the current status so we can validate the transition.
     const { data: existingOrder, error: fetchErr } = await supabase
       .from('orders')

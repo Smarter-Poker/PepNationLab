@@ -17,7 +17,7 @@ import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
  *   (they don't need reconstitution).
  *   BAC water products themselves are excluded (obviously).
  *   Acetic acid reconstituted peptides (GLP-1 class) need acetic acid, not BAC
- *   water, but we still count them since researchers often add BAC water anyway.
+ *   water, and are excluded from the BAC water calculation.
  *   Vials needed = ceil(totalMl / 10) since each BAC water vial is 10 mL.
  *
  * Returns:
@@ -239,7 +239,7 @@ export async function POST(req: NextRequest) {
             .from('agent_products')
             .select('retail_price')
             .eq('product_id', preferredBac.id)
-            .order('retail_price', { ascending: false })
+            .order('retail_price', { ascending: true })
             .limit(1)
             .maybeSingle();
           if (pubRow?.retail_price) {
@@ -247,7 +247,9 @@ export async function POST(req: NextRequest) {
           }
         }
       }
-    } catch { /* ignore - BAC water lookup is best-effort */ }
+    } catch (bacErr) {
+      console.error('[cart/bac-water] BAC water lookup failed (best-effort):', bacErr);
+    }
 
     return NextResponse.json({
       vialsNeeded,

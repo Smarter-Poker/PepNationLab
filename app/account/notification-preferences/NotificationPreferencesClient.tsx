@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import {
   enablePush,
   disablePush,
@@ -86,8 +85,13 @@ export default function NotificationPreferencesClient({
   const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(null);
 
   useEffect(() => {
-    setPushSupported(isWebPushSupported());
-    setPushPermission(notificationPermission());
+    // Browser-only APIs — must run after mount to avoid SSR mismatch
+    const supported = isWebPushSupported();
+    const permission = notificationPermission();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPushSupported(supported);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPushPermission(permission);
   }, []);
 
   const flash = (text: string, ok: boolean) => {

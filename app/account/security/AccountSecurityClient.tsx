@@ -321,7 +321,7 @@ export default function AccountSecurityClient({
 
         {/* ============ Status Summary ============ */}
         <section className="glass-panel hover-lift" style={cardStyle}>
-          <h2 style={h2Style}>What's Enabled</h2>
+          <h2 style={h2Style}>What&apos;s Enabled</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {(() => {
               const isInternal = userEmail.endsWith('@internal.auth');

@@ -72,6 +72,10 @@ export async function POST(req: NextRequest) {
   if (!agentId) {
     return NextResponse.json({ error: 'agentId Is Required.' }, { status: 400 });
   }
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(agentId)) {
+    return NextResponse.json({ error: 'Invalid agentId Format.' }, { status: 400 });
+  }
   if (enabled && (!Number.isInteger(level) || (level as number) < 1 || (level as number) > 5)) {
     return NextResponse.json({ error: 'A Locked Level Between 1 And 5 Is Required When Enabling The Override.' }, { status: 400 });
   }
