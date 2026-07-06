@@ -66,14 +66,14 @@ export async function POST(req: NextRequest) {
       if (!ap) agentId = null;
     }
 
-    // Fallback to first active agent profile if no agent context could be resolved
+    // Fallback to the house researchstore -- never use .limit(1) which returns
+    // a non-deterministic agent and could expose another agent's catalog to guests.
     if (!agentId) {
       const { data: fallbackAgent } = await supabase
         .from('agent_profiles')
         .select('id')
+        .eq('slug', 'researchstore')
         .eq('is_active', true)
-        .order('created_at', { ascending: true })
-        .limit(1)
         .maybeSingle();
       if (fallbackAgent) {
         agentId = fallbackAgent.id;
