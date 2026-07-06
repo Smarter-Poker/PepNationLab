@@ -1938,7 +1938,7 @@ function CustomerSupportWidgetInner() {
                     No Conversation Selected
                   </strong>
                   <p style={{ fontSize: '0.86rem', maxWidth: 380, lineHeight: 1.5, margin: 0 }}>
-                    Pick A Support Thread From The Left To Open It Here. You’ll
+                    Pick A Support Thread From The Left To Open It Here. You&apos;ll
                     Get The Full Messenger - Text, Photos, Videos, Voice Notes,
                     Files, And Links - Without Leaving Customer Support.
                   </p>

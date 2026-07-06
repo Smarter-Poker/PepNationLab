@@ -47,7 +47,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
     if (fetchError) {
       setError(fetchError.message);
     } else {
-      setMessages((data ?? []) as any[]);
+      setMessages((data ?? []) as InternalMessage[]);
     }
     setLoading(false);
   }, [agentId]);
