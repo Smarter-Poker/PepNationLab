@@ -36,10 +36,13 @@ export default function FirstRunNotificationPrompt() {
   const [error, setError] = useState<string | null>(null);
 
   // The onboarding wizard has its own notifications step; never double-prompt there.
+  // The public landing page ("/") must always show the artwork unobstructed --
+  // the prompt waits until the visitor is inside the app.
   const onOnboarding = (pathname || '').startsWith('/onboarding');
+  const onLanding = pathname === '/';
 
   useEffect(() => {
-    if (onOnboarding) return;
+    if (onOnboarding || onLanding) return;
     let cancelled = false;
     const supabase = createClient();
     (async () => {
@@ -80,7 +83,7 @@ export default function FirstRunNotificationPrompt() {
       if (!cancelled) setShow(true);
     })();
     return () => { cancelled = true; };
-  }, [onOnboarding]);
+  }, [onOnboarding, onLanding]);
 
   const markDone = () => {
     if (!uid) return;
@@ -105,7 +108,7 @@ export default function FirstRunNotificationPrompt() {
     setShow(false);
   };
 
-  if (onOnboarding || !show) return null;
+  if (onOnboarding || onLanding || !show) return null;
 
   const setupHref =
     role === 'admin' ? '/admin'
