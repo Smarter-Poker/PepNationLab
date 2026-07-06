@@ -290,6 +290,20 @@ function CustomerSupportWidgetInner() {
     return () => { cancelled = true; };
   }, []);
 
+  const clearQueryParams = useCallback(() => {
+    if (typeof window === 'undefined' || !searchParams) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('openSupport');
+    params.delete('orderId');
+    const qs = params.toString();
+    router.replace(qs ? `/messenger?${qs}` : '/messenger', { scroll: false });
+  }, [router, searchParams]);
+
+  const handleCloseModal = useCallback(() => {
+    setModalOpen(false);
+    clearQueryParams();
+  }, [clearQueryParams]);
+
   // ESC closes the modal.
   useEffect(() => {
     if (!modalOpen) return;
@@ -298,7 +312,7 @@ function CustomerSupportWidgetInner() {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [modalOpen]);
+  }, [modalOpen, handleCloseModal]);
 
   // Keep after-hours central clock ticking
   useEffect(() => {
@@ -329,19 +343,7 @@ function CustomerSupportWidgetInner() {
     }
   }, [show, didAutoOpen, searchParams, modalOpen]);
 
-  const clearQueryParams = useCallback(() => {
-    if (typeof window === 'undefined' || !searchParams) return;
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete('openSupport');
-    params.delete('orderId');
-    const qs = params.toString();
-    router.replace(qs ? `/messenger?${qs}` : '/messenger', { scroll: false });
-  }, [router, searchParams]);
-
-  const handleCloseModal = useCallback(() => {
-    setModalOpen(false);
-    clearQueryParams();
-  }, [clearQueryParams]);
+  // clearQueryParams and handleCloseModal are declared earlier (before the ESC useEffect).
 
   const supportConv = useMemo(() => {
     return conversations.find((c) => c.counterparty_role === 'admin');

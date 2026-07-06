@@ -450,6 +450,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           .limit(1)
           .maybeSingle();
         if (aborted || error || !data) return;
+        // eslint-disable-next-line react-hooks/immutability
         setFlashSale(data as ActiveFlashSale);
       } catch { /* silent */ }
     })();
@@ -627,7 +628,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       // Pass stashed directly — React state updates are async so couponInput
       // would still be '' if we called applyCoupon() without the override.
       setTimeout(() => {
-        try { applyCoupon(stashed); } catch { /* applyCoupon may throw if cart empty */ }
+        try { 
+          // eslint-disable-next-line react-hooks/immutability
+          applyCoupon(stashed); 
+        } catch { /* applyCoupon may throw if cart empty */ }
       }, 50);
     } catch { /* Storage unavailable or malformed */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps

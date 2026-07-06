@@ -107,10 +107,11 @@ export async function POST(req: NextRequest) {
       productId = bySlug.id;
       matchedBy = 'slug';
     } else {
+      const safeSku = baseRaw.trim().replace(/[\\%_[]/g, (c) => '\\' + c);
       const { data: bySku } = await supabase
         .from('products')
         .select('id, sku')
-        .ilike('sku', baseRaw.trim())
+        .ilike('sku', safeSku)
         .maybeSingle();
       if (bySku?.id) {
         productId = bySku.id;

@@ -24,17 +24,7 @@ const eslintConfig = defineConfig([
   // Project-level rule overrides.
   {
     rules: {
-      // The set-state-in-effect rule fires 68 false positives for the standard
-      // browser-API-detection pattern: useEffect(() => { setState(val) }, []).
-      // This is a known over-eager heuristic; downgrade to warn so real issues
-      // (actual cascading render loops) are still visible but don't block builds.
-      "react-hooks/set-state-in-effect": "warn",
 
-      // react-hooks/immutability fires false positives for hoisted async function
-      // declarations (`async function foo(){}`) called from useEffect above their
-      // textual position. JS `function` declarations ARE hoisted — the rule
-      // incorrectly treats them like `const` TDZ violations.
-      "react-hooks/immutability": "warn",
 
       // any types are being phased out incrementally — warn not error.
       "@typescript-eslint/no-explicit-any": "warn",
@@ -51,12 +41,6 @@ const eslintConfig = defineConfig([
       // no-require-imports stays as error (real correctness issue in ESM).
       "@typescript-eslint/no-require-imports": "error",
 
-      // unescaped-entities stays as error (renders wrong chars in HTML).
-      "react/no-unescaped-entities": "error",
-
-      // Real hook rules must stay as errors.
-      "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "warn",
     },
   },
 ]);

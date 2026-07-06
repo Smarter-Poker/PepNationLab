@@ -39,11 +39,12 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
     if (caller?.role !== 'admin') return bad('Forbidden.', 403);
   }
 
+  const safeCouponCode = coupon.code.replace(/[\\%_[]/g, (c) => '\\' + c);
   const { data: orders, error } = await svc
     .from('orders')
     .select('id, buyer_id, subtotal, discount_amount, total, status, created_at, profiles!orders_buyer_id_fkey(full_name, username)')
     .eq('agent_id', coupon.agent_id)
-    .ilike('coupon_code', coupon.code)
+    .ilike('coupon_code', safeCouponCode)
     .order('created_at', { ascending: false })
     .limit(500);
 
