@@ -12,7 +12,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { searchTrials, type CtgovTrial } from '@/lib/research/clinical-trials';
 
@@ -70,7 +70,7 @@ export async function GET(req: Request) {
   let failed = 0;
 
   try {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const { data: rowsData } = await supabase
       .from('compounds')
       .select('slug, display_name, evidence_tier')
