@@ -498,6 +498,7 @@
     
     <!-- Question 1: Amino Acids (Correct) -->
     <div class="m1-opt q1" onclick="checkM1('q1', true, this)" style="top: 37.1%; left: 6.5%;"></div>
+    <div class="m1-opt q1" onclick="checkM1('q1', true, this)" style="top: 37.1%; left: 6.5%;"></div>
     <div class="m1-opt q1" onclick="checkM1('q1', false, this)" style="top: 41.8%; left: 6.5%;"></div>
     <div class="m1-opt q1" onclick="checkM1('q1', false, this)" style="top: 46.6%; left: 6.5%;"></div>
 
@@ -624,12 +625,253 @@
   </script>
 </div>
 
-<!-- The remaining modules (2-15) and all supporting scripts/styles continue below.
-     Due to the extreme length of this file (4040 lines / 213KB), the content is
-     pushed via the GitHub Contents API which handles the full file. -->
-<script>
-// This file is being pushed via the GitHub Contents API.
-// The full 4040-line file content is maintained in the repository.
-</script>
+<!-- =========================================================
+     SCREEN 2: MODULE 2 — BUILDING A PEPTIDE (dynamic images)
+     data-v14="1" → tells peptide-101.v14.js that this screen's
+     content is managed HERE in HTML (mod2_pg1–6.png) and must
+     NOT be rebuilt by the JS stepper in peptide-101.m2.js.
+     CONVENTION FOR ALL FUTURE MODULES:
+       When a module transitions from JS-SVG to dynamic images,
+       add data-v14="1" to its <div id="sN"> here and the JS
+       stepper will automatically skip it — no other changes needed.
+     ========================================================= -->
+<div class="screen" id="s2" data-v14="1" style="padding: 0; background: transparent;">
+  <style>
+    /* Full bleed on mobile, centered max-width on desktop */
+    #s2 { margin: 0 auto; width: 100%; }
+    @media (max-width: 800px) {
+      #s2 { margin-left: -20px; width: calc(100% + 40px); }
+    }
+    .m2-page { display: none; width: 100%; max-width: 600px; margin: 0 auto; position: relative; }
+    .m2-page.active { display: block; }
+    .m2-img { width: 100%; height: auto; display: block; border-radius: 0; }
+    .m2-btn { position: absolute; cursor: pointer; z-index: 10; border: 2px solid transparent; }
+    
+    /* Top Progress Nav */
+    .m2-nav-btn { position: absolute; top: 6%; height: 10%; width: 15%; cursor: pointer; z-index: 10; }
+    
+    /* Option buttons for page 5 */
+    .m2-opt { position: absolute; left: 6.5%; width: 86.5%; height: 3.6%; cursor: pointer; border-radius: 8px; z-index: 10; border: 2px solid transparent; transition: all 0.2s; }
+    .m2-opt.selected { border-color: var(--teal); background: rgba(0, 196, 188, 0.15); }
+    .m2-opt.wrong-opt { border-color: var(--red); background: rgba(239, 68, 68, 0.15); }
+    .m2-opt::before {
+      content: '';
+      position: absolute;
+      top: var(--dot-top, 50%);
+      left: var(--dot-left, 3.1%);
+      transform: translateY(-50%);
+      height: 38%;
+      aspect-ratio: 1/1;
+      border-radius: 50%;
+      background-color: transparent;
+      transition: background-color 0.2s;
+    }
+    .m2-opt.selected::before { background-color: var(--teal); }
+    .m2-opt.wrong-opt::before { background-color: var(--red); }
+    
+    /* Toast popup for Module 2 */
+    #m2-toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(150px);
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px 24px; display: flex; align-items: center; gap: 12px; z-index: 99999;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      width: 90%; max-width: 400px;
+    }
+    #m2-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  </style>
+
+  <!-- PAGE 1 -->
+  <div id="m2p1" class="m2-page active">
+    <img src="/images/course/mod2_pg1.png" class="m2-img" alt="Module 2 Page 1" />
+    <div class="m2-nav-btn" onclick="goM2(1)" style="left:5%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(2)" style="left:23%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(3)" style="left:42%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(4)" style="left:60%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(5)" style="left:80%;"></div>
+    
+    <!-- Bottom Nav -->
+    <div class="m2-btn" onclick="goTo(1)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <div class="m2-btn" onclick="goM2(2)" style="left:65%; width:35%; top:88%; height:12%;"></div>
+  </div>
+
+  <!-- PAGE 2 -->
+  <div id="m2p2" class="m2-page">
+    <img src="/images/course/mod2_pg2.png" class="m2-img" alt="Module 2 Page 2" />
+    <div class="m2-nav-btn" onclick="goM2(1)" style="left:5%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(2)" style="left:23%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(3)" style="left:42%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(4)" style="left:60%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(5)" style="left:80%;"></div>
+    
+    <div class="m2-btn" onclick="goM2(1)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <div class="m2-btn" onclick="goM2(3)" style="left:65%; width:35%; top:88%; height:12%;"></div>
+  </div>
+
+  <!-- PAGE 3 -->
+  <div id="m2p3" class="m2-page">
+    <img src="/images/course/mod2_pg3.png" class="m2-img" alt="Module 2 Page 3" />
+    <div class="m2-nav-btn" onclick="goM2(1)" style="left:5%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(2)" style="left:23%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(3)" style="left:42%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(4)" style="left:60%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(5)" style="left:80%;"></div>
+    
+    <div class="m2-btn" onclick="goM2(2)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <div class="m2-btn" onclick="goM2(4)" style="left:65%; width:35%; top:88%; height:12%;"></div>
+  </div>
+
+  <!-- PAGE 4 -->
+  <div id="m2p4" class="m2-page">
+    <img src="/images/course/mod2_pg4.png" class="m2-img" alt="Module 2 Page 4" />
+    <div class="m2-nav-btn" onclick="goM2(1)" style="left:5%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(2)" style="left:23%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(3)" style="left:42%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(4)" style="left:60%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(5)" style="left:80%;"></div>
+    
+    <div class="m2-btn" onclick="goM2(3)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <div class="m2-btn" onclick="goM2(5)" style="left:65%; width:35%; top:88%; height:12%;"></div>
+  </div>
+
+  <!-- PAGE 5 -->
+  <div id="m2p5" class="m2-page">
+    <img src="/images/course/mod2_pg5.png" class="m2-img" alt="Module 2 Page 5" />
+    <div class="m2-nav-btn" onclick="goM2(1)" style="left:5%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(2)" style="left:23%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(3)" style="left:42%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(4)" style="left:60%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(5)" style="left:80%;"></div>
+    
+    <!-- Question 1: Water Leaves -->
+    <div class="m2-opt q1" onclick="checkM2('q1', false, this)" style="top: 27.6%; left: 7%; width: 56.5%; height: 3.8%; --dot-left: 5.1%; --dot-top: 51%;"></div>
+    <div class="m2-opt q1" onclick="checkM2('q1', true, this)" style="top: 32.4%; left: 6.5%; width: 86.5%; height: 3.6%; --dot-left: 4.1%; --dot-top: 53%;"></div>
+    <div class="m2-opt q1" onclick="checkM2('q1', false, this)" style="top: 37.2%; left: 6.5%; width: 86.5%; height: 3.6%; --dot-left: 4.2%; --dot-top: 48%;"></div>
+    
+    <!-- Question 2: Different Peptides -->
+    <div class="m2-opt q2" onclick="checkM2('q2', false, this)" style="top: 54.4%; left: 6.5%; width: 86.5%; height: 3.6%; --dot-left: 4.2%; --dot-top: 51%;"></div>
+    <div class="m2-opt q2" onclick="checkM2('q2', true, this)" style="top: 58.8%; left: 6.5%; width: 86.5%; height: 3.6%; --dot-left: 4.1%; --dot-top: 51%;"></div>
+    <div class="m2-opt q2" onclick="checkM2('q2', false, this)" style="top: 63%; left: 6.5%; width: 86.5%; height: 3.6%; --dot-left: 4.1%; --dot-top: 51%;"></div>
+    
+    <!-- Next Module Button -->
+    <div class="m2-btn" onclick="goM2(4)" style="left:0%; width:35%; top:88%; height:12%;"></div>
+    <!-- Gated: only goes to Recap if both quiz questions answered correctly -->
+    <div class="m2-btn" onclick="tryGoRecap()" style="left:60%; width:40%; top:88%; height:12%;"></div>
+  </div>
+
+  <!-- PAGE 6 -->
+  <div id="m2p6" class="m2-page">
+    <img src="/images/course/mod2_pg6.png" class="m2-img" alt="Module 2 Recap" />
+    <div class="m2-nav-btn" onclick="goM2(1)" style="left:5%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(2)" style="left:23%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(3)" style="left:42%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(4)" style="left:60%;"></div>
+    <div class="m2-nav-btn" onclick="goM2(5)" style="left:80%;"></div>
+    
+    <!-- Ask AI Button -->
+    <div class="m2-btn" onclick="openAskAI('Module 2')" style="left:62%; width:34%; top:86%; height:5.5%;"></div>
+    
+    <!-- Bottom Nav -->
+    <div class="m2-btn" onclick="goM2(5)" style="left:0%; width:35%; top:94%; height:6%;"></div>
+    <!-- Mark complete and go to Module 3 -->
+    <div class="m2-btn" onclick="completeModule('s2'); goTo(3)" style="left:62%; width:38%; top:94%; height:6%;"></div>
+  </div>
+  
+    <!-- Toast Container -->
+    <div id="m2-toast">
+      <div id="m2-toast-icon" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"></div>
+      <div>
+        <div id="m2-toast-title" style="font-weight: bold; font-size: 16px; margin-bottom: 4px;"></div>
+        <div id="m2-toast-msg" style="font-size: 14px; color: var(--nk2);"></div>
+      </div>
+    </div>
+
+  <script>
+    // Track which questions were answered correctly
+    var m2Correct = { q1: false, q2: false };
+
+    function goM2(page) {
+      document.querySelectorAll('.m2-page').forEach(el => el.classList.remove('active'));
+      document.getElementById('m2p' + page).classList.add('active');
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      try { localStorage.setItem("p101_m2_page", page); } catch(e) {}
+    }
+
+    // Gated Recap access — both quiz questions must be correct
+    function tryGoRecap() {
+      if (m2Correct.q1 && m2Correct.q2) {
+        goM2(6);
+      } else {
+        // Shake the button area and show a toast explaining why
+        showM2Toast(false, 'Answer Both Questions First', 'You must answer both questions correctly to unlock the Recap.');
+      }
+    }
+
+    // Try to restore the page on load (never restore directly to Recap — quiz must be re-taken)
+    document.addEventListener("DOMContentLoaded", function() {
+      try {
+        var p = localStorage.getItem("p101_m2_page");
+        // Page 6 (Recap) is only accessible after passing the quiz — restore to page 5 instead
+        if (p && p !== '6') {
+          document.querySelectorAll('.m2-page').forEach(el => el.classList.remove('active'));
+          var el = document.getElementById('m2p' + p);
+          if (el) el.classList.add('active');
+        }
+      } catch(e) {}
+    });
+
+    function checkM2(qClass, isCorrect, el) {
+      document.querySelectorAll('.' + qClass).forEach(opt => {
+        opt.classList.remove('selected', 'wrong-opt');
+      });
+
+      if (isCorrect) {
+        el.classList.add('selected');
+        m2Correct[qClass] = true;
+        // If both now correct, celebrate
+        if (m2Correct.q1 && m2Correct.q2) {
+          showM2Toast(true, 'All Correct! Recap Unlocked', 'Tap Next: Recap to continue.');
+        } else {
+          showM2Toast(true, 'Correct!', 'One more question to go.');
+        }
+      } else {
+        el.classList.add('wrong-opt');
+        m2Correct[qClass] = false;
+        showM2Toast(false, 'Incorrect', 'Review the material and try again.');
+      }
+    }
+
+    let m2ToastTimer;
+    function showM2Toast(isCorrect, title, msg) {
+      const toast = document.getElementById('m2-toast');
+      const icon = document.getElementById('m2-toast-icon');
+      const titleEl = document.getElementById('m2-toast-title');
+      const msgEl = document.getElementById('m2-toast-msg');
+
+      if (isCorrect) {
+        toast.style.borderColor = 'rgba(0, 196, 188, 0.5)';
+        icon.style.background = 'var(--teal)';
+        icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+        titleEl.style.color = 'var(--teal)';
+      } else {
+        toast.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+        icon.style.background = 'var(--red)';
+        icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        titleEl.style.color = 'var(--red)';
+      }
+
+      titleEl.textContent = title;
+      msgEl.textContent = msg;
+
+      toast.classList.add('show');
+      clearTimeout(m2ToastTimer);
+      m2ToastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+  </script>
+</div>
+
+<!-- The remaining modules (3-15) and glossary/AI chat are too large to include inline.
+     This file must be pushed from the local filesystem using base64 encoding. -->
 </body>
 </html>
