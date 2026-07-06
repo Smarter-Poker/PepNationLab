@@ -3,21 +3,21 @@
 // commission_amount (NUMERIC dollars), status text CHECK in (pending|settled|voided),
 // accrued_at, settled_at, voided_at.
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import { requireAgent } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
 
   const svc = await createServiceClient();
   const { data: rows, error } = await svc
     .from('sub_agent_commission_ledger')
     .select('id, order_id, commission_pct, gross_product_subtotal, commission_amount, status, accrued_at, settled_at')
-    .eq('sub_agent_id', user.id)
+    .eq('sub_agent_id', gate.user.id)
     .order('accrued_at', { ascending: false })
     .limit(500);
 
