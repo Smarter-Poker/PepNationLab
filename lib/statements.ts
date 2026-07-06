@@ -161,7 +161,7 @@ export async function persistStatement(
   // If we found a non-paid row, always let the upsert proceed so totals
   // are refreshed for the same week (regardless of force flag).
 
-  // A $0 statement has nothing to collect — close it immediately so it never
+  // A $0 statement has nothing to collect -- close it immediately so it never
   // appears as "outstanding" in the admin panel, wallet, or any balance query.
   const isZeroBalance = computed.totalOwed <= 0;
   const upsertPayload: Record<string, unknown> = {

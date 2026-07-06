@@ -92,8 +92,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const milestoneSeeded = useRef(false);
   const goalSeeded = useRef(false);
 
-  // ── Monthly revenue goal: durable + cross-device via /api/agent/sales/goal,
-  //    with a localStorage cache for instant first paint. ──────────────────────
+  // -- Monthly revenue goal: durable + cross-device via /api/agent/sales/goal,
+  //    with a localStorage cache for instant first paint. --
   useEffect(() => {
     let cancelled = false;
     let cache = 5000;
@@ -191,7 +191,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     return () => { cancelled = true; };
   }, [orders.length]);
 
-  // ── All analytics derived from the orders array ─────────────────────────────
+  // -- All analytics derived from the orders array --
   const a = useMemo(() => {
     const all = (orders || []) as any[];
     const collected = all.filter((o) => COLLECTED.has(o.status));
@@ -370,8 +370,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const nextMilestone = MILESTONES.find((m) => a.lifetimeRevenue < m.amount) || null;
   const achievedMilestones = MILESTONES.filter((m) => a.lifetimeRevenue >= m.amount);
 
-  // ── Celebration: fire once when a new milestone or the monthly goal is crossed.
-  //    Seeds silently on first load so we never burst on initial mount. ─────────
+  // -- Celebration: fire once when a new milestone or the monthly goal is crossed.
+  //    Seeds silently on first load so we never burst on initial mount. --
   useEffect(() => {
     if (loading) return;
     const mKey = `pnl_celebrated_milestone_${agentId}`;
@@ -468,10 +468,10 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         @keyframes pnl-confetti { from { opacity: 1; transform: translateY(0) rotate(0deg);} to { opacity: 0; transform: translateY(72vh) rotate(540deg);} }
       `}} />
 
-      {/* ─────────────── GLOBAL HEADER ─────────────── */}
+      {/* GLOBAL HEADER */}
       <h2 style={{ fontSize: '1.4rem', margin: '0 0 var(--space-2) 0', fontFamily: 'var(--font-brand)' }}>Sales &amp; Accounting</h2>
 
-      {/* ─────────────── ACCOUNTING / MONEY STRIP ─────────────── */}
+      {/* ACCOUNTING / MONEY STRIP */}
       <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
         <div className="glass-panel">
           <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
@@ -514,7 +514,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         )}
       </div>
 
-      {/* ─────────────── GETTING STARTED (no sales yet) ─────────────── */}
+      {/* GETTING STARTED (no sales yet) */}
       {!a.hasCollected && (
         <div className="glass-panel">
           <div className="" style={{ padding: 'var(--space-6)' }}>
@@ -530,7 +530,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         </div>
       )}
 
-      {/* ─────────────── GOAL + STREAK + FORECAST ─────────────── */}
+      {/* GOAL + STREAK + FORECAST */}
       <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
         <div className="glass-panel" style={goal > 0 && goalPct >= 100 ? { animation: 'sa-pulse 2.4s ease-in-out infinite' } : undefined}>
           <div className="" style={{ padding: 'var(--space-6)', display: 'flex', gap: 'var(--space-5)', alignItems: 'center' }}>
@@ -596,7 +596,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         </div>
       </div>
 
-      {/* ─────────────── MILESTONES ─────────────── */}
+      {/* MILESTONES */}
       <div className="glass-panel">
         <div className="" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
@@ -629,7 +629,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         </div>
       </div>
 
-      {/* ─────────────── KPI SNAPSHOT ─────────────── */}
+      {/* KPI SNAPSHOT */}
       <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-4)' }}>
         <KpiCard label="Collected Revenue" value={fmt(a.lifetimeRevenue)} delta={a.revDelta30} deltaLabel="Vs Prior 30d" />
         <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" help={PROFIT_HELP} />
@@ -638,7 +638,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         <KpiCard label="Repeat Buyer Rate" value={`${Number(a.repeatRate || 0).toFixed(0)}%`} sub={`${a.distinctBuyers} Buyers`} />
       </div>
 
-      {/* ─────────────── TREND CHART ─────────────── */}
+      {/* TREND CHART */}
       <div className="glass-panel">
         <div className="" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 'var(--space-4)' }}>
@@ -648,7 +648,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
                 <button key={r} className={`sa-range-btn ${view === r ? 'active' : ''}`} onClick={() => setView(r)}>{r}D</button>
               ))}
               <select className="sa-month-select" value={view.startsWith('m') ? view : ''} onChange={(e) => e.target.value && setView(e.target.value)}>
-                <option value="">By Month…</option>
+                <option value="">By Month...</option>
                 {monthOptions.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
             </div>
@@ -674,7 +674,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         </div>
       </div>
 
-      {/* ─────────────── BREAKDOWNS ─────────────── */}
+      {/* BREAKDOWNS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-4)' }}>
         <div className="glass-panel">
           <div className="" style={{ padding: 'var(--space-6)' }}>
@@ -732,7 +732,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         </div>
       </div>
 
-      {/* ─────────────── MONTHLY PROFIT & LOSS ─────────────── */}
+      {/* MONTHLY PROFIT & LOSS */}
       <div className="glass-panel">
         <div className="" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
@@ -768,7 +768,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         </div>
       </div>
 
-      {/* ─────────────── TOP PRODUCTS / RESEARCHERS ─────────────── */}
+      {/* TOP PRODUCTS / RESEARCHERS */}
       {insights && (insights.topProducts?.length > 0 || insights.topBuyers?.length > 0) && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
           <RankList title="Top Products" rows={(insights.topProducts || []).map((p: any) => ({ name: p.name, primary: fmt(p.revenue), secondary: `${p.qty} Sold` }))} empty="No Sales Yet." />
@@ -776,7 +776,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         </div>
       )}
 
-      {/* ─────────────── ORDERS MANAGER ─────────────── */}
+      {/* ORDERS MANAGER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: 0 }}>Orders</h2>
         <button onClick={exportOrdersCsv} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--white)', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>Export Orders CSV</button>
@@ -785,7 +785,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         <AgentOrders orders={orders} setOrders={setOrders} />
       </div>
 
-      {/* ─────────────── ACCOUNTING ─────────────── */}
+      {/* ACCOUNTING */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         <AgentTierWidget />
         {!isSub && <div style={{ animation: 'fadeIn 0.3s ease-out' }}><AgentStatements /></div>}
@@ -797,7 +797,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   );
 }
 
-// ── Small presentational helpers ──────────────────────────────────────────────
+// -- Small presentational helpers --
 function KpiCard({ label, value, delta, deltaLabel, sub, color, help }: { label: string; value: string; delta?: number; deltaLabel?: string; sub?: string; color?: string; help?: string }) {
   return (
     <div className="glass-panel">
