@@ -6,6 +6,7 @@ import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerR
 import { ThreadReplySchema } from '@/lib/messenger/schemas';
 import { sanitizeMessageText } from '@/lib/messenger/sanitize';
 import { hasAdminMention, recordAdminMention } from '@/lib/messenger/admin-mentions';
+import { sendBroadcast } from '@/lib/messenger/broadcast';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -90,6 +91,14 @@ export async function POST(req: NextRequest) {
       text: cleanText,
     });
   }
+
+  // Broadcast the thread reply to the conversation channel so all
+  // participants receive the real-time update without polling.
+  await sendBroadcast({
+    topic: `conversation:${parent.conversation_id}`,
+    event: 'new_thread_reply',
+    payload: { message: inserted },
+  });
 
   return NextResponse.json({ message: inserted });
 }

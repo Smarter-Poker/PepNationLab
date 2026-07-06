@@ -605,13 +605,59 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      const { data: redeem, error: redeemError } = await serviceSupabase
+      // Try the atomic 4-param RPC first (includes per-user limit in the DB).
+      // If the updated function hasn't been deployed yet, fall back to the
+      // 3-param call with an application-level per-user check.
+      let redeem: any;
+      let redeemError: any;
+
+      ({ data: redeem, error: redeemError } = await serviceSupabase
         .rpc('redeem_coupon', {
           p_code: trimmedCouponCode,
           p_agent_id: couponAgentId,
           p_order_subtotal: subtotal,
           p_user_id: user.id
-        });
+        }));
+
+      // PostgREST returns PGRST202 / 42883 when the function signature is unknown
+      if (redeemError && /PGRST202|42883|could not find/i.test(
+        `${redeemError.code ?? ''} ${redeemError.message ?? ''}`
+      )) {
+        console.warn('redeem_coupon 4-param not available, falling back to 3-param + app-level per-user check');
+
+        // Application-level per-user limit check (non-atomic but functional)
+        const { data: couponRow } = await serviceSupabase
+          .from('coupons')
+          .select('max_uses_per_user')
+          .eq('code', trimmedCouponCode)
+          .eq('agent_id', couponAgentId)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (couponRow?.max_uses_per_user != null) {
+          const { count } = await serviceSupabase
+            .from('orders')
+            .select('id', { count: 'exact', head: true })
+            .eq('coupon_code', trimmedCouponCode)
+            .eq('buyer_id', user.id)
+            .neq('status', 'cancelled');
+          if (count != null && count >= Number(couponRow.max_uses_per_user)) {
+            await releaseReservedInventory();
+            return NextResponse.json(
+              { error: 'You Have Already Used This Coupon The Maximum Number Of Times.' },
+              { status: 422 }
+            );
+          }
+        }
+
+        // Now call the 3-param version
+        ({ data: redeem, error: redeemError } = await serviceSupabase
+          .rpc('redeem_coupon', {
+            p_code: trimmedCouponCode,
+            p_agent_id: couponAgentId,
+            p_order_subtotal: subtotal,
+          }));
+      }
 
       if (redeemError) {
         console.error('Coupon RPC Failed:', redeemError);

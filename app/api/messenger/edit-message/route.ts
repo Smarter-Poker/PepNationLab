@@ -67,11 +67,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
-  await svc.from('messenger_edit_history').insert({
-    message_id: parsed.data.messageId,
-    previous_text: existing.text ?? null,
-    edited_by: user.id,
-  });
+  try {
+    const { error: histErr } = await svc.from('messenger_edit_history').insert({
+      message_id: parsed.data.messageId,
+      previous_text: existing.text ?? null,
+      edited_by: user.id,
+    });
+    if (histErr) {
+      console.error('[edit-message] failed to record edit history:', histErr);
+    }
+  } catch (histEx) {
+    console.error('[edit-message] failed to record edit history:', histEx);
+  }
 
   await sendBroadcast({
     topic: `chat:${existing.conversation_id}`,
