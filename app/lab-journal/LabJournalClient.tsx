@@ -1132,7 +1132,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                             <h3 style={{ color: 'var(--white)', margin: 0 }}>Comparison from {new Date(c.created_at).toLocaleDateString()}</h3>
                             {c.notes && (
                               <p style={{ color: 'var(--silver)', fontSize: '0.85rem', marginTop: 8, fontStyle: 'italic', maxWidth: '600px' }}>
-                                "{c.notes}"
+                                {`"${c.notes}"`}
                               </p>
                             )}
                           </div>

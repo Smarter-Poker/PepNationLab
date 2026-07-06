@@ -50,6 +50,26 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Security: Validate mediaUrl is from a trusted domain (our Supabase storage or Tenor CDN).
+  // This prevents attacker-injected external URLs from being persisted and displayed to recipients.
+  if (parsed.data.mediaUrl) {
+    try {
+      const mediaUrlObj = new URL(parsed.data.mediaUrl);
+      const hostname = mediaUrlObj.hostname.toLowerCase();
+      const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || '').hostname.toLowerCase();
+      const allowedHosts = [
+        supabaseHost,
+        'c.tenor.com', // Tenor GIF CDN
+        'media.tenor.com', // Tenor GIF CDN (alternate)
+      ];
+      if (!allowedHosts.some((h) => hostname === h || hostname.endsWith(`.${h}`))) {
+        return NextResponse.json({ error: 'Media URL Domain Not Allowed' }, { status: 400 });
+      }
+    } catch {
+      return NextResponse.json({ error: 'Invalid Media URL' }, { status: 400 });
+    }
+  }
+
   let expiresAt: string | null = null;
   if (parsed.data.expiresAt) {
     const t = Date.parse(parsed.data.expiresAt);

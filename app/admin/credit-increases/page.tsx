@@ -78,7 +78,7 @@ export default function AdminCreditIncreasesPage() {
     <div style={{ padding: '20px 16px', maxWidth: 900, margin: '0 auto' }}>
       <h1 className="animated-gradient-text" style={{ fontSize: '1.5rem', margin: 0 }}>Credit Increase Requests</h1>
       <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem', margin: '4px 0 18px' }}>
-        {pendingCount > 0 ? `${pendingCount} Pending Review.` : 'No Pending Requests.'} Approving Raises The Agent's Credit Limit Immediately.
+        {pendingCount > 0 ? `${pendingCount} Pending Review.` : 'No Pending Requests.'} Approving Raises The Agent&apos;s Credit Limit Immediately.
       </p>
 
       {error ? (

@@ -518,7 +518,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       {!a.hasCollected && (
         <div className="glass-panel">
           <div className="" style={{ padding: 'var(--space-6)' }}>
-            <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: '0 0 6px' }}>Let's Get Your First Sale</h2>
+            <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: '0 0 6px' }}>Let&apos;s Get Your First Sale</h2>
             <p style={{ color: 'var(--silver)', fontSize: '0.88rem', margin: '0 0 14px' }}>Your Stats, Charts, Streak, And Goal All Come Alive Once Orders Start Landing. A Few Good First Moves:</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <a className="sa-cta" href={tabHref('Storefront Config')} style={{ background: 'var(--teal)', color: '#04201f' }}>Set Up Storefront</a>

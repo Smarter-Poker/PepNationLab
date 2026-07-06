@@ -971,7 +971,7 @@ function PricingConfig({ agentId }: { agentId: string }) {
             {showBulkExplain && (
               <div style={{ background: 'var(--surface-2)', padding: '12px 16px', borderRadius: 8, marginBottom: 'var(--space-4)', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <p style={{ fontSize: '0.85rem', color: 'var(--silver)', margin: 0, lineHeight: 1.5 }}>
-                  How It Works: Bulk Pricing Automatically Applies A Percentage Discount To The Entire Order Subtotal When The Customer's Cart Reaches A Specific Total Vial Count. For Example, If A Customer Buys 50 Vials Of BPC-157 And 50 Vials Of TB-500, They Reach The 100-Vial Tier And Receive The Discount Off Their Total. This Encourages Larger Overall Purchases Across Your Entire Catalog. This Feature Is Always Active To Ensure High Conversions.
+                  How It Works: Bulk Pricing Automatically Applies A Percentage Discount To The Entire Order Subtotal When The Customer&apos;s Cart Reaches A Specific Total Vial Count. For Example, If A Customer Buys 50 Vials Of BPC-157 And 50 Vials Of TB-500, They Reach The 100-Vial Tier And Receive The Discount Off Their Total. This Encourages Larger Overall Purchases Across Your Entire Catalog. This Feature Is Always Active To Ensure High Conversions.
                 </p>
               </div>
             )}

@@ -1,6 +1,6 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import type { ParticipantRole } from './types';
-import { timingSafeEqual } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 
 export type RequireSessionResult =
   | { user: { id: string; email: string | null }; error: null }
@@ -195,7 +195,6 @@ export function getCronAuth(
   try {
     // Hash both sides to fixed-length SHA-256 so the comparison is constant-time
     // regardless of secret or token length (prevents length oracle attacks).
-    const { createHash } = require('crypto') as typeof import('crypto');
     const expectedBuf = createHash('sha256').update(secret).digest();
     const gotBuf = createHash('sha256').update(got).digest();
     if (!timingSafeEqual(expectedBuf, gotBuf)) {

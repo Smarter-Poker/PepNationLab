@@ -102,6 +102,34 @@ export default function MessageBubble({
   onLabelToggle, onThread, onReport, onSetReminder,
   activeMenuId, onMenuToggle, readBy = [],
 }: Props) {
+  // ── All hooks must be declared unconditionally before any early return ────
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(message.text ?? '');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
+  const [labelsOpen, setLabelsOpen] = useState(false);
+  const [expiryTick, setExpiryTick] = useState(0);
+  const [hovered, setHovered] = useState(false);
+  const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const openedViaTouchRef = useRef<number>(0);
+  const lastTapRef = useRef<number>(0);
+
+  useEffect(() => {
+    return () => {
+      if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
+    };
+  }, []);
+
+  // Re-render once a minute to update the expiry countdown label.
+  // Kept here (unconditionally) so the hook order is stable.
+  useEffect(() => {
+    if (!message.expires_at) return;
+    const id = setInterval(() => setExpiryTick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, [message.expires_at]);
+
+  // ── Early return for system messages (after all hooks) ──────────────────
   if (message.message_type === 'system') {
     return (
       <div
@@ -126,23 +154,6 @@ export default function MessageBubble({
   const setMenuOpen = (open: boolean) => {
     if (onMenuToggle) onMenuToggle(message.id, open);
   };
-  const [popoverOpen, setPopoverOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [editText, setEditText] = useState(message.text ?? '');
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [lightbox, setLightbox] = useState(false);
-  const [labelsOpen, setLabelsOpen] = useState(false);
-  const [expiryTick, setExpiryTick] = useState(0);
-  const [hovered, setHovered] = useState(false);
-  const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const openedViaTouchRef = useRef<number>(0);
-  const lastTapRef = useRef<number>(0);
-
-  useEffect(() => {
-    return () => {
-      if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
-    };
-  }, []);
 
   const handleMediaTap = (e: React.MouseEvent | React.TouchEvent) => {
     const now = Date.now();
@@ -189,12 +200,6 @@ export default function MessageBubble({
   const url = extractFirstUrl(message.text);
   const isMediaBubble = ['image', 'gif', 'video'].includes(message.message_type);
 
-  // Re-render once a minute to update the expiry countdown label.
-  useEffect(() => {
-    if (!message.expires_at) return;
-    const id = setInterval(() => setExpiryTick((n) => n + 1), 60_000);
-    return () => clearInterval(id);
-  }, [message.expires_at]);
   // expiryTick is intentionally read to ensure React re-renders when the timer fires.
   void expiryTick;
 

@@ -35,6 +35,21 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Security: Restrict mediaUrl to trusted domains (Supabase storage and Tenor CDN).
+  if (parsed.data.mediaUrl) {
+    try {
+      const mediaUrlObj = new URL(parsed.data.mediaUrl);
+      const hostname = mediaUrlObj.hostname.toLowerCase();
+      const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || '').hostname.toLowerCase();
+      const allowedHosts = [supabaseHost, 'c.tenor.com', 'media.tenor.com'];
+      if (!allowedHosts.some((h) => hostname === h || hostname.endsWith(`.${h}`))) {
+        return NextResponse.json({ error: 'Media URL Domain Not Allowed' }, { status: 400 });
+      }
+    } catch {
+      return NextResponse.json({ error: 'Invalid Media URL' }, { status: 400 });
+    }
+  }
+
   const svc = createAdminClient();
 
   const { data: parent } = await svc

@@ -163,7 +163,7 @@ export default function AdminFlashSalesPage() {
                 </div>
                 {s.banner_text && (
                   <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 4, fontStyle: 'italic' }}>
-                    "{s.banner_text}"
+                    {`"${s.banner_text}"`}
                   </div>
                 )}
               </div>

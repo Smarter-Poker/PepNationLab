@@ -343,7 +343,7 @@ function AvatarCropper({ file, busy, onCancel, onConfirm }: CropperProps) {
       setDecoding(false);
     };
 
-    const useImgFallback = () => {
+    const handleImgFallback = () => {
       try {
         const url = URL.createObjectURL(file);
         fallbackUrlRef.current = url;
@@ -367,9 +367,9 @@ function AvatarCropper({ file, busy, onCancel, onConfirm }: CropperProps) {
     if (typeof createImageBitmap === 'function') {
       createImageBitmap(file, { imageOrientation: 'from-image' } as ImageBitmapOptions)
         .then((bmp) => finish(bmp))
-        .catch(() => useImgFallback());
+        .catch(() => handleImgFallback());
     } else {
-      useImgFallback();
+      handleImgFallback();
     }
 
     return () => {

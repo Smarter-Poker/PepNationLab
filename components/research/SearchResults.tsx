@@ -125,7 +125,7 @@ export default function SearchResults({
               href={`/research/search?q=${encodeURIComponent(originalQuery)}&autoCorrect=false`} 
               style={{ color: '#00C4BC', textDecoration: 'underline', fontWeight: 600 }}
             >
-              Search instead for "{originalQuery}"
+              {`Search instead for "${originalQuery}"`}
             </Link>
           </span>
         </div>

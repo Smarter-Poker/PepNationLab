@@ -317,7 +317,7 @@ function GoalHeader({ goal, onSetGoal }: {
           <Target size={17} color="#00C4BC" aria-hidden />
         </div>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: '0.69rem', color: '#7A8B9E', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>This Month's Goal</div>
+          <div style={{ fontSize: '0.69rem', color: '#7A8B9E', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>This Month&apos;s Goal</div>
           <div style={{ fontSize: '1.05rem', color: '#FFFFFF', fontWeight: 800, marginTop: 2 }}>
             {fmtInt(goal.achieved_count)} <span style={{ color: '#7A8B9E', fontWeight: 400 }}>of</span> {goal.target_count != null ? fmtInt(goal.target_count) : '-'} New Researchers
           </div>
@@ -968,9 +968,9 @@ export default function AgentResearcherCRMv2({
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <AlertTriangle size={14} color="#F59E0B" aria-hidden />
             <span style={{ fontSize: '0.8rem', color: '#F59E0B', fontWeight: 700 }}>
-              {neverLoggedIn} Researcher{neverLoggedIn !== 1 ? 's' : ''} Haven't Logged In Yet
+              {neverLoggedIn} Researcher{neverLoggedIn !== 1 ? 's' : ''} Haven&apos;t Logged In Yet
             </span>
-            <span style={{ fontSize: '0.75rem', color: '#7A8B9E' }}>- They Haven't Activated Their Account</span>
+            <span style={{ fontSize: '0.75rem', color: '#7A8B9E' }}>- They Haven&apos;t Activated Their Account</span>
           </div>
           <button type="button" onClick={messageNeverLoggedIn}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 9, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.32)', color: '#F59E0B', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>

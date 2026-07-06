@@ -225,7 +225,7 @@ export default function WalletSendSheet({
               Send Funds
             </h2>
             <p style={{ color: 'var(--silver)', fontSize: '0.86rem', lineHeight: 1.5, marginTop: 0 }}>
-              Funds Are Deducted From Your Wallet (Or Billed To Your Credit Line) And Added To The Recipient's Wallet.
+              Funds Are Deducted From Your Wallet (Or Billed To Your Credit Line) And Added To The Recipient&apos;s Wallet.
             </p>
 
             <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>

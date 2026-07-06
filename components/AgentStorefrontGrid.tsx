@@ -264,6 +264,19 @@ export default function AgentStorefrontGrid({
   const [mounted, setMounted] = useState(false);
   const [showStoreGrid, setShowStoreGrid] = useState(true);
 
+  // These three state declarations must live before any callbacks that reference
+  // their setters (closeGrid calls setFilterArea, setFilterCategory, setSearchQuery).
+  // They depend on getInit which is defined below, but that’s fine since
+  // useState’s initializer only runs once on mount — it’s not re-evaluated on re-renders.
+  // We forward-declare the helper inline.
+  const _getSearchParam = (key: string): string => {
+    if (typeof window === 'undefined') return '';
+    try { return new URLSearchParams(window.location.search).get(key) ?? ''; } catch { return ''; }
+  };
+  const [searchQuery, setSearchQuery] = useState<string>(() => _getSearchParam('q'));
+  const [filterCategory, setFilterCategory] = useState<string>(() => _getSearchParam('category') || 'all');
+  const [filterArea, setFilterArea] = useState<string>(() => _getSearchParam('area') || '');
+
   // Keep the localStorage catalog cache warm - fires on mount and every 5 min.
   // Benefits: next navigation to this storefront renders instantly from cache.
   useCatalogRefresh(agentSlug);
@@ -366,7 +379,7 @@ export default function AgentStorefrontGrid({
   };
 
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
-  const [searchQuery, setSearchQuery] = useState<string>(getInit('q'));
+  // searchQuery is declared earlier (before closeGrid) to avoid TDZ error.
   const deferredSearch = useDeferredValue(searchQuery);
   const [activeCardIndex, setActiveCardIndex] = useState<number | null>(1);
   const [aiSearchFallbackQuery, setAiSearchFallbackQuery] = useState<string>('');
@@ -512,8 +525,8 @@ export default function AgentStorefrontGrid({
   const initialSort = (getInit('sort') || 'popular') as
     | 'popular' | 'name_asc' | 'name_desc' | 'price_low' | 'price_high' | 'newest';
   const [sortBy, setSortBy] = useState<typeof initialSort>(initialSort);
-  const [filterCategory, setFilterCategory] = useState<string>(getInit('category') || 'all');
-  const [filterArea, setFilterArea] = useState<string>(getInit('area') || '');
+  // filterCategory, filterArea, and searchQuery are declared earlier (before closeGrid)
+  // to avoid the TDZ error from referencing their setters in the useCallback.
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [inStockOnly, setInStockOnly] = useState<boolean>(getInit('inStock') === '1');
   const [bulkOnly, setBulkOnly] = useState<boolean>(getInit('bulk') === '1');

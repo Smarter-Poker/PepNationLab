@@ -316,7 +316,7 @@ export default function EditProductPage() {
               <div className="form-group" style={{ flex: '1 1 140px', marginBottom: 0 }}><label className="form-label" htmlFor="low_stock_threshold">Low Stock Alert <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 400, display: 'block' }}>(Badge Below This)</span></label><input id="low_stock_threshold" type="number" min="0" className="form-input" placeholder="5" value={form.low_stock_threshold} onChange={e => set('low_stock_threshold', e.target.value)} /></div>
               <div className="form-group" style={{ flex: '1 1 120px', marginBottom: 0 }}><label className="form-label" htmlFor="backorder_days">Backorder Days</label><input id="backorder_days" type="number" min="1" className="form-input" placeholder="14" value={form.backorder_days} onChange={e => set('backorder_days', e.target.value)} /></div>
             </div>
-            <div style={{ marginTop: 'var(--space-3)', fontSize: '0.78rem', color: 'var(--grey-400)' }}>Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Out Of Stock / Backordered". When Restocked, Storefronts Instantly Update To "In Stock - Ships Now."</div>
+            <div style={{ marginTop: 'var(--space-3)', fontSize: '0.78rem', color: 'var(--grey-400)' }}>Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To &quot;Out Of Stock / Backordered&quot;. When Restocked, Storefronts Instantly Update To &quot;In Stock - Ships Now.&quot;</div>
           </div>
         </div>
 
