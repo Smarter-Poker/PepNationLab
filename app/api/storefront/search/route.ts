@@ -80,7 +80,10 @@ function asTrimmedString(v: unknown, maxLen = 200): string | null {
 function escapeIlike(text: string): string {
   // Escape PostgreSQL ILIKE special characters so user input cannot run wildcard
   // injections. Escapes: \ % _ and [ (POSIX character-class delimiter).
-  return text.replace(/[\\%_[]/g, m => `\\${m}`);
+  // Also strip commas -- they act as condition separators in PostgREST .or() filters
+  // and cannot be backslash-escaped, so a comma in the search term would split the
+  // filter string and corrupt the query.
+  return text.replace(/[\\%_[]/g, m => `\\${m}`).replace(/,/g, '');
 }
 
 const SORT_OPTIONS: ReadonlySet<SortKey> = new Set<SortKey>([
