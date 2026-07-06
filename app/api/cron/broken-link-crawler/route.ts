@@ -4,7 +4,7 @@
  * request; any 4xx/5xx/non-network result drops a label_change alert.
  */
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { isSsrfTarget } from '@/lib/ssrf-guard';
 
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
 
   let processed = 0, broken = 0, errored = 0;
   try {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const { data } = await supabase
       .from('compound_references')
       .select('id, compound_slug, url, source')
