@@ -17,7 +17,7 @@
 
 import type { NextRequest } from 'next/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
   let errorNote: string | null = null;
 
   try {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const windowStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     // Get all label purchases in the window, grouped by agent.
