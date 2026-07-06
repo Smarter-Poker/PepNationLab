@@ -49,7 +49,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
 
   // Resolve the agent's payment handles so CheckoutForm shows only the
   // handles this specific agent has configured (not hardcoded platform handles).
-  // Prefer agentSlug (storefront URL) → then researcher's referring_agent_id.
+  // Prefer agentSlug (storefront URL) -> then researcher's referring_agent_id.
   let agentPaymentHandles: Record<string, string> = {};
   let minOverallQty = 1;
   let minOrderQty = 1;

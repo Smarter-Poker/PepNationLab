@@ -20,7 +20,8 @@ export const dynamic = 'force-dynamic';
  * when the flag is enabled).
  */
 
-async function assertOwnedSubAgent(svc: Awaited<ReturnType<typeof createAdminClient>>, callerId: string, subAgentId: string) {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+async function assertOwnedSubAgent(svc: any, callerId: string, subAgentId: string) {
   const { data } = await svc
     .from('profiles')
     .select('id, parent_agent_id, is_sub_agent')
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
   const subAgentId = req.nextUrl.searchParams.get('subAgentId') || '';
   if (!subAgentId) return NextResponse.json({ error: 'subAgentId Is Required.' }, { status: 400 });
 
-  const svc = await createAdminClient();
+  const svc = createAdminClient();
   if (!(await assertOwnedSubAgent(svc, gate.user.id, subAgentId))) {
     return NextResponse.json({ error: 'Not Your Sub-Agent.' }, { status: 403 });
   }
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
   const subAgentId = typeof body.subAgentId === 'string' ? body.subAgentId : '';
   if (!subAgentId) return NextResponse.json({ error: 'subAgentId Is Required.' }, { status: 400 });
 
-  const svc = await createAdminClient();
+  const svc = createAdminClient();
   if (!(await assertOwnedSubAgent(svc, gate.user.id, subAgentId))) {
     return NextResponse.json({ error: 'Not Your Sub-Agent.' }, { status: 403 });
   }

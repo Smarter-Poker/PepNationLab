@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const svc = await createServiceClient();
+  const svc = createAdminClient();
 
   const { data: parent } = await svc
     .from('messenger_messages')

@@ -145,7 +145,6 @@ export default function AdminAuditClient({
 
       <div className="glass-panel hover-lift stagger-fade-in">
         <div
-          className=""
           style={{ padding: 0, overflowX: "auto" }}
         >
           <table

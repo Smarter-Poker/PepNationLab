@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 
 /** GET a single sub-agent invoice with reconstructed line items for PDF rendering. */
@@ -9,7 +9,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     if (!gate.ok) return gate.response;
 
     const { id } = await ctx.params;
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const callerId = gate.user.id;
 
     // Caller must be a super_agent or admin.

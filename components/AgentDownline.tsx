@@ -27,7 +27,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
   // volume up to a max cap via the house milestone ladder.
   const [caCommissionMode, setCaCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
   const [caCommissionPct, setCaCommissionPct] = useState('');
-  // 'default' = read-only house ladder (20% → 40%); 'custom' = fully adjustable.
+  // 'default' = read-only house ladder (20% -> 40%); 'custom' = fully adjustable.
   const [caScaleType, setCaScaleType] = useState<'default' | 'custom'>('default');
   const [caCustomSteps, setCaCustomSteps] = useState(freshDefaultLadder());
   const [showGamificationInfo, setShowGamificationInfo] = useState(false);

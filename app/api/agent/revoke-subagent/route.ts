@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'You Cannot Revoke Yourself.' }, { status: 400 });
   }
 
-  const supabase = await createAdminClient();
+  const supabase = createAdminClient();
 
   // Caller must not be a sub-agent themselves (no nested revocation)
   const { data: callerProfile } = await supabase

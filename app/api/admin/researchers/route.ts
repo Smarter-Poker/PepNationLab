@@ -134,6 +134,21 @@ export async function POST(req: NextRequest) {
     const isAgentRole = role === 'agent' || role === 'super_agent';
     const canonicalRole = isSuperPromotion ? 'agent' : role;
 
+    // Validate agent-specific fields BEFORE updating the profile to avoid
+    // leaving the user in a broken state (role=agent but no agent_profiles row)
+    // if validation fails.
+    if (isAgentRole) {
+      if (!slug || !display_name) return NextResponse.json({ error: 'Slug And User Name Are Required For Agents' }, { status: 400 });
+      if (typeof display_name !== 'string' || display_name.length > 100) return NextResponse.json({ error: 'User Name Length Must Be 100 Characters Or Less' }, { status: 400 });
+      const slugRegex = /^[a-z0-9\-]+$/;
+      if (!slugRegex.test(slug)) return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
+      if (slug.length < 2 || slug.length > 50) return NextResponse.json({ error: 'Slug Length Must Be Between 2 And 50 Characters' }, { status: 400 });
+
+      const { data: existingSlug, error: slugCheckError } = await supabase.from('agent_profiles').select('id').eq('slug', slug).neq('id', id).maybeSingle();
+      if (slugCheckError) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+      if (existingSlug) return NextResponse.json({ error: 'This Agent Storefront Slug Is Already Taken' }, { status: 400 });
+    }
+
     const profileUpdates: Record<string, unknown> = {
       role: canonicalRole,
       is_super_agent: isSuperPromotion,
@@ -165,17 +180,7 @@ export async function POST(req: NextRequest) {
       changes: { role, tier, account_type, credit_limit },
     });
 
-    if (role === 'agent' || role === 'super_agent') {
-      if (!slug || !display_name) return NextResponse.json({ error: 'Slug And User Name Are Required For Agents' }, { status: 400 });
-      if (typeof display_name !== 'string' || display_name.length > 100) return NextResponse.json({ error: 'User Name Length Must Be 100 Characters Or Less' }, { status: 400 });
-      const slugRegex = /^[a-z0-9\-]+$/;
-      if (!slugRegex.test(slug)) return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
-      if (slug.length < 2 || slug.length > 50) return NextResponse.json({ error: 'Slug Length Must Be Between 2 And 50 Characters' }, { status: 400 });
-
-      const { data: existingSlug, error: slugCheckError } = await supabase.from('agent_profiles').select('id').eq('slug', slug).neq('id', id).maybeSingle();
-      if (slugCheckError) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
-      if (existingSlug) return NextResponse.json({ error: 'This Agent Storefront Slug Is Already Taken' }, { status: 400 });
-
+    if (isAgentRole) {
       const agentProfileData = {
         id, slug, display_name,
         is_active: is_active !== undefined ? is_active : true,

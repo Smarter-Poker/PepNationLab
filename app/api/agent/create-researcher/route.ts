@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Username Must Be At Least 2 Characters (Letters, Numbers, Underscores)' }, { status: 400 });
   }
 
-  // Use .eq() not .ilike() — sanitized usernames may contain underscores (a LIKE wildcard).
+  // Use .eq() not .ilike() -- sanitized usernames may contain underscores (a LIKE wildcard).
   const { data: existingUser } = await admin
     .from('profiles')
     .select('id')

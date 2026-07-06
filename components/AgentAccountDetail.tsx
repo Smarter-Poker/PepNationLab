@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { freshDefaultLadder, isDefaultLadder } from '@/lib/gamification';
+import { freshDefaultLadder } from '@/lib/gamification';
 import AgentFreezeToggle from '@/components/AgentFreezeToggle';
 import AdminTierOverrideControl from '@/components/AdminTierOverrideControl';
 import ViewAsButton from '@/components/ViewAsButton';
@@ -140,9 +140,7 @@ export default function AgentAccountDetail({
   const [maxAutoApproveLimit, setMaxAutoApproveLimit] = useState('');
   const [commissionPct, setCommissionPct] = useState('');
   const [commissionMode, setCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
-  const [scaleType, setScaleType] = useState<'default' | 'custom'>('default');
   const [customSteps, setCustomSteps] = useState(freshDefaultLadder());
-  const [showGamificationInfo, setShowGamificationInfo] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -166,7 +164,7 @@ export default function AgentAccountDetail({
     if (!downlinePasswordAgent || !downlineNewPassword) return;
     setDownlinePasswordSaving(true);
     try {
-      const res = await fetch('/api/admin/agents/update-password', {
+      const res = await fetch('/api/agent/update-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: downlinePasswordAgent.id, newPassword: downlineNewPassword }),
@@ -224,9 +222,7 @@ export default function AgentAccountDetail({
         }
         const finalSteps = mappedSteps.slice(0, 3);
         setCustomSteps(finalSteps);
-        setScaleType(isDefaultLadder(finalSteps) ? 'default' : 'custom');
       } else {
-        setScaleType('default');
         setCustomSteps(freshDefaultLadder());
       }
 
@@ -278,8 +274,8 @@ export default function AgentAccountDetail({
         }));
       }
       if (accountType === 'credit') {
-        payload.credit_limit = creditLimit === '' ? 0 : creditLimit;
-        payload.max_auto_approve_limit = maxAutoApproveLimit === '' ? null : maxAutoApproveLimit;
+        payload.credit_limit = creditLimit === '' ? 0 : Number(creditLimit);
+        payload.max_auto_approve_limit = maxAutoApproveLimit === '' ? null : Number(maxAutoApproveLimit);
       }
 
       const res = await fetch(`/api/agent/agents/${agentId}`, {

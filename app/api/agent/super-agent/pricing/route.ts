@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     // Only super-agents may view or configure sub-agent pricing.
     // Regular agents calling this endpoint would receive admin_cost
-    // (base_cost × multiplier) for all products - a wholesale cost leak.
+    // (base_cost x multiplier) for all products - a wholesale cost leak.
     const { data: superAgentCheck } = await supabase
       .from('profiles')
       .select('is_super_agent')
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Only Super Agents Can Configure Baseline Pricing.' }, { status: 403 });
     }
 
-    // ── Server-side baseline_cost floor ────────────────────────────────────────
+    // Server-side baseline_cost floor
     // A super-agent cannot price sub-agents below their own wholesale cost
     // (which would mean selling at a loss). computeAgentCost returns the
     // per-10-vial-pack cost; baseline_cost is also per-10-vial-pack.

@@ -574,4 +574,3 @@ export async function notifyAccountAlert(
     url: `/dashboard/agent?tab=balance`,
   });
 }
-
