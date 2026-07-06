@@ -115,26 +115,37 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
   }
 
   async function toggleBundle(bundleId: string) {
+    // Apply optimistic update first, then revert on failure
+    setBundles(prev => prev.map(b => b.id === bundleId ? { ...b, is_active: !b.is_active } : b));
     try {
-      await fetch('/api/agent/bundles', {
+      const res = await fetch('/api/agent/bundles', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: bundleId, action: 'toggle' }),
       });
+      if (!res.ok) throw new Error('Failed To Toggle Bundle');
+    } catch {
+      // Revert optimistic update on failure
       setBundles(prev => prev.map(b => b.id === bundleId ? { ...b, is_active: !b.is_active } : b));
-    } catch {}
+    }
   }
 
   async function deleteBundle(bundleId: string) {
     if (!confirm('Delete This Bundle?')) return;
+    const snapshot = bundles.find(b => b.id === bundleId);
+    // Apply optimistic removal first, then revert on failure
+    setBundles(prev => prev.filter(b => b.id !== bundleId));
     try {
-      await fetch('/api/agent/bundles', {
+      const res = await fetch('/api/agent/bundles', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: bundleId }),
       });
-      setBundles(prev => prev.filter(b => b.id !== bundleId));
-    } catch {}
+      if (!res.ok) throw new Error('Failed To Delete Bundle');
+    } catch {
+      // Revert optimistic removal on failure
+      if (snapshot) setBundles(prev => [...prev, snapshot].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+    }
   }
 
   function getBundlePrice(bundle: Bundle): number {
