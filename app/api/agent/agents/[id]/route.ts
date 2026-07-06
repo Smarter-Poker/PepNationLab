@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireSession } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +23,11 @@ type CallerCheck =
   | { ok: false; response: NextResponse };
 
 async function gateManager(): Promise<CallerCheck> {
-  const gate = await requireAgent();
+  // requireSession (not requireAgent): admins must be able to open any agent's
+  // account detail from /admin/agents. requireAgent hard-rejects admins, which
+  // made the isAdmin ownership bypass below unreachable ("Forbidden. Agent
+  // Access Required." on Edit Details). Role gating happens right here instead.
+  const gate = await requireSession();
   if (!gate.ok) return { ok: false, response: gate.response };
   const supabase = createAdminClient();
   const { data: caller } = await supabase
@@ -33,7 +37,7 @@ async function gateManager(): Promise<CallerCheck> {
     .maybeSingle();
   const isAdmin = caller?.role === 'admin';
   const isSuperAgent = caller?.is_super_agent === true;
-  const isAgent = caller?.role === 'agent';
+  const isAgent = caller?.role === 'agent' || caller?.role === 'super_agent';
   if (!caller || (!isSuperAgent && !isAgent && !isAdmin)) {
     return {
       ok: false,

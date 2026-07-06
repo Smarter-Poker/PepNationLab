@@ -3,10 +3,14 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-const LEVELS: { level: number; name: string }[] = [
-  { level: 1, name: 'Premium' },
-  { level: 2, name: 'Pro' },
-  { level: 3, name: 'Rookie' },
+interface TierLevel { level: number; name: string; markup?: number }
+
+// Static fallback only - replaced by live house_tiers config from the GET
+// endpoint so markup labels always reflect the admin's current multipliers.
+const DEFAULT_LEVELS: TierLevel[] = [
+  { level: 1, name: 'Premium', markup: 1.5 },
+  { level: 2, name: 'Pro', markup: 2.0 },
+  { level: 3, name: 'Rookie', markup: 2.5 },
 ];
 
 /**
@@ -23,6 +27,7 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
   const [currentLevel, setCurrentLevel] = useState<number | null>(null);
   const [customMarkup, setCustomMarkup] = useState<string>('');
   const [ladderActive, setLadderActive] = useState(false);
+  const [levels, setLevels] = useState<TierLevel[]>(DEFAULT_LEVELS);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -42,6 +47,9 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
           setCustomMarkup('');
         }
         setLadderActive(!!json.ladderActive);
+        if (Array.isArray(json.levels) && json.levels.length > 0) {
+          setLevels(json.levels);
+        }
       } catch {
         /* non-blocking: leave defaults */
       } finally {
@@ -72,7 +80,7 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
       if (resolvedMarkup !== '') {
         toast.success(`Flat Markup Set To ${resolvedMarkup}%`);
       } else {
-        toast.success(nextEnabled ? `Locked To ${LEVELS.find((l) => l.level === nextLevel)?.name ?? `Level ${nextLevel}`}` : 'Switched To Gamification Scale');
+        toast.success(nextEnabled ? `Locked To ${levels.find((l) => l.level === nextLevel)?.name ?? `Level ${nextLevel}`}` : 'Switched To Gamification Scale');
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed To Save Override');
@@ -106,7 +114,7 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
     }
   };
 
-  const currentTierName = currentLevel ? LEVELS.find(l => l.level === currentLevel)?.name : null;
+  const currentTierName = currentLevel ? levels.find(l => l.level === currentLevel)?.name : null;
   const autoLabel = currentTierName
     ? `Gamification Scale (Currently Tier ${currentLevel}: ${currentTierName})`
     : 'Gamification Scale (Volume-Based)';
@@ -133,10 +141,10 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
         >
           <option value="auto">{autoLabel}</option>
           
-          <optgroup label="Lock To A Gamification Tier">
-            {LEVELS.map((l) => (
+          <optgroup label="Lock To A Standard Tier">
+            {levels.map((l) => (
               <option key={`tier_${l.level}`} value={`tier_${l.level}`}>
-                Tier {l.level}: {l.name} ({[1.5, 2.0, 2.5][l.level - 1] * 100}% Markup)
+                Tier {l.level}: {l.name}{l.markup != null ? ` (${Math.round(l.markup * 100)}% Markup = ${(1 + l.markup).toFixed(1)}x Cost)` : ''}
               </option>
             ))}
           </optgroup>
