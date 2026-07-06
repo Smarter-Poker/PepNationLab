@@ -4,7 +4,7 @@
  * E-utils does not surface. Writes references with source_type='europepmc'.
  */
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { searchOpenAccess } from '@/lib/research/europe-pmc';
 
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
 
   let processed = 0, errored = 0, deferred = 0;
   try {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const { data } = await supabase
       .from('compounds')
       .select('slug, display_name')
