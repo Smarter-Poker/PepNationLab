@@ -27,7 +27,8 @@ export async function GET(req: NextRequest) {
         id, agent_id, product_id, custom_name, custom_description,
         custom_image_url, retail_price, margin_percent, is_visible, is_on_sale, sale_price, sort_order,
         products (name, description, image_url, category, in_stock, inventory_count,
-                 unit_size, unit_measure, base_cost)
+                 unit_size, unit_measure, base_cost,
+                 market_avg_price, market_low_price, market_high_price)
       `)
       .eq('agent_id', agentId)
       .order('sort_order', { ascending: true });
