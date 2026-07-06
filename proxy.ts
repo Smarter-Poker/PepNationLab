@@ -1,13 +1,18 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-// --- SITE LOCKDOWN ---
-// The site is locked. Only authenticated users may access any page.
-// New account registration is disabled -- /register always redirects to /login.
-// The only public route is /login itself (plus static assets handled by matcher).
+// --- PUBLIC LANDING + HOUSE-STORE SIGNUP ---
+// The landing page (/) is public. New accounts are created through /signup
+// (or Google sign-in) and are always linked to the house storefront
+// (see lib/default-store.ts). Legacy /register redirects to /signup.
+// Guests may browse agent storefronts and research pages; everything else
+// still requires authentication.
 
 // Routes that are always public (no auth required)
 const PUBLIC_ROUTES = [
+  '/',
+  '/signup',
+  '/auth/callback',
   '/login',
   '/forgot-password',
   '/become-agent',
@@ -100,7 +105,7 @@ function isPublicDynamicRoute(pathname: string): boolean {
   // Exclude known protected prefixes
   const protectedPrefixes = [
     '/admin', '/dashboard', '/api', '/orders', '/products', '/account',
-    '/checkout', '/messages', '/messenger', '/register', '/login', '/forgot-password',
+    '/checkout', '/messages', '/messenger', '/register', '/signup', '/auth', '/login', '/forgot-password',
     '/become-agent', '/about', '/terms', '/privacy', '/compliance',
     '/disclaimer', '/shipping', '/invite',
   ];
@@ -118,7 +123,7 @@ export default async function proxy(request: NextRequest) {
 
   if (pathname.startsWith('/register')) {
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
+    url.pathname = '/signup';
     url.search = '';
     return NextResponse.redirect(url);
   }
@@ -292,6 +297,6 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|logo.*|.*\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|css|js|map)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|logo.*|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|css|js|map)$).*)',
   ],
 };
