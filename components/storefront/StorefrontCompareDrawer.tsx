@@ -289,10 +289,10 @@ function scoreCompoundFromPinned(p: PinnedItem, compoundsBySlug: Record<string, 
   const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
   if (!c) {
     return {
-      total: 80,
-      letter: 'B-',
+      total: 0,
+      letter: 'N/A',
       breakdown: { evidence: 0, safety: 0, coverage: 0, science: 0, handling: 0, completeness: 0 },
-      verdict: 'Compound data pending',
+      verdict: 'No Compound Data',
       weaknesses: [],
       strengths: [],
       bestFor: [],
@@ -929,10 +929,26 @@ export default function StorefrontCompareDrawer({
   }
 
   const displayedPinned = useMemo(() => {
-    return isMobile && sortedPinnedItems.length > 1 
-      ? [sortedPinnedItems[0], sortedPinnedItems[clampedMobileIndex]] 
+    return isMobile && sortedPinnedItems.length > 1
+      ? [sortedPinnedItems[0], sortedPinnedItems[clampedMobileIndex]]
       : sortedPinnedItems;
   }, [isMobile, sortedPinnedItems, clampedMobileIndex]);
+
+  // Scores and pros/cons must be indexed in sync with displayedPinned, NOT the
+  // full sortedPinned array. On mobile with 3+ pinned items, displayedPinned is
+  // a 2-element subset [0, clampedMobileIndex] -- using idx into the full array
+  // would show data for the wrong compound.
+  const displayedScores = useMemo(() => {
+    return isMobile && sortedPinned.length > 1
+      ? [pinnedScores[0], pinnedScores[clampedMobileIndex]]
+      : pinnedScores;
+  }, [isMobile, sortedPinned, clampedMobileIndex, pinnedScores]);
+
+  const displayedProsCons = useMemo(() => {
+    return isMobile && sortedPinnedItems.length > 1
+      ? [pinnedProsCons[0], pinnedProsCons[clampedMobileIndex]]
+      : pinnedProsCons;
+  }, [isMobile, sortedPinnedItems, pinnedProsCons, clampedMobileIndex]);
 
   const maxHalfLife = useMemo(() => {
     return Math.max(...displayedPinned.map(p => {
@@ -1240,7 +1256,7 @@ export default function StorefrontCompareDrawer({
                   borderRadius: 10
                 }}>
                   {displayedPinned.map((p, idx) => {
-                    const score = pinnedScores[idx];
+                    const score = displayedScores[idx];
                     const color = colors[idx % colors.length];
                     return (
                       <div key={p.productName} style={{
@@ -1316,9 +1332,9 @@ export default function StorefrontCompareDrawer({
               {/* Pros & Cons Tab */}
               <div style={{ display: matrixTab === 'proscons' ? 'grid' : 'none', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
                 {displayedPinned.map((p, idx) => {
-                   const pc = pinnedProsCons[idx];
+                   const pc = displayedProsCons[idx];
                    const color = colors[idx % colors.length];
-                   const score = pinnedScores[idx];
+                   const score = displayedScores[idx];
                    return (
                     <div key={p.productName} style={{
                       padding: 14, borderRadius: 10,
@@ -1502,7 +1518,7 @@ export default function StorefrontCompareDrawer({
                             <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Administration</div>
                             {c?.half_life && <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)', marginBottom: 3 }}><Clock size={9} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Half-life: <strong style={{ color: color === primaryColor ? '#FFF' : color }}>{c.half_life}</strong></div>}
                             {c?.typical_frequency && <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)', marginBottom: 3 }}><Zap size={9} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Frequency: <strong style={{ color: 'rgba(255,255,255,0.9)' }}>{c.typical_frequency}</strong></div>}
-                            {dosesPerWeek && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', marginTop: 3, fontStyle: 'italic' }}>~{dosesPerWeek}× per week based on half-life</div>}
+                            {dosesPerWeek && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', marginTop: 3, fontStyle: 'italic' }}>~{dosesPerWeek}x per week based on half-life</div>}
                           </div>
                         )}
                         {c?.handling?.freeze_thaw && <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 5, alignItems: 'flex-start' }}><Thermometer size={11} color="#F6AD55" style={{ marginTop: 1, flexShrink: 0 }} /><span>{c.handling.freeze_thaw}</span></div>}
