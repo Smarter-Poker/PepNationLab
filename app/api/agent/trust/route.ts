@@ -39,7 +39,15 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { targetUserId, auto_approve_orders } = await request.json();
+    let targetUserId: string | undefined;
+    let auto_approve_orders: boolean | undefined;
+    try {
+      const body = await request.json();
+      targetUserId = body?.targetUserId;
+      auto_approve_orders = body?.auto_approve_orders;
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
 
     if (!targetUserId || typeof auto_approve_orders !== 'boolean') {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });

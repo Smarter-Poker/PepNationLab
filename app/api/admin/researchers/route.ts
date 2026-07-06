@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   try {
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     const searchParams = req.nextUrl.searchParams;
     const role = searchParams.get('role');
     const rawQuery = searchParams.get('query');
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   try {
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     const body = await req.json().catch(() => ({}));
 
     const { id, action, role, tier, account_type, credit_limit, is_active, slug, display_name, balance_delta, custom_markup_override } = body;
