@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
@@ -31,7 +31,7 @@ export const dynamic = 'force-dynamic';
 // the literal string. Without this, "@gmail.com%" would route a transfer to
 // whichever Gmail-domain profile sorted first.
 function escapeLikeLiteral(value: string): string {
-  // Escape PostgreSQL ILIKE special characters: \ % _ and [ (POSIX char-class).
+  // Escape PostgreSQL ILIKE special characters: \\ % _ and [ (POSIX char-class).
   return value.replace(/\\/g, '\\\\').replace(/[%_[]/g, (m) => '\\' + m);
 }
 
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     key: readIdempotencyKey(req),
     request: body,
     handler: async () => {
-      const service = await createServiceClient();
+      const service = createAdminClient();
       const recipientIdRaw = typeof body?.recipientId === 'string' ? body.recipientId.trim() : '';
   const recipientEmailRaw = typeof body?.recipientEmail === 'string' ? body.recipientEmail.trim().toLowerCase() : '';
   const note = typeof body?.note === 'string' ? body.note.trim().slice(0, 200) : '';
