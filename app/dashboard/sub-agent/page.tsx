@@ -1,9 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { toast } from 'sonner';
-import PushNotificationToggle from '@/components/PushNotificationToggle';
 import Navbar from '@/components/Navbar';
 import SubAgentDashboardClient from '@/components/SubAgentDashboardClient';
 
@@ -48,28 +45,11 @@ type Overview = {
   referred_researchers_count: number;
 };
 
-function fmtMoney(v: number | null | undefined): string {
-  if (v == null) return '$0.00';
-  return `$${Number(v).toFixed(2)}`;
-}
-
-function fmtDate(s: string | null | undefined): string {
-  if (!s) return '-';
-  try {
-    return new Date(s).toLocaleDateString();
-  } catch {
-    return s;
-  }
-}
-
 export default function SubAgentDashboardPage() {
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-
   const load = async () => {
-    setRefreshing(true);
     try {
       const res = await fetch('/api/sub-agent/overview', { credentials: 'include', cache: 'no-store' });
       const json = await res.json();
@@ -78,8 +58,6 @@ export default function SubAgentDashboardPage() {
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed To Load Dashboard.');
-    } finally {
-      setRefreshing(false);
     }
   };
 

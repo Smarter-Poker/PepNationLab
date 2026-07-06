@@ -62,7 +62,7 @@ export default function AdminCreditIncreasesPage() {
         body: JSON.stringify({ requestId: r.id, decision, note: (notes[r.id] || '').trim() || undefined }),
       });
       const j = await res.json();
-      if (!res.ok) throw new Error(j.error || 'failed');
+      if (!res.ok) throw new Error(j.error || 'Failed');
       toast.success(decision === 'approved' ? `Approved - New Limit ${money(j.result?.new_limit ?? r.requested_limit)}` : 'Request Denied');
       await load();
     } catch (e: any) {

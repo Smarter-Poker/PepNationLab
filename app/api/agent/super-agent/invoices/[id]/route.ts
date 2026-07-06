@@ -49,7 +49,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     const { data: orders } = await supabase
       .from('orders')
       .select('id, created_at, shipping_cost, order_items(product_name, quantity, unit_super_agent_cost, unit_cost_price)')
-      .eq('agent_id', invoice.sub_agent_id)
+      .eq('agent_id', invoice.agent_id)
       .neq('status', 'cancelled')
       .gte('created_at', rangeStart)
       .lt('created_at', rangeEndExclusive);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { computeSubAgentBaselineCost } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createServiceClient();
+    const supabase = await createAdminClient();
     const agentId = gate.user.id;
 
     // Verify caller is a Super Agent
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createServiceClient();
+    const supabase = await createAdminClient();
     const superAgentId = gate.user.id;
 
     const body = await req.json();
@@ -126,6 +126,7 @@ export async function POST(req: NextRequest) {
       .select('id, shipping_cost, order_items(product_id, quantity, unit_super_agent_cost, unit_cost_price)')
       .eq('agent_id', sub_agent_id)
       .neq('status', 'cancelled')
+      .neq('is_wholesale_restock', true)
       .gte('created_at', rangeStart)
       .lt('created_at', rangeEndExclusive);
 
@@ -211,7 +212,7 @@ export async function POST(req: NextRequest) {
     // In-app notification - shows in bell immediately via Realtime
     await notifyInvoiceGenerated(supabase, sub_agent_id, week_start, totalOwed).catch(() => { /* best-effort */ });
 
-    return NextResponse.json({ success: true, invoiceId: invoice.id });
+    return NextResponse.json({ success: true, invoiceId: invoice?.id ?? null });
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

@@ -519,11 +519,6 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                         </span>
                       </label>
                       {togglingTrust === agent.id && <span style={{ fontSize: '0.7rem', color: 'var(--teal)' }}>Saving...</span>}
-                      {(agent.account_type === 'credit' || agent.account_type === 'prepaid') && (
-                        <span style={{ fontSize: '0.7rem', color: 'var(--silver)', fontStyle: 'italic' }} title="Locked by Account Type">
-                          (Locked)
-                        </span>
-                      )}
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '160px' }}>

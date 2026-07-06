@@ -23,8 +23,8 @@ export default async function AgentHelpPage() {
     .eq('id', user.id)
     .maybeSingle();
 
-  // is_active !== true catches both false AND null (null means not explicitly activated)
-  if (!prof || prof.is_active !== true) redirect('/login?redirect=/dashboard/agent/help');
+  // Only block explicitly deactivated users; null (newly created) is allowed
+  if (!prof || prof.is_active === false) redirect('/login?redirect=/dashboard/agent/help');
   if (!['agent', 'super_agent', 'admin'].includes(prof.role)) redirect('/dashboard');
 
   return (

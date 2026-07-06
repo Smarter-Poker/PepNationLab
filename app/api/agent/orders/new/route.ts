@@ -182,9 +182,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (finalAutoStatus === 'approved_ship' || finalAutoStatus === 'approved_pickup') {
-      try {
-        await supabase.rpc('charge_order_credit_line', { p_order_id: newOrder.id, p_created_by: agentId });
-      } catch {}
+      const { error: creditErr } = await supabase.rpc('charge_order_credit_line', { p_order_id: newOrder.id, p_created_by: agentId });
+      if (creditErr) {
+        console.error('[CRITICAL] charge_order_credit_line Failed For Manual Order', newOrder.id, creditErr);
+      }
     }
 
     try {

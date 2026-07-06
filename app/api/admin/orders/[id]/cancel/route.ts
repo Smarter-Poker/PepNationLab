@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     key: readIdempotencyKey(req),
     request: { id, ...parsed.data },
     handler: async () => {
-      const service = await createServiceClient();
+      const service = createAdminClient();
 
       // cancel_order RPC: pass 'none' as refund_type - all sales are final.
       const { error: rpcError } = await service.rpc('cancel_order', {

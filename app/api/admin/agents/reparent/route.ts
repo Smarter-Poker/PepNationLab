@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Agent Cannot Be Its Own Parent' }, { status: 400 });
   }
 
-  const svc = await createServiceClient();
+  const svc = await createAdminClient();
 
   // Confirm agentId is an agent / super_agent
   const { data: agent } = await svc

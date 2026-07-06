@@ -841,7 +841,7 @@ export default function ProductCatalogClient({
               ) : (
                 <tr>
                   <td
-                    colSpan={10}
+                    colSpan={11}
                     style={{ padding: "var(--space-12)", textAlign: "center" }}
                   >
                     <p
@@ -963,8 +963,8 @@ export default function ProductCatalogClient({
                   onChange={(e) => setBulkValue(e.target.value)}
                   placeholder={
                     bulkAdjustment === "percent_delta"
-                      ? "e.g. 10 or -5"
-                      : "e.g. 12.50"
+                      ? "E.g. 10 Or -5"
+                      : "E.g. 12.50"
                   }
                 />
               </div>

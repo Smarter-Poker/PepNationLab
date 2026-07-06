@@ -3,6 +3,7 @@
 // All RPC calls use user-authed client so SECURITY DEFINER caller-check passes.
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { requireAgent } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -10,9 +11,9 @@ export const runtime = 'nodejs';
 type Insight = { id: string; kind: 'restock' | 'dormant' | 'anomaly' | 'goal' | 'first_sale'; title: string; body: string };
 
 export async function GET() {
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const svc = await createServiceClient();
   const insights: Insight[] = [];
@@ -21,7 +22,7 @@ export async function GET() {
   const { data: invRows } = await svc
     .from('agent_inventory')
     .select('product_id, stock_count, products(name)')
-    .eq('agent_id', user.id)
+    .eq('agent_id', gate.user.id)
     .lt('stock_count', 5)
     .limit(5);
   (invRows ?? []).forEach((r: any) => {
@@ -38,7 +39,7 @@ export async function GET() {
   const { data: researchers } = await svc
     .from('profiles')
     .select('id, full_name')
-    .eq('referring_agent_id', user.id)
+    .eq('referring_agent_id', gate.user.id)
     .eq('role', 'researcher')
     .limit(50);
   for (const r of researchers ?? []) {
@@ -65,12 +66,12 @@ export async function GET() {
   const { data: goal } = await svc
     .from('agent_sales_goals')
     .select('target_cents')
-    .eq('agent_id', user.id)
+    .eq('agent_id', gate.user.id)
     .eq('period_start', monthStart)
     .maybeSingle();
   if (goal) {
     const { data: mtd } = await supabase.rpc('agent_sales_kpis', {
-      p_agent_id: user.id,
+      p_agent_id: gate.user.id,
       p_start: new Date(monthStart + 'T00:00:00Z').toISOString(),
       p_end: new Date().toISOString(),
     });

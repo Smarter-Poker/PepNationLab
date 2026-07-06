@@ -5,15 +5,15 @@
 // (Previously queried a nonexistent `agent_commissions` table, so the swallowed
 // error made every 1099 report $0.)
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import { requireAgent } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
 
   const url = new URL(req.url);
   const year = parseInt(url.searchParams.get('year') ?? String(new Date().getFullYear() - 1), 10);
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
   const { data: rows } = await svc
     .from('sub_agent_commission_ledger')
     .select('commission_amount, status, settled_at')
-    .eq('sub_agent_id', user.id)
+    .eq('sub_agent_id', gate.user.id)
     .eq('status', 'settled')
     .gte('settled_at', start)
     .lt('settled_at', end);
@@ -38,7 +38,7 @@ export async function GET(req: Request) {
   const { data: profile } = await svc
     .from('profiles')
     .select('id, full_name, email, username')
-    .eq('id', user.id)
+    .eq('id', gate.user.id)
     .maybeSingle();
 
   return NextResponse.json({

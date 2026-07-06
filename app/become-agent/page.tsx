@@ -5,7 +5,7 @@ import PageShell from '@/components/PageShell';
 export const metadata = {
   title: 'Become An Agent | Pep Nation Lab',
   description: 'Apply to operate your own branded peptide research supply storefront on the Pep Nation Lab platform.',
-  robots: { index: true, follow: true },
+  robots: { index: false, follow: false },
 };
 
 export default function BecomeAgentPage() {

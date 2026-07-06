@@ -832,6 +832,7 @@ function PricingConfig({ agentId }: { agentId: string }) {
 
   const [showBulkExplain, setShowBulkExplain] = React.useState(false);
   const [showDynamicPricing, setShowDynamicPricing] = React.useState(false);
+  const [showConfig, setShowConfig] = React.useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -861,8 +862,6 @@ function PricingConfig({ agentId }: { agentId: string }) {
     position: 'absolute', top: 2, left: on ? 22 : 2, width: 18, height: 18, borderRadius: '50%',
     background: 'var(--black)', transition: 'left 0.2s',
   });
-
-  const [showConfig, setShowConfig] = React.useState(false);
 
   return (
     <div className="glass-panel" style={{ marginBottom: 'var(--space-4)', padding: 0, overflow: 'hidden' }}>

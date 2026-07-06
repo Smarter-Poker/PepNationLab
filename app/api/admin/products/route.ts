@@ -110,6 +110,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     }
 
+    if (!data) {
+      return NextResponse.json({ error: 'Product Was Created But ID Could Not Be Retrieved' }, { status: 500 });
+    }
+
     return NextResponse.json({ id: data.id }, { status: 201 });
   } catch (err) {
     console.error('[admin/products] POST error:', err);

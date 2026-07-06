@@ -109,7 +109,7 @@ export default function AdminFlashSalesPage() {
 
       {creating && (
         <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
-          <div className="" style={{ padding: 'var(--space-5)' }}>
+          <div style={{ padding: 'var(--space-5)' }}>
             <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: 'var(--space-3)' }}>Create Flash Sale</h3>
             <form onSubmit={create} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -150,7 +150,7 @@ export default function AdminFlashSalesPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         {sales.map((s) => (
           <div key={s.id} className="glass-panel">
-            <div className="" style={{ padding: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <div style={{ padding: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 240 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                   <h3 style={{ fontSize: '1.05rem', margin: 0, color: 'var(--white)' }}>{s.name}</h3>
@@ -180,7 +180,7 @@ export default function AdminFlashSalesPage() {
         ))}
         {!loading && sales.length === 0 && (
           <div className="glass-panel">
-            <div className="" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--grey-400)' }}>
+            <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--grey-400)' }}>
               No Flash Sales Configured.
             </div>
           </div>

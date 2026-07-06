@@ -142,6 +142,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Guard: sub-agents MUST resolve to their parent agent, otherwise pricing
+    // collapses to $0 and the order has no billing chain.
+    if (isSubAgent && !agentProfile) {
+      return NextResponse.json(
+        { error: 'Sub-Agent Account Configuration Error. Please Contact Your Parent Agent.' },
+        { status: 403 }
+      );
+    }
+
     // Cart item ids may be agent_product ids (mobile by-name / quick-add path via
     // CartContext, where the storefront grid is not mounted) or master product ids
     // (storefront / reorder paths). Every downstream lookup here resolves against
@@ -443,8 +452,9 @@ export async function POST(request: NextRequest) {
           }
 
           // Gamification Markup (Super Agent -> Agent)
-          // The Agent pays the Super Agent's cost + Markup
-          if (agentProfile && !agentProfile.is_sub_agent) {
+          // The Agent pays the Super Agent's cost + Markup.
+          // Sub-agent wholesale orders are exempt -- they pay baseline_cost.
+          if (agentProfile && !agentProfile.is_sub_agent && !isSubAgent) {
              costPrice = (superAgentCost ?? 0) * (1 + (agentEffectiveMarkupPct / 100));
           }
 
@@ -985,17 +995,19 @@ export async function POST(request: NextRequest) {
         await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
       }
 
-      return NextResponse.json({ error: `An Unexpected Error Occurred: ${itemsError.message || JSON.stringify(itemsError)}` }, { status: 500 });
+      return NextResponse.json({ error: 'An Unexpected Error Occurred While Saving Order Items.' }, { status: 500 });
     }
 
     if (initialStatus === 'approved_ship' || initialStatus === 'approved_pickup') {
-      try {
-        await serviceSupabase.rpc('charge_order_credit_line', { p_order_id: order.id, p_created_by: user.id });
-      } catch {}
+      const { error: creditErr } = await serviceSupabase.rpc('charge_order_credit_line', { p_order_id: order.id, p_created_by: user.id });
+      if (creditErr) {
+        console.error('[CRITICAL] charge_order_credit_line Failed For Order', order.id, creditErr);
+      }
       if (initialStatus === 'approved_ship') {
-        try {
-          await serviceSupabase.rpc('shippo_enqueue_label_job', { p_order_id: order.id });
-        } catch {}
+        const { error: labelErr } = await serviceSupabase.rpc('shippo_enqueue_label_job', { p_order_id: order.id });
+        if (labelErr) {
+          console.error('[WARNING] shippo_enqueue_label_job Failed For Order', order.id, labelErr);
+        }
       }
     }
 

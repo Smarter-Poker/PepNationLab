@@ -8,7 +8,6 @@ import PushNotificationToggle from '@/components/PushNotificationToggle';
 import Link from 'next/link';
 import WalletCard from '@/components/WalletCard';
 import Navbar from '@/components/Navbar';
-import MyQRCodeModal from '@/components/MyQRCodeModal';
 
 type Overview = {
   profile: {
@@ -61,7 +60,7 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
   
   const [copiedStorefront, setCopiedStorefront] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [showQRModal, setShowQRModal] = useState(false);
+
 
   const setActiveTab = (tab: string) => {
     const newParams = new URLSearchParams(searchParams.toString());
@@ -108,7 +107,7 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
                 <AgentOverview 
                   activeResearchersCount={data.referred_researchers_count}
                   activeOrdersCount={data.recent_orders.length}
-                  totalRevenue={0} // Not tracked directly on sub-agent overview API
+                  totalRevenue={data.lifetime_commission}
                   storefrontUrl={storefrontUrl}
                   copyStorefrontLink={copyStorefrontLink}
                   copiedStorefront={copiedStorefront}
@@ -233,7 +232,6 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
           </div>
         </div>
       </div>
-      <MyQRCodeModal open={showQRModal} onClose={() => setShowQRModal(false)} />
     </div>
   );
 }

@@ -651,7 +651,7 @@ export default function AgentStorefrontGrid({
   useEffect(() => {
     if (detailProduct) {
       scrollPosRef.current = window.scrollY;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: 'instant' });
     } else {
       if (scrollPosRef.current > 0) {
         window.scrollTo({ top: scrollPosRef.current, behavior: 'instant' });

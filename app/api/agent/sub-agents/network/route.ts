@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 
 export const runtime = 'nodejs';
@@ -28,7 +28,7 @@ export async function GET() {
     if (!gate.ok) return gate.response;
 
     const callerId = gate.user.id;
-    const svc = await createServiceClient();
+    const svc = await createAdminClient();
 
     // Caller must be a super-agent or agent (not sub-agent).
     const { data: caller } = await svc

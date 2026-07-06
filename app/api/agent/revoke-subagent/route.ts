@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyRoleRevoked } from '@/lib/notify';
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'You Cannot Revoke Yourself.' }, { status: 400 });
   }
 
-  const supabase = await createServiceClient();
+  const supabase = await createAdminClient();
 
   // Caller must not be a sub-agent themselves (no nested revocation)
   const { data: callerProfile } = await supabase

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +47,7 @@ export default async function SuperAgentRollupPage() {
     redirect('/dashboard/agent');
   }
 
-  const svc = await createServiceClient();
+  const svc = await createAdminClient();
 
   const { data: downline, error: downlineErr } = await svc
     .from('profiles')

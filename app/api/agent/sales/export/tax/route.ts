@@ -1,19 +1,19 @@
 // Round 24 Sales - Tax-Ready CSV per state.
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { NextRequest } from 'next/server';
 import { safeError } from '@/lib/api-error';
+import { requireAgent } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return new Response('unauthorized', { status: 401 });
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
   const url = new URL(req.url);
   const year = parseInt(url.searchParams.get('year') ?? String(new Date().getFullYear()), 10);
   const svc = await createServiceClient();
-  const { data, error } = await svc.rpc('agent_sales_tax_summary', { p_agent_id: user.id, p_year: year });
+  const { data, error } = await svc.rpc('agent_sales_tax_summary', { p_agent_id: gate.user.id, p_year: year });
   if (error) return safeError('sales.export.tax', error, 400);
   const header = 'State,Orders,Gross Revenue USD\n';
   const rows = (data ?? []).map((r: any) =>

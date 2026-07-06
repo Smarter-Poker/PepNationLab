@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
     }
     // Agents and super-agents both store role='agent'; never flip the flag on a
     // researcher or admin row.
-    if (agentProfile.role !== 'agent') {
-      return NextResponse.json({ error: 'Only Agents Can Be Upgraded To Super Agents' }, { status: 400 });
+    if (agentProfile.role !== 'agent' && agentProfile.role !== 'super_agent') {
+      return NextResponse.json({ error: 'Only Agents Can Be Upgraded To Super Agents.' }, { status: 400 });
     }
     if (is_super_agent && agentProfile.parent_agent_id) {
       return NextResponse.json({ error: 'Sub-Agents Cannot Be Upgraded To Super Agents' }, { status: 400 });

@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
   if (authError || !authData?.user) {
     console.error('[create-researcher] auth.admin.createUser error:', authError);
     return NextResponse.json(
-      { error: authError?.message || 'Failed To Create Auth Account' },
+      { error: 'Failed To Create Auth Account' },
       { status: 500 }
     );
   }
@@ -144,7 +144,6 @@ export async function POST(req: NextRequest) {
     disclaimer_v1_accepted: false,
     is_active: true,
     must_change_password: true,
-    provisioned_password: password,
     updated_at: new Date().toISOString(),
   };
   if (referringSubAgentId) {
@@ -160,7 +159,7 @@ export async function POST(req: NextRequest) {
     console.error('[create-researcher] profile upsert error:', profileError);
     await admin.auth.admin.deleteUser(newUserId);
     return NextResponse.json(
-      { error: `Profile Setup Failed: ${profileError.message}` },
+      { error: 'Profile Setup Failed' },
       { status: 500 }
     );
   }

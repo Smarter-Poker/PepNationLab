@@ -18,7 +18,7 @@ export default async function AdminProductsPage() {
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile || (profile.role !== "admin" && profile.role !== "shipping")) {
     return redirect("/dashboard");

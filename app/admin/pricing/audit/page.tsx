@@ -10,7 +10,7 @@ export default function PricingAuditLogsPage() {
     const fetchLogs = async () => {
       try {
         const res = await fetch('/api/admin/pricing/audit');
-        if (!res.ok) throw new Error('Failed to fetch audit logs');
+        if (!res.ok) throw new Error('Failed To Fetch Audit Logs');
         const data = await res.json();
         setLogs(data.logs || []);
       } catch (err: any) {
@@ -26,7 +26,7 @@ export default function PricingAuditLogsPage() {
     <div style={{ padding: 'var(--space-6)', maxWidth: 1200, margin: '0 auto' }}>
       <h1 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)' }}>Price History Audit Logs</h1>
       <p style={{ color: 'var(--silver)', marginBottom: 'var(--space-6)' }}>
-        Immutable record of all retail price changes triggered by gamification, admin overrides, or agent margin updates.
+        Immutable Record Of All Retail Price Changes Triggered By Gamification, Admin Overrides, Or Agent Margin Updates.
       </p>
 
       {loading ? (
@@ -84,7 +84,7 @@ export default function PricingAuditLogsPage() {
               {logs.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--silver)' }}>
-                    No audit logs found.
+                    No Audit Logs Found.
                   </td>
                 </tr>
               )}

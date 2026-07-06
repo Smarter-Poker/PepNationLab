@@ -84,6 +84,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
+  if (!saved) {
+    return NextResponse.json({ error: 'Override Was Saved But ID Could Not Be Retrieved' }, { status: 500 });
+  }
+
   await supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,
     action: 'product_tier_override_set',

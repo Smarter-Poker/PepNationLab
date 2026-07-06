@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
+import { isAgentAncestorOf } from '@/lib/agent-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyPromotedToAgent, notifyPromotionSuccess } from '@/lib/notify';
 import { generateQrDataUrl } from '@/lib/qr';
@@ -186,7 +187,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const isPromotingToFullAgent = callerProfile.is_super_agent === true;
+    const isPromotingToFullAgent = callerProfile.is_super_agent === true || callerProfile.role === 'super_agent';
     if (!isPromotingToFullAgent) {
       const safeguard = await verifyCommissionSafeguard(admin, callerId, commissionPct);
       if (!safeguard.safe) {
@@ -229,11 +230,19 @@ export async function POST(req: NextRequest) {
     if (!researcherProfile) {
       return NextResponse.json({ error: 'Researcher Not Found.' }, { status: 404 });
     }
+    // Ownership check: direct match OR super-agent ancestry (single-hop).
+    // A super-agent's sub-agent's researcher has referring_agent_id pointing
+    // to the sub-agent, not the super-agent, so we must check ancestry.
     if (researcherProfile.referring_agent_id !== callerId) {
-      return NextResponse.json(
-        { error: 'Researcher Does Not Belong To Your Downline.' },
-        { status: 403 },
-      );
+      const isAncestor = researcherProfile.referring_agent_id
+        ? await isAgentAncestorOf(admin as any, callerId, researcherProfile.referring_agent_id)
+        : false;
+      if (!isAncestor) {
+        return NextResponse.json(
+          { error: 'Researcher Does Not Belong To Your Downline.' },
+          { status: 403 },
+        );
+      }
     }
     if (researcherProfile.role !== 'researcher') {
       return NextResponse.json(

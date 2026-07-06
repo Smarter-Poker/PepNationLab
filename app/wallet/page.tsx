@@ -17,7 +17,7 @@ export default async function WalletRoute() {
     .from('profiles')
     .select('id, role, account_type, is_super_agent')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
   if (!profile) redirect('/login');
   // Every signed-in role can reach /wallet. Empty data states are handled
   // gracefully by each tab's "No ... Yet" copy when the underlying scope

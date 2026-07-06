@@ -29,7 +29,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
     .from('profiles')
     .select('full_name, role, tier, referring_agent_id, is_sub_agent')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile) {
     redirect('/login');
@@ -60,7 +60,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
         .from('agent_profiles')
         .select('payment_handles, min_overall_qty, min_order_qty')
         .eq('slug', agentSlug)
-        .single();
+        .maybeSingle();
       if (ap?.payment_handles) {
         if (typeof ap.payment_handles === 'string') {
           try { agentPaymentHandles = JSON.parse(ap.payment_handles); } catch {}
@@ -79,7 +79,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
         .from('agent_profiles')
         .select('payment_handles, min_overall_qty, min_order_qty')
         .eq('id', profile.referring_agent_id)
-        .single();
+        .maybeSingle();
       if (ap?.payment_handles) {
         if (typeof ap.payment_handles === 'string') {
           try { agentPaymentHandles = JSON.parse(ap.payment_handles); } catch {}

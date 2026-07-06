@@ -50,6 +50,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     .select('id, conversation_id, author_id, body, created_at')
     .maybeSingle();
   if (error) return NextResponse.json({ error: 'Failed To Save Note' }, { status: 500 });
+  if (!data) return NextResponse.json({ error: 'Note Saved But Could Not Be Retrieved' }, { status: 500 });
 
   await g.svc.from('admin_audit_log').insert({
     actor_id: g.userId,

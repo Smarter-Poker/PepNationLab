@@ -11,6 +11,8 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
+    // Log full error details for debugging; never expose error.message to the UI
+    console.error('[error.tsx]', error?.message, error?.stack);
     captureError(error, { boundary: 'app/error.tsx', digest: error?.digest });
   }, [error]);
 
@@ -66,9 +68,7 @@ export default function Error({
         </div>
         <h1 style={{ fontSize: '1.6rem', color: 'var(--white, #FFFFFF)', marginBottom: '0.75rem', fontWeight: 700 }}>Something Went Wrong</h1>
         <p style={{ fontSize: '0.95rem', color: 'var(--silver, #A8B4C0)', marginBottom: '1.5rem', lineHeight: 1.6 }}>An Unexpected Error Occurred. Please Try Again Or Contact Support If The Problem Persists.</p>
-        {error?.message ? (
-          <p style={{ fontSize: '0.8rem', color: 'var(--grey-400, #6B7785)', marginBottom: '2rem', fontFamily: 'monospace', wordBreak: 'break-word', textTransform: 'none' }}>{error.message}</p>
-        ) : error?.digest ? (
+        {error?.digest ? (
           <p style={{ fontSize: '0.75rem', color: 'var(--grey-400, #6B7785)', marginBottom: '2rem', fontFamily: 'monospace', wordBreak: 'break-word', textTransform: 'none' }}>Reference: {error.digest}</p>
         ) : null}
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>

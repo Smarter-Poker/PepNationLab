@@ -27,7 +27,7 @@ export default function PWAEnforcer() {
         .from('profiles')
         .select('role, pwa_dismissed')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
         .then(({ data: profile }) => {
           if (profile && ['super_agent', 'agent', 'sub_agent'].includes(profile.role)) {
             

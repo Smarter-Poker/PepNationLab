@@ -80,6 +80,36 @@ export interface Compound {
   intranasal_status?: 'established' | 'emerging' | 'not_suitable' | null;
   intranasal_bioavailability_pct?: number | null;
   intranasal_note?: string | null;
+
+  /* Regulatory / pipeline */
+  fda_approval_year?: number | null;
+  ema_approval_year?: number | null;
+  dea_schedule?: string | null;
+  dailymed_setid?: string | null;
+  faers_event_count?: number | null;
+  year_first_approved?: number | null;
+  year_first_human_trial?: number | null;
+  pipeline_status?: string | null;
+  pipeline_phase?: string | null;
+  pipeline_indication?: string | null;
+  is_discontinued?: boolean | null;
+  discontinuation_reason?: string | null;
+  discontinuation_year?: number | null;
+  is_orphan_drug?: boolean | null;
+  orphan_indications?: string[] | null;
+
+  /* Structure / identifiers */
+  pdb_ids?: string[] | null;
+  alphafold_id?: string | null;
+  sequence_one_letter?: string | null;
+  receptors?: string[] | null;
+  chembl_id?: string | null;
+  uniprot_id?: string | null;
+  unii?: string | null;
+
+  /* PK detail */
+  tmax_hours?: number | null;
+  cmax_ng_ml?: number | null;
 }
 
 export const EVIDENCE_TIER: Record<string, { label: string; color: string; blurb: string; badgeUrl: string }> = {

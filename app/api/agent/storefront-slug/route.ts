@@ -106,5 +106,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
+  if (!data) {
+    return NextResponse.json({ error: 'Slug Was Updated But Could Not Be Retrieved' }, { status: 500 });
+  }
+
   return NextResponse.json({ slug: data.slug, url: `/${data.slug}` });
 }

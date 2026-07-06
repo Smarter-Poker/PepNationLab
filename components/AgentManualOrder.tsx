@@ -101,11 +101,12 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
           'Content-Type': 'application/json',
           'Idempotency-Key': idempotencyKey,
         },
+        // NOTE: total is intentionally omitted -- the server MUST recalculate
+        // the total from items + shippingCost to prevent price manipulation.
         body: JSON.stringify({
           buyerName, buyerEmail, street, city, state, zip,
           paymentMethod,
           items: cart,
-          total,
           shippingCost
         })
       });

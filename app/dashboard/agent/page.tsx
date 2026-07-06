@@ -19,7 +19,7 @@ export default async function AgentDashboardPage() {
     .from('profiles')
     .select('id, email, full_name, role, tier, is_super_agent, is_sub_agent')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile) {
     redirect('/login');
@@ -139,7 +139,7 @@ export default async function AgentDashboardPage() {
   });
 
   return (
-    <Suspense fallback={<div style={{ padding: '2rem', color: 'var(--grey-400, #888)' }}>Loading dashboard…</div>}>
+    <Suspense fallback={<div style={{ padding: '2rem', color: 'var(--grey-400, #888)' }}>Loading Dashboard…</div>}>
       <AgentDashboardClient
         userProfile={{
           id: profile.id,

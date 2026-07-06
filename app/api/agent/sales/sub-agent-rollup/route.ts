@@ -11,7 +11,7 @@ export const runtime = 'nodejs';
 export async function GET(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
 
   const svc = await createServiceClient();
   const { data: profile } = await svc
@@ -19,8 +19,8 @@ export async function GET(req: Request) {
     .select('id, is_super_agent, role')
     .eq('id', user.id)
     .maybeSingle();
-  if (!profile?.is_super_agent && profile?.role !== 'admin') {
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  if (!profile?.is_super_agent && profile?.role !== 'super_agent' && profile?.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
   }
 
   const { data: subAgents } = await svc

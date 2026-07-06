@@ -561,7 +561,7 @@ function BacWaterCalculator({
             lineHeight: 1.5,
           }}
         >
-          Your {totalPeptideVials} peptide vial{totalPeptideVials !== 1 ? 's' : ''} need{totalPeptideVials === 1 ? 's' : ''}{' '}
+          Your {totalPeptideVials} Peptide Vial{totalPeptideVials !== 1 ? 's' : ''} Need{totalPeptideVials === 1 ? 's' : ''}{' '}
           <strong style={{ color: 'var(--teal)' }}>~{totalMlNeeded} mL</strong> of BAC Water For Reconstitution.
           {alreadyInCart && alreadyInCartQty > 0 && (
             <span style={{ color: 'rgba(255,255,255,0.5)' }}>

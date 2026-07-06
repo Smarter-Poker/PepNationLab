@@ -140,6 +140,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: friendly }, { status: 500 });
   }
 
+  if (!created) {
+    return NextResponse.json({ error: 'Coupon Was Created But ID Could Not Be Retrieved' }, { status: 500 });
+  }
+
   // Audit log
   await supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,

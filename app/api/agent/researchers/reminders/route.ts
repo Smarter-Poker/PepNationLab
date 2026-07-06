@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
       .insert({ agent_id: gate.user.id, researcher_id: parsed.data.researcherId, title: parsed.data.title, remind_at: parsed.data.remindAt })
       .select('id').maybeSingle();
     if (error) return NextResponse.json({ error: 'Could Not Save Reminder' }, { status: 500 });
+    if (!data) return NextResponse.json({ error: 'Reminder Saved But ID Could Not Be Retrieved' }, { status: 500 });
     return NextResponse.json({ id: data.id });
   } catch (err) {
     console.error('[researchers/reminders] POST error:', err);

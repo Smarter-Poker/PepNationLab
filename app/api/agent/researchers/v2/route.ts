@@ -92,6 +92,14 @@ export async function GET() {
     const now = Date.now();
     const today = new Date(now);
 
+    // Fetch the agent's commission_pct for the estimated commission KPI.
+    const { data: agentProfile } = await svc
+      .from('profiles')
+      .select('commission_pct')
+      .eq('id', agentId)
+      .maybeSingle();
+    const commissionRate = (agentProfile?.commission_pct != null ? Number(agentProfile.commission_pct) / 100 : 0.05);
+
     // 1. RESEARCHERS ------------------------------------------------------
     const { data: researchersRaw } = await svc
       .from('profiles')
@@ -572,8 +580,8 @@ export async function GET() {
             }
           : { value: 0, sparkline: [], delta_pct: 0, label: '-' },
         lifetime_commission: {
-          value: Number((totalLTV * 0.05).toFixed(2)),
-          sparkline: weeklyRevenue.map((v) => v * 0.05),
+          value: Number((totalLTV * commissionRate).toFixed(2)),
+          sparkline: weeklyRevenue.map((v) => v * commissionRate),
           delta_pct: pctDelta(ltvThisMonth, ltvLastMonth),
           label: 'Est Commission',
         },

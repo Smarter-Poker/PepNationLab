@@ -59,8 +59,6 @@ function LoginPageInner() {
       // cookie being written, causing silent logout. We fire it 3 seconds after
       // navigation starts - by then the session cookie is safely committed.
       // Best-effort: failures are ignored (old sessions expire naturally).
-      const supabaseForSignOut = supabase; // capture ref
-
       // Record session
       fetch('/api/agent/sessions', { method: 'POST' }).catch(() => {});
 

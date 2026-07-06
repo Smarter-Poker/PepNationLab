@@ -18,7 +18,7 @@ export async function GET() {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
   
-  const supabase = createServiceClient();
+  const supabase = await createServiceClient();
   const { data, error } = await supabase
     .from('messenger_support_quick_replies')
     .select('id, slash_key, label, body, created_at, updated_at')
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const parsed = Body.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid Payload' }, { status: 400 });
 
-  const supabase = createServiceClient();
+  const supabase = await createServiceClient();
   const { data, error } = await supabase
     .from('messenger_support_quick_replies')
     .upsert(

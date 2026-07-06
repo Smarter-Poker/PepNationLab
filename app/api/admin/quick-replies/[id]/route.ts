@@ -17,12 +17,12 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
   const { id } = await ctx.params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: 'Invalid Id' }, { status: 400 });
 
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const { error } = await svc
     .from('messenger_support_quick_replies')
     .delete()
     .eq('id', id)
-    .eq('user_id', gate.user.id);
+    .eq('user_id', gate.userId);
   if (error) return NextResponse.json({ error: 'Failed To Delete' }, { status: 500 });
   return NextResponse.json({ success: true });
 }

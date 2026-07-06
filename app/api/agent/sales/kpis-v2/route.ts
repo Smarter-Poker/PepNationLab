@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { parseRange, priorPeriod } from '@/lib/sales-range';
+import { requireAgent } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const url = new URL(req.url);
   const { start, end } = parseRange(url.searchParams);
@@ -16,8 +17,8 @@ export async function GET(req: Request) {
 
   // R24 hotfix: RPCs require auth.uid(); call via user-authed client.
   const [{ data: current }, { data: previous }] = await Promise.all([
-    supabase.rpc('agent_sales_kpis', { p_agent_id: user.id, p_start: start.toISOString(), p_end: end.toISOString() }),
-    supabase.rpc('agent_sales_kpis', { p_agent_id: user.id, p_start: prior.start.toISOString(), p_end: prior.end.toISOString() }),
+    supabase.rpc('agent_sales_kpis', { p_agent_id: gate.user.id, p_start: start.toISOString(), p_end: end.toISOString() }),
+    supabase.rpc('agent_sales_kpis', { p_agent_id: gate.user.id, p_start: prior.start.toISOString(), p_end: prior.end.toISOString() }),
   ]);
 
   const c = current?.[0] ?? { revenue_cents: 0, profit_cents: 0, orders_count: 0, aov_cents: 0, new_researchers: 0, cancelled_count: 0 };

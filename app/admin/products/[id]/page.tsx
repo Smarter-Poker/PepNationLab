@@ -219,11 +219,11 @@ export default function EditProductPage() {
             <div className="grid-2" style={{ gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" htmlFor="name">Product Name</label>
-                <input id="name" type="text" className="form-input" placeholder="e.g. BPC-157" value={form.name} onChange={e => set('name', e.target.value)} required />
+                <input id="name" type="text" className="form-input" placeholder="E.g. BPC-157" value={form.name} onChange={e => set('name', e.target.value)} required />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" htmlFor="sku">SKU</label>
-                <input id="sku" type="text" className="form-input" placeholder="e.g. BPC-157-5MG" value={form.sku} onChange={e => set('sku', e.target.value)} />
+                <input id="sku" type="text" className="form-input" placeholder="E.g. BPC-157-5MG" value={form.sku} onChange={e => set('sku', e.target.value)} />
               </div>
             </div>
             <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
@@ -262,7 +262,7 @@ export default function EditProductPage() {
               </div>
               <div className="form-group" style={{ flex: '0 1 100px', marginBottom: 0 }}>
                 <label className="form-label" htmlFor="unit_size">Unit Size</label>
-                <input id="unit_size" type="text" className="form-input" placeholder="e.g. 5" value={form.unit_size} onChange={e => set('unit_size', e.target.value)} />
+                <input id="unit_size" type="text" className="form-input" placeholder="E.g. 5" value={form.unit_size} onChange={e => set('unit_size', e.target.value)} />
               </div>
               <div className="form-group" style={{ flex: '0 1 100px', marginBottom: 0 }}>
                 <label className="form-label" htmlFor="unit_measure">Unit</label>
@@ -276,7 +276,7 @@ export default function EditProductPage() {
               <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                 <div className="form-group" style={{ flex: '1 1 160px', marginBottom: 0 }}>
                   <label className="form-label" htmlFor="admin_bulk_threshold">Threshold (Vials)</label>
-                  <input id="admin_bulk_threshold" type="number" min="1" className="form-input" placeholder="e.g. 100" value={form.admin_bulk_threshold} onChange={e => set('admin_bulk_threshold', e.target.value)} />
+                  <input id="admin_bulk_threshold" type="number" min="1" className="form-input" placeholder="E.g. 100" value={form.admin_bulk_threshold} onChange={e => set('admin_bulk_threshold', e.target.value)} />
                 </div>
                 <div className="form-group" style={{ flex: '1 1 160px', marginBottom: 0 }}>
                   <label className="form-label" htmlFor="admin_bulk_price">Bulk Unit Cost ($)</label>
@@ -292,9 +292,9 @@ export default function EditProductPage() {
               <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(192,184,168,0.15)' }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Agent Sell Prices Per Unit (From DB Multipliers)</div>
                 <div style={{ display: 'flex', gap: 'var(--space-6)' }}>
-                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 1 ({multipliers.tier_1}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_1 / 10).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 2 ({multipliers.tier_2}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_2 / 10).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 3 ({multipliers.tier_3}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--grey-400)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_3 / 10).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 1 ({multipliers.tier_1}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_1).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 2 ({multipliers.tier_2}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_2).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 3 ({multipliers.tier_3}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--grey-400)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_3).toFixed(2)}</div></div>
                 </div>
               </div>
             )}

@@ -62,7 +62,8 @@ export async function validateCoupon(
       .from('orders')
       .select('id', { count: 'exact', head: true })
       .eq('coupon_code', coupon.code)
-      .eq('buyer_id', opts.userId);
+      .eq('buyer_id', opts.userId)
+      .neq('status', 'cancelled');
     if (count != null && count >= Number(coupon.max_uses_per_user)) {
       return { valid: false, error: 'You Have Already Used This Coupon The Maximum Number Of Times.' };
     }

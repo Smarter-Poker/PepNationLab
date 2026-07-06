@@ -60,7 +60,7 @@ export async function claimCronRun(
       status: 'running',
     })
     .select('id')
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
     // Unique-violation (already ran) or transient - treat as not-claimed.

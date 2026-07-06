@@ -47,7 +47,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
       setLoading(true);
       const res = await fetch('/api/agent/agents');
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to fetch agent accounts');
+      if (!res.ok) throw new Error(json.error || 'Failed To Fetch Agent Accounts');
       setAgents(json.data || []);
     } catch (err: any) {
       setError(err.message);
@@ -102,9 +102,9 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
         })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create agent');
+      if (!res.ok) throw new Error(data.error || 'Failed To Create Agent');
 
-      toast.success('Agent Account created successfully!');
+      toast.success('Agent Account Created Successfully!');
       setShowCreateModal(false);
       setCaFirstName('');
       setCaLastName('');
@@ -302,7 +302,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Password</label>
                   <input
-                    type="text"
+                    type="password"
                     required
                     minLength={8}
                     style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
@@ -486,7 +486,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 <div style={{ marginBottom: 'var(--space-6)' }}>
                   <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>New Password</label>
                   <input
-                    type="text"
+                    type="password"
                     style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={resetPwValue}
                     onChange={e => setResetPwValue(e.target.value)}

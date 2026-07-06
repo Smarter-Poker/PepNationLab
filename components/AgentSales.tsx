@@ -86,7 +86,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const [goalLoaded, setGoalLoaded] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalDraft, setGoalDraft] = useState('');
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const isFetching = useRef(false);
   const needsRefetch = useRef(false);
   const milestoneSeeded = useRef(false);

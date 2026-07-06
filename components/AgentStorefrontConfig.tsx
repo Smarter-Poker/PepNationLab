@@ -125,6 +125,10 @@ export default function AgentStorefrontConfig({
         },
       };
 
+      // TODO [P2]: Refactor to use a server-side API route instead of direct
+      // Supabase client writes. The browser client respects RLS (the .eq('id', agentId)
+      // filter combined with RLS policies ensures agents can only write their own row),
+      // but a server route would add CSRF protection and centralized validation.
       const { error: updateError } = await supabase
         .from('agent_profiles')
         .update(updatePayload)

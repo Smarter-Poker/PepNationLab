@@ -31,7 +31,8 @@ interface RecallRow {
   alert_type: string | null;
   agency: string | null;
   alert_date: string | null;
-  description: string | null;
+  title: string | null;
+  summary: string | null;
   url: string | null;
 }
 
@@ -76,7 +77,7 @@ export default async function CompoundRegulatoryPage({ params }: PageProps) {
 
   const { data: recallsData } = await supabase
     .from('compound_recall_alerts')
-    .select('id, compound_slug, alert_type, agency, alert_date, description, url')
+    .select('id, compound_slug, alert_type, agency, alert_date, title, summary, url')
     .eq('compound_slug', slug)
     .in('alert_type', ['recall', 'black_box', 'safety_signal'])
     .order('alert_date', { ascending: false });
@@ -157,9 +158,14 @@ export default async function CompoundRegulatoryPage({ params }: PageProps) {
                     <span style={{ fontSize: '0.82rem', color: 'var(--silver, #A8B4C0)' }}>{r.alert_date}</span>
                   )}
                 </div>
-                {r.description && (
+                {r.title && (
+                  <p style={{ marginTop: 'var(--space-2, 8px)', marginBottom: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>
+                    {r.title}
+                  </p>
+                )}
+                {r.summary && (
                   <p style={{ marginTop: 'var(--space-2, 8px)', marginBottom: 0, fontSize: '0.9rem', color: 'var(--silver-light, #D0DAE4)', lineHeight: 1.6 }}>
-                    {r.description}
+                    {r.summary}
                   </p>
                 )}
                 {r.url && (
