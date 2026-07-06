@@ -63,6 +63,6 @@ export async function POST(req: NextRequest) {
     .select('id, is_muted, mute_until')
     .maybeSingle();
 
-  if (updErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (updErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   return NextResponse.json({ participant: updated });
 }

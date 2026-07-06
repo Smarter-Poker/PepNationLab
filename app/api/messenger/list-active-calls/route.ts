@@ -44,6 +44,6 @@ export async function POST(req: NextRequest) {
     .in('status', ['ringing', 'active'])
     .order('started_at', { ascending: false })
     .limit(10);
-  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   return NextResponse.json({ calls: data ?? [] });
 }

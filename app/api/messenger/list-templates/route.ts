@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     .order('usage_count', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(200);
-  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
   return NextResponse.json({ templates: data ?? [] });
 }

@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     .eq('conversation_id', parsed.data.conversationId)
     .order('joined_at', { ascending: true });
 
-  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
   const participants = partsData ?? [];
   const userIds = participants.map((p) => p.user_id);

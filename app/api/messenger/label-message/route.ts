@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       if ((insErr as { code?: string }).code === '23505') {
         return NextResponse.json({ alreadyLabeled: true });
       }
-      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+      return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     }
     return NextResponse.json({ label: inserted });
   }
@@ -71,6 +71,6 @@ export async function POST(req: NextRequest) {
     .eq('message_id', parsed.data.messageId)
     .eq('user_id', user.id)
     .eq('label', parsed.data.label);
-  if (delErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (delErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

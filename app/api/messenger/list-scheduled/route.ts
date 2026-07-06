@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     .eq('status', 'pending')
     .order('scheduled_at', { ascending: true })
     .limit(200);
-  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
   const list = (data ?? []) as ScheduledRow[];
   if (list.length === 0) return NextResponse.json({ scheduled: [] });
