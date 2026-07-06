@@ -1248,7 +1248,7 @@ function copyShare() {
     enhanceCert();
     buildRoadmap();
     standardizeNav();
-    fixLockKey(); buildBondViz(); buildDecay(); buildVial(); buildBodyMap(); updateVial();
+    fixLockKey(); buildBondViz(); buildDecay(); buildVial(); updateVial();
     glossTooltips();
     updateOverviewStats();
     updateProgressUI();
