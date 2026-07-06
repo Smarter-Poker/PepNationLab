@@ -160,12 +160,22 @@ Never remove, bypass, or weaken these gates.
 
 ## Pricing Architecture
 
-Three agent tiers -- multipliers are set in `pricing_tiers` table:
-- Tier 1: 5x base cost (best pricing)
-- Tier 2: 6x base cost
-- Tier 3: 7x base cost (entry pricing)
+Three agent tiers -- multipliers are set in `pricing_tiers` table (current values as of 2026-07-06):
+- Tier 1: 2.5x base cost (best pricing)
+- Tier 2: 3.0x base cost
+- Tier 3: 3.5x base cost (entry pricing)
 
 All multipliers are admin-configurable via dashboard. Never hardcode prices.
+
+`pricing_tiers.multiplier` is kept in lockstep with `house_tiers.markup`
+(markup = multiplier - 1, tier_N maps to level N) by the
+`trg_sync_house_tiers_from_pricing_tiers` trigger, and every
+`agent_products.retail_price` is auto-recomputed (preserving each row's
+`margin_percent`) whenever the admin changes tier multipliers, house markups,
+product base costs, or an agent's assigned tier
+(migration `20260706120000_tier_pricing_global_alignment.sql`). Assigning a
+tier to an agent locks them to that tier's pricing (`fixed_scale_override`,
+`locked_tier_level`) and clears any stale flat `custom_markup_override`.
 
 ---
 
@@ -561,10 +571,11 @@ statement_status: 'open', 'pending_payment', 'paid'
 ### Pricing Engine Detail
 
 ```
-Retail Price = base_cost * tier_multiplier
-  - Tier 1: 5x (best, for top agents)
-  - Tier 2: 6x (standard)
-  - Tier 3: 7x (entry)
+Agent Wholesale Cost = base_cost * tier_multiplier
+  - Tier 1: 2.5x (best, for top agents)
+  - Tier 2: 3.0x (standard)
+  - Tier 3: 3.5x (entry)
+  - Retail Price = Agent Cost * (1 + margin_percent / 100), default margin 50%
   - Per-product overrides possible via product_tier_overrides table
 
 Super Agent Flow:
