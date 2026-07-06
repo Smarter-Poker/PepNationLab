@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import StorefrontCompareDrawer from '@/components/storefront/StorefrontCompareDrawer';
 import FindAPeptideClient from '@/components/storefront/FindAPeptideClient';
 import GuestCTA from '@/components/GuestCTA';
+import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,13 +54,15 @@ export default async function FindAPeptidePage() {
     agent = ap;
   }
 
-  // Fallback to default active agent for guests or users without an assigned agent
+  // Fallback to the house store — always deterministic, never a random agent.
+  // Never use .limit(1) here: that returns whichever agent Postgres picks first
+  // (non-deterministic) and could expose another agent's catalog to guests.
   if (!agent) {
     const { data: fallbackAgent } = await svc
       .from('agent_profiles')
       .select('id, slug, primary_color')
+      .eq('slug', DEFAULT_STORE_SLUG)
       .eq('is_active', true)
-      .limit(1)
       .maybeSingle();
     agent = fallbackAgent;
   }

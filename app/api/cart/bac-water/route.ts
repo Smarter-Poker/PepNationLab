@@ -234,16 +234,24 @@ export async function POST(req: NextRequest) {
             if (perVial > 0) bacWaterProduct.retail_price = perVial;
           }
         } else {
-          // Public catalog price: use admin retail
-          const { data: pubRow } = await supabase
-            .from('agent_products')
-            .select('retail_price')
-            .eq('product_id', preferredBac.id)
-            .order('retail_price', { ascending: true })
-            .limit(1)
+          // Guest/public price: use researchstore's catalog price — never the cheapest
+          // across all agents, which could be another agent's private pricing.
+          const { data: houseAgent } = await supabase
+            .from('agent_profiles')
+            .select('id')
+            .eq('slug', 'researchstore')
+            .eq('is_active', true)
             .maybeSingle();
-          if (pubRow?.retail_price) {
-            bacWaterProduct.retail_price = Number(pubRow.retail_price) / 10;
+          if (houseAgent?.id) {
+            const { data: pubRow } = await supabase
+              .from('agent_products')
+              .select('retail_price')
+              .eq('agent_id', houseAgent.id)
+              .eq('product_id', preferredBac.id)
+              .maybeSingle();
+            if (pubRow?.retail_price) {
+              bacWaterProduct.retail_price = Number(pubRow.retail_price) / 10;
+            }
           }
         }
       }

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { UserPlus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 
 // Public Researcher Signup -- Every Account Created Here Is Linked To The
-// House Storefront (Daniel Bekavac's Store) Via The Storefront Register API.
+// House Storefront (Pep Nation Research Store) Via The Storefront Register API.
 
 const ACKNOWLEDGMENTS = [
   { key: 'c1', text: 'I Confirm I Am At Least 21 Years Of Age And A Qualified Researcher Or Institutional Purchaser.' },
@@ -17,6 +18,7 @@ const ACKNOWLEDGMENTS = [
 type AckKey = (typeof ACKNOWLEDGMENTS)[number]['key'];
 
 export default function SignupPage() {
+  const searchParams = useSearchParams();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
@@ -26,6 +28,26 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Capture the agent slug from localStorage so the new account is linked
+  // to the agent the guest was browsing when they decided to sign up.
+  const [capturedAgentSlug, setCapturedAgentSlug] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem('pnl_referral_agent');
+      if (stored) {
+        const parsed = JSON.parse(stored) as { slug?: string; savedAt?: number };
+        const age = Date.now() - (parsed.savedAt ?? 0);
+        if (parsed.slug && age < 30 * 24 * 60 * 60 * 1000) {
+          setCapturedAgentSlug(parsed.slug);
+        }
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Sanitize ?redirect= — only allow relative paths starting with /
+  const rawRedirect = searchParams.get('redirect') ?? '';
+  const redirectTo = /^\/(?!\/|\\)/.test(rawRedirect) ? rawRedirect : '/dashboard';
 
   const allAcked = ACKNOWLEDGMENTS.every(a => acks[a.key]);
 
@@ -51,11 +73,14 @@ export default function SignupPage() {
     setError('');
 
     try {
+      // Use the captured agent slug if available, otherwise fall back to default store
+      const agentSlug = capturedAgentSlug ?? DEFAULT_STORE_SLUG;
+
       const res = await fetch('/api/storefront/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          agentSlug: DEFAULT_STORE_SLUG,
+          agentSlug,
           username,
           password,
           firstName,
@@ -80,12 +105,17 @@ export default function SignupPage() {
       });
 
       if (authError) {
-        // Account Exists But Auto-Login Failed -- Send Them To The Login Page.
-        window.location.replace('/login');
+        // Account Exists But Auto-Login Failed -- Send Them To The Login Page,
+        // preserving the redirect so they can still land on their intended page.
+        const loginFallback = `/login${redirectTo !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`;
+        window.location.replace(loginFallback);
         return;
       }
 
       await logRegistrationDisclaimer();
+
+      // Clear the referral agent now that the account has been linked
+      try { window.localStorage.removeItem('pnl_referral_agent'); } catch { /* ignore */ }
 
       // Wait Until The Session Cookie Is Readable Locally (Max 3s).
       for (let i = 0; i < 15; i++) {
@@ -94,7 +124,7 @@ export default function SignupPage() {
         await new Promise(r => setTimeout(r, 200));
       }
 
-      window.location.replace('/dashboard');
+      window.location.replace(redirectTo);
     } catch {
       setError('Something Went Wrong. Please Try Again.');
       setLoading(false);
@@ -111,13 +141,18 @@ export default function SignupPage() {
     setError('');
     try {
       const supabase = createClient();
+      // Pass redirect through the OAuth callback, plus registration ack flag
+      const callbackRedirect = redirectTo !== '/dashboard'
+        ? `${redirectTo}?ack=registration`
+        : '/dashboard?ack=registration';
+
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirect=/dashboard&ack=registration`,
+          redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(callbackRedirect)}`,
         },
       });
-      
+
       if (oauthError) {
         console.error('[Google Signup] OAuth Error:', oauthError);
         setError('Google Sign-In Is Not Available Right Now. Please Use The Form Below.');
@@ -134,6 +169,11 @@ export default function SignupPage() {
       setGoogleLoading(false);
     }
   }
+
+  // Build the "Sign In" link so if the user switches to login, redirect is preserved
+  const loginHref = redirectTo !== '/dashboard'
+    ? `/login?redirect=${encodeURIComponent(redirectTo)}`
+    : '/login';
 
   return (
     <div style={{
@@ -165,6 +205,20 @@ export default function SignupPage() {
           <p style={{ marginBottom: 'var(--space-6)', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
             Join Pep Nation Lab For Peptide Education And Research
           </p>
+
+          {capturedAgentSlug && (
+            <div style={{
+              marginBottom: 'var(--space-4)',
+              padding: 'var(--space-2) var(--space-4)',
+              background: 'rgba(0,196,188,0.07)',
+              border: '1px solid rgba(0,196,188,0.2)',
+              borderRadius: 8,
+              fontSize: '0.78rem',
+              color: 'var(--teal)',
+            }}>
+              ✓ Your account will be linked to your agent&apos;s storefront automatically.
+            </div>
+          )}
 
           {error && (
             <div className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)' }}>
@@ -269,7 +323,7 @@ export default function SignupPage() {
           <div style={{ marginTop: 'var(--space-6)', textAlign: 'center' }}>
             <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
               Already Have An Account?{' '}
-              <a href="/login" style={{ color: 'var(--teal)' }}>Sign In</a>
+              <a href={loginHref} style={{ color: 'var(--teal)' }}>Sign In</a>
             </p>
           </div>
         </div>

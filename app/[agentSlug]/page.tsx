@@ -12,6 +12,7 @@ import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
 import Navbar from '@/components/Navbar';
 import StorefrontSkeleton from '@/components/StorefrontSkeleton';
 import GuestCTA from '@/components/GuestCTA';
+import AgentLinkCapture from '@/components/AgentLinkCapture';
 
 interface Props {
   params: Promise<{ agentSlug: string }>;
@@ -260,6 +261,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
       ['--black-2' as any]: '#000000'
     }}>
       <CouponLinkCapture />
+      {/* Capture agent slug for guest signup attribution */}
+      {!user && <AgentLinkCapture agentSlug={agentSlug} />}
       <Navbar agentSlug={agentSlug} />
       <div style={{ height: 60 }} />
 

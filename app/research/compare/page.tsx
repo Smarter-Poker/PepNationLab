@@ -13,8 +13,16 @@ import { getAreaProducts, type AreaProduct } from '@/lib/area-products-server';
 import CompareTool from '@/components/research/CompareTool';
 
 export const metadata: Metadata = {
-  title: 'Compare Compounds | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Compare Research Compounds | Pep Nation Lab',
+  description: 'Side-by-side comparison of research-grade peptides and compounds. Compare mechanisms, half-lives, research evidence, and handling for informed research decisions.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/compare' },
+  openGraph: {
+    title: 'Compare Research Compounds | Pep Nation Lab',
+    description: 'Side-by-side peptide comparison: mechanisms, half-lives, evidence, and dosing guides.',
+    url: 'https://pepnationlab.com/research/compare',
+    type: 'website',
+  },
 };
 
 export default async function CompareCompoundsPage({

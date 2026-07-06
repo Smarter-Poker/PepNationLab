@@ -4,6 +4,7 @@
  */
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getProductImage } from '@/lib/categoryImage';
+import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
 
 export interface AreaProduct {
@@ -85,12 +86,12 @@ export async function getAreaProducts(
 
   if (!agentId) {
     if (role === 'admin') {
-      // Fallback for admins: pick the first active agent so they can actually test the UI
+      // Admins always preview the house researchstore — never pick a random agent via .limit(1)
       const { data: fallbackAgent } = await supabase
         .from('agent_profiles')
         .select('id')
+        .eq('slug', DEFAULT_STORE_SLUG)
         .eq('is_active', true)
-        .limit(1)
         .maybeSingle();
       if (fallbackAgent) {
         agentId = fallbackAgent.id;

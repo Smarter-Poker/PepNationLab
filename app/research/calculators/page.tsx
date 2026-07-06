@@ -8,8 +8,16 @@ import type { Metadata } from 'next';
 import CalculatorsClient from '@/components/research/CalculatorsClient';
 
 export const metadata: Metadata = {
-  title: 'Researcher Calculators | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Peptide Research Calculators | Dosing, Half-Life & Reconstitution | Pep Nation Lab',
+  description: 'Free research calculators for peptides: dosing by body weight, half-life decay curves, BAC water reconstitution volumes, and injection site scheduling.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/calculators' },
+  openGraph: {
+    title: 'Peptide Research Calculators | Pep Nation Lab',
+    description: 'Dosing, reconstitution, half-life, and scheduling calculators for research-grade peptides.',
+    url: 'https://pepnationlab.com/research/calculators',
+    type: 'website',
+  },
 };
 
 export default function CalculatorsPage() {

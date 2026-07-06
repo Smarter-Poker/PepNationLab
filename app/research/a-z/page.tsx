@@ -9,8 +9,16 @@ import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier } from '@/lib/compounds';
 
 export const metadata: Metadata = {
-  title: 'A-Z Index | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Peptide A-Z Index | Research Library | Pep Nation Lab',
+  description: 'Complete alphabetical index of research-grade peptides and compounds. Find BPC-157, Semaglutide, TB-500, Tirzepatide, and hundreds more RUO compounds.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/a-z' },
+  openGraph: {
+    title: 'Peptide A-Z Index | Pep Nation Lab Research Library',
+    description: 'Alphabetical directory of 300+ research-grade peptides with mechanism, evidence, and handling data.',
+    url: 'https://pepnationlab.com/research/a-z',
+    type: 'website',
+  },
 };
 
 export default async function ResearchAZPage() {
