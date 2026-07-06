@@ -19,6 +19,10 @@ interface ProductInfo {
   base_cost?: number | null;
   min_retail_price?: number | null;
   max_margin_percent?: number | null;
+  /** Average online research-vendor selling price, USD per single vial (market benchmark) */
+  market_avg_price?: number | null;
+  market_low_price?: number | null;
+  market_high_price?: number | null;
 }
 
 interface AgentProduct {
@@ -41,6 +45,64 @@ interface AgentProduct {
 }
 
 type FilterMode = 'all' | 'active' | 'hidden';
+
+/**
+ * Market Intel strip: benchmarks THIS agent's tier-dynamic cost and listed
+ * price against the researched average online selling price (per vial, July
+ * 2026 snapshot across 2-4 research-peptide vendors). agent_cost already
+ * reflects the agent's current tier multiplier or custom % markup, so the
+ * comparison recomputes automatically whenever admin changes their pricing.
+ * Market values are stored per single vial; Bac Water cards display per
+ * 10-pack, so the benchmark is scaled to match the card's unit.
+ */
+function MarketIntel({ p, priceOverride }: { p: AgentProduct; priceOverride?: number }) {
+  const rawAvg = p.products?.market_avg_price != null ? Number(p.products.market_avg_price) : null;
+  if (rawAvg == null || rawAvg <= 0) return null;
+
+  const isBacWater = /bac\.?\s*water/i.test(p.products?.name || '');
+  const packFactor = isBacWater ? 10 : 1;
+  const unitLabel = isBacWater ? '10x Vials' : 'Vial';
+  const mktAvg = rawAvg * packFactor;
+  const mktLow = p.products?.market_low_price != null ? Number(p.products.market_low_price) * packFactor : null;
+  const mktHigh = p.products?.market_high_price != null ? Number(p.products.market_high_price) * packFactor : null;
+
+  const listedPer10 = priceOverride != null ? Number(priceOverride) : Number(p.retail_price);
+  const yourPrice = listedPer10 > 0 ? listedPer10 / (isBacWater ? 1 : 10) : null;
+  const yourCost = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost / (isBacWater ? 1 : 10) : null;
+
+  const vsPct = yourPrice != null && mktAvg > 0 ? Math.round((yourPrice / mktAvg - 1) * 100) : null;
+  const headroom = yourCost != null ? mktAvg - yourCost : null;
+
+  const below = vsPct != null && vsPct < -2;
+  const above = vsPct != null && vsPct > 2;
+  const badgeColor = above ? '#FC8181' : below ? '#68D391' : '#F6E05E';
+  const badgeBg = above ? 'rgba(229,62,62,0.10)' : below ? 'rgba(104,211,145,0.10)' : 'rgba(246,224,94,0.10)';
+  const badgeText = vsPct == null ? null : above ? `${vsPct}% Above Market` : below ? `${Math.abs(vsPct)}% Below Market` : 'At Market Price';
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 6, padding: '5px 8px', background: 'rgba(246,224,94,0.04)', border: '1px solid rgba(246,224,94,0.12)', borderRadius: 6 }}>
+      <span style={{ fontSize: '0.62rem', color: '#F6E05E', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Market Intel</span>
+      <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
+        Avg ${mktAvg.toFixed(2)} / {unitLabel}
+      </span>
+      {mktLow != null && mktHigh != null && (
+        <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.45)' }}>
+          Range ${mktLow.toFixed(0)}&ndash;${mktHigh.toFixed(0)}
+        </span>
+      )}
+      {badgeText && (
+        <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '1px 6px', borderRadius: 4, color: badgeColor, background: badgeBg, border: `1px solid ${badgeColor}33` }}>
+          Your Price {badgeText}
+        </span>
+      )}
+      {headroom != null && headroom > 0 && (
+        <span style={{ fontSize: '0.68rem', color: 'var(--teal)', fontWeight: 700 }}>
+          Profit At Market Avg: ${headroom.toFixed(2)} / {unitLabel}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export default function AgentStoreProducts({ agentId }: { agentId: string }) {
   const [products, setProducts] = useState<AgentProduct[]>([]);
@@ -488,6 +550,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             </span>
                           </div>
                         </div>
+                        <MarketIntel p={p} priceOverride={Number((editForm as any).retail_price)} />
                       </div>
                       <div className="agentprod-actions" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                         <button onClick={handleSave} disabled={saving} className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.75rem', height: 32 }}>{saving ? 'Saving...' : 'Save'}</button>
@@ -545,6 +608,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             </span>
                           )}
                         </div>
+                        <MarketIntel p={p} />
                       </div>
                       <div className="agentprod-actions" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                         <button
@@ -692,6 +756,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             </span>
                           </div>
                         </div>
+                        <MarketIntel p={p} priceOverride={Number((editForm as any).retail_price)} />
                       </div>
                       <div className="agentprod-actions" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                         <button onClick={handleSave} disabled={saving} className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.75rem', height: 32 }}>{saving ? 'Saving...' : 'Save'}</button>
@@ -749,6 +814,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             </span>
                           )}
                         </div>
+                        <MarketIntel p={p} />
                       </div>
                       <div className="agentprod-actions" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                         <button
