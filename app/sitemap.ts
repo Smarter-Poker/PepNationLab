@@ -52,7 +52,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .limit(2000);
     const rows = (data ?? []) as Array<{ slug: string; updated_at: string | null; research_areas: string[] | null }>;
     compounds = rows.map((r) => ({
-      url: `${BASE}/research/compounds/${r.slug}`,
+      url: `${BASE}/research/${r.slug}`,
       lastModified: r.updated_at ? new Date(r.updated_at) : now,
       changeFrequency: 'weekly' as const,
       priority: 0.8,

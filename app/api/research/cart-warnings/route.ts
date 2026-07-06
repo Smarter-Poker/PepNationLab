@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { analyzeCartWarnings, type Compound } from '@/lib/compounds';
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
+import { assertSameOrigin } from '@/lib/csrf';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +22,15 @@ function coerceCompound(row: Record<string, unknown>): Compound {
 }
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
+  const ip = getClientIp(req);
+  const rl = await rateLimit({ key: 'research_cart_warnings', limit: 60, windowSeconds: 60, identifier: ip });
+  if (!rl.allowed) {
+    return NextResponse.json({ warnings: [] }, { status: 429 });
+  }
+
   let slugs: string[] = [];
   let productIds: string[] = [];
   try {

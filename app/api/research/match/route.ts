@@ -13,6 +13,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getAllCompounds } from '@/lib/compounds-server';
+import { assertSameOrigin } from '@/lib/csrf';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import {
   scoreCompounds,
   type MatchInput,
@@ -63,6 +65,15 @@ function parseInput(raw: unknown): MatchInput | null {
 }
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
+  const ip = getClientIp(req);
+  const rl = await rateLimit({ key: 'research_match', limit: 20, windowSeconds: 60, identifier: ip });
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+  }
+
   let body: unknown = null;
   try {
     body = await req.json();

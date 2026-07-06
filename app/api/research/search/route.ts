@@ -17,7 +17,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { parseQuery, buildAutoWildcardTsquery, type ParsedQuery } from '@/lib/research/search-parser';
 import { classifyIntent, type IntentMatch } from '@/lib/research/intent';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
-
+import { assertSameOrigin } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
 
@@ -336,6 +336,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   let q = '';
   let limit = 20;
   let offset = 0;

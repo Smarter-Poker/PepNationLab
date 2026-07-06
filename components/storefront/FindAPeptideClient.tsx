@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import DiscoveryHero, { type MatchedProduct } from './StorefrontDiscovery';
 import { getProductImage } from '@/lib/categoryImage';
 import type { Compound } from '@/lib/compounds';
+import GuestAuthModal from '@/components/GuestAuthModal';
 
 interface ProductItem {
   id: string;
@@ -62,6 +63,12 @@ export default function FindAPeptideClient({
   const router = useRouter();
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
   const firstCartSave = useRef(true);
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [currentPath, setCurrentPath] = useState('');
+
+  useEffect(() => {
+    setCurrentPath(window.location.pathname + window.location.search);
+  }, []);
 
   // Load cart on mount
   useEffect(() => {
@@ -226,7 +233,7 @@ export default function FindAPeptideClient({
         onAlreadyKnowClicked={() => {
           router.push(`/${agentSlug}`);
         }}
-        onAddToCart={isGuest ? () => { window.location.href = '/login'; } : addToCart}
+        onAddToCart={isGuest ? () => { setShowGuestModal(true); } : addToCart}
         onOpenProduct={(productId) => {
           router.push(`/${agentSlug}?product=${encodeURIComponent(productId)}`);
         }}
@@ -272,7 +279,7 @@ export default function FindAPeptideClient({
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a
-              href="/login"
+              href={`/login${currentPath ? `?redirect=${encodeURIComponent(currentPath)}` : ''}`}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -288,7 +295,7 @@ export default function FindAPeptideClient({
               Sign In
             </a>
             <a
-              href="/signup"
+              href={`/signup${currentPath ? `?redirect=${encodeURIComponent(currentPath)}` : ''}`}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -358,6 +365,12 @@ export default function FindAPeptideClient({
           </span>
         </Link>
       )}
+
+      <GuestAuthModal
+        open={showGuestModal}
+        onClose={() => setShowGuestModal(false)}
+        featureLabel="Purchasing"
+      />
     </div>
   );
 }
