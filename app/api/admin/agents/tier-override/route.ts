@@ -31,6 +31,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  // Live tier config so the UI never shows stale hardcoded markup labels.
+  const { data: houseTiers } = await svc
+    .from('house_tiers')
+    .select('level, name, markup')
+    .order('level');
+
   // custom_markup_override is stored as a DECIMAL FRACTION (0.30 = 30%) because
   // the pricing engine computes cost = base * (1 + custom_markup_override).
   // The UI works in whole percent, so expose it multiplied by 100.
@@ -40,6 +46,11 @@ export async function GET(req: NextRequest) {
     currentLevel: data?.house_tier_level == null ? null : Number(data.house_tier_level),
     customMarkup: data?.custom_markup_override == null ? null : Math.round(Number(data.custom_markup_override) * 100 * 100) / 100,
     ladderActive: isTierLadderV2(),
+    levels: (houseTiers ?? []).map((t) => ({
+      level: Number(t.level),
+      name: String(t.name),
+      markup: Number(t.markup),
+    })),
   });
 }
 
@@ -107,6 +118,13 @@ export async function POST(req: NextRequest) {
   // Reflect the locked level immediately when enabling; otherwise leave the
   // persisted level for the recompute cron to refresh from volume.
   if (enabled) update.house_tier_level = level;
+  // Locking to a standard tier (1-3) is a tier assignment: mirror profiles.tier
+  // so the admin roster badge and tier semantics stay consistent with pricing.
+  // A flat custom % markup intentionally leaves tier untouched - the override
+  // takes precedence over tier pricing in the resolution chain.
+  if (enabled && customMarkup === null && Number.isInteger(level) && (level as number) >= 1 && (level as number) <= 3) {
+    update.tier = `tier_${level}`;
+  }
 
   const { error } = await svc.from('profiles').update(update).eq('id', agentId);
   if (error) {

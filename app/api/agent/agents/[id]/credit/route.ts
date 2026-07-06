@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireSession } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 
@@ -24,7 +24,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (csrf) return csrf;
 
   try {
-    const gate = await requireAgent();
+    // requireSession (not requireAgent): admins credit agents from the admin
+    // account drawer; requireAgent rejects admins before the isAdmin check
+    // below can run. The super_agent/admin role check below is the authorizer.
+    const gate = await requireSession();
     if (!gate.ok) return gate.response;
     const callerId = gate.user.id;
     const { id } = await ctx.params;

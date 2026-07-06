@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireSession } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
 /**
@@ -11,13 +11,15 @@ export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  const gate = await requireAgent();
+  // requireSession (not requireAgent): admins reset sub-account passwords from
+  // the admin account drawer; requireAgent rejects admins before the role check
+  // below (which already allows admin) can run.
+  const gate = await requireSession();
   if (!gate.ok) return gate.response;
 
   const serviceSupabase = createAdminClient();
 
-  // Verify caller is an agent/super-agent/admin (requireAgent already checks agent/super_agent)
-  // so we only need to also allow admin role
+  // Verify caller is an agent/super-agent/admin.
   const { data: callerProfile } = await serviceSupabase
     .from('profiles')
     .select('id, role')
@@ -54,8 +56,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'User Not Found' }, { status: 404 });
   }
 
-  // Agent can only reset passwords for users referred by them
-  if (targetProfile.referring_agent_id !== gate.user.id) {
+  // Agent can only reset passwords for users referred by them; admins can
+  // reset any researcher/agent sub-account password from the admin drawer.
+  if (callerProfile.role !== 'admin' && targetProfile.referring_agent_id !== gate.user.id) {
     return NextResponse.json({ error: 'You Can Only Reset Passwords For Your Own Researchers And Sub-Agents' }, { status: 403 });
   }
 
