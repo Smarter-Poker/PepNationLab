@@ -107,15 +107,7 @@ function AdminTransactionsPageInner() {
     setDateTo("");
   }
 
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
-
-  useEffect(() => {
-    setPage(1);
-  }, [typeFilter, agentFilter, dateFrom, dateTo]);
-
-  const fetchTransactions = async () => {
+  async function fetchTransactions() {
     try {
       const res = await fetch("/api/admin/transactions?limit=250");
       const json = await res.json();
@@ -126,7 +118,15 @@ function AdminTransactionsPageInner() {
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [typeFilter, agentFilter, dateFrom, dateTo]);
 
   const getUsername = (email: string, fullName: string | null) => {
     if (fullName) return fullName;
