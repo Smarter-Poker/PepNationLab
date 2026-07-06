@@ -139,7 +139,7 @@ export default async function AgentDashboardPage() {
   });
 
   return (
-    <Suspense fallback={<div style={{ padding: '2rem', color: 'var(--grey-400, #888)' }}>Loading dashboard…</div>}>
+    <Suspense fallback={<div style={{ padding: '2rem', color: 'var(--grey-400, #888)' }}>Loading Dashboard…</div>}>
       <AgentDashboardClient
         userProfile={{
           id: profile.id,

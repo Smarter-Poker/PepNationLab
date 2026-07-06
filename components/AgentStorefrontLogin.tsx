@@ -109,8 +109,7 @@ export default function AgentStorefrontLogin({
 
       router.refresh();
       // If refresh navigates away, the timeout will be GC'd; if it doesn't,
-      // the reload fires. Either way setLoading is reset by the finally block.
-      clearTimeout(fallbackTimeout);
+      // the reload fires after 3s. Either way setLoading is reset by the finally block.
     } catch (err: any) {
       setError(err.message || 'Sign In Failed. Please Try Again.');
     } finally {
