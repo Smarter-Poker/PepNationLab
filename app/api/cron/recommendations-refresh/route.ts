@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 
 /**
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: true, reason: 'already_ran_today' });
   }
 
-  const supabase = await createServiceClient();
+  const supabase = createAdminClient();
   let mode: 'concurrent' | 'plain' | 'none' = 'none';
   let lastError: string | null = null;
 
@@ -78,4 +78,3 @@ export async function GET(req: NextRequest) {
   await finishCronRun(claim.id, 'succeeded', `refreshed mode=${mode}`);
   return NextResponse.json({ ok: true, mode, partition });
 }
-

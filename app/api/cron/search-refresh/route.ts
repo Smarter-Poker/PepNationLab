@@ -8,7 +8,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const { error } = await supabase.rpc('refresh_compound_search');
     if (error) {
       await finishCronRun(claim.id, 'failed', error.message.slice(0, 500));

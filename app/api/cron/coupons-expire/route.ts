@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { safeError } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const { data, error } = await supabase.rpc('coupons_daily_expiry_sweep');
     if (error) {
       console.error('[cron/coupons-expire] rpc error:', error.message);

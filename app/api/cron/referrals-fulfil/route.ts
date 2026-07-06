@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
 
     // Fetch all pending referrals that have a qualifying order attached
     const { data: pendingReferrals, error } = await supabase
@@ -70,4 +70,3 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Unexpected cron error' }, { status: 500 });
   }
 }
-

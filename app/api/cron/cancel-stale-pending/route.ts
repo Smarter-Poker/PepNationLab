@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const admin = await createServiceClient();
+    const admin = createAdminClient();
     const { data, error } = await admin.rpc('cancel_stale_pending_orders', { p_hours: 72 });
     if (error) {
       await finishCronRun(claim.id, 'failed', `rpc error: ${error.message.slice(0, 200)}`);
