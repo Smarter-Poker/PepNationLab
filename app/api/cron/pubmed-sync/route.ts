@@ -12,7 +12,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { esearch } from '@/lib/research/pubmed';
 
@@ -56,7 +56,7 @@ export async function GET(req: Request) {
   let failed = 0;
 
   try {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const cutoff = new Date(Date.now() - SEVEN_DAYS_MS).toISOString();
 
     const { data: stale } = await supabase
