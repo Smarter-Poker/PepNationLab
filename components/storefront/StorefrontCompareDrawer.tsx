@@ -290,7 +290,7 @@ function scoreCompoundFromPinned(p: PinnedItem, compoundsBySlug: Record<string, 
   if (!c) {
     return {
       total: 0,
-      letter: 'N/A',
+      letter: 'C',
       breakdown: { evidence: 0, safety: 0, coverage: 0, science: 0, handling: 0, completeness: 0 },
       verdict: 'No Compound Data',
       weaknesses: [],
