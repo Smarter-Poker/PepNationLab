@@ -4,7 +4,7 @@
  * any new FAERS-derived alerts into compound_recall_alerts.
  */
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { searchFaersAdverseEvents, getApprovalRecords } from '@/lib/research/fda-drugs';
 
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
 
   let processed = 0, errored = 0, deferred = 0;
   try {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const { data } = await supabase
       .from('compounds')
       .select('slug, display_name, faers_event_count')
