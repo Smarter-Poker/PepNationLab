@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { safeError } from '@/lib/api-error';
+import { requireAgent } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -23,9 +24,10 @@ export async function POST(req: Request) {
   const csrf = assertSameOrigin(req as any);
   if (csrf) return csrf;
 
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
+
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   let body: z.infer<typeof FreezeBody>;
   try { body = FreezeBody.parse(await req.json()); }
@@ -48,9 +50,10 @@ export async function DELETE(req: Request) {
   const csrf = assertSameOrigin(req as any);
   if (csrf) return csrf;
 
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
+
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   let body: z.infer<typeof UnfreezeBody>;
   try { body = UnfreezeBody.parse(await req.json()); }

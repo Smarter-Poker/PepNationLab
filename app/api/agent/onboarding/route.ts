@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { isTierLadderV2 } from '@/lib/pricing';
 
@@ -107,16 +108,15 @@ function buildSteps(args: {
 }
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
 
   const service = createAdminClient();
 
   const { data: profile } = await service
     .from('profiles')
     .select('id, role, is_super_agent, is_sub_agent, parent_agent_id, first_name, last_name, email, phone, username, must_change_password, custom_markup_override, commission_pct, default_sub_commission_pct, default_agent_markup_pct, default_agent_pricing_mode, onboarding_progress, onboarding_completed_at')
-    .eq('id', user.id)
+    .eq('id', gate.user.id)
     .maybeSingle();
 
   if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
@@ -128,7 +128,7 @@ export async function GET() {
   }
 
   const progress = (profile.onboarding_progress as Record<string, unknown>) ?? {};
-  const notificationsDone = await hasActivePushSubscription(service, user.id);
+  const notificationsDone = await hasActivePushSubscription(service, gate.user.id);
 
   // Storefront-owning roles need their agent_profiles row.
   let storefront: { slug: string | null; display_name: string | null; warehouse_address: Record<string, unknown> | null; payment_ready: boolean } | null = null;
@@ -137,7 +137,7 @@ export async function GET() {
     const { data: ap } = await service
       .from('agent_profiles')
       .select('slug, display_name, warehouse_address, payment_handles')
-      .eq('id', user.id)
+      .eq('id', gate.user.id)
       .maybeSingle();
     // payment_ready mirrors the dashboard's own gate: at least one non-empty
     // payment handle (Zelle / Venmo / Cash App / Apple Pay). The dashboard
@@ -274,9 +274,8 @@ export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
 
   const body = await req.json().catch(() => null);
   const parsed = PostSchema.safeParse(body);
@@ -288,7 +287,7 @@ export async function POST(req: NextRequest) {
   const { data: profile } = await service
     .from('profiles')
     .select('id, role, is_super_agent, is_sub_agent, onboarding_progress, must_change_password, first_name, last_name, email, phone, custom_markup_override')
-    .eq('id', user.id)
+    .eq('id', gate.user.id)
     .maybeSingle();
   if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
 
@@ -300,7 +299,7 @@ export async function POST(req: NextRequest) {
   // Helper to merge an acknowledgment flag into onboarding_progress.
   const setAck = async (col: string) => {
     const progress = { ...((profile.onboarding_progress as Record<string, unknown>) ?? {}), [col]: true };
-    return service.from('profiles').update({ onboarding_progress: progress }).eq('id', user.id);
+    return service.from('profiles').update({ onboarding_progress: progress }).eq('id', gate.user.id);
   };
 
   if (action === 'ack') {
@@ -316,7 +315,7 @@ export async function POST(req: NextRequest) {
     const { error } = await service
       .from('profiles')
       .update({ first_name, last_name, email, phone, full_name })
-      .eq('id', user.id);
+      .eq('id', gate.user.id);
     if (error) return NextResponse.json({ error: 'profile_update_failed' }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
@@ -337,7 +336,7 @@ export async function POST(req: NextRequest) {
     const { data: whRows, error } = await service
       .from('agent_profiles')
       .update({ warehouse_address })
-      .eq('id', user.id)
+      .eq('id', gate.user.id)
       .select('id');
     if (error) return NextResponse.json({ error: 'warehouse_update_failed' }, { status: 500 });
     // A zero-row update means this account has no agent_profiles row (should never
@@ -368,7 +367,7 @@ export async function POST(req: NextRequest) {
     const { error } = await service
       .from('profiles')
       .update({ custom_markup_override: fraction, onboarding_progress: mergedProgress })
-      .eq('id', user.id);
+      .eq('id', gate.user.id);
     if (error) return NextResponse.json({ error: 'markup_update_failed' }, { status: 500 });
     return NextResponse.json({ ok: true, markup_pct: parsed.data.markup_pct });
   }
@@ -383,7 +382,7 @@ export async function POST(req: NextRequest) {
     const { error } = await service
       .from('profiles')
       .update({ default_sub_commission_pct: pct })
-      .eq('id', user.id);
+      .eq('id', gate.user.id);
     if (error) return NextResponse.json({ error: 'downstream_commission_failed' }, { status: 500 });
     const { error: ackErr } = await setAck('downstream_tutorial_ack');
     if (ackErr) return NextResponse.json({ error: 'downstream_commission_failed' }, { status: 500 });
@@ -407,7 +406,7 @@ export async function POST(req: NextRequest) {
     const { error } = await service
       .from('profiles')
       .update(update)
-      .eq('id', user.id);
+      .eq('id', gate.user.id);
     if (error) return NextResponse.json({ error: 'downstream_markup_failed' }, { status: 500 });
     const { error: ackErr } = await setAck('downstream_tutorial_ack');
     if (ackErr) return NextResponse.json({ error: 'downstream_markup_failed' }, { status: 500 });
@@ -423,7 +422,7 @@ export async function POST(req: NextRequest) {
     const missing: string[] = [];
     if (profile.must_change_password === true) missing.push('password');
     // Notifications must be VERIFIED by a real subscription, not acknowledged.
-    if (!(await hasActivePushSubscription(service, user.id))) missing.push('notifications');
+    if (!(await hasActivePushSubscription(service, gate.user.id))) missing.push('notifications');
     const profileComplete = Boolean(
       (profile.first_name && String(profile.first_name).trim()) &&
       (profile.last_name && String(profile.last_name).trim()) &&
@@ -436,7 +435,7 @@ export async function POST(req: NextRequest) {
       const { data: ap } = await service
         .from('agent_profiles')
         .select('warehouse_address')
-        .eq('id', user.id)
+        .eq('id', gate.user.id)
         .maybeSingle();
       if (!warehouseComplete((ap?.warehouse_address as Record<string, unknown>) ?? null)) missing.push('warehouse');
       if (!ack('storefront_ack')) missing.push('storefront');
@@ -453,7 +452,7 @@ export async function POST(req: NextRequest) {
     const { error } = await service
       .from('profiles')
       .update({ onboarding_completed_at: new Date().toISOString() })
-      .eq('id', user.id);
+      .eq('id', gate.user.id);
     if (error) return NextResponse.json({ error: 'complete_failed' }, { status: 500 });
     return NextResponse.json({ ok: true, completed: true });
   }
