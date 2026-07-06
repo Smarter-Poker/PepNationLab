@@ -23,9 +23,7 @@ export default function PricingTiersPage() {
 
   const [sampleBaseCost, setSampleBaseCost] = useState("10.00");
 
-  useEffect(() => {
-    fetchTiers();
-  }, []);
+
 
   async function fetchTiers() {
     setLoading(true);
@@ -44,6 +42,10 @@ export default function PricingTiersPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    fetchTiers();
+  }, []);
 
   function startEdit(tier: PricingTier) {
     setEditingTier(tier);

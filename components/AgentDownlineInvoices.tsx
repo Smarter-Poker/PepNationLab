@@ -24,9 +24,7 @@ export default function AgentDownlineInvoices({ isSuperAgent }: { isSuperAgent: 
   const [invoices, setInvoices] = useState<AgentInvoice[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchInvoices();
-  }, []);
+
 
   async function fetchInvoices() {
     try {
@@ -40,6 +38,10 @@ export default function AgentDownlineInvoices({ isSuperAgent }: { isSuperAgent: 
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
 
   async function markPaid(invoiceId: string) {
     if (!confirm('Are You Sure You Want To Mark This Invoice As Paid?')) return;

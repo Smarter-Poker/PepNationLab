@@ -39,7 +39,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
     if (caller?.role !== 'admin') return bad('Forbidden.', 403);
   }
 
-  const safeCouponCode = coupon.code.replace(/[\\%_[]/g, (c) => '\\' + c);
+  const safeCouponCode = coupon.code.replace(/[\\%_[]/g, (c: string) => '\\' + c);
   const { data: orders, error } = await svc
     .from('orders')
     .select('id, buyer_id, subtotal, discount_amount, total, status, created_at, profiles!orders_buyer_id_fkey(full_name, username)')

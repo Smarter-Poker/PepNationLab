@@ -40,10 +40,7 @@ export default function AdminSalesPage() {
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    fetchSales();
-    setPage(1);
-  }, [range]);
+
 
   async function fetchSales() {
     setLoading(true);
@@ -62,6 +59,11 @@ export default function AdminSalesPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    fetchSales();
+    setPage(1);
+  }, [range]);
 
   async function loadAgentLedger(agent: AgentSales) {
     setSelectedAgent(agent);
