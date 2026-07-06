@@ -1,15 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createServiceClient, createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { requireAgent } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
+  const user = gate.user;
   const body = await req.json().catch(() => null);
   if (!body || !body.user_name) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   const newName = String(body.user_name).trim();
