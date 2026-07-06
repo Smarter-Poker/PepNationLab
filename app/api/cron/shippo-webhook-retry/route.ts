@@ -27,7 +27,7 @@
 
 import type { NextRequest } from 'next/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { processShippoEvent, asRecord, asString } from '@/lib/shippo-webhook';
 
 export const dynamic = 'force-dynamic';
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
   let errorNote: string | null = null;
 
   try {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const now = Date.now();
     const windowStart = new Date(now - WINDOW_MS).toISOString();
     const cutoff = new Date(now - GRACE_MS).toISOString();
