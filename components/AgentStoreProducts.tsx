@@ -860,15 +860,11 @@ function PricingConfig({ agentId }: { agentId: string }) {
   const [loaded, setLoaded] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
 
-  const [enableDynamic, setEnableDynamic] = React.useState(true);
+  // Dynamic Pricing (Small-Order Surcharges) Was Removed Platform-Wide And
+  // Replaced By Fixed Per-Peptide Quantity Discounts:
+  // 3-4 Vials 10% Off, 5-6 Vials 15% Off, 7+ Vials 20% Off.
   const [minOrderQty, setMinOrderQty] = React.useState(1);
   const [minOverallQty, setMinOverallQty] = React.useState(3);
-  const [dynamicTiers, setDynamicTiers] = React.useState([
-    { min_qty: 1, max_qty: 2, surcharge_percent: 20 },
-    { min_qty: 3, max_qty: 5, surcharge_percent: 15 },
-    { min_qty: 6, max_qty: 9, surcharge_percent: 10 },
-    { min_qty: 10, max_qty: 999999, surcharge_percent: 0 },
-  ]);
 
   const [enableBulk, setEnableBulk] = React.useState(true);
   const [bulkTiers, setBulkTiers] = React.useState([
@@ -881,12 +877,10 @@ function PricingConfig({ agentId }: { agentId: string }) {
     (async () => {
       const { data } = await supabase
         .from('agent_profiles')
-        .select('enable_dynamic_pricing, dynamic_pricing_tiers, min_order_qty, min_overall_qty, enable_bulk_discounts, bulk_discount_tiers')
+        .select('min_order_qty, min_overall_qty, enable_bulk_discounts, bulk_discount_tiers')
         .eq('id', agentId)
         .maybeSingle();
       if (data) {
-        if (data.enable_dynamic_pricing != null) setEnableDynamic(data.enable_dynamic_pricing);
-        if (data.dynamic_pricing_tiers) setDynamicTiers(data.dynamic_pricing_tiers as any);
         if (data.min_order_qty != null) setMinOrderQty(data.min_order_qty);
         if (data.min_overall_qty != null) setMinOverallQty(data.min_overall_qty);
         if (data.enable_bulk_discounts != null) setEnableBulk(data.enable_bulk_discounts);
@@ -897,7 +891,6 @@ function PricingConfig({ agentId }: { agentId: string }) {
   }, [agentId]);
 
   const [showBulkExplain, setShowBulkExplain] = React.useState(false);
-  const [showDynamicPricing, setShowDynamicPricing] = React.useState(false);
   const [showConfig, setShowConfig] = React.useState(false);
 
   async function handleSave() {
@@ -905,8 +898,6 @@ function PricingConfig({ agentId }: { agentId: string }) {
     const { error } = await supabase
       .from('agent_profiles')
       .update({
-        enable_dynamic_pricing: enableDynamic,
-        dynamic_pricing_tiers: dynamicTiers,
         min_order_qty: minOrderQty,
         min_overall_qty: minOverallQty,
         enable_bulk_discounts: enableBulk,
@@ -962,53 +953,47 @@ function PricingConfig({ agentId }: { agentId: string }) {
             </div>
           </div>
 
-          {/* Dynamic Pricing Section */}
+          {/* Order Minimums + Quantity Discounts (Replaces Dynamic Pricing) */}
           <div style={{ marginBottom: 'var(--space-6)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', cursor: 'pointer' }} onClick={() => setShowDynamicPricing(!showDynamicPricing)}>
-              <div>
-                <h4 style={{ color: '#fff', fontSize: '1.05rem', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  Dynamic Pricing 
-                  <span style={{ fontSize: '0.8rem', color: 'var(--grey-500)', background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 4 }}>
-                    {showDynamicPricing ? 'Collapse' : 'Expand'}
-                  </span>
-                </h4>
-                <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Small-Order Surcharges For Orders Under 10 Vials</p>
+            <h4 style={{ color: '#fff', fontSize: '1.05rem', marginBottom: 4 }}>Order Minimums</h4>
+            <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: '0 0 var(--space-4)' }}>Minimum Quantities Required To Check Out From Your Store</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 'var(--space-5)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>Per-Peptide Minimum Qty:</span>
+                <input type="number" min={1} className="form-input" style={{ width: 70, padding: '4px 8px', height: 32 }}
+                  value={minOrderQty} onChange={e => setMinOrderQty(Number(e.target.value) || 1)} />
               </div>
-              <div onClick={(e) => e.stopPropagation()}>
-                <button type="button" onClick={() => setEnableDynamic(!enableDynamic)} style={toggleStyle(enableDynamic)}>
-                  <span style={toggleDot(enableDynamic)} />
-                </button>
+              <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>Overall Order Minimum Qty:</span>
+                <input type="number" min={1} className="form-input" style={{ width: 70, padding: '4px 8px', height: 32 }}
+                  value={minOverallQty} onChange={e => setMinOverallQty(Number(e.target.value) || 1)} />
               </div>
             </div>
 
-            {showDynamicPricing && enableDynamic && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-2)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>Per-Peptide Minimum Qty:</span>
-                    <input type="number" min={1} className="form-input" style={{ width: 70, padding: '4px 8px', height: 32 }}
-                      value={minOrderQty} onChange={e => setMinOrderQty(Number(e.target.value) || 1)} />
-                  </div>
-                  <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>Overall Order Minimum Qty:</span>
-                    <input type="number" min={1} className="form-input" style={{ width: 70, padding: '4px 8px', height: 32 }}
-                      value={minOverallQty} onChange={e => setMinOverallQty(Number(e.target.value) || 1)} />
-                  </div>
-                </div>
-                {dynamicTiers.map((tier, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: '0.85rem' }}>
-                    <span style={{ color: 'var(--grey-400)', minWidth: 60 }}>{tier.min_qty}-{tier.max_qty === 999999 ? 'unlimited' : tier.max_qty} vials</span>
-                    <span style={{ color: 'var(--grey-400)' }}>+</span>
-                    <input type="number" min={0} max={100} className="form-input" style={{ width: 60, padding: '4px 8px', height: 32 }}
-                      value={tier.surcharge_percent} onChange={e => {
-                        const next = [...dynamicTiers]; next[i] = { ...next[i], surcharge_percent: Number(e.target.value) || 0 }; setDynamicTiers(next);
-                      }} />
-                    <span style={{ color: 'var(--grey-400)' }}>% surcharge</span>
-                  </div>
-                ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
+              <div>
+                <h4 style={{ color: '#fff', fontSize: '1.05rem', margin: 0 }}>Quantity Discounts</h4>
+                <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: '4px 0 0' }}>Standard Per-Peptide Volume Discounts. Applied Automatically At Checkout To The Same Peptide, Never Across Different Peptides.</p>
               </div>
-            )}
+              <div style={{ padding: '4px 12px', background: 'rgba(0,196,188,0.1)', color: 'var(--teal)', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600, border: '1px solid rgba(0,196,188,0.2)', whiteSpace: 'nowrap' }}>
+                ALWAYS ON
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--surface-2)', borderRadius: 8 }}>
+                <span style={{ color: 'var(--grey-300)' }}>3-4 Vials Of The Same Peptide</span>
+                <strong style={{ color: '#68D391' }}>10% Off</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--surface-2)', borderRadius: 8 }}>
+                <span style={{ color: 'var(--grey-300)' }}>5-6 Vials Of The Same Peptide</span>
+                <strong style={{ color: '#68D391' }}>15% Off</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--surface-2)', borderRadius: 8 }}>
+                <span style={{ color: 'var(--grey-300)' }}>7+ Vials Of The Same Peptide</span>
+                <strong style={{ color: '#68D391' }}>20% Off</strong>
+              </div>
+            </div>
           </div>
 
           <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)', margin: 'var(--space-4) 0' }} />

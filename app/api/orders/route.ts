@@ -7,6 +7,7 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { calculateShippingCost, getCarrierName } from '@/lib/shipping';
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 import { computeLineSplit, type ItemFulfillmentSplit } from '@/lib/order-line-splits';
+import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
 
 
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
@@ -358,6 +359,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // 4b. Quantity Discount Eligibility -- Honors The Storefront's
+    // volume_pricing_enabled Toggle (Default On). Researcher Retail Only.
+    let volumeDiscountsEnabled = true;
+    if (agentProfile && !isAgentSelfBuy && !isSubAgent) {
+      const { data: vpRow } = await serviceSupabase
+        .from('agent_profiles')
+        .select('volume_pricing_enabled')
+        .eq('id', agentProfile.id)
+        .maybeSingle();
+      volumeDiscountsEnabled = vpRow?.volume_pricing_enabled !== false;
+    }
+
     // 5. Fetch Super Agent Baseline Costs
     let superAgentBaselines: Record<string, { baseline_cost: number, bulk_baseline_cost: number | null, bulk_threshold: number }> = {};
     if (superAgentProfile) {
@@ -497,6 +510,23 @@ export async function POST(request: NextRequest) {
       if (cartItem.bundleName) {
         retailPrice = Math.max(0, retailPrice * 0.9);
         costPrice = Math.max(0, costPrice * 0.9);
+      }
+
+      // Quantity Discount: 3-4 Vials 10% Off, 5-6 Vials 15% Off, 7+ Vials 20%
+      // Off -- Per Specific Peptide (Line Quantity), Never Across Peptides.
+      // Researcher Retail Only; Stack Bundle Items Keep Their Own 10% Deal;
+      // Diluents (BAC Water, Acetic Acid) Are Excluded. Replaces The Old
+      // Small-Order Surcharge ("Dynamic Pricing") Scheme.
+      if (
+        volumeDiscountsEnabled &&
+        !isWholesalePurchase &&
+        !cartItem.bundleName &&
+        !isVolumeDiscountExcluded(dbProduct.name)
+      ) {
+        const qtyPct = quantityDiscountPct(itemQty);
+        if (qtyPct > 0) {
+          retailPrice = Math.max(0, retailPrice * (1 - qtyPct / 100));
+        }
       }
 
       // Round unit prices to exact cents

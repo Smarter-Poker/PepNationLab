@@ -72,12 +72,12 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
-  // Cascade new tier pricing to all of this agent's products immediately.
-  // DB trigger on profiles.tier handles this, but we also call the RPC directly
-  // so the catalog reflects the new cost on the very next page load.
-  try {
-    await supabase.rpc('recalculate_agent_product_prices', { p_agent_id: agentId });
-  } catch { /* non-critical: DB trigger also handles this */ }
+  // Tier Changes Preserve Store Retail Prices (Owner Decision 2026-07-06):
+  // The DB trigger fn_recalc_agent_products_on_markup_change keeps every
+  // retail_price fixed and re-derives margin_percent from the new wholesale
+  // cost, so an upgraded agent simply earns more profit per sale. Do NOT call
+  // recalculate_agent_product_prices here -- that would recompute retail from
+  // the rounded margin and could drift prices by cents.
 
   return NextResponse.json({ success: true, tier });
     },

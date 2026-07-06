@@ -132,12 +132,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed To Update Override.' }, { status: 500 });
   }
 
-  // Force a pricing recalculation for all products
-  try {
-    await svc.rpc('recalculate_agent_product_prices', { p_agent_id: agentId });
-  } catch (err) {
-    console.error('[tier-override] recalculation failed:', err);
-  }
+  // Tier/Markup Changes Preserve Store Retail Prices (Owner Decision
+  // 2026-07-06): the DB trigger fn_recalc_agent_products_on_markup_change
+  // keeps retail_price fixed and re-derives margin_percent from the new
+  // wholesale cost. No retail recalculation here.
 
   return NextResponse.json({ success: true, agentId, enabled, level: enabled ? level : null, customMarkup: customMarkupPct });
 }

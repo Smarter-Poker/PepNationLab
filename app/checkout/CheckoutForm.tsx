@@ -12,6 +12,7 @@ import { toTitleCase } from '@/lib/categoryImage';
 import { createClient } from '@/lib/supabase/client';
 import { calculateShippingCost as getShippingCost, ShippingOption } from '@/lib/shipping';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
+import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
 
 type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'apple_pay' | 'apple_cash';
 
@@ -45,6 +46,8 @@ interface CheckoutFormProps {
   /** Overall minimum items required to checkout from this agent */
   minOverallQty?: number;
   minOrderQty?: number;
+  /** Per-Peptide Quantity Discounts (3+/5+/7+ Vials) -- Mirrors The Server */
+  volumeDiscountsEnabled?: boolean;
 }
 
 interface SavedAddress {
@@ -68,7 +71,7 @@ interface ActiveFlashSale {
   ends_at: string;
 }
 
-export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1, minOrderQty = 1 }: CheckoutFormProps) {
+export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1, minOrderQty = 1, volumeDiscountsEnabled = true }: CheckoutFormProps) {
   const isAgentByRole = userProfile.role === 'agent' || userProfile.role === 'super_agent';
   const isSubAgent = userProfile.is_sub_agent === true;
   const isAgentSelfBuy = isAgentByRole && !isSubAgent;
@@ -650,7 +653,20 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const flashDiscount = flashSale && cartSubtotal > 0
     ? Math.round(cartSubtotal * (flashSale.discount_pct / 100) * 100) / 100
     : 0;
-  const subtotalAfterDiscount = Math.max(0, cartSubtotal - discount - flashDiscount) + shippingCost;
+  // Quantity Discount: 3-4 Vials 10%, 5-6 Vials 15%, 7+ Vials 20% Off -- Per
+  // Specific Peptide Line. Mirrors The Server-Side Pricing In /api/orders.
+  // Excludes Wholesale Buys, Stack Bundle Items, And Diluents.
+  const volumeDiscount = (volumeDiscountsEnabled && !isAgentSelfBuy && !isSubAgent)
+    ? cart.reduce((sum, item) => {
+        if (item.bundleName || isVolumeDiscountExcluded(item.name)) return sum;
+        const pct = quantityDiscountPct(item.quantity);
+        if (pct <= 0) return sum;
+        const unit = (item as { retailPrice?: number }).retailPrice ?? item.costPrice;
+        const discountedUnit = Math.round(unit * (1 - pct / 100) * 100) / 100;
+        return sum + Math.max(0, unit - discountedUnit) * item.quantity;
+      }, 0)
+    : 0;
+  const subtotalAfterDiscount = Math.max(0, cartSubtotal - discount - flashDiscount - volumeDiscount) + shippingCost;
   const grandTotal = Math.max(0, subtotalAfterDiscount - agentPricingDiscount);
 
   const handleNextStep = () => {
@@ -1297,6 +1313,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(0,196,188,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(0,196,188,0.2)' }}>
                   <span style={{ color: 'var(--teal)', fontWeight: 600 }}>Agent Direct Pricing Discount</span>
                   <strong style={{ color: 'var(--teal)' }}>-${agentPricingDiscount.toFixed(2)}</strong>
+                </div>
+              )}
+              {volumeDiscount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(104,211,145,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(104,211,145,0.2)' }}>
+                  <span style={{ color: '#68D391', fontWeight: 600 }}>Volume Discount (3+ Vials Per Peptide)</span>
+                  <strong style={{ color: '#68D391' }}>-${volumeDiscount.toFixed(2)}</strong>
                 </div>
               )}
               {appliedCoupon && (

@@ -788,7 +788,7 @@ export default function AgentStorefrontGrid({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detailProduct, cartItems, agentSlug]);
 
-  const [pendingQty, setPendingQty] = useState(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
+  const [pendingQty, setPendingQty] = useState(selfBuyMin);
 
   const firstCartSave = useRef(true);
   useEffect(() => {
@@ -2527,7 +2527,7 @@ export default function AgentStorefrontGrid({
                 const defaultVId = group.defaultVariantId || group.variants[0]?.id;
                 const existingQty = defaultVId ? cartItems[defaultVId] : undefined;
                 const bw = isBacWaterItem(group.name, group.compoundSlug);
-                setPendingQty(existingQty ?? (bw ? 10 : (isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin)));
+                setPendingQty(existingQty ?? (bw ? 10 : (selfBuyMin)));
               }}
             >
               <div className="" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0, position: 'relative' }}>
@@ -3109,7 +3109,7 @@ export default function AgentStorefrontGrid({
                           setShowCartFloat(false);
                           setTimeout(() => {
                             setDetailProduct(grp);
-                            setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
+                            setPendingQty(selfBuyMin);
                           }, 200);
                         }
                       }}
@@ -3444,24 +3444,26 @@ export default function AgentStorefrontGrid({
 
                   const agentCostPerVial = (activeV as any).cost_price != null ? Number((activeV as any).cost_price) / 10 : basePrice;
 
-                  const tiers = volumePricingEnabled
+                  // Quantity Discounts: Buying More Of The SAME Peptide Saves
+                  // 10/15/20%. Diluents (BAC Water) And Owner Restocks Stay Flat.
+                  const tiers = (volumePricingEnabled && !isBW && !isStorefrontOwner)
                       ? [
-                          { label: '1-2 Vials', min: 1, max: 2, pct: 20 },
-                          { label: '3-5 Vials', min: 3, max: 5, pct: 15 },
-                          { label: '6-9 Vials', min: 6, max: 9, pct: 10 },
-                          { label: '10+ Vials - Best Price', min: 10, max: Infinity, pct: 0 },
+                          { label: '1-2 Vials', min: 1, max: 2, pct: 0 },
+                          { label: '3-4 Vials', min: 3, max: 4, pct: -10 },
+                          { label: '5-6 Vials', min: 5, max: 6, pct: -15 },
+                          { label: '7+ Vials - Best Price', min: 7, max: Infinity, pct: -20 },
                         ]
                       : [
                           { label: 'All Quantities - Flat Price', min: 1, max: Infinity, pct: 0 },
                         ];
 
                   const getUnitPrice = (q: number) => {
-                    
+
                     const t = tiers.find(t => q >= t.min && q <= t.max);
                     return t ? parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2)) : basePrice;
                   };
 
-                  const displayQty = qty > 0 ? qty : (isStorefrontOwner ? 10 : 1);
+                  const displayQty = qty > 0 ? qty : 1;
                   const unitPrice = getUnitPrice(displayQty);
                   const lineTotal = unitPrice * displayQty;
 
@@ -3589,7 +3591,7 @@ export default function AgentStorefrontGrid({
                                 }));
                                 setDetailProduct(null);
                                 setShowBulkPricing(false);
-                                setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
+                                setPendingQty(selfBuyMin);
                                 setShowCartFloat(true);
                               }}
                               style={{ width: 140, height: 44, fontSize: '0.9rem' }}
@@ -3606,7 +3608,7 @@ export default function AgentStorefrontGrid({
                             borderRadius: 'var(--radius-md)', overflow: 'hidden'
                           }}>
                           <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Volume Pricing
+                            Volume Discounts
                           </div>
                           {tiers.map((t, i) => {
                             const tierPrice = parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
@@ -3619,8 +3621,8 @@ export default function AgentStorefrontGrid({
                               }}>
                                 <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
                                   {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}-${t.max} vials`)}
-                                  {t.pct > 0 && <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.75rem' }}>+{t.pct}%</span>}
-                                  {t.pct === 0 && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
+                                  {t.pct < 0 && <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.75rem' }}>Save {-t.pct}%</span>}
+                                  {t.pct === 0 && tiers.length > 1 && <span style={{ color: 'var(--grey-400)', marginLeft: 8, fontSize: '0.75rem' }}>Standard</span>}
                                 </span>
                                 <span style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: isActive ? primaryColor : 'var(--grey-300)' }}>
                                   ${tierPrice.toFixed(2)}/ea
@@ -3663,14 +3665,14 @@ export default function AgentStorefrontGrid({
                     const grp = grouped.find((g) => g.compoundSlug === slug);
                     if (grp) {
                       setDetailHistory(prev => [...prev, grp]);
-                      setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
+                      setPendingQty(selfBuyMin);
                     }
                   }}
                   onOpenProductByName={(name) => {
                     const grp = grouped.find((g) => g.name === name);
                     if (grp) {
                       setDetailHistory(prev => [...prev, grp]);
-                      setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
+                      setPendingQty(selfBuyMin);
                     }
                   }}
                   onAddVariantToCart={(variantId, qty) => {
