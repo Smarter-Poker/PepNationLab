@@ -32,7 +32,7 @@ export async function computeStatement(
     .from('profiles')
     .select('tier, is_super_agent, parent_agent_id, account_type')
     .eq('id', agentId)
-    .single();
+    .maybeSingle();
 
   if (agentError || !agent) {
     return { ok: false, error: 'Agent Profile Not Found.' };
@@ -183,7 +183,7 @@ export async function persistStatement(
     .from('weekly_statements')
     .upsert(upsertPayload, { onConflict: 'agent_id,week_start' })
     .select('id')
-    .single();
+    .maybeSingle();
 
   if (upsertError || !statement) {
     return { ok: false, error: upsertError?.message ?? 'Failed To Save Statement.' };
