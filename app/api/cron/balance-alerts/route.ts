@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { notifyAccountAlert } from '@/lib/notify';
 
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
   let finishNotes: string | undefined;
 
   try {
-    const service = await createServiceClient();
+    const service = createAdminClient();
     const throttleCutoff = new Date(now.getTime() - THROTTLE_HOURS * 60 * 60 * 1000).toISOString();
 
     // Find agents who might need an alert.
