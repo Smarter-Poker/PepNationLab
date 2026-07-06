@@ -1,3 +1,4 @@
+DROP FUNCTION IF EXISTS public.redeem_coupon(text, uuid, numeric); DROP FUNCTION IF EXISTS public.redeem_coupon(text, uuid, numeric, uuid);
 -- Migration: coupon_per_user_atomic
 -- Purpose: Update redeem_coupon RPC to atomically enforce max_uses_per_user.
 -- Previously, per-user limit checking was done in application code (lib/coupons.ts)
