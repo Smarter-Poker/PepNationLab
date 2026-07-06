@@ -1,23 +1,23 @@
 // R24 phase 6 - Sales heatmap. Buckets orders by (day_of_week, hour) over a range.
 import { NextResponse } from 'next/server';
 import { safeError } from '@/lib/api-error';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { parseRange } from '@/lib/sales-range';
+import { requireAgent } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
 
   const { start, end } = parseRange(new URL(req.url).searchParams);
   const svc = await createServiceClient();
   const { data: orders, error } = await svc
     .from('orders')
     .select('created_at')
-    .eq('agent_id', user.id)
+    .eq('agent_id', gate.user.id)
     .gte('created_at', start.toISOString())
     .lt('created_at', end.toISOString())
     .neq('status', 'cancelled')
