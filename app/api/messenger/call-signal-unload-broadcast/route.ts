@@ -96,6 +96,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('[UNLOAD BROADCAST] Failed to broadcast server-side:', err);
-    return NextResponse.json({ error: 'Failed to broadcast' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed To Broadcast' }, { status: 500 });
   }
 }
