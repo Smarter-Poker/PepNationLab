@@ -11,7 +11,7 @@
  * the level for UI/leaderboards and (b) detect level changes for notifications.
  */
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { isTierLadderV2, getHouseTiers } from '@/lib/pricing';
 import { notifyTierLevelUp } from '@/lib/notify';
@@ -36,7 +36,7 @@ export async function GET(req: Request) {
   let leveledUp = 0;
 
   try {
-    const svc = await createServiceClient();
+    const svc = createAdminClient();
     const tiers = await getHouseTiers(svc);
     const nameByLevel = new Map(tiers.map((t) => [t.level, t.name]));
 
