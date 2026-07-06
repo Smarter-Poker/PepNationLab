@@ -23,7 +23,7 @@
  * /account/notifications if they want to.
  */
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 
 export const runtime = 'nodejs';
@@ -59,7 +59,7 @@ export async function GET(req: Request) {
   let finishNotes: string | undefined;
 
   try {
-    const service = await createServiceClient();
+    const service = createAdminClient();
     const throttleCutoff = new Date(
       now.getTime() - THROTTLE_HOURS * 60 * 60 * 1000,
     );
@@ -107,7 +107,7 @@ export async function GET(req: Request) {
 }
 
 async function writeAlerts(
-  service: Awaited<ReturnType<typeof createServiceClient>>,
+  service: ReturnType<typeof createAdminClient>,
   rows: InventoryRow[],
 ): Promise<{ alertsWritten: number; agentsTouched: number }> {
   if (rows.length === 0) return { alertsWritten: 0, agentsTouched: 0 };
