@@ -727,14 +727,14 @@ function ActivityFeed({ items }: { items: ActivityItem[] }) {
               <span style={{ color: '#5A6A7A', fontSize: '0.71rem', whiteSpace: 'nowrap' }}>{daysAgo(a.at)}</span>
             </li>
           ))}
-          {items.length > 5 && !open && (
-            <li style={{ padding: '10px 0', textAlign: 'center' }}>
-              <button type="button" onClick={() => setOpen(true)} style={{ background: 'none', border: 'none', color: '#00C4BC', fontSize: '0.74rem', cursor: 'pointer' }}>
-                Show All {items.length}
-              </button>
-            </li>
-          )}
         </ul>
+      )}
+      {!open && items.length > 5 && (
+        <div style={{ padding: '10px 18px', textAlign: 'center' }}>
+          <button type="button" onClick={() => setOpen(true)} style={{ background: 'none', border: 'none', color: '#00C4BC', fontSize: '0.74rem', cursor: 'pointer' }}>
+            Show All {items.length}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -1115,7 +1115,7 @@ export default function AgentResearcherCRMv2({
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .crm-icon-btn {
           background: rgba(255,255,255,0.04);
           border: 1px solid rgba(255,255,255,0.09);

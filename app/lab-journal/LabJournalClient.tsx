@@ -467,7 +467,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     const latestOrderDate = new Date(orders[orders.length - 1].last_purchased_date!).getTime();
     // End date is 8 weeks after the latest order
     const latestDate = latestOrderDate + (8 * 7 * 24 * 60 * 60 * 1000);
-    const totalDuration = latestDate - earliestDate;
+    // totalDuration intentionally removed (unused; clampedTotalDuration is used instead)
 
     // We don't want to show years of history on a small chart, so clamp to the last 6 months if needed
     const minTime = Math.max(earliestDate, new Date().getTime() - (180 * 24 * 60 * 60 * 1000));
@@ -640,7 +640,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       ) : (
         <History size={48} style={{ color: 'var(--teal)', marginBottom: 'var(--space-4)', opacity: 0.8 }} />
       )}
-      <h2 style={{ color: 'var(--white)', fontSize: '1.25', marginBottom: 'var(--space-2)' }}>
+      <h2 style={{ color: 'var(--white)', fontSize: '1.25rem', marginBottom: 'var(--space-2)' }}>
         {activeTab === 'favorites' ? 'Your Wishlist Is Empty' : activeTab === 'pastOrders' ? 'No Past Orders Found' : activeTab === 'bundles' ? 'No Bundles Found' : 'Nothing Here Yet'}
       </h2>
       <p style={{ color: 'var(--silver)', fontSize: '0.95rem', maxWidth: 400 }}>

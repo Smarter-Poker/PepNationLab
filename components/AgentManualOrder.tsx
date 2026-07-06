@@ -204,8 +204,8 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
 
             {cart.length > 0 ? (
               <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '16px' }}>
-                {cart.map((item, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                {cart.map((item) => (
+                  <div key={item.product_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <div>
                       <span style={{ color: '#fff', fontWeight: 600 }}>{item.quantity}x {item.name}</span>
                     </div>

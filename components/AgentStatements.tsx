@@ -11,7 +11,7 @@ interface Statement {
   total_shipping: number;
   total_owed: number;
   status: 'pending_payment' | 'paid';
-  statement_orders: [{ count: number }];
+  statement_orders: { count: number }[];
 }
 
 export default function AgentStatements() {
