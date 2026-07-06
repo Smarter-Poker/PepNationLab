@@ -76,6 +76,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Tier Not Found' }, { status: 404 });
     }
 
+    // Cascade the new multiplier to the house ladder that actually drives agent
+    // wholesale cost (markup = multiplier - 1, tier_N maps to level N), then
+    // recompute every store's retail prices so all agents on this tier adjust
+    // immediately. A DB trigger mirrors this cascade as a safety net.
+    const tierLevel = parseInt(tier_name.replace('tier_', ''), 10);
+    if (Number.isFinite(tierLevel)) {
+      const { error: houseErr } = await supabase
+        .from('house_tiers')
+        .update({ markup: numMultiplier - 1, updated_at: new Date().toISOString() })
+        .eq('level', tierLevel);
+      if (houseErr) {
+        console.error('[admin/pricing-tiers] house_tiers sync failed:', houseErr.message);
+      }
+      const { error: recalcErr } = await supabase.rpc('recalculate_agent_product_prices');
+      if (recalcErr) {
+        console.error('[admin/pricing-tiers] retail recalc failed:', recalcErr.message);
+      }
+    }
+
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[admin/pricing-tiers] POST error:', err);

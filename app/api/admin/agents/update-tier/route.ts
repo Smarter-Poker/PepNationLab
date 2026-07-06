@@ -53,9 +53,19 @@ export async function PATCH(req: NextRequest) {
 
   const locked_tier_level = tier ? parseInt(tier.replace('tier_', ''), 10) : null;
 
+  // Assigning a tier means tier pricing governs: lock the house level to the
+  // tier (fixed_scale_override), mirror it into house_tier_level for the UI,
+  // and clear any stale flat custom_markup_override so the agent's wholesale
+  // cost is exactly base_cost x the admin-configured tier multiplier.
   const { error } = await supabase
     .from('profiles')
-    .update({ tier: tier as AgentTier, locked_tier_level })
+    .update({
+      tier: tier as AgentTier,
+      locked_tier_level,
+      fixed_scale_override: true,
+      house_tier_level: locked_tier_level,
+      custom_markup_override: null,
+    })
     .eq('id', agentId);
 
   if (error) {
