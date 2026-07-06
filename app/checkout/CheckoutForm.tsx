@@ -644,10 +644,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const shippingCost = calculateShippingCost();
   const discount = appliedCoupon?.discount ?? 0;
   const flashDiscount = flashSale && cartSubtotal > 0
-    ? Math.round(cartSubtotal * flashSale.discount_pct) / 100
+    ? Math.round(cartSubtotal * (flashSale.discount_pct / 100) * 100) / 100
     : 0;
   const subtotalAfterDiscount = Math.max(0, cartSubtotal - discount - flashDiscount) + shippingCost;
-  const grandTotal = Math.max(0, subtotalAfterDiscount);
+  const grandTotal = Math.max(0, subtotalAfterDiscount - agentPricingDiscount);
 
   const handleNextStep = () => {
     setError(null);
