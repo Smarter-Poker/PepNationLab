@@ -314,7 +314,7 @@ export default function FindAPeptideClient({
           </div>
         </div>
       )}
-      {totalCartItems > 0 && (
+      {!isGuest && totalCartItems > 0 && (
         <Link
           href={`/checkout?agent=${encodeURIComponent(agentSlug)}`}
           style={{
