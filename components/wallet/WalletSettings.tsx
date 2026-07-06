@@ -40,6 +40,9 @@ export default function WalletSettings() {
   async function save(next: { enabled?: boolean; handle?: Handle }) {
     const body = { enabled: next.enabled ?? enabled, handle: next.handle ?? handle };
     setSaving(true);
+    // Capture current values for rollback
+    const prevEnabled = enabled;
+    const prevHandle = handle;
     // Optimistic
     if (next.enabled !== undefined) setEnabled(next.enabled);
     if (next.handle !== undefined) setHandle(next.handle);
@@ -53,8 +56,9 @@ export default function WalletSettings() {
       toast.success('Saved');
     } catch {
       toast.error('Could Not Save');
-      // Revert
-      if (next.enabled !== undefined) setEnabled(!next.enabled);
+      // Revert both fields to pre-optimistic values
+      setEnabled(prevEnabled);
+      setHandle(prevHandle);
     } finally {
       setSaving(false);
     }

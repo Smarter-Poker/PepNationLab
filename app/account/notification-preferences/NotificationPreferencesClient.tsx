@@ -88,9 +88,7 @@ export default function NotificationPreferencesClient({
     // Browser-only APIs — must run after mount to avoid SSR mismatch
     const supported = isWebPushSupported();
     const permission = notificationPermission();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPushSupported(supported);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPushPermission(permission);
   }, []);
 

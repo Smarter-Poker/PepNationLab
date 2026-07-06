@@ -609,7 +609,8 @@ export async function POST(request: NextRequest) {
         .rpc('redeem_coupon', {
           p_code: trimmedCouponCode,
           p_agent_id: couponAgentId,
-          p_order_subtotal: subtotal
+          p_order_subtotal: subtotal,
+          p_user_id: user.id
         });
 
       if (redeemError) {

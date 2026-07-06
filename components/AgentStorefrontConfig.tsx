@@ -71,7 +71,7 @@ export default function AgentStorefrontConfig({
     return Date.now() - lastChange >= COOLDOWN_MS;
   }, [displayNameChangedAt]);
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
+  const handleUpdateProfile = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     const cleanSlug = slug.trim().toLowerCase();
 
