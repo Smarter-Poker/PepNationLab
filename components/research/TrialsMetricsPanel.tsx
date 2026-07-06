@@ -13,7 +13,7 @@
  *   - chembl_id / uniprot_id / unii external links
  */
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import IframeModal from '@/components/ui/IframeModal';
 import { type Compound, evidenceTier, RISK_META } from '@/lib/compounds';

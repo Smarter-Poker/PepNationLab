@@ -70,7 +70,7 @@ function toFahrenheit(value?: string | null): string | null {
 
 // Ban em/en dashes from FAQ copy (platform request). Replace with a comma.
 function noEmDash(value: string): string {
-  return value.replace(/\s*[-–]\s*/g, ', ');
+  return value.replace(/\s*[-–—]\s*/g, ', ');
 }
 
 function Para({ children }: { children: React.ReactNode }) {

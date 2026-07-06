@@ -9,8 +9,9 @@ export function calculateShippingCost(option: ShippingOption, weightOz: number):
   if (option === 'agent_pickup') {
     return 0;
   }
-  // Convert ounces to grams
-  const weightG = weightOz * 28.3495;
+  // Convert ounces to grams; guard against non-finite or negative inputs.
+  const safeOz = Number.isFinite(weightOz) && weightOz > 0 ? weightOz : 0;
+  const weightG = safeOz * 28.3495;
   const baseRate = option === 'fedex' ? 80 : 40;
   
   if (weightG <= 500) {

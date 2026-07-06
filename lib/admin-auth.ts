@@ -178,7 +178,7 @@ export async function assertMfaRecent(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const amr: Array<{ method: string; timestamp: number }> = (session as any).user?.amr ?? [];
+  const amr: Array<{ method: string; timestamp: number }> = (session as any).amr ?? [];
   if (!Array.isArray(amr) || amr.length === 0) {
     return NextResponse.json(
       { error: 'Multi-Factor Authentication Required For This Action.' },
