@@ -444,7 +444,7 @@ function MatchResultsDrawer({
                   </div>
                     <div style={{ marginTop: 24, padding: 20, background: 'rgba(192,197,206,0.1)', borderRadius: 16, border: '1px solid rgba(192,197,206,0.2)' }}>
                       <p style={{ color: '#C0C5CE', fontSize: '1.1rem', fontWeight: 600, lineHeight: 1.5, textAlign: 'center' }}>
-                        The AI needs more context to refine these results. Please restart the match process and provide more detail.
+                        The AI Needs More Context To Refine These Results. Please Restart The Match Process And Provide More Detail.
                       </p>
                       <button
                         type="button"
@@ -465,7 +465,7 @@ function MatchResultsDrawer({
                   <Sparkles size={48} color={primaryColor} style={{ marginBottom: 16, opacity: 0.5 }} />
                   <h3 style={{ color: '#FFF', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8 }}>0 Matches Found</h3>
                   <p style={{ color: '#A8B4C0', marginBottom: 24, lineHeight: 1.5 }}>
-                    We couldn&apos;t find a protocol matching all of your strict constraints (e.g. Oral-Only, Low-Risk).
+                    We Couldn&apos;t Find A Protocol Matching All Of Your Strict Constraints (E.G. Oral-Only, Low-Risk).
                   </p>
                   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
                     <button type="button" onClick={() => setFilterOralOnly(false)} style={{ padding: '10px 16px', background: 'rgba(255,255,255,0.1)', color: '#FFF', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Drop Oral-Only</button>
@@ -1051,12 +1051,12 @@ function GuidedDiscoveryWizard({
                     <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 12 }}>
                       Step 4 of 4
                     </div>
-                    <h3 style={{ margin: '0 0 16px 0', fontSize: '1.25rem', fontWeight: 800 }}>What is your budget appetite?</h3>
+                    <h3 style={{ margin: '0 0 16px 0', fontSize: '1.25rem', fontWeight: 800 }}>What Is Your Budget Appetite?</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                       {[
-                        { v: 'conservative', label: 'Conservative', sub: 'Prioritize single, foundational compounds' },
-                        { v: 'standard', label: 'Standard', sub: 'Balanced recommendations' },
-                        { v: 'unlimited', label: 'Unlimited', sub: 'Show me the absolute best, regardless of price' },
+                        { v: 'conservative', label: 'Conservative', sub: 'Prioritize Single, Foundational Compounds' },
+                        { v: 'standard', label: 'Standard', sub: 'Balanced Recommendations' },
+                        { v: 'unlimited', label: 'Unlimited', sub: 'Show Me The Absolute Best, Regardless Of Price' },
                       ].map(o => {
                         const active = state.budget === o.v;
                         return (
