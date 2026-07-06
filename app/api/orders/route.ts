@@ -142,6 +142,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Guard: sub-agents MUST resolve to their parent agent, otherwise pricing
+    // collapses to $0 and the order has no billing chain.
+    if (isSubAgent && !agentProfile) {
+      return NextResponse.json(
+        { error: 'Sub-Agent Account Configuration Error. Please Contact Your Parent Agent.' },
+        { status: 403 }
+      );
+    }
+
     // Cart item ids may be agent_product ids (mobile by-name / quick-add path via
     // CartContext, where the storefront grid is not mounted) or master product ids
     // (storefront / reorder paths). Every downstream lookup here resolves against
@@ -223,7 +232,7 @@ export async function POST(request: NextRequest) {
     }
 
     // CLOSED-LOOP RESEARCHER OWNERSHIP + CATALOG GUARD
-    // Applied whether or not agentSlug is present — the slug just provides
+    // Applied whether or not agentSlug is present -- the slug just provides
     // the storefront-level min-qty and domain checks on top. The core
     // visibility gate is always enforced via the DB-stored referring_agent_id.
     if (!isAgentSelfBuy && !isSubAgent && agentProfile) {
@@ -243,7 +252,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (agentSlug) {
-      // Use .eq() not .ilike() — slug is a user-supplied value; underscore in
+      // Use .eq() not .ilike() -- slug is a user-supplied value; underscore in
       // .ilike() is a LIKE wildcard that could match wrong storefronts.
       const { data: storefrontAgent } = await serviceSupabase
         .from('agent_profiles')
@@ -274,7 +283,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: `This Storefront Requires A Minimum Of ${minPerItem} Per Peptide.` }, { status: 400 });
         }
       }
-      // Note: product visibility already checked above — skip the redundant
+      // Note: product visibility already checked above -- skip the redundant
       // per-slug visible-products query since the universal guard ran first.
     }
 
@@ -365,7 +374,7 @@ export async function POST(request: NextRequest) {
     let totalWeightOz = 0;
     const computedItems = [];
 
-    // Hoist the effective-markup RPC out of the per-item loop — the agent ID
+    // Hoist the effective-markup RPC out of the per-item loop -- the agent ID
     // is constant for the entire checkout, calling it once saves N-1 round trips.
     let agentEffectiveMarkupPct = 0;
     if (agentProfile && !agentProfile.is_sub_agent) {
@@ -443,8 +452,9 @@ export async function POST(request: NextRequest) {
           }
 
           // Gamification Markup (Super Agent -> Agent)
-          // The Agent pays the Super Agent's cost + Markup
-          if (agentProfile && !agentProfile.is_sub_agent) {
+          // The Agent pays the Super Agent's cost + Markup.
+          // Sub-agent wholesale orders are exempt -- they pay baseline_cost.
+          if (agentProfile && !agentProfile.is_sub_agent && !isSubAgent) {
              costPrice = (superAgentCost ?? 0) * (1 + (agentEffectiveMarkupPct / 100));
           }
 
@@ -503,7 +513,7 @@ export async function POST(request: NextRequest) {
           product_name: finalProductName,
           quantity: split.localQty,
           unit_retail_price: retailPrice,
-          unit_cost_price: costPrice,                                           // use real cost, not 0 — zero corrupts COGS reporting
+          unit_cost_price: costPrice,                                           // use real cost, not 0 -- zero corrupts COGS reporting
           unit_super_agent_cost: superAgentCost,                               // use real super-agent cost, not 0
           isLocalFulfillment: true
         } as any);
@@ -678,7 +688,7 @@ export async function POST(request: NextRequest) {
 
     // Disclaimer audit check: verify Layer 3 (add_to_cart) acceptance exists before
     // inserting Layer 4 (checkout). A missing add_to_cart row means the researcher
-    // bypassed the cart disclaimer gate — refuse the order.
+    // bypassed the cart disclaimer gate -- refuse the order.
     const { data: addToCartRow } = await serviceSupabase
       .from('disclaimer_acceptances')
       .select('id')
@@ -877,7 +887,7 @@ export async function POST(request: NextRequest) {
       }
     }
     // GUARD: Ensure we actually have items to insert before creating the order row.
-    // This check MUST run before the INSERT — after the INSERT, a delete is lossy:
+    // This check MUST run before the INSERT -- after the INSERT, a delete is lossy:
     // it does NOT release reserved inventory, does NOT unredeem the coupon, and does
     // NOT refund prepaid balance. Checking here lets rollbackPreOrder() clean up cleanly.
     if (computedItems.length === 0) {
@@ -915,7 +925,7 @@ export async function POST(request: NextRequest) {
 
     if (orderError || !order) {
       // Handle unique constraint violation on idempotency_key (race between two
-      // concurrent requests with the same key — the loser returns the winner's order)
+      // concurrent requests with the same key -- the loser returns the winner's order)
       if (orderError && (orderError as any).code === '23505' && idempotencyKey) {
         const { data: existing } = await serviceSupabase
           .from('orders')
@@ -950,7 +960,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Back-fill order_id on the disclaimer acceptance row for compliance audit joins.
-    // Must not block the response — wrap in non-throwing promise chain.
+    // Must not block the response -- wrap in non-throwing promise chain.
     serviceSupabase
       .from('disclaimer_acceptances')
       .update({ order_id: order.id })
@@ -985,7 +995,7 @@ export async function POST(request: NextRequest) {
         await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
       }
 
-      return NextResponse.json({ error: `An Unexpected Error Occurred: ${itemsError.message || JSON.stringify(itemsError)}` }, { status: 500 });
+      return NextResponse.json({ error: 'An Unexpected Error Occurred While Saving Order Items.' }, { status: 500 });
     }
 
     if (initialStatus === 'approved_ship' || initialStatus === 'approved_pickup') {
