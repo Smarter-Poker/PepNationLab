@@ -1151,14 +1151,14 @@ export default function ProductModalEnhancements({
               gap: 10, color: 'var(--white)',
             }}>
               <span style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>
-                Save ${formatMoney(saveVsSeparately.savings)}
+                Save ${formatMoney(saveVsSeparately.savings / 10)}
               </span>
               <span style={{ fontSize: '0.86rem', color: 'var(--grey-300)' }}>
                 ({saveVsSeparately.pct.toFixed(0)}% Off Separate Vials)
               </span>
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 6 }}>
-              Separate Vials Add Up To ${formatMoney(saveVsSeparately.separateTotal)}. The Stack Is ${formatMoney(saveVsSeparately.bundle)}.
+              Separate Vials Add Up To ${formatMoney(saveVsSeparately.separateTotal / 10)}. The Stack Is ${formatMoney(saveVsSeparately.bundle / 10)}.
             </div>
           </section>
         </>
