@@ -752,8 +752,8 @@ export async function POST(request: NextRequest) {
           return { error: `Insufficient Prepaid Balance. Requires $${amount.toFixed(2)}, But Balance Is $${bal.toFixed(2)}. Please Recharge Your Account.`, status: 402 };
         }
         const { data: deductSuccess } = await serviceSupabase.rpc('deduct_prepaid_balance', {
-          p_agent_id: saProfile.id,
-          p_amount: amount,
+          agent_id: saProfile.id,
+          amount: amount,
           p_order_id: null,
           p_description: 'Order Payment',
         });
