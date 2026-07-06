@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     .lte('scheduled_at', nowIso)
     .order('scheduled_at', { ascending: true })
     .limit(50);
-  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
   const list = (rows ?? []) as ScheduledRow[];
   let processed = 0;

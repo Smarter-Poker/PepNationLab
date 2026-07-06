@@ -32,11 +32,11 @@ export async function GET(req: NextRequest) {
 
   if (missedRes.error) {
     captureCallError(missedRes.error, 'sweep', { branch: 'missed' });
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
   if (staleRes.error) {
     captureCallError(staleRes.error, 'sweep', { branch: 'stale_active' });
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
   if (missedRes.data && missedRes.data.length > 0) {

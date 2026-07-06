@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { data, error: qErr } = await query;
-  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
   const messages = (data ?? []) as MessageRow[];
 

@@ -245,7 +245,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   const { data, error: rpcErr } = await svc.rpc('fn_get_user_conversations', { p_user: user.id });
-  if (rpcErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (rpcErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
   let conversations = (data ?? []) as RawConv[];
 

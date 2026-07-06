@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
       })
       .select('*')
       .maybeSingle();
-    if (insErr || !inserted) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    if (insErr || !inserted) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
     await recordCallTelemetry('messenger_call.start', user.id, {
       call_id: (inserted as CallRow).id,
@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
       .eq('status', 'ringing')
       .select('*')
       .maybeSingle();
-    if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     if (!updated) {
       const { data: current } = await svc
         .from('messenger_calls')
@@ -224,7 +224,7 @@ export async function POST(req: NextRequest) {
       .eq('status', 'ringing')
       .select('*')
       .maybeSingle();
-    if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     if (!updated) {
       const { data: current } = await svc
         .from('messenger_calls')
@@ -271,7 +271,7 @@ export async function POST(req: NextRequest) {
     .eq('id', callId)
     .select('*')
     .maybeSingle();
-  if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (upErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
   if (updated) {
     const u = updated as CallRow;

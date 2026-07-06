@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     .eq('conversation_id', parsed.data.conversationId)
     .eq('user_id', user.id)
     .maybeSingle();
-  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
   return NextResponse.json({ themeValue: data?.theme_value ?? null });
 }
