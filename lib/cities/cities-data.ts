@@ -1000,8 +1000,8 @@ export const CITIES: City[] = [
   { name: 'Overland Park', slug: 'overland-park', state: 'Kansas', stateSlug: 'kansas', stateAbbr: 'KS', population: 200000, medianIncome: 80000, tier: 2, region: 'Greater Kansas City' },
   { name: 'Leawood', slug: 'leawood', state: 'Kansas', stateSlug: 'kansas', stateAbbr: 'KS', population: 35000, medianIncome: 130000, tier: 1, region: 'Greater Kansas City' },
   { name: 'Lenexa', slug: 'lenexa', state: 'Kansas', stateSlug: 'kansas', stateAbbr: 'KS', population: 58000, medianIncome: 80000, tier: 2, region: 'Greater Kansas City' },
-  { name: 'Kansas City', slug: 'kansas-city', state: 'Missouri', stateSlug: 'missouri', stateAbbr: 'MO', population: 497000, medianIncome: 53000, tier: 3 },
-  { name: 'St. Louis', slug: 'st-louis', state: 'Missouri', stateSlug: 'missouri', stateAbbr: 'MO', population: 301000, medianIncome: 42000, tier: 3 },
+  { name: 'Kansas City', slug: 'kansas-city', state: 'Missouri', stateSlug: 'missouri', stateAbbr: 'MO', population: 497000, medianIncome: 53000, tier: 3, region: 'Greater Kansas City' },
+  { name: 'St. Louis', slug: 'st-louis', state: 'Missouri', stateSlug: 'missouri', stateAbbr: 'MO', population: 301000, medianIncome: 42000, tier: 3, region: 'Greater St. Louis' },
   { name: 'Clayton', slug: 'clayton', state: 'Missouri', stateSlug: 'missouri', stateAbbr: 'MO', population: 17000, medianIncome: 105000, tier: 2, region: 'Greater St. Louis' },
 
   // ─────────────────────────────────────────────
@@ -1044,14 +1044,14 @@ export const CITIES: City[] = [
   // ─────────────────────────────────────────────
   { name: 'Hilton Head', slug: 'hilton-head', state: 'South Carolina', stateSlug: 'south-carolina', stateAbbr: 'SC', population: 40000, medianIncome: 72000, tier: 2 },
   { name: 'Mount Pleasant', slug: 'mount-pleasant', state: 'South Carolina', stateSlug: 'south-carolina', stateAbbr: 'SC', population: 95000, medianIncome: 87000, tier: 2, region: 'Greater Charleston' },
-  { name: 'Charleston', slug: 'charleston', state: 'South Carolina', stateSlug: 'south-carolina', stateAbbr: 'SC', population: 150000, medianIncome: 60000, tier: 2 },
+  { name: 'Charleston', slug: 'charleston', state: 'South Carolina', stateSlug: 'south-carolina', stateAbbr: 'SC', population: 150000, medianIncome: 60000, tier: 2, region: 'Greater Charleston' },
   { name: 'Columbia', slug: 'columbia', state: 'South Carolina', stateSlug: 'south-carolina', stateAbbr: 'SC', population: 136000, medianIncome: 48000, tier: 3 },
 
   // ─────────────────────────────────────────────
   // LOUISIANA
   // ─────────────────────────────────────────────
   { name: 'Metairie', slug: 'metairie', state: 'Louisiana', stateSlug: 'louisiana', stateAbbr: 'LA', population: 140000, medianIncome: 58000, tier: 3, region: 'Greater New Orleans' },
-  { name: 'New Orleans', slug: 'new-orleans', state: 'Louisiana', stateSlug: 'louisiana', stateAbbr: 'LA', population: 383000, medianIncome: 40000, tier: 3 },
+  { name: 'New Orleans', slug: 'new-orleans', state: 'Louisiana', stateSlug: 'louisiana', stateAbbr: 'LA', population: 383000, medianIncome: 40000, tier: 3, region: 'Greater New Orleans' },
   { name: 'Baton Rouge', slug: 'baton-rouge', state: 'Louisiana', stateSlug: 'louisiana', stateAbbr: 'LA', population: 228000, medianIncome: 44000, tier: 3 },
 
   // ─────────────────────────────────────────────
@@ -1059,7 +1059,7 @@ export const CITIES: City[] = [
   // ─────────────────────────────────────────────
   { name: 'Mountain Brook', slug: 'mountain-brook', state: 'Alabama', stateSlug: 'alabama', stateAbbr: 'AL', population: 21000, medianIncome: 155000, tier: 1, region: 'Greater Birmingham' },
   { name: 'Vestavia Hills', slug: 'vestavia-hills', state: 'Alabama', stateSlug: 'alabama', stateAbbr: 'AL', population: 35000, medianIncome: 95000, tier: 2, region: 'Greater Birmingham' },
-  { name: 'Birmingham', slug: 'birmingham', state: 'Alabama', stateSlug: 'alabama', stateAbbr: 'AL', population: 212000, medianIncome: 42000, tier: 3 },
+  { name: 'Birmingham', slug: 'birmingham', state: 'Alabama', stateSlug: 'alabama', stateAbbr: 'AL', population: 212000, medianIncome: 42000, tier: 3, region: 'Greater Birmingham' },
   { name: 'Huntsville', slug: 'huntsville', state: 'Alabama', stateSlug: 'alabama', stateAbbr: 'AL', population: 214000, medianIncome: 60000, tier: 3 },
 
   // ─────────────────────────────────────────────
@@ -1073,7 +1073,7 @@ export const CITIES: City[] = [
   // OKLAHOMA
   // ─────────────────────────────────────────────
   { name: 'Edmond', slug: 'edmond', state: 'Oklahoma', stateSlug: 'oklahoma', stateAbbr: 'OK', population: 100000, medianIncome: 80000, tier: 2, region: 'Greater Oklahoma City' },
-  { name: 'Oklahoma City', slug: 'oklahoma-city', state: 'Oklahoma', stateSlug: 'oklahoma', stateAbbr: 'OK', population: 680000, medianIncome: 54000, tier: 3 },
+  { name: 'Oklahoma City', slug: 'oklahoma-city', state: 'Oklahoma', stateSlug: 'oklahoma', stateAbbr: 'OK', population: 680000, medianIncome: 54000, tier: 3, region: 'Greater Oklahoma City' },
   { name: 'Tulsa', slug: 'tulsa', state: 'Oklahoma', stateSlug: 'oklahoma', stateAbbr: 'OK', population: 413000, medianIncome: 50000, tier: 3 },
 
   // ─────────────────────────────────────────────
@@ -1095,7 +1095,7 @@ export const CITIES: City[] = [
   { name: 'Kailua', slug: 'kailua', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 50000, medianIncome: 90000, tier: 2 },
 ];
 
-// ─── Content versioning ─────────────────────────────────────────────────────
+// ─── Content versioning ───────────────────────────────────────────────────────────────────
 /**
  * Bump this date ONLY when city page content materially changes (copy, FAQs,
  * schema, layout). It feeds sitemap <lastmod> and schema dateModified. Do NOT
@@ -1104,7 +1104,7 @@ export const CITIES: City[] = [
  */
 export const CITY_CONTENT_UPDATED = new Date('2026-07-07');
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────────────────────
 
 /** Returns all unique state slugs present in the city data */
 export function getStatesSlugs(): string[] {
