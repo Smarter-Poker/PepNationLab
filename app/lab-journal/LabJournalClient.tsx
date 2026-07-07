@@ -638,6 +638,84 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     }
   };
 
+  const generateLabReport = () => {
+    const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Injection site summary
+    const siteCounts: Record<string, number> = {};
+    doses.forEach(d => { if (d.injection_site) siteCounts[d.injection_site] = (siteCounts[d.injection_site] || 0) + 1; });
+    const siteRows = Object.entries(siteCounts).sort((a, b) => b[1] - a[1])
+      .map(([s, n]) => `<tr><td>${esc(s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))}</td><td style="text-align:right">${n}</td></tr>`).join('');
+
+    // Recent doses
+    const doseRows = doses.slice(0, 25).map(d =>
+      `<tr><td>${esc(new Date(d.dosed_at).toLocaleDateString())}</td><td>${esc(d.compound_slug)}</td><td>${esc(d.dose_amount)} ${esc(d.unit)}</td><td>${esc(d.injection_site ? d.injection_site.replace(/_/g, ' ') : '')}</td></tr>`
+    ).join('') || '<tr><td colspan="4" style="color:#888">No Doses Logged</td></tr>';
+
+    // Biometric summary
+    const bioRows = trackedMetrics.map(m => {
+      const s = metricStats(m);
+      if (!s) return '';
+      const arrow = (d: number) => d === 0 ? '' : d > 0 ? ' (Up ' + Math.abs(Math.round(d * 100) / 100) + ')' : ' (Down ' + Math.abs(Math.round(d * 100) / 100) + ')';
+      return `<tr><td>${esc(m)}</td><td style="text-align:right">${esc(s.current)} ${esc(s.unit)}</td><td style="text-align:right">${esc(Math.round(s.d7 * 100) / 100)}${arrow(s.d7)}</td><td style="text-align:right">${esc(Math.round(s.d30 * 100) / 100)}</td></tr>`;
+    }).join('') || '<tr><td colspan="4" style="color:#888">No Biometrics Logged</td></tr>';
+
+    const insightRows = insights.map(i => `<li>${esc(i.text)}</li>`).join('') || '<li style="color:#888">No Signals Yet</li>';
+
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Lab Report — ${today}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #14232f; margin: 0; padding: 40px; background: #fff; }
+  h1 { font-size: 22px; margin: 0 0 4px; color: #0a7d78; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; color: #0a7d78; border-bottom: 2px solid #cfeceb; padding-bottom: 6px; margin: 26px 0 10px; }
+  .sub { color: #667; font-size: 12px; margin-bottom: 20px; }
+  .cards { display: flex; gap: 12px; flex-wrap: wrap; }
+  .card { flex: 1 1 120px; border: 1px solid #e3e9ee; border-radius: 8px; padding: 12px 14px; }
+  .card .l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #889; }
+  .card .v { font-size: 22px; font-weight: 800; color: #14232f; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eef2f5; }
+  th { color: #667; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+  ul { margin: 6px 0; padding-left: 18px; font-size: 12px; }
+  li { margin-bottom: 4px; }
+  .foot { margin-top: 30px; padding-top: 12px; border-top: 1px solid #e3e9ee; font-size: 10px; color: #99a; }
+  @media print { body { padding: 16px; } .noprint { display: none; } }
+</style></head><body>
+  <button class="noprint" onclick="window.print()" style="float:right;background:#0a7d78;color:#fff;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-weight:600">Print / Save As PDF</button>
+  <h1>Pep Nation Lab — Research Log Summary</h1>
+  <div class="sub">Generated ${today} · For Qualified Research Documentation Only</div>
+
+  <h2>Protocol Overview</h2>
+  <div class="cards">
+    <div class="card"><div class="l">Adherence 30D</div><div class="v">${doseStats.adherence != null ? doseStats.adherence + '%' : '--'}</div></div>
+    <div class="card"><div class="l">Current Streak</div><div class="v">${doseStats.streak} Days</div></div>
+    <div class="card"><div class="l">Active Compounds</div><div class="v">${doseStats.activeCompounds}</div></div>
+    <div class="card"><div class="l">Total Doses</div><div class="v">${doseStats.total}</div></div>
+  </div>
+
+  <h2>Signals</h2>
+  <ul>${insightRows}</ul>
+
+  <h2>Biometrics</h2>
+  <table><thead><tr><th>Metric</th><th style="text-align:right">Current</th><th style="text-align:right">7-Day Change</th><th style="text-align:right">30-Day Change</th></tr></thead><tbody>${bioRows}</tbody></table>
+
+  <h2>Injection Site Rotation</h2>
+  <table><thead><tr><th>Site</th><th style="text-align:right">Times Used</th></tr></thead><tbody>${siteRows || '<tr><td colspan="2" style="color:#888">No Sites Logged</td></tr>'}</tbody></table>
+
+  <h2>Recent Dose Log</h2>
+  <table><thead><tr><th>Date</th><th>Compound</th><th>Amount</th><th>Site</th></tr></thead><tbody>${doseRows}</tbody></table>
+
+  <div class="foot">Research Use Only. This Document Summarizes Self-Reported Research Log Data And Does Not Constitute Medical Advice, Diagnosis, Or A Dosing Recommendation. Concentration Estimates Are Informational.</div>
+</body></html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) { toast.error('Please Allow Pop-Ups To Generate The Report'); return; }
+    w.document.write(html);
+    w.document.close();
+    toast.success('Lab Report Generated');
+  };
+
   const exportJournalToCSV = () => {
     let csv = 'Type,Date,Title/Items,Details\n';
     
@@ -1581,9 +1659,14 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
             </button>
           ))}
         </div>
-        <button onClick={exportJournalToCSV} className="btn btn-secondary btn-sm" style={{ whiteSpace: 'nowrap', borderRadius: 20, flexShrink: 0 }}>
-          Export Journal to CSV
-        </button>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
+          <button onClick={generateLabReport} className="btn btn-secondary btn-sm" style={{ whiteSpace: 'nowrap', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <FlaskConical size={14} /> Print Lab Report
+          </button>
+          <button onClick={exportJournalToCSV} className="btn btn-secondary btn-sm" style={{ whiteSpace: 'nowrap', borderRadius: 20 }}>
+            Export Journal to CSV
+          </button>
+        </div>
       </div>
 
       {activeTab === 'bundles' && (

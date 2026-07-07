@@ -30,7 +30,23 @@ import ResearchCartButton from '@/components/research/ResearchCartButton';
 import MonographSeoContent from '@/components/research/MonographSeoContent';
 import MonographCitations from '@/components/research/MonographCitations';
 
-export const dynamic = 'force-dynamic';
+// ISR: monographs are static reference content that changes rarely. Pre-render
+// every compound at build and revalidate hourly. This ships full, instant HTML
+// to search engines and non-JS AI crawlers (previously force-dynamic streamed
+// the body, which lightweight fetchers truncated) and dramatically improves
+// Core Web Vitals. dynamicParams=true renders any new/unknown slug on demand
+// and caches it at the edge.
+export const revalidate = 3600;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  try {
+    const all = await getAllCompounds();
+    return all.map((compound) => ({ slug: compound.slug }));
+  } catch {
+    return [];
+  }
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

@@ -13,7 +13,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { CITIES, getCity, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
-import { getCityFAQs } from '@/lib/cities/city-content';
 import { getStoreTop10 } from '@/lib/cities/top10-server';
 import CityPage from './CityPage';
 
@@ -89,7 +88,7 @@ export default async function CityLandingPage({
   const city = getCity(stateSlug, citySlug);
   if (!city) notFound();
 
-  const faqs = getCityFAQs(city);
+
   // Live storefront Top 10 — identical products, names, sizes, and prices to
   // the default store. Empty array on failure → CityPage falls back to the
   // static FEATURED_PEPTIDES list.
