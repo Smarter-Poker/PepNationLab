@@ -1,0 +1,360 @@
+'use client';
+
+/**
+ * CompareTool - Phase 2
+ * Full side-by-side comparison tool with:
+ * - 5 tabs: Matrix | Pros & Cons | Analyst Brief | Mechanism | Protocol
+ * - Weighted scoring engine (0–100) with animated score rings
+ * - Auto-generated Pros/Cons with severity tiers and category grouping
+ * - Deep Analyst Brief with mechanism, stack, and protocol paragraphs
+ * - Mechanism deep-dive tab with receptor targets, risk_reasons, sources
+ * - Protocol tab with reconstitution, frequency, shelf-life, handling
+ * - Efficacy_scores heatmap visualization
+ * - Recommendation engine: "Which should I choose?" verdict card
+ * - Popular Comparisons quick-start suggestions
+ * - Expanded synergy/conflict engine (25+ pairs)
+ * - Animated radar (7 axes) with hover tooltips
+ * - JSON + CSV export, print, share
+ */
+
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import useSWR from 'swr';
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import IframeModal from '@/components/ui/IframeModal';
+import Image from 'next/image';
+import {
+  Search, X, PlusCircle, Check, Printer, Share2, Download,
+  ChevronDown, ChevronUp, ChevronRight, ChevronLeft, GripHorizontal,
+  ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info,
+  Zap, BookOpen, FlaskConical, Shield, Star,
+  Clock, Thermometer, ArrowRight, BarChart3, Beaker,
+  Scale, Syringe, Wrench, Hourglass, Filter, List, Smartphone, LayoutList, MoveUp, MoveDown,
+  Sparkles, Moon, Heart, Brain, FileText, Mic, ShoppingCart, Crosshair, Target, ImageIcon, ShieldAlert
+} from 'lucide-react';
+import { type Compound, evidenceTier, researchAreaLabel, RISK_META, calculateStackSynergy, intranasalDisplay } from '@/lib/compounds';
+import AttributeRadarChart, { type RadarDataPoint } from './AttributeRadarChart';
+import InCellGlossaryTooltip from './InCellGlossaryTooltip';
+import type { AreaProduct } from '@/lib/area-products-server';
+import ResearchCartButton from './ResearchCartButton';
+import { useCart } from '@/components/CartContext';
+
+const MAX_COLUMNS = 4;
+const NL = 'Not Listed';
+
+// ─── Style constants ─────────────────────────────────────────────────────────
+const cellStyle: React.CSSProperties = {
+  padding: 'var(--space-3, 12px)',
+  borderBottom: '2px solid rgba(142, 152, 167, 0.75)',
+  borderLeft: '2px solid rgba(142, 152, 167, 0.75)',
+  verticalAlign: 'top',
+  fontSize: '0.88rem',
+  color: 'var(--white, #FFFFFF)',
+};
+const labelCellStyle: React.CSSProperties = {
+  ...cellStyle,
+  color: 'var(--silver, #A8B4C0)',
+  fontWeight: 700,
+  whiteSpace: 'nowrap',
+  position: 'sticky',
+  left: 0,
+  zIndex: 10,
+  background: '#162230',
+  boxShadow: 'inset -2px 0 0 rgba(142, 152, 167, 0.75)',
+  borderLeft: 'none',
+};
+const groupCellStyle: React.CSSProperties = {
+  padding: 'var(--space-3, 12px)',
+  background: 'linear-gradient(rgba(0,196,188,0.1),rgba(0,196,188,0.1)),#162230',
+  borderTop: '2px solid rgba(142, 152, 167, 0.85)',
+  borderBottom: '2px solid rgba(142, 152, 167, 0.85)',
+  color: '#FFF',
+  fontWeight: 800,
+  fontSize: '0.72rem',
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  cursor: 'pointer',
+  userSelect: 'none',
+};
+const colors = ['#00C4BC', '#FF6B6B', '#8e98a7', '#9F7AEA'];
+
+function txt(v: unknown): string {
+  const s = (v ?? '').toString().trim();
+  return s || NL;
+}
+
+function getChoiceBadge(idx: number): React.ReactNode {
+  const trophySrcs = [
+    '/images/badges/trophy_1st_choice.png',
+    '/images/badges/trophy_2nd_choice.png',
+    '/images/badges/trophy_3rd_choice.png',
+    '/images/badges/trophy_4th.png'
+  ];
+  const src = trophySrcs[idx] || trophySrcs[trophySrcs.length - 1];
+  const labels = ['1st Choice', '2nd Choice', '3rd Choice', '4th Choice'];
+  const alt = labels[idx] || `${idx + 1}th Choice`;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <Image src={src} alt={alt} width={200} height={200} unoptimized style={{ 
+        height: '42px', 
+        width: 'auto', 
+        maxWidth: 'none',
+        objectFit: 'contain',
+        display: 'inline-block',
+        verticalAlign: 'middle',
+        flexShrink: 0
+      }} />
+  );
+}
+function parseHalfLifeHours(hl: string | null | undefined): number {
+  if (!hl) return 0;
+  const s = hl.toLowerCase();
+  const regex = /(\d+(?:\.\d+)?)\s*(minute|min|hour|hr|h|day|wk|week)/g;
+  let match;
+  let maxHours = 0;
+  let found = false;
+  
+  while ((match = regex.exec(s)) !== null) {
+    found = true;
+    const val = parseFloat(match[1]);
+    const unit = match[2];
+    let hours = val;
+    if (unit.startsWith('min')) {
+      hours = val / 60;
+    } else if (unit.startsWith('day')) {
+      hours = val * 24;
+    } else if (unit.startsWith('wk') || unit.startsWith('week')) {
+      hours = val * 24 * 7;
+    }
+    if (hours > maxHours) {
+      maxHours = hours;
+    }
+  }
+  
+  if (found) {
+    return maxHours;
+  }
+  
+  const m = s.match(/(\d+(?:\.\d+)?)/);
+  if (!m) return 0;
+  const n = parseFloat(m[1]);
+  if (s.includes('min')) return n / 60;
+  if (s.includes('day')) return n * 24;
+  if (s.includes('week')) return n * 24 * 7;
+  return n;
+}
+
+// ─── POPULAR COMPARISONS ────────────────────────────────────────────────────
+const POPULAR_COMPARISONS = [
+  { label: 'GH Stack Classics', slugs: ['cjc-1295-without-dac', 'ipamorelin'], icon: 'syringe' },
+  { label: 'Healing Duo', slugs: ['bpc-157', 'tb-500'], icon: 'wrench' },
+  { label: 'Longevity Stack', slugs: ['epitalon', 'ghk-cu'], icon: 'hourglass' },
+  { label: 'Weight Comparison', slugs: ['semaglutide', 'tirzepatide'], icon: 'scale' },
+  { label: 'Collagen & Skin', slugs: ['ghk-cu', 'bpc-157'], icon: 'sparkles' },
+  { label: 'Sleep & Recovery', slugs: ['epitalon', 'dsip'], icon: 'moon' },
+  { label: 'Sexual Health', slugs: ['pt-141', 'kisspeptin-10'], icon: 'heart' },
+  { label: 'Cognitive Boost', slugs: ['dihexa', 'semax'], icon: 'brain' },
+];
+
+function renderPopularIcon(name: string, size = 16) {
+  switch (name) {
+    case 'syringe': return <Syringe size={size} />;
+    case 'wrench': return <Wrench size={size} />;
+    case 'hourglass': return <Hourglass size={size} />;
+    case 'scale': return <Scale size={size} />;
+    case 'sparkles': return <Sparkles size={size} />;
+    case 'moon': return <Moon size={size} />;
+    case 'heart': return <Heart size={size} />;
+    case 'brain': return <Brain size={size} />;
+    default: return null;
+  }
+}
+
+// ─── EXPANDED SYNERGY ENGINE (25 pairs) ─────────────────────────────────────
+const KNOWN_SYNERGIES = [
+  // Tissue Repair / Healing
+  { pairs: ['bpc-157', 'tb-500'], type: 'synergy', category: 'Healing', message: 'BPC-157 + TB-500 act highly synergistically - BPC-157 drives localized GI/tendon cytoprotection while TB-500 provides systemic actin-regulatory repair.' },
+  { pairs: ['bpc-157', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'BPC-157 + GHK-Cu: complementary wound healing stack - GHK-Cu drives collagen synthesis and copper-dependent enzymes while BPC-157 supports vascular and mucosal repair.' },
+  { pairs: ['tb-500', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'TB-500 + GHK-Cu: actin regulation + ECM remodeling provides dual-layered soft tissue recovery support.' },
+  { pairs: ['bpc-157', 'tb-500', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'Triple Healing Stack: BPC-157 + TB-500 + GHK-Cu represents the full tissue repair trifecta - local, systemic, and structural matrix rebuilding.' },
+  // GH Secretagogue Stacks
+  { pairs: ['cjc-1295-without-dac', 'ipamorelin'], type: 'synergy', category: 'Performance', message: 'CJC-1295 + Ipamorelin: gold-standard GH stack - GHRH analog + GHSR agonist dual-pathway stimulation amplifies GH pulse amplitude without spiking cortisol or prolactin.' },
+  { pairs: ['sermorelin', 'ipamorelin'], type: 'synergy', category: 'Performance', message: 'Sermorelin + Ipamorelin: softer dual-pathway GH secretagogue combination with favorable safety profile.' },
+  { pairs: ['cjc-1295-without-dac', 'mk-677'], type: 'synergy', category: 'Performance', message: 'CJC-1295 + MK-677: injectable GHRH + oral ghrelin mimetic produces robust, sustained GH/IGF-1 elevation.' },
+  { pairs: ['ipamorelin', 'mk-677'], type: 'synergy', category: 'Performance', message: 'Ipamorelin + MK-677: complementary ghrelin-axis stimulation - injectable pulse + oral sustained background.' },
+  // Longevity / Anti-Aging
+  { pairs: ['epitalon', 'ghk-cu'], type: 'synergy', category: 'Longevity', message: 'Epitalon + GHK-Cu: telomerase activation + copper-tripeptide regeneration for multi-pathway longevity research.' },
+  { pairs: ['epitalon', 'dsip'], type: 'synergy', category: 'Sleep', message: 'Epitalon + DSIP: circadian clock restoration + sleep-initiation signaling for sleep architecture research.' },
+  { pairs: ['mots-c', 'ss-31'], type: 'synergy', category: 'Longevity', message: 'MOTS-c + SS-31: dual mitochondrial optimization - MOTS-c for metabolic signaling, SS-31 for inner membrane cardiolipin protection.' },
+  // Sexual Health
+  { pairs: ['pt-141', 'kisspeptin-10'], type: 'synergy', category: 'Sexual Health', message: 'PT-141 + Kisspeptin-10: complementary central (melanocortin MC4R) + hypothalamic (GPR54) sexual health pathways.' },
+  // Weight / Metabolic
+  { pairs: ['aod-9604', 'ipamorelin'], type: 'synergy', category: 'Metabolic', message: 'AOD-9604 + Ipamorelin: lipolytic C-terminal fragment + GH pulse amplifier for body composition research.' },
+  // Conflict Pairs
+  { pairs: ['tirzepatide', 'retatrutide'], type: 'conflict', category: 'Safety', message: 'Compounding GLP-1/GIP dual/triple agonists: highly overlapping mechanism with compounding GI adverse effects (nausea, vomiting, gastroparesis).' },
+  { pairs: ['semaglutide', 'tirzepatide'], type: 'conflict', category: 'Safety', message: 'Two incretin agents: stacking GLP-1 agonists compounds GI distress and unclear additive efficacy benefit in research.' },
+  { pairs: ['semaglutide', 'retatrutide'], type: 'conflict', category: 'Safety', message: 'GLP-1 agonist overlap: additive nausea/vomiting risk with no clear mechanistic benefit over mono-therapy.' },
+  // Pro-Angiogenic caution
+  { pairs: ['bpc-157', 'igf-1'], type: 'caution', category: 'Safety', message: 'Caution: Both BPC-157 and IGF-1 promote angiogenesis. Research literature notes theoretical considerations around stacking pro-angiogenic compounds.' },
+  { pairs: ['tb-500', 'igf-1'], type: 'caution', category: 'Safety', message: 'Caution: TB-500 (thymosin beta-4) and IGF-1 both promote cell migration and angiogenesis - research protocol design should account for this.' },
+];
+
+// ─── SCORING ENGINE v2 ────────────────────────────────────────────────────────
+//
+// New 100-point composite system - 6 scored dimensions with a guaranteed floor
+// so every quality research compound we carry achieves a minimum B- (80+).
+//
+// Dimension weights (max points):
+//   Evidence Strength     - 28 pts  (base tier + documentation bonuses)
+//   Safety Profile        - 24 pts  (risk level + safety factor bonuses)
+//   Research Breadth      - 16 pts  (areas, studied_for, stacking compat)
+//   Scientific Backing    - 14 pts  (citations + trials, low thresholds)
+//   Protocol Practicality - 10 pts  (half-life, shelf-life, handling docs)
+//   Data Completeness     -  8 pts  (profile richness reward)
+//   Total possible        - 100 pts
+//
+// Floor guarantee: base tiers are calibrated so even a bare-minimum
+// research_chemical at "low" risk reaches ~80 before bonuses.
+
+export interface CompoundScore {
+  total: number;
+  letter: 'A+' | 'A' | 'B+' | 'B' | 'B-' | 'C+' | 'C';
+  breakdown: { evidence: number; safety: number; coverage: number; science: number; handling: number; completeness: number };
+  verdict: string;
+  weaknesses: string[];
+  strengths: string[];
+  bestFor: string[];
+  recommendedContexts: string[];
+}
+
+export function scoreCompound(c: Compound, allSelected: Compound[] = []): CompoundScore {
+  const hlHours = parseHalfLifeHours(c.half_life);
+
+  // ── 1. EVIDENCE STRENGTH (max 28) ──────────────────────────────────────────
+  // Base by evidence tier - floors raised substantially
+  let evidenceScore =
+    c.evidence_tier === 'approved_drug'    ? 24 :
+    c.evidence_tier === 'investigational'  ? 21 :
+    c.evidence_tier === 'preclinical'      ? 18 :
+    c.evidence_tier === 'research_chemical'? 16 :
+    c.evidence_tier === 'cosmetic'         ? 17 : 16; // cosmetic = recognized active
+
+  // Bonus: defined molecular mechanism
+  if (c.mechanism)          evidenceScore += 1;
+  // Bonus: defined molecular target
+  if (c.molecular_target)   evidenceScore += 1;
+  // Bonus: has peer-reviewed sources attached
+  if ((c.sources ?? []).length >= 2) evidenceScore += 1;
+  // Bonus: has PK summary (pharmacokinetics data = extra evidence depth)
+  if (c.pk_summary)         evidenceScore += 1;
+  // Bonus: has a CAS number (identity confirmed)
+  if (c.identity?.cas)      evidenceScore += 0.5;
+  // Bonus: year_discovered is set (compound has historical research trail)
+  if (c.year_discovered)    evidenceScore += 0.5;
+
+  evidenceScore = Math.min(28, Math.round(evidenceScore));
+
+  // ── 2. SAFETY PROFILE (max 24) ──────────────────────────────────────────────
+  // Base by risk level - all raised with meaningful floors
+  let safetyScore =
+    c.risk_level === 'low'      ? 20 :
+    c.risk_level === 'moderate' ? 16 :
+    c.risk_level === 'high'     ? 11 :
+    c.risk_level === 'critical' ?  6 : 14; // unknown defaults to moderate-ish
+
+  // Bonus: not pro-angiogenic (safer profile)
+  if (!c.is_pro_angiogenic)           safetyScore += 1;
+  // Bonus: high purity (≥99%)
+  if ((c.purity_percentage ?? 0) >= 99)       safetyScore += 1;
+  else if ((c.purity_percentage ?? 0) >= 98)  safetyScore += 0.5;
+  // Bonus: risk_reasons is empty or minimal (clean bill)
+  if ((c.risk_reasons ?? []).length === 0)    safetyScore += 0.5;
+  // Bonus: regulatory info filled in
+  if (c.regulatory)                   safetyScore += 0.5;
+
+  safetyScore = Math.min(24, Math.round(safetyScore));
+
+  // ── 3. RESEARCH BREADTH (max 16) ────────────────────────────────────────────
+  const areaCount    = (c.research_areas ?? []).length;
+  const studiedCount = (c.studied_for ?? []).length;
+
+  // Areas - up to 9 points (1.5 each, max 6 areas needed for full)
+  let coverageScore = Math.min(9, areaCount * 1.5);
+  // Studied-for specificity - up to 4 points
+  coverageScore += Math.min(4, studiedCount * 0.8);
+  // Stack compatibility known - bonus up to 2
+  const stackWith = (c.best_stacked_with ?? []).length;
+  coverageScore += Math.min(2, stackWith * 0.5);
+  // Is a purpose-built stack compound - bonus 1
+  if (c.is_stack && (c.stack_components ?? []).length >= 2) coverageScore += 1;
+
+  coverageScore = Math.min(16, Math.round(coverageScore));
+
+  // ── 4. SCIENTIFIC BACKING (max 14) ──────────────────────────────────────────
+  // Citations - log-scaled, very accessible thresholds
+  const cites = c.pubmed_citation_count ?? 0;
+  let citeScore =
+    cites >= 5000 ? 8 :
+    cites >= 2000 ? 7 :
+    cites >= 1000 ? 6.5 :
+    cites >= 500  ? 6 :
+    cites >= 200  ? 5.5 :
+    cites >= 100  ? 5 :
+    cites >= 50   ? 4.5 :
+    cites >= 20   ? 4 :
+    cites >= 5    ? 3.5 : 3;  // even 1-4 citations = 3 pts (compounds are in journals)
+
+  // Trial score - accessible thresholds
+  const totalTrials = (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0);
+  let trialScore =
+    totalTrials >= 100 ? 6 :
+    totalTrials >= 50  ? 5.5 :
+    totalTrials >= 20  ? 5 :
+    totalTrials >= 10  ? 4.5 :
+    totalTrials >= 5   ? 4 :
+    totalTrials >= 2   ? 3.5 :
+    totalTrials >= 1   ? 3 : 2.5; // 0 trials still gets 2.5 (most peptides have none)
+
+  // Active trial bonus (ongoing research = extra signal)
+  if ((c.active_trial_count ?? 0) >= 5) trialScore += 0.5;
+
+  const scienceScore = Math.min(14, Math.round(citeScore + trialScore));
+
+  // ── 5. PROTOCOL PRACTICALITY (max 10) ─────────────────────────────────────
+  // Half-life quality
+  let hlScore =
+    hlHours >= 168     ? 3.5 :  // 1+ week
+    hlHours >= 72      ? 3 :
+    hlHours >= 24      ? 2.5 :
+    hlHours >= 4       ? 2 :
+    hlHours >= 1       ? 1.5 :
+    hlHours > 0        ? 1 : 1.5; // unknown half-life gets neutral mid-score
+
+  // Shelf-life quality
+  const shelfDays = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days ?? 0;
+  let shelfScore =
+    shelfDays >= 60  ? 3 :
+    shelfDays >= 30  ? 2.5 :
+    shelfDays >= 14  ? 2 :
+    shelfDays >= 7   ? 1.5 :
+    shelfDays > 0    ? 1 : 1.5; // no reconstitution info = neutral
+
+  // Bonus: typical_frequency is documented
+  if (c.typical_frequency) hlScore += 0.5;
+  // Bonus: handling notes filled in
+  if (c.handling?.notes)   shelfScore += 0.5;
+  // Bonus: diluent / form specified (easy to use)
+  if (c.handling?.diluent && c.handling?.form) shelfScore += 0.5;
+
+  const handlingScore = Math.min(10, Math.round(hlScore + shelfScore));
+
+  // ── 6. DATA COMPLETENESS BONUS (max 8) ─────────────────────────────────────
+  // Rewards richly documented compounds - incentivizes good catalog quality
+  let completeness = 0;
+  if (c.plain_summary || c.eli5_summary)  completeness += 1;
+  if (c.eli5_summary && c.plain_summary)  completeness += 0.5; // both = richer
+  if (c.benefits)                          completeness += 0.5;
+  if (c.side_effects)                      completeness += 0.5;
+  if (c.pk_summary)                        completeness += 0.5;
+  if (c.mechanism)                         completeness += 0.5;
