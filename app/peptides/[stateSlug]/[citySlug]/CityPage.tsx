@@ -203,9 +203,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             ld+json block here — duplicate Service/Breadcrumb nodes on the same
             URL are conflicting structured data and hurt rich-result parsing. */}
 
-        {/* ═══════════════════════════════════════════════════
+        {/* ═════════════════════════════════════════════════
             HERO — 3D peptide helix full-bleed
-        ═══════════════════════════════════════════════════ */}
+        ═════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', minHeight: 'clamp(640px, 95vh, 980px)', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
           {/* BG image */}
           <Image src="/images/city-hero-peptide.jpg" alt="3D peptide helix" fill priority
@@ -341,11 +341,11 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════
+        {/* ═════════════════════════════════════════════════
             AT A GLANCE — dense, quotable fact box (answer-engine bait:
             AI assistants and featured snippets quote exactly this kind
             of self-contained factual block)
-        ═══════════════════════════════════════════════════ */}
+        ═════════════════════════════════════════════════ */}
         <section style={{ padding: 'clamp(40px, 5vw, 64px) 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           <div className="container">
             <h2 style={{ color: 'var(--white)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 'var(--space-4)' }}>
@@ -377,9 +377,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════
+        {/* ═════════════════════════════════════════════════
             FEATURED PEPTIDES — LIVE storefront Top 10 (same names + prices)
-        ═══════════════════════════════════════════════════ */}
+        ═════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
           {/* Dynamic molecule BG */}
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(0,196,188,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
@@ -475,9 +475,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════
+        {/* ═════════════════════════════════════════════════
             WHY PEP NATION LAB — dynamic BG + Nano Banana 3D icons
-        ═══════════════════════════════════════════════════ */}
+        ═════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
           {/* Dynamic neural/hex BG */}
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 70% 30%, rgba(192,184,168,0.08) 0%, transparent 60%)', pointerEvents: 'none' }} />
@@ -507,7 +507,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
                       src={VALUE_ICON_IMAGE[vp.icon] ?? '/images/icons/icon-compounds.jpg'}
                       alt={vp.title}
                       fill
-                     
+                      sizes="64px"
                       style={{ objectFit: 'cover' }}
                     />
                   </div>
@@ -525,9 +525,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════
+        {/* ═════════════════════════════════════════════════
             AGENT NETWORK CTA
-        ═══════════════════════════════════════════════════ */}
+        ═════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', borderTop: 'var(--border-subtle)', borderBottom: 'var(--border-subtle)', padding: 'clamp(48px, 6vw, 80px) 0', overflow: 'hidden' }}>
           {/* Reuse the catalog BG at a different opacity */}
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center bottom, rgba(0,196,188,0.04) 0%, transparent 80%)', pointerEvents: 'none' }} />
@@ -559,9 +559,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════
+        {/* ═════════════════════════════════════════════════
             FAQ — dynamic hero BG reused at low opacity
-        ═══════════════════════════════════════════════════ */}
+        ═════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at right center, rgba(0,196,188,0.03) 0%, transparent 60%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,10,15,0.9) 50%, var(--black) 100%)', zIndex: 1 }} />
@@ -600,9 +600,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════
+        {/* ═════════════════════════════════════════════════
             FINAL CTA
-        ═══════════════════════════════════════════════════ */}
+        ═════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', borderTop: 'var(--border-subtle)', padding: 'clamp(64px, 8vw, 100px) 0', textAlign: 'center', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(192,184,168,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'var(--black-2)', opacity: 0.8, zIndex: 1 }} />
@@ -632,14 +632,14 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════
+        {/* ═════════════════════════════════════════════════
             NEARBY CITIES STRIP
-        ═══════════════════════════════════════════════════ */}
+        ═════════════════════════════════════════════════ */}
         <NearbyStrip stateSlug={stateSlug} currentCitySlug={citySlug} stateName={city.state} region={city.region} />
 
-        {/* ═══════════════════════════════════════════════════
+        {/* ═════════════════════════════════════════════════
             FOOTER
-        ═══════════════════════════════════════════════════ */}
+        ═════════════════════════════════════════════════ */}
         <footer style={{ background: 'var(--black)', borderTop: '1px solid rgba(192,184,168,0.06)', padding: 'var(--space-8) 0' }}>
           <div className="container">
             <div data-nosnippet style={{ background: 'rgba(229,62,62,0.04)', border: '1px solid rgba(229,62,62,0.12)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
@@ -678,7 +678,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
   );
 }
 
-// ─── Nearby cities strip ────────────────────────────────────────────────────────────────
+// ─── Nearby cities strip ────────────────────────────────────────────────────────────────────────
 // Links same-state cities PLUS same-region cities across state lines (metro
 // areas like Kansas City or the NYC tri-state span states), strengthening the
 // internal link mesh between related pages.
