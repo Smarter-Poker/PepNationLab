@@ -3,12 +3,12 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CITIES, getStatesSlugs, getCitiesByState, getStateName, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
 
-// ─── Static params ─────────────────────────────────────────────────────────
+// ─── Static params ───────────────────────────────────────────────────────────
 export async function generateStaticParams() {
   return getStatesSlugs().map((stateSlug) => ({ stateSlug }));
 }
 
-// ─── Per-state metadata ────────────────────────────────────────────────────
+// ─── Per-state metadata ──────────────────────────────────────────────────
 export async function generateMetadata({
   params,
 }: {
@@ -55,7 +55,7 @@ export async function generateMetadata({
   };
 }
 
-// ─── Page component ────────────────────────────────────────────────────────
+// ─── Page component ──────────────────────────────────────────────────────────
 export default async function StateLandingPage({
   params,
 }: {
@@ -90,6 +90,17 @@ export default async function StateLandingPage({
   const tier1 = sorted.filter((c) => c.tier === 1);
   const tier2 = sorted.filter((c) => c.tier === 2);
   const tier3 = sorted.filter((c) => c.tier === 3);
+
+  // Region silo: group cities by their regional label (Chicagoland area,
+  // Central Illinois, Metro East, ...) so the hub interlinks geography the
+  // way searchers and search engines understand it. Regions ordered by size.
+  const regionMap = new Map<string, typeof sorted>();
+  for (const c of sorted) {
+    const label = c.region ?? `Greater ${stateName}`;
+    if (!regionMap.has(label)) regionMap.set(label, []);
+    regionMap.get(label)!.push(c);
+  }
+  const regions = Array.from(regionMap.entries()).sort((a, b) => b[1].length - a[1].length);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -148,7 +159,7 @@ export default async function StateLandingPage({
 
       <div style={{ background: 'var(--black)', minHeight: '100dvh' }}>
 
-        {/* ── HERO ─────────────────────────────────────────────────── */}
+        {/* ── HERO ─────────────────────────────────────────────────────── */}
         <section
           className="hero-bg"
           style={{
@@ -234,7 +245,7 @@ export default async function StateLandingPage({
           </div>
         </section>
 
-        {/* ── CITY GRID ─────────────────────────────────────────────── */}
+        {/* ── CITY GRID ───────────────────────────────────────────────────── */}
         <section className="section" style={{ paddingTop: 'var(--space-20)', paddingBottom: 'var(--space-20)' }}>
           <div className="container">
 
@@ -277,11 +288,44 @@ export default async function StateLandingPage({
           </div>
         </section>
 
-        {/* ── STATE FAQ ─────────────────────────────────────────────── */}
+        {/* ── BROWSE BY REGION — geographic silo interlinking ────────────── */}
+        {regions.length > 1 && (
+          <section style={{ padding: 'clamp(48px, 6vw, 80px) 0', borderTop: 'var(--border-subtle)', background: 'var(--black-2)' }}>
+            <div className="container">
+              <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.4rem, 2.5vw, 1.9rem)', fontWeight: 800, marginBottom: 'var(--space-3)' }}>
+                Browse {stateName} By <span style={{ color: 'var(--teal)' }}>Region</span>
+              </h2>
+              <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', maxWidth: 640, lineHeight: 1.7, marginBottom: 'var(--space-8)' }}>
+                Research peptide coverage across every major region of {stateName} — from the {regions[0][0]} to {regions[regions.length - 1][0]}.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-7)' }}>
+                {regions.map(([label, regionCities]) => (
+                  <div key={label}>
+                    <h3 style={{ color: 'var(--silver-light)', fontSize: '0.95rem', fontWeight: 700, marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                      {label}
+                      <span style={{ fontSize: '0.7rem', color: 'var(--grey-600)', fontWeight: 400 }}>
+                        {regionCities.length} {regionCities.length === 1 ? 'City' : 'Cities'}
+                      </span>
+                    </h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                      {regionCities.map((c) => (
+                        <Link key={c.slug} href={`/peptides/${stateSlug}/${c.slug}`} style={{ padding: '5px 14px', fontSize: '0.78rem', color: 'var(--grey-400)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--radius-full)', textDecoration: 'none' }}>
+                          {c.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── STATE FAQ ───────────────────────────────────────────────────── */}
         <section style={{ padding: 'clamp(60px, 8vw, 100px) 0', background: 'linear-gradient(to bottom, var(--black), var(--black-2))' }}>
           <div className="container" style={{ maxWidth: 780 }}>
             <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 800, marginBottom: 'var(--space-6)', textAlign: 'center' }}>
-              Frequently Asked Questions in <span style={{ color: 'var(--teal)' }}>{stateName}</span>
+              Frequently Asked Questions In <span style={{ color: 'var(--teal)' }}>{stateName}</span>
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {stateFaqs.map((faq, i) => (
@@ -303,7 +347,7 @@ export default async function StateLandingPage({
           </div>
         </section>
 
-        {/* ── BACK LINK ─────────────────────────────────────────────── */}
+        {/* ── BACK LINK ───────────────────────────────────────────────────── */}
         <div style={{ borderTop: 'var(--border-subtle)', padding: 'var(--space-8) 0', background: 'var(--black-2)' }}>
           <div className="container">
             <Link href="/peptides" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.85rem', color: 'var(--grey-400)', textDecoration: 'none' }}>
@@ -342,7 +386,7 @@ export default async function StateLandingPage({
   );
 }
 
-// ─── City card grid component ──────────────────────────────────────────────
+// ─── City card grid component ────────────────────────────────────────────────
 import type { City } from '@/lib/cities/cities-data';
 
 function CityGrid({ cities, stateSlug, highlight = false }: { cities: City[]; stateSlug: string; highlight?: boolean }) {
