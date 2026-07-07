@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { GUIDES } from '@/lib/research/guides';
 
 export const revalidate = 3600; // Cache for 1 hour
 
@@ -39,6 +40,13 @@ export async function GET() {
 
   text += `## Local Coverage Directory\n`;
   text += `- [Peptides By City](${base}/peptides): Directory of covered US cities, organized by state. Nearly 300 city pages, each describing local research peptide supply, FAQs, and featured compounds.\n\n`;
+
+  text += `## Research Guides\n`;
+  text += `In-depth, RUO-compliant guides for qualified researchers.\n`;
+  for (const g of GUIDES) {
+    text += `- [${g.title}](${base}/research/guides/${g.slug}): ${g.description}\n`;
+  }
+  text += `\n`;
 
   text += `## Company\n`;
   text += `- [Compliance](${base}/compliance): Research Use Only policy details.\n`;
