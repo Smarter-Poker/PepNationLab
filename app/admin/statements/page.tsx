@@ -148,7 +148,7 @@ export default function AdminStatementsPage() {
                           {s.status !== "paid" && Number(s.total_owed) > 0 ? (
                             <button onClick={() => { setPayingStatement(s); setPayMethod("zelle"); setPayReference(""); }} className="btn-neon-cyan" style={{ padding: "var(--space-2) var(--space-4)", fontSize: "0.78rem" }}>Mark Paid</button>
                           ) : s.status !== "paid" && Number(s.total_owed) <= 0 ? (
-                            <div style={{ fontSize: "0.74rem", color: "var(--grey-500)", fontStyle: "italic" }}>$0 — No Balance</div>
+                            <div style={{ fontSize: "0.74rem", color: "var(--grey-500)", fontStyle: "italic" }}>$0 - No Balance</div>
                           ) : (
                             <div style={{ fontSize: "0.74rem", color: "var(--grey-400)", textAlign: "right" }}>Paid {s.paid_at ? new Date(s.paid_at).toLocaleDateString() : ""}{s.payment_method ? ` / ${paymentMethodLabel(s.payment_method)}` : ""}</div>
                           )}

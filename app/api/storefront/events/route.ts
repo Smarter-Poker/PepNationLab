@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     return new Response(null, { status: 204 });
   } catch (err) {
     console.error('[storefront/events] POST error:', err);
-    // Best-effort analytics — return 204 so the client does not retry endlessly.
+    // Best-effort analytics - return 204 so the client does not retry endlessly.
     return new Response(null, { status: 204 });
   }
 }

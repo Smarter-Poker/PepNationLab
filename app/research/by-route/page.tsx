@@ -11,12 +11,12 @@ import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
   title: 'Browse Peptides By Administration Route | Research Library | Pep Nation Lab',
-  description: 'Browse research peptides by administration route — subcutaneous, intramuscular, intranasal, oral, and topical. Understand delivery method differences. Research use only.',
+  description: 'Browse research peptides by administration route - subcutaneous, intramuscular, intranasal, oral, and topical. Understand delivery method differences. Research use only.',
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://pepnationlab.com/research/by-route' },
   openGraph: {
     title: 'Peptides By Administration Route | Pep Nation Lab',
-    description: 'Browse research peptides organized by administration route — subcutaneous, intranasal, oral, and more.',
+    description: 'Browse research peptides organized by administration route - subcutaneous, intranasal, oral, and more.',
     url: 'https://pepnationlab.com/research/by-route',
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptides By Route' }],

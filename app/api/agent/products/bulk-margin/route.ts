@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
         const productId = ap.product_id as string;
         const rawCost = (ap.products as any)?.base_cost;
         const baseCost = rawCost != null ? Number(rawCost) : NaN;
-        // Skip products with missing or zero cost — writing $0 retail would
+        // Skip products with missing or zero cost - writing $0 retail would
         // make the product free. Agent must set price manually for these.
         if (!Number.isFinite(baseCost) || baseCost <= 0) return null;
 

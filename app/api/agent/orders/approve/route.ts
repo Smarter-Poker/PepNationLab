@@ -244,7 +244,7 @@ export async function POST(req: NextRequest) {
       try {
         await supabase.rpc('charge_order_credit_line', { p_order_id: orderId, p_created_by: callerId });
       } catch (creditErr) {
-        console.error('[CRITICAL] charge_order_credit_line failed — order approved but credit line not charged:', {
+        console.error('[CRITICAL] charge_order_credit_line failed - order approved but credit line not charged:', {
           orderId,
           agentId: primaryBilledAgentId,
           error: creditErr instanceof Error ? creditErr.message : String(creditErr),

@@ -11,12 +11,12 @@ import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
   title: 'Browse Peptides By Peptide Class | Research Library | Pep Nation Lab',
-  description: 'Browse research-grade peptides organized by peptide class — GLP-1 agonists, GHRPs, GHRHs, BPC analogs, melanocortins, and more. Research use only.',
+  description: 'Browse research-grade peptides organized by peptide class - GLP-1 agonists, GHRPs, GHRHs, BPC analogs, melanocortins, and more. Research use only.',
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://pepnationlab.com/research/by-class' },
   openGraph: {
     title: 'Browse Peptides By Class | Pep Nation Lab',
-    description: 'Research peptides organized by class — GLP-1 agonists, GHRPs, melanocortins, BPC analogs, and more.',
+    description: 'Research peptides organized by class - GLP-1 agonists, GHRPs, melanocortins, BPC analogs, and more.',
     url: 'https://pepnationlab.com/research/by-class',
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptides By Class' }],

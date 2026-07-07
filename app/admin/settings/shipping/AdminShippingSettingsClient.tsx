@@ -124,7 +124,7 @@ export default function AdminShippingSettingsClient() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
   const [agentAssignLoading, setAgentAssignLoading] = useState<string | null>(null);
-  // Controlled state for each agent's origin dropdown — keyed by agent.id.
+  // Controlled state for each agent's origin dropdown - keyed by agent.id.
   // Initialized from agentWarehouses on load so the select reflects the saved value.
   const [agentOriginSelections, setAgentOriginSelections] = useState<Record<string, string>>({});
   const [webhookActivity, setWebhookActivity] = useState<WebhookActivity | null>(null);

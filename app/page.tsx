@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     description: 'Access 300+ research-grade peptides. Wholesale pricing for qualified researchers. Full research library, calculators, and AI match engine included.',
     url: 'https://pepnationlab.com',
     type: 'website',
-    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab — Premium Research Peptide Distribution' }],
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab - Premium Research Peptide Distribution' }],
   },
   twitter: {
     card: 'summary_large_image',

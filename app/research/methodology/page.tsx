@@ -105,7 +105,7 @@ export default function MethodologyPage() {
         <h2 style={{ fontSize: '1.35rem', fontWeight: 700, margin: '0 0 8px' }}>Our Evidence-Tier System</h2>
         <p style={{ lineHeight: 1.65, margin: '0 0 12px', maxWidth: '72ch' }}>
           Every Compound Is Assigned An Evidence Tier That Communicates The Strength And Type Of Available
-          Research At A Glance. Tiers Never Imply Endorsement For Human Use — They Describe The State Of The
+          Research At A Glance. Tiers Never Imply Endorsement For Human Use - They Describe The State Of The
           Scientific Literature Only.
         </p>
         <dl style={{ margin: 0 }}>

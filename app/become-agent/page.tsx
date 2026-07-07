@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Become A Distribution Agent | Pep Nation Lab',
     description:
-      'Build your own branded research peptide storefront. Wholesale pricing, recurring commissions, and full platform support — apply to join the Pep Nation Lab agent network.',
+      'Build your own branded research peptide storefront. Wholesale pricing, recurring commissions, and full platform support - apply to join the Pep Nation Lab agent network.',
     url: 'https://pepnationlab.com/become-agent',
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Become A Pep Nation Lab Agent' }],

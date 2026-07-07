@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   try {
     const admin = createAdminClient();
 
-    // Use .eq() not .ilike() — attacker-supplied username; underscore in
+    // Use .eq() not .ilike() - attacker-supplied username; underscore in
     // .ilike() is a LIKE wildcard that could match unintended accounts.
     const { data } = await admin
       .from('profiles')

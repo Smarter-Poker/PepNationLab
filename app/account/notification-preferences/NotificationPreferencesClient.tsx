@@ -85,7 +85,7 @@ export default function NotificationPreferencesClient({
   const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(null);
 
   useEffect(() => {
-    // Browser-only APIs — must run after mount to avoid SSR mismatch
+    // Browser-only APIs - must run after mount to avoid SSR mismatch
     const supported = isWebPushSupported();
     const permission = notificationPermission();
     setPushSupported(supported);

@@ -11,7 +11,7 @@ import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
   title: 'Peptides In Clinical Pipeline | Compounds In Development | Pep Nation Lab',
-  description: 'Research peptides and compounds currently in clinical development pipeline — Phase 1, 2, and 3 trials. Track emerging peptide drug development. Research use only.',
+  description: 'Research peptides and compounds currently in clinical development pipeline - Phase 1, 2, and 3 trials. Track emerging peptide drug development. Research use only.',
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://pepnationlab.com/research/in-pipeline' },
   openGraph: {

@@ -4,7 +4,7 @@
  * og:image and twitter:image for every /research/[slug] route.
  *
  * Uses ImageResponse (next/og) with Satori under the hood.
- * Only flexbox + subset CSS supported — no grid, no backdrop-filter.
+ * Only flexbox + subset CSS supported - no grid, no backdrop-filter.
  */
 import { ImageResponse } from 'next/og';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -44,7 +44,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       summary = (data.plain_summary ?? summary).slice(0, 110);
     }
   } catch {
-    // Preview build — fall back to slug-derived text
+    // Preview build - fall back to slug-derived text
   }
 
   const tierColor = TIER_COLORS[evidenceTier] ?? '#00C4BC';
@@ -53,7 +53,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   try {
     const res = await fetch('https://fonts.gstatic.com/s/inter/v18/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.ttf');
     if (res.ok) fontData = await res.arrayBuffer();
-  } catch { /* no font — Satori falls back */ }
+  } catch { /* no font - Satori falls back */ }
 
   return new ImageResponse(
     (
@@ -87,7 +87,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
         {/* Bottom bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 60px 44px', marginTop: 'auto' }}>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>For Research Use Only — Not For Human Consumption</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>For Research Use Only - Not For Human Consumption</div>
           <div style={{ width: 120, height: 3, background: `linear-gradient(90deg, ${tierColor}, transparent)`, borderRadius: 2 }} />
         </div>
 

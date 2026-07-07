@@ -157,7 +157,7 @@ async function writeAlerts(
   if (insertErr) {
     // Throw so the outer handler's catch sets finishStatus = 'failed'.
     // Returning {0,0} would let the cron appear healthy while silently
-    // dropping all alerts — ops would assume no items needed alerting.
+    // dropping all alerts - ops would assume no items needed alerting.
     console.error('[inventory-alerts] notifications insert failed:', insertErr.message);
     throw insertErr;
   }

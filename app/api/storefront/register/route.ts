@@ -7,6 +7,8 @@ import { sanitizeUsername } from '@/lib/usernames';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { notifyNewResearcher } from '@/lib/notify';
+import { emailConfigured, sendWelcomeEmail } from '@/lib/email';
+import { hashCode, isValidEmail, normalizeEmail, CODE_PURPOSE_SIGNUP, MAX_CODE_ATTEMPTS } from '@/lib/verification';
 
 /**
  * POST /api/storefront/register
@@ -20,7 +22,7 @@ export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  // Rate limiting by IP — use the shared persistent store (Supabase-backed) so
+  // Rate limiting by IP - use the shared persistent store (Supabase-backed) so
   // the limit holds across Vercel serverless invocations. An in-process Map
   // was previously used here but is always empty on cold starts, making the
   // limit completely ineffective.
@@ -39,7 +41,8 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { agentSlug, username, password, firstName, lastName, phone } = body || {};
+  const { agentSlug, username, password, firstName, lastName, phone, code } = body || {};
+  const email = normalizeEmail(body?.email);
 
   if (!agentSlug) {
     return NextResponse.json({ error: 'Agent Storefront Is Required.' }, { status: 400 });
@@ -52,7 +55,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Field length caps — prevent oversized profile inserts.
+  // A real email is required for all public signups.
+  if (!isValidEmail(email)) {
+    return NextResponse.json({ error: 'A Valid Email Address Is Required.' }, { status: 400 });
+  }
+
+  // Field length caps - prevent oversized profile inserts.
   if (String(firstName).trim().length > 100 || String(lastName).trim().length > 100) {
     return NextResponse.json({ error: 'Name Must Be 100 Characters Or Fewer.' }, { status: 400 });
   }
@@ -108,7 +116,7 @@ export async function POST(req: NextRequest) {
 
     const referringAgentId: string = agentProfile.id;
 
-    // Check username uniqueness — use .eq() not .ilike() (underscore is a LIKE wildcard).
+    // Check username uniqueness - use .eq() not .ilike() (underscore is a LIKE wildcard).
     const { data: existingUser } = await admin
       .from('profiles')
       .select('id')
@@ -117,6 +125,48 @@ export async function POST(req: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json({ error: 'That Username Is Already Taken.' }, { status: 400 });
+    }
+
+    // ── Email verification ──────────────────────────────────────────────────
+    // When the email sender is configured, a valid single-use code (issued by
+    // /api/auth/request-code) is required and the email is marked verified.
+    // When it is NOT configured yet, the account is still created with the email
+    // stored but unverified, so signups never break before email is wired.
+    const verificationRequired = emailConfigured();
+    let emailVerified = false;
+    if (verificationRequired) {
+      if (!code || !/^\d{6}$/.test(String(code))) {
+        return NextResponse.json({ error: 'Please Enter The 6-Digit Verification Code Sent To Your Email.' }, { status: 400 });
+      }
+      const { data: codeRow } = await admin
+        .from('email_verification_codes')
+        .select('id, code_hash, attempts, expires_at, consumed')
+        .eq('email', email)
+        .eq('purpose', CODE_PURPOSE_SIGNUP)
+        .eq('consumed', false)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!codeRow) {
+        return NextResponse.json({ error: 'No Active Code. Please Request A New Verification Code.' }, { status: 400 });
+      }
+      if (new Date(codeRow.expires_at).getTime() < Date.now()) {
+        return NextResponse.json({ error: 'Your Code Has Expired. Please Request A New One.' }, { status: 400 });
+      }
+      if ((codeRow.attempts ?? 0) >= MAX_CODE_ATTEMPTS) {
+        return NextResponse.json({ error: 'Too Many Incorrect Attempts. Please Request A New Code.' }, { status: 429 });
+      }
+      const matches = hashCode(String(code), email) === codeRow.code_hash;
+      if (!matches) {
+        await admin
+          .from('email_verification_codes')
+          .update({ attempts: (codeRow.attempts ?? 0) + 1 })
+          .eq('id', codeRow.id);
+        return NextResponse.json({ error: 'Incorrect Code. Please Try Again.' }, { status: 400 });
+      }
+      await admin.from('email_verification_codes').update({ consumed: true }).eq('id', codeRow.id);
+      emailVerified = true;
     }
 
     const internalEmail = `${usernameClean}@internal.auth`;
@@ -142,6 +192,8 @@ export async function POST(req: NextRequest) {
     const profilePayload: Record<string, unknown> = {
       id: newUserId,
       email: null,
+      contact_email: email,
+      email_verified: emailVerified,
       username: usernameClean,
       full_name: fullName,
       first_name: String(firstName).trim(),
@@ -168,6 +220,10 @@ export async function POST(req: NextRequest) {
     }
 
     await notifyNewResearcher(admin, referringAgentId, fullName).catch(() => { /* ignore */ });
+
+    // Welcome email (best-effort, non-blocking). No-op if the sender is not
+    // configured; only meaningful once email is live.
+    sendWelcomeEmail({ to: email, fullName, username: usernameClean }).catch(() => { /* ignore */ });
 
     return NextResponse.json({
       success: true,

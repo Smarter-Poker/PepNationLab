@@ -38,7 +38,7 @@ export default function Peptide101LandingPage() {
         if (!hasProgress && !hasLastScreen) {
           window.location.href = '/peptide-101/course#s1';
         }
-      } catch { /* storage unavailable — skip */ }
+      } catch { /* storage unavailable - skip */ }
     }, 800);
 
     const handleStorage = (e: StorageEvent) => {

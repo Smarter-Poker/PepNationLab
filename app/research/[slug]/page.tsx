@@ -67,11 +67,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       },
     },
     openGraph: {
-      title: `${name} — Research Reference | Pep Nation Lab`,
+      title: `${name} - Research Reference | Pep Nation Lab`,
       description: summary || `${name} research-use-only reference: mechanism, evidence, handling, and references.`,
       url: `https://pepnationlab.com/research/${slug}`,
       type: 'article',
-      images: [{ url: '/og-card.png', width: 1200, height: 630, alt: `${name} Research Reference — Pep Nation Lab` }],
+      images: [{ url: '/og-card.png', width: 1200, height: 630, alt: `${name} Research Reference - Pep Nation Lab` }],
     },
     twitter: {
       card: 'summary_large_image',

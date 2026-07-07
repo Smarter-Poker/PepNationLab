@@ -422,7 +422,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       out.push({ tone: 'warn', text: `${weekReview.topSite.name} Accounted For ${weekReview.topSite.share}% Of This Week's Injections. Rotate Sites To Rest The Tissue.` });
     }
 
-    // Biggest biometric mover (7d) — computed inline from biometrics
+    // Biggest biometric mover (7d) - computed inline from biometrics
     const metricNames = Array.from(new Set(biometrics.map(b => b.metric_name)));
     let biggest: { name: string; delta: number; unit: string } | null = null;
     metricNames.forEach(m => {
@@ -696,7 +696,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
     const insightRows = insights.map(i => `<li>${esc(i.text)}</li>`).join('') || '<li style="color:#888">No Signals Yet</li>';
 
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Lab Report — ${today}</title>
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Lab Report - ${today}</title>
 <style>
   * { box-sizing: border-box; }
   body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #14232f; margin: 0; padding: 40px; background: #fff; }
@@ -716,7 +716,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   @media print { body { padding: 16px; } .noprint { display: none; } }
 </style></head><body>
   <button class="noprint" onclick="window.print()" style="float:right;background:#0a7d78;color:#fff;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-weight:600">Print / Save As PDF</button>
-  <h1>Pep Nation Lab — Research Log Summary</h1>
+  <h1>Pep Nation Lab - Research Log Summary</h1>
   <div class="sub">Generated ${today} · For Qualified Research Documentation Only</div>
 
   <h2>Protocol Overview</h2>
@@ -2447,7 +2447,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                             let bg = 'rgba(255,255,255,0.05)';
                             if (!isFuture && day.count === 1) bg = 'rgba(0,196,188,0.45)';
                             else if (!isFuture && day.count >= 2) bg = 'var(--teal)';
-                            return <div key={day.key} title={`${day.date.toLocaleDateString()} — ${day.count} Dose${day.count === 1 ? '' : 's'}`} style={{ width: 14, height: 14, borderRadius: 3, background: bg, opacity: isFuture ? 0.25 : 1 }} />;
+                            return <div key={day.key} title={`${day.date.toLocaleDateString()} - ${day.count} Dose${day.count === 1 ? '' : 's'}`} style={{ width: 14, height: 14, borderRadius: 3, background: bg, opacity: isFuture ? 0.25 : 1 }} />;
                           })}
                         </div>
                       ))}

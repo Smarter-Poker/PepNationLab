@@ -234,7 +234,7 @@ export async function POST(req: NextRequest) {
             if (perVial > 0) bacWaterProduct.retail_price = perVial;
           }
         } else {
-          // Guest/public price: use researchstore's catalog price — never the cheapest
+          // Guest/public price: use researchstore's catalog price - never the cheapest
           // across all agents, which could be another agent's private pricing.
           const { data: houseAgent } = await supabase
             .from('agent_profiles')

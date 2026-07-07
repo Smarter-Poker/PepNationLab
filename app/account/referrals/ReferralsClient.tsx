@@ -207,7 +207,7 @@ export default function ReferralsClient({ referralCode, referrals, settings }: P
                     </div>
                     <div style={{ color: 'var(--silver)', fontSize: '0.78rem', marginTop: 2 }}>
                       {new Date(r.created_at).toLocaleDateString()}
-                      {r.rewarded_at && ` — Rewarded ${new Date(r.rewarded_at).toLocaleDateString()}`}
+                      {r.rewarded_at && ` - Rewarded ${new Date(r.rewarded_at).toLocaleDateString()}`}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexShrink: 0 }}>

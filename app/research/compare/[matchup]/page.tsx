@@ -3,7 +3,7 @@
  *
  * Targets high-intent comparison search queries (e.g. "BPC-157 vs TB-500")
  * that the individual monographs do not rank for. Each page is a genuine,
- * data-rich side-by-side built from the compound database — semantic HTML, an
+ * data-rich side-by-side built from the compound database - semantic HTML, an
  * at-a-glance comparison table (the format AI answer engines extract), unique
  * metadata, breadcrumb + WebPage schema, and internal links to both full
  * monographs.
@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: { params: Promise<{ matchup: 
   if (!a || !b) return { title: 'Compound Comparison | Pep Nation Lab' };
 
   const title = `${a.display_name} vs ${b.display_name}: Research Comparison | Pep Nation Lab`;
-  const description = `A side-by-side research comparison of ${a.display_name} and ${b.display_name} — ${pair.angle}. Mechanism, evidence tier, molecular weight, half-life, and references. Research use only.`;
+  const description = `A side-by-side research comparison of ${a.display_name} and ${b.display_name} - ${pair.angle}. Mechanism, evidence tier, molecular weight, half-life, and references. Research use only.`;
   const url = `https://pepnationlab.com/research/compare/${matchup}`;
   return {
     title,
@@ -80,7 +80,7 @@ export async function generateMetadata({ params }: { params: Promise<{ matchup: 
 function Cell({ children }: { children: React.ReactNode }) {
   return (
     <td style={{ padding: '10px 14px', fontSize: '0.92rem', color: 'var(--white, #fff)', borderBottom: '1px solid rgba(192,184,168,0.12)', verticalAlign: 'top', wordBreak: 'break-word' }}>
-      {children ?? '—'}
+      {children ?? '-'}
     </td>
   );
 }
@@ -106,7 +106,7 @@ export default async function ComparisonPage({ params }: { params: Promise<{ mat
 
   const url = `https://pepnationlab.com/research/compare/${matchup}`;
 
-  // Key differences — factual, derived from the data (never dosing guidance).
+  // Key differences - factual, derived from the data (never dosing guidance).
   const diffs: string[] = [];
   if (a.category && b.category && a.category !== b.category) {
     diffs.push(`${a.display_name} is categorized under ${a.category}, while ${b.display_name} falls under ${b.category}.`);
@@ -167,7 +167,7 @@ export default async function ComparisonPage({ params }: { params: Promise<{ mat
           {a.display_name} vs {b.display_name}: Research Comparison
         </h1>
         <p style={{ fontSize: '1.05rem', lineHeight: 1.65, margin: 0, maxWidth: '72ch', color: 'var(--silver, #D0DAE4)' }}>
-          A Side-By-Side Research Comparison Of {a.display_name} And {b.display_name} — {pair.angle}. This Reference
+          A Side-By-Side Research Comparison Of {a.display_name} And {b.display_name} - {pair.angle}. This Reference
           Compares Mechanism, Evidence Tier, Molecular Identity, And Pharmacokinetics For Qualified Researchers. For
           In Vitro Laboratory Research Use Only. Not Medical Advice Or Dosing Guidance.
         </p>

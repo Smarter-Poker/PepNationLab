@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Research Areas | Pep Nation Lab',
-    description: 'Browse research peptides by therapeutic category — weight management, cognitive, gut health, longevity, and more.',
+    description: 'Browse research peptides by therapeutic category - weight management, cognitive, gut health, longevity, and more.',
     images: ['/og-card.png'],
   },
 };

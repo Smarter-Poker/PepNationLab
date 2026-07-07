@@ -29,7 +29,7 @@ const ALLOW = [
   '/products',
   '/shipping',
 
-  // Local SEO — Peptides by City (prefix covers /peptides/[state]/[city])
+  // Local SEO - Peptides by City (prefix covers /peptides/[state]/[city])
   '/peptides',
   '/peptides/',
 
@@ -39,7 +39,7 @@ const ALLOW = [
   '/privacy',
   '/terms',
 
-  // Research Library — Hub
+  // Research Library - Hub
   '/research',
   '/research/',
   '/research/areas',
@@ -51,13 +51,13 @@ const ALLOW = [
   '/research/learn',
   '/research/evidence',
 
-  // Research Library — Tools
+  // Research Library - Tools
   '/research/calculators',
   '/research/compare',
   '/research/stacks',
   '/research/match',
 
-  // Research Library — Browse Filters
+  // Research Library - Browse Filters
   '/research/by-class',
   '/research/by-target',
   '/research/by-mechanism',
@@ -65,7 +65,7 @@ const ALLOW = [
   '/research/by-half-life',
   '/research/by-mw',
 
-  // Research Library — Curated Lists
+  // Research Library - Curated Lists
   '/research/most-cited',
   '/research/most-studied-2026',
   '/research/new-additions',
@@ -77,14 +77,14 @@ const ALLOW = [
   '/research/orphan-drugs',
   '/research/correlated',
 
-  // Research Library — Dynamic paths (compound monographs + area/target sub-pages)
+  // Research Library - Dynamic paths (compound monographs + area/target sub-pages)
   '/research/area/',
   '/research/by-target/',
 
-  // Research Library — API Docs
+  // Research Library - API Docs
   '/research/api-docs',
 
-  // AI / LLM discoverability — machine-readable surfaces.
+  // AI / LLM discoverability - machine-readable surfaces.
   // These sit under /api (which is Disallowed below); the longer,
   // more specific Allow wins for compliant crawlers (Googlebot,
   // Bingbot, GPTBot, ClaudeBot, PerplexityBot), so the per-compound

@@ -184,7 +184,7 @@ function AdminOrdersPageInner() {
         if (data) setUserRole(data.role);
       }
     } catch (err) {
-      // non-fatal — default to empty role
+      // non-fatal - default to empty role
     }
   }
 

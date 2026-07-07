@@ -24,12 +24,20 @@ function SignupForm() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [acks, setAcks] = useState<Record<AckKey, boolean>>({ c1: false, c2: false, c3: false });
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+  // Two-step flow: 'form' collects details; 'code' collects the 6-digit email
+  // verification code. When the email sender isn't configured, we skip 'code'
+  // and create the account straight from the form.
+  const [step, setStep] = useState<'form' | 'code'>('form');
+  const [code, setCode] = useState('');
+  const [resending, setResending] = useState(false);
 
   // Capture the agent slug from localStorage so the new account is linked
   // to the agent the guest was browsing when they decided to sign up.
@@ -47,7 +55,7 @@ function SignupForm() {
     } catch { /* ignore */ }
   }, []);
 
-  // Sanitize ?redirect= — only allow relative paths starting with /
+  // Sanitize ?redirect= - only allow relative paths starting with /
   const rawRedirect = searchParams.get('redirect') ?? '';
   const redirectTo = /^\/(?!\/|\\)/.test(rawRedirect) ? rawRedirect : '/dashboard';
 
@@ -65,17 +73,92 @@ function SignupForm() {
     }
   }
 
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // Step 1: validate the form, request an email verification code. If the email
+  // sender isn't configured yet, skip straight to account creation.
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     if (!allAcked) {
       setError('Please Confirm All Three Acknowledgments To Continue.');
       return;
     }
+    if (!EMAIL_RE.test(email.trim())) {
+      setError('Please Enter A Valid Email Address.');
+      return;
+    }
     setLoading(true);
     setError('');
+    setInfo('');
 
     try {
-      // Use the captured agent slug if available, otherwise fall back to default store
+      const res = await fetch('/api/auth/request-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(data?.error || 'Could Not Start Verification. Please Try Again.');
+        setLoading(false);
+        return;
+      }
+
+      if (data?.verification_required) {
+        // Move to the code-entry step.
+        setStep('code');
+        setInfo(`We Sent A 6-Digit Code To ${email.trim()}. Enter It Below To Finish.`);
+        setLoading(false);
+        return;
+      }
+
+      // Sender not configured -> create the account directly (email stored, unverified).
+      await doRegister();
+    } catch {
+      setError('Something Went Wrong. Please Try Again.');
+      setLoading(false);
+    }
+  }
+
+  // Step 2: submit the code and create the account.
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault();
+    if (!/^\d{6}$/.test(code.trim())) {
+      setError('Enter The 6-Digit Code From Your Email.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    await doRegister(code.trim());
+  }
+
+  async function handleResend() {
+    if (resending) return;
+    setResending(true);
+    setError('');
+    setInfo('');
+    try {
+      const res = await fetch('/api/auth/request-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) setInfo(`A New Code Was Sent To ${email.trim()}.`);
+      else setError(data?.error || 'Could Not Resend The Code.');
+    } catch {
+      setError('Could Not Resend The Code. Please Try Again.');
+    } finally {
+      setResending(false);
+    }
+  }
+
+  // Creates the account (optionally with a verification code) and signs in.
+  async function doRegister(verificationCode?: string) {
+    setLoading(true);
+    setError('');
+    try {
       const agentSlug = capturedAgentSlug ?? DEFAULT_STORE_SLUG;
 
       const res = await fetch('/api/storefront/register', {
@@ -87,7 +170,9 @@ function SignupForm() {
           password,
           firstName,
           lastName,
+          email: email.trim(),
           phone: phone || undefined,
+          code: verificationCode,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -107,19 +192,14 @@ function SignupForm() {
       });
 
       if (authError) {
-        // Account Exists But Auto-Login Failed -- Send Them To The Login Page,
-        // preserving the redirect so they can still land on their intended page.
         const loginFallback = `/login${redirectTo !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`;
         window.location.replace(loginFallback);
         return;
       }
 
       await logRegistrationDisclaimer();
-
-      // Clear the referral agent now that the account has been linked
       try { window.localStorage.removeItem('pnl_referral_agent'); } catch { /* ignore */ }
 
-      // Wait Until The Session Cookie Is Readable Locally (Max 3s).
       for (let i = 0; i < 15; i++) {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token) break;
@@ -228,6 +308,48 @@ function SignupForm() {
             </div>
           )}
 
+          {info && (
+            <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)', background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.25)', borderRadius: 8 }}>
+              <p style={{ fontSize: '0.82rem', color: 'var(--teal)', margin: 0 }}>{info}</p>
+            </div>
+          )}
+
+          {/* ── Step 2: Email verification code ── */}
+          {step === 'code' && (
+            <form onSubmit={handleVerify}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="code">6-Digit Verification Code</label>
+                <input
+                  id="code" type="text" inputMode="numeric" className="form-input"
+                  placeholder="000000" value={code}
+                  onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  autoComplete="one-time-code" autoFocus
+                  style={{ letterSpacing: '0.4em', fontSize: '1.2rem', textAlign: 'center' }}
+                />
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary hover-lift"
+                style={{ width: '100%', justifyContent: 'center' }}
+                disabled={loading || code.length !== 6}
+              >
+                {loading ? 'Verifying...' : 'Verify & Create Account'}
+              </button>
+              <div style={{ marginTop: 'var(--space-4)', display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                <button type="button" onClick={() => { setStep('form'); setError(''); setInfo(''); setCode(''); }}
+                  style={{ background: 'none', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', padding: 0 }}>
+                  Use A Different Email
+                </button>
+                <button type="button" onClick={handleResend} disabled={resending}
+                  style={{ background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', padding: 0 }}>
+                  {resending ? 'Resending...' : 'Resend Code'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {step === 'form' && (
+          <>
           <button
             type="button"
             onClick={handleGoogleSignup}
@@ -281,6 +403,15 @@ function SignupForm() {
             </div>
 
             <div className="form-group">
+              <label className="form-label" htmlFor="email">Email</label>
+              <input
+                id="email" type="email" className="form-input" placeholder="you@example.com"
+                value={email} onChange={e => setEmail(e.target.value)}
+                required maxLength={254} autoComplete="email" autoCapitalize="none" spellCheck={false}
+              />
+            </div>
+
+            <div className="form-group">
               <label className="form-label" htmlFor="password">Password</label>
               <input
                 id="password" type="password" className="form-input" placeholder="At Least 8 Characters"
@@ -316,11 +447,13 @@ function SignupForm() {
               type="submit"
               className="btn btn-primary hover-lift"
               style={{ width: '100%', justifyContent: 'center' }}
-              disabled={loading || !allAcked || !firstName || !lastName || !username || password.length < 8}
+              disabled={loading || !allAcked || !firstName || !lastName || !username || !email || password.length < 8}
             >
               {loading ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
+          </>
+          )}
 
           <div style={{ marginTop: 'var(--space-6)', textAlign: 'center' }}>
             <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>

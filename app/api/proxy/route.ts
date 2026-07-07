@@ -90,7 +90,7 @@ function rewriteHtml(html: string, originalUrl: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  // Auth gate: require a valid session — the proxy must not be usable as an
+  // Auth gate: require a valid session - the proxy must not be usable as an
   // anonymous open web proxy that abuses server egress/bandwidth.
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

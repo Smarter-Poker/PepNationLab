@@ -291,7 +291,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
 
   // LCP fix: the storefront hero (AgentStorefrontGrid, Phase 3 Dynamic Image
   // Hero) paints /images/store_discovery_hero_v3.png via a CSS
-  // background-image, which the browser preload scanner cannot see — the
+  // background-image, which the browser preload scanner cannot see - the
   // request only starts after CSSOM + JS hydration (measured LCP 9.0s).
   // Hoisting a high-priority preload from this server component puts a
   // <link rel="preload" as="image"> in the initial HTML head so the download
@@ -346,7 +346,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
         </p>
       </footer>
 
-      {/* Guest conversion banner — only visible to unauthenticated visitors */}
+      {/* Guest conversion banner - only visible to unauthenticated visitors */}
       {!user && <GuestCTA />}
 
     </div>
@@ -366,7 +366,7 @@ export async function generateMetadata({ params }: Props) {
 
   const title = `${agent.display_name} | Pep Nation Lab`;
   const description = agent.tagline
-    ? `${agent.tagline} — Research-grade peptides for qualified researchers. Research use only.`
+    ? `${agent.tagline} - Research-grade peptides for qualified researchers. Research use only.`
     : `Research compounds from ${agent.display_name}. Premium RUO peptides for qualified researchers. Research use only.`;
 
   return {
@@ -379,7 +379,7 @@ export async function generateMetadata({ params }: Props) {
       description,
       url: `https://pepnationlab.com/${agentSlug}`,
       type: 'website',
-      images: [{ url: '/og-card.png', width: 1200, height: 630, alt: `${agent.display_name} — Pep Nation Lab` }],
+      images: [{ url: '/og-card.png', width: 1200, height: 630, alt: `${agent.display_name} - Pep Nation Lab` }],
     },
     twitter: {
       card: 'summary_large_image',

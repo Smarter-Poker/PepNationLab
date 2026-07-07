@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     if (slugs) {
       query = query.in('slug', identifiers);
     } else {
-      // Case-insensitive name match — storefront products use display_name directly
+      // Case-insensitive name match - storefront products use display_name directly
       query = query.or(identifiers.map(n => `display_name.ilike.${n}`).join(','));
     }
 

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     siteName: 'Pep Nation Lab',
     type: 'website',
     locale: 'en_US',
-    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab — Peptides By City' }],
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab - Peptides By City' }],
   },
   twitter: {
     card: 'summary_large_image',
@@ -48,12 +48,12 @@ const jsonLd = {
       '@type': 'CollectionPage',
       name: 'Research Peptides By City',
       url: 'https://pepnationlab.com/peptides',
-      description: `Pep Nation Lab local coverage directory — research-grade peptides available nationwide across ${CITIES.length} US cities.`,
+      description: `Pep Nation Lab local coverage directory - research-grade peptides available nationwide across ${CITIES.length} US cities.`,
       publisher: { '@id': 'https://pepnationlab.com/#organization' },
       datePublished: '2026-07-01',
       dateModified: CITY_CONTENT_UPDATED.toISOString().slice(0, 10),
     },
-    // ItemList of state directory pages — lets search engines and AI models
+    // ItemList of state directory pages - lets search engines and AI models
     // enumerate coverage by state.
     {
       '@type': 'ItemList',

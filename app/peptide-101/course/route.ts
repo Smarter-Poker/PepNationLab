@@ -20,7 +20,7 @@ export async function GET() {
     const tag = `<script src="/peptide-101.v14.js?v=${v}"></script>`;
     html = html.includes('</body>') ? html.replace('</body>', `${tag}\n</body>`) : html + tag;
   } else {
-    // Already present — still bust its cache.
+    // Already present - still bust its cache.
     html = html.replace(/\/peptide-101\.v14\.js(\?v=\d+)?/g, `/peptide-101.v14.js?v=${v}`);
   }
 
@@ -36,7 +36,7 @@ export async function GET() {
   return new Response(html, {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      // Never serve a cached copy — course content changes frequently.
+      // Never serve a cached copy - course content changes frequently.
       'Cache-Control': 'no-store, must-revalidate',
     },
   });

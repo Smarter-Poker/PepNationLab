@@ -53,7 +53,7 @@ export async function GET(req: Request) {
       let body = '';
 
       if (p.account_type === 'credit' && p.credit_limit) {
-        // Compute current utilization — only look at the last 90 days.
+        // Compute current utilization - only look at the last 90 days.
         // Older orders are already invoiced and paid; pulling all-time history
         // for agents with years of orders was an unbounded full-table scan.
         const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();

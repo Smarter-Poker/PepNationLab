@@ -628,7 +628,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       couponAutoAppliedRef.current = true;
       setCouponInput(stashed);
       window.localStorage.removeItem('pnl_pending_coupon');
-      // Pass stashed directly — React state updates are async so couponInput
+      // Pass stashed directly - React state updates are async so couponInput
       // would still be '' if we called applyCoupon() without the override.
       setTimeout(() => {
         try { 

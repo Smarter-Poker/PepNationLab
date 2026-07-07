@@ -56,7 +56,7 @@ export async function GET(
   const supabase = await createServiceClient();
 
   // ── 1. Resolve agent ────────────────────────────────────────────────────────
-  // Use .eq() not .ilike() — slugs are lowercase; .ilike() on a user-supplied
+  // Use .eq() not .ilike() - slugs are lowercase; .ilike() on a user-supplied
   // URL param allows underscore-wildcard matching to wrong storefronts.
   const { data: agent } = await supabase
     .from('agent_profiles')
@@ -171,7 +171,7 @@ export async function GET(
     headers: {
       // Vercel edge + CDN: serve stale for 5 min, allow SWR for 10 min
       'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-      // CORS: restrict to our own origin — the wildcard (*) combined with a service-role
+      // CORS: restrict to our own origin - the wildcard (*) combined with a service-role
       // client is a security liability if this SELECT is ever expanded to include sensitive fields.
       'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL ?? 'https://pepnationlab.com',
       'Vary': 'Accept-Encoding',

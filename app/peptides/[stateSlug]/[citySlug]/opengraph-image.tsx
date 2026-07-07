@@ -1,6 +1,6 @@
 /**
  * Dynamic OG image for city landing pages (/peptides/[state]/[city]).
- * File-based ImageResponse — auto-wired to og:image by Next.js.
+ * File-based ImageResponse - auto-wired to og:image by Next.js.
  */
 import { ImageResponse } from 'next/og';
 import { readFile } from 'node:fs/promises';
@@ -25,7 +25,7 @@ export default async function Image({ params }: { params: Promise<{ stateSlug: s
   // Canonical store-catalog figure used across all city pages.
   const compoundCount = '100+';
 
-  // Local font — no network fetch at render time (the old Google Fonts fetch
+  // Local font - no network fetch at render time (the old Google Fonts fetch
   // added latency and failed silently when blocked).
   let fontData: ArrayBuffer | null = null;
   try {

@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     url: "https://pepnationlab.com",
     siteName: "Pep Nation Lab",
     type: "website",
-    images: [{ url: "/og-card.png", width: 1200, height: 630, alt: "Pep Nation Lab — Premium Research Peptide Distribution" }],
+    images: [{ url: "/og-card.png", width: 1200, height: 630, alt: "Pep Nation Lab - Premium Research Peptide Distribution" }],
   },
   twitter: {
     card: "summary_large_image",
@@ -112,7 +112,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
-        {/* Global WebSite + Organization JSON-LD — present on every page.
+        {/* Global WebSite + Organization JSON-LD - present on every page.
             SearchAction enables Google Sitelinks Search Box in SERPs. */}
         <script
           type="application/ld+json"

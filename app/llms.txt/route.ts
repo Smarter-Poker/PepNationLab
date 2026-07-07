@@ -14,7 +14,7 @@ export async function GET() {
   const base = 'https://pepnationlab.com';
 
   let text = `# Pep Nation Lab\n\n`;
-  text += `> Pep Nation Lab (pepnationlab.com) is a US wholesale distribution platform for research-grade peptides, serving verified researchers and scientific institutions. It provides 300+ research-grade peptide monographs covering mechanism of action, evidence tier, pharmacokinetics, molecular identity, handling, and referenced findings, plus reconstitution calculators, a comparison engine, and an AI match engine. Every product and all content are strictly for in vitro laboratory research use only — not for human or animal consumption, ingestion, or injection, and not FDA-approved. Access requires a verified researcher account.\n\n`;
+  text += `> Pep Nation Lab (pepnationlab.com) is a US wholesale distribution platform for research-grade peptides, serving verified researchers and scientific institutions. It provides 300+ research-grade peptide monographs covering mechanism of action, evidence tier, pharmacokinetics, molecular identity, handling, and referenced findings, plus reconstitution calculators, a comparison engine, and an AI match engine. Every product and all content are strictly for in vitro laboratory research use only - not for human or animal consumption, ingestion, or injection, and not FDA-approved. Access requires a verified researcher account.\n\n`;
 
   text += `Key facts:\n`;
   text += `- Catalog: 100+ research-grade peptides and compounds (BPC-157, Semaglutide, Tirzepatide, TB-500, Ipamorelin, CJC-1295, Sermorelin, PT-141, GHK-Cu, Epithalon, and more)\n`;

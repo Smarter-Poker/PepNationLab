@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     siteName: 'Pep Nation Lab',
     type: 'website',
     locale: 'en_US',
-    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab — Research Guides' }],
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab - Research Guides' }],
   },
   twitter: {
     card: 'summary_large_image',
@@ -86,7 +86,7 @@ export default function GuidesHubPage() {
               Research Peptide <span style={{ color: 'var(--teal)' }}>Guides</span>
             </h1>
             <p style={{ fontSize: '1.05rem', maxWidth: 640, color: 'var(--silver-light)', lineHeight: 1.75 }}>
-              In-depth, plain-language guides written for qualified researchers. Every guide is framed strictly around in vitro Research Use Only context — regulatory background, quality documentation, and laboratory handling principles.
+              In-depth, plain-language guides written for qualified researchers. Every guide is framed strictly around in vitro Research Use Only context - regulatory background, quality documentation, and laboratory handling principles.
             </p>
           </div>
         </section>

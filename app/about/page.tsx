@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'About Pep Nation Lab',
-    description: 'Science, transparency, and trust — research-first peptide distribution for qualified researchers.',
+    description: 'Science, transparency, and trust - research-first peptide distribution for qualified researchers.',
     images: ['/og-card.png'],
   },
 };

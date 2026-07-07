@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
             },
           });
           if (auditErr) {
-            // Don't throw — the variance was detected, we just couldn't record it.
+            // Don't throw - the variance was detected, we just couldn't record it.
             // This appears in Vercel function logs for ops to catch.
             console.error('[shippo-reconcile] audit_log insert failed for variance:', {
               agentId, varianceCents, error: auditErr.message,

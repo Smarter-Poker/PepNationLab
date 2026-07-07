@@ -1,8 +1,8 @@
 /**
  * /api/seo/indexnow - trigger IndexNow submission (Bing, Yandex, Seznam, etc.).
  *
- * GET  Submits the full set of important public URLs — key pages, every
- *      compound monograph, and every comparison page — so new/updated content
+ * GET  Submits the full set of important public URLs - key pages, every
+ *      compound monograph, and every comparison page - so new/updated content
  *      is discovered within minutes instead of waiting for organic crawl.
  *      Wired to a daily Vercel cron (see vercel.json). Also safe to hit
  *      manually. Bing feeds ChatGPT search, so this also shortens AI

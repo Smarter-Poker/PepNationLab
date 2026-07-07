@@ -88,14 +88,14 @@ export default function HomeClient() {
     <div style={{ backgroundColor: '#020617', minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       {/* Crawlable, screen-reader-accessible content embedded over the image.
           Gives the domain root a real <h1>, positioning copy, and a semantic
-          summary of what the artwork communicates — visually hidden so the
+          summary of what the artwork communicates - visually hidden so the
           artwork is unchanged. */}
       <header style={srOnly}>
-        <h1>Pep Nation Lab — Wholesale Research-Grade Peptides For Qualified Researchers</h1>
+        <h1>Pep Nation Lab - Wholesale Research-Grade Peptides For Qualified Researchers</h1>
         <p>
           Pep Nation Lab supplies research-grade peptides to verified researchers and scientific
-          institutions across all 50 US states. Browse a catalog of 100+ research compounds — including
-          BPC-157, Semaglutide, Tirzepatide, TB-500, Ipamorelin, and CJC-1295 — at wholesale pricing,
+          institutions across all 50 US states. Browse a catalog of 100+ research compounds - including
+          BPC-157, Semaglutide, Tirzepatide, TB-500, Ipamorelin, and CJC-1295 - at wholesale pricing,
           with a full research library, compound monographs, dosing calculators, and local coverage in
           hundreds of US cities. All products are strictly for in vitro laboratory research use only.
           They are not for human or animal consumption, ingestion, or injection, and are not FDA-approved.
@@ -112,12 +112,12 @@ export default function HomeClient() {
 
       <div style={{ position: 'relative', width: '100%', maxWidth: '941px', margin: '0 auto' }}>
         {/* LCP element. next/image (not a raw <img>) so the 2.0MB source PNG
-            is served as a right-sized AVIF/WebP through the image optimizer —
+            is served as a right-sized AVIF/WebP through the image optimizer -
             requires the ydsaqnnuwyvtyxgvrnys.supabase.co remotePattern in
             next.config.ts. priority emits a <link rel="preload"> in the head. */}
         <Image
           src="https://ydsaqnnuwyvtyxgvrnys.supabase.co/storage/v1/object/public/storefront-assets/landing/pep-nation-landing.png"
-          alt="Pep Nation Lab Research Academy — Wholesale Research-Grade Peptides For Qualified Researchers. Research Use Only."
+          alt="Pep Nation Lab Research Academy - Wholesale Research-Grade Peptides For Qualified Researchers. Research Use Only."
           width={941}
           height={1672}
           priority
@@ -150,7 +150,7 @@ export default function HomeClient() {
         ))}
       </div>
 
-      {/* Crawlable Text Footer — Visible real text links giving search engines
+      {/* Crawlable Text Footer - Visible real text links giving search engines
           and AI crawlers a direct path from the domain root into every public
           directory and content hub. */}
       <footer style={{ width: '100%', maxWidth: '941px', margin: '0 auto', padding: '18px 16px 26px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>

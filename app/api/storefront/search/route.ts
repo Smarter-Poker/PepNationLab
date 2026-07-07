@@ -280,7 +280,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Scrub private/internal fields before returning — these were needed for
+    // Scrub private/internal fields before returning - these were needed for
     // server-side filtering (bulk, inStock) but must not be exposed publicly.
     const publicProducts = products.map(p => {
       const productsRaw = (p as { products: unknown }).products;

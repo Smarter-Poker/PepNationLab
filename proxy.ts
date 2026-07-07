@@ -68,6 +68,8 @@ const PUBLIC_ROUTES = [
   '/api/auth/resolve',
   '/api/auth/signout',
   '/api/auth/change-password',
+  // Public signup email-verification code issuer (rate-limited inside the route).
+  '/api/auth/request-code',
   '/api/auth/verify-agent-access',
   '/api/health',
   '/api/availability',

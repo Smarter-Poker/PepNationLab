@@ -475,7 +475,7 @@ function ResearchersAdminPageInner() {
         const ap = Array.isArray(p.agent_profiles) ? p.agent_profiles[0] : p.agent_profiles;
         return {
           id: p.id,
-          label: `${p.full_name || p.username || p.email}${p.is_super_agent ? ' (Super Agent)' : ''}${ap?.slug ? ` — @${ap.slug}` : ''}`,
+          label: `${p.full_name || p.username || p.email}${p.is_super_agent ? ' (Super Agent)' : ''}${ap?.slug ? ` - @${ap.slug}` : ''}`,
           slug: ap?.slug ?? null,
         };
       })
@@ -1099,7 +1099,7 @@ function ResearchersAdminPageInner() {
             <div className="" style={{ padding: 'var(--space-2)' }}>
               <h2 style={{ fontSize: '1.15rem', marginBottom: 'var(--space-2)' }}>Adjust Prepaid Balance</h2>
               <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
-                {selectedProfile.full_name} — Current Balance: <strong style={{ color: 'var(--teal)' }}>${Number(selectedProfile.prepaid_balance || 0).toFixed(2)}</strong>
+                {selectedProfile.full_name} - Current Balance: <strong style={{ color: 'var(--teal)' }}>${Number(selectedProfile.prepaid_balance || 0).toFixed(2)}</strong>
               </p>
               {modalError && (
                 <div className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3)' }}>
@@ -1169,7 +1169,7 @@ function ResearchersAdminPageInner() {
               <h2 style={{ fontSize: '1.15rem', marginBottom: 'var(--space-2)' }}>Assign Researcher To An Agent</h2>
               <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
                 {selectedProfile.full_name || selectedProfile.username}
-                {' — '}Currently Owned By{' '}
+                {' - '}Currently Owned By{' '}
                 <strong style={{ color: isHouseOwned(selectedProfile) ? 'var(--silver)' : 'var(--teal)' }}>
                   {isHouseOwned(selectedProfile) ? 'House (Admin)' : (selectedProfile.referring_agent_name || 'An Agent')}
                 </strong>

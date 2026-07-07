@@ -26,7 +26,7 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: `https://pepnationlab.com/peptides/${stateSlug}` },
-    // No `images` — the file-based opengraph-image.tsx in this segment
+    // No `images` - the file-based opengraph-image.tsx in this segment
     // generates a unique per-state OG card; a static image would override it.
     openGraph: {
       title,
@@ -122,7 +122,7 @@ export default async function StateLandingPage({
         datePublished: '2026-07-01',
         dateModified: CITY_CONTENT_UPDATED.toISOString().slice(0, 10),
       },
-      // ItemList of every covered city — lets search engines and AI models
+      // ItemList of every covered city - lets search engines and AI models
       // enumerate coverage ("what cities does Pep Nation Lab serve in X?").
       {
         '@type': 'ItemList',
@@ -195,7 +195,7 @@ export default async function StateLandingPage({
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', marginBottom: 'var(--space-5)' }}>
               <span className="badge badge-teal" style={{ fontSize: '0.68rem' }}>Research Use Only</span>
-              <span className="badge badge-silver" style={{ fontSize: '0.68rem' }}>{stateAbbr} — {cities.length} Cities</span>
+              <span className="badge badge-silver" style={{ fontSize: '0.68rem' }}>{stateAbbr} - {cities.length} Cities</span>
               {tier1.length > 0 && (
                 <span className="badge" style={{ fontSize: '0.68rem', background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.25)', color: 'var(--gold)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                   <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" stroke="none">
@@ -217,7 +217,7 @@ export default async function StateLandingPage({
               for local peptide research coverage, wholesale pricing, and nearby agent support.
             </p>
 
-            {/* Unique per-state summary — generated from real market data so
+            {/* Unique per-state summary - generated from real market data so
                 every state page carries copy no other page has. */}
             <p style={{ fontSize: '0.92rem', maxWidth: 620, color: 'var(--grey-400)', lineHeight: 1.7, marginBottom: 'var(--space-7)' }}>
               {sorted.length > 2
@@ -230,7 +230,7 @@ export default async function StateLandingPage({
             </p>
 
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-              {/* Primary CTA points at an indexable page — /login is robots-disallowed,
+              {/* Primary CTA points at an indexable page - /login is robots-disallowed,
                   so it stays as the secondary link only. */}
               <Link href="/research" className="btn btn-primary btn-xl">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -257,7 +257,7 @@ export default async function StateLandingPage({
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                   </svg>
                   <h2 style={{ color: 'var(--white)', fontSize: '1.1rem', margin: 0 }}>Priority Markets</h2>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--grey-600)', fontWeight: 400 }}>Highest tier — fastest fulfillment</span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--grey-600)', fontWeight: 400 }}>Highest tier - fastest fulfillment</span>
                 </div>
                 <CityGrid cities={tier1} stateSlug={stateSlug} highlight />
               </div>
@@ -288,7 +288,7 @@ export default async function StateLandingPage({
           </div>
         </section>
 
-        {/* ── BROWSE BY REGION — geographic silo interlinking ──────────── */}
+        {/* ── BROWSE BY REGION - geographic silo interlinking ──────────── */}
         {regions.length > 1 && (
           <section style={{ padding: 'clamp(48px, 6vw, 80px) 0', borderTop: 'var(--border-subtle)', background: 'var(--black-2)' }}>
             <div className="container">
@@ -296,7 +296,7 @@ export default async function StateLandingPage({
                 Browse {stateName} By <span style={{ color: 'var(--teal)' }}>Region</span>
               </h2>
               <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', maxWidth: 640, lineHeight: 1.7, marginBottom: 'var(--space-8)' }}>
-                Research peptide coverage across every major region of {stateName} — from the {regions[0][0]} to {regions[regions.length - 1][0]}.
+                Research peptide coverage across every major region of {stateName} - from the {regions[0][0]} to {regions[regions.length - 1][0]}.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-7)' }}>
                 {regions.map(([label, regionCities]) => (

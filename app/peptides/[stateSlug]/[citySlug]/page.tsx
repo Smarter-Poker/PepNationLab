@@ -18,14 +18,14 @@ import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import CityPage from './CityPage';
 
 // ISR: regenerate each city page at most every 5 minutes so the Top 10 grid
-// tracks the live storefront catalog — admin price/name changes flow through
+// tracks the live storefront catalog - admin price/name changes flow through
 // without a redeploy.
 export const revalidate = 300;
 
 // ─── Static params (build-time pre-rendering) ─────────────────────
 // Scale-ready ISR: at build we pre-render only the highest-priority markets
-// (sorted by tier, then population) up to a cap. Every other city — and any
-// city added later — is rendered on first request via ISR and cached at the
+// (sorted by tier, then population) up to a cap. Every other city - and any
+// city added later - is rendered on first request via ISR and cached at the
 // edge (dynamicParams defaults to true). This keeps build time bounded as the
 // city database grows into the thousands, while the top markets stay
 // pre-rendered for instant first paint. At the current city count every entry
@@ -52,7 +52,7 @@ export async function generateMetadata({
   const city = getCity(stateSlug, citySlug);
   if (!city) return {};
 
-  const title = `Peptide Research In ${city.name}, ${city.stateAbbr} — Pep Nation Lab`;
+  const title = `Peptide Research In ${city.name}, ${city.stateAbbr} - Pep Nation Lab`;
   const description = `Pep Nation Lab supplies research-grade peptides to qualified researchers in ${city.name}, ${city.state}. BPC-157, Semaglutide, Tirzepatide, TB-500 & 100+ more research compounds. Wholesale pricing. Verified accounts only.`;
 
   return {
@@ -61,7 +61,7 @@ export async function generateMetadata({
     alternates: {
       canonical: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
     },
-    // NOTE: no `images` here on purpose — the file-based opengraph-image.tsx
+    // NOTE: no `images` here on purpose - the file-based opengraph-image.tsx
     // in this route segment generates a unique per-city OG card. Declaring a
     // static image in metadata would override and kill the dynamic one.
     openGraph: {
@@ -102,7 +102,7 @@ export default async function CityLandingPage({
   if (!city) notFound();
 
 
-  // Live storefront Top 10 — identical products, names, sizes, and prices to
+  // Live storefront Top 10 - identical products, names, sizes, and prices to
   // the default store. Empty array on failure → CityPage falls back to the
   // static FEATURED_PEPTIDES list.
   const top10 = await getStoreTop10();
@@ -128,7 +128,7 @@ export default async function CityLandingPage({
         '@type': 'Service',
         '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#service`,
         serviceType: 'Research Peptide Supply',
-        name: `Research Peptide Supply — ${city.name}, ${city.stateAbbr}`,
+        name: `Research Peptide Supply - ${city.name}, ${city.stateAbbr}`,
         url: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
         description: `Research-grade peptide supply for qualified researchers in ${city.name}, ${city.state}. In vitro laboratory use only. Verified researcher accounts required.`,
         provider: { '@id': 'https://pepnationlab.com/#organization' },
@@ -150,13 +150,13 @@ export default async function CityLandingPage({
           audienceType: 'Qualified Researchers And Scientific Institutions',
         },
       },
-      // Top 10 compounds rendered on this page — mirrors the live storefront,
+      // Top 10 compounds rendered on this page - mirrors the live storefront,
       // gives crawlers and answer engines an enumerable product list.
       ...(top10.length > 0
         ? [
             {
               '@type': 'ItemList',
-              name: `Top 10 Research Compounds — ${city.name}, ${city.stateAbbr}`,
+              name: `Top 10 Research Compounds - ${city.name}, ${city.stateAbbr}`,
               numberOfItems: top10.length,
               itemListElement: top10.map((p, i) => ({
                 '@type': 'ListItem',

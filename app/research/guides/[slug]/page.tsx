@@ -126,7 +126,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
 
           <section style={{ padding: 'clamp(24px, 4vw, 48px) 0 clamp(48px, 7vw, 88px)' }}>
             <div className="container" style={{ maxWidth: 820 }}>
-              {/* Key takeaways — dense, quotable block for answer engines */}
+              {/* Key takeaways - dense, quotable block for answer engines */}
               <aside className="card" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-8)', borderColor: 'var(--border-teal)' }}>
                 <h2 style={{ color: 'var(--teal)', fontSize: '0.95rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 0, marginBottom: 'var(--space-4)' }}>Key Takeaways</h2>
                 <ul style={{ margin: 0, paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>

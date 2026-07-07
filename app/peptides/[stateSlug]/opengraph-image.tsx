@@ -18,7 +18,7 @@ export default async function Image({ params }: { params: Promise<{ stateSlug: s
   const resolved = getStateName(stateSlug);
   const stateName = resolved === stateSlug ? toTitleCase(stateSlug) : resolved;
 
-  // Local font — no network fetch at render time.
+  // Local font - no network fetch at render time.
   let fontData: ArrayBuffer | null = null;
   try {
     const buf = await readFile(join(process.cwd(), 'public', 'fonts', 'Inter-Bold.otf'));

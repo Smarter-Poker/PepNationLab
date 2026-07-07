@@ -69,7 +69,7 @@ export default async function FindAPeptidePage() {
     agent = ap;
   }
 
-  // Fallback to the house store — always deterministic, never a random agent.
+  // Fallback to the house store - always deterministic, never a random agent.
   // Never use .limit(1) here: that returns whichever agent Postgres picks first
   // (non-deterministic) and could expose another agent's catalog to guests.
   if (!agent) {

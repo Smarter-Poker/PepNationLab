@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
     }
 
-    // Use .eq() not .ilike() — sanitized usernames may contain underscores (a LIKE wildcard).
+    // Use .eq() not .ilike() - sanitized usernames may contain underscores (a LIKE wildcard).
     const { data: existingUsername } = await supabase.from('profiles').select('id').eq('username', usernameClean).maybeSingle();
     if (existingUsername) {
       return NextResponse.json({ error: 'This Username Is Already Taken' }, { status: 400 });
@@ -258,7 +258,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      // Seed at Rookie pricing (house_tiers level 3) — most conservative starting point.
+      // Seed at Rookie pricing (house_tiers level 3) - most conservative starting point.
       // V2 engine is live; use house_tiers directly instead of pricing_tiers.
       const { data: rookieTier } = await supabase.from('house_tiers').select('markup').eq('level', 3).maybeSingle();
       const { data: products } = await supabase.from('products').select('id, base_cost').eq('is_active', true);
