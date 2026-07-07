@@ -86,6 +86,7 @@ export default function FlashSaleBanner() {
     <div
       role="status"
       aria-live="polite"
+      data-nosnippet
       style={{
         position: 'sticky',
         top: 0,

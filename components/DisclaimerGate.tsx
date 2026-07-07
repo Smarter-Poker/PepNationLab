@@ -14,7 +14,7 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
     setChecks(prev => ({ ...prev, [key]: !prev[key] }));
 
   return (
-    <div className="modal-overlay" style={{ alignItems: 'flex-start', paddingTop: '5vh', paddingBottom: '5vh' }}>
+    <div data-nosnippet className="modal-overlay" style={{ alignItems: 'flex-start', paddingTop: '5vh', paddingBottom: '5vh' }}>
       {/* Pep Nation wordmark */}
       <div className="modal-content" style={{ maxWidth: 680 }}>
         

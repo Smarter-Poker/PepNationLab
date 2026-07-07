@@ -42,6 +42,25 @@ export default async function ResearchLibraryPage({
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0C151D' }}>
       
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org/',
+            '@type': 'Dataset',
+            name: 'Pep Nation Lab Research Peptide Database',
+            description: 'A comprehensive database of research-grade peptides and chemical compounds for laboratory use. Includes molecular weights, sequences, and evidence tiers.',
+            url: 'https://pepnationlab.com/research/catalog',
+            license: 'https://pepnationlab.com/terms',
+            isAccessibleForFree: true,
+            creator: {
+              '@type': 'Organization',
+              name: 'Pep Nation Lab'
+            }
+          })
+        }}
+      />
+
       {/* Left Dock Navigation */}
       <div style={{ flex: '0 0 240px', display: 'none' }} className="desktop-dock">
          {/* Using CSS class for hiding on mobile if needed */}

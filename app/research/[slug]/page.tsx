@@ -42,7 +42,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     description: summary || `${name} research-use-only reference: mechanism, evidence, handling, and references.`,
     keywords: [name, ...(compound.aliases ?? []).slice(0, 4), 'research peptide', 'RUO compound', 'peptide research', 'Pep Nation Lab'].join(', '),
     robots: { index: true, follow: true },
-    alternates: { canonical: `https://pepnationlab.com/research/${slug}` },
+    alternates: { 
+      canonical: `https://pepnationlab.com/research/${slug}`,
+      types: {
+        'text/markdown': `https://pepnationlab.com/api/llm/compound/${slug}`,
+      },
+    },
     openGraph: {
       title: `${name} — Research Reference | Pep Nation Lab`,
       description: summary || `${name} research-use-only reference: mechanism, evidence, handling, and references.`,
