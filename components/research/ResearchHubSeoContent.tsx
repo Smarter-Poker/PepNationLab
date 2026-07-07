@@ -27,6 +27,7 @@ const TOOL_LINKS: Array<{ href: string; label: string }> = [
   { href: '/research/most-cited', label: 'Most-Cited Compounds' },
   { href: '/research/approved-drugs', label: 'Approved Drugs' },
   { href: '/research/faq', label: 'Research Library FAQ' },
+  { href: '/research/methodology', label: 'Editorial Standards And Methodology' },
 ];
 
 export default async function ResearchHubSeoContent() {

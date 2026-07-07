@@ -118,6 +118,14 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         description: compound.plain_summary ?? `${compound.display_name} research-use-only reference for qualified researchers.`,
         isPartOf: { '@id': 'https://pepnationlab.com/#website' },
         about: { '@id': `https://pepnationlab.com/research/${compound.slug}#substance` },
+        // E-E-A-T / YMYL trust signals: identify who publishes and maintains
+        // this reference. reviewedBy + maintainer point to the organization
+        // entity; lastReviewed communicates content freshness to Google and
+        // AI answer engines.
+        publisher: { '@id': 'https://pepnationlab.com/#organization' },
+        reviewedBy: { '@id': 'https://pepnationlab.com/#organization' },
+        maintainer: { '@id': 'https://pepnationlab.com/#organization' },
+        lastReviewed: '2026-07-07',
         audience: {
           '@type': 'MedicalAudience',
           audienceType: 'Researchers',

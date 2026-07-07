@@ -136,6 +136,11 @@ export default function MonographSeoContent({ compound }: { compound: Compound }
       )}
 
       <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)' }}>
+        Maintained By The Pep Nation Lab Research Team. See Our{' '}
+        <a href="/research/methodology" style={{ color: 'var(--teal, #00C4BC)' }}>Editorial Standards And Research Methodology</a>{' '}
+        For How This Reference Is Sourced And Reviewed.
+      </p>
+      <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)' }}>
         This Reference Is Provided For In Vitro Laboratory Research Use Only. Not For Human Consumption. See The{' '}
         <a href="/disclaimer" style={{ color: 'var(--teal, #00C4BC)' }}>Full Research Disclaimer</a>.
       </p>
