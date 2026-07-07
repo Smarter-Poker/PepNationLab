@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'About Pep Nation Lab | Research Peptide Distribution Platform',
@@ -9,7 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://pepnationlab.com/about' },
   openGraph: {
     title: 'About Pep Nation Lab | Research Peptide Distribution Platform',
-    description: 'Science, transparency, and trust. Learn about Pep Nation Lab's mission, compliance framework, and research-only commitment.',
+    description: "Science, transparency, and trust. Learn about Pep Nation Lab's mission, compliance framework, and research-only commitment.",
     url: 'https://pepnationlab.com/about',
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'About Pep Nation Lab' }],
