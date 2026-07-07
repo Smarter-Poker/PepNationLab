@@ -41,6 +41,19 @@ const PUBLIC_ROUTES = [
   '/api/storefront/catalog',
   '/api/storefront/semantic',
   '/api/stats/member-count',
+  // Guest cart endpoints. The global CartProvider runs on the guest
+  // storefront and calls these; each is either a service-client price/data
+  // lookup (refresh, recommendations, bac-water) or explicitly falls back to
+  // the house 'researchstore' storefront for anonymous visitors
+  // (resolve-name). Blocking them 401'd guest cart pricing/recs and made the
+  // add-by-name button show a misleading "Unauthorized" error toast.
+  // NOTE: /api/cart/sync is intentionally NOT here — it persists to the
+  // user's profile and is user-only by design (its 401 is caught silently;
+  // the guest cart still persists to localStorage).
+  '/api/cart/refresh',
+  '/api/cart/resolve-name',
+  '/api/cart/recommendations',
+  '/api/cart/bac-water',
   '/research',
   // Local SEO city landing pages — /peptides, /peptides/[state], AND
   // /peptides/[state]/[city]. The 3-segment city URLs are NOT covered by
@@ -56,6 +69,15 @@ const PUBLIC_ROUTES = [
   '/api/research/suggest',
   '/api/research/instant-answer',
   '/api/research/click',
+  // Guest-safe research data endpoints. These are stateless (NLP) or read
+  // public compound data with no per-user gating, and are called by
+  // guest-facing surfaces: the storefront AI discovery hero + /research/match
+  // (ai-match), the compare drawer + calculators (compounds-list), and the
+  // /research/catalog browser (products). Previously 401'd before they ran,
+  // silently breaking those headline guest features.
+  '/api/research/ai-match',
+  '/api/research/compounds-list',
+  '/api/research/products',
   // Research Library v3 Wave 2 public API (bearer-token auth handled in route)
   '/api/research/public',
   // Research Library v3 Wave 2 embed widget (iframe-able knowledge card)
