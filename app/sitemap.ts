@@ -28,6 +28,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     })),
+    ...CITIES.map((city) => ({
+      url: `${BASE}/peptides/${city.stateSlug}/${city.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
 
     // Legal / Compliance
     { url: `${BASE}/compliance`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },

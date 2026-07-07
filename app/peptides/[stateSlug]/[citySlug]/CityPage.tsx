@@ -162,6 +162,22 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         }
         .city-fadein { animation: city-fadein 0.75s ease forwards; }
 
+        /* image buttons */
+        .city-img-btn {
+          display: inline-block;
+          transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .city-img-btn:hover {
+          transform: scale(1.03);
+          filter: drop-shadow(0 10px 20px rgba(0,0,0,0.4));
+        }
+        .city-img-btn img {
+          display: block;
+          height: clamp(48px, 6vw, 64px);
+          width: auto;
+          object-fit: contain;
+        }
+
         /* popular name tag */
         .popular-name-tag {
           display: inline-block;
@@ -254,19 +270,12 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
             </p>
 
             {/* CTAs */}
-            <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', marginBottom: 'var(--space-10)' }}>
-              <Link href="/login" className="btn btn-primary btn-xl">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                  <polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
-                </svg>
-                Access the Lab
+            <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 'var(--space-10)', alignItems: 'center' }}>
+              <Link href="/login" className="city-img-btn" aria-label="Access the Lab">
+                <img src="/images/buttons/btn-access.png" alt="Access the Lab" />
               </Link>
-              <Link href="/research" className="btn btn-secondary btn-xl">
-                Browse Catalog
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
+              <Link href="/research" className="city-img-btn" aria-label="Browse Catalog">
+                <img src="/images/buttons/btn-browse.png" alt="Browse Catalog" />
               </Link>
             </div>
 
@@ -553,16 +562,12 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
               Create a verified researcher account today and unlock wholesale pricing on 100+ pharmaceutical-grade peptides shipped fast to {city.name}, {city.stateAbbr}.
             </p>
 
-            <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link href="/login" className="btn btn-primary btn-xl">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                  <polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
-                </svg>
-                Access the Lab
+            <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
+              <Link href="/login" className="city-img-btn" aria-label="Access the Lab">
+                <img src="/images/buttons/btn-access.png" alt="Access the Lab" />
               </Link>
-              <Link href="/research" className="btn btn-secondary btn-xl">
-                Explore Research Library
+              <Link href="/research" className="city-img-btn" aria-label="Explore Research Library">
+                <img src="/images/buttons/btn-browse.png" alt="Explore Research Library" />
               </Link>
             </div>
 
