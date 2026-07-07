@@ -8,7 +8,7 @@
 
   const completenessScore = Math.min(8, Math.round(completeness));
 
-  // ── TOTAL ─────────────────────────────────────────────────────────────────
+  // ── TOTAL ──────────────────────────────────────────────────────────────────
   const OVERRIDES: Record<string, number> = {
     // Healing & Recovery
     'bpc-157': 98,
@@ -165,7 +165,7 @@
     }
   }
 
-  // ── GRADE LETTER ──────────────────────────────────────────────────────────
+  // ── GRADE LETTER ────────────────────────────────────────────────────────────
   const letter: CompoundScore['letter'] =
     total >= 96 ? 'A+' :
     total >= 92 ? 'A'  :
@@ -192,7 +192,7 @@
     allSelected.every(other => other.slug === c.slug || !(other.research_areas ?? []).includes(area))
   );
 
-  // ── RECOMMENDED CONTEXTS ───────────────────────────────────────────────────
+  // ── RECOMMENDED CONTEXTS ────────────────────────────────────────────────────
   const recommendedContexts: string[] = [];
   if (c.evidence_tier === 'approved_drug' || c.evidence_tier === 'investigational')
     recommendedContexts.push('Researchers requiring clinical-grade validated compounds');
@@ -351,7 +351,7 @@ function generateProsCons(c: Compound): ProsCons {
   return { pros, cons };
 }
 
-// ─── ANALYST BRIEF GENERATOR ──────────────────────────────────────────────────────
+// ─── ANALYST BRIEF GENERATOR ─────────────────────────────────────────────────
 function generateAnalystBrief(selected: Compound[], scores: CompoundScore[]): string[] {
   if (selected.length < 2) return [];
   const paragraphs: string[] = [];
