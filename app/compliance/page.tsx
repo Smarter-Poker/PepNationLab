@@ -20,6 +20,29 @@ export const metadata: Metadata = {
 export default function CompliancePage() {
   return (
     <PageShell>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'WebPage',
+              '@id': 'https://pepnationlab.com/compliance#webpage',
+              url: 'https://pepnationlab.com/compliance',
+              name: 'Compliance Policy',
+              isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+              publisher: { '@id': 'https://pepnationlab.com/#organization' },
+            },
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+                { '@type': 'ListItem', position: 2, name: 'Compliance', item: 'https://pepnationlab.com/compliance' },
+              ],
+            },
+          ],
+        }) }}
+      />
       <LegalDocument
         title="Compliance Policy"
         lastUpdated="May 21, 2026"
