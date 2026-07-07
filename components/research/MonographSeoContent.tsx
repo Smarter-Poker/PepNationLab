@@ -8,6 +8,8 @@
  *
  * Phase 2 AIO:
  *  - Semantic <article> / <section> structure with a clean h1 -> h2 hierarchy.
+ *  - An answer-first one-sentence definition (AEO: answer engines and featured
+ *    snippets extract a short self-contained definition before prose).
  *  - An "At A Glance" HTML <table> of the hard facts (molecular weight, amino
  *    acid sequence, CAS number, half-life) which AI answer engines extract
  *    preferentially over prose.
@@ -69,6 +71,14 @@ export default function MonographSeoContent({ compound }: { compound: Compound }
   const casNumber = compound.identity?.cas ?? null;
   const routes = (compound.route_of_admin ?? []).filter(Boolean).join(', ') || null;
 
+  // Answer-first definition: a single, self-contained sentence that AI answer
+  // engines and featured snippets extract before longer prose. Composed only
+  // from existing fields, and RUO-framed. Tagged .compound-summary so it feeds
+  // the page's existing speakable selector.
+  const defClass = compound.compound_class || 'research compound';
+  const defTarget = compound.molecular_target ? ` targeting ${compound.molecular_target}` : '';
+  const defArea = compound.category ? `${compound.category} research` : 'laboratory research';
+
   return (
     <article
       aria-label={`${compound.display_name} Research Summary`}
@@ -89,6 +99,24 @@ export default function MonographSeoContent({ compound }: { compound: Compound }
             Also Known As: {aliases.join(', ')}
           </p>
         )}
+
+        {/* Answer-first definition callout (AEO). */}
+        <p
+          className="compound-summary compound-definition"
+          style={{
+            margin: '0 0 16px',
+            padding: '12px 16px',
+            borderLeft: '3px solid var(--teal, #00C4BC)',
+            background: 'rgba(0,196,188,0.06)',
+            borderRadius: '0 8px 8px 0',
+            fontSize: '1.02rem',
+            lineHeight: 1.6,
+          }}
+        >
+          <strong>{compound.display_name}</strong> is a research-grade {defClass}{defTarget} studied in {defArea}.
+          It is supplied strictly for in vitro laboratory research use only — not for human or animal consumption,
+          and not FDA-approved.
+        </p>
 
         {tier && (
           <p style={{ margin: '0 0 16px', fontSize: '0.9rem' }}>
