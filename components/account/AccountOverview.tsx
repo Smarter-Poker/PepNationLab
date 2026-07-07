@@ -146,6 +146,66 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
   const [inputValue, setInputValue] = useState('');
   const [savingTask, setSavingTask] = useState(false);
 
+  // Email verification inline state
+  const [emailVerifyStep, setEmailVerifyStep] = useState<'email' | 'code'>('email');
+  const [emailVerifyCode, setEmailVerifyCode] = useState('');
+  const [emailVerifyError, setEmailVerifyError] = useState<string | null>(null);
+
+  const handleSendEmailVerification = async () => {
+    if (!inputValue.trim() || !inputValue.includes('@')) {
+      setEmailVerifyError('Please enter a valid email.');
+      return;
+    }
+    setSavingTask(true);
+    setEmailVerifyError(null);
+    try {
+      const res = await fetch('/api/auth/request-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inputValue.trim(), purpose: 'verify_email' })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send code.');
+      
+      setEmailVerifyStep('code');
+      toast.success('Verification code sent.');
+    } catch (err: any) {
+      setEmailVerifyError(err.message);
+    } finally {
+      setSavingTask(false);
+    }
+  };
+
+  const handleVerifyEmailCode = async () => {
+    if (emailVerifyCode.length !== 6) {
+      setEmailVerifyError('Please enter a 6-digit code.');
+      return;
+    }
+    setSavingTask(true);
+    setEmailVerifyError(null);
+    try {
+      const res = await fetch('/api/auth/verify-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inputValue.trim(), code: emailVerifyCode })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to verify code.');
+      
+      toast.success('Email verified successfully.');
+      if (profile) {
+        onProfileChange({ ...profile, contact_email: inputValue.trim(), email_verified: true });
+      }
+      setExpandedTask(null);
+      setEmailVerifyStep('email');
+      setEmailVerifyCode('');
+    } catch (err: any) {
+      setEmailVerifyError(err.message);
+    } finally {
+      setSavingTask(false);
+    }
+  };
+
   // Inline warehouse address form state
   const [warehouseDraft, setWarehouseDraft] = useState({
     street1: (agentProfile?.warehouse_address?.street1 ?? '') as string,
@@ -482,13 +542,14 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
                         className="btn btn-primary btn-sm"
                         disabled={expandedTask === t.id}
                         onClick={() => {
-                          const isInlineEditable = ['first-name', 'last-name', 'email', 'phone', 'timezone', 'avatar', 'warehouse'].includes(t.id);
+                          const isInlineEditable = ['first-name', 'last-name', 'email', 'email-verified', 'phone', 'timezone', 'avatar', 'warehouse'].includes(t.id);
                           if (isInlineEditable) {
                             setExpandedTask(t.id);
                             const keyMap: Record<string, string> = {
                               'first-name': 'first_name',
                               'last-name': 'last_name',
                               'email': 'email',
+                              'email-verified': 'contact_email',
                               'phone': 'phone',
                               'timezone': 'timezone',
                             };
@@ -581,6 +642,62 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
                               {savingWarehouse ? 'Saving...' : 'Save Address'}
                             </button>
                           </div>
+                        </div>
+                      ) : t.id === 'email-verified' ? (
+                        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {emailVerifyError && (
+                            <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 4, color: 'var(--red)', fontSize: '0.85rem' }}>
+                              {emailVerifyError}
+                            </div>
+                          )}
+                          {emailVerifyStep === 'email' ? (
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <input
+                                type="email"
+                                className="form-input"
+                                style={{ flex: 1, margin: 0 }}
+                                placeholder="Enter Your Real Email Address"
+                                value={inputValue}
+                                onChange={e => setInputValue(e.target.value)}
+                                autoFocus
+                              />
+                              <button
+                                className="btn btn-primary"
+                                disabled={savingTask || !inputValue.trim()}
+                                onClick={handleSendEmailVerification}
+                              >
+                                {savingTask ? 'Sending...' : 'Send Code'}
+                              </button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={6}
+                                className="form-input"
+                                style={{ flex: 1, margin: 0, letterSpacing: '0.5em', textAlign: 'center', fontFamily: 'monospace', fontSize: '1.2rem' }}
+                                placeholder="000000"
+                                value={emailVerifyCode}
+                                onChange={e => setEmailVerifyCode(e.target.value.replace(/\D/g, ''))}
+                                autoFocus
+                              />
+                              <button
+                                className="btn btn-primary"
+                                disabled={savingTask || emailVerifyCode.length !== 6}
+                                onClick={handleVerifyEmailCode}
+                              >
+                                {savingTask ? 'Verifying...' : 'Verify Code'}
+                              </button>
+                              <button
+                                className="btn btn-ghost"
+                                disabled={savingTask}
+                                onClick={() => { setEmailVerifyStep('email'); setEmailVerifyError(null); }}
+                              >
+                                Back
+                              </button>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
