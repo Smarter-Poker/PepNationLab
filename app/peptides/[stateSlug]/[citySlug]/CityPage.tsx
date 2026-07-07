@@ -58,6 +58,25 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
           acceptedAnswer: { '@type': 'Answer', text: faq.answer },
         })),
       },
+      {
+        '@type': 'MedicalBusiness',
+        '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#business`,
+        name: `Pep Nation Lab — ${city.name} Research Peptides`,
+        url: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
+        image: 'https://pepnationlab.com/logo-mark.svg',
+        description: `Research-grade peptide supply for qualified researchers in ${city.name}, ${city.state}.`,
+        areaServed: {
+          '@type': 'City',
+          name: city.name,
+        },
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: city.name,
+          addressRegion: city.stateAbbr,
+          addressCountry: 'US',
+        },
+        priceRange: '$$',
+      },
     ],
   };
 

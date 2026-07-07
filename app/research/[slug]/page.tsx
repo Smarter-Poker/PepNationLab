@@ -18,6 +18,7 @@ import { getCompound, getAllCompounds, getCompoundBindings } from '@/lib/compoun
 import { relatedCompounds } from '@/lib/compounds';
 import MonographTabs from '@/components/research/MonographTabs';
 import CompoundKnowledgePanel from '@/components/research/CompoundKnowledgePanel';
+import CompoundCityLinks from '@/components/CompoundCityLinks';
 import SequenceMotifViewer from '@/components/research/SequenceMotifViewer';
 import MechanismSVG from '@/components/research/MechanismSVG';
 import { PKChart, ReceptorAffinityHeatmap } from '@/components/research/LazyCharts';
@@ -187,6 +188,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           <PKChart tmaxHours={tmax} halfLifeHours={halfLife} cmaxNgMl={cmax} />
         )}
         {bindings.length > 0 && <ReceptorAffinityHeatmap bindings={bindings} />}
+      </div>
+
+      {/* Internal Linking Strategy - Cross-link to Local SEO landing pages */}
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 var(--space-4, 16px) var(--space-6, 32px)' }}>
+        <CompoundCityLinks compoundName={compound.display_name} />
       </div>
 
       {/* Right-rail knowledge panel - desktop only via CSS in the component. */}
