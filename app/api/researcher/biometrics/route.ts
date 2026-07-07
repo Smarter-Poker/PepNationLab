@@ -38,31 +38,43 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { metric_name, metric_value, unit, measured_at, notes } = await req.json();
+    const body = await req.json();
 
-    if (!metric_name || metric_value === undefined) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
+    const insertRecord = async (record: any) => {
+      const { metric_name, metric_value, unit, measured_at, notes } = record;
 
-    if (typeof metric_name !== 'string' || metric_name.length > 100) {
-      return NextResponse.json({ error: 'metric_name too long' }, { status: 400 });
-    }
-    if (unit && (typeof unit !== 'string' || unit.length > 50)) {
-      return NextResponse.json({ error: 'unit too long' }, { status: 400 });
-    }
-    if (notes && (typeof notes !== 'string' || notes.length > 2000)) {
-      return NextResponse.json({ error: 'notes too long' }, { status: 400 });
-    }
+      if (!metric_name || metric_value === undefined) {
+        throw new Error('Missing required fields');
+      }
+      if (typeof metric_name !== 'string' || metric_name.length > 100) {
+        throw new Error('metric_name too long');
+      }
+      if (unit && (typeof unit !== 'string' || unit.length > 50)) {
+        throw new Error('unit too long');
+      }
+      if (notes && (typeof notes !== 'string' || notes.length > 2000)) {
+        throw new Error('notes too long');
+      }
 
-    const numericValue = Number(metric_value);
-    if (!Number.isFinite(numericValue) || numericValue < -1e9 || numericValue > 1e9) {
-      return NextResponse.json({ error: 'metric_value must be a finite number within safe range' }, { status: 400 });
-    }
+      const numericValue = Number(metric_value);
+      if (!Number.isFinite(numericValue) || numericValue < -1e9 || numericValue > 1e9) {
+        throw new Error('metric_value must be a finite number within safe range');
+      }
 
-    const parsedDate = measured_at ? new Date(measured_at) : new Date();
-    if (isNaN(parsedDate.getTime())) {
-      return NextResponse.json({ error: 'Invalid measured_at date' }, { status: 400 });
-    }
+      const parsedDate = measured_at ? new Date(measured_at) : new Date();
+      if (isNaN(parsedDate.getTime())) {
+        throw new Error('Invalid measured_at date');
+      }
+
+      return {
+        user_id: user!.id,
+        metric_name,
+        metric_value: numericValue,
+        unit,
+        measured_at: parsedDate.toISOString(),
+        notes
+      };
+    };
 
     const { count } = await supabase
       .from('researcher_biometrics')
@@ -73,25 +85,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Biometric record limit reached (1000)' }, { status: 429 });
     }
 
-    const { data, error } = await supabase
-      .from('researcher_biometrics')
-      .insert({
-        user_id: user!.id,
-        metric_name,
-        metric_value: numericValue,
-        unit,
-        measured_at: parsedDate.toISOString(),
-        notes
-      })
-      .select()
-      .maybeSingle();
+    if (Array.isArray(body)) {
+      if (body.length > 100) return NextResponse.json({ error: 'Max 100 records per bulk insert' }, { status: 400 });
+      if ((count ?? 0) + body.length > 1000) return NextResponse.json({ error: 'Limit reached' }, { status: 429 });
+      
+      const records = [];
+      for (const b of body) records.push(await insertRecord(b));
+      
+      const { data, error } = await supabase
+        .from('researcher_biometrics')
+        .insert(records)
+        .select();
+      
+      if (error) throw error;
+      return NextResponse.json({ biometrics: data });
+    } else {
+      const record = await insertRecord(body);
+      const { data, error } = await supabase
+        .from('researcher_biometrics')
+        .insert(record)
+        .select()
+        .maybeSingle();
 
-    if (error) throw error;
-
-    return NextResponse.json({ biometric: data });
-  } catch (error) {
+      if (error) throw error;
+      return NextResponse.json({ biometric: data });
+    }
+  } catch (error: any) {
     console.error('Error logging biometric:', error);
-    return NextResponse.json({ error: 'Failed to log biometric' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to log biometric' }, { status: 400 });
   }
 }
 

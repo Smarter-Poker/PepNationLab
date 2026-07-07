@@ -46,6 +46,16 @@ const GOAL_MAPPINGS: Record<string, string[]> = {
   'Cognitive Enhancement': ['Dihexa', 'Semax', 'Selank'],
 };
 
+const PROTOCOL_TEMPLATES = [
+  { name: 'Standard BPC-157 Tissue Repair', compound: 'BPC-157', amount: '250', unit: 'mcg', frequency: 'Every Day' },
+  { name: 'Standard TB-500 Recovery', compound: 'TB-500', amount: '2.5', unit: 'mg', frequency: 'Twice Weekly' },
+  { name: 'Wolverine Stack (BPC-157 + TB-500)', compound: 'BPC-157/TB-500 Blend', amount: '500', unit: 'mcg', frequency: 'Every Day' },
+  { name: 'GLP-1 Starter (Tirzepatide)', compound: 'Tirzepatide', amount: '2.5', unit: 'mg', frequency: 'Once Weekly' },
+  { name: 'GLP-1 Starter (Semaglutide)', compound: 'Semaglutide', amount: '0.25', unit: 'mg', frequency: 'Once Weekly' },
+  { name: 'GHK-Cu Skin/Hair', compound: 'GHK-Cu', amount: '2', unit: 'mg', frequency: 'Every Day' },
+  { name: 'Ipamorelin / CJC-1295 Anti-Aging', compound: 'Ipamorelin/CJC-1295', amount: '100', unit: 'mcg', frequency: '5 Days On, 2 Off' }
+];
+
 // Estimated elimination half-lives (hours) for the informational "Active In System" model.
 // Values are approximate literature figures for research context only.
 const HALF_LIFE_HOURS: Record<string, number> = {
@@ -178,10 +188,22 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [isComparing, setIsComparing] = useState(false);
 
   // Inventory & Calc State
-  const [inventoryData, setInventoryData] = useState<Record<string, { on_hand: number, lot: string, expiration: string }>>({});
+  const [inventoryData, setInventoryData] = useState<Record<string, { on_hand: number, lot: string, expiration: string, recon_mg?: string, recon_ml?: string, recon_dose?: string }>>({});
   const [reconMg, setReconMg] = useState('5');
   const [reconMl, setReconMl] = useState('2');
   const [reconDose, setReconDose] = useState('250');
+  const [reconProductId, setReconProductId] = useState<string | null>(null);
+  const [qrModalProduct, setQrModalProduct] = useState<string | null>(null);
+
+  const handleReconChange = (field: 'recon_mg' | 'recon_ml' | 'recon_dose', value: string) => {
+    if (field === 'recon_mg') setReconMg(value);
+    if (field === 'recon_ml') setReconMl(value);
+    if (field === 'recon_dose') setReconDose(value);
+    
+    if (reconProductId) {
+      updateInventory(reconProductId, field, value);
+    }
+  };
 
   // Scheduler & Injection Sites State
   const [scheduledDoses, setScheduledDoses] = useState<any[]>([]);
@@ -476,7 +498,10 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           product_id: productId, 
           on_hand: updated[productId].on_hand,
           lot_number: updated[productId].lot, 
-          expiration_date: updated[productId].expiration
+          expiration_date: updated[productId].expiration,
+          recon_mg: updated[productId].recon_mg,
+          recon_ml: updated[productId].recon_ml,
+          recon_dose: updated[productId].recon_dose
         })
       });
     } catch {}
@@ -1028,6 +1053,16 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     }
   };
 
+  const loadBiometrics = async () => {
+    try {
+      const res = await fetch('/api/researcher/biometrics');
+      const data = await res.json();
+      if (data.biometrics) setBiometrics(data.biometrics);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const saveBiometric = async () => {
     if (!bioName || !bioValue) return;
     setBioSaving(true);
@@ -1037,17 +1072,83 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ metric_name: bioName, metric_value: parseFloat(bioValue), unit: bioUnit })
       });
-      const data = await res.json();
-      if (res.ok && data.biometric) {
-        setBiometrics(prev => [...prev, data.biometric]);
+      if (res.ok) {
+        toast.success('Logged successfully');
         setBioValue('');
-        toast.success('Biometric Logged');
-      } else throw new Error(data.error);
-    } catch (e) {
-      toast.error('Failed To Log Biometric');
+        await loadBiometrics();
+      } else {
+        toast.error('Failed to log');
+      }
+    } catch {
+      toast.error('Error logging');
     } finally {
       setBioSaving(false);
     }
+  };
+
+  const handleCsvImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target?.result as string;
+      try {
+        const rows = text.split('\n').filter(r => r.trim());
+        if (rows.length < 2) return toast.error('Invalid CSV format');
+        const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+        
+        const dateIdx = headers.findIndex(h => h.includes('date') || h.includes('time'));
+        const metricIdx = headers.findIndex(h => h.includes('metric') || h.includes('name'));
+        const valueIdx = headers.findIndex(h => h.includes('value') || h.includes('amount'));
+        const unitIdx = headers.findIndex(h => h.includes('unit'));
+
+        if (metricIdx === -1 || valueIdx === -1) {
+          return toast.error('CSV must have Metric/Name and Value columns');
+        }
+
+        const toImport = rows.slice(1).map(r => {
+          const cols = r.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+          if (!cols[metricIdx] || !cols[valueIdx]) return null;
+          return {
+            measured_at: dateIdx !== -1 && cols[dateIdx] ? new Date(cols[dateIdx]).toISOString() : new Date().toISOString(),
+            metric_name: cols[metricIdx],
+            metric_value: parseFloat(cols[valueIdx]),
+            unit: unitIdx !== -1 ? cols[unitIdx] : ''
+          };
+        }).filter(Boolean);
+
+        if (toImport.length === 0) return toast.error('No valid records found in CSV');
+
+        toast.loading(`Importing ${toImport.length} records...`, { id: 'csv-import' });
+        
+        // Chunk into 100s
+        let success = 0;
+        for (let i = 0; i < toImport.length; i += 100) {
+          const chunk = toImport.slice(i, i + 100);
+          const res = await fetch('/api/researcher/biometrics', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(chunk)
+          });
+          if (res.ok) {
+            success += chunk.length;
+          } else {
+            console.error(await res.text());
+          }
+        }
+        
+        if (success > 0) {
+          toast.success(`Imported ${success} records`, { id: 'csv-import' });
+        await loadBiometrics();
+        } else {
+          toast.error('Failed to import records', { id: 'csv-import' });
+        }
+      } catch (err) {
+        toast.error('Import failed', { id: 'csv-import' });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // reset
   };
 
   const deleteBiometric = async (id: string) => {
@@ -1676,6 +1777,18 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                 <span style={{ color: 'var(--silver)' }}>Expires:</span>
                 <input type="month" value={inventoryData[item.product_id]?.expiration ?? ''} onChange={e => updateInventory(item.product_id, 'expiration', e.target.value)} style={{ width: 110, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)', padding: '2px 6px', borderRadius: 4, textAlign: 'right' }} onClick={e => e.stopPropagation()} />
               </div>
+              {inventoryData[item.product_id]?.recon_mg && inventoryData[item.product_id]?.recon_ml && (
+                <div style={{ marginTop: 4 }}>
+                  <button
+                    onClick={e => { e.stopPropagation(); setQrModalProduct(item.product_id); }}
+                    className="btn btn-secondary btn-sm"
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '4px 8px', fontSize: '0.75rem' }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    Vial Label (QR)
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -1851,18 +1964,43 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     <div style={{ flex: '1 1 300px' }}>
                       <h3 style={{ color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Reconstitution Calculator</h3>
                       <p style={{ color: 'var(--silver)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>Calculate your syringe pull (units) based on vial size and bac water added.</p>
+                      
+                      <div style={{ marginBottom: 'var(--space-4)' }}>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Load Saved Vial State</label>
+                        <select 
+                          value={reconProductId || ''} 
+                          onChange={e => {
+                            const pid = e.target.value;
+                            setReconProductId(pid || null);
+                            if (pid && inventoryData[pid]) {
+                              if (inventoryData[pid].recon_mg) setReconMg(inventoryData[pid].recon_mg as string);
+                              if (inventoryData[pid].recon_ml) setReconMl(inventoryData[pid].recon_ml as string);
+                              if (inventoryData[pid].recon_dose) setReconDose(inventoryData[pid].recon_dose as string);
+                            }
+                          }}
+                          style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }}
+                        >
+                          <option value="">-- Manual Calculation --</option>
+                          {Object.keys(inventoryData).map(pid => {
+                            const item = [...catalog, ...favorites, ...pastOrders, ...recentlyViewed, ...bundles].find(i => i.product_id === pid);
+                            if (!item) return null;
+                            return <option key={pid} value={pid}>{item.name}</option>;
+                          })}
+                        </select>
+                      </div>
+
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                         <div>
                           <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Vial Size (mg)</label>
-                          <input type="number" value={reconMg} onChange={e => setReconMg(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
+                          <input type="number" value={reconMg} onChange={e => handleReconChange('recon_mg', e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
                         </div>
                         <div>
                           <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Bac Water Added (ml)</label>
-                          <input type="number" value={reconMl} onChange={e => setReconMl(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
+                          <input type="number" value={reconMl} onChange={e => handleReconChange('recon_ml', e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
                         </div>
                         <div style={{ gridColumn: '1 / -1' }}>
                           <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Desired Dose (mcg)</label>
-                          <input type="number" value={reconDose} onChange={e => setReconDose(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
+                          <input type="number" value={reconDose} onChange={e => handleReconChange('recon_dose', e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
                         </div>
                       </div>
                     </div>
@@ -2330,6 +2468,26 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                   <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
                     <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 8 }}><Clock size={18} style={{ color: 'var(--teal)' }} /> Protocol Scheduler</h3>
                     <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
+                      <select 
+                        onChange={e => {
+                          const t = PROTOCOL_TEMPLATES[parseInt(e.target.value)];
+                          if (t) {
+                            setScheduleCompound(t.compound);
+                            setScheduleAmount(t.amount);
+                            setScheduleUnit(t.unit);
+                            setScheduleFrequency(t.frequency);
+                          }
+                        }} 
+                        style={{ flex: 1, minWidth: '100%', background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', padding: '12px', borderRadius: 8, color: 'var(--teal)', fontWeight: 'bold' }}
+                      >
+                        <option value="">+ Load from Protocol Library</option>
+                        {PROTOCOL_TEMPLATES.map((t, i) => (
+                          <option key={i} value={i}>{t.name} ({t.compound} {t.amount}{t.unit} {t.frequency})</option>
+                        ))}
+                      </select>
+                      
+                      <div style={{ width: '100%', height: 1, background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+
                       <select value={scheduleCompound} onChange={e => setScheduleCompound(e.target.value)} style={{ flex: 1, minWidth: 200, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }}>
                         <option value="">Select Compound</option>
                         {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => i.name).map(i => i.name))).map(slug => (<option key={slug as string} value={slug as string}>{slug}</option>))}
@@ -2361,18 +2519,43 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     <div style={{ flex: '1 1 300px' }}>
                       <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 8 }}><Beaker size={18} style={{ color: 'var(--teal)' }} /> Reconstitution Calculator</h3>
                       <p style={{ color: 'var(--silver)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>Calculate Your Syringe Pull Based On Vial Size And Bac Water Added.</p>
+                      
+                      <div style={{ marginBottom: 'var(--space-4)' }}>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Load Saved Vial State</label>
+                        <select 
+                          value={reconProductId || ''} 
+                          onChange={e => {
+                            const pid = e.target.value;
+                            setReconProductId(pid || null);
+                            if (pid && inventoryData[pid]) {
+                              if (inventoryData[pid].recon_mg) setReconMg(inventoryData[pid].recon_mg as string);
+                              if (inventoryData[pid].recon_ml) setReconMl(inventoryData[pid].recon_ml as string);
+                              if (inventoryData[pid].recon_dose) setReconDose(inventoryData[pid].recon_dose as string);
+                            }
+                          }}
+                          style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }}
+                        >
+                          <option value="">-- Manual Calculation --</option>
+                          {Object.keys(inventoryData).map(pid => {
+                            const item = [...catalog, ...favorites, ...pastOrders, ...recentlyViewed, ...bundles].find(i => i.product_id === pid);
+                            if (!item) return null;
+                            return <option key={pid} value={pid}>{item.name}</option>;
+                          })}
+                        </select>
+                      </div>
+
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                         <div>
                           <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Vial Size (mg)</label>
-                          <input type="number" value={reconMg} onChange={e => setReconMg(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
+                          <input type="number" value={reconMg} onChange={e => handleReconChange('recon_mg', e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
                         </div>
                         <div>
                           <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Bac Water (ml)</label>
-                          <input type="number" value={reconMl} onChange={e => setReconMl(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
+                          <input type="number" value={reconMl} onChange={e => handleReconChange('recon_ml', e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
                         </div>
                         <div style={{ gridColumn: '1 / -1' }}>
                           <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Desired Dose (mcg)</label>
-                          <input type="number" value={reconDose} onChange={e => setReconDose(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
+                          <input type="number" value={reconDose} onChange={e => handleReconChange('recon_dose', e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
                         </div>
                       </div>
                     </div>
@@ -2455,6 +2638,17 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                       <button onClick={saveBiometric} disabled={!bioName || !bioValue || bioSaving} className="btn btn-primary" style={{ padding: '12px 24px', borderRadius: 8 }}>
                         {bioSaving ? 'Saving...' : 'Log'}
                       </button>
+                    </div>
+                    
+                    <div style={{ marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ color: 'var(--silver)', fontSize: '0.8rem' }}>
+                        Have data from Apple Health or Google Fit?
+                      </div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: '6px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: 6, fontSize: '0.85rem', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        Bulk Import CSV
+                        <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleCsvImport} />
+                      </label>
                     </div>
                   </div>
 
@@ -2913,6 +3107,42 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Modal */}
+      {qrModalProduct && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }} onClick={() => setQrModalProduct(null)} />
+          <div className="glass-panel" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 350, borderRadius: 'var(--radius-xl)', overflow: 'hidden', padding: 'var(--space-6)', textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+              <h3 style={{ margin: 0, color: 'var(--white)' }}>Vial Label (QR)</h3>
+              <button onClick={() => setQrModalProduct(null)} className="btn btn-ghost btn-sm" style={{ padding: 4 }}><X size={20} /></button>
+            </div>
+            
+            {(() => {
+              const item = [...catalog, ...favorites, ...pastOrders, ...recentlyViewed, ...bundles].find(i => i.product_id === qrModalProduct);
+              const inv = inventoryData[qrModalProduct];
+              if (!item || !inv) return null;
+              
+              const qrText = encodeURIComponent(`Product: ${item.name}\nMg: ${inv.recon_mg}\nMl: ${inv.recon_ml}\nDose: ${inv.recon_dose}mcg`);
+              const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrText}&format=svg&color=00c4bc&bgcolor=14232f`;
+              
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-4)' }}>
+                  <div style={{ background: '#fff', padding: 8, borderRadius: 8, display: 'inline-block' }}>
+                    <Image src={qrUrl} alt="QR Code" width={200} height={200} unoptimized />
+                  </div>
+                  <div style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>
+                    <div style={{ color: 'var(--teal)', fontWeight: 'bold', marginBottom: 4 }}>{item.name}</div>
+                    <div>{inv.recon_mg}mg • {inv.recon_ml}ml BAC</div>
+                    <div>Desired Dose: {inv.recon_dose}mcg</div>
+                  </div>
+                  <button className="btn btn-primary" style={{ width: '100%', marginTop: 'var(--space-4)' }} onClick={() => window.print()}>Print Label</button>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
