@@ -4,8 +4,8 @@
  */
 
 export interface KeywordCluster {
-  primary: string;       // Primary keyword template (use {city}, {state})
-  secondary: string[];   // Secondary keyword variants
+  primary: string;
+  secondary: string[];
   intent: 'commercial' | 'informational' | 'local';
   searchVolumeTier: 'high' | 'medium' | 'low';
 }
@@ -73,13 +73,17 @@ export const KEYWORD_CLUSTERS: KeywordCluster[] = [
   },
 ];
 
-/** Featured peptides shown on city landing pages */
+/**
+ * Featured peptides shown on city landing pages.
+ * image: path relative to /public/images/products/
+ * These match exactly what is in the products store.
+ */
 export interface FeaturedPeptide {
   name: string;
   slug: string;           // links to /research/[slug]
   category: string;
-  tagline: string;
-  icon: string;           // icon key for SVG lookup map in CityPage
+  description: string;
+  image: string;          // /images/products/[filename]
   badge?: string;
 }
 
@@ -88,59 +92,59 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     name: 'BPC-157',
     slug: 'bpc-157',
     category: 'Healing & Recovery',
-    tagline: 'Body Protection Compound — one of the most studied peptides for tissue repair research.',
-    icon: 'FlaskConical',
+    description: 'Body Protection Compound. One of the most studied peptides for tissue repair, gut health, and recovery research.',
+    image: '/images/products/bpc-157.png',
     badge: 'Most Researched',
   },
   {
     name: 'Semaglutide',
     slug: 'semaglutide',
     category: 'Metabolic Health',
-    tagline: 'GLP-1 receptor agonist widely studied for metabolic and weight regulation research.',
-    icon: 'Beaker',
+    description: 'GLP-1 receptor agonist widely studied for metabolic regulation and weight management research applications.',
+    image: '/images/products/semaglutide.png',
     badge: 'High Demand',
   },
   {
     name: 'TB-500',
     slug: 'tb-500',
     category: 'Recovery & Performance',
-    tagline: 'Thymosin Beta-4 fragment studied for cellular recovery and tissue regeneration.',
-    icon: 'Syringe',
+    description: 'Thymosin Beta-4 fragment studied for cellular recovery, tissue regeneration, and angiogenesis research.',
+    image: '/images/products/tb-500.png',
   },
   {
     name: 'Tirzepatide',
     slug: 'tirzepatide',
     category: 'Metabolic Health',
-    tagline: 'Dual GIP/GLP-1 agonist — cutting-edge metabolic research compound.',
-    icon: 'Microscope',
+    description: 'Dual GIP/GLP-1 receptor agonist. Cutting-edge metabolic and weight regulation research compound.',
+    image: '/images/products/tirzepatide.png',
     badge: 'Trending',
   },
   {
     name: 'Ipamorelin',
     slug: 'ipamorelin',
     category: 'Growth & Longevity',
-    tagline: 'Selective growth hormone secretagogue — widely used in longevity research.',
-    icon: 'TestTube',
+    description: 'Selective growth hormone secretagogue widely used in anti-aging and longevity peptide research protocols.',
+    image: '/images/products/ipamorelin.png',
   },
   {
-    name: 'CJC-1295',
+    name: 'CJC-1295 + Ipamorelin',
     slug: 'cjc-1295',
     category: 'Growth & Longevity',
-    tagline: 'GHRH analogue studied for growth hormone pulse amplification.',
-    icon: 'Telescope',
+    description: 'GHRH analogue blend studied for sustained growth hormone pulse amplification and recovery research.',
+    image: '/images/products/cjc-1295-ipamorelin.png',
   },
   {
     name: 'Sermorelin',
     slug: 'sermorelin',
     category: 'Growth & Longevity',
-    tagline: 'First-generation GHRH analogue with a long safety research profile.',
-    icon: 'Thermometer',
+    description: 'First-generation GHRH analogue with a long safety research profile. Widely studied for GH stimulation.',
+    image: '/images/products/sermorelin.png',
   },
   {
     name: 'PT-141',
     slug: 'pt-141',
     category: 'Sexual Health',
-    tagline: 'Melanocortin receptor agonist studied for sexual function and libido research.',
-    icon: 'Pill',
+    description: 'Melanocortin receptor agonist (Bremelanotide) studied for sexual function and libido research.',
+    image: '/images/products/pt-141.png',
   },
 ];

@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { compound_slug, dose_amount, unit, dosed_at, notes } = await req.json();
+    const { compound_slug, dose_amount, unit, dosed_at, notes, injection_site } = await req.json();
 
     if (!compound_slug || !dose_amount || !unit) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -52,6 +52,9 @@ export async function POST(req: NextRequest) {
     }
     if (notes && (typeof notes !== 'string' || notes.length > 2000)) {
       return NextResponse.json({ error: 'notes too long' }, { status: 400 });
+    }
+    if (injection_site && (typeof injection_site !== 'string' || injection_site.length > 100)) {
+      return NextResponse.json({ error: 'injection_site too long' }, { status: 400 });
     }
 
     const numericDose = Number(dose_amount);
@@ -81,7 +84,8 @@ export async function POST(req: NextRequest) {
         dose_amount: numericDose,
         unit,
         dosed_at: parsedDate.toISOString(),
-        notes
+        notes,
+        injection_site
       })
       .select()
       .maybeSingle();

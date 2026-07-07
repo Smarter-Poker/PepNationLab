@@ -53,11 +53,11 @@ export function getRegionLabel(city: City): string {
 // ─── Intro variants (rotated by city tier to add uniqueness) ─────────────
 const INTRO_VARIANTS = [
   (city: City) =>
-    `Pep Nation Lab is the trusted wholesale source for research-grade peptides serving researchers in ${city.name}, ${city.stateAbbr} and across the ${getRegionLabel(city)}. Our curated catalog of 300+ pharmaceutical-grade compounds is backed by rigorous QA and full documentation — available exclusively to qualified scientific institutions and licensed researchers.`,
+    `Pep Nation Lab is the trusted wholesale source for research-grade peptides serving researchers in ${city.name}, ${city.stateAbbr} and across the ${getRegionLabel(city)}. Our curated catalog of 100+ pharmaceutical-grade compounds is backed by rigorous QA and full documentation, available exclusively to qualified scientific institutions and licensed researchers.`,
   (city: City) =>
-    `The research community in ${city.name}, ${city.stateAbbr} demands quality. Pep Nation Lab delivers — offering one of the nation's largest selections of high-purity, research-grade peptides shipped directly to qualified labs and research professionals in the ${getRegionLabel(city)} region.`,
+    `The research community in ${city.name}, ${city.stateAbbr} demands quality. Pep Nation Lab delivers one of the nation's largest selections of high-purity, research-grade peptides shipped directly to qualified labs and research professionals in the ${getRegionLabel(city)} region.`,
   (city: City) =>
-    `Researchers in ${city.name}, ${city.state} and the surrounding ${getRegionLabel(city)} area rely on Pep Nation Lab for wholesale access to 300+ research peptides, growth factors, and bioactive compounds. Every product is batch-tested, fully documented, and available with priority fulfillment for verified accounts.`,
+    `Researchers in ${city.name}, ${city.state} and the surrounding ${getRegionLabel(city)} area rely on Pep Nation Lab for wholesale access to 100+ research peptides, growth factors, and bioactive compounds. Every product is batch-tested, fully documented, and available with priority fulfillment for verified accounts.`,
 ];
 
 export function getCityIntro(city: City): string {
@@ -76,7 +76,7 @@ export function getCityFAQs(city: City): FAQ[] {
   return [
     {
       question: `How do researchers in ${city.name}, ${city.stateAbbr} access Pep Nation Lab's products?`,
-      answer: `Qualified researchers in ${city.name} can create a verified account at PepNationLab.com. After identity and credential verification, you gain immediate access to our full catalog of 300+ research-grade peptides at wholesale pricing, with fast nationwide shipping directly to your lab or research facility.`,
+      answer: `Qualified researchers in ${city.name} can create a verified account at PepNationLab.com. After identity and credential verification, you gain immediate access to our full catalog of 100+ research-grade peptides at wholesale pricing, with fast nationwide shipping directly to your lab or research facility.`,
     },
     {
       question: `What peptides are most researched in the ${region} area?`,
@@ -88,7 +88,7 @@ export function getCityFAQs(city: City): FAQ[] {
     },
     {
       question: `What is the difference between research peptides and pharmaceutical peptides?`,
-      answer: `Research peptides sold by Pep Nation Lab are strictly for in vitro laboratory use — analytical research, cell studies, and scientific inquiry. They are NOT pharmaceutical drugs, are not FDA-approved for human or animal use, and must only be handled by qualified researchers in appropriate lab settings. This distinction is critical for regulatory compliance in ${city.state}.`,
+      answer: `Research peptides sold by Pep Nation Lab are strictly for in vitro laboratory use: analytical research, cell studies, and scientific inquiry. They are NOT pharmaceutical drugs, are not FDA-approved for human or animal use, and must only be handled by qualified researchers in appropriate lab settings. This distinction is critical for regulatory compliance in ${city.state}.`,
     },
     {
       question: `Is there an agent or representative near ${city.name}?`,
@@ -122,8 +122,8 @@ export const VALUE_PROPS: ValueProp[] = [
   },
   {
     icon: 'FlaskConical',
-    title: '300+ Compounds',
-    body: 'One of the largest catalogs in the industry. BPC-157, Semaglutide, Tirzepatide, TB-500, and hundreds more.',
+    title: '100+ Compounds',
+    body: 'One of the largest catalogs in the industry. BPC-157, Semaglutide, Tirzepatide, TB-500, and dozens more.',
   },
   {
     icon: 'Shield',

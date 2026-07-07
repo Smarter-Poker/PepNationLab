@@ -728,7 +728,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
   function handleBulkAdd() {
     if (selectedItems.size === 0) return;
-    const baseItems = activeTab === 'favorites' ? favorites : activeTab === 'pastOrders' ? pastOrders : activeTab === 'bundles' ? bundles : recentlyViewed;
+    const baseItems = activeTab === 'favorites' ? favorites : activeTab === 'inventory' ? pastOrders : activeTab === 'bundles' ? bundles : recentlyViewed;
     const toAdd = baseItems.filter(i => selectedItems.has(i.product_id) && i.in_stock !== false);
     if (toAdd.length === 0) return;
     
@@ -759,7 +759,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     if (sortBy === 'priceAsc') return (a.retail_price || 0) - (b.retail_price || 0);
     if (sortBy === 'priceDesc') return (b.retail_price || 0) - (a.retail_price || 0);
     if (sortBy === 'alpha') return a.name.localeCompare(b.name);
-    if (sortBy === 'frequent' && activeTab === 'pastOrders') return (b.purchase_count || 0) - (a.purchase_count || 0);
+    if (sortBy === 'frequent' && activeTab === 'inventory') return (b.purchase_count || 0) - (a.purchase_count || 0);
     return 0; // recent/default
   });
 
@@ -867,7 +867,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
             {item.is_on_sale && (
               <Image src="/images/badges/badge_price_drop.png" alt="Price Drop" width={22} height={22} unoptimized style={{ borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />
             )}
-            {activeTab === 'pastOrders' && item.purchase_count && item.purchase_count > 1 && sortBy === 'frequent' && (
+            {activeTab === 'inventory' && item.purchase_count && item.purchase_count > 1 && sortBy === 'frequent' && (
               <div style={{ background: 'rgba(234,179,8,0.2)', border: '1px solid rgba(234,179,8,0.5)', color: '#EAB308', padding: '2px 8px', borderRadius: 12, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', backdropFilter: 'blur(4px)' }}>
                 Ordered {item.purchase_count}x
               </div>
@@ -886,8 +886,6 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
               <Heart size={16} color={favorites.some(f => f.product_id === item.product_id) ? 'var(--red)' : 'var(--silver)'} fill={favorites.some(f => f.product_id === item.product_id) ? 'var(--red)' : 'none'} />
             </button>
           </div>
-        </div>
-
         </div>
 
         <div style={{ padding: 'var(--space-3)', display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
@@ -1031,7 +1029,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
               <option value="priceAsc">Price: Low to High</option>
               <option value="priceDesc">Price: High to Low</option>
               <option value="alpha">Alphabetical</option>
-              {activeTab === 'pastOrders' && <option value="frequent">Most Frequently Ordered</option>}
+              {activeTab === 'inventory' && <option value="frequent">Most Frequently Ordered</option>}
             </select>
 
             <div style={{ display: 'flex', background: 'rgba(0,0,0,0.2)', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -1485,7 +1483,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                   <button onClick={clearRecentlyViewed} className="btn btn-ghost btn-sm" style={{ color: 'var(--silver)', fontSize: '0.8rem', padding: '4px 12px' }}>Clear History</button>
                 </div>
               )}
-              {activeTab === 'pastOrders' && !searchQuery && (
+              {activeTab === 'inventory' && !searchQuery && (
                 <div className="glass-panel" style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-4)', borderRadius: 'var(--radius-md)', background: 'var(--surface-1)', marginBottom: 'var(--space-4)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                     <PackageOpen size={18} style={{ color: 'var(--teal)' }} />

@@ -4,6 +4,7 @@
  */
 import type { MetadataRoute } from 'next';
 import { createServiceClient } from '@/lib/supabase/server';
+import { CITIES, getStatesSlugs } from '@/lib/cities/cities-data';
 
 const BASE = 'https://pepnationlab.com';
 
@@ -17,6 +18,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/contact`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE}/find-a-peptide`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE}/peptide-101`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
+
+    // Local SEO — Peptides by City
+    { url: `${BASE}/peptides`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    ...getStatesSlugs().map((stateSlug) => ({
+      url: `${BASE}/peptides/${stateSlug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
 
     // Legal / Compliance
     { url: `${BASE}/compliance`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
@@ -113,5 +123,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // best-effort: fall back to static paths only
   }
 
-  return [...staticPaths, ...compounds];
+  // City landing pages — priority scored by market tier
+  const cityPriority: Record<number, number> = { 1: 0.8, 2: 0.7, 3: 0.6 };
+  const cityChangeFreq: Record<number, MetadataRoute.Sitemap[number]['changeFrequency']> = {
+    1: 'weekly',
+    2: 'weekly',
+    3: 'monthly',
+  };
+  const cityPages: MetadataRoute.Sitemap = CITIES.map((city) => ({
+    url: `${BASE}/peptides/${city.stateSlug}/${city.slug}`,
+    lastModified: now,
+    changeFrequency: cityChangeFreq[city.tier] ?? 'monthly',
+    priority: cityPriority[city.tier] ?? 0.6,
+  }));
+
+  return [...staticPaths, ...compounds, ...cityPages];
 }
