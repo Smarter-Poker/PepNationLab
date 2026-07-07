@@ -1,11 +1,49 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ChevronRight, Package, Users, BarChart2, Shield } from 'lucide-react';
 import PageShell from '@/components/PageShell';
 
-export const metadata = {
-  title: 'Become An Agent | Pep Nation Lab',
-  description: 'Apply to operate your own branded peptide research supply storefront on the Pep Nation Lab platform.',
-  robots: { index: false, follow: false },
+export const metadata: Metadata = {
+  title: 'Become A Distribution Agent | Pep Nation Lab',
+  description:
+    'Apply to operate your own branded peptide research supply storefront on the Pep Nation Lab platform. Earn recurring commissions by connecting qualified researchers with wholesale-priced RUO compounds.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/become-agent' },
+  openGraph: {
+    title: 'Become A Distribution Agent | Pep Nation Lab',
+    description:
+      'Build your own branded research peptide storefront. Wholesale pricing, recurring commissions, and full platform support — apply to join the Pep Nation Lab agent network.',
+    url: 'https://pepnationlab.com/become-agent',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Become A Pep Nation Lab Agent' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Become A Distribution Agent | Pep Nation Lab',
+    description: 'Build your own branded research peptide storefront with wholesale pricing and recurring commissions.',
+    images: ['/og-card.png'],
+  },
+};
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: 'Become A Distribution Agent',
+  url: 'https://pepnationlab.com/become-agent',
+  description:
+    'Apply to operate a branded research peptide distribution storefront on the Pep Nation Lab platform. Earn commissions, access wholesale pricing, and serve your local research community.',
+  publisher: {
+    '@type': 'Organization',
+    name: 'Pep Nation Lab',
+    url: 'https://pepnationlab.com',
+  },
+  breadcrumb: {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+      { '@type': 'ListItem', position: 2, name: 'Become An Agent', item: 'https://pepnationlab.com/become-agent' },
+    ],
+  },
 };
 
 export default function BecomeAgentPage() {
