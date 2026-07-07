@@ -33,7 +33,7 @@ const ZONES: Zone[] = [
   { href: '#mission-anchor', label: 'Our Mission', top: '25.0%', left: '4.6%', width: '15.6%', height: '2.7%' },
 
   // Ready To Get Started: Wholesale Link + Sign In Button
-  { href: '/products', label: 'Wholesale Pricing', top: '76.3%', left: '59.9%', width: '5.8%', height: '1.6%' },
+  { href: '/products', label: 'Wholesale Pricing', top: '76.3%', left: '61.2%', width: '6.2%', height: '1.6%' },
   { href: '/login', label: 'Sign In To Your Account', top: '77.5%', left: '43.0%', width: '14%', height: '2.6%' },
 
   // Compliance Badge Strip
