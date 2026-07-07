@@ -7,6 +7,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { CITIES, getStatesSlugs, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { GUIDES, GUIDES_UPDATED } from '@/lib/research/guides';
+import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
 const BASE = 'https://pepnationlab.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -85,6 +86,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...GUIDES.map((g) => ({
       url: `${BASE}/research/guides/${g.slug}`,
       lastModified: new Date(g.dateModified),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
+
+    // Research Library — Editorial Standards + Compound Comparisons
+    { url: `${BASE}/research/methodology`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    ...COMPARISON_PAIRS.map((p) => ({
+      url: `${BASE}/research/compare/${matchupSlug(p.a, p.b)}`,
+      lastModified: now,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),

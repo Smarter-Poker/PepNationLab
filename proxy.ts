@@ -91,6 +91,9 @@ const PUBLIC_ROUTES = [
   // SEO surfaces
   '/sitemap.xml',
   '/feed.xml',
+  // IndexNow submission trigger — hit by the daily cron (vercel.json); it only
+  // submits our own canonical URLs to Bing/Yandex. Public so the cron reaches it.
+  '/api/seo/indexnow',
   // AI/LLM discoverability — llms.txt and robots.ts advertise these
   // machine-readable markdown endpoints to anonymous crawlers (GPTBot,
   // ClaudeBot, PerplexityBot), so they must not require auth.
