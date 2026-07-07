@@ -303,7 +303,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                     </div>
                   )}
                   <div style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-1)' }}>
-                    {PEPTIDE_ICON_SVG[peptide.icon] ?? PEPTIDE_ICON_SVG.FlaskConical}
+                    {PEPTIDE_ICON_SVG[(peptide as any).icon] ?? PEPTIDE_ICON_SVG.FlaskConical}
                   </div>
                   <div>
                     <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
@@ -312,7 +312,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                     <h3 style={{ color: 'var(--teal)', fontSize: '1.15rem', margin: 0 }}>{peptide.name}</h3>
                   </div>
                   <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.65, margin: 0, flex: 1 }}>
-                    {peptide.tagline}
+                    {peptide.description || (peptide as any).tagline}
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--teal)', fontSize: '0.8rem', fontWeight: 600, marginTop: 'var(--space-2)' }}>
                     View Research

@@ -117,7 +117,6 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [scheduleAmount, setScheduleAmount] = useState('');
   const [scheduleUnit, setScheduleUnit] = useState('mcg');
   const [scheduleFrequency, setScheduleFrequency] = useState('Every Day');
-  const [injectionSites, setInjectionSites] = useState<Record<string, number>>({});
   const [selectedSite, setSelectedSite] = useState<string>('');
 
   // Check cart status
@@ -139,47 +138,105 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     return () => window.removeEventListener('storage', checkCart);
   }, [storefrontSlug]);
 
+  const computedInjectionSites = useMemo(() => {
+    const sites: Record<string, number> = {};
+    doses.forEach(d => {
+      if (d.injection_site && d.dosed_at) {
+        const ts = new Date(d.dosed_at).getTime();
+        if (!sites[d.injection_site] || ts > sites[d.injection_site]) {
+          sites[d.injection_site] = ts;
+        }
+      }
+    });
+    return sites;
+  }, [doses]);
+
   useEffect(() => {
-    try {
-      const savedInv = localStorage.getItem('pnl_inventory_data');
-      if (savedInv) setInventoryData(JSON.parse(savedInv));
+    const syncLegacyData = async () => {
+      try {
+        const savedInv = localStorage.getItem('pnl_inventory_data');
+        if (savedInv) {
+          const invData = JSON.parse(savedInv);
+          for (const [productId, data] of Object.entries<any>(invData)) {
+            await fetch('/api/researcher/inventory', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ product_id: productId, on_hand: data.on_hand, lot_number: data.lot, expiration_date: data.expiration })
+            });
+          }
+          localStorage.removeItem('pnl_inventory_data');
+        }
 
-      const savedSched = localStorage.getItem('pnl_scheduled_doses');
-      if (savedSched) setScheduledDoses(JSON.parse(savedSched));
-
-      const savedSites = localStorage.getItem('pnl_injection_sites');
-      if (savedSites) setInjectionSites(JSON.parse(savedSites));
-    } catch {}
+        const savedSched = localStorage.getItem('pnl_scheduled_doses');
+        if (savedSched) {
+          const schedData = JSON.parse(savedSched);
+          for (const s of schedData) {
+            await fetch('/api/researcher/protocols', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ compound_slug: s.compound, amount: s.amount, unit: s.unit, frequency: s.frequency })
+            });
+          }
+          localStorage.removeItem('pnl_scheduled_doses');
+        }
+      } catch (e) {
+        console.error('Legacy sync failed', e);
+      }
+    };
+    syncLegacyData();
   }, []);
 
-  const updateInventory = (productId: string, field: string, value: any) => {
+  const updateInventory = async (productId: string, field: string, value: any) => {
     const updated = { ...inventoryData };
-    if (!updated[productId]) updated[productId] = { on_hand: 1, lot: '', expiration: '' };
+    if (!updated[productId]) updated[productId] = { on_hand: 1, lot_number: '', expiration_date: '' };
     updated[productId] = { ...updated[productId], [field]: value };
     setInventoryData(updated);
-    try { localStorage.setItem('pnl_inventory_data', JSON.stringify(updated)); } catch {}
+    
+    try {
+      await fetch('/api/researcher/inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          product_id: productId, 
+          on_hand: updated[productId].on_hand,
+          lot_number: updated[productId].lot_number || updated[productId].lot, 
+          expiration_date: updated[productId].expiration_date || updated[productId].expiration
+        })
+      });
+    } catch {}
   };
 
-  const addScheduledDose = () => {
+  const addScheduledDose = async () => {
     if (!scheduleCompound || !scheduleAmount) return;
-    const newSchedule = { id: Date.now().toString(), compound: scheduleCompound, amount: scheduleAmount, unit: scheduleUnit, frequency: scheduleFrequency, created_at: new Date().toISOString() };
-    const updated = [...scheduledDoses, newSchedule];
-    setScheduledDoses(updated);
-    try { localStorage.setItem('pnl_scheduled_doses', JSON.stringify(updated)); } catch {}
-    setScheduleCompound(''); setScheduleAmount('');
+    
+    const payload = { compound_slug: scheduleCompound, amount: scheduleAmount, unit: scheduleUnit, frequency: scheduleFrequency };
+    try {
+      const res = await fetch('/api/researcher/protocols', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.protocol) {
+        setScheduledDoses(prev => [data.protocol, ...prev]);
+        setScheduleCompound(''); setScheduleAmount('');
+      }
+    } catch {}
   };
 
-  const deleteScheduledDose = (id: string) => {
-    const updated = scheduledDoses.filter(s => s.id !== id);
-    setScheduledDoses(updated);
-    try { localStorage.setItem('pnl_scheduled_doses', JSON.stringify(updated)); } catch {}
+  const deleteScheduledDose = async (id: string) => {
+    try {
+      await fetch('/api/researcher/protocols', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      setScheduledDoses(prev => prev.filter(s => s.id !== id));
+    } catch {}
   };
 
   const logInjectionSite = (siteId: string) => {
-    const updated = { ...injectionSites, [siteId]: Date.now() };
-    setInjectionSites(updated);
-    try { localStorage.setItem('pnl_injection_sites', JSON.stringify(updated)); } catch {}
-    toast.success(`Logged injection at ${siteId}`);
+    // This now just sets selectedSite. The actual saving happens in saveDose.
   };
 
   // Fetch helpful data and notes
@@ -207,6 +264,22 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     fetch('/api/researcher/biometrics')
       .then(res => res.json())
       .then(data => { if (data.biometrics) setBiometrics(data.biometrics); })
+      .catch(console.error);
+
+    fetch('/api/researcher/inventory')
+      .then(res => res.json())
+      .then(data => { 
+        if (data.inventory) {
+          const invMap: Record<string, any> = {};
+          data.inventory.forEach((i: any) => invMap[i.product_id] = i);
+          setInventoryData(invMap);
+        }
+      })
+      .catch(console.error);
+
+    fetch('/api/researcher/protocols')
+      .then(res => res.json())
+      .then(data => { if (data.protocols) setScheduledDoses(data.protocols); })
       .catch(console.error);
   }, []);
 
@@ -441,17 +514,27 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     if (!doseCompound || !doseAmount) return;
     setDoseSaving(true);
     try {
+      const payload = {
+        compound_slug: doseCompound,
+        dose_amount: parseFloat(doseAmount),
+        unit: doseUnit,
+        dosed_at: new Date().toISOString(),
+        injection_site: selectedSite
+      };
+      
       const res = await fetch('/api/researcher/doses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ compound_slug: doseCompound, dose_amount: parseFloat(doseAmount), unit: doseUnit })
+        body: JSON.stringify(payload)
       });
+      
       const data = await res.json();
       if (res.ok && data.dose) {
         setDoses(prev => [data.dose, ...prev]);
         setDoseAmount('');
-        toast.success('Dose Logged');
-      } else throw new Error(data.error);
+        setSelectedSite('');
+        toast.success('Dose logged!');
+      } else throw new Error(data.error || 'Failed to log dose');
     } catch (e) {
       toast.error('Failed To Log Dose');
     } finally {
@@ -1292,7 +1375,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                           { id: 'left_thigh', x: 35, y: 75, label: 'L Thigh' }, { id: 'right_thigh', x: 65, y: 75, label: 'R Thigh' },
                           { id: 'left_glute', x: 40, y: 65, label: 'L Glute (Back)' }, { id: 'right_glute', x: 60, y: 65, label: 'R Glute (Back)' }
                         ].map(site => {
-                          const lastUsed = injectionSites[site.id];
+                          const lastUsed = computedInjectionSites[site.id];
                           const daysSince = lastUsed ? (Date.now() - lastUsed) / 86400000 : Infinity;
                           let color = 'rgba(255,255,255,0.3)';
                           if (daysSince < 2) color = 'var(--red)';
