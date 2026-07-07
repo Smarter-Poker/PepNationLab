@@ -107,6 +107,17 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
+        {/* Fonts: preconnect + direct stylesheet so the Inter fetch starts with
+            the HTML instead of waiting on the render-blocking globals.css
+            @import chain (HTML -> CSS -> Google CSS -> woff2 costs seconds of
+            FCP/LCP on throttled 4G). The URL matches the globals.css @import
+            exactly so the two requests dedupe in the browser cache. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        />
         {/* Global WebSite + Organization JSON-LD — present on every page.
             SearchAction enables Google Sitelinks Search Box in SERPs. */}
         <script
