@@ -96,6 +96,52 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
+        {/* Global WebSite + Organization JSON-LD — present on every page.
+            SearchAction enables Google Sitelinks Search Box in SERPs. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@graph': [
+                {
+                  '@type': 'WebSite',
+                  '@id': 'https://pepnationlab.com/#website',
+                  name: 'Pep Nation Lab',
+                  url: 'https://pepnationlab.com',
+                  description: 'Wholesale research peptide distribution platform for qualified researchers. 300+ RUO compounds with full research library, calculators, and AI match engine.',
+                  publisher: { '@id': 'https://pepnationlab.com/#organization' },
+                  potentialAction: {
+                    '@type': 'SearchAction',
+                    target: {
+                      '@type': 'EntryPoint',
+                      urlTemplate: 'https://pepnationlab.com/research/search?q={search_term_string}',
+                    },
+                    'query-input': 'required name=search_term_string',
+                  },
+                },
+                {
+                  '@type': 'Organization',
+                  '@id': 'https://pepnationlab.com/#organization',
+                  name: 'Pep Nation Lab',
+                  url: 'https://pepnationlab.com',
+                  logo: {
+                    '@type': 'ImageObject',
+                    '@id': 'https://pepnationlab.com/#logo',
+                    url: 'https://pepnationlab.com/logo-mark.svg',
+                    contentUrl: 'https://pepnationlab.com/logo-mark.svg',
+                    width: 512,
+                    height: 512,
+                    caption: 'Pep Nation Lab',
+                  },
+                  image: { '@id': 'https://pepnationlab.com/#logo' },
+                  description: 'Wholesale research peptide distribution for qualified researchers. All products for in vitro research use only. Not for human consumption.',
+                  slogan: 'Research-First Peptide Distribution',
+                },
+              ],
+            }),
+          }}
+        />
       </head>
       <body>
         <ThemeProvider>

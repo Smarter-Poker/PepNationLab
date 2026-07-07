@@ -24,7 +24,7 @@ export default async function Image({ params }: { params: Promise<{ stateSlug: s
 
   let fontData: ArrayBuffer | null = null;
   try {
-    const res = await fetch('https://fonts.gstatic.com/s/inter/v18/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7W0Q5n-wU.woff2');
+    const res = await fetch('https://fonts.gstatic.com/s/inter/v18/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.ttf');
     if (res.ok) fontData = await res.arrayBuffer();
   } catch { /* fallback */ }
 
