@@ -272,7 +272,7 @@ export default function WalletPage({
           </div>
 
           {/* TAB STRIP */}
-          <div role="tablist" style={{ display: 'flex', gap: 6, overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 1 }}>
+          <div role="tablist" aria-label="Wallet Sections" style={{ display: 'flex', gap: 6, overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 1 }}>
             {tabs.map(t => (
               <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
                 style={{

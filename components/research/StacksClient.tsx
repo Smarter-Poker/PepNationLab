@@ -316,6 +316,15 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                   containIntrinsicSize: '500px'
                 }}
                 onClick={() => setActiveStackDrawer(stack.slug)}
+                role="button"
+                tabIndex={0}
+                aria-label={`View Details For ${stack.display_name}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    if (e.key === ' ') e.preventDefault();
+                    setActiveStackDrawer(stack.slug);
+                  }
+                }}
               >
                 <div style={{ background: 'linear-gradient(145deg, #1A1F26 0%, #0F1318 100%)', borderRadius: 20, height: '100%', position: 'relative', overflow: 'hidden', padding: 'var(--space-5)' }}>
                   {/* Out of Stock Warning Badge */}
@@ -325,8 +334,19 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
                     </div>
                   )}
                   {/* Compare Checkbox */}
-                  <div 
+                  <div
                     onClick={(e) => { e.stopPropagation(); toggleCompare(stack.slug); }}
+                    role="checkbox"
+                    aria-checked={isComparing}
+                    aria-label={`Select ${stack.display_name} For Comparison`}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        if (e.key === ' ') e.preventDefault();
+                        e.stopPropagation();
+                        toggleCompare(stack.slug);
+                      }
+                    }}
                     style={{ position: 'absolute', top: 16, left: 16, zIndex: 10, width: 24, height: 24, borderRadius: 6, border: isComparing ? 'none' : '1px solid rgba(255,255,255,0.2)', background: isComparing ? '#00E5FF' : 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     {isComparing && <CheckCircle2 size={16} color="#000" />}
@@ -656,7 +676,7 @@ export default function StacksClient({ compounds, stacks, products }: Props) {
               {selectedForCompare.map(slug => (
                 <div key={slug} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 8 }}>
                   <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600 }}>{bySlug.get(slug)?.display_name}</span>
-                  <button onClick={() => toggleCompare(slug)} style={{ background: 'none', border: 'none', color: '#A8B4C0', cursor: 'pointer', padding: 0, display: 'flex' }}><X size={14} /></button>
+                  <button onClick={() => toggleCompare(slug)} aria-label={`Remove ${bySlug.get(slug)?.display_name ?? slug} From Comparison`} style={{ background: 'none', border: 'none', color: '#A8B4C0', cursor: 'pointer', padding: 0, display: 'flex' }}><X size={14} /></button>
                 </div>
               ))}
             </div>
@@ -719,16 +739,19 @@ interface StacksCompareDrawerProps {
 function StacksCompareDrawer({ stack1, stack2, bySlug, products, onClose, synergy1, synergy2, bundlePrice1, bundlePrice2 }: StacksCompareDrawerProps) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }}>
-      <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
+      <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} aria-hidden="true" />
       <motion.div 
         initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Compare Stacks"
         style={{ width: '100%', maxWidth: 700, height: '100%', background: '#0F1923', borderLeft: '1px solid rgba(255,255,255,0.1)', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}
       >
         <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'rgba(15, 25, 35, 0.95)', backdropFilter: 'blur(10px)', zIndex: 10 }}>
           <h2 style={{ margin: 0, color: '#fff', fontSize: '1.2rem', display: 'flex', gap: 12, alignItems: 'center' }}>
             <span style={{ color: '#00E5FF' }}>Compare Stacks</span>
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#A8B4C0', cursor: 'pointer' }}><X /></button>
+          <button onClick={onClose} aria-label="Close Compare Stacks" style={{ background: 'none', border: 'none', color: '#A8B4C0', cursor: 'pointer' }}><X /></button>
         </div>
 
         <div style={{ padding: 32, flex: 1 }}>
@@ -835,9 +858,12 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-      <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
-      <motion.div 
+      <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} aria-hidden="true" />
+      <motion.div
         initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={mainTitle}
         style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', background: 'rgba(10, 15, 20, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}
       >
         <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'sticky', top: 0, background: 'linear-gradient(to bottom, rgba(10,15,20,0.98) 0%, rgba(10,15,20,0.9) 100%)', zIndex: 10 }}>
@@ -863,7 +889,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
               );
             })()}
           </div>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}><X size={20} /></button>
+          <button onClick={onClose} aria-label="Close Stack Details" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}><X size={20} /></button>
         </div>
 
         <div style={{ padding: '24px 32px 0 32px' }}>

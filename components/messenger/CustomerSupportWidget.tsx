@@ -1274,7 +1274,9 @@ function CustomerSupportWidgetInner() {
                   key={t.id}
                   type="button"
                   role="tab"
+                  id={`cs-filter-tab-${t.id}`}
                   aria-selected={active}
+                  aria-controls="cs-thread-list"
                   onClick={() => setTab(t.id)}
                   style={{
                     flex: 1,
@@ -1373,7 +1375,7 @@ function CustomerSupportWidgetInner() {
               </div>
             </div>
           )}
-          <div style={focusedRow ? { flex: '0 0 auto', overflow: 'visible' } : { overflowY: 'auto', flex: 1, minHeight: 0 }}>
+          <div id="cs-thread-list" style={focusedRow ? { flex: '0 0 auto', overflow: 'visible' } : { overflowY: 'auto', flex: 1, minHeight: 0 }}>
             {loading && rows.length === 0 ? (
               <div
                 style={{

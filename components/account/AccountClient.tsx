@@ -125,7 +125,9 @@ export default function AccountClient({
               <button
                 key={t.id}
                 role="tab"
+                id={`account-tab-${t.id}`}
                 aria-selected={active}
+                aria-controls="account-tabpanel"
                 onClick={() => goToTab(t.id)}
                 style={{
                   appearance: 'none',
@@ -149,7 +151,8 @@ export default function AccountClient({
 
         <section
           role="tabpanel"
-          aria-label={TABS.find((t) => t.id === activeTab)?.label}
+          id="account-tabpanel"
+          aria-labelledby={`account-tab-${activeTab}`}
           style={{ animation: 'fadeInUp 0.3s ease' }}
         >
           {activeTab === 'overview' && (

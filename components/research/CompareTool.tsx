@@ -1130,10 +1130,10 @@ function FocusRowModal({ row, selected, maxHalfLife, controlCompound, topPickSlu
   const explanation = ROW_EXPLANATIONS[row.label];
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
-      <div style={{ background: '#0F1E2D', width: '100%', maxWidth: 520, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: '24px 24px 44px', boxShadow: '0 -16px 60px rgba(0,0,0,0.7)', animation: 'slideUp 0.3s ease-out', maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" aria-label={row.label} style={{ background: '#0F1E2D', width: '100%', maxWidth: 520, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: '24px 24px 44px', boxShadow: '0 -16px 60px rgba(0,0,0,0.7)', animation: 'slideUp 0.3s ease-out', maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#fff' }}>{row.label}</h3>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.06)', border: 'none', color: '#A8B4C0', cursor: 'pointer', borderRadius: 8, padding: 6, display: 'flex' }}><X size={20} /></button>
+          <button onClick={onClose} aria-label="Close Explanation" style={{ background: 'rgba(255,255,255,0.06)', border: 'none', color: '#A8B4C0', cursor: 'pointer', borderRadius: 8, padding: 6, display: 'flex' }}><X size={20} /></button>
         </div>
         {row.glossaryTerm && <div style={{ fontSize: '0.65rem', color: 'rgba(0,196,188,0.7)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>Glossary: {row.glossaryTerm}</div>}
         {explanation && (
@@ -1274,7 +1274,7 @@ function ProsConsCard({ pc }: { pc: ProsCons }) {
         ))}
       </div>
       {sorted.length > MAX_SHOWN && (
-        <button type="button" onClick={() => setExpanded(e => !e)} style={{ marginTop: 8, background: 'none', border: 'none', color: '#FFF', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <button type="button" onClick={() => setExpanded(e => !e)} aria-expanded={expanded} style={{ marginTop: 8, background: 'none', border: 'none', color: '#FFF', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           {expanded ? <><ChevronUp size={12} aria-hidden="true" /> Show Less</> : <><ChevronDown size={12} aria-hidden="true" /> Show {sorted.length - MAX_SHOWN} More</>}
         </button>
       )}
@@ -1646,10 +1646,10 @@ const TruncatedCell = ({ children }: { children: React.ReactNode }) => {
         {children}
       </div>
       {isTruncated && !expanded && (
-        <button type="button" onClick={() => setExpanded(true)} style={{ color: '#FFF', background: 'transparent', border: 'none', padding: 0, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', marginTop: 4 }}>Read More</button>
+        <button type="button" onClick={() => setExpanded(true)} aria-expanded={false} style={{ color: '#FFF', background: 'transparent', border: 'none', padding: 0, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', marginTop: 4 }}>Read More</button>
       )}
       {expanded && (
-        <button type="button" onClick={() => setExpanded(false)} style={{ color: 'rgba(255,255,255,0.4)', background: 'transparent', border: 'none', padding: 0, fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', marginTop: 4 }}>Show Less</button>
+        <button type="button" onClick={() => setExpanded(false)} aria-expanded={true} style={{ color: 'rgba(255,255,255,0.4)', background: 'transparent', border: 'none', padding: 0, fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', marginTop: 4 }}>Show Less</button>
       )}
     </div>
   );
@@ -2324,8 +2324,8 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
           <button
             type="button"
             onClick={startVoiceSearch}
-            title="Voice search"
-            aria-label="Voice search"
+            title="Voice Search"
+            aria-label="Voice Search"
             style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: voiceActive ? '#00C4BC' : 'transparent', border: 'none', color: voiceActive ? '#04221F' : 'rgba(168,180,192,0.45)', cursor: 'pointer', display: 'flex', padding: 5, borderRadius: 6, transition: 'all 0.2s' }}
           >
             <Mic size={16} style={{ animation: voiceActive ? 'pulse 0.7s ease-in-out infinite' : 'none' }} />

@@ -2536,6 +2536,15 @@ export default function AgentStorefrontGrid({
                 const bw = isBacWaterItem(group.name, group.compoundSlug);
                 setPendingQty(existingQty ?? (bw ? 10 : (selfBuyMin)));
               }}
+              role="button"
+              tabIndex={0}
+              aria-label={`View Details For ${group.name}`}
+              onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.key === ' ') e.preventDefault();
+                  e.currentTarget.click();
+                }
+              }}
             >
               <div className="" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0, position: 'relative' }}>
 
@@ -2826,6 +2835,7 @@ export default function AgentStorefrontGrid({
         <div
           role="button"
           tabIndex={0}
+          aria-label={totalCartItems > 0 ? `Open Cart, ${totalCartItems} Item${totalCartItems !== 1 ? 's' : ''}` : 'Open Cart'}
           className="floating-cart-wrapper hover-cart-float"
           onClick={() => {
             if (totalCartItems === 0 && totalSavedItems === 0) {
@@ -2833,6 +2843,12 @@ export default function AgentStorefrontGrid({
               setTimeout(() => setCartToast(false), 2500);
             } else {
               setShowCartFloat(!showCartFloat);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              if (e.key === ' ') e.preventDefault();
+              e.currentTarget.click();
             }
           }}
         >

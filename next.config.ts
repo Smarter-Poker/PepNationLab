@@ -83,7 +83,17 @@ const nextConfig = {
                 "wss://*.livekit.cloud https://*.livekit.cloud " +
                 "https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io; " +
               "worker-src 'self' blob:; " +
-              "frame-ancestors 'none';",
+              // object-src 'none': block Flash/Java-era plugin embeds entirely.
+              "object-src 'none'; " +
+              // base-uri 'self': prevent <base> tag injection from redirecting
+              // every relative URL (forms, scripts) to an attacker host.
+              "base-uri 'self'; " +
+              // form-action 'self': forms can only submit back to us — blocks
+              // XSS-injected <form action="https://evil"> credential exfil.
+              "form-action 'self'; " +
+              "frame-ancestors 'none'; " +
+              // Auto-upgrade any stray http:// subresource to https.
+              "upgrade-insecure-requests;",
           },
         ],
       },

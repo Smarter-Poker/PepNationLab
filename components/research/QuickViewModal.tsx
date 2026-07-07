@@ -25,10 +25,13 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
     <AnimatePresence>
       {isOpen && compound && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
-          <motion.div 
+          <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} aria-hidden="true" />
+          <motion.div
             initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            style={{ 
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Quick View: ${storeProduct?.productName || compound.display_name}`}
+            style={{
               width: '100%', maxWidth: 640, maxHeight: '90vh', 
               background: 'linear-gradient(145deg, rgba(20, 30, 45, 0.95) 0%, rgba(10, 15, 25, 0.98) 100%)', 
               borderRadius: 24, 
@@ -71,7 +74,7 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
                   </div>
                 )}
               </div>
-              <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}>
+              <button onClick={onClose} aria-label="Close Quick View" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}>
                 <X size={20} />
               </button>
             </div>

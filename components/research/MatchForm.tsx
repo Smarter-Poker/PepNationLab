@@ -328,9 +328,18 @@ function MatchFormInner() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
               {goalOptions.map(g => (
-                <div 
-                  key={g.value} 
-                  onClick={() => setGoal(g.value)} 
+                <div
+                  key={g.value}
+                  onClick={() => setGoal(g.value)}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={goal === g.value}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      if (e.key === ' ') e.preventDefault();
+                      setGoal(g.value);
+                    }
+                  }}
                   className={`image-card ${goal === g.value ? 'selected' : ''}`}
                   style={{
                     display: 'flex',
@@ -387,7 +396,7 @@ function MatchFormInner() {
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>How Much Clinical Evidence Do You Require For These Compounds?</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {EVIDENCE_OPTIONS.map(o => (
-                <div key={o.value} onClick={() => setEvidenceComfort(o.value)} className={`step-card ${evidenceComfort === o.value ? 'selected' : ''}`}>
+                <div key={o.value} onClick={() => setEvidenceComfort(o.value)} role="button" tabIndex={0} aria-pressed={evidenceComfort === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setEvidenceComfort(o.value); } }} className={`step-card ${evidenceComfort === o.value ? 'selected' : ''}`}>
                   <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 4px 0' }}>{o.label}</h3>
                   <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0 }}>{o.help}</p>
                 </div>
@@ -407,7 +416,7 @@ function MatchFormInner() {
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {RISK_OPTIONS.map(o => (
-                <div key={o.value} onClick={() => setRiskTolerance(o.value)} className={`step-card ${riskTolerance === o.value ? 'selected' : ''}`}>
+                <div key={o.value} onClick={() => setRiskTolerance(o.value)} role="button" tabIndex={0} aria-pressed={riskTolerance === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setRiskTolerance(o.value); } }} className={`step-card ${riskTolerance === o.value ? 'selected' : ''}`}>
                   <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 4px 0' }}>{o.label}</h3>
                   <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0 }}>{o.help}</p>
                 </div>

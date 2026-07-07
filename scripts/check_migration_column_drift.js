@@ -124,10 +124,21 @@ function buildSchemaFromMigrations(files) {
     }
 
     // ALTER TABLE [IF EXISTS] [public.]<name> ADD COLUMN [IF NOT EXISTS] <col>
-    const alterRe = /alter\s+table(?:\s+if\s+exists)?\s+(?:(?:public|auth)\.)?([a-z_][a-z0-9_]*)\s+add\s+column(?:\s+if\s+not\s+exists)?\s+"?([a-z_][a-z0-9_]*)"?/gi;
+    // A single ALTER TABLE may carry multiple comma-separated ADD COLUMN
+    // clauses, so capture the whole statement (up to ';') and scan every
+    // ADD COLUMN inside it — the old single-match regex only saw the first
+    // column and produced false drift positives (e.g. compounds.quality_score).
+    const alterHeadRe = /alter\s+table(?:\s+if\s+exists)?\s+(?:(?:public|auth)\.)?([a-z_][a-z0-9_]*)\b/gi;
     let am;
-    while ((am = alterRe.exec(sql)) !== null) {
-      addCol(am[1], am[2]);
+    while ((am = alterHeadRe.exec(sql)) !== null) {
+      const table = am[1];
+      const stmtEnd = sql.indexOf(';', am.index);
+      const stmt = sql.slice(am.index, stmtEnd === -1 ? sql.length : stmtEnd);
+      const addColRe = /add\s+column(?:\s+if\s+not\s+exists)?\s+"?([a-z_][a-z0-9_]*)"?/gi;
+      let ac;
+      while ((ac = addColRe.exec(stmt)) !== null) {
+        addCol(table, ac[1]);
+      }
     }
   }
   return schema;

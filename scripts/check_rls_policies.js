@@ -200,6 +200,16 @@ function reconstructFinalState(files) {
       const forMatch = body.match(/\bfor\s+(all|select|insert|update|delete)\b/i);
       const cmdName = forMatch ? forMatch[1].toUpperCase() : 'ALL';
 
+      // TO <role>[, <role>...] — sits between table name and FOR/USING/WITH
+      // CHECK. Defaults to PUBLIC when absent.
+      let roles = ['public'];
+      const toMatch = body.match(/\bto\s+((?:"[^"]+"|[a-zA-Z_][a-zA-Z0-9_]*)(?:\s*,\s*(?:"[^"]+"|[a-zA-Z_][a-zA-Z0-9_]*))*)/i);
+      if (toMatch) {
+        roles = toMatch[1]
+          .split(',')
+          .map((r) => unquoteIdent(r.trim()).toLowerCase());
+      }
+
       let usingExpr = null;
       const usingIdx = body.search(/\busing\s*\(/i);
       if (usingIdx >= 0) {
@@ -223,6 +233,7 @@ function reconstructFinalState(files) {
       t.policies.set(normPolicyName(polName), {
         name: polName,
         cmd: cmdName,
+        roles,
         usingExpr,
         withCheckExpr: checkExpr,
         file: fileRel,
@@ -279,6 +290,17 @@ function main() {
       const permissiveUsing = isTriviallyTrue(pol.usingExpr);
       const permissiveCheck = isTriviallyTrue(pol.withCheckExpr);
       if (!permissiveUsing && !permissiveCheck) continue;
+      // Policies granted exclusively TO service_role are inert from a
+      // client-exposure standpoint: anon/authenticated can never match them,
+      // and service_role bypasses RLS entirely. USING/CHECK (true) is the
+      // only sensible body for such a policy, so don't flag it.
+      if (
+        Array.isArray(pol.roles) &&
+        pol.roles.length > 0 &&
+        pol.roles.every((r) => r === 'service_role')
+      ) {
+        continue;
+      }
       const key2 = `${t.original}::${pol.name}`.toLowerCase();
       if (permissive.has(key2)) continue;
       offenders.push({

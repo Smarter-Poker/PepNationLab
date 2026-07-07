@@ -1,5 +1,47 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
+
+// ─── Global API Rate Limiting ────────────────────────────────────────────────
+// Edge-level backstop against scrape bots and abuse across all ~80 /api/*
+// endpoints. Individual hot routes keep their own tighter limits (register,
+// orders, disclaimer-log, research search) — this is the outer wall.
+// Uses lib/rate-limit.ts: Upstash when UPSTASH_REDIS_REST_* is configured,
+// otherwise per-instance in-memory sliding window (fails open, never locks
+// out real users because of limiter infrastructure problems).
+const RL_EXEMPT_PREFIXES = [
+  '/api/cron/', // Vercel cron — authenticated via CRON_SECRET inside each route
+  '/api/messenger/cron/', // same
+  '/api/webhooks/', // signed webhooks (Shippo) — verified in-route, may burst on retry
+  '/api/health', // uptime probe
+];
+
+async function applyApiRateLimit(request: NextRequest, pathname: string): Promise<NextResponse | null> {
+  if (!pathname.startsWith('/api/')) return null;
+  if (RL_EXEMPT_PREFIXES.some((p) => pathname === p || pathname.startsWith(p))) return null;
+
+  const ip = getClientIp(request);
+  const result = await rateLimit({
+    key: 'api_global',
+    limit: 240,
+    windowSeconds: 60,
+    identifier: ip,
+  });
+  if (result.allowed) return null;
+
+  const retryAfter = Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000));
+  return NextResponse.json(
+    { error: 'Too Many Requests' },
+    {
+      status: 429,
+      headers: {
+        'Retry-After': String(retryAfter),
+        'X-RateLimit-Limit': '240',
+        'X-RateLimit-Remaining': '0',
+      },
+    },
+  );
+}
 
 // --- PUBLIC LANDING + HOUSE-STORE SIGNUP ---
 // The landing page (/) is public. New accounts are created through /signup
@@ -167,6 +209,11 @@ export default async function proxy(request: NextRequest) {
   }
 
   const pathname = request.nextUrl.pathname;
+
+  // Global API rate limit — runs before auth so bots can't even burn a
+  // Supabase auth.getUser() round trip per request.
+  const limited = await applyApiRateLimit(request, pathname);
+  if (limited) return limited;
 
   if (pathname.startsWith('/register')) {
     const url = request.nextUrl.clone();

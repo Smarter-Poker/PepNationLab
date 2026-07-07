@@ -61,14 +61,16 @@ export default function BrowseFilterShell({
           gap: '8px',
         }}
       >
-        {groups.map((g) => {
+        {groups.map((g, i) => {
           const isActive = g.key === active;
           return (
             <button
               key={g.key}
               type="button"
               role="tab"
+              id={`browse-tab-${i}`}
               aria-selected={isActive}
+              aria-controls="browse-tabpanel"
               onClick={() => setActive(g.key)}
               style={{
                 display: 'inline-flex',
@@ -111,7 +113,7 @@ export default function BrowseFilterShell({
       </nav>
 
       {/* ── Active group content ── */}
-      <div role="tabpanel" aria-label={current.label}>
+      <div role="tabpanel" id="browse-tabpanel" aria-labelledby={`browse-tab-${Math.max(0, groups.indexOf(current))}`}>
         {current.count === 0 ? (
           <div
             className="glass-panel"

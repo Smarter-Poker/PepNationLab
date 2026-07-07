@@ -955,11 +955,14 @@ function CartDrawer() {
         background: 'rgba(5, 10, 15, 0.75)', backdropFilter: 'blur(6px)',
       }}
     >
-      <div onClick={() => setIsCartOpen(false)} style={{ flexGrow: 1, cursor: 'pointer' }} />
+      <div onClick={() => setIsCartOpen(false)} style={{ flexGrow: 1, cursor: 'pointer' }} aria-hidden="true" />
 
       <motion.div
         initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Shopping Cart"
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.2}
@@ -1079,9 +1082,9 @@ function CartDrawer() {
                                 </h4>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.09)' }}>
-                                    <button onClick={() => updateQuantity(item.id, item.quantity - 1, item.bundleName)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 22, height: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>-</button>
+                                    <button onClick={() => updateQuantity(item.id, item.quantity - 1, item.bundleName)} aria-label={`Decrease Quantity Of ${item.name}`} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 22, height: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>-</button>
                                     <span style={{ fontSize: '0.75rem', width: 20, textAlign: 'center', color: 'var(--teal)', fontWeight: 700 }}>{item.quantity}</span>
-                                    <button onClick={() => updateQuantity(item.id, item.quantity + 1, item.bundleName)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 22, height: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>+</button>
+                                    <button onClick={() => updateQuantity(item.id, item.quantity + 1, item.bundleName)} aria-label={`Increase Quantity Of ${item.name}`} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 22, height: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>+</button>
                                   </div>
                                   <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
                                     <span style={{ textDecoration: 'line-through', marginRight: 6 }}>${(activePrice * item.quantity).toFixed(2)}</span>
@@ -1108,9 +1111,9 @@ function CartDrawer() {
                           {item.sku && <div style={{ fontSize: '0.67rem', color: 'var(--grey-400)', marginBottom: 6 }}>SKU: {item.sku}</div>}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                             <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.09)' }}>
-                              <button onClick={() => updateQuantity(item.id, item.quantity - 1, item.bundleName)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>-</button>
+                              <button onClick={() => updateQuantity(item.id, item.quantity - 1, item.bundleName)} aria-label={`Decrease Quantity Of ${item.name}`} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>-</button>
                               <span style={{ fontSize: '0.82rem', width: 22, textAlign: 'center', color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontWeight: 700 }}>{item.quantity}</span>
-                              <button onClick={() => updateQuantity(item.id, item.quantity + 1, item.bundleName)} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>+</button>
+                              <button onClick={() => updateQuantity(item.id, item.quantity + 1, item.bundleName)} aria-label={`Increase Quantity Of ${item.name}`} style={{ background: 'none', border: 'none', color: 'var(--silver)', width: 25, height: 25, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>+</button>
                             </div>
                             <div>
                               <div style={{ fontSize: '0.88rem', color: 'var(--white)', fontWeight: 700, fontFamily: 'var(--font-brand)' }}>

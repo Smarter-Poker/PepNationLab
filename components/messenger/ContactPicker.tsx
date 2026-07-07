@@ -169,7 +169,9 @@ export default function ContactPicker({ contacts, multi, selectedIds, onChange, 
                 key={chip.key}
                 type="button"
                 role="tab"
+                id={`contact-filter-tab-${chip.key}`}
                 aria-selected={active}
+                aria-controls="contact-picker-list"
                 onClick={() => setRoleFilter(chip.key)}
                 disabled={empty && chip.key !== 'all'}
                 style={{
@@ -199,6 +201,7 @@ export default function ContactPicker({ contacts, multi, selectedIds, onChange, 
       )}
 
       <div
+        id="contact-picker-list"
         style={{
           overflowY: 'auto',
           maxHeight: 280,

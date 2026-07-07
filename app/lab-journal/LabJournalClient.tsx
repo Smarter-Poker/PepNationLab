@@ -72,8 +72,11 @@ const HALF_LIFE_HOURS: Record<string, number> = {
 function estimateHalfLifeHours(compound: string): number {
   const key = compound.toLowerCase().trim();
   if (HALF_LIFE_HOURS[key] != null) return HALF_LIFE_HOURS[key];
-  for (const [k, v] of Object.entries(HALF_LIFE_HOURS)) {
-    if (key.includes(k) || k.includes(key)) return v;
+  // Longest keys first so specific names win; require >= 4 chars for the substring
+  // fallback so short keys (e.g. 'nad') do not match unrelated names (e.g. 'gonadorelin').
+  const keys = Object.keys(HALF_LIFE_HOURS).sort((a, b) => b.length - a.length);
+  for (const k of keys) {
+    if (k.length >= 4 && (key.includes(k) || k.includes(key))) return HALF_LIFE_HOURS[k];
   }
   return 24; // conservative default
 }
@@ -174,7 +177,10 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   // Progress Photos state
   const [progressPhotos, setProgressPhotos] = useState<any[]>([]);
   const [photoCaption, setPhotoCaption] = useState('');
-  const [photoDate, setPhotoDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [photoDate, setPhotoDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
   const [photoUploading, setPhotoUploading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -250,7 +256,6 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [bioRange, setBioRange] = useState<7 | 30 | 90 | 365>(30);
   const [bioMetricFilter, setBioMetricFilter] = useState<string>('');
   const [doseNote, setDoseNote] = useState('');
-  const [doseWhen, setDoseWhen] = useState('now');
 
   // --- Dose analytics ---
   const doseStats = useMemo(() => {
@@ -536,17 +541,9 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     } catch {}
   };
 
-  const logInjectionSite = (siteId: string) => {
-    // This now just sets selectedSite. The actual saving happens in saveDose.
-  };
 
-  // Fetch helpful data and notes
+  // Fetch researcher lab-journal data
   useEffect(() => {
-    fetch('/api/researcher/helpful-data')
-      .then(res => res.json())
-      .then(data => { if (data.helpfulData) setHelpfulData(data.helpfulData); })
-      .catch(console.error);
-
     fetch('/api/researcher/notes')
       .then(res => res.json())
       .then(data => { if (data.notes) setNotes(data.notes); })
@@ -2383,7 +2380,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                                 const isSel = selectedSite === site.id;
                                 const isSuggested = suggestion && site.id === suggestion.id && daysSince >= 5;
                                 return (
-                                  <div key={site.id} onClick={() => { setSelectedSite(site.id); logInjectionSite(site.id); }} style={{ position: 'absolute', left: `${site.x}%`, top: `${site.y}%`, transform: 'translate(-50%, -50%)', width: isSel ? 20 : 15, height: isSel ? 20 : 15, borderRadius: '50%', background: color, border: isSel ? '2px solid white' : '1px solid rgba(0,0,0,0.5)', cursor: 'pointer', boxShadow: isSuggested ? '0 0 0 4px rgba(0,196,188,0.25)' : '0 0 8px rgba(0,0,0,0.5)', transition: 'all 0.2s' }} title={`${site.label} ${lastUsed ? `(${Math.round(daysSince)}d ago)` : '(Never Used)'}`} />
+                                  <div key={site.id} onClick={() => setSelectedSite(site.id)} style={{ position: 'absolute', left: `${site.x}%`, top: `${site.y}%`, transform: 'translate(-50%, -50%)', width: isSel ? 20 : 15, height: isSel ? 20 : 15, borderRadius: '50%', background: color, border: isSel ? '2px solid white' : '1px solid rgba(0,0,0,0.5)', cursor: 'pointer', boxShadow: isSuggested ? '0 0 0 4px rgba(0,196,188,0.25)' : '0 0 8px rgba(0,0,0,0.5)', transition: 'all 0.2s' }} title={`${site.label} ${lastUsed ? `(${Math.round(daysSince)}d ago)` : '(Never Used)'}`} />
                                 );
                               })}
                             </div>
@@ -2463,6 +2460,9 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                       More
                     </div>
                   </div>
+
+                  {/* Interactive Cycle Timeline (from purchase history) */}
+                  {renderGanttChart()}
 
                   {/* Protocol Scheduler */}
                   <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
@@ -2815,7 +2815,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                   ) : (
                     Object.entries(
                       progressPhotos.reduce((acc: Record<string, any[]>, p) => {
-                        const key = new Date(p.taken_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+                        const key = new Date(p.taken_at + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
                         (acc[key] = acc[key] || []).push(p);
                         return acc;
                       }, {})
@@ -2835,7 +2835,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                               </div>
                               <div style={{ padding: 'var(--space-3)' }}>
                                 <div style={{ color: 'var(--white)', fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.caption || 'Untitled'}</div>
-                                <div style={{ color: 'var(--silver)', fontSize: '0.75rem', marginTop: 2 }}>{new Date(p.taken_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                                <div style={{ color: 'var(--silver)', fontSize: '0.75rem', marginTop: 2 }}>{new Date(p.taken_at + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</div>
                               </div>
                             </div>
                           ))}

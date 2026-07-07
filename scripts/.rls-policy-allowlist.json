@@ -26,6 +26,71 @@
       "table": "shipping_rates",
       "policy": "Anyone can view shipping rates",
       "reason": "Public flat-rate shipping tiers shown on the checkout page and the public Shipping page. Anonymous quotes must work pre-login."
+    },
+    {
+      "table": "compounds",
+      "policy": "compounds_public_read",
+      "reason": "Public research knowledge base — compound monographs are the site's public catalog/SEO content. Read-only; writes gated by admin policies."
+    },
+    {
+      "table": "compound_references",
+      "policy": "refs_public_read",
+      "reason": "Published literature citations (PMID/DOI) rendered on public monograph pages. No user data; writes require is_admin()."
+    },
+    {
+      "table": "compound_pubmed_cache",
+      "policy": "pubmed_cache_public_read",
+      "reason": "Cache of public PubMed API responses used to render evidence tabs. Source data is already public; writes require is_admin()."
+    },
+    {
+      "table": "compound_clinical_trials",
+      "policy": "trials_public_read",
+      "reason": "ClinicalTrials.gov records (public registry data) shown on monograph Trials tabs. Writes require is_admin()."
+    },
+    {
+      "table": "compound_wada_history",
+      "policy": "wada_public_read",
+      "reason": "WADA prohibited-list history (public regulatory data) shown on monographs. Writes require is_admin()."
+    },
+    {
+      "table": "compound_fact_citations",
+      "policy": "fact_public_read",
+      "reason": "Citation footnotes for monograph facts — public evidence layer. Writes require is_admin()."
+    },
+    {
+      "table": "compound_orthologs",
+      "policy": "ortho_public_read",
+      "reason": "UniProt ortholog data (public bioinformatics data) on monographs. Writes require is_admin()."
+    },
+    {
+      "table": "compound_chembl_bindings",
+      "policy": "chembl_public_read",
+      "reason": "ChEMBL binding-affinity data (public database) on monographs. Writes require is_admin()."
+    },
+    {
+      "table": "compound_grants_funding",
+      "policy": "grants_public_read",
+      "reason": "NIH RePORTER grant/funding records (public data) on monographs. Writes require is_admin()."
+    },
+    {
+      "table": "compound_recall_alerts",
+      "policy": "recall_public_read",
+      "reason": "FDA recall/safety alerts — deliberately public safety information. Writes require is_admin()."
+    },
+    {
+      "table": "compound_pdb_structures",
+      "policy": "pdb_public_read",
+      "reason": "Protein Data Bank structure metadata (public data) on monographs. Writes require is_admin()."
+    },
+    {
+      "table": "compound_companion_papers",
+      "policy": "companion_public_read",
+      "reason": "Computed related-papers listing derived from public literature. Writes require is_admin()."
+    },
+    {
+      "table": "shared_research_protocols",
+      "policy": "Anyone can view shared protocols",
+      "reason": "Public share-link feature: rows are addressed by unguessable uuid and are meant to be viewable by anyone holding the link. RLS cannot express 'only if you know the id'; payload contains no account data."
     }
   ]
 }

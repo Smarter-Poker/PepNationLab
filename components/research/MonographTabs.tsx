@@ -277,6 +277,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
       {/* Tab bar */}
       <div
         role="tablist"
+        aria-label="Compound Research Profile Sections"
         style={{ display: 'flex', flexWrap: 'wrap', gap: 4, borderBottom: '1px solid rgba(192,184,168,0.2)', marginBottom: 'var(--space-4)', overflowX: 'auto' }}
       >
         {tabs.map((t) => {
@@ -286,7 +287,9 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               key={t.key}
               type="button"
               role="tab"
+              id={`tab-${t.key}`}
               aria-selected={isActive}
+              aria-controls="monograph-tabpanel"
               onClick={() => setActive(t.key)}
               style={{
                 display: 'inline-flex',
@@ -327,7 +330,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
       </div>
 
       {/* Tab panels */}
-      <section role="tabpanel" className="glass-panel" style={{ padding: 'var(--space-5)', minHeight: 160 }}>
+      <section role="tabpanel" id="monograph-tabpanel" aria-labelledby={`tab-${active}`} className="glass-panel" style={{ padding: 'var(--space-5)', minHeight: 160 }}>
 
         {/* OVERVIEW */}
         {active === 'overview' && (

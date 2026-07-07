@@ -24,6 +24,14 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
     };
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const domain = useMemo(() => {
     try {
       return new URL(url).hostname;
@@ -45,6 +53,9 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
         onDragEnd={(e, info) => {
           if (info.offset.y > 100) onClose();
         }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title || 'External Link Viewer'}
         style={{
           position: 'fixed',
           top: 0,
@@ -83,6 +94,7 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
               onClick={onClose}
+              aria-label="Close External Link Viewer"
               style={{
                 display: 'flex',
                 alignItems: 'center',

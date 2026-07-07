@@ -48,7 +48,9 @@ export default function AreaContentTabs({ tabs }: { tabs: AreaTab[] }) {
               key={t.key}
               type="button"
               role="tab"
+              id={`area-content-tab-${t.key}`}
               aria-selected={isActive}
+              aria-controls="area-content-tabpanel"
               onClick={() => setActive(t.key)}
               style={{
                 display: 'inline-flex',
@@ -75,7 +77,7 @@ export default function AreaContentTabs({ tabs }: { tabs: AreaTab[] }) {
       </nav>
 
       {/* Active panel */}
-      <div role="tabpanel" aria-label={current?.label}>
+      <div role="tabpanel" id="area-content-tabpanel" aria-labelledby={`area-content-tab-${active}`}>
         {current?.children}
       </div>
     </div>

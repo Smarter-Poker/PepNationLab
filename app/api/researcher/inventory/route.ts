@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { product_id, on_hand, lot_number, expiration_date } = await req.json();
+    const { product_id, on_hand, lot_number, expiration_date, recon_mg, recon_ml, recon_dose } = await req.json();
 
     if (!product_id) {
       return NextResponse.json({ error: 'Missing product_id' }, { status: 400 });
@@ -51,6 +51,9 @@ export async function POST(req: NextRequest) {
         on_hand: Number(on_hand) || 0,
         lot_number: lot_number || null,
         expiration_date: expiration_date || null,
+        recon_mg: recon_mg ? Number(recon_mg) : null,
+        recon_ml: recon_ml ? Number(recon_ml) : null,
+        recon_dose: recon_dose ? Number(recon_dose) : null,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id, product_id' })
       .select()

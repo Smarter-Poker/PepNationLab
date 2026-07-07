@@ -56,8 +56,17 @@ export default function PremiumCompoundCard({ compound, isEli5 = false, onQuickV
         </div>
       )}
       
-      <div 
+      <div
         onClick={() => onQuickView?.(compound)}
+        role="button"
+        tabIndex={0}
+        aria-label={`Quick View: ${storeProduct?.productName || compound.display_name}`}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === ' ') e.preventDefault();
+            onQuickView?.(compound);
+          }
+        }}
         style={{ display: 'flex', gap: '16px', flexGrow: 1, cursor: 'pointer' }}
       >
         {/* Left Side: Massive Image */}

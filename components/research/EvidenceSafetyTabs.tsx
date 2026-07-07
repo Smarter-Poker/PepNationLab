@@ -58,7 +58,9 @@ export default function EvidenceSafetyTabs({
               key={t.key}
               type="button"
               role="tab"
+              id={`evidence-safety-tab-${t.key}`}
               aria-selected={isActive}
+              aria-controls="evidence-safety-tabpanel"
               onClick={() => setActive(t.key)}
               style={{
                 display: 'inline-flex',
@@ -89,7 +91,7 @@ export default function EvidenceSafetyTabs({
 
       {/* Evidence At A Glance */}
       {active === 'evidence' && (
-        <section>
+        <section role="tabpanel" id="evidence-safety-tabpanel" aria-labelledby="evidence-safety-tab-evidence">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4, 16px)' }}>
             {groups.map((g) => {
               const tierMeta = evidenceTier(g.tier);
@@ -129,7 +131,7 @@ export default function EvidenceSafetyTabs({
 
       {/* Safety Flags */}
       {active === 'flags' && (
-        <section>
+        <section role="tabpanel" id="evidence-safety-tabpanel" aria-labelledby="evidence-safety-tab-flags">
           <p style={{ fontSize: '0.9rem', color: 'var(--silver, #A8B4C0)', marginTop: 0, marginBottom: 'var(--space-4, 16px)', maxWidth: '760px' }}>
             Compounds Carrying A Notable Handling Or Safety Consideration. Surfacing These Plainly Is Part Of The
             Research-Use-Only Posture. Read Each Compound Page For The Full Warnings Section.

@@ -15,6 +15,16 @@
       "table": "products",
       "column": "inventory_count",
       "reason": "products.inventory_count added by 20260521000002_product_inventory.sql — present in the live DB."
+    },
+    {
+      "table": "profiles",
+      "column": "agent_tier",
+      "reason": "Referenced only by the historical buggy function body in 20260605000003 (wrong column name; real column is profiles.tier). Superseded by 20260605000008 and 20260605030000, which rewrite protect_profile_columns and RAISE if agent_tier remains. Live prod function verified clean 2026-07-07. Safe on rebuild: plpgsql bodies are not validated at CREATE time and the guarded branch only runs for role=authenticated."
+    },
+    {
+      "table": "profiles",
+      "column": "agent_status",
+      "reason": "Same as profiles.agent_tier — historical wrong column name in 20260605000003, replaced by later hotfix migrations that verify its removal. Column intentionally never existed."
     }
   ]
 }

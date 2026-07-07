@@ -27,14 +27,16 @@ export default function FaqExplorer({ items, categories }: { items: FaqItem[]; c
     <div>
       {/* Category button rail */}
       <div role="tablist" style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2, 8px)', marginBottom: 'var(--space-5, 24px)' }}>
-        {cats.map((cat) => {
+        {cats.map((cat, i) => {
           const isActive = cat === active;
           return (
             <button
               key={cat}
               type="button"
               role="tab"
+              id={`faq-tab-${i}`}
               aria-selected={isActive}
+              aria-controls="faq-tabpanel"
               onClick={() => setActive(cat)}
               style={{
                 display: 'inline-flex',
@@ -63,7 +65,7 @@ export default function FaqExplorer({ items, categories }: { items: FaqItem[]; c
       </div>
 
       {/* Active category questions */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2, 8px)' }}>
+      <div role="tabpanel" id="faq-tabpanel" aria-labelledby={`faq-tab-${Math.max(0, cats.indexOf(active))}`} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2, 8px)' }}>
         {current.map((f, i) => (
           <details key={i} className="glass-panel" style={{ borderRadius: 'var(--radius-lg, 12px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)' }}>
             <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--white, #FFFFFF)', fontSize: '0.98rem', listStyle: 'revert' }}>

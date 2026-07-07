@@ -205,8 +205,18 @@ function AnimatedScoreRingDrawer({ score, color }: { score: CompoundScore; color
 
   return (
     <div style={{ position: 'relative' }}>
-      <div 
+      <div
         onClick={() => setShowAudit(prev => !prev)}
+        role="button"
+        tabIndex={0}
+        aria-expanded={showAudit}
+        aria-label={`Grade ${score.letter}, ${displayPct} Out Of 100. View Score Audit Breakdown`}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === ' ') e.preventDefault();
+            setShowAudit(prev => !prev);
+          }
+        }}
         style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, cursor: 'pointer', padding: '4px', borderRadius: '6px', transition: 'background 0.2s', userSelect: 'none' }}
         onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
         onMouseOut={e => e.currentTarget.style.background = 'transparent'}
@@ -1215,6 +1225,7 @@ export default function StorefrontCompareDrawer({
                 )}
                 <button
                   onClick={() => setShowMatrix(false)}
+                  aria-label="Close Comparison Matrix"
                   style={{
                     background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--white)',
                     width: 32, height: 32, borderRadius: '50%', cursor: 'pointer',
@@ -1293,7 +1304,7 @@ export default function StorefrontCompareDrawer({
 
               {/* Tab navigation */}
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, width: '100%' }}>
-                <div style={{ position: 'relative', width: '100%', maxWidth: '993px', aspectRatio: '993 / 148', userSelect: 'none' }}>
+                <div role="tablist" aria-label="Comparison Sections" style={{ position: 'relative', width: '100%', maxWidth: '993px', aspectRatio: '993 / 148', userSelect: 'none' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <Image src="/images/compare-pill-bar.png" alt="Compare Section Tabs" width={200} height={200} unoptimized style={{ width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }} />
                   {([
@@ -1309,6 +1320,11 @@ export default function StorefrontCompareDrawer({
                       <button
                         key={id}
                         type="button"
+                        role="tab"
+                        id={`compare-tab-${id}`}
+                        aria-selected={isActive}
+                        aria-controls={`compare-panel-${id}`}
+                        aria-label={label}
                         onClick={() => setMatrixTab(id)}
                         title={label}
                         style={{
@@ -1330,7 +1346,7 @@ export default function StorefrontCompareDrawer({
               </div>
 
               {/* Pros & Cons Tab */}
-              <div style={{ display: matrixTab === 'proscons' ? 'grid' : 'none', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
+              <div role="tabpanel" id="compare-panel-proscons" aria-labelledby="compare-tab-proscons" style={{ display: matrixTab === 'proscons' ? 'grid' : 'none', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
                 {displayedPinned.map((p, idx) => {
                    const pc = displayedProsCons[idx];
                    const color = colors[idx % colors.length];
@@ -1383,7 +1399,7 @@ export default function StorefrontCompareDrawer({
               </div>
 
               {/* Analyst Brief Tab */}
-              <div style={{
+              <div role="tabpanel" id="compare-panel-brief" aria-labelledby="compare-tab-brief" style={{
                 display: (matrixTab === 'brief' && analystBriefLines.length > 0) ? 'block' : 'none',
                 padding: 16, borderRadius: 10,
                 border: '4px solid transparent',
@@ -1414,7 +1430,7 @@ export default function StorefrontCompareDrawer({
               </div>
 
               {/* Mechanism Tab */}
-              <div style={{ display: matrixTab === 'mechanism' ? 'grid' : 'none', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
+              <div role="tabpanel" id="compare-panel-mechanism" aria-labelledby="compare-tab-mechanism" style={{ display: matrixTab === 'mechanism' ? 'grid' : 'none', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
                 {displayedPinned.map((p, idx) => {
                   const color = colors[idx % colors.length];
                   const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
@@ -1470,7 +1486,7 @@ export default function StorefrontCompareDrawer({
               </div>
 
               {/* Protocol Tab */}
-              <div style={{ display: matrixTab === 'protocol' ? 'grid' : 'none', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
+              <div role="tabpanel" id="compare-panel-protocol" aria-labelledby="compare-tab-protocol" style={{ display: matrixTab === 'protocol' ? 'grid' : 'none', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
                 {displayedPinned.map((p, idx) => {
                   const color = colors[idx % colors.length];
                   const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
@@ -1554,7 +1570,7 @@ export default function StorefrontCompareDrawer({
               </div>
 
               {/* Verdict Tab */}
-              <div style={{ display: matrixTab === 'verdict' ? 'block' : 'none' }}>
+              <div role="tabpanel" id="compare-panel-verdict" aria-labelledby="compare-tab-verdict" style={{ display: matrixTab === 'verdict' ? 'block' : 'none' }}>
                 {sortedPinnedItems.length >= 2 && (() => {
                   const ranked = sortedPinnedItems.map((p, i) => ({ p, s: pinnedScores[i] }));
                   const leader = ranked[0];
@@ -1617,7 +1633,7 @@ export default function StorefrontCompareDrawer({
               </div>
 
               {/* Matrix Tab */}
-              <div style={{
+              <div role="tabpanel" id="compare-panel-matrix" aria-labelledby="compare-tab-matrix" style={{
                 display: matrixTab === 'matrix' ? 'block' : 'none',
                 borderRadius: 'var(--radius-lg, 12px)',
                 overflowX: 'auto',

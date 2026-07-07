@@ -760,6 +760,15 @@ export default function AreaProductGrid({
                 contentVisibility: 'auto',
                 containIntrinsicSize: '500px'
               }}
+              role="button"
+              tabIndex={0}
+              aria-label={`Quick View: ${toTitleCase(p.productName)}`}
+              onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.key === ' ') e.preventDefault();
+                  e.currentTarget.click();
+                }
+              }}
               onClick={() => {
                 if (compound) {
                   setQuickViewCompound({
@@ -808,6 +817,17 @@ export default function AreaProductGrid({
                         }
                       } catch {}
                       pin(p);
+                    }
+                  }}
+                  role="checkbox"
+                  aria-checked={isComparing}
+                  aria-label={`Select ${toTitleCase(p.productName)} For Comparison`}
+                  tabIndex={0}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      if (e.key === ' ') e.preventDefault();
+                      e.stopPropagation();
+                      e.currentTarget.click();
                     }
                   }}
                   style={{ position: 'absolute', top: 16, left: 16, zIndex: 10, width: 24, height: 24, borderRadius: 6, border: isComparing ? 'none' : '1px solid rgba(255,255,255,0.2)', background: isComparing ? '#00E5FF' : 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}

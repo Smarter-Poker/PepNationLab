@@ -112,7 +112,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
 
   return (
     <div style={modalOverlayStyle} onClick={onClose}>
-      <div style={modalContainerStyle} onClick={(e) => e.stopPropagation()}>
+      <div style={modalContainerStyle} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Help Me Choose Wizard">
         <button
           onClick={onClose}
           aria-label="Close Wizard"

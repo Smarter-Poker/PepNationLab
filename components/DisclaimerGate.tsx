@@ -16,7 +16,7 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
   return (
     <div data-nosnippet className="modal-overlay" style={{ alignItems: 'flex-start', paddingTop: '5vh', paddingBottom: '5vh' }}>
       {/* Pep Nation wordmark */}
-      <div className="modal-content" style={{ maxWidth: 680 }}>
+      <div className="modal-content" role="dialog" aria-modal="true" aria-label="Mandatory Research-Only Acknowledgment" style={{ maxWidth: 680 }}>
         
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
@@ -103,7 +103,20 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
             { key: 'c2' as const, text: 'I Confirm That All Products I Purchase Are For In Vitro Laboratory Research Purposes Only And Will Not Be Used For Human Or Animal Consumption Or Injection.' },
             { key: 'c3' as const, text: 'I Confirm I Have Read And Agree To The Pep Nation Lab Research-Only Terms Of Service And Assume Full Legal Responsibility For My Purchases.' },
           ].map(({ key, text }) => (
-            <label key={key} className="form-checkbox" onClick={() => toggle(key)}>
+            <label
+              key={key}
+              className="form-checkbox"
+              onClick={() => toggle(key)}
+              role="checkbox"
+              aria-checked={checks[key]}
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.key === ' ') e.preventDefault();
+                  toggle(key);
+                }
+              }}
+            >
               <div style={{
                 width: 22, height: 22, minWidth: 22, borderRadius: 4,
                 border: `2px solid ${checks[key] ? 'var(--teal)' : 'var(--silver-dark)'}`,
