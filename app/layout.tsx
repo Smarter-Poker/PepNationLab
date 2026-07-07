@@ -114,7 +114,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />/>
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
         {/* Global WebSite + Organization JSON-LD — present on every page.
             SearchAction enables Google Sitelinks Search Box in SERPs. */}
         <script
