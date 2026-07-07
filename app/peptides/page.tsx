@@ -25,7 +25,7 @@ const jsonLd = {
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
-        { '@type': 'ListItem', position: 2, name: 'Peptides by City', item: 'https://pepnationlab.com/peptides' },
+        { '@type': 'ListItem', position: 2, name: 'Peptides By City', item: 'https://pepnationlab.com/peptides' },
       ],
     },
     {
@@ -72,7 +72,7 @@ export default function PeptidesByStatePage() {
                 </li>
                 <li style={{ color: 'var(--grey-600)', fontSize: '0.7rem' }}>›</li>
                 <li>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--teal)' }}>Peptides by City</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--teal)' }}>Peptides By City</span>
                 </li>
               </ol>
             </nav>
@@ -110,7 +110,7 @@ export default function PeptidesByStatePage() {
         </section>
 
         {/* ── RUO STRIP ────────────────────────────────────────────── */}
-        <div style={{ background: 'rgba(229,62,62,0.05)', borderBottom: '1px solid rgba(229,62,62,0.15)', padding: 'var(--space-3) 0' }}>
+        <div data-nosnippet style={{ background: 'rgba(229,62,62,0.05)', borderBottom: '1px solid rgba(229,62,62,0.15)', padding: 'var(--space-3) 0' }}>
           <div className="container">
             <p style={{ fontSize: '0.75rem', color: 'var(--grey-400)', margin: 0, textAlign: 'center' }}>
               <strong style={{ color: 'var(--red)' }}>Research Use Only:</strong>{' '}

@@ -38,51 +38,8 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
   const faqs = getCityFAQs(city);
   const region = getRegionLabel(city);
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
-          { '@type': 'ListItem', position: 2, name: 'Peptides by City', item: 'https://pepnationlab.com/peptides' },
-          { '@type': 'ListItem', position: 3, name: city.state, item: `https://pepnationlab.com/peptides/${stateSlug}` },
-          { '@type': 'ListItem', position: 4, name: city.name, item: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}` },
-        ],
-      },
-      {
-        '@type': 'FAQPage',
-        mainEntity: faqs.map((faq) => ({
-          '@type': 'Question',
-          name: faq.question,
-          acceptedAnswer: { '@type': 'Answer', text: faq.answer },
-        })),
-      },
-      {
-        '@type': 'MedicalBusiness',
-        '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#business`,
-        name: `Pep Nation Lab — ${city.name} Research Peptides`,
-        url: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
-        image: 'https://pepnationlab.com/logo-mark.svg',
-        description: `Research-grade peptide supply for qualified researchers in ${city.name}, ${city.state}.`,
-        areaServed: {
-          '@type': 'City',
-          name: city.name,
-        },
-        address: {
-          '@type': 'PostalAddress',
-          addressLocality: city.name,
-          addressRegion: city.stateAbbr,
-          addressCountry: 'US',
-        },
-        priceRange: '$$',
-      },
-    ],
-  };
-
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <style>{`
         /* ── City-page scoped styles ─────────────────── */
@@ -216,7 +173,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
               <ol style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', listStyle: 'none', padding: 0, margin: 0 }}>
                 {[
                   { label: 'Home', href: '/' },
-                  { label: 'Peptides by City', href: '/peptides' },
+                  { label: 'Peptides By City', href: '/peptides' },
                   { label: city.state, href: `/peptides/${stateSlug}` },
                   { label: city.name, href: null },
                 ].map((crumb, i) => (
@@ -295,7 +252,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
             </div>
 
             {/* ── RUO DISCLAIMER — moved to BOTTOM of hero ── */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: 'rgba(229,62,62,0.06)', border: '1px solid rgba(229,62,62,0.18)', borderRadius: 'var(--radius-lg)', padding: '11px 16px', maxWidth: 580, marginTop: 'var(--space-8)' }}>
+            <div data-nosnippet style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: 'rgba(229,62,62,0.06)', border: '1px solid rgba(229,62,62,0.18)', borderRadius: 'var(--radius-lg)', padding: '11px 16px', maxWidth: 580, marginTop: 'var(--space-8)' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" style={{ flexShrink: 0, marginTop: 2 }}>
                 <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
                 <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -580,7 +537,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         ═══════════════════════════════════════════════════════════ */}
         <footer style={{ background: 'var(--black)', borderTop: '1px solid rgba(192,184,168,0.06)', padding: 'var(--space-8) 0' }}>
           <div className="container">
-            <div style={{ background: 'rgba(229,62,62,0.04)', border: '1px solid rgba(229,62,62,0.12)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+            <div data-nosnippet style={{ background: 'rgba(229,62,62,0.04)', border: '1px solid rgba(229,62,62,0.12)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
               <p style={{ fontSize: '0.71rem', color: 'var(--grey-500)', lineHeight: 1.7, textAlign: 'center', margin: 0 }}>
                 <strong style={{ color: 'rgba(229,62,62,0.8)' }}>Research Use Only Disclaimer:</strong>{' '}
                 All products sold on PepNationLab.com are strictly for in vitro laboratory research and analytical purposes only.
@@ -595,7 +552,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                 {[
                   { label: 'Home', href: '/' },
                   { label: 'Research Library', href: '/research' },
-                  { label: 'Peptides by City', href: '/peptides' },
+                  { label: 'Peptides By City', href: '/peptides' },
                   { label: 'Disclaimer', href: '/disclaimer' },
                   { label: 'Terms', href: '/terms' },
                   { label: 'Privacy', href: '/privacy' },

@@ -20,7 +20,7 @@ export async function generateMetadata({
 
   const stateName = getStateName(stateSlug);
   const stateAbbr = cities[0].stateAbbr;
-  const title = `Research Peptides in ${stateName} | ${cities.length} Cities | Pep Nation Lab`;
+  const title = `Research Peptides In ${stateName} | ${cities.length} Cities | Pep Nation Lab`;
   const description = `Pep Nation Lab supplies research-grade peptides to qualified researchers across ${cities.length} cities in ${stateName}. BPC-157, Semaglutide, Tirzepatide, TB-500 and 300+ more. Wholesale pricing. Verified accounts only.`;
 
   return {
@@ -65,13 +65,13 @@ export default async function StateLandingPage({
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
-          { '@type': 'ListItem', position: 2, name: 'Peptides by City', item: 'https://pepnationlab.com/peptides' },
+          { '@type': 'ListItem', position: 2, name: 'Peptides By City', item: 'https://pepnationlab.com/peptides' },
           { '@type': 'ListItem', position: 3, name: stateName, item: `https://pepnationlab.com/peptides/${stateSlug}` },
         ],
       },
       {
         '@type': 'CollectionPage',
-        name: `Research Peptides in ${stateName}`,
+        name: `Research Peptides In ${stateName}`,
         url: `https://pepnationlab.com/peptides/${stateSlug}`,
         description: `Research-grade peptide coverage across ${cities.length} cities in ${stateName}.`,
         publisher: { '@type': 'Organization', name: 'Pep Nation Lab', url: 'https://pepnationlab.com' },
@@ -105,7 +105,7 @@ export default async function StateLandingPage({
               <ol style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', listStyle: 'none', padding: 0, margin: 0 }}>
                 {[
                   { label: 'Home', href: '/' },
-                  { label: 'Peptides by City', href: '/peptides' },
+                  { label: 'Peptides By City', href: '/peptides' },
                   { label: stateName, href: null },
                 ].map((crumb, i) => (
                   <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -136,7 +136,7 @@ export default async function StateLandingPage({
             </div>
 
             <h1 className="glow-teal" style={{ color: 'var(--white)', maxWidth: 700, marginBottom: 'var(--space-5)' }}>
-              Research Peptides in{' '}
+              Research Peptides In{' '}
               <span style={{ color: 'var(--teal)' }}>{stateName}</span>
             </h1>
 
