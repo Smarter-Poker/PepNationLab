@@ -1,0 +1,360 @@
+  }, []);
+
+  const removeCompound = useCallback((slug: string) => { haptic([20, 10, 20]); setSelectedSlugs(prev => prev.filter(s => s !== slug)); }, []); // Feature 11
+  const toggleGroup = useCallback((label: string) => setCollapsedGroups(prev => { const n = new Set(prev); if (n.has(label)) { n.delete(label); } else { n.add(label); } return n; }), []);
+
+  function handleShare() {
+    if (typeof window === 'undefined') return;
+    navigator.clipboard.writeText(window.location.href).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  }
+
+  function handleExportCSV() {
+    if (!selected.length) return;
+    let csv = 'Attribute,' + selected.map(c => `"${c.display_name}"`).join(',') + '\n';
+    for (const row of ROWS) {
+      if (row.kind === 'group') { csv += `"${row.label}"\n`; continue; }
+      csv += `"${row.label}",` + selected.map(c => `"${String(row.getValue(c)).replace(/"/g, '""')}"`).join(',') + '\n';
+    }
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `pepnationlab_compare_${selectedSlugs.join('_')}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function handleExportJSON() {
+    if (!selected.length) return;
+    const data = selected.map((c, i) => ({
+      compound: c.display_name,
+      slug: c.slug,
+      score: scores[i],
+      prosCons: prosCons[i],
+      attributes: Object.fromEntries(ROWS.filter(r => r.kind === 'data').map(r => r.kind === 'data' ? [r.label, String(r.getValue(c))] : ['', ''])),
+    }));
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `pepnationlab_compare_${selectedSlugs.join('_')}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  const canAdd = selected.length < MAX_COLUMNS;
+  const colSpan = displayedSelected.length + 1;
+
+  const radarData: RadarDataPoint[] = useMemo(() => {
+    if (selected.length < 2) return [];
+    const maxCites = Math.max(...selected.map(c => c.pubmed_citation_count ?? 0), 1);
+    const maxHl = Math.max(...selected.map(c => parseHalfLifeHours(c.half_life)), 1);
+    const maxTrials = Math.max(...selected.map(c => (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0)), 1);
+    return [
+      { label: 'Evidence', scores: selected.map(c => c.evidence_tier === 'approved_drug' ? 100 : c.evidence_tier === 'investigational' ? 78 : c.evidence_tier === 'preclinical' ? 55 : 30) },
+      { label: 'Safety', scores: selected.map(c => c.risk_level === 'low' ? 100 : c.risk_level === 'moderate' ? 72 : c.risk_level === 'high' ? 38 : 10) },
+      { label: 'Citations', scores: selected.map(c => Math.min(100, Math.max(5, ((c.pubmed_citation_count ?? 0) / maxCites) * 100))) },
+      { label: 'Trials', scores: selected.map(c => Math.min(100, Math.max(5, (((c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0)) / maxTrials) * 100))) },
+      { label: 'Half-Life', scores: selected.map(c => Math.min(100, Math.max(5, (parseHalfLifeHours(c.half_life) / maxHl) * 100))) },
+      { label: 'Coverage', scores: selected.map(c => Math.min(100, Math.max(5, ((c.research_areas ?? []).length / 8) * 100))) },
+      { label: 'Handling', scores: selected.map(c => { const s = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days ?? 0; return Math.min(100, Math.max(5, (s / 60) * 100)); }) },
+    ];
+  }, [selected]);
+
+
+  const tabs = [
+    { id: 'matrix' as const, label: 'Matrix', showAlways: false },
+    { id: 'proscons' as const, label: 'Pros & Cons', showAlways: false },
+    { id: 'brief' as const, label: 'Analyst Brief', showAlways: false },
+    ...(selected.some(c => c.efficacy_scores && Object.keys(c.efficacy_scores).length > 0)
+      ? [{ id: 'efficacy' as const, label: 'Efficacy', showAlways: false }]
+      : []),
+    { id: 'mechanism' as const, label: 'Mechanism', showAlways: false },
+    { id: 'protocol' as const, label: 'Protocol', showAlways: false },
+    { id: 'recommend' as const, label: 'Verdict', showAlways: false },
+    { id: 'ai' as const, label: 'AI Analyst', showAlways: false },
+  ];
+
+  return (
+    <div>
+      {/* Search bar */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          body { background: #fff !important; color: #000 !important; font-size: 12px !important; }
+          .no-print { display: none !important; }
+          .glass-panel { background: #fff !important; border: 1px solid #ddd !important; box-shadow: none !important; color: #000 !important; margin-bottom: 20px !important; page-break-inside: avoid !important; }
+          .matrix-table { border: 1px solid #ccc !important; }
+          td, th { color: #000 !important; background: #fff !important; border-bottom: 1px solid #ccc !important; border-right: 1px solid #ccc !important; padding: 8px !important; }
+          th { border-bottom: 2px solid #000 !important; }
+          h3, h4 { color: #000 !important; }
+          span { color: inherit !important; }
+          img { max-width: 100% !important; filter: grayscale(100%); }
+        }
+        .ct-tab { background: rgba(255,255,255,0.03) !important; border: 4px solid rgba(255,255,255,0.05) !important; color: rgba(255,255,255,0.5) !important; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .ct-tab:hover { background: rgba(255,255,255,0.08) !important; border-color: rgba(0,196,188,0.3) !important; color: rgba(255,255,255,0.9) !important; box-shadow: 0 0 15px rgba(0,196,188,0.2) !important; }
+        .ct-tab.active { background: rgba(0,196,188,0.1) !important; border: 4px solid rgba(0,196,188,0.4) !important; color: #FFF !important; box-shadow: 0 4px 20px rgba(0, 196, 188, 0.25) !important; }
+        
+        .ct-row-hover { transition: all 0.3s ease; }
+        .ct-row-hover td { transition: all 0.3s ease; }
+        .ct-row-hover:hover td { background: rgba(0,196,188,0.04) !important; box-shadow: inset 0 0 20px rgba(0,196,188,0.05); }
+        
+        .popular-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; gap: 6px; position: relative; overflow: hidden; backdrop-filter: blur(10px); }
+        .popular-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,196,188,0.1), rgba(0,0,0,0)); opacity: 0; transition: opacity 0.3s ease; }
+        .popular-card:hover { border-color: rgba(0,196,188,0.4); transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 24px rgba(0,196,188,0.15); }
+        .popular-card:hover::before { opacity: 1; }
+        
+        .action-btn-nickel { background: rgba(255,255,255,0.03) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: #FFF !important; border-radius: 12px !important; padding: 8px 16px !important; font-size: 0.85rem !important; font-weight: 800 !important; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); letter-spacing: 0.02em; }
+        .action-btn-nickel:hover { background: rgba(0,196,188,0.1) !important; border-color: rgba(0,196,188,0.4) !important; box-shadow: 0 4px 15px rgba(0,196,188,0.2) !important; transform: translateY(-1px); }
+        
+        .search-input-nickel { width: 100%; background: rgba(22, 34, 48, 0.6) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.15) !important; border-radius: 12px !important; padding: 14px 44px 14px 44px !important; font-size: 1rem !important; outline: none !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-weight: 600; }
+        .search-input-nickel:focus { border-color: rgba(0,196,188,0.6) !important; box-shadow: 0 0 0 4px rgba(0,196,188,0.15), 0 8px 24px rgba(0,0,0,0.4) !important; background: rgba(22, 34, 48, 0.8) !important; }
+        .search-input-nickel::placeholder { color: rgba(255,255,255,0.3) !important; font-weight: 500; }
+        
+        .brief-paragraph { border-left: 3px solid rgba(0,196,188,0.4) !important; padding-left: 16px; margin: 0; color: rgba(255,255,255,0.85); font-size: 0.95rem; line-height: 1.8; letter-spacing: 0.01em; }
+        
+        .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .matrix-table th, .matrix-table td { border-bottom: 1px solid rgba(255,255,255,0.06) !important; }
+        .matrix-table th:not(:first-child), .matrix-table td:not(:first-child) { border-left: 1px solid rgba(255,255,255,0.06) !important; }
+        
+        .efficacy-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .efficacy-table th, .efficacy-table td { border-bottom: 1px solid rgba(255,255,255,0.06) !important; }
+        .efficacy-table th:not(:first-child), .efficacy-table td:not(:first-child) { border-left: 1px solid rgba(255,255,255,0.06) !important; }
+        
+        .glass-panel {
+          background: rgba(15, 22, 30, 0.6) !important;
+          border: 1px solid rgba(255,255,255,0.08) !important;
+          border-radius: 16px !important;
+          backdrop-filter: blur(32px) saturate(180%);
+          -webkit-backdrop-filter: blur(32px) saturate(180%);
+          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+          position: relative;
+          overflow: hidden;
+        }
+        .glass-panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); z-index: 1; pointer-events: none; }
+        
+        .inner-card-nickel {
+          background: rgba(255,255,255,0.02) !important;
+          border: 1px solid rgba(255,255,255,0.06) !important;
+          border-radius: 12px;
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          transition: all 0.3s ease;
+        }
+        .inner-card-nickel:hover { background: rgba(255,255,255,0.04) !important; border-color: rgba(255,255,255,0.1) !important; }
+        
+        .pulse-glow { animation: pulseGlow 2s infinite ease-in-out; }
+        
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeInDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes pulseGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(0,196,188,0.4); transform:scale(1); } 50% { box-shadow: 0 0 15px 4px rgba(0,196,188,0.2); transform:scale(1.02); } }
+      `}} />
+      <div className="no-print" style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', marginBottom: 24, position: 'relative', zIndex: 50 }} ref={searchRef}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 240, maxWidth: 520 }}>
+          <Search style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(168,180,192,0.6)' }} size={17} />
+          <input
+            type="text"
+            placeholder={canAdd ? 'Search compounds to add...' : `Maximum ${MAX_COLUMNS} selected`}
+            value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); setIsSearchOpen(true); }}
+            onFocus={() => setIsSearchOpen(true)}
+            disabled={!canAdd}
+            className="search-input-nickel"
+            style={{ opacity: canAdd ? 1 : 0.5 }}
+          />
+          {/* Feature 12: Voice search mic button */}
+          <button
+            type="button"
+            onClick={startVoiceSearch}
+            title="Voice Search"
+            aria-label="Voice Search"
+            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: voiceActive ? '#00C4BC' : 'transparent', border: 'none', color: voiceActive ? '#04221F' : 'rgba(168,180,192,0.45)', cursor: 'pointer', display: 'flex', padding: 5, borderRadius: 6, transition: 'all 0.2s' }}
+          >
+            <Mic size={16} style={{ animation: voiceActive ? 'pulse 0.7s ease-in-out infinite' : 'none' }} />
+          </button>
+          {isSearchOpen && searchQuery.trim() && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6, background: '#162230', border: '1px solid rgba(168,180,192,0.2)', borderRadius: 8, overflow: 'hidden', boxShadow: '0 12px 30px rgba(0,0,0,0.6)', zIndex: 100 }}>
+              {searchResults.length ? (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: 320, overflowY: 'auto' }}>
+                  {searchResults.map(c => {
+                    const tier = evidenceTier(c.evidence_tier);
+                    return (
+                      <li key={c.slug}>
+                        <button type="button" onClick={() => addCompound(c.slug)}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '11px 16px', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(168,180,192,0.08)', color: '#fff', textAlign: 'left', cursor: 'pointer' }}
+                          onMouseOver={e => e.currentTarget.style.background = 'rgba(0,196,188,0.08)'}
+                          onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{c.display_name}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'rgba(168,180,192,0.7)', marginTop: 1 }}>{c.category} · {c.compound_class}</div>
+                          </div>
+                          <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: 999, background: `${tier.color}20`, color: tier.color, fontWeight: 700, flexShrink: 0 }}>{tier.label}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <div style={{ padding: 16, textAlign: 'center', color: 'rgba(168,180,192,0.6)', fontSize: '0.88rem' }}>No compounds match &quot;{searchQuery}&quot;</div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Quick Filters */}
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', width: '100%', marginTop: 8 }}>
+          {['Weight Loss', 'Tissue Repair', 'Cognitive', 'Muscle Growth', 'Anti-Aging', 'GLP-1'].map(tag => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => { setSearchQuery(tag); setIsSearchOpen(true); }}
+              style={{
+                background: searchQuery.toLowerCase() === tag.toLowerCase() ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${searchQuery.toLowerCase() === tag.toLowerCase() ? 'rgba(0,196,188,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                color: searchQuery.toLowerCase() === tag.toLowerCase() ? '#00C4BC' : '#A8B4C0',
+                padding: '4px 10px',
+                borderRadius: 999,
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                flexShrink: 0
+              }}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+        <span style={{ color: 'rgba(168,180,192,0.7)', fontSize: '0.82rem', fontWeight: 700 }}>{selected.length}/{MAX_COLUMNS}</span>
+        {/* Floating Action Dock */}
+        {selected.length > 0 && (
+            <div style={{ display: 'flex', gap: 10, marginLeft: 'auto', flexWrap: 'wrap', alignItems: 'center', background: 'rgba(15, 22, 30, 0.4)', padding: '6px 12px', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: 700, userSelect: 'none', padding: '4px 8px' }}>
+                <input type="checkbox" checked={diffMode} onChange={e => setDiffMode(e.target.checked)} style={{ accentColor: '#00C4BC', width: 16, height: 16 }} />
+                Diff Mode
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: 700, userSelect: 'none', padding: '4px 8px', borderRight: '1px solid rgba(255,255,255,0.1)', paddingRight: 16, marginRight: 6 }}>
+                <input type="checkbox" checked={hideIdentical} onChange={e => setHideIdentical(e.target.checked)} style={{ accentColor: '#00C4BC', width: 16, height: 16 }} />
+                Hide Identical
+              </label>
+              
+              <button type="button" onClick={handleExportCSV} className="action-btn-nickel" title="Export CSV"><Download size={14} /> CSV</button>
+              <button type="button" onClick={handleExportJSON} className="action-btn-nickel" title="Export JSON"><Download size={14} /> JSON</button>
+              <button type="button" onClick={handleShareCard} className="action-btn-nickel" title="Share Visual Card"><ImageIcon size={14} /> Card</button>
+              <button type="button" onClick={handleShare} className="action-btn-nickel" title="Share Link">{copied ? <Check size={14} color="#00C4BC" /> : <Share2 size={14} />} {copied ? 'Copied' : 'Share'}</button>
+              <button type="button" onClick={() => window.print()} className="action-btn-nickel" title="Print Dossier"><Printer size={14} /> Print</button>
+              <button type="button" onClick={() => setJournalModalOpen(true)} className="action-btn-nickel" title="Save to Lab Journal" style={{ background: 'rgba(0,196,188,0.1)' }}><BookOpen size={14} color="#00C4BC" /> Save to Lab</button>
+              
+              <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
+              
+              <button type="button" onClick={() => {
+                if (!cartContext) return;
+                const itemsToAdd = selected
+                  .map(c => products.find(p => p?.compoundSlug === c.slug))
+                  .filter(Boolean)
+                  .map(p => ({
+                    product: {
+                      id: p!.agentProductId || p!.compoundSlug,
+                      name: p!.productName,
+                      sku: p!.productName,
+                      retailPrice: p!.retailPrice,
+                      costPrice: p!.retailPrice,
+                      bulkCostPrice: p!.retailPrice,
+                      bulkThreshold: 1,
+                      weightOz: p!.weightOz
+                    },
+                    quantity: 1
+                  }));
+                if (itemsToAdd.length > 0) {
+                  cartContext.addMultipleToCart(itemsToAdd, 'Research Stack');
+                }
+              }} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 4px 15px rgba(0,229,255,0.3))' }}>
+                <Image src="/images/add_stack_to_cart_btn.png" alt="Add Stack to Cart" width={200} height={200} unoptimized style={{ height: 48, objectFit: 'contain' }} />
+              </button>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {selected.length > 0 && selected.length < MAX_COLUMNS && (
+              <button type="button" onClick={() => {
+                const allSuggested = selected.flatMap(c => c.best_stacked_with || []);
+                const uniqueSuggested = Array.from(new Set(allSuggested));
+                const available = compounds.filter(c => uniqueSuggested.some(s => s.toLowerCase() === c.slug || s.toLowerCase() === c.display_name.toLowerCase()) && !selectedSlugs.includes(c.slug));
+                if (available.length > 0) addCompound(available[0].slug);
+              }} className="pulse-glow" style={{ background: 'rgba(0,196,188,0.15)', border: '1px solid rgba(0,196,188,0.5)', color: '#00C4BC', borderRadius: 10, padding: '8px 16px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, backdropFilter: 'blur(10px)', transition: 'all 0.3s ease' }}>
+                <Sparkles size={16} /> Suggest Pairing
+              </button>
+            )}
+            {selected.length > 0 && <button type="button" onClick={() => setSelectedSlugs([])} style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', color: '#FC8181', borderRadius: 10, padding: '8px 16px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.3s ease' }} onMouseOver={e => e.currentTarget.style.background='rgba(229,62,62,0.2)'} onMouseOut={e => e.currentTarget.style.background='rgba(229,62,62,0.1)'}>Clear All</button>}
+          </div>
+      </div>
+
+
+
+      {/* Empty State */}
+      {selected.length === 0 ? (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14, marginBottom: 32 }}>
+            {[1, 2, 3].map(num => (
+              <div key={num} className="inner-card-nickel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, minHeight: 240 }}>
+                <PlusCircle size={44} color="rgba(168,180,192,0.2)" />
+                <div style={{ color: 'rgba(168,180,192,0.6)', fontWeight: 700, fontSize: '1rem' }}>Compound {num}</div>
+                <p style={{ color: 'rgba(168,180,192,0.4)', fontSize: '0.82rem', textAlign: 'center', padding: '0 24px', margin: 0 }}>Search above to select a compound for comparison.</p>
+              </div>
+            ))}
+          </div>
+          {/* Feature 7: Compare History */}
+          {compareHistory.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Clock size={13} /> Recent Comparisons
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {compareHistory.map((slugs, i) => (
+                  <button key={i} type="button" className="action-btn-nickel"
+                    onClick={() => { haptic(30); setSelectedSlugs(slugs.filter(s => compounds.some(c => c.slug === s))); }}>
+                    {slugs.map(s => bySlug.get(s)?.display_name ?? s).join(' vs ')}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Popular Comparisons */}
+          <div style={{ marginTop: 8 }}>
+            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Popular Comparisons - Quick Start</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
+              {POPULAR_COMPARISONS.filter(p => p.slugs.every(s => compounds.some(c => c.slug === s))).map(p => (
+                <button key={p.label} type="button" className="popular-card" onClick={() => { setSelectedSlugs(p.slugs.slice(0, MAX_COLUMNS)); }}>
+                  <span style={{ fontSize: '1.1rem', display: 'inline-flex', alignItems: 'center' }}>{renderPopularIcon(p.icon)}</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>{p.label}</span>
+                  <span style={{ fontSize: '0.68rem', color: 'rgba(168,180,192,0.5)' }}>{p.slugs.map(s => bySlug.get(s)?.display_name ?? s).join(' vs. ')}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28, paddingBottom: isMobile ? 70 : 0 }}>
+
+          {/* Feature 5: Quick Compare Bar - sticky strip with compact scores */}
+          {selected.length >= 2 && (
+            <div className="no-print hide-scroll" style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(9,18,28,0.96)', borderBottom: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(14px)', display: 'flex', gap: 8, padding: '8px 12px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', borderRadius: isMobile ? 0 : 10, scrollbarWidth: 'none' }}>
+              {selected.map((c, i) => {
+                const sc = scores[i]; const color = colors[i % colors.length]; const isTop = c.slug === topPickSlug;
+                return (
+                  <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', background: isTop ? 'rgba(0,196,188,0.12)' : `${color}10`, border: `1px solid ${isTop ? 'rgba(0,196,188,0.35)' : color + '28'}`, borderRadius: 20, flexShrink: 0 }}>
+                    {isTop && <Image src="/images/badges/badge_top_pick.png" alt="Top Pick" width={200} height={200} unoptimized style={{ height: '28px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', verticalAlign: 'middle', marginLeft: 4, flexShrink: 0 }} />}
+                    <span style={{ fontSize: '0.73rem', fontWeight: 800, color }}>{c.display_name.split(' ').slice(0, 2).join(' ')}</span>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'rgba(255,255,255,0.75)' }}>{sc.letter}</span>
+                    <span style={{ fontSize: '0.64rem', color: 'rgba(255,255,255,0.4)' }}>{sc.total}</span>
+                  </div>
+                );
+              })}
+              {isMobile && (
+                <button onClick={handleShareCard} className="action-btn-nickel" style={{ padding: '4px 10px', flexShrink: 0, fontSize: '0.68rem' }}>
+                  <Share2 size={10} /> Share Card
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Feature 10: Contraindication Warning Banner (from AI Analysis) */}
+          {aiAnalysis?.warnings?.length > 0 && (
