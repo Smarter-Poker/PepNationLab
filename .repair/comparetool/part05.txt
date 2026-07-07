@@ -203,7 +203,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
   const [showLandscapePrompt, setShowLandscapePrompt] = useState(true);
   const [reorderModalOpen, setReorderModalOpen] = useState(false);
   const [jumpMenuOpen, setJumpMenuOpen] = useState(false);
-  // ─── New Feature State ────────────────────────────────────────────────
+  // ─── New Feature State ──────────────────────────────────────────────────
   const [swipeIndex, setSwipeIndex] = useState(0);          // Feature 1: Swipe
   const [swipeMode, setSwipeMode] = useState(true);         // Feature 1: default on
   const [showWinnersOnly, setShowWinnersOnly] = useState(false); // Feature 2
