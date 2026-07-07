@@ -118,9 +118,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
         }
         .city-pcard-img {
           transition: transform 0.35s ease;
-          object-fit: contain;
-          max-height: 110px;
-          width: auto;
+          object-fit: cover;
         }
         .city-flink:hover { color: var(--teal) !important; }
         .city-vcard { transition: all 0.2s; }
@@ -200,45 +198,10 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
       `}</style>
 
       <div style={{ background: 'var(--black)', minHeight: '100dvh' }}>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@graph': [
-                {
-                  '@type': 'Service',
-                  '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#service`,
-                  serviceType: 'Research Peptide Supply',
-                  provider: {
-                    '@type': 'MedicalOrganization',
-                    '@id': 'https://pepnationlab.com/#organization',
-                    name: 'Pep Nation Lab',
-                    url: 'https://pepnationlab.com',
-                  },
-                  areaServed: {
-                    '@type': 'City',
-                    name: city.name,
-                    containsPlace: {
-                      '@type': 'State',
-                      name: city.state,
-                    },
-                  },
-                  description: `Premium research-grade peptides and compounds shipped to ${city.name}, ${city.stateAbbr} for verified researchers.`,
-                },
-                {
-                  '@type': 'BreadcrumbList',
-                  itemListElement: [
-                    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
-                    { '@type': 'ListItem', position: 2, name: 'Peptides By City', item: 'https://pepnationlab.com/peptides' },
-                    { '@type': 'ListItem', position: 3, name: city.state, item: `https://pepnationlab.com/peptides/${stateSlug}` },
-                    { '@type': 'ListItem', position: 4, name: city.name, item: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}` },
-                  ],
-                },
-              ],
-            }),
-          }}
-        />
+        {/* NOTE: JSON-LD (BreadcrumbList, FAQPage, Service, WebPage, ItemList)
+            is emitted ONCE, server-side, in page.tsx. Do not add another
+            ld+json block here — duplicate Service/Breadcrumb nodes on the same
+            URL are conflicting structured data and hurt rich-result parsing. */}
 
         {/* ═══════════════════════════════════════════════════
             HERO — 3D peptide helix full-bleed
@@ -448,12 +411,13 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
                   <div className="city-pcard-wrapper">
                     <div className="city-pcard-inner">
 
-                    {/* Image header (same as store card) */}
-                    <div style={{ height: 140, background: 'radial-gradient(circle at 35% 35%, rgba(192,184,168,0.1) 0%, var(--surface-2) 80%)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    {/* Image header — full-bleed, edge to edge like the store card */}
+                    <div style={{ position: 'relative', height: 180, overflow: 'hidden', background: 'var(--surface-2)' }}>
                       <Image
                         src={card.image}
                         alt={card.name}
-                        width={120} height={120}
+                        fill
+                        sizes="(max-width: 768px) 50vw, 280px"
                         className="city-pcard-img"
                         unoptimized={card.image.startsWith('http')}
                       />
@@ -714,7 +678,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
   );
 }
 
-// ─── Nearby cities strip ──────────────────────────────────────────────────────────
+// ─── Nearby cities strip ────────────────────────────────────────────────────────────────
 // Links same-state cities PLUS same-region cities across state lines (metro
 // areas like Kansas City or the NYC tri-state span states), strengthening the
 // internal link mesh between related pages.
