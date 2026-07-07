@@ -176,14 +176,24 @@ export interface CityFact {
 }
 
 export function getCityFacts(city: City): CityFact[] {
-  return [
+  const facts: CityFact[] = [
     { label: 'Service Area', value: `${city.name}, ${city.stateAbbr} (${getRegionLabel(city)})` },
+    { label: 'Population', value: `Approximately ${formatPopulation(city.population)} Residents` },
+  ];
+  if (city.county) {
+    facts.push({ label: 'County', value: `${city.county} County, ${city.state}` });
+  }
+  if (city.zips && city.zips.length > 0) {
+    facts.push({ label: 'ZIP Codes Served', value: city.zips.join(', ') });
+  }
+  facts.push(
     { label: 'Shipping', value: `Nationwide To All 50 States, Including ${city.state}` },
     { label: 'Catalog', value: '100+ Research-Grade Peptides And Compounds' },
     { label: 'Documentation', value: 'Batch COA Included With Every Order' },
     { label: 'Access', value: 'Verified Researcher Accounts Only' },
     { label: 'Intended Use', value: 'In Vitro Laboratory Research Only — Not For Human Or Animal Use' },
-  ];
+  );
+  return facts;
 }
 
 // ─── Value props ──────────────────────────────────────────────────────────
