@@ -133,20 +133,14 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         }
         .city-fadein { animation: city-fadein 0.75s ease forwards; }
 
-        /* image buttons */
-        .city-img-btn {
-          display: inline-block;
-          transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .city-img-btn:hover {
-          transform: scale(1.03);
-          filter: drop-shadow(0 10px 20px rgba(0,0,0,0.4));
-        }
-        .city-img-btn img {
-          display: block;
-          height: clamp(56px, 8vw, 76px);
-          width: auto;
-          object-fit: contain;
+        /* CTA text buttons (replaced PNG image buttons — crawlable anchor
+           text, zero image payload, Title Case per platform rule) */
+        .city-cta {
+          font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+          padding: 14px 34px;
+          font-weight: 700;
+          letter-spacing: 0.01em;
+          white-space: nowrap;
         }
 
         /* popular name tag */
@@ -171,6 +165,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         <section style={{ position: 'relative', minHeight: 'clamp(640px, 95vh, 980px)', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
           {/* BG image */}
           <Image src="/images/city-hero-peptide.jpg" alt="3D peptide helix" fill priority
+            sizes="100vw" quality={60}
             style={{ objectFit: 'cover', objectPosition: 'center right', opacity: 0.75 }} />
           {/* Left gradient overlay */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, var(--black) 35%, rgba(5,10,15,0.6) 65%, transparent 100%)', zIndex: 1 }} />
@@ -232,7 +227,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
             {/* H1 */}
             <h1 style={{ color: 'var(--white)', fontSize: 'clamp(2.4rem, 6vw, 4.5rem)', fontWeight: 900, lineHeight: 1.05, letterSpacing: '-0.03em', marginBottom: 'var(--space-5)', maxWidth: 700, fontFamily: 'var(--font-brand)' }}>
               Peptide Research<br />
-              in <span style={{ color: 'var(--teal)', textShadow: '0 0 40px rgba(0,196,188,0.5)' }}>{city.name}</span>
+              In <span style={{ color: 'var(--teal)', textShadow: '0 0 40px rgba(0,196,188,0.5)' }}>{city.name}</span>
             </h1>
 
             {/* Subheading */}
@@ -242,11 +237,11 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
 
             {/* CTAs */}
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 'var(--space-10)', alignItems: 'center' }}>
-              <Link href="/research" className="city-img-btn" aria-label="Access the Lab">
-                <img src="/images/buttons/btn-access.png" alt="Access the Lab" />
+              <Link href="/research" className="btn btn-primary city-cta">
+                Access The Lab
               </Link>
-              <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-img-btn" aria-label="Browse Catalog">
-                <img src="/images/buttons/btn-browse.png" alt="Browse Catalog" />
+              <Link href={`/${DEFAULT_STORE_SLUG}`} className="btn btn-secondary city-cta">
+                Browse Catalog
               </Link>
             </div>
 
@@ -286,9 +281,14 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ padding: 'clamp(40px, 5vw, 64px) 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           <div className="container">
-            <h2 style={{ color: 'var(--white)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 'var(--space-5)' }}>
+            <h2 style={{ color: 'var(--white)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 'var(--space-4)' }}>
               Research Peptide Supply In {city.name} — At A Glance
             </h2>
+            {city.localBlurb && (
+              <p style={{ fontSize: '0.92rem', color: 'var(--silver-light)', lineHeight: 1.75, maxWidth: 780, marginBottom: 'var(--space-5)' }}>
+                {city.localBlurb} Pep Nation Lab supplies verified researchers throughout the area with research-grade peptides, shipped with full batch documentation.
+              </p>
+            )}
             <dl style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
@@ -315,6 +315,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
           {/* Dynamic molecule BG */}
           <Image src="/images/section-bg-catalog.jpg" alt="" fill
+            sizes="100vw" quality={50}
             style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.18, pointerEvents: 'none' }} />
           {/* Dark overlay */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,15,20,0.85) 40%, var(--black-2) 100%)', zIndex: 1 }} />
@@ -395,8 +396,8 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
 
             {/* See full catalog CTA */}
             <div style={{ textAlign: 'center', marginTop: 'var(--space-12)' }}>
-              <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-img-btn" aria-label="Browse Full Research Catalog">
-                <img src="/images/buttons/btn-browse-full.png" alt="Browse Full Research Catalog" />
+              <Link href={`/${DEFAULT_STORE_SLUG}`} className="btn btn-primary city-cta">
+                Browse Full Research Catalog
               </Link>
             </div>
           </div>
@@ -408,6 +409,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
           {/* Dynamic neural/hex BG */}
           <Image src="/images/section-bg-trust.jpg" alt="" fill
+            sizes="100vw" quality={50}
             style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.22, pointerEvents: 'none' }} />
           {/* Overlay */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,15,20,0.8) 50%, var(--black) 100%)', zIndex: 1 }} />
@@ -418,7 +420,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                 Why Researchers Choose Us
               </div>
               <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)' }}>
-                The {region}&apos;s Trusted Source for{' '}
+                The {region}&apos;s Trusted Source For{' '}
                 <span style={{ color: 'var(--teal)' }}>Research Peptides</span>
               </h2>
               <p style={{ color: 'var(--grey-400)', fontSize: '0.95rem', maxWidth: 480, margin: '0 auto', lineHeight: 1.65 }}>
@@ -459,6 +461,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         <section style={{ position: 'relative', borderTop: 'var(--border-subtle)', borderBottom: 'var(--border-subtle)', padding: 'clamp(48px, 6vw, 80px) 0', overflow: 'hidden' }}>
           {/* Reuse the catalog BG at a different opacity */}
           <Image src="/images/section-bg-catalog.jpg" alt="" fill
+            sizes="100vw" quality={50}
             style={{ objectFit: 'cover', objectPosition: 'center bottom', opacity: 0.12, pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'var(--black-2)', opacity: 0.75, zIndex: 1 }} />
 
@@ -477,11 +480,11 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                 </p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                <Link href="/become-agent" className="city-img-btn" aria-label="Become an Agent">
-                  <img src="/images/buttons/btn-agent.png" alt="Become an Agent" />
+                <Link href="/become-agent" className="btn btn-primary city-cta">
+                  Become An Agent
                 </Link>
                 <Link href="/login" style={{ fontSize: '0.8rem', color: 'var(--grey-500)', textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center' }}>
-                  Already an agent? Sign in
+                  Already An Agent? Sign In
                 </Link>
               </div>
             </div>
@@ -493,6 +496,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
           <Image src="/images/city-hero-peptide.jpg" alt="" fill
+            sizes="100vw" quality={50}
             style={{ objectFit: 'cover', objectPosition: 'right center', opacity: 0.06, pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,10,15,0.9) 50%, var(--black) 100%)', zIndex: 1 }} />
 
@@ -502,7 +506,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                 Common Questions
               </div>
               <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)' }}>
-                Peptide Research in{' '}
+                Peptide Research In{' '}
                 <span style={{ color: 'var(--teal)' }}>{city.name}, {city.stateAbbr}</span>
               </h2>
               <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem' }}>
@@ -535,6 +539,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', borderTop: 'var(--border-subtle)', padding: 'clamp(64px, 8vw, 100px) 0', textAlign: 'center', overflow: 'hidden' }}>
           <Image src="/images/section-bg-trust.jpg" alt="" fill
+            sizes="100vw" quality={50}
             style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.15, pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'var(--black-2)', opacity: 0.8, zIndex: 1 }} />
 
@@ -549,11 +554,11 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
             </p>
 
             <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
-              <Link href="/research" className="city-img-btn" aria-label="Access the Lab">
-                <img src="/images/buttons/btn-access.png" alt="Access the Lab" />
+              <Link href="/research" className="btn btn-primary city-cta">
+                Access The Lab
               </Link>
-              <Link href="/research" className="city-img-btn" aria-label="Explore Research Library">
-                <img src="/images/buttons/btn-explore.png" alt="Explore Research Library" />
+              <Link href={`/${DEFAULT_STORE_SLUG}`} className="btn btn-secondary city-cta">
+                Browse Full Catalog
               </Link>
             </div>
 
@@ -616,9 +621,15 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
 function NearbyStrip({ stateSlug, currentCitySlug, stateName, region }: {
   stateSlug: string; currentCitySlug: string; stateName: string; region?: string;
 }) {
+  // Same-region cities first (geographic silo), then by population.
   const sameState = CITIES
     .filter((c) => c.stateSlug === stateSlug && c.slug !== currentCitySlug)
-    .sort((a, b) => b.population - a.population);
+    .sort((a, b) => {
+      const aSame = region && a.region === region ? 1 : 0;
+      const bSame = region && b.region === region ? 1 : 0;
+      if (aSame !== bSame) return bSame - aSame;
+      return b.population - a.population;
+    });
   const crossState = region
     ? CITIES.filter((c) => c.stateSlug !== stateSlug && c.region === region)
         .sort((a, b) => b.population - a.population)
@@ -632,7 +643,7 @@ function NearbyStrip({ stateSlug, currentCitySlug, stateName, region }: {
     <section style={{ padding: 'var(--space-10) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
       <div className="container">
         <p style={{ fontSize: '0.7rem', color: 'var(--grey-600)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 'var(--space-4)' }}>
-          More cities in {stateName}
+          More Cities In {stateName}
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
           {nearby.map((c) => (

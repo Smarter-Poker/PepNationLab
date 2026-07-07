@@ -94,6 +94,27 @@ PepNationLab strictly forbids navigating users away from the `pepnationlab.com` 
 
 ---
 
+## MANDATORY: Ship At The End Of Every Build -- No Local-Only Commits
+
+**This is a hard platform rule with zero exceptions. It applies to EVERY agent
+working in this repo (Claude, Cowork, Antigravity, or any other).**
+
+Never end a build session with work sitting in an uncommitted or local-only
+state. Every build MUST finish with the full ship sequence:
+
+1. **Commit** all completed work with a descriptive message.
+2. **Push to `main`** -- Vercel auto-deploys on push. A build is not done until
+   it is pushed and publishing.
+3. **Apply any SQL** written during the build against the CORRECT Supabase
+   project (`ydsaqnnuwyvtyxgvrnys` for PepNationLab, `cupnhfdwveouenutnveg` for
+   PepNationRX) at the end of the build, and commit the migration file.
+4. **Verify** the deploy on the live production URL, never localhost.
+
+"Commit locally and wait" is never acceptable. If multiple agents are working
+concurrently, pull/rebase before pushing rather than holding work back.
+
+---
+
 ## Zero Cross-Contamination With Smarter.Poker
 
 PepNationLab is a 100% isolated platform. Never:
