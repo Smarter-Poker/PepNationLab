@@ -685,3 +685,30 @@ export const GUIDE_FAQS: Record<string, { q: string; a: string }[]> = {
     },
   ],
 };
+
+// Maps a compound category to the most relevant research guides. Two universal
+// guides (RUO explainer + COA) always lead, followed by category-specific
+// guides. Used to surface editorial guides on compound monographs
+// (internal-link mesh + topical association).
+const CATEGORY_GUIDE_SLUGS: Record<string, string[]> = {
+  'Weight Loss & Metabolism': ['glp-1-receptor-agonists-in-research', 'peptide-research-areas-explained'],
+  'Healing & Recovery': ['bpc-157-research-overview', 'peptide-research-areas-explained'],
+  'Muscle Growth & Performance': ['growth-hormone-secretagogues-explained', 'peptide-research-areas-explained'],
+  'Anti-Aging & Longevity': ['peptide-research-areas-explained', 'understanding-peptide-purity'],
+  'Skin, Hair & Cosmetics': ['peptide-research-areas-explained', 'understanding-peptide-purity'],
+  'Immunity & Wellness': ['peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides'],
+  'Sexual Health & Hormones': ['peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides'],
+  'Peptide Stacks': ['peptide-research-areas-explained', 'peptide-storage-and-reconstitution'],
+};
+
+export function getGuidesForCategory(category: string | null | undefined): { slug: string; title: string }[] {
+  const universal = ['what-research-use-only-means', 'how-to-read-a-certificate-of-analysis'];
+  const specific = (category && CATEGORY_GUIDE_SLUGS[category]) || ['peptide-research-areas-explained'];
+  const slugs: string[] = [];
+  for (const s of [...universal, ...specific]) if (!slugs.includes(s)) slugs.push(s);
+  return slugs
+    .map((slug) => GUIDES.find((g) => g.slug === slug))
+    .filter((g): g is Guide => Boolean(g))
+    .slice(0, 4)
+    .map((g) => ({ slug: g.slug, title: g.title }));
+}
