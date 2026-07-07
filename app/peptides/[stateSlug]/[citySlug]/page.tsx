@@ -22,7 +22,7 @@ import CityPage from './CityPage';
 // without a redeploy.
 export const revalidate = 300;
 
-// ─── Static params (build-time pre-rendering) ─────────────────────────────
+// ─── Static params (build-time pre-rendering) ─────────────────────────
 export async function generateStaticParams() {
   return CITIES.map((city) => ({
     stateSlug: city.stateSlug,

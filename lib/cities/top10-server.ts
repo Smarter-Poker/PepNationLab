@@ -199,7 +199,7 @@ async function fetchStoreTop10(): Promise<StoreTop10Item[]> {
     // ── Compound evidence data for the ranking bonuses ─────────────────────
     const compoundsBySlug = await getCompoundsBySlugs(groups.map((g) => g.compoundSlug));
 
-    // ── Rank exactly like the store's Top 10 card (index 1, no search) ─────
+    // ── Rank exactly like the store's Top 10 card (index 1, no search) ───────
     const score = (g: Group): number => {
       let s = 0;
       const inStock = g.variants.some((v) => {
