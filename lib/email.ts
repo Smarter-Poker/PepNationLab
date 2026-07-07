@@ -43,6 +43,18 @@ const PROVIDER = (process.env.EMAIL_PROVIDER || 'resend').toLowerCase();
 const REPLY_TO = process.env.EMAIL_REPLY_TO || undefined;
 
 /**
+ * Whether a real email sender is configured and can actually deliver mail.
+ * The registration flow uses this to decide whether to require code
+ * verification (configured) or fall back to creating the account with an
+ * unverified email (not configured) so signups never break pre-setup.
+ */
+export function emailConfigured(): boolean {
+  if (PROVIDER === 'none') return false;
+  if (PROVIDER === 'resend') return !!process.env.RESEND_API_KEY;
+  return false;
+}
+
+/**
  * Low-level send. Returns a result object; never throws, so callers can fire it
  * best-effort without wrapping every call in try/catch.
  */
@@ -171,6 +183,29 @@ export async function sendOrderConfirmationEmail(params: {
     subject: `Order Confirmed — #${params.orderId}`,
     html,
     text: `Thank you, ${name}. Order #${params.orderId} confirmed. Total $${Number(params.total).toFixed(2)}. View it at ${SITE}/orders/${params.orderId}`,
+  });
+}
+
+/** Email verification code (6-digit) for public account registration. */
+export async function sendVerificationCodeEmail(params: {
+  to: string;
+  code: string;
+}): Promise<SendEmailResult> {
+  const html = layout(`
+    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">Verify Your Email</h1>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 20px;">
+      Use this code to finish creating your Pep Nation Lab account. It expires in 10 minutes.
+    </p>
+    <div style="font-size:34px;font-weight:800;letter-spacing:10px;color:#00C4BC;background:#0F1923;border:1px solid rgba(0,196,188,0.3);border-radius:12px;padding:18px 0;text-align:center;margin:0 0 20px;">${params.code}</div>
+    <p style="font-size:12px;line-height:1.6;color:#8b95a3;margin:0;">
+      If you did not request this, you can safely ignore this email.
+    </p>
+  `);
+  return sendEmail({
+    to: params.to,
+    subject: `Your Pep Nation Lab Verification Code: ${params.code}`,
+    html,
+    text: `Your Pep Nation Lab verification code is ${params.code}. It expires in 10 minutes.`,
   });
 }
 
