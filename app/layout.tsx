@@ -104,7 +104,7 @@ const NO_FLASH_SCRIPT = `
     document.documentElement.setAttribute('data-theme', 'dark');
   }
 })();
-\`;
+`;
 
 export default function RootLayout({
   children,
