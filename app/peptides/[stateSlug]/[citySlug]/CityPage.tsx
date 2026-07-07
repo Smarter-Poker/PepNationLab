@@ -361,6 +361,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                       </div>
                     </div>
                   </div>
+                  </div>
                 </Link>
               ))}
             </div>
