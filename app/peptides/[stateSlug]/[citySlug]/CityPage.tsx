@@ -45,21 +45,33 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         /* ── City-page scoped styles ─────────────────── */
         .city-crumb:hover { color: var(--teal) !important; }
         .city-pill:hover  { color: var(--teal) !important; border-color: rgba(192,184,168,0.35) !important; }
-        .city-pcard {
-          transition: all 0.28s ease;
-          cursor: pointer;
-          position: relative;
-          overflow: hidden;
+        .city-pcard-wrapper {
+          padding: 3px;
+          border-radius: 18px;
+          background: linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%);
+          box-shadow: 0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+        .city-pcard-wrapper:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.5);
+        }
+        .city-pcard-inner {
+          background: linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%);
+          border-radius: 15px;
+          box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
           display: flex;
           flex-direction: column;
           height: 100%;
+          overflow: hidden;
+          position: relative;
         }
-        .city-pcard:hover {
-          border-color: var(--teal) !important;
-          transform: translateY(-5px);
-          box-shadow: 0 0 40px rgba(0,196,188,0.2), 0 20px 48px rgba(0,0,0,0.6);
+        .city-pcard-inner:hover .city-pcard-img {
+          transform: scale(1.05);
         }
-        .city-pcard:hover .city-pcard-img { transform: scale(1.05); }
         .city-pcard-img {
           transition: transform 0.35s ease;
           object-fit: contain;
@@ -130,7 +142,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         }
         .city-img-btn img {
           display: block;
-          height: clamp(48px, 6vw, 64px);
+          height: clamp(56px, 8vw, 76px);
           width: auto;
           object-fit: contain;
         }
@@ -228,7 +240,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
 
             {/* CTAs */}
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 'var(--space-10)', alignItems: 'center' }}>
-              <Link href="/login" className="city-img-btn" aria-label="Access the Lab">
+              <Link href="/research" className="city-img-btn" aria-label="Access the Lab">
                 <img src="/images/buttons/btn-access.png" alt="Access the Lab" />
               </Link>
               <Link href="/research" className="city-img-btn" aria-label="Browse Catalog">
@@ -297,7 +309,8 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 'var(--space-5)' }}>
               {FEATURED_PEPTIDES.map((peptide) => (
                 <Link key={peptide.slug} href={`/research/${peptide.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
-                  <div className="city-pcard glass-panel">
+                  <div className="city-pcard-wrapper">
+                    <div className="city-pcard-inner">
 
                     {/* Badge */}
                     {peptide.badge && (
@@ -428,8 +441,8 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                   {region} Agent Network
                 </div>
                 <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 'var(--space-4)' }}>
-                  Serve Researchers in{' '}
-                  <span style={{ color: 'var(--teal)' }}>{city.name}</span>
+                  Serve Researchers In<br />
+                  <span style={{ color: '#d4cdbb' }}>{city.name}</span>
                 </h2>
                 <p style={{ color: 'var(--grey-400)', lineHeight: 1.7, margin: 0, fontSize: '0.9rem' }}>
                   Join the Pep Nation Lab agent network and build your business in the {region} area. Earn recurring commissions by connecting qualified researchers with premium compounds at wholesale pricing.
@@ -498,22 +511,17 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
           <div style={{ position: 'absolute', inset: 0, background: 'var(--black-2)', opacity: 0.8, zIndex: 1 }} />
 
           <div className="container" style={{ position: 'relative', zIndex: 2, maxWidth: 620 }}>
-            <div style={{ width: 64, height: 64, margin: '0 auto var(--space-6)', background: 'var(--teal-subtle)', border: 'var(--border-teal)', borderRadius: 'var(--radius-xl)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5">
-                <path d="M6 3h12"/><path d="M9 3v6l-5 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-5-9V3"/>
-              </svg>
-            </div>
 
-            <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-4)' }}>
-              Ready to Start Your Research{' '}
-              <span style={{ color: 'var(--teal)' }}>in {city.name}?</span>
+            <h2 style={{ color: 'var(--white)', fontSize: 'clamp(2.4rem, 6vw, 3.8rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-4)' }}>
+              Ready To Start Your Research{' '}
+              <span style={{ color: '#d4cdbb' }}>In {city.name}?</span>
             </h2>
             <p style={{ color: 'var(--grey-400)', lineHeight: 1.7, marginBottom: 'var(--space-8)', fontSize: '0.95rem' }}>
               Create a verified researcher account today and unlock wholesale pricing on 100+ pharmaceutical-grade peptides shipped fast to {city.name}, {city.stateAbbr}.
             </p>
 
             <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
-              <Link href="/login" className="city-img-btn" aria-label="Access the Lab">
+              <Link href="/research" className="city-img-btn" aria-label="Access the Lab">
                 <img src="/images/buttons/btn-access.png" alt="Access the Lab" />
               </Link>
               <Link href="/research" className="city-img-btn" aria-label="Explore Research Library">
