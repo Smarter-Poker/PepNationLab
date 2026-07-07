@@ -93,7 +93,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   };
   
   // UX Features State
-  const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'pastOrders' | 'compareHistory' | 'notes' | 'doses' | 'biometrics'>('bundles');
+  const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'inventory' | 'compareHistory' | 'notes' | 'doses' | 'biometrics'>('bundles');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -105,7 +105,23 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [visibleCount, setVisibleCount] = useState(24);
   const [isComparing, setIsComparing] = useState(false);
 
+  // Inventory & Calc State
+  const [inventoryData, setInventoryData] = useState<Record<string, { on_hand: number, lot: string, expiration: string }>>({});
+  const [reconMg, setReconMg] = useState('5');
+  const [reconMl, setReconMl] = useState('2');
+  const [reconDose, setReconDose] = useState('250');
+
+  // Scheduler & Injection Sites State
+  const [scheduledDoses, setScheduledDoses] = useState<any[]>([]);
+  const [scheduleCompound, setScheduleCompound] = useState('');
+  const [scheduleAmount, setScheduleAmount] = useState('');
+  const [scheduleUnit, setScheduleUnit] = useState('mcg');
+  const [scheduleFrequency, setScheduleFrequency] = useState('Every Day');
+  const [injectionSites, setInjectionSites] = useState<Record<string, number>>({});
+  const [selectedSite, setSelectedSite] = useState<string>('');
+
   // Check cart status
+
   useEffect(() => {
     const checkCart = () => {
       try {
@@ -122,6 +138,49 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     window.addEventListener('storage', checkCart);
     return () => window.removeEventListener('storage', checkCart);
   }, [storefrontSlug]);
+
+  useEffect(() => {
+    try {
+      const savedInv = localStorage.getItem('pnl_inventory_data');
+      if (savedInv) setInventoryData(JSON.parse(savedInv));
+
+      const savedSched = localStorage.getItem('pnl_scheduled_doses');
+      if (savedSched) setScheduledDoses(JSON.parse(savedSched));
+
+      const savedSites = localStorage.getItem('pnl_injection_sites');
+      if (savedSites) setInjectionSites(JSON.parse(savedSites));
+    } catch {}
+  }, []);
+
+  const updateInventory = (productId: string, field: string, value: any) => {
+    const updated = { ...inventoryData };
+    if (!updated[productId]) updated[productId] = { on_hand: 1, lot: '', expiration: '' };
+    updated[productId] = { ...updated[productId], [field]: value };
+    setInventoryData(updated);
+    try { localStorage.setItem('pnl_inventory_data', JSON.stringify(updated)); } catch {}
+  };
+
+  const addScheduledDose = () => {
+    if (!scheduleCompound || !scheduleAmount) return;
+    const newSchedule = { id: Date.now().toString(), compound: scheduleCompound, amount: scheduleAmount, unit: scheduleUnit, frequency: scheduleFrequency, created_at: new Date().toISOString() };
+    const updated = [...scheduledDoses, newSchedule];
+    setScheduledDoses(updated);
+    try { localStorage.setItem('pnl_scheduled_doses', JSON.stringify(updated)); } catch {}
+    setScheduleCompound(''); setScheduleAmount('');
+  };
+
+  const deleteScheduledDose = (id: string) => {
+    const updated = scheduledDoses.filter(s => s.id !== id);
+    setScheduledDoses(updated);
+    try { localStorage.setItem('pnl_scheduled_doses', JSON.stringify(updated)); } catch {}
+  };
+
+  const logInjectionSite = (siteId: string) => {
+    const updated = { ...injectionSites, [siteId]: Date.now() };
+    setInjectionSites(updated);
+    try { localStorage.setItem('pnl_injection_sites', JSON.stringify(updated)); } catch {}
+    toast.success(`Logged injection at ${siteId}`);
+  };
 
   // Fetch helpful data and notes
   useEffect(() => {
@@ -178,6 +237,14 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     // Add Comparisons
     comparisons.forEach(c => {
       csv += `Comparison,${new Date(c.created_at).toLocaleDateString()},"Folder: ${(c.folder_name || 'Unsorted').replace(/"/g, '""')} | Items: ${c.product_ids.join(', ')}","${(c.notes || '').replace(/"/g, '""')}"\n`;
+    });
+
+    // Add Inventory
+    Object.entries(inventoryData).forEach(([pid, data]) => {
+      const item = [...favorites, ...pastOrders, ...recentlyViewed, ...catalog].find(i => i.product_id === pid);
+      if (item) {
+        csv += `Inventory,${new Date().toLocaleDateString()},"${(item.name || '').replace(/"/g, '""')}","On Hand: ${data.on_hand} | Lot: ${data.lot} | Exp: ${data.expiration}"\n`;
+      }
     });
     
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -678,7 +745,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   }
 
   // Derived Data
-  let currentItems = activeTab === 'favorites' ? favorites : activeTab === 'pastOrders' ? pastOrders : activeTab === 'bundles' ? bundles : activeTab === 'recentlyViewed' ? recentlyViewed : [];
+  let currentItems = activeTab === 'favorites' ? favorites : activeTab === 'inventory' ? pastOrders : activeTab === 'bundles' ? bundles : activeTab === 'recentlyViewed' ? recentlyViewed : [];
 
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
@@ -711,7 +778,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       {activeTab === 'favorites' ? (
         <Heart size={48} style={{ color: 'var(--teal)', marginBottom: 'var(--space-4)', opacity: 0.8 }} />
-      ) : activeTab === 'pastOrders' ? (
+      ) : activeTab === 'inventory' ? (
         <PackageOpen size={48} style={{ color: 'var(--teal)', marginBottom: 'var(--space-4)', opacity: 0.8 }} />
       ) : activeTab === 'bundles' ? (
         <Layers size={48} style={{ color: 'var(--teal)', marginBottom: 'var(--space-4)', opacity: 0.8 }} />
@@ -719,11 +786,11 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         <History size={48} style={{ color: 'var(--teal)', marginBottom: 'var(--space-4)', opacity: 0.8 }} />
       )}
       <h2 style={{ color: 'var(--white)', fontSize: '1.25rem', marginBottom: 'var(--space-2)' }}>
-        {activeTab === 'favorites' ? 'Your Wishlist Is Empty' : activeTab === 'pastOrders' ? 'No Past Orders Found' : activeTab === 'bundles' ? 'No Bundles Found' : 'Nothing Here Yet'}
+        {activeTab === 'favorites' ? 'Your Wishlist Is Empty' : activeTab === 'inventory' ? 'No Inventory Found' : activeTab === 'bundles' ? 'No Bundles Found' : 'Nothing Here Yet'}
       </h2>
       <p style={{ color: 'var(--silver)', fontSize: '0.95rem', maxWidth: 400 }}>
         {activeTab === 'favorites' ? 'Tap the heart icon on any product to save it here for later.' : 
-         activeTab === 'pastOrders' ? 'Items you purchase will appear here. Also checkout the helpful data for your past purchases.' : 
+         activeTab === 'inventory' ? 'Items you purchase will appear here. Manage your stock and usage.' : 
          activeTab === 'bundles' ? 'Bundles and stacks curated for optimal results will appear here.' :
          activeTab === 'compareHistory' ? 'Compounds you have compared will appear here.' :
          activeTab === 'notes' ? 'Your personal lab journal notes will appear here.' :
@@ -821,6 +888,8 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           </div>
         </div>
 
+        </div>
+
         <div style={{ padding: 'var(--space-3)', display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
           <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.3, whiteSpace: viewMode === 'list' ? 'nowrap' : 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {item.name}
@@ -828,6 +897,24 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           <div style={{ color: 'var(--silver)', fontSize: '0.7rem', letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: 2 }}>
             {item.category || 'Compound'} {item.unit_size && `• ${item.unit_size}${item.unit_measure}`}
           </div>
+          
+          {activeTab === 'inventory' && (
+            <div style={{ marginTop: 'var(--space-2)', display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--silver)' }}>On Hand:</span>
+                <input type="number" value={inventoryData[item.product_id]?.on_hand ?? 0} onChange={e => updateInventory(item.product_id, 'on_hand', parseInt(e.target.value) || 0)} style={{ width: 60, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)', padding: '2px 6px', borderRadius: 4, textAlign: 'right' }} onClick={e => e.stopPropagation()} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--silver)' }}>Lot #:</span>
+                <input type="text" placeholder="e.g. 1A2B" value={inventoryData[item.product_id]?.lot ?? ''} onChange={e => updateInventory(item.product_id, 'lot', e.target.value)} style={{ width: 90, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)', padding: '2px 6px', borderRadius: 4, textAlign: 'right' }} onClick={e => e.stopPropagation()} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--silver)' }}>Expires:</span>
+                <input type="month" value={inventoryData[item.product_id]?.expiration ?? ''} onChange={e => updateInventory(item.product_id, 'expiration', e.target.value)} style={{ width: 110, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)', padding: '2px 6px', borderRadius: 4, textAlign: 'right' }} onClick={e => e.stopPropagation()} />
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: viewMode === 'grid' ? 'auto' : 4, paddingTop: viewMode === 'grid' ? 'var(--space-3)' : 0 }}>
             {displayPrice > 0 ? (
               <div style={{ color: 'var(--teal)', fontWeight: 800, fontSize: '1.05rem', fontFamily: 'var(--font-brand)' }}>
@@ -862,7 +949,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
             { id: 'notes', label: 'My Notes', icon: Info },
             { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
             { id: 'favorites', label: 'Saved Compounds', icon: Heart },
-            { id: 'pastOrders', label: 'Helpful Data & Orders', icon: PackageOpen },
+            { id: 'inventory', label: 'Inventory', icon: PackageOpen },
             { id: 'doses', label: 'Dose Tracker', icon: Layers },
             { id: 'biometrics', label: 'Biometrics', icon: Layers },
             { id: 'recentlyViewed', label: 'Recently Viewed', icon: History },
@@ -955,8 +1042,41 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
           {currentItems.length === 0 && activeTab !== 'notes' && activeTab !== 'compareHistory' && activeTab !== 'doses' && activeTab !== 'biometrics' ? renderEmptyState() : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-              {activeTab === 'pastOrders' && (
+              {activeTab === 'inventory' && (
                 <>
+                  <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)', display: 'flex', flexWrap: 'wrap', gap: 'var(--space-6)' }}>
+                    <div style={{ flex: '1 1 300px' }}>
+                      <h3 style={{ color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Reconstitution Calculator</h3>
+                      <p style={{ color: 'var(--silver)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>Calculate your syringe pull (units) based on vial size and bac water added.</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Vial Size (mg)</label>
+                          <input type="number" value={reconMg} onChange={e => setReconMg(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Bac Water Added (ml)</label>
+                          <input type="number" value={reconMl} onChange={e => setReconMl(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
+                        </div>
+                        <div style={{ gridColumn: '1 / -1' }}>
+                          <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Desired Dose (mcg)</label>
+                          <input type="number" value={reconDose} onChange={e => setReconDose(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,196,188,0.05)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(0,196,188,0.2)', padding: 'var(--space-4)' }}>
+                      <div style={{ color: 'var(--silver)', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.1em', marginBottom: 8 }}>Pull Syringe To</div>
+                      <div style={{ color: 'var(--teal)', fontSize: '3rem', fontWeight: 800, lineHeight: 1, textShadow: '0 0 20px rgba(0,196,188,0.3)' }}>
+                        {(() => {
+                          const mg = parseFloat(reconMg); const ml = parseFloat(reconMl); const dose = parseFloat(reconDose);
+                          if (!mg || !ml || !dose) return '0.0';
+                          return ((dose * ml * 100) / (mg * 1000)).toFixed(1);
+                        })()}
+                      </div>
+                      <div style={{ color: 'var(--white)', fontSize: '1.2rem', marginTop: 4 }}>Units (IU)</div>
+                      <div style={{ color: 'var(--silver)', fontSize: '0.7rem', marginTop: 8, opacity: 0.6 }}>*Assuming standard U-100 syringe</div>
+                    </div>
+                  </div>
+
                   {renderGanttChart()}
                   {helpfulData && (
                     <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
@@ -1109,55 +1229,118 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
               ) : activeTab === 'doses' ? (
                 <div>
-                  <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
-                    <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)' }}>Log a Dose</h2>
-                    <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
-                      <select 
-                        value={doseCompound} 
-                        onChange={e => {
-                          const cmp = e.target.value;
-                          setDoseCompound(cmp);
-                          const lastDose = doses.find(d => d.compound_slug === cmp);
-                          if (lastDose) {
-                            setDoseAmount(lastDose.dose_amount.toString());
-                            setDoseUnit(lastDose.unit);
-                          } else {
-                            setDoseAmount('');
-                          }
-                        }}
-                        style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
-                      >
-                        <option value="">Select Compound</option>
-                        {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => i.name).map(i => i.name))).map(slug => (
-                          <option key={slug as string} value={slug as string}>{slug}</option>
-                        ))}
-                      </select>
-                      <input 
-                        type="number" 
-                        placeholder="Amount" 
-                        value={doseAmount} 
-                        onChange={e => setDoseAmount(e.target.value)}
-                        style={{ width: 120, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
-                      />
-                      <select 
-                        value={doseUnit} 
-                        onChange={e => setDoseUnit(e.target.value)}
-                        style={{ width: 100, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
-                      >
-                        <option value="mcg">mcg</option>
-                        <option value="mg">mg</option>
-                        <option value="iu">IU</option>
-                        <option value="ml">ml</option>
-                      </select>
-                      <button onClick={saveDose} disabled={!doseCompound || !doseAmount || doseSaving} className="btn btn-primary" style={{ padding: '12px 24px', borderRadius: 8 }}>
-                        {doseSaving ? 'Saving...' : 'Log'}
-                      </button>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+                    <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
+                      <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)' }}>Log a Dose</h2>
+                      <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <select 
+                          value={doseCompound} 
+                          onChange={e => {
+                            const cmp = e.target.value;
+                            setDoseCompound(cmp);
+                            const lastDose = doses.find(d => d.compound_slug === cmp);
+                            if (lastDose) {
+                              setDoseAmount(lastDose.dose_amount.toString());
+                              setDoseUnit(lastDose.unit);
+                            } else {
+                              setDoseAmount('');
+                            }
+                          }}
+                          style={{ flex: 1, minWidth: 200, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                        >
+                          <option value="">Select Compound</option>
+                          {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => i.name).map(i => i.name))).map(slug => (
+                            <option key={slug as string} value={slug as string}>{slug}</option>
+                          ))}
+                        </select>
+                        <input 
+                          type="number" 
+                          placeholder="Amount" 
+                          value={doseAmount} 
+                          onChange={e => setDoseAmount(e.target.value)}
+                          style={{ width: 120, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                        />
+                        <select 
+                          value={doseUnit} 
+                          onChange={e => setDoseUnit(e.target.value)}
+                          style={{ width: 100, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                        >
+                          <option value="mcg">mcg</option>
+                          <option value="mg">mg</option>
+                          <option value="iu">IU</option>
+                          <option value="ml">ml</option>
+                        </select>
+                        <button onClick={saveDose} disabled={!doseCompound || !doseAmount || doseSaving || !selectedSite} className="btn btn-primary" style={{ padding: '12px 24px', borderRadius: 8, flexGrow: 1 }}>
+                          {doseSaving ? 'Saving...' : 'Log'}
+                        </button>
+                      </div>
+                      {!selectedSite && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginTop: 8 }}>* Please select an injection site from the visualizer to log a dose.</div>}
+                      
+                      <h3 style={{ color: 'var(--white)', marginTop: 'var(--space-6)' }}>Protocol Correlation Graph</h3>
+                      {biometrics.length > 0 
+                         ? Array.from(new Set(biometrics.map(b => b.metric_name))).map(metric => renderCombinedChart(metric))
+                         : renderCombinedChart('Doses Only')}
                     </div>
-                    
-                    <h3 style={{ color: 'var(--white)', marginTop: 'var(--space-6)' }}>Protocol Correlation Graph</h3>
-                    {biometrics.length > 0 
-                       ? Array.from(new Set(biometrics.map(b => b.metric_name))).map(metric => renderCombinedChart(metric))
-                       : renderCombinedChart('Doses Only')}
+
+                    <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
+                      <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)', textAlign: 'center' }}>Injection Site Rotation</h3>
+                      <div style={{ position: 'relative', width: 200, height: 350, background: 'rgba(255,255,255,0.02)', borderRadius: 12, margin: '0 auto', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                          <path d="M50 5 a8 8 0 1 0 0 16 a8 8 0 1 0 0 -16 z M30 25 q20 -10 40 0 l10 30 l-10 -5 l-10 45 l-10 0 l0 -30 l0 30 l-10 0 l-10 -45 l-10 5 z" fill="rgba(0,196,188,0.05)" stroke="rgba(0,196,188,0.3)" strokeWidth="1" vectorEffect="non-scaling-stroke"/>
+                        </svg>
+                        {[
+                          { id: 'left_arm', x: 25, y: 35, label: 'L Arm' }, { id: 'right_arm', x: 75, y: 35, label: 'R Arm' },
+                          { id: 'left_abdomen', x: 40, y: 50, label: 'L Abdomen' }, { id: 'right_abdomen', x: 60, y: 50, label: 'R Abdomen' },
+                          { id: 'left_thigh', x: 35, y: 75, label: 'L Thigh' }, { id: 'right_thigh', x: 65, y: 75, label: 'R Thigh' },
+                          { id: 'left_glute', x: 40, y: 65, label: 'L Glute (Back)' }, { id: 'right_glute', x: 60, y: 65, label: 'R Glute (Back)' }
+                        ].map(site => {
+                          const lastUsed = injectionSites[site.id];
+                          const daysSince = lastUsed ? (Date.now() - lastUsed) / 86400000 : Infinity;
+                          let color = 'rgba(255,255,255,0.3)';
+                          if (daysSince < 2) color = 'var(--red)';
+                          else if (daysSince < 5) color = '#eab308';
+                          else if (lastUsed) color = 'var(--teal)';
+                          return (
+                            <div key={site.id} onClick={() => { setSelectedSite(site.id); logInjectionSite(site.id); }} style={{ position: 'absolute', left: `${site.x}%`, top: `${site.y}%`, transform: 'translate(-50%, -50%)', width: 16, height: 16, borderRadius: '50%', background: color, border: selectedSite === site.id ? '2px solid white' : '1px solid rgba(0,0,0,0.5)', cursor: 'pointer', boxShadow: '0 0 10px rgba(0,0,0,0.5)', transition: 'all 0.2s' }} title={`${site.label} ${lastUsed ? `(${Math.round(daysSince)} days ago)` : '(Never)'}`} />
+                          );
+                        })}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 16, fontSize: '0.75rem', color: 'var(--silver)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red)' }}/> &lt;2d</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: '#eab308' }}/> 2-5d</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)' }}/> &gt;5d</div>
+                      </div>
+                      {selectedSite && <div style={{ textAlign: 'center', marginTop: 12, color: 'var(--white)', fontWeight: 'bold' }}>Selected: {selectedSite.replace('_', ' ').toUpperCase()}</div>}
+                    </div>
+                  </div>
+
+                  <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
+                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>Protocol Scheduler</h3>
+                    <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
+                      <select value={scheduleCompound} onChange={e => setScheduleCompound(e.target.value)} style={{ flex: 1, minWidth: 200, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }}>
+                        <option value="">Select Compound</option>
+                        {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => i.name).map(i => i.name))).map(slug => (<option key={slug as string} value={slug as string}>{slug}</option>))}
+                      </select>
+                      <input type="number" placeholder="Amount" value={scheduleAmount} onChange={e => setScheduleAmount(e.target.value)} style={{ width: 100, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }} />
+                      <select value={scheduleUnit} onChange={e => setScheduleUnit(e.target.value)} style={{ width: 90, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }}>
+                        <option value="mcg">mcg</option><option value="mg">mg</option><option value="iu">IU</option><option value="ml">ml</option>
+                      </select>
+                      <select value={scheduleFrequency} onChange={e => setScheduleFrequency(e.target.value)} style={{ width: 140, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }}>
+                        <option value="Every Day">Every Day</option><option value="Every Other Day">Every Other Day</option><option value="5 Days On, 2 Off">5 Days On, 2 Off</option><option value="Once Weekly">Once Weekly</option><option value="Twice Weekly">Twice Weekly</option>
+                      </select>
+                      <button onClick={addScheduledDose} disabled={!scheduleCompound || !scheduleAmount} className="btn btn-secondary" style={{ padding: '12px 24px', borderRadius: 8 }}>Add Schedule</button>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 'var(--space-3)' }}>
+                      {scheduledDoses.map(s => (
+                        <div key={s.id} style={{ background: 'rgba(255,255,255,0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', position: 'relative' }}>
+                          <button onClick={() => deleteScheduledDose(s.id)} style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer' }}><X size={16}/></button>
+                          <div style={{ color: 'var(--teal)', fontWeight: 'bold' }}>{s.compound}</div>
+                          <div style={{ color: 'var(--white)' }}>{s.amount} {s.unit}</div>
+                          <div style={{ color: 'var(--silver)', fontSize: '0.85rem', marginTop: 4 }}><Layers size={12} style={{ display: 'inline', marginRight: 4 }}/>{s.frequency}</div>
+                        </div>
+                      ))}
+                      {scheduledDoses.length === 0 && <div style={{ color: 'var(--silver)' }}>No scheduled protocols yet.</div>}
+                    </div>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
