@@ -28,6 +28,7 @@ import SubscribeButton from '@/components/research/SubscribeButton';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
 import MonographSeoContent from '@/components/research/MonographSeoContent';
+import MonographCitations from '@/components/research/MonographCitations';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,6 +108,47 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   if (c.unii) { code.codingSystem = 'UNII'; code.codeValue = c.unii; }
   if (Object.keys(code).length > 0) medicalSubstance.code = code;
 
+  // Directive C: ChemicalSubstance - lets AI crawlers treat this as a molecular
+  // entity (weight, sequence, identifiers) rather than generic web copy.
+  const chemicalSubstance: Record<string, unknown> = {
+    '@type': 'ChemicalSubstance',
+    '@id': `https://pepnationlab.com/research/${compound.slug}#chemical`,
+    name: compound.display_name,
+    url: `https://pepnationlab.com/research/${compound.slug}`,
+  };
+  if (compound.aliases && compound.aliases.length > 0) chemicalSubstance.alternateName = compound.aliases;
+  const mw = (c.molecular_weight_da as number | null) ?? compound.identity?.molecular_weight ?? null;
+  if (mw != null) chemicalSubstance.molecularWeight = typeof mw === 'number' ? `${mw} Da` : mw;
+  const seqOne = (c.sequence_one_letter as string | null) ?? compound.identity?.sequence ?? null;
+  if (seqOne) chemicalSubstance.description = `Amino acid sequence: ${seqOne}`;
+  if (compound.identity?.cas) chemicalSubstance.identifier = compound.identity.cas;
+  const sameAs: string[] = [];
+  if (c.chembl_id) sameAs.push(`https://www.ebi.ac.uk/chembl/compound_report_card/${c.chembl_id}/`);
+  if (c.uniprot_id) sameAs.push(`https://www.uniprot.org/uniprotkb/${c.uniprot_id}/entry`);
+  if (sameAs.length > 0) chemicalSubstance.sameAs = sameAs;
+
+  // Directive C: Dataset - declares this monograph as a structured research
+  // data record, part of the larger compound database, for Google Dataset
+  // Search and dataset-aware AI crawlers.
+  const dataset: Record<string, unknown> = {
+    '@type': 'Dataset',
+    '@id': `https://pepnationlab.com/research/${compound.slug}#dataset`,
+    name: `${compound.display_name} Research Data`,
+    description:
+      compound.plain_summary ??
+      `Structured research reference data for ${compound.display_name}: mechanism, evidence tier, pharmacokinetics, molecular identity, and references. In vitro research use only.`,
+    url: `https://pepnationlab.com/research/${compound.slug}`,
+    isPartOf: 'https://pepnationlab.com/research/catalog',
+    license: 'https://pepnationlab.com/terms',
+    isAccessibleForFree: true,
+    creator: { '@id': 'https://pepnationlab.com/#organization' },
+    about: { '@id': `https://pepnationlab.com/research/${compound.slug}#chemical` },
+    keywords: [compound.display_name, ...(compound.aliases ?? []), 'research peptide', compound.category ?? 'research compound']
+      .filter(Boolean)
+      .join(', '),
+    variableMeasured: ['Molecular Weight', 'Amino Acid Sequence', 'Half-Life', 'Mechanism Of Action', 'Evidence Tier'],
+  };
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -145,6 +187,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         ],
       },
       medicalSubstance,
+      chemicalSubstance,
+      dataset,
     ],
   };
 
@@ -168,6 +212,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           and search engines can read the substance without executing the
           client-rendered tabs below. */}
       <MonographSeoContent compound={compound} />
+
+      {/* Directive D: server-visible, Omega-compliant citation anchors so AI
+          crawlers see the outbound PubMed/NCBI authority links in the initial
+          HTML. Clicks are intercepted into IframeModal (never navigate away). */}
+      <MonographCitations sources={compound.sources ?? []} compoundName={compound.display_name} />
 
       <MonographTabs compound={compound} related={related} />
 

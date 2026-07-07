@@ -155,10 +155,13 @@ export default function RootLayout({
                     email: 'research@pepnationlab.com',
                     availableLanguage: ['English'],
                   },
-                  // sameAs intentionally omitted until official brand profiles
-                  // (X, Instagram, LinkedIn, YouTube, Wikidata) exist. Populate
-                  // this array with those URLs to strengthen entity/knowledge-graph
-                  // resolution for search engines and AI answer engines.
+                  // POPULATE THIS ARRAY with official brand profiles
+                  // (e.g. X, Instagram, LinkedIn, YouTube, Wikidata) to strengthen
+                  // entity/knowledge-graph resolution for AI answer engines.
+                  sameAs: [
+                    // 'https://x.com/pepnationlab',
+                    // 'https://www.linkedin.com/company/pepnationlab'
+                  ],
                 },
               ],
             }),

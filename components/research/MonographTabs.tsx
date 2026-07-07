@@ -182,7 +182,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
   const [modalUrl, setModalUrl] = useState<string | null>(null);
 
   return (
-    <main style={{ maxWidth: 820, margin: '0 auto', padding: 'var(--space-4) var(--space-4) var(--space-8)' }}>
+    <article style={{ maxWidth: 820, margin: '0 auto', padding: 'var(--space-4) var(--space-4) var(--space-8)' }}>
       {/* Sticky Back / actions bar */}
       <div
         style={{
@@ -331,7 +331,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
 
         {/* OVERVIEW */}
         {active === 'overview' && (
-          <div>
+          <section aria-labelledby="tab-overview">
             {compound.eli5_summary && (
               <Eli5Formatter text={compound.eli5_summary} color={teal} />
             )}
@@ -339,13 +339,61 @@ export default function MonographTabs({ compound, related = [] }: Props) {
             {compound.plain_summary && <Para>{compound.plain_summary}</Para>}
 
             <SectionDivider title="Identity & Classification" />
-            <Fact label="Class" value={compound.compound_class} />
-            <Fact label="Molecular Target" value={compound.molecular_target} />
-            <Fact label="Category" value={compound.category} />
-            <Fact label="Year Discovered" value={compound.year_discovered} />
-            <Fact label="Molecular Weight" value={compound.molecular_weight_da ? `${compound.molecular_weight_da} Da` : id.molecular_weight} />
-            <Fact label="CAS Number" value={id.cas} />
-            <Fact label="Parent Compound" value={id.parent} />
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', margin: '12px 0' }}>
+              <caption style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>
+                {compound.display_name} Key Research Facts
+              </caption>
+              <tbody>
+                {compound.compound_class && (
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <th scope="row" style={{ flex: '0 0 42%', color: 'var(--silver)', fontWeight: 700, textAlign: 'left', padding: '7px 0', verticalAlign: 'top', width: '42%' }}>Class</th>
+                    <td style={{ textTransform: 'capitalize', color: 'var(--white)', padding: '7px 0', wordBreak: 'break-word' }}>{compound.compound_class}</td>
+                  </tr>
+                )}
+                {compound.molecular_target && (
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <th scope="row" style={{ flex: '0 0 42%', color: 'var(--silver)', fontWeight: 700, textAlign: 'left', padding: '7px 0', verticalAlign: 'top' }}>Molecular Target</th>
+                    <td style={{ textTransform: 'capitalize', color: 'var(--white)', padding: '7px 0', wordBreak: 'break-word' }}>{compound.molecular_target}</td>
+                  </tr>
+                )}
+                {compound.category && (
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <th scope="row" style={{ flex: '0 0 42%', color: 'var(--silver)', fontWeight: 700, textAlign: 'left', padding: '7px 0', verticalAlign: 'top' }}>Category</th>
+                    <td style={{ textTransform: 'capitalize', color: 'var(--white)', padding: '7px 0', wordBreak: 'break-word' }}>{compound.category}</td>
+                  </tr>
+                )}
+                {compound.year_discovered && (
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <th scope="row" style={{ flex: '0 0 42%', color: 'var(--silver)', fontWeight: 700, textAlign: 'left', padding: '7px 0', verticalAlign: 'top' }}>Year Discovered</th>
+                    <td style={{ textTransform: 'capitalize', color: 'var(--white)', padding: '7px 0', wordBreak: 'break-word' }}>{compound.year_discovered}</td>
+                  </tr>
+                )}
+                {(compound.molecular_weight_da || id.molecular_weight) && (
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <th scope="row" style={{ flex: '0 0 42%', color: 'var(--silver)', fontWeight: 700, textAlign: 'left', padding: '7px 0', verticalAlign: 'top' }}>Molecular Weight</th>
+                    <td style={{ textTransform: 'capitalize', color: 'var(--white)', padding: '7px 0', wordBreak: 'break-word' }}>{compound.molecular_weight_da ? `${compound.molecular_weight_da} Da` : id.molecular_weight}</td>
+                  </tr>
+                )}
+                {id.sequence && (
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <th scope="row" style={{ flex: '0 0 42%', color: 'var(--silver)', fontWeight: 700, textAlign: 'left', padding: '7px 0', verticalAlign: 'top' }}>Amino Acid Sequence</th>
+                    <td style={{ textTransform: 'capitalize', color: 'var(--white)', padding: '7px 0', wordBreak: 'break-all', fontFamily: 'monospace' }}>{id.sequence}</td>
+                  </tr>
+                )}
+                {id.cas && (
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <th scope="row" style={{ flex: '0 0 42%', color: 'var(--silver)', fontWeight: 700, textAlign: 'left', padding: '7px 0', verticalAlign: 'top' }}>CAS Number</th>
+                    <td style={{ textTransform: 'capitalize', color: 'var(--white)', padding: '7px 0', wordBreak: 'break-word' }}>{id.cas}</td>
+                  </tr>
+                )}
+                {id.parent && (
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <th scope="row" style={{ flex: '0 0 42%', color: 'var(--silver)', fontWeight: 700, textAlign: 'left', padding: '7px 0', verticalAlign: 'top' }}>Parent Compound</th>
+                    <td style={{ textTransform: 'capitalize', color: 'var(--white)', padding: '7px 0', wordBreak: 'break-word' }}>{id.parent}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
 
             {/* Purity bar */}
             {compound.purity_percentage != null && (
@@ -437,12 +485,12 @@ export default function MonographTabs({ compound, related = [] }: Props) {
             <div style={{ marginTop: 'var(--space-4)' }}>
               <SequenceViewer sequence={id.sequence} molecularWeight={compound.molecular_weight_da ? `${compound.molecular_weight_da} Da` : id.molecular_weight} />
             </div>
-          </div>
+          </section>
         )}
 
         {/* ANALYTICS (NEW) */}
         {active === 'analytics' && (
-          <div>
+          <section aria-labelledby="tab-analytics">
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: teal, marginBottom: 4 }}>
                 Application Domain Efficacy Profile
@@ -503,12 +551,12 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 </div>
               </>
             )}
-          </div>
+          </section>
         )}
 
         {/* MECHANISM */}
         {active === 'mechanism' && (
-          <div>
+          <section aria-labelledby="tab-mechanism">
             {compound.compound_class && (
               <InfoCard color={teal}>
                 <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>Compound Class</div>
@@ -572,12 +620,12 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 </>
               );
             })()}
-          </div>
+          </section>
         )}
 
         {/* STUDIED FOR */}
         {active === 'studied' && (
-          <div>
+          <section aria-labelledby="tab-studied">
             {compound.studied_for.length > 0 && (
               <div style={{ marginBottom: 'var(--space-4)' }}>
                 <Label>Studied For</Label>
@@ -647,12 +695,12 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 </div>
               </>
             )}
-          </div>
+          </section>
         )}
 
         {/* HANDLING */}
         {active === 'handling' && (
-          <div>
+          <section aria-labelledby="tab-handling">
             {(() => {
               const nasal = intranasalDisplay(compound);
               return (
@@ -723,12 +771,12 @@ export default function MonographTabs({ compound, related = [] }: Props) {
             )}
             {h.notes && <Para>{h.notes}</Para>}
             <ReconstitutionCalculator />
-          </div>
+          </section>
         )}
 
         {/* SAFETY */}
         {active === 'safety' && (
-          <div>
+          <section aria-labelledby="tab-safety">
             {risk && (
               <InfoCard color={risk.color}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -770,12 +818,12 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 <Para>{compound.regulatory}</Para>
               </div>
             )}
-          </div>
+          </section>
         )}
 
         {/* RESEARCH DATA (NEW) */}
         {active === 'research_data' && (
-          <div>
+          <section aria-labelledby="tab-research_data">
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: teal, marginBottom: 4 }}>
                 Research Metrics & External Databases
@@ -785,12 +833,12 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               </p>
             </div>
             <TrialsMetricsPanel compound={compound} />
-          </div>
+          </section>
         )}
 
         {/* SOURCES */}
         {active === 'sources' && (
-          <div>
+          <section aria-labelledby="tab-sources">
             <Label>Sources</Label>
             <ul style={{ margin: 0, paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: 6 }}>
               {compound.sources.map((src, i) => {
@@ -809,7 +857,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 );
               })}
             </ul>
-          </div>
+          </section>
         )}
       </section>
 
@@ -895,6 +943,6 @@ export default function MonographTabs({ compound, related = [] }: Props) {
       {modalUrl && (
         <IframeModal url={modalUrl} onClose={() => setModalUrl(null)} />
       )}
-    </main>
+    </article>
   );
 }
