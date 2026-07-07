@@ -863,7 +863,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
             </div>
           </div>
 
-          {currentItems.length === 0 && activeTab !== 'notes' && activeTab !== 'compareHistory' ? renderEmptyState() : (
+          {currentItems.length === 0 && activeTab !== 'notes' && activeTab !== 'compareHistory' && activeTab !== 'doses' && activeTab !== 'biometrics' ? renderEmptyState() : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
               {activeTab === 'pastOrders' && (
                 <>

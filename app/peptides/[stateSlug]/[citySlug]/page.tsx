@@ -1,0 +1,687 @@
+/**
+ * app/peptides/[stateSlug]/[citySlug]/page.tsx
+ *
+ * Local SEO city landing page.
+ * URL pattern: pepnationlab.com/peptides/illinois/oak-lawn
+ *
+ * • generateStaticParams() → pre-renders all cities at build time
+ * • generateMetadata()     → unique title/description/OG per city
+ * • Inline JSON-LD schema  → BreadcrumbList + FAQPage
+ * • No client JS required  → pure server component
+ */
+
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import Image from 'next/image';
+import { notFound } from 'next/navigation';
+import { CITIES, getCity } from '@/lib/cities/cities-data';
+import { FEATURED_PEPTIDES } from '@/lib/cities/keywords';
+import { getCityIntro, getCityFAQs, VALUE_PROPS, getRegionLabel } from '@/lib/cities/city-content';
+
+// ─── Static params (build-time pre-rendering) ─────────────────────────────
+export async function generateStaticParams() {
+  return CITIES.map((city) => ({
+    stateSlug: city.stateSlug,
+    citySlug: city.slug,
+  }));
+}
+
+// ─── Per-city metadata ────────────────────────────────────────────────────
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ stateSlug: string; citySlug: string }>;
+}): Promise<Metadata> {
+  const { stateSlug, citySlug } = await params;
+  const city = getCity(stateSlug, citySlug);
+  if (!city) return {};
+
+  const title = `Peptide Research in ${city.name}, ${city.stateAbbr} — Pep Nation Lab`;
+  const description = `Pep Nation Lab supplies research-grade peptides to qualified researchers in ${city.name}, ${city.state}. BPC-157, Semaglutide, Tirzepatide, TB-500 & 300+ more. Wholesale pricing. Verified accounts only.`;
+
+  return {
+    title,
+    description,
+    keywords: [
+      `peptide therapy ${city.name}`,
+      `research peptides ${city.name} ${city.stateAbbr}`,
+      `BPC-157 ${city.name}`,
+      `semaglutide ${city.name}`,
+      `tirzepatide ${city.name}`,
+      `TB-500 ${city.name}`,
+      `weight loss peptides ${city.name}`,
+      `peptide clinic ${city.name}`,
+      `anti-aging peptides ${city.name} ${city.stateAbbr}`,
+      `research peptides ${city.state}`,
+    ].join(', '),
+    alternates: {
+      canonical: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
+    },
+    openGraph: {
+      title,
+      description,
+      url: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
+      siteName: 'Pep Nation Lab',
+      type: 'website',
+      images: [{ url: '/og-card.png', width: 1200, height: 630, alt: title }],
+    },
+    robots: { index: true, follow: true },
+  };
+}
+
+// ─── Page component ───────────────────────────────────────────────────────
+export default async function CityLandingPage({
+  params,
+}: {
+  params: Promise<{ stateSlug: string; citySlug: string }>;
+}) {
+  const { stateSlug, citySlug } = await params;
+  const city = getCity(stateSlug, citySlug);
+  if (!city) notFound();
+
+  const intro = getCityIntro(city);
+  const faqs = getCityFAQs(city);
+  const region = getRegionLabel(city);
+
+  // ── JSON-LD structured data ──────────────────────────────────────────
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Peptides by City', item: 'https://pepnationlab.com/peptides' },
+          { '@type': 'ListItem', position: 3, name: city.state, item: `https://pepnationlab.com/peptides/${stateSlug}` },
+          { '@type': 'ListItem', position: 4, name: city.name, item: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}` },
+        ],
+      },
+      {
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((faq) => ({
+          '@type': 'Question',
+          name: faq.question,
+          acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+        })),
+      },
+      {
+        '@type': 'Organization',
+        name: 'Pep Nation Lab',
+        url: 'https://pepnationlab.com',
+        description: `Wholesale research peptide distribution serving ${city.name}, ${city.state} and nationwide.`,
+        areaServed: city.name,
+        contactPoint: { '@type': 'ContactPoint', email: 'support@pepnationlab.com', contactType: 'customer service' },
+      },
+    ],
+  };
+
+  return (
+    <>
+      {/* JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      <div style={{ background: 'var(--black)', minHeight: '100dvh' }}>
+
+        {/* ── HERO ─────────────────────────────────────────────────── */}
+        <section className="hero-bg" style={{
+          position: 'relative',
+          overflow: 'hidden',
+          paddingTop: 'clamp(80px, 12vw, 140px)',
+          paddingBottom: 'clamp(60px, 8vw, 100px)',
+        }}>
+          {/* Decorative orbit rings */}
+          <div style={{
+            position: 'absolute', top: '50%', right: '-8%',
+            transform: 'translateY(-50%)',
+            width: 560, height: 560,
+            borderRadius: '50%',
+            border: '1px solid rgba(192,184,168,0.07)',
+            pointerEvents: 'none',
+          }}>
+            <div style={{ position: 'absolute', inset: 50, borderRadius: '50%', border: '1px solid rgba(192,184,168,0.05)' }} />
+            <div style={{ position: 'absolute', inset: 120, borderRadius: '50%', border: '1px solid rgba(192,184,168,0.03)' }} />
+          </div>
+
+          <div className="container" style={{ position: 'relative', zIndex: 1 }}>
+
+            {/* Breadcrumb */}
+            <nav aria-label="Breadcrumb" style={{ marginBottom: 'var(--space-6)' }}>
+              <ol style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', listStyle: 'none', padding: 0, margin: 0 }}>
+                {[
+                  { label: 'Home', href: '/' },
+                  { label: 'Peptides by City', href: '/peptides' },
+                  { label: city.state, href: `/peptides/${stateSlug}` },
+                  { label: city.name, href: null },
+                ].map((crumb, i) => (
+                  <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {i > 0 && <span style={{ color: 'var(--grey-600)', fontSize: '0.7rem' }}>›</span>}
+                    {crumb.href ? (
+                      <Link href={crumb.href} style={{ fontSize: '0.8rem', color: 'var(--grey-400)', transition: 'color 0.2s' }}
+                        onMouseOver={e => (e.currentTarget.style.color = 'var(--teal)')}
+                        onMouseOut={e => (e.currentTarget.style.color = 'var(--grey-400)')}
+                      >{crumb.label}</Link>
+                    ) : (
+                      <span style={{ fontSize: '0.8rem', color: 'var(--teal)' }}>{crumb.label}</span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </nav>
+
+            {/* Badges */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', marginBottom: 'var(--space-5)' }}>
+              <span className="badge badge-teal" style={{ fontSize: '0.68rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M6 3h12"/><path d="M9 3v6l-5 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-5-9V3"/>
+                </svg>
+                Research Use Only
+              </span>
+              <span className="badge badge-silver" style={{ fontSize: '0.68rem' }}>
+                📍 {city.name}, {city.stateAbbr}
+              </span>
+              {city.tier === 1 && (
+                <span className="badge" style={{ fontSize: '0.68rem', background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.25)', color: 'var(--gold)' }}>
+                  ⭐ Priority Market
+                </span>
+              )}
+            </div>
+
+            {/* H1 */}
+            <h1 className="glow-teal" style={{ marginBottom: 'var(--space-5)', color: 'var(--white)', maxWidth: 720 }}>
+              Peptide Research in{' '}
+              <span style={{ color: 'var(--teal)' }}>{city.name}, {city.stateAbbr}</span>
+            </h1>
+
+            {/* Intro paragraph */}
+            <p style={{
+              fontSize: '1.05rem',
+              maxWidth: 640,
+              color: 'var(--silver-light)',
+              lineHeight: 1.75,
+              marginBottom: 'var(--space-7)',
+            }}>
+              {intro}
+            </p>
+
+            {/* RUO warning strip */}
+            <div style={{
+              background: 'rgba(229,62,62,0.06)',
+              border: '1px solid rgba(229,62,62,0.2)',
+              borderRadius: 'var(--radius-md)',
+              padding: 'var(--space-3) var(--space-4)',
+              marginBottom: 'var(--space-8)',
+              display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)',
+              maxWidth: 640,
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" style={{ flexShrink: 0, marginTop: 2 }}>
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <p style={{ fontSize: '0.78rem', color: 'var(--silver)', margin: 0, lineHeight: 1.6 }}>
+                All products are <strong style={{ color: 'var(--red)' }}>strictly for in vitro research use only</strong> — not for human or animal consumption. Qualified researchers only.
+              </p>
+            </div>
+
+            {/* CTAs */}
+            <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+              <Link href="/login" className="btn btn-primary btn-xl">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                  <polyline points="10 17 15 12 10 7"/>
+                  <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                Access the Lab
+              </Link>
+              <Link href="/research" className="btn btn-secondary btn-xl">
+                Browse Research Library
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </Link>
+            </div>
+
+            {/* Stats */}
+            <div style={{
+              display: 'flex', gap: 'var(--space-8)', marginTop: 'var(--space-12)',
+              paddingTop: 'var(--space-8)',
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+              flexWrap: 'wrap',
+            }}>
+              {[
+                { num: '300+', label: 'Research Compounds' },
+                { num: '50 States', label: 'Nationwide Shipping' },
+                { num: '3 Tiers', label: 'Wholesale Pricing' },
+                { num: '100%', label: 'Verified Accounts' },
+              ].map(({ num, label }) => (
+                <div key={label}>
+                  <div style={{
+                    fontFamily: 'var(--font-brand)', fontSize: '1.6rem', fontWeight: 800,
+                    color: 'var(--teal)', textShadow: '0 0 20px rgba(192,184,168,0.35)',
+                  }}>{num}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── FEATURED PEPTIDES GRID ────────────────────────────────── */}
+        <section className="section" style={{ background: 'var(--black-2)', paddingTop: 'var(--space-20)', paddingBottom: 'var(--space-20)' }}>
+          <div className="container">
+            <div style={{ marginBottom: 'var(--space-12)', textAlign: 'center' }}>
+              <div className="badge badge-teal" style={{ marginBottom: 'var(--space-4)', fontSize: '0.7rem' }}>
+                Research Catalog
+              </div>
+              <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>
+                Top Researched Peptides Near{' '}
+                <span style={{ color: 'var(--teal)' }}>{city.name}</span>
+              </h2>
+              <p style={{ color: 'var(--grey-400)', fontSize: '0.95rem', maxWidth: 560, margin: '0 auto' }}>
+                Explore our most in-demand research compounds. Each is available at wholesale pricing for verified researchers in {city.name}, {city.stateAbbr} and nationwide.
+              </p>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: 'var(--space-5)',
+            }}>
+              {FEATURED_PEPTIDES.map((peptide) => (
+                <Link
+                  key={peptide.slug}
+                  href={`/research/${peptide.slug}`}
+                  style={{ textDecoration: 'none' }}
+                >
+                  <div
+                    className="card"
+                    style={{
+                      padding: 'var(--space-6)',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 'var(--space-3)',
+                      transition: 'all 0.25s ease',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      overflow: 'hidden',
+                    }}
+                    onMouseOver={e => {
+                      const el = e.currentTarget;
+                      el.style.borderColor = 'rgba(192,184,168,0.4)';
+                      el.style.transform = 'translateY(-3px)';
+                      el.style.boxShadow = 'var(--shadow-teal)';
+                    }}
+                    onMouseOut={e => {
+                      const el = e.currentTarget;
+                      el.style.borderColor = '';
+                      el.style.transform = '';
+                      el.style.boxShadow = '';
+                    }}
+                  >
+                    {/* Badge */}
+                    {peptide.badge && (
+                      <div style={{
+                        position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)',
+                        background: 'rgba(0,229,255,0.08)',
+                        border: '1px solid rgba(0,229,255,0.2)',
+                        borderRadius: 'var(--radius-full)',
+                        padding: '2px 10px',
+                        fontSize: '0.62rem', color: 'var(--gold)',
+                        fontWeight: 600, letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                      }}>
+                        {peptide.badge}
+                      </div>
+                    )}
+                    <div style={{ fontSize: '2rem', marginBottom: 'var(--space-1)' }}>{peptide.icon}</div>
+                    <div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                        {peptide.category}
+                      </div>
+                      <h3 style={{ color: 'var(--teal)', fontSize: '1.15rem', margin: 0 }}>{peptide.name}</h3>
+                    </div>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.65, margin: 0, flex: 1 }}>
+                      {peptide.tagline}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--teal)', fontSize: '0.8rem', fontWeight: 600, marginTop: 'var(--space-2)' }}>
+                      View Research
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                      </svg>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            <div style={{ textAlign: 'center', marginTop: 'var(--space-10)' }}>
+              <Link href="/research/a-z" className="btn btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                Browse Full A–Z Research Catalog
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ── WHY PEP NATION LAB ────────────────────────────────────── */}
+        <section className="section" style={{ paddingTop: 'var(--space-20)', paddingBottom: 'var(--space-20)' }}>
+          <div className="container">
+            <div style={{ marginBottom: 'var(--space-12)', textAlign: 'center' }}>
+              <div className="badge badge-silver" style={{ marginBottom: 'var(--space-4)', fontSize: '0.7rem' }}>
+                Why Researchers Choose Us
+              </div>
+              <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>
+                The {region}&apos;s Trusted Source for{' '}
+                <span style={{ color: 'var(--teal)' }}>Research Peptides</span>
+              </h2>
+              <p style={{ color: 'var(--grey-400)', fontSize: '0.95rem', maxWidth: 540, margin: '0 auto' }}>
+                Researchers in {city.name} choose Pep Nation Lab for one reason — we make quality research accessible at prices that scale with your lab.
+              </p>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: 'var(--space-5)',
+            }}>
+              {VALUE_PROPS.map((vp) => (
+                <div key={vp.title} style={{
+                  background: 'var(--surface-1)',
+                  border: 'var(--border-subtle)',
+                  borderRadius: 'var(--radius-xl)',
+                  padding: 'var(--space-6)',
+                  display: 'flex', gap: 'var(--space-4)',
+                }}>
+                  <div style={{
+                    width: 48, height: 48, flexShrink: 0,
+                    background: 'var(--teal-subtle)',
+                    border: 'var(--border-teal)',
+                    borderRadius: 'var(--radius-lg)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '1.4rem',
+                  }}>
+                    {vp.icon}
+                  </div>
+                  <div>
+                    <h4 style={{ color: 'var(--silver-light)', marginBottom: 'var(--space-2)', fontSize: '0.95rem' }}>{vp.title}</h4>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.65, margin: 0 }}>{vp.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── AGENT NETWORK CTA ─────────────────────────────────────── */}
+        <section style={{
+          background: 'var(--surface-1)',
+          borderTop: 'var(--border-subtle)',
+          borderBottom: 'var(--border-subtle)',
+          padding: 'var(--space-16) 0',
+        }}>
+          <div className="container">
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(192,184,168,0.06) 0%, rgba(0,0,0,0) 60%)',
+              border: 'var(--border-teal)',
+              borderRadius: 'var(--radius-2xl)',
+              padding: 'clamp(32px, 5vw, 56px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 'var(--space-8)',
+            }}>
+              <div style={{ maxWidth: 560 }}>
+                <div className="badge badge-teal" style={{ marginBottom: 'var(--space-4)', fontSize: '0.68rem' }}>
+                  {region} Agent Network
+                </div>
+                <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)', fontSize: 'clamp(1.4rem, 3vw, 2rem)' }}>
+                  Serve Researchers in <span style={{ color: 'var(--teal)' }}>{city.name}</span>
+                </h2>
+                <p style={{ color: 'var(--grey-400)', lineHeight: 1.7, marginBottom: 0, fontSize: '0.92rem' }}>
+                  Join the Pep Nation Lab agent network and build your business in the {region} area. Earn recurring commissions by connecting qualified researchers with premium compounds at wholesale pricing.
+                </p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
+                <Link href="/become-agent" className="btn btn-primary btn-xl">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                  Become an Agent
+                </Link>
+                <Link href="/login" style={{ fontSize: '0.82rem', color: 'var(--grey-400)', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                  Already an agent? Sign in →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── FAQ ───────────────────────────────────────────────────── */}
+        <section className="section" style={{ paddingTop: 'var(--space-20)', paddingBottom: 'var(--space-20)' }}>
+          <div className="container" style={{ maxWidth: 800, margin: '0 auto' }}>
+            <div style={{ marginBottom: 'var(--space-12)', textAlign: 'center' }}>
+              <div className="badge badge-silver" style={{ marginBottom: 'var(--space-4)', fontSize: '0.7rem' }}>
+                Common Questions
+              </div>
+              <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>
+                Peptide Research in{' '}
+                <span style={{ color: 'var(--teal)' }}>{city.name}, {city.stateAbbr}</span>
+              </h2>
+              <p style={{ color: 'var(--grey-400)', fontSize: '0.92rem' }}>
+                Answers to the most common questions from researchers in {city.name} and the {region} area.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              {faqs.map((faq, i) => (
+                <details key={i} style={{
+                  background: 'var(--surface-1)',
+                  border: 'var(--border-subtle)',
+                  borderRadius: 'var(--radius-xl)',
+                  overflow: 'hidden',
+                }}>
+                  <summary style={{
+                    padding: 'var(--space-5) var(--space-6)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '0.95rem',
+                    color: 'var(--silver-light)',
+                    listStyle: 'none',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 'var(--space-4)',
+                  }}>
+                    <span>{faq.question}</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2" style={{ flexShrink: 0, transition: 'transform 0.2s' }}>
+                      <path d="M6 9l6 6 6-6"/>
+                    </svg>
+                  </summary>
+                  <div style={{
+                    padding: '0 var(--space-6) var(--space-5)',
+                    borderTop: '1px solid rgba(255,255,255,0.04)',
+                  }}>
+                    <p style={{ fontSize: '0.88rem', color: 'var(--grey-400)', lineHeight: 1.75, margin: 0, paddingTop: 'var(--space-4)' }}>
+                      {faq.answer}
+                    </p>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── FINAL CTA ─────────────────────────────────────────────── */}
+        <section style={{
+          background: 'var(--black-2)',
+          borderTop: 'var(--border-subtle)',
+          padding: 'var(--space-20) 0',
+          textAlign: 'center',
+        }}>
+          <div className="container" style={{ maxWidth: 620 }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-4)' }}>🧬</div>
+            <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>
+              Ready to Start Your Research in{' '}
+              <span style={{ color: 'var(--teal)' }}>{city.name}?</span>
+            </h2>
+            <p style={{ color: 'var(--grey-400)', lineHeight: 1.7, marginBottom: 'var(--space-8)', fontSize: '0.95rem' }}>
+              Create a verified researcher account today and unlock wholesale pricing on 300+ pharmaceutical-grade peptides — shipped fast to {city.name}, {city.stateAbbr}.
+            </p>
+            <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link href="/register" className="btn btn-primary btn-xl">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+                </svg>
+                Create Research Account
+              </Link>
+              <Link href="/research" className="btn btn-secondary btn-xl">
+                Explore Research Library
+              </Link>
+            </div>
+            <div style={{
+              marginTop: 'var(--space-8)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 'var(--space-2)',
+            }}>
+              <Image src="/images/badges/research_use_pill_transparent.png" alt="Research Use Only" width={320} height={60} unoptimized style={{ height: 'auto', maxWidth: 320, opacity: 0.6 }} />
+            </div>
+          </div>
+        </section>
+
+        {/* ── NEARBY CITIES STRIP ──────────────────────────────────── */}
+        <NearbyStripSection stateSlug={stateSlug} currentCitySlug={citySlug} stateName={city.state} stateAbbr={city.stateAbbr} />
+
+        {/* Footer */}
+        <FooterInline />
+      </div>
+    </>
+  );
+}
+
+// ─── Nearby cities from same state ───────────────────────────────────────
+function NearbyStripSection({ stateSlug, currentCitySlug, stateName, stateAbbr }: {
+  stateSlug: string; currentCitySlug: string; stateName: string; stateAbbr: string;
+}) {
+  const nearby = CITIES
+    .filter((c) => c.stateSlug === stateSlug && c.slug !== currentCitySlug)
+    .sort((a, b) => b.population - a.population)
+    .slice(0, 8);
+
+  if (nearby.length === 0) return null;
+
+  return (
+    <section style={{
+      padding: 'var(--space-12) 0',
+      borderTop: '1px solid rgba(255,255,255,0.04)',
+    }}>
+      <div className="container">
+        <h3 style={{
+          color: 'var(--grey-600)',
+          fontSize: '0.75rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          marginBottom: 'var(--space-4)',
+        }}>
+          More cities in {stateName} ({stateAbbr})
+        </h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+          {nearby.map((c) => (
+            <Link
+              key={c.slug}
+              href={`/peptides/${stateSlug}/${c.slug}`}
+              style={{
+                padding: '6px 14px',
+                fontSize: '0.8rem',
+                color: 'var(--grey-400)',
+                background: 'var(--surface-1)',
+                border: 'var(--border-subtle)',
+                borderRadius: 'var(--radius-full)',
+                textDecoration: 'none',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={e => { e.currentTarget.style.color = 'var(--teal)'; e.currentTarget.style.borderColor = 'rgba(192,184,168,0.3)'; }}
+              onMouseOut={e => { e.currentTarget.style.color = 'var(--grey-400)'; e.currentTarget.style.borderColor = ''; }}
+            >
+              {c.name}
+            </Link>
+          ))}
+          <Link
+            href={`/peptides/${stateSlug}`}
+            style={{
+              padding: '6px 14px',
+              fontSize: '0.8rem',
+              color: 'var(--teal)',
+              background: 'var(--teal-subtle)',
+              border: 'var(--border-teal)',
+              borderRadius: 'var(--radius-full)',
+              textDecoration: 'none',
+            }}
+          >
+            All {stateName} cities →
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Inline footer (lighter version for city pages) ──────────────────────
+function FooterInline() {
+  return (
+    <footer style={{
+      background: 'var(--black)',
+      borderTop: '1px solid rgba(192,184,168,0.06)',
+      padding: 'var(--space-8) 0',
+    }}>
+      <div className="container">
+        <div style={{
+          background: 'var(--red-bg)',
+          border: '1px solid rgba(229,62,62,0.15)',
+          borderRadius: 'var(--radius-md)',
+          padding: 'var(--space-4)',
+          marginBottom: 'var(--space-6)',
+        }}>
+          <p style={{ fontSize: '0.73rem', color: 'var(--grey-400)', lineHeight: 1.7, textAlign: 'center', margin: 0 }}>
+            <strong style={{ color: 'var(--red)' }}>Research Use Only Disclaimer:</strong>{' '}
+            All products sold on PepNationLab.com are strictly for <em>in vitro</em> laboratory research and analytical purposes only. They are NOT intended for human or animal consumption, ingestion, or injection. These products have not been evaluated or approved by the FDA. Purchasers assume full legal responsibility for compliance with all applicable laws.
+          </p>
+        </div>
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          flexWrap: 'wrap', gap: 'var(--space-4)',
+        }}>
+          <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+            {[
+              { label: 'Home', href: '/' },
+              { label: 'Research Library', href: '/research' },
+              { label: 'Peptides by City', href: '/peptides' },
+              { label: 'Disclaimer', href: '/disclaimer' },
+              { label: 'Terms', href: '/terms' },
+              { label: 'Privacy', href: '/privacy' },
+            ].map(({ label, href }) => (
+              <Link key={label} href={href} style={{ fontSize: '0.78rem', color: 'var(--grey-600)', textDecoration: 'none' }}>
+                {label}
+              </Link>
+            ))}
+          </div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--grey-600)', margin: 0 }}>
+            © {new Date().getFullYear()} Pep Nation Lab LLC. All Rights Reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
