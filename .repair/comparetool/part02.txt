@@ -82,7 +82,7 @@
   return paragraphs;
 }
 
-// ─── RECOMMENDATION ENGINE ─────────────────────────────────────────────────────
+// ─── RECOMMENDATION ENGINE ────────────────────────────────────────────────────
 interface Recommendation {
   compound: Compound;
   score: CompoundScore;
@@ -113,7 +113,7 @@ function generateRecommendations(selected: Compound[], scores: CompoundScore[]):
   };
 }
 
-// ─── ROW DEFINITIONS ───────────────────────────────────────────────────────────
+// ─── ROW DEFINITIONS ─────────────────────────────────────────────────────────
 type Row =
   | { kind: 'group'; label: string }
   | {
