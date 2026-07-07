@@ -15,8 +15,12 @@ const nextConfig = {
       },
     ],
     formats: ["image/avif", "image/webp"],
-    // Quality values used across the app (city hero uses 45, landing uses 60).
-    qualities: [45, 60, 75],
+    // Quality allowlist. Every quality={n} used anywhere in the app MUST be
+    // listed here - with an explicit qualities config, next/image rejects
+    // unlisted values at request time (broken image, HTTP 400 from the
+    // optimizer). Current call sites: 40 (landing artwork), 45 (city hero),
+    // 60/75 (general use). If you change a quality prop, update this list.
+    qualities: [40, 45, 60, 75],
   },
   async redirects() {
     return [
