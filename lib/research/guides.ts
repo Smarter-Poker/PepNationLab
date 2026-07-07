@@ -27,6 +27,7 @@ export interface Guide {
   sections: GuideSection[];
   keyTakeaways: string[]; // dense, quotable summary for AEO
   related: string[];      // slugs of related guides
+  compounds?: { name: string; slug: string }[];  // linked compound monographs
 }
 
 const AUTHOR = 'Pep Nation Lab Research Desk';
@@ -241,6 +242,7 @@ export const GUIDES: Guide[] = [
       'Permitted use is determined by regulatory category, not by the chemical name.',
     ],
     related: ['what-research-use-only-means', 'how-to-read-a-certificate-of-analysis'],
+    compounds: [{ name: 'Semaglutide', slug: 'semaglutide' }, { name: 'Tirzepatide', slug: 'tirzepatide' }],
   },
   // ───────────────────────────────────────────────────────────────────────
   {
@@ -334,6 +336,7 @@ export const GUIDES: Guide[] = [
       'All study is framed around in vitro and preclinical research context only.',
     ],
     related: ['glp-1-receptor-agonists-in-research', 'growth-hormone-secretagogues-explained'],
+    compounds: [{ name: 'BPC-157', slug: 'bpc-157' }, { name: 'TB-500', slug: 'tb-500' }, { name: 'Semaglutide', slug: 'semaglutide' }, { name: 'Tirzepatide', slug: 'tirzepatide' }, { name: 'Ipamorelin', slug: 'ipamorelin' }, { name: 'Sermorelin', slug: 'sermorelin' }, { name: 'GHK-Cu', slug: 'ghk-cu' }, { name: 'Epithalon', slug: 'epithalon' }],
   },
 
   // ───────────────────────────────────────────────────────────────────────
@@ -380,6 +383,7 @@ export const GUIDES: Guide[] = [
       'These compounds are for in vitro research only, not human or animal use.',
     ],
     related: ['peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides'],
+    compounds: [{ name: 'Semaglutide', slug: 'semaglutide' }, { name: 'Tirzepatide', slug: 'tirzepatide' }, { name: 'Retatrutide', slug: 'retatrutide' }],
   },
 
   // ───────────────────────────────────────────────────────────────────────
@@ -426,6 +430,7 @@ export const GUIDES: Guide[] = [
       'Protocols should draw on the primary literature and batch documentation.',
     ],
     related: ['peptide-research-areas-explained', 'what-research-use-only-means'],
+    compounds: [{ name: 'BPC-157', slug: 'bpc-157' }, { name: 'TB-500', slug: 'tb-500' }],
   },
 
   // ───────────────────────────────────────────────────────────────────────
@@ -471,6 +476,7 @@ export const GUIDES: Guide[] = [
       'All are Research Use Only, not for human or animal use.',
     ],
     related: ['peptide-research-areas-explained', 'glp-1-receptor-agonists-in-research'],
+    compounds: [{ name: 'Sermorelin', slug: 'sermorelin' }, { name: 'CJC-1295', slug: 'cjc-1295-dac' }, { name: 'Ipamorelin', slug: 'ipamorelin' }, { name: 'GHRP-2', slug: 'ghrp-2' }, { name: 'GHRP-6', slug: 'ghrp-6' }],
   },
 
   // ───────────────────────────────────────────────────────────────────────
