@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useMemo } from 'react';
 import SmartStackBuilder from '@/components/researcher/SmartStackBuilder';
 import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, XCircle, Layers, FlaskConical, Zap } from 'lucide-react';
 import { Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ComposedChart, Bar, ReferenceLine } from 'recharts';
@@ -188,7 +188,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
   const updateInventory = async (productId: string, field: string, value: any) => {
     const updated = { ...inventoryData };
-    if (!updated[productId]) updated[productId] = { on_hand: 1, lot_number: '', expiration_date: '' };
+    if (!updated[productId]) updated[productId] = { on_hand: 1, lot: '', expiration: '' };
     updated[productId] = { ...updated[productId], [field]: value };
     setInventoryData(updated);
     
@@ -199,8 +199,8 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         body: JSON.stringify({ 
           product_id: productId, 
           on_hand: updated[productId].on_hand,
-          lot_number: updated[productId].lot_number || updated[productId].lot, 
-          expiration_date: updated[productId].expiration_date || updated[productId].expiration
+          lot_number: updated[productId].lot, 
+          expiration_date: updated[productId].expiration
         })
       });
     } catch {}
