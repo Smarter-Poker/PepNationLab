@@ -236,9 +236,12 @@ export default function MonographTabs({ compound, related = [] }: Props) {
 
       {/* Header */}
       <header style={{ textAlign: 'center', marginBottom: 'var(--space-4)' }}>
-        <h1 style={{ fontSize: '1.7rem', fontWeight: 900, color: 'var(--white)', margin: 0 }}>
+        {/* Demoted to h2: the server-rendered MonographSeoContent block above
+            owns the single page-level h1 for SEO. This keeps the visible tab
+            header while preserving one-h1-per-page semantics. */}
+        <h2 style={{ fontSize: '1.7rem', fontWeight: 900, color: 'var(--white)', margin: 0 }}>
           {compound.display_name}
-        </h1>
+        </h2>
         {compound.aliases.length > 0 && (
           <p style={{ ...cap, fontSize: '0.82rem', color: 'var(--silver)', margin: '6px 0 0' }}>
             Also Known As: {compound.aliases.join(', ')}

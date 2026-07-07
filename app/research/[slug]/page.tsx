@@ -27,6 +27,7 @@ import AddToReadingQueueButton from '@/components/research/AddToReadingQueueButt
 import SubscribeButton from '@/components/research/SubscribeButton';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
+import MonographSeoContent from '@/components/research/MonographSeoContent';
 
 export const dynamic = 'force-dynamic';
 
@@ -153,6 +154,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      {/* Server-rendered SEO content: emits the core compound prose into the
+          initial HTML so non-JS AI crawlers (GPTBot, ClaudeBot, PerplexityBot)
+          and search engines can read the substance without executing the
+          client-rendered tabs below. */}
+      <MonographSeoContent compound={compound} />
 
       <MonographTabs compound={compound} related={related} />
 
