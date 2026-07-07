@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { GUIDES, getGuide, getRelatedGuides, GUIDE_AUTHOR } from '@/lib/research/guides';
+import { GUIDES, getGuide, getRelatedGuides, GUIDE_AUTHOR, GUIDE_FAQS } from '@/lib/research/guides';
 
 export function generateStaticParams() {
   return GUIDES.map((g) => ({ slug: g.slug }));
@@ -48,6 +48,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
 
   const url = `https://pepnationlab.com/research/guides/${guide.slug}`;
   const related = getRelatedGuides(guide);
+  const faqs = GUIDE_FAQS[guide.slug] ?? [];
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -87,6 +88,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
             }
           : {}),
       },
+      ...(faqs.length ? [{ '@type': 'FAQPage', mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) }] : []),
     ],
   };
 
@@ -156,6 +158,18 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                   <strong style={{ color: 'var(--red)' }}>Research Use Only:</strong> This guide is informational and describes research-context handling of compounds intended strictly for in vitro laboratory research. Products are not for human or animal consumption, ingestion, or injection, and are not FDA-approved. Nothing here is medical, clinical, or dosing advice.
                 </p>
               </div>
+
+              {faqs.length > 0 && (
+                <section style={{ marginTop: 'var(--space-10)' }}>
+                  <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.3rem, 2.4vw, 1.7rem)', fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 'var(--space-5)' }}>Frequently Asked Questions</h2>
+                  {faqs.map((f, i) => (
+                    <div key={i} style={{ marginBottom: 'var(--space-5)' }}>
+                      <h3 style={{ color: 'var(--white)', fontSize: '1.05rem', fontWeight: 700, lineHeight: 1.4, marginBottom: 'var(--space-2)' }}>{f.q}</h3>
+                      <p style={{ color: 'var(--silver-light)', fontSize: '1rem', lineHeight: 1.8, margin: 0 }}>{f.a}</p>
+                    </div>
+                  ))}
+                </section>
+              )}
 
               {guide.compounds && guide.compounds.length > 0 && (
                 <div style={{ marginTop: 'var(--space-10)' }}>
