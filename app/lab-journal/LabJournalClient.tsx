@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import SmartStackBuilder from '@/components/researcher/SmartStackBuilder';
-import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, XCircle, Layers, FlaskConical, Zap } from 'lucide-react';
+import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, XCircle, Layers, FlaskConical, Zap, Target } from 'lucide-react';
 import { Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ComposedChart, Bar, ReferenceLine } from 'recharts';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -49,6 +49,11 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [doses, setDoses] = useState<any[]>([]);
   const [biometrics, setBiometrics] = useState<any[]>([]);
   
+  // Goals State
+  const [goals, setGoals] = useState<any[]>([]);
+  const [goalName, setGoalName] = useState('');
+  const [goalSaving, setGoalSaving] = useState(false);
+  
   // Notes UI State
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [editingNote, setEditingNote] = useState<any>(null);
@@ -56,6 +61,10 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [noteText, setNoteText] = useState('');
   const [noteCompoundSlug, setNoteCompoundSlug] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
+
+  // Intelligence State
+  const [intelligenceCompound, setIntelligenceCompound] = useState<string | null>(null);
+  const [intelligenceData, setIntelligenceData] = useState<any>(null);
 
   // AI Protocol State
   const [showAiBuilder, setShowAiBuilder] = useState(false);
@@ -93,7 +102,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   };
   
   // UX Features State
-  const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'inventory' | 'compareHistory' | 'notes' | 'doses' | 'biometrics'>('bundles');
+  const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'inventory' | 'compareHistory' | 'notes' | 'doses' | 'biometrics' | 'goals'>('bundles');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -281,7 +290,76 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       .then(res => res.json())
       .then(data => { if (data.protocols) setScheduledDoses(data.protocols); })
       .catch(console.error);
+
+    fetch('/api/researcher/goals')
+      .then(res => res.json())
+      .then(data => { if (data.goals) setGoals(data.goals); })
+      .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    if (!intelligenceCompound) {
+      setIntelligenceData(null);
+      return;
+    }
+    setIntelligenceData({ loading: true });
+    fetch(`/api/researcher/intelligence?slug=${encodeURIComponent(intelligenceCompound)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.intelligence) setIntelligenceData(data.intelligence);
+        else setIntelligenceData(null);
+      })
+      .catch(() => setIntelligenceData(null));
+  }, [intelligenceCompound]);
+
+  const saveGoal = async () => {
+    if (!goalName) return;
+    setGoalSaving(true);
+    try {
+      const res = await fetch('/api/researcher/goals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal_name: goalName, is_active: goals.length === 0 })
+      });
+      const data = await res.json();
+      if (res.ok && data.goal) {
+        setGoals(prev => [data.goal, ...prev.map(g => goals.length === 0 ? g : { ...g, is_active: false })]);
+        setGoalName('');
+        toast.success('Goal saved');
+        if (goals.length === 0) {
+           fetch('/api/researcher/goals').then(r => r.json()).then(d => { if (d.goals) setGoals(d.goals) });
+        }
+      }
+    } catch {
+      toast.error('Failed to save goal');
+    } finally {
+      setGoalSaving(false);
+    }
+  };
+
+  const activateGoal = async (id: string) => {
+    try {
+      await fetch('/api/researcher/goals', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, is_active: true })
+      });
+      setGoals(prev => prev.map(g => ({ ...g, is_active: g.id === id })));
+      toast.success('Active goal updated');
+    } catch {}
+  };
+
+  const deleteGoal = async (id: string) => {
+    try {
+      await fetch('/api/researcher/goals', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      setGoals(prev => prev.filter(g => g.id !== id));
+      toast.success('Goal deleted');
+    } catch {}
+  };
 
   const saveComparison = async (ids: string[]) => {
     try {
@@ -877,6 +955,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
          activeTab === 'bundles' ? 'Bundles and stacks curated for optimal results will appear here.' :
          activeTab === 'compareHistory' ? 'Compounds you have compared will appear here.' :
          activeTab === 'notes' ? 'Your personal lab journal notes will appear here.' :
+         activeTab === 'goals' ? 'Create a research goal to focus your studies and receive intelligent recommendations.' :
          'Browse products on a storefront and they will magically appear here.'}
       </p>
       {storefrontSlug && (
@@ -1027,6 +1106,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
         <div style={{ display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', paddingBottom: 'var(--space-2)', flex: 1, minWidth: 0 }}>
           {[
+            { id: 'goals', label: 'Research Goals', icon: Target },
             { id: 'notes', label: 'My Notes', icon: Info },
             { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
             { id: 'favorites', label: 'Saved Compounds', icon: Heart },
@@ -1121,7 +1201,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
             </div>
           </div>
 
-          {currentItems.length === 0 && activeTab !== 'notes' && activeTab !== 'compareHistory' && activeTab !== 'doses' && activeTab !== 'biometrics' ? renderEmptyState() : (
+          {currentItems.length === 0 && activeTab !== 'notes' && activeTab !== 'compareHistory' && activeTab !== 'doses' && activeTab !== 'biometrics' && activeTab !== 'goals' ? renderEmptyState() : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
               {activeTab === 'inventory' && (
                 <>
@@ -1175,7 +1255,46 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                   )}
                 </>
               )}
-              {activeTab === 'notes' ? (
+              {activeTab === 'goals' ? (
+                <div>
+                  <div className="glass-panel stagger-fade-in" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
+                    <h2 style={{ color: 'var(--teal)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-2)' }}>
+                      <Target size={24} /> Set Your Research Goal
+                    </h2>
+                    <p style={{ color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Define your primary objective to tailor your lab journal and unlock intelligent compound recommendations.</p>
+                    
+                    <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Muscle Growth, Injury Repair, Cognitive Enhancement" 
+                        value={goalName} 
+                        onChange={e => setGoalName(e.target.value)}
+                        style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                      />
+                      <button onClick={saveGoal} disabled={!goalName.trim() || goalSaving} className="btn btn-primary" style={{ padding: '8px 24px', whiteSpace: 'nowrap' }}>
+                        {goalSaving ? 'Saving...' : 'Add Goal'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                    <h3 style={{ color: 'var(--white)', marginTop: 'var(--space-2)' }}>Your Active & Past Goals</h3>
+                    {goals.length === 0 ? renderEmptyState() : goals.map(g => (
+                      <div key={g.id} className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', position: 'relative', border: g.is_active ? '1px solid var(--teal)' : '1px solid rgba(255,255,255,0.1)' }}>
+                        <div style={{ position: 'absolute', top: 'var(--space-4)', right: 'var(--space-4)', display: 'flex', gap: 'var(--space-2)' }}>
+                          {!g.is_active && <button onClick={() => activateGoal(g.id)} className="btn btn-ghost btn-sm" style={{ padding: 4, color: 'var(--teal)' }}>Set Active</button>}
+                          <button onClick={() => deleteGoal(g.id)} className="btn btn-ghost btn-sm" style={{ padding: 4, color: 'var(--red)' }}><Trash2 size={16}/></button>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 'var(--space-2)' }}>
+                          <h4 style={{ margin: 0, fontSize: '1.2rem', color: g.is_active ? 'var(--white)' : 'var(--silver)' }}>{g.goal_name}</h4>
+                          {g.is_active && <span style={{ background: 'var(--teal)', color: 'var(--black)', padding: '2px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 'bold' }}>ACTIVE</span>}
+                        </div>
+                        <p style={{ margin: 0, color: 'var(--silver)', fontSize: '0.9rem' }}>Created: {new Date(g.created_at).toLocaleDateString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : activeTab === 'notes' ? (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
                     <button onClick={() => setShowAiBuilder(!showAiBuilder)} className="btn btn-secondary" style={{ padding: '8px 20px', borderRadius: 20 }}>{showAiBuilder ? 'Hide AI Builder' : 'Use AI Builder'}</button>
@@ -1733,6 +1852,61 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           </div>
         </div>
       )}
+      {intelligenceCompound && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 99999, display: 'flex', justifyContent: 'flex-end' }} onClick={() => setIntelligenceCompound(null)}>
+          <div style={{ width: '100%', maxWidth: 400, background: 'var(--bg-card)', height: '100%', borderLeft: '1px solid rgba(255,255,255,0.1)', overflowY: 'auto', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()} className="slide-in-right">
+            <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'var(--bg-card)', zIndex: 10 }}>
+              <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--teal)' }}><FlaskConical size={20}/> Intelligence</h2>
+              <button onClick={() => setIntelligenceCompound(null)} className="btn btn-ghost btn-sm"><X size={20}/></button>
+            </div>
+            <div style={{ padding: 'var(--space-6)' }}>
+              <h1 style={{ fontSize: '2rem', marginBottom: 'var(--space-2)' }}>{intelligenceCompound}</h1>
+              
+              {!intelligenceData ? (
+                <p style={{ color: 'var(--silver)' }}>Loading intelligence data...</p>
+              ) : intelligenceData.loading ? (
+                <p style={{ color: 'var(--silver)' }}>Analyzing compound...</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                  {intelligenceData.evidence_tier && (
+                    <div>
+                      <span style={{ background: intelligenceData.evidence_tier === 'FDA Approved' ? 'var(--teal)' : 'rgba(255,255,255,0.1)', color: intelligenceData.evidence_tier === 'FDA Approved' ? '#000' : 'var(--white)', padding: '4px 12px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 'bold' }}>
+                        Tier: {intelligenceData.evidence_tier}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <p style={{ color: 'var(--silver)', lineHeight: 1.6 }}>{intelligenceData.description}</p>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                    <div className="glass-panel" style={{ padding: 'var(--space-3)', borderRadius: 8 }}>
+                      <p style={{ margin: 0, color: 'var(--silver)', fontSize: '0.8rem', marginBottom: 4 }}>Half-Life</p>
+                      <p style={{ margin: 0, fontWeight: 'bold' }}>{intelligenceData.half_life || 'Unknown'}</p>
+                    </div>
+                    <div className="glass-panel" style={{ padding: 'var(--space-3)', borderRadius: 8 }}>
+                      <p style={{ margin: 0, color: 'var(--silver)', fontSize: '0.8rem', marginBottom: 4 }}>Clinical Dosage</p>
+                      <p style={{ margin: 0, fontWeight: 'bold' }}>{intelligenceData.clinical_dosage || 'Unknown'}</p>
+                    </div>
+                  </div>
+
+                  {intelligenceData.warnings && (
+                    <div style={{ background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.3)', padding: 'var(--space-4)', borderRadius: 8 }}>
+                      <p style={{ margin: 0, color: 'var(--red)', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 'bold', marginBottom: 8 }}><Info size={16}/> Warnings & Interactions</p>
+                      <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem', lineHeight: 1.5 }}>{intelligenceData.warnings}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CSS for animations */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+      `}} />
     </div>
   );
 }
