@@ -17,8 +17,23 @@ import EvidenceSafetyTabs, {
 } from '@/components/research/EvidenceSafetyTabs';
 
 export const metadata: Metadata = {
-  title: 'Evidence & Safety Reference | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Evidence and Safety Reference | Research Peptide Risk Data | Pep Nation Lab',
+  description: 'Cross-compound evidence tier ratings and safety flag reference for all catalog research peptides. Understand the strength of evidence and known risk considerations. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/evidence' },
+  openGraph: {
+    title: 'Research Peptide Evidence and Safety Reference | Pep Nation Lab',
+    description: 'Evidence tier ratings and safety flags for all catalog research peptides in one cross-compound reference.',
+    url: 'https://pepnationlab.com/research/evidence',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Research Peptide Evidence and Safety' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Peptide Evidence and Safety Reference | Pep Nation Lab',
+    description: 'Evidence tier ratings and safety flags for research peptides in one cross-compound reference.',
+    images: ['/og-card.png'],
+  },
 };
 
 const TIER_ORDER = ['approved_drug', 'investigational', 'preclinical', 'research_chemical', 'cosmetic', 'supply'];

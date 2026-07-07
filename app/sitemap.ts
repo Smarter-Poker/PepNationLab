@@ -15,6 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Core
     { url: `${BASE}/`, lastModified: now, changeFrequency: 'weekly', priority: 1.0 },
     { url: `${BASE}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${BASE}/become-agent`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE}/contact`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE}/find-a-peptide`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE}/peptide-101`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
@@ -37,10 +38,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Research Library — Hub Pages
     { url: `${BASE}/research`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: `${BASE}/research/areas`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${BASE}/research/about-areas`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE}/research/catalog`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE}/research/a-z`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${BASE}/research/glossary`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE}/research/faq`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/learn`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/evidence`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
 
     // Research Library — Tools
     { url: `${BASE}/research/calculators`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },

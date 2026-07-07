@@ -12,8 +12,23 @@ import { GraduationCap } from 'lucide-react';
 import LearnGuidesExplorer from '@/components/research/LearnGuidesExplorer';
 
 export const metadata: Metadata = {
-  title: 'Learn | Peptide Education Hub | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Peptide Education Hub | Learn About Research Peptides | Pep Nation Lab',
+  description: 'Foundational education guides for peptide researchers. Learn about evidence tiers, reconstitution, storage, peptide classes, how to read a monograph, and quality verification. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/learn' },
+  openGraph: {
+    title: 'Peptide Education Hub | Pep Nation Lab',
+    description: 'Research education guides covering evidence tiers, reconstitution, storage, peptide classes, and quality verification for qualified researchers.',
+    url: 'https://pepnationlab.com/research/learn',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptide Research Education Hub' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Peptide Education Hub | Pep Nation Lab',
+    description: 'Research education guides on evidence tiers, reconstitution, storage, and peptide classes.',
+    images: ['/og-card.png'],
+  },
 };
 
 export default function LearnHubPage() {

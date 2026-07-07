@@ -5,8 +5,23 @@ import { Activity, BookOpen, Layers } from 'lucide-react';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 
 export const metadata: Metadata = {
-  title: 'About Therapeutic Areas | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Therapeutic Research Areas | Peptide Research Categories | Pep Nation Lab',
+  description: 'Explore peptide research organized by therapeutic area: metabolic health, recovery, longevity, cognition, immune function, and more. Browse all research categories. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/about-areas' },
+  openGraph: {
+    title: 'Peptide Research Therapeutic Areas | Pep Nation Lab',
+    description: 'Peptide research organized by therapeutic area: metabolic health, recovery, longevity, cognition, immune function, and more.',
+    url: 'https://pepnationlab.com/research/about-areas',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptide Research Therapeutic Areas' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Peptide Research Therapeutic Areas | Pep Nation Lab',
+    description: 'Browse peptide research by therapeutic area including metabolic health, recovery, longevity, and cognition.',
+    images: ['/og-card.png'],
+  },
 };
 
 export default function AboutAreasPage() {

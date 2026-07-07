@@ -39,13 +39,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `${name} | Research Library | Pep Nation Lab`,
     description: summary || `${name} research-use-only reference: mechanism, evidence, handling, and references.`,
+    keywords: [name, ...(compound.aliases ?? []).slice(0, 4), 'research peptide', 'RUO compound', 'peptide research', 'Pep Nation Lab'].join(', '),
     robots: { index: true, follow: true },
     alternates: { canonical: `https://pepnationlab.com/research/${slug}` },
     openGraph: {
-      title: `${name} - Pep Nation Lab Research Library`,
-      description: summary,
+      title: `${name} — Research Reference | Pep Nation Lab`,
+      description: summary || `${name} research-use-only reference: mechanism, evidence, handling, and references.`,
       url: `https://pepnationlab.com/research/${slug}`,
       type: 'article',
+      images: [{ url: '/og-card.png', width: 1200, height: 630, alt: `${name} Research Reference — Pep Nation Lab` }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${name} | Pep Nation Lab Research Library`,
+      description: summary || `${name} RUO research reference: mechanism, evidence tier, and handling data.`,
+      images: ['/og-card.png'],
     },
   };
 }
@@ -74,23 +82,57 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   // Build MedicalSubstance JSON-LD - only emit fields that exist on the row.
   const c: Record<string, unknown> = compound as unknown as Record<string, unknown>;
-  const jsonLd: Record<string, unknown> = {
-    '@context': 'https://schema.org',
+  const medicalSubstance: Record<string, unknown> = {
     '@type': 'MedicalSubstance',
+    '@id': `https://pepnationlab.com/research/${compound.slug}#substance`,
     name: compound.display_name,
     identifier: compound.slug,
     url: `https://pepnationlab.com/research/${compound.slug}`,
   };
-  if (compound.aliases && compound.aliases.length > 0) jsonLd.alternateName = compound.aliases;
-  if (compound.plain_summary) jsonLd.description = compound.plain_summary;
-  if (compound.mechanism) jsonLd.mechanismOfAction = compound.mechanism;
-  if (compound.warnings) jsonLd.warning = compound.warnings;
-  if (compound.side_effects) jsonLd.adverseOutcome = compound.side_effects;
+  if (compound.aliases && compound.aliases.length > 0) medicalSubstance.alternateName = compound.aliases;
+  if (compound.plain_summary) medicalSubstance.description = compound.plain_summary;
+  if (compound.mechanism) medicalSubstance.mechanismOfAction = compound.mechanism;
+  if (compound.warnings) medicalSubstance.warning = compound.warnings;
+  if (compound.side_effects) medicalSubstance.adverseOutcome = compound.side_effects;
   const code: Record<string, unknown> = {};
   if (c.chembl_id) { code.codingSystem = 'ChEMBL'; code.codeValue = c.chembl_id; }
   if (c.uniprot_id) { code.codingSystem = 'UniProt'; code.codeValue = c.uniprot_id; }
   if (c.unii) { code.codingSystem = 'UNII'; code.codeValue = c.unii; }
-  if (Object.keys(code).length > 0) jsonLd.code = code;
+  if (Object.keys(code).length > 0) medicalSubstance.code = code;
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'MedicalWebPage',
+        '@id': `https://pepnationlab.com/research/${compound.slug}#webpage`,
+        name: `${compound.display_name} | Research Library | Pep Nation Lab`,
+        url: `https://pepnationlab.com/research/${compound.slug}`,
+        description: compound.plain_summary ?? `${compound.display_name} research-use-only reference for qualified researchers.`,
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        about: { '@id': `https://pepnationlab.com/research/${compound.slug}#substance` },
+        audience: {
+          '@type': 'MedicalAudience',
+          audienceType: 'Researchers',
+          healthCondition: { '@type': 'MedicalCondition', name: 'Research Use Only' },
+        },
+        speakable: {
+          '@type': 'SpeakableSpecification',
+          cssSelector: ['h1', '.compound-summary', '.mechanism-text'],
+        },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: compound.display_name, item: `https://pepnationlab.com/research/${compound.slug}` },
+        ],
+      },
+      medicalSubstance,
+    ],
+  };
+
 
   // Pull the most-recent PK numbers off the compound row (Wave 1 columns).
   const tmax = (c.tmax_hours as number | null) ?? null;

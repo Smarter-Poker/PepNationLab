@@ -48,8 +48,10 @@ const jsonLd = {
 
 export default function BecomeAgentPage() {
   return (
-    <PageShell>
-      <div style={{ background: 'var(--black)', minHeight: '100dvh', padding: 'var(--space-10) var(--space-4)' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <PageShell>
+        <div style={{ background: 'var(--black)', minHeight: '100dvh', padding: 'var(--space-10) var(--space-4)' }}>
 
         {/* Hero */}
         <div className="container" style={{ maxWidth: 760, textAlign: 'center', marginBottom: 'var(--space-12)' }}>
@@ -144,6 +146,7 @@ export default function BecomeAgentPage() {
         </div>
 
       </div>
-    </PageShell>
+      </PageShell>
+    </>
   );
 }
