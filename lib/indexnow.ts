@@ -4,8 +4,9 @@
  * results, so this shortens the time-to-discovery for AI answer engines).
  *
  * Setup:
- *  - The key is published at https://pepnationlab.com/<KEY>.txt (see the file
- *    of that name in /public). IndexNow validates ownership against it.
+ *  - The key is served at https://pepnationlab.com/<KEY>.txt via an explicit
+ *    App Router route (app/<KEY>.txt/route.ts). IndexNow validates ownership
+ *    against it.
  *  - Call pingIndexNow([...urls]) whenever content is created or updated
  *    (e.g. after publishing a new compound monograph or city page), or hit
  *    the /api/seo/indexnow route from a cron job.
@@ -14,7 +15,7 @@
  * we never submit URLs we do not own.
  */
 
-export const INDEXNOW_KEY = '8f2b1c9d4e6a7035b1c8d2e9f0a3b4c5';
+export const INDEXNOW_KEY = 'c4d9b1e7a2f83506b9e2c1d7f4a80b36';
 const HOST = 'pepnationlab.com';
 
 export async function pingIndexNow(urls: string[]): Promise<{ ok: boolean; status: number; submitted: number }> {
