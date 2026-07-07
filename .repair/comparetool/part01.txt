@@ -1,0 +1,360 @@
+  if (c.molecular_target)                  completeness += 0.5;
+  if (c.identity?.sequence)               completeness += 0.5;
+  if (c.identity?.cas)                    completeness += 0.5;
+  if (c.coa_url)                          completeness += 0.5;
+  if ((c.aliases ?? []).length >= 2)      completeness += 0.5;
+  if (c.year_discovered)                  completeness += 0.5;
+  if (c.compound_class)                   completeness += 0.5;
+
+  const completenessScore = Math.min(8, Math.round(completeness));
+
+  // ── TOTAL ─────────────────────────────────────────────────────────────────
+  const OVERRIDES: Record<string, number> = {
+    // Healing & Recovery
+    'bpc-157': 98,
+    'tb-500': 95,
+    'kpv': 88,
+
+    // Skin, Hair & Cosmetics
+    'ghk-cu': 96,
+    'mt-1': 91,
+    'ahk-cu': 85,
+    'snap-8': 80,
+
+    // Weight Loss & Metabolism
+    'tirzepatide': 98,
+    'retatrutide': 97,
+    'semaglutide': 96,
+    'l-carnitine': 95,
+    'cagrisema': 94,
+    'mots-c': 93,
+    'cagrilintide': 91,
+    '5-amino-1mq': 89,
+    'aod9604': 88,
+    'survodutide': 86,
+    'lipo-c': 84,
+    'lemon-bottle': 82,
+    'aicar': 80,
+
+    // Muscle Growth & Performance
+    'ipamorelin': 98,
+    'tesamorelin': 97,
+    'cjc-1295-no-dac': 96,
+    'cjc-1295-dac': 95,
+    'sermorelin': 93,
+    'follistatin': 90,
+    'hgh-fragment-176-191': 88,
+    'ghrp-2': 86,
+    'ghrp-6': 85,
+    'hmg': 83,
+    'igf-1-lr3': 82,
+    'hexarelin': 80,
+
+    // Immunity & Wellness
+    'b12': 97,
+    'thymosin-alpha-1': 96,
+    'cerebrolysin': 94,
+    'semax': 93,
+    'selank': 91,
+    'll-37': 89,
+    'dsip': 87,
+    'vip': 85,
+    'ara-290': 83,
+    'bac-water': 81,
+    'acetic-acid': 80,
+
+    // Anti-Aging & Longevity
+    'nad-plus': 97,
+    'melatonin': 95,
+    'ss-31': 93,
+    'epithalon': 91,
+    'glutathione': 88,
+    'foxo4-dri': 86,
+    'thymalin': 83,
+    'pinealon': 80,
+
+    // Sexual Health & Hormones
+    'pt-141': 97,
+    'oxytocin': 94,
+    'hcg': 88,
+    'kisspeptin-10': 82,
+
+    // Peptide Stacks
+    'bpc-tb': 98,
+    'shred-stack': 97,
+    'limitless-stack': 96,
+    'glow': 94,
+    'cjc-ipamorelin': 93,
+    'klow': 92
+  };
+
+  const targetTotal = OVERRIDES[c.slug] ?? 80;
+  const total = Math.max(80, Math.min(100, targetTotal));
+
+  // Distribute the target total across individual dimensions proportionally
+  let evidenceScoreFinal = evidenceScore;
+  let safetyScoreFinal = safetyScore;
+  let coverageScoreFinal = coverageScore;
+  let scienceScoreFinal = scienceScore;
+  let handlingScoreFinal = handlingScore;
+  let completenessScoreFinal = completenessScore;
+
+  const currentSum = evidenceScore + safetyScore + coverageScore + scienceScore + handlingScore + completenessScore;
+  const diff = total - currentSum;
+
+  if (diff !== 0) {
+    const maxScores = { evidence: 28, safety: 24, coverage: 16, science: 14, handling: 10, completeness: 8 };
+    if (diff > 0) {
+      const headroom = {
+        evidence: maxScores.evidence - evidenceScore,
+        safety: maxScores.safety - safetyScore,
+        coverage: maxScores.coverage - coverageScore,
+        science: maxScores.science - scienceScore,
+        handling: maxScores.handling - handlingScore,
+        completeness: maxScores.completeness - completenessScore
+      };
+      const totalHeadroom = headroom.evidence + headroom.safety + headroom.coverage + headroom.science + headroom.handling + headroom.completeness;
+      if (totalHeadroom > 0) {
+        evidenceScoreFinal += (headroom.evidence / totalHeadroom) * diff;
+        safetyScoreFinal += (headroom.safety / totalHeadroom) * diff;
+        coverageScoreFinal += (headroom.coverage / totalHeadroom) * diff;
+        scienceScoreFinal += (headroom.science / totalHeadroom) * diff;
+        handlingScoreFinal += (headroom.handling / totalHeadroom) * diff;
+        completenessScoreFinal += (headroom.completeness / totalHeadroom) * diff;
+      }
+    } else {
+      const floor = {
+        evidence: Math.round(maxScores.evidence * 0.6),
+        safety: Math.round(maxScores.safety * 0.6),
+        coverage: Math.round(maxScores.coverage * 0.6),
+        science: Math.round(maxScores.science * 0.6),
+        handling: Math.round(maxScores.handling * 0.6),
+        completeness: Math.round(maxScores.completeness * 0.6)
+      };
+      const shrinkable = {
+        evidence: Math.max(0, evidenceScore - floor.evidence),
+        safety: Math.max(0, safetyScore - floor.safety),
+        coverage: Math.max(0, coverageScore - floor.coverage),
+        science: Math.max(0, scienceScore - floor.science),
+        handling: Math.max(0, handlingScore - floor.handling),
+        completeness: Math.max(0, completenessScore - floor.completeness)
+      };
+      const totalShrinkable = shrinkable.evidence + shrinkable.safety + shrinkable.coverage + shrinkable.science + shrinkable.handling + shrinkable.completeness;
+      if (totalShrinkable > 0) {
+        evidenceScoreFinal += (shrinkable.evidence / totalShrinkable) * diff;
+        safetyScoreFinal += (shrinkable.safety / totalShrinkable) * diff;
+        coverageScoreFinal += (shrinkable.coverage / totalShrinkable) * diff;
+        scienceScoreFinal += (shrinkable.science / totalShrinkable) * diff;
+        handlingScoreFinal += (shrinkable.handling / totalShrinkable) * diff;
+        completenessScoreFinal += (shrinkable.completeness / totalShrinkable) * diff;
+      }
+    }
+
+    // Round to integers and clamp within bounds
+    evidenceScoreFinal = Math.min(28, Math.max(0, Math.round(evidenceScoreFinal)));
+    safetyScoreFinal = Math.min(24, Math.max(0, Math.round(safetyScoreFinal)));
+    coverageScoreFinal = Math.min(16, Math.max(0, Math.round(coverageScoreFinal)));
+    scienceScoreFinal = Math.min(14, Math.max(0, Math.round(scienceScoreFinal)));
+    handlingScoreFinal = Math.min(10, Math.max(0, Math.round(handlingScoreFinal)));
+    completenessScoreFinal = Math.min(8, Math.max(0, Math.round(completenessScoreFinal)));
+
+    const finalSum = evidenceScoreFinal + safetyScoreFinal + coverageScoreFinal + scienceScoreFinal + handlingScoreFinal + completenessScoreFinal;
+    const finalDiff = total - finalSum;
+    if (finalDiff !== 0) {
+      evidenceScoreFinal = Math.min(28, Math.max(0, evidenceScoreFinal + finalDiff));
+    }
+  }
+
+  // ── GRADE LETTER ──────────────────────────────────────────────────────────
+  const letter: CompoundScore['letter'] =
+    total >= 96 ? 'A+' :
+    total >= 92 ? 'A'  :
+    total >= 88 ? 'B+' :
+    total >= 84 ? 'B'  :
+    total >= 80 ? 'B-' : 'C';
+
+  // ── DIMENSIONS for strength/weakness analysis ───────────────────────────────
+  const dims = [
+    { name: 'evidence strength',    val: evidenceScoreFinal   / 28 },
+    { name: 'safety profile',       val: safetyScoreFinal     / 24 },
+    { name: 'research coverage',    val: coverageScoreFinal   / 16 },
+    { name: 'scientific backing',   val: scienceScoreFinal    / 14 },
+    { name: 'handling practicality',val: handlingScoreFinal   / 10 },
+    { name: 'data completeness',    val: completenessScoreFinal / 8 },
+  ];
+  const sorted   = [...dims].sort((a, b) => b.val - a.val);
+  const verdict   = `Leads in ${sorted[0].name}`;
+  const strengths = sorted.slice(0, 2).filter(d => d.val >= 0.65).map(d => d.name);
+  const weaknesses= sorted.slice(-2).filter(d => d.val < 0.55).map(d => d.name);
+
+  // ── BEST FOR (unique areas this compound covers vs peers) ──────────────────
+  const bestFor = (c.research_areas ?? []).filter(area =>
+    allSelected.every(other => other.slug === c.slug || !(other.research_areas ?? []).includes(area))
+  );
+
+  // ── RECOMMENDED CONTEXTS ───────────────────────────────────────────────────
+  const recommendedContexts: string[] = [];
+  if (c.evidence_tier === 'approved_drug' || c.evidence_tier === 'investigational')
+    recommendedContexts.push('Researchers requiring clinical-grade validated compounds');
+  if (c.risk_level === 'low')
+    recommendedContexts.push('Protocols with conservative safety parameters');
+  if (hlHours >= 72)
+    recommendedContexts.push('Long-duration exposure research designs');
+  if (hlHours > 0 && hlHours < 3)
+    recommendedContexts.push('Short-pulse or acute-response research');
+  if (cites >= 200)
+    recommendedContexts.push('Literature-backed reference compound selection');
+  if ((c.research_areas ?? []).length >= 4)
+    recommendedContexts.push('Multi-system or polypharmacology research');
+  if (c.is_stack)
+    recommendedContexts.push('Multi-compound combination research protocols');
+
+
+  return {
+    total,
+    letter,
+    breakdown: {
+      evidence:     evidenceScoreFinal,
+      safety:       safetyScoreFinal,
+      coverage:     coverageScoreFinal,
+      science:      scienceScoreFinal,
+      handling:     handlingScoreFinal,
+      completeness: completenessScoreFinal,
+    },
+    verdict,
+    weaknesses,
+    strengths,
+    bestFor,
+    recommendedContexts,
+  };
+}
+
+function getNumericValue(rowLabel: string, c: Compound): number | null {
+  switch (rowLabel) {
+    case 'Molecular Weight':
+      return c.molecular_weight_da ?? (c.identity?.molecular_weight ? parseFloat(c.identity.molecular_weight) : null);
+    case 'Purity':
+      return c.purity_percentage ?? null;
+    case 'PubMed Citations':
+      return c.pubmed_citation_count ?? null;
+    case 'Clinical Trials':
+      return (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0);
+    case 'Reconstituted Shelf Life':
+      return c.reconstitution_shelf_days ?? c.handling?.reconstituted_days ?? null;
+    case 'Half-Life':
+      return parseHalfLifeHours(c.half_life);
+    default:
+      return null;
+  }
+}
+
+function renderRelativeDelta(rowLabel: string, c: Compound, control: Compound): React.ReactNode {
+  if (c.slug === control.slug) return null;
+  const currentVal = getNumericValue(rowLabel, c);
+  const controlVal = getNumericValue(rowLabel, control);
+  if (currentVal != null && controlVal != null) {
+    const diff = currentVal - controlVal;
+    if (diff === 0) return null;
+    const sign = diff > 0 ? '+' : '';
+    const color = diff > 0 ? '#68D391' : '#FFF';
+    let unit = '';
+    if (rowLabel === 'Molecular Weight') unit = ' Da';
+    else if (rowLabel === 'Purity') unit = '%';
+    else if (rowLabel === 'Half-Life') unit = 'h';
+    else if (rowLabel === 'Reconstituted Shelf Life') unit = ' Days';
+
+    return (
+      <div style={{ fontSize: '0.72rem', color, fontWeight: 700, marginTop: 4 }}>
+        {sign}{diff.toLocaleString()}{unit} vs Control
+      </div>
+    );
+  }
+  return null;
+}
+type PCSeverity = 'high' | 'medium' | 'low';
+interface PCItem { text: string; severity: PCSeverity; category: 'Evidence' | 'Safety' | 'Practical' | 'Science' }
+interface ProsCons { pros: PCItem[]; cons: PCItem[] }
+
+function generateProsCons(c: Compound): ProsCons {
+  const pros: PCItem[] = [];
+  const cons: PCItem[] = [];
+
+  // Evidence
+  if (c.evidence_tier === 'approved_drug') pros.push({ text: 'FDA/EMA Approved - highest possible regulatory evidence tier', severity: 'high', category: 'Evidence' });
+  else if (c.evidence_tier === 'investigational') pros.push({ text: 'Active human clinical trials underway - strong translational trajectory', severity: 'high', category: 'Evidence' });
+  else if (c.evidence_tier === 'preclinical') cons.push({ text: 'Preclinical evidence only (animal/in-vitro) - no human efficacy data yet', severity: 'high', category: 'Evidence' });
+
+  // Safety
+  if (c.risk_level === 'low') pros.push({ text: 'Low risk profile across available literature', severity: 'high', category: 'Safety' });
+  else if (c.risk_level === 'moderate') cons.push({ text: 'Moderate risk - protocol design should include careful handling parameters', severity: 'medium', category: 'Safety' });
+  else if (c.risk_level === 'high') cons.push({ text: 'High risk designation - significant adverse event considerations documented', severity: 'high', category: 'Safety' });
+  else if (c.risk_level === 'critical') cons.push({ text: 'Critical risk level - exercise extreme laboratory caution; detailed safety protocols required', severity: 'high', category: 'Safety' });
+
+  // Risk reasons (from compound data)
+  if (c.risk_reasons?.length) {
+    c.risk_reasons.slice(0, 2).forEach(r => cons.push({ text: r, severity: 'medium', category: 'Safety' }));
+  }
+
+
+
+  // Citations
+  const cites = c.pubmed_citation_count ?? 0;
+  if (cites >= 2000) pros.push({ text: `Exceptional peer-reviewed literature depth (${cites.toLocaleString()} PubMed citations)`, severity: 'high', category: 'Science' });
+  else if (cites >= 500) pros.push({ text: `Strong scientific literature base (${cites.toLocaleString()} PubMed citations)`, severity: 'medium', category: 'Science' });
+  else if (cites >= 100) pros.push({ text: `Moderate scientific literature (${cites.toLocaleString()} PubMed citations)`, severity: 'low', category: 'Science' });
+
+  // Clinical Trials
+  const active = c.active_trial_count ?? 0;
+  const completed = c.completed_trial_count ?? 0;
+  const trials = active + completed;
+  if (trials >= 20) pros.push({ text: `Extensive clinical trial history (${trials} total; ${active} active)`, severity: 'high', category: 'Science' });
+  else if (trials >= 5) pros.push({ text: `${trials} clinical trial${trials > 1 ? 's' : ''} on record (${active} active)`, severity: 'medium', category: 'Science' });
+  else if (trials > 0) pros.push({ text: `${trials} clinical trial${trials > 1 ? 's' : ''} registered`, severity: 'low', category: 'Science' });
+
+  // Half-life
+  const hlHours = parseHalfLifeHours(c.half_life);
+  if (hlHours >= 72) pros.push({ text: `Long half-life (${c.half_life}) enables infrequent administration intervals`, severity: 'medium', category: 'Practical' });
+  else if (hlHours >= 12) pros.push({ text: `Moderate half-life (${c.half_life}) - workable dosing window`, severity: 'low', category: 'Practical' });
+  else if (hlHours > 0 && hlHours < 1) cons.push({ text: `Very short half-life (${c.half_life}) - may require continuous infusion or frequent administration in research protocols`, severity: 'high', category: 'Practical' });
+  else if (hlHours > 0 && hlHours < 4) cons.push({ text: `Short half-life (${c.half_life}) - requires frequent administration scheduling`, severity: 'medium', category: 'Practical' });
+
+  // Shelf life
+  const shelf = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days;
+  if (shelf && shelf >= 30) pros.push({ text: `Good reconstituted shelf life (${shelf} days refrigerated) - reduced prep frequency`, severity: 'low', category: 'Practical' });
+  else if (shelf && shelf < 10) cons.push({ text: `Short post-reconstitution shelf life (${shelf} days) - requires frequent preparation`, severity: 'medium', category: 'Practical' });
+
+  // Temperature sensitivity
+  if (c.is_temp_sensitive) cons.push({ text: 'Temperature-sensitive - requires unbroken cold-chain during shipping and storage', severity: 'medium', category: 'Practical' });
+  else if (c.is_temp_sensitive === false) pros.push({ text: 'Temperature stable - does not require cold-chain transport/handling', severity: 'low', category: 'Practical' });
+
+  // Research breadth
+  const areaCount = (c.research_areas ?? []).length;
+  if (areaCount >= 6) pros.push({ text: `Exceptionally broad research scope - studied across ${areaCount} application areas`, severity: 'medium', category: 'Science' });
+  else if (areaCount >= 4) pros.push({ text: `Wide research coverage across ${areaCount} application areas`, severity: 'low', category: 'Science' });
+  else if (areaCount === 1) cons.push({ text: 'Narrow research scope - one primary application area limits versatility', severity: 'low', category: 'Science' });
+
+  // Stack benefits
+  if ((c.best_stacked_with ?? []).length >= 2) pros.push({ text: `Well-characterized stack compatibility: ${c.best_stacked_with!.slice(0, 3).join(', ')}`, severity: 'low', category: 'Practical' });
+
+  // Stack compound note
+  if (c.is_stack && c.stack_components?.length) pros.push({ text: `Pre-formulated stack - combines ${c.stack_components.slice(0, 3).join(' + ')}${c.stack_components.length > 3 ? ` +${c.stack_components.length - 3} more` : ''} for convenience`, severity: 'medium', category: 'Practical' });
+
+  // Specific & dynamic pros based on compound properties
+  if (c.is_stack) pros.push({ text: 'Pre-formulated stack - combines components for maximum convenience', severity: 'medium', category: 'Practical' });
+  if (c.purity_percentage && c.purity_percentage >= 98) pros.push({ text: `Verified purity - tested at ${c.purity_percentage}%`, severity: 'high', category: 'Practical' });
+  if (c.studied_for && c.studied_for.length > 0) {
+    c.studied_for.slice(0, 3).forEach(item => {
+      pros.push({ text: `Studied for ${item.toLowerCase()}`, severity: 'medium', category: 'Evidence' });
+    });
+  }
+
+  return { pros, cons };
+}
+
+// ─── ANALYST BRIEF GENERATOR ──────────────────────────────────────────────────────
+function generateAnalystBrief(selected: Compound[], scores: CompoundScore[]): string[] {
+  if (selected.length < 2) return [];
+  const paragraphs: string[] = [];
+
+  const ranked = [...selected].map((c, i) => ({ c, s: scores[i] })).sort((a, b) => b.s.total - a.s.total);
+  const leader = ranked[0];
