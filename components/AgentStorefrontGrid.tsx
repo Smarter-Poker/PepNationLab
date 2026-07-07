@@ -18,6 +18,7 @@ import DynamicDetailButton from './storefront/DynamicDetailButton';
 import { evidenceTier, EVIDENCE_TIER, RISK_META, intranasalDisplay, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
+import GuestAuthModal from '@/components/GuestAuthModal';
 import { toast } from 'sonner';
 import { writeCatalogCache, isCatalogCacheFresh, readCatalogCache, CATALOG_TTL_MS, evictCatalogCache } from '@/lib/storefront-cache';
 import { createClient } from '@/lib/supabase/client';
@@ -263,6 +264,10 @@ export default function AgentStorefrontGrid({
 }: Props) {
   const [mounted, setMounted] = useState(false);
   const [showStoreGrid, setShowStoreGrid] = useState(true);
+  // When a logged-out visitor tries a member-only action (e.g. saving to their
+  // wishlist), the API returns 401. Instead of silently failing, we surface the
+  // sign-in / create-account modal so that guest interest converts to a signup.
+  const [guestModalFeature, setGuestModalFeature] = useState<string | null>(null);
 
   // These three state declarations must live before any callbacks that reference
   // their setters (closeGrid calls setFilterArea, setFilterCategory, setSearchQuery).
@@ -325,6 +330,8 @@ export default function AgentStorefrontGrid({
           else next.add(productId);
           return next;
         });
+        // Guests get 401 here -- convert the intent into a signup prompt.
+        if (res.status === 401) setGuestModalFeature('Save To Your Wishlist');
       }
     } catch {
       setWishlist(prev => {
@@ -4014,6 +4021,14 @@ export default function AgentStorefrontGrid({
           );
         })()}
       </AnimatePresence>
+
+      {/* Guest conversion: shown when a logged-out visitor tries a member-only
+          action (e.g. saving to wishlist). Prompts sign in / create account. */}
+      <GuestAuthModal
+        open={guestModalFeature !== null}
+        onClose={() => setGuestModalFeature(null)}
+        featureLabel={guestModalFeature ?? 'This Feature'}
+      />
     </div>
   );
 }
