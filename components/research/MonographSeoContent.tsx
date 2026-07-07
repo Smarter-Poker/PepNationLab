@@ -20,6 +20,7 @@
 
 import type { Compound } from '@/lib/compounds';
 import { EVIDENCE_TIER } from '@/lib/compounds';
+import { getGuidesForCategory } from '@/lib/research/guides';
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   if (value === null || value === undefined || value === '') return null;
@@ -70,6 +71,7 @@ export default function MonographSeoContent({ compound }: { compound: Compound }
   const sequence = compound.sequence_one_letter ?? compound.identity?.sequence ?? null;
   const casNumber = compound.identity?.cas ?? null;
   const routes = (compound.route_of_admin ?? []).filter(Boolean).join(', ') || null;
+  const relatedGuides = getGuidesForCategory(compound.category);
 
   // Answer-first definition: a single, self-contained sentence that AI answer
   // engines and featured snippets extract before longer prose. Composed only
@@ -206,6 +208,19 @@ export default function MonographSeoContent({ compound }: { compound: Compound }
         <section style={{ margin: '0 0 20px' }}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 8px' }}>Regulatory Status</h2>
           <p style={{ margin: 0, lineHeight: 1.6 }}>{compound.regulatory}</p>
+        </section>
+      )}
+
+      {relatedGuides.length > 0 && (
+        <section style={{ margin: '0 0 20px' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 8px' }}>Related Research Guides</h2>
+          <ul style={{ margin: 0, paddingLeft: '1.2rem', lineHeight: 1.7 }}>
+            {relatedGuides.map((g) => (
+              <li key={g.slug}>
+                <a href={`/research/guides/${g.slug}`} style={{ color: 'var(--teal, #00C4BC)' }}>{g.title}</a>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
