@@ -86,7 +86,7 @@ function FocusRowModal({ row, selected, maxHalfLife, controlCompound, topPickSlu
   );
 }
 
-// ─── Animated Score Ring ────────────────────────────────────────────────────────
+// ─── Animated Score Ring ──────────────────────────────────────────────────────
 function AnimatedScoreRing({ score, color }: { score: CompoundScore; color: string }) {
   const [displayPct, setDisplayPct] = useState(0);
   const rafRef = useRef<number>(0);
@@ -167,7 +167,7 @@ function AnimatedScoreRing({ score, color }: { score: CompoundScore; color: stri
   );
 }
 
-// ─── Pros/Cons Card ───────────────────────────────────────────────────────────────────
+// ─── Pros/Cons Card ───────────────────────────────────────────────────────────
 function ProsConsCard({ pc }: { pc: ProsCons }) {
   const [expanded, setExpanded] = useState(false);
   const MAX_SHOWN = 4;
@@ -202,7 +202,7 @@ function ProsConsCard({ pc }: { pc: ProsCons }) {
   );
 }
 
-// ─── Efficacy Scores Heatmap ──────────────────────────────────────────────────────
+// ─── Efficacy Scores Heatmap ──────────────────────────────────────────────────
 function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
   const allKeys = [...new Set(selected.flatMap(c => Object.keys(c.efficacy_scores ?? {})))];
   if (!allKeys.length) return null;
@@ -261,7 +261,7 @@ function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
   );
 }
 
-// ─── Recommendation Card ───────────────────────────────────────────────────────────────
+// ─── Recommendation Card ──────────────────────────────────────────────────────
 function RecommendationCard({ rec, label, icon, color }: { rec: { compound: Compound; score: CompoundScore; reason: string; secondaryLabel: string }; label: string; icon: React.ReactNode; color: string }) {
   const textColor = (color === '#00C4BC' || color === '#FC8181') ? '#FFF' : color;
   return (
@@ -303,7 +303,7 @@ function RecommendationCard({ rec, label, icon, color }: { rec: { compound: Comp
   );
 }
 
-// ─── Mechanism Tab ────────────────────────────────────────────────────────────────────
+// ─── Mechanism Tab ────────────────────────────────────────────────────────────
 function MechanismTab({ selected }: { selected: Compound[] }) {
   const [modalUrl, setModalUrl] = useState<string | null>(null);
   return (
