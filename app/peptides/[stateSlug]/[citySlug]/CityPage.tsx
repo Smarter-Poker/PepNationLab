@@ -209,7 +209,8 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
         <section style={{ position: 'relative', minHeight: 'clamp(640px, 95vh, 980px)', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
           {/* BG image */}
           <Image src="/images/city-hero-peptide.jpg" alt="3D peptide helix" fill priority
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1400px" quality={60}
+            fetchPriority="high"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1400px" quality={45}
             style={{ objectFit: 'cover', objectPosition: 'center right', opacity: 0.75 }} />
           {/* Left gradient overlay */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, var(--black) 35%, rgba(5,10,15,0.6) 65%, transparent 100%)', zIndex: 1 }} />
