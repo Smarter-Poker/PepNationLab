@@ -14,6 +14,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { CITIES, getCity, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
 import { getStoreTop10 } from '@/lib/cities/top10-server';
+import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import CityPage from './CityPage';
 
 // ISR: regenerate each city page at most every 5 minutes so the Top 10 grid
@@ -21,7 +22,7 @@ import CityPage from './CityPage';
 // without a redeploy.
 export const revalidate = 300;
 
-// ─── Static params (build-time pre-rendering) ─────────────────────────
+// ─── Static params (build-time pre-rendering) ─────────────────────
 export async function generateStaticParams() {
   return CITIES.map((city) => ({
     stateSlug: city.stateSlug,
@@ -29,7 +30,7 @@ export async function generateStaticParams() {
   }));
 }
 
-// ─── Per-city metadata ────────────────────────────────────────────────────
+// ─── Per-city metadata ──────────────────────────────────────────────────
 export async function generateMetadata({
   params,
 }: {
@@ -122,6 +123,11 @@ export default async function CityLandingPage({
         areaServed: {
           '@type': 'City',
           name: city.name,
+          // Entity disambiguation: ties this City node to its Wikipedia
+          // entry so search engines resolve the exact municipality.
+          sameAs: encodeURI(
+            `https://en.wikipedia.org/wiki/${city.name.replace(/ /g, '_')},_${city.state.replace(/ /g, '_')}`
+          ),
           containedInPlace: {
             '@type': 'State',
             name: city.state,
@@ -132,6 +138,23 @@ export default async function CityLandingPage({
           audienceType: 'Qualified Researchers And Scientific Institutions',
         },
       },
+      // Top 10 compounds rendered on this page — mirrors the live storefront,
+      // gives crawlers and answer engines an enumerable product list.
+      ...(top10.length > 0
+        ? [
+            {
+              '@type': 'ItemList',
+              name: `Top 10 Research Compounds — ${city.name}, ${city.stateAbbr}`,
+              numberOfItems: top10.length,
+              itemListElement: top10.map((p, i) => ({
+                '@type': 'ListItem',
+                position: i + 1,
+                name: p.subtitle ? `${p.name} (${p.subtitle})` : p.name,
+                url: `https://pepnationlab.com/${DEFAULT_STORE_SLUG}?product=${p.productId}`,
+              })),
+            },
+          ]
+        : []),
       {
         '@type': 'WebPage',
         '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
