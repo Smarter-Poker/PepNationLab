@@ -1,9 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 import DisclaimerGate from './DisclaimerGate';
 import { isDisclaimerAccepted, recordDisclaimerAcceptance } from '@/lib/disclaimer-client';
+
+// Acceptance lives in localStorage (an external store), so we read it with
+// useSyncExternalStore: the server snapshot reports "accepted" (children
+// render, no gate in SSR HTML), and after hydration the real client snapshot
+// takes over. Re-reads are triggered by the custom acceptance event (same
+// tab) and the storage event (other tabs).
+const ACCEPTED_EVENT = 'pnl-disclaimer-accepted';
+
+function subscribeToAcceptance(callback: () => void) {
+  window.addEventListener(ACCEPTED_EVENT, callback);
+  window.addEventListener('storage', callback);
+  return () => {
+    window.removeEventListener(ACCEPTED_EVENT, callback);
+    window.removeEventListener('storage', callback);
+  };
+}
 
 /**
  * Layer 1 of the mandatory 4-layer research-only disclaimer.

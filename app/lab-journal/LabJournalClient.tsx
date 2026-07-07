@@ -549,6 +549,16 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       csv += `Comparison,${new Date(c.created_at).toLocaleDateString()},"Folder: ${(c.folder_name || 'Unsorted').replace(/"/g, '""')} | Items: ${c.product_ids.join(', ')}","${(c.notes || '').replace(/"/g, '""')}"\n`;
     });
 
+    // Add Doses
+    doses.forEach(d => {
+      csv += `Dose,${new Date(d.dosed_at).toLocaleString()},"${String(d.compound_slug || '').replace(/"/g, '""')}","${d.dose_amount} ${d.unit}${d.injection_site ? ` | Site: ${d.injection_site}` : ''}${d.notes ? ` | ${String(d.notes).replace(/"/g, '""')}` : ''}"\n`;
+    });
+
+    // Add Biometrics
+    biometrics.forEach(b => {
+      csv += `Biometric,${new Date(b.measured_at).toLocaleString()},"${String(b.metric_name || '').replace(/"/g, '""')}","${b.metric_value} ${b.unit || ''}"\n`;
+    });
+
     // Add Inventory
     Object.entries(inventoryData).forEach(([pid, data]) => {
       const item = [...favorites, ...pastOrders, ...recentlyViewed, ...catalog].find(i => i.product_id === pid);
@@ -1772,13 +1782,48 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                 </div>
 
               ) : activeTab === 'doses' ? (
-                <div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+<div>
+                  {/* Stat Cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+                    <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                      <div style={{ width: 72, height: 72, position: 'relative', flexShrink: 0 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadialBarChart innerRadius="70%" outerRadius="100%" data={[{ v: doseStats.adherence ?? 0, fill: 'var(--teal)' }]} startAngle={90} endAngle={-270}>
+                            <RadialBar background={{ fill: 'rgba(255,255,255,0.08)' }} dataKey="v" cornerRadius={20} />
+                          </RadialBarChart>
+                        </ResponsiveContainer>
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--white)', fontWeight: 800, fontSize: '1rem' }}>
+                          {doseStats.adherence != null ? `${doseStats.adherence}%` : '--'}
+                        </div>
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ color: 'var(--silver)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Adherence 30D</div>
+                        <div style={{ color: 'var(--white)', fontSize: '0.85rem', marginTop: 4 }}>{doseStats.adherence != null ? `${doseStats.last30} Of ~${doseStats.expected30} Planned` : 'Add A Protocol'}</div>
+                      </div>
+                    </div>
+                    {statCard('Current Streak', <span>{doseStats.streak}<span style={{ fontSize: '0.9rem', color: 'var(--silver)', fontWeight: 400 }}> Days</span></span>, doseStats.streak > 0 ? 'Keep It Going' : 'Log Today To Start', Flame, '#F6AD55')}
+                    {statCard('Active Compounds', doseStats.activeCompounds, 'Being Tracked', Beaker)}
+                    {statCard('Doses This Week', doseStats.last7, `${doseStats.total} All Time`, Syringe)}
+                  </div>
+
+                  <div className="dose-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
                     <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
-                      <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)' }}>Log a Dose</h2>
+                      <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 8 }}><Syringe size={20} style={{ color: 'var(--teal)' }} /> Log A Dose</h2>
+
+                      {doses.length > 0 && (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 'var(--space-4)' }}>
+                          <span style={{ color: 'var(--silver)', fontSize: '0.8rem', alignSelf: 'center' }}>Quick Repeat:</span>
+                          {Array.from(new Map(doses.map(d => [d.compound_slug, d])).values()).slice(0, 4).map((d: any) => (
+                            <button key={d.id} onClick={() => repeatLastDose(d)} disabled={doseSaving} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.25)', color: 'var(--teal)', padding: '5px 12px', borderRadius: 999, fontSize: '0.8rem', cursor: 'pointer' }}>
+                              <Repeat size={12} /> {d.compound_slug} {d.dose_amount}{d.unit}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
                       <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <select 
-                          value={doseCompound} 
+                        <select
+                          value={doseCompound}
                           onChange={e => {
                             const cmp = e.target.value;
                             setDoseCompound(cmp);
@@ -1790,76 +1835,157 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                               setDoseAmount('');
                             }
                           }}
-                          style={{ flex: 1, minWidth: 200, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                          style={{ flex: 1, minWidth: 180, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
                         >
                           <option value="">Select Compound</option>
                           {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => i.name).map(i => i.name))).map(slug => (
                             <option key={slug as string} value={slug as string}>{slug}</option>
                           ))}
                         </select>
-                        <input 
-                          type="number" 
-                          placeholder="Amount" 
-                          value={doseAmount} 
+                        <input
+                          type="number"
+                          placeholder="Amount"
+                          value={doseAmount}
                           onChange={e => setDoseAmount(e.target.value)}
-                          style={{ width: 120, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                          style={{ width: 110, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
                         />
-                        <select 
-                          value={doseUnit} 
+                        <select
+                          value={doseUnit}
                           onChange={e => setDoseUnit(e.target.value)}
-                          style={{ width: 100, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                          style={{ width: 90, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
                         >
                           <option value="mcg">mcg</option>
                           <option value="mg">mg</option>
                           <option value="iu">IU</option>
                           <option value="ml">ml</option>
                         </select>
-                        <button onClick={saveDose} disabled={!doseCompound || !doseAmount || doseSaving || !selectedSite} className="btn btn-primary" style={{ padding: '12px 24px', borderRadius: 8, flexGrow: 1 }}>
-                          {doseSaving ? 'Saving...' : 'Log'}
-                        </button>
                       </div>
-                      {!selectedSite && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginTop: 8 }}>* Please select an injection site from the visualizer to log a dose.</div>}
-                      
-                      <h3 style={{ color: 'var(--white)', marginTop: 'var(--space-6)' }}>Protocol Correlation Graph</h3>
-                      {biometrics.length > 0 
-                         ? Array.from(new Set(biometrics.map(b => b.metric_name))).map(metric => renderCombinedChart(metric))
-                         : renderCombinedChart('Doses Only')}
+                      <input
+                        type="text"
+                        placeholder="Optional Note (Site Soreness, Timing, Context)"
+                        value={doseNote}
+                        onChange={e => setDoseNote(e.target.value)}
+                        style={{ width: '100%', marginTop: 'var(--space-3)', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 12px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }}
+                      />
+                      <button onClick={saveDose} disabled={!doseCompound || !doseAmount || doseSaving || !selectedSite} className="btn btn-primary" style={{ width: '100%', marginTop: 'var(--space-3)', padding: '12px 24px', borderRadius: 8 }}>
+                        {doseSaving ? 'Saving...' : selectedSite ? `Log Dose To ${selectedSite.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}` : 'Log Dose'}
+                      </button>
+                      {!selectedSite && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}><MapPin size={14} /> Select An Injection Site To Log A Dose.</div>}
                     </div>
 
                     <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
-                      <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)', textAlign: 'center' }}>Injection Site Rotation</h3>
-                      <div style={{ position: 'relative', width: 200, height: 350, background: 'rgba(255,255,255,0.02)', borderRadius: 12, margin: '0 auto', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                          <path d="M50 5 a8 8 0 1 0 0 16 a8 8 0 1 0 0 -16 z M30 25 q20 -10 40 0 l10 30 l-10 -5 l-10 45 l-10 0 l0 -30 l0 30 l-10 0 l-10 -45 l-10 5 z" fill="rgba(0,196,188,0.05)" stroke="rgba(0,196,188,0.3)" strokeWidth="1" vectorEffect="non-scaling-stroke"/>
-                        </svg>
-                        {[
-                          { id: 'left_arm', x: 25, y: 35, label: 'L Arm' }, { id: 'right_arm', x: 75, y: 35, label: 'R Arm' },
-                          { id: 'left_abdomen', x: 40, y: 50, label: 'L Abdomen' }, { id: 'right_abdomen', x: 60, y: 50, label: 'R Abdomen' },
-                          { id: 'left_thigh', x: 35, y: 75, label: 'L Thigh' }, { id: 'right_thigh', x: 65, y: 75, label: 'R Thigh' },
-                          { id: 'left_glute', x: 40, y: 65, label: 'L Glute (Back)' }, { id: 'right_glute', x: 60, y: 65, label: 'R Glute (Back)' }
-                        ].map(site => {
-                          const lastUsed = computedInjectionSites[site.id];
-                          const daysSince = lastUsed ? (Date.now() - lastUsed) / 86400000 : Infinity;
-                          let color = 'rgba(255,255,255,0.3)';
-                          if (daysSince < 2) color = 'var(--red)';
-                          else if (daysSince < 5) color = '#eab308';
-                          else if (lastUsed) color = 'var(--teal)';
-                          return (
-                            <div key={site.id} onClick={() => { setSelectedSite(site.id); logInjectionSite(site.id); }} style={{ position: 'absolute', left: `${site.x}%`, top: `${site.y}%`, transform: 'translate(-50%, -50%)', width: 16, height: 16, borderRadius: '50%', background: color, border: selectedSite === site.id ? '2px solid white' : '1px solid rgba(0,0,0,0.5)', cursor: 'pointer', boxShadow: '0 0 10px rgba(0,0,0,0.5)', transition: 'all 0.2s' }} title={`${site.label} ${lastUsed ? `(${Math.round(daysSince)} days ago)` : '(Never)'}`} />
-                          );
-                        })}
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 16, fontSize: '0.75rem', color: 'var(--silver)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red)' }}/> &lt;2d</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: '#eab308' }}/> 2-5d</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)' }}/> &gt;5d</div>
-                      </div>
-                      {selectedSite && <div style={{ textAlign: 'center', marginTop: 12, color: 'var(--white)', fontWeight: 'bold' }}>Selected: {selectedSite.replace('_', ' ').toUpperCase()}</div>}
+                      <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-3)', textAlign: 'center', fontSize: '1rem' }}>Injection Site Rotation</h3>
+                      {(() => {
+                        const SITES = [
+                          { id: 'left_arm', x: 25, y: 33, label: 'L Arm' }, { id: 'right_arm', x: 75, y: 33, label: 'R Arm' },
+                          { id: 'left_abdomen', x: 41, y: 50, label: 'L Abdomen' }, { id: 'right_abdomen', x: 59, y: 50, label: 'R Abdomen' },
+                          { id: 'left_glute', x: 41, y: 63, label: 'L Glute' }, { id: 'right_glute', x: 59, y: 63, label: 'R Glute' },
+                          { id: 'left_thigh', x: 43, y: 78, label: 'L Thigh' }, { id: 'right_thigh', x: 57, y: 78, label: 'R Thigh' },
+                        ];
+                        const suggestion = [...SITES].sort((a, b) => {
+                          const la = computedInjectionSites[a.id] || 0;
+                          const lb = computedInjectionSites[b.id] || 0;
+                          return la - lb;
+                        })[0];
+                        return (
+                          <>
+                            <div style={{ position: 'relative', width: 190, height: 340, background: 'radial-gradient(circle at 50% 30%, rgba(0,196,188,0.04), transparent)', borderRadius: 12, margin: '0 auto', border: '1px solid rgba(255,255,255,0.05)' }}>
+                              <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                <path d="M50 5 a8 8 0 1 0 0 16 a8 8 0 1 0 0 -16 z M30 25 q20 -10 40 0 l10 30 l-10 -5 l-10 45 l-10 0 l0 -30 l0 30 l-10 0 l-10 -45 l-10 5 z" fill="rgba(0,196,188,0.05)" stroke="rgba(0,196,188,0.3)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                              </svg>
+                              {SITES.map(site => {
+                                const lastUsed = computedInjectionSites[site.id];
+                                const daysSince = lastUsed ? (Date.now() - lastUsed) / 86400000 : Infinity;
+                                let color = 'rgba(0,196,188,0.9)';
+                                if (daysSince < 2) color = 'var(--red)';
+                                else if (daysSince < 5) color = '#eab308';
+                                const isSel = selectedSite === site.id;
+                                const isSuggested = suggestion && site.id === suggestion.id && daysSince >= 5;
+                                return (
+                                  <div key={site.id} onClick={() => { setSelectedSite(site.id); logInjectionSite(site.id); }} style={{ position: 'absolute', left: `${site.x}%`, top: `${site.y}%`, transform: 'translate(-50%, -50%)', width: isSel ? 20 : 15, height: isSel ? 20 : 15, borderRadius: '50%', background: color, border: isSel ? '2px solid white' : '1px solid rgba(0,0,0,0.5)', cursor: 'pointer', boxShadow: isSuggested ? '0 0 0 4px rgba(0,196,188,0.25)' : '0 0 8px rgba(0,0,0,0.5)', transition: 'all 0.2s' }} title={`${site.label} ${lastUsed ? `(${Math.round(daysSince)}d ago)` : '(Never Used)'}`} />
+                                );
+                              })}
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 12, fontSize: '0.72rem', color: 'var(--silver)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red)' }} /> &lt;2d</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: '#eab308' }} /> 2-5d</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)' }} /> Ready</div>
+                            </div>
+                            {suggestion && (
+                              <div style={{ textAlign: 'center', marginTop: 10, color: 'var(--teal)', fontSize: '0.8rem' }}>
+                                Suggested Next: <strong>{suggestion.label}</strong>
+                                {computedInjectionSites[suggestion.id] ? ` (${Math.round((Date.now() - computedInjectionSites[suggestion.id]) / 86400000)}d Rest)` : ' (Never Used)'}
+                              </div>
+                            )}
+                            {selectedSite && <div style={{ textAlign: 'center', marginTop: 8, color: 'var(--white)', fontWeight: 700, fontSize: '0.85rem' }}>Selected: {selectedSite.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</div>}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
 
+                  {/* Active In System curve */}
                   <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
-                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>Protocol Scheduler</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 'var(--space-2)' }}>
+                      <h3 style={{ color: 'var(--white)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Activity size={18} style={{ color: 'var(--teal)' }} /> Estimated Concentration Model</h3>
+                      {rangeSwitcher(doseRange, setDoseRange)}
+                    </div>
+                    <p style={{ color: 'var(--silver)', fontSize: '0.8rem', marginTop: 0, marginBottom: 'var(--space-4)' }}>Informational Half-Life Decay Estimate, Normalized Per Compound To Its Own Peak. Dashed Region Is Projected.</p>
+                    {activeInSystem.data.length > 0 ? (
+                      <div style={{ width: '100%', height: 320 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={activeInSystem.data} margin={{ top: 10, right: 8, left: -20, bottom: 0 }}>
+                            <defs>
+                              {activeInSystem.compounds.map((c, i) => (
+                                <linearGradient key={c} id={`ais-${i}`} x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.35} />
+                                  <stop offset="100%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.02} />
+                                </linearGradient>
+                              ))}
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                            <XAxis dataKey="label" stroke="rgba(255,255,255,0.3)" tick={{ fill: 'var(--silver)', fontSize: 10 }} tickLine={false} axisLine={false} minTickGap={28} />
+                            <YAxis stroke="rgba(255,255,255,0.3)" tick={{ fill: 'var(--silver)', fontSize: 10 }} tickLine={false} axisLine={false} domain={[0, 100]} unit="%" />
+                            <RechartsTooltip contentStyle={{ backgroundColor: '#1A202C', borderColor: 'rgba(255,255,255,0.1)', borderRadius: 8 }} itemStyle={{ fontSize: '0.8rem' }} labelStyle={{ color: 'var(--silver)' }} />
+                            <Legend wrapperStyle={{ fontSize: '0.8rem' }} />
+                            <ReferenceLine x={new Date().toLocaleDateString([], { month: 'short', day: 'numeric' })} stroke="rgba(255,255,255,0.35)" strokeDasharray="4 4" label={{ value: 'Now', fill: 'var(--silver)', fontSize: 10, position: 'top' }} />
+                            {activeInSystem.compounds.map((c, i) => (
+                              <Area key={c} type="monotone" dataKey={c} name={c} stroke={CHART_COLORS[i % CHART_COLORS.length]} strokeWidth={2} fill={`url(#ais-${i})`} dot={false} />
+                            ))}
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : <div style={{ color: 'var(--silver)', padding: 'var(--space-4)' }}>Log Doses To See Your Estimated Concentration Curve.</div>}
+                  </div>
+
+                  {/* Dose Calendar Heatmap */}
+                  <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)', overflowX: 'auto' }}>
+                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 8 }}><Calendar size={18} style={{ color: 'var(--teal)' }} /> Consistency Calendar</h3>
+                    <div style={{ display: 'flex', gap: 4, minWidth: 'fit-content' }}>
+                      {calendarWeeks.map((week, wi) => (
+                        <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {week.map(day => {
+                            const isFuture = day.date.getTime() > Date.now();
+                            let bg = 'rgba(255,255,255,0.05)';
+                            if (!isFuture && day.count === 1) bg = 'rgba(0,196,188,0.45)';
+                            else if (!isFuture && day.count >= 2) bg = 'var(--teal)';
+                            return <div key={day.key} title={`${day.date.toLocaleDateString()} — ${day.count} Dose${day.count === 1 ? '' : 's'}`} style={{ width: 14, height: 14, borderRadius: 3, background: bg, opacity: isFuture ? 0.25 : 1 }} />;
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, fontSize: '0.72rem', color: 'var(--silver)' }}>
+                      Less
+                      <div style={{ width: 12, height: 12, borderRadius: 3, background: 'rgba(255,255,255,0.05)' }} />
+                      <div style={{ width: 12, height: 12, borderRadius: 3, background: 'rgba(0,196,188,0.45)' }} />
+                      <div style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--teal)' }} />
+                      More
+                    </div>
+                  </div>
+
+                  {/* Protocol Scheduler */}
+                  <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
+                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 8 }}><Clock size={18} style={{ color: 'var(--teal)' }} /> Protocol Scheduler</h3>
                     <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
                       <select value={scheduleCompound} onChange={e => setScheduleCompound(e.target.value)} style={{ flex: 1, minWidth: 200, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }}>
                         <option value="">Select Compound</option>
@@ -1869,77 +1995,117 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                       <select value={scheduleUnit} onChange={e => setScheduleUnit(e.target.value)} style={{ width: 90, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }}>
                         <option value="mcg">mcg</option><option value="mg">mg</option><option value="iu">IU</option><option value="ml">ml</option>
                       </select>
-                      <select value={scheduleFrequency} onChange={e => setScheduleFrequency(e.target.value)} style={{ width: 140, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }}>
+                      <select value={scheduleFrequency} onChange={e => setScheduleFrequency(e.target.value)} style={{ width: 150, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }}>
                         <option value="Every Day">Every Day</option><option value="Every Other Day">Every Other Day</option><option value="5 Days On, 2 Off">5 Days On, 2 Off</option><option value="Once Weekly">Once Weekly</option><option value="Twice Weekly">Twice Weekly</option>
                       </select>
                       <button onClick={addScheduledDose} disabled={!scheduleCompound || !scheduleAmount} className="btn btn-secondary" style={{ padding: '12px 24px', borderRadius: 8 }}>Add Schedule</button>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 'var(--space-3)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 'var(--space-3)' }}>
                       {scheduledDoses.map(s => (
                         <div key={s.id} style={{ background: 'rgba(255,255,255,0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', position: 'relative' }}>
-                          <button onClick={() => deleteScheduledDose(s.id)} style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer' }}><X size={16}/></button>
-                          <div style={{ color: 'var(--teal)', fontWeight: 'bold' }}>{s.compound}</div>
+                          <button onClick={() => deleteScheduledDose(s.id)} style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer' }}><X size={16} /></button>
+                          <div style={{ color: 'var(--teal)', fontWeight: 700 }}>{s.compound_slug || s.compound}</div>
                           <div style={{ color: 'var(--white)' }}>{s.amount} {s.unit}</div>
-                          <div style={{ color: 'var(--silver)', fontSize: '0.85rem', marginTop: 4 }}><Layers size={12} style={{ display: 'inline', marginRight: 4 }}/>{s.frequency}</div>
+                          <div style={{ color: 'var(--silver)', fontSize: '0.85rem', marginTop: 4 }}><Clock size={12} style={{ display: 'inline', marginRight: 4 }} />{s.frequency}</div>
                         </div>
                       ))}
-                      {scheduledDoses.length === 0 && <div style={{ color: 'var(--silver)' }}>No scheduled protocols yet.</div>}
+                      {scheduledDoses.length === 0 && <div style={{ color: 'var(--silver)' }}>No Scheduled Protocols Yet. Add One To Track Adherence.</div>}
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                    <h3 style={{ color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>Recent History</h3>
-                    {doses.map(d => (
-                      <div key={d.id} className="glass-panel" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  {/* Reconstitution Calculator (moved from Inventory) */}
+                  <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)', display: 'flex', flexWrap: 'wrap', gap: 'var(--space-6)' }}>
+                    <div style={{ flex: '1 1 300px' }}>
+                      <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 8 }}><Beaker size={18} style={{ color: 'var(--teal)' }} /> Reconstitution Calculator</h3>
+                      <p style={{ color: 'var(--silver)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>Calculate Your Syringe Pull Based On Vial Size And Bac Water Added.</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                         <div>
-                          <div style={{ color: 'var(--teal)', fontWeight: 'bold' }}>{d.compound_slug}</div>
-                          <div style={{ color: 'var(--white)' }}>{d.dose_amount} {d.unit}</div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Vial Size (mg)</label>
+                          <input type="number" value={reconMg} onChange={e => setReconMg(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                          <div style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>
-                            {new Date(d.dosed_at).toLocaleDateString()} at {new Date(d.dosed_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Bac Water (ml)</label>
+                          <input type="number" value={reconMl} onChange={e => setReconMl(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
+                        </div>
+                        <div style={{ gridColumn: '1 / -1' }}>
+                          <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Desired Dose (mcg)</label>
+                          <input type="number" value={reconDose} onChange={e => setReconDose(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: 6, color: 'var(--white)' }} />
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,196,188,0.05)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(0,196,188,0.2)', padding: 'var(--space-4)' }}>
+                      <div style={{ color: 'var(--silver)', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.1em', marginBottom: 8 }}>Pull Syringe To</div>
+                      <div style={{ color: 'var(--teal)', fontSize: '3rem', fontWeight: 800, lineHeight: 1, textShadow: '0 0 20px rgba(0,196,188,0.3)' }}>
+                        {(() => {
+                          const mg = parseFloat(reconMg); const ml = parseFloat(reconMl); const dose = parseFloat(reconDose);
+                          if (!mg || !ml || !dose) return '0.0';
+                          return ((dose * ml * 100) / (mg * 1000)).toFixed(1);
+                        })()}
+                      </div>
+                      <div style={{ color: 'var(--white)', fontSize: '1.2rem', marginTop: 4 }}>Units (IU)</div>
+                      <div style={{ color: 'var(--silver)', fontSize: '0.7rem', marginTop: 8, opacity: 0.6 }}>*Assuming Standard U-100 Syringe</div>
+                    </div>
+                  </div>
+
+                  {/* Recent History */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-1)', display: 'flex', alignItems: 'center', gap: 8 }}><History size={18} style={{ color: 'var(--teal)' }} /> Recent History</h3>
+                    {doses.slice(0, 40).map(d => (
+                      <div key={d.id} className="glass-panel" style={{ padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ color: 'var(--teal)', fontWeight: 700 }}>{d.compound_slug}</div>
+                          <div style={{ color: 'var(--white)', fontSize: '0.95rem' }}>{d.dose_amount} {d.unit}
+                            {d.injection_site && <span style={{ color: 'var(--silver)', fontSize: '0.8rem' }}> · {String(d.injection_site).replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}</span>}
                           </div>
-                          <button onClick={() => deleteDose(d.id)} className="btn btn-ghost btn-sm" style={{ padding: 4, color: 'var(--red)' }}><Trash2 size={16}/></button>
+                          {d.notes && <div style={{ color: 'var(--silver)', fontSize: '0.78rem', marginTop: 2, fontStyle: 'italic' }}>{d.notes}</div>}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexShrink: 0 }}>
+                          <div style={{ color: 'var(--silver)', fontSize: '0.82rem', textAlign: 'right' }}>
+                            {new Date(d.dosed_at).toLocaleDateString()}<br />{new Date(d.dosed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                          <button onClick={() => deleteDose(d.id)} className="btn btn-ghost btn-sm" style={{ padding: 4, color: 'var(--red)' }}><Trash2 size={16} /></button>
                         </div>
                       </div>
                     ))}
-                    {doses.length === 0 && <div style={{ color: 'var(--silver)' }}>No doses logged yet.</div>}
+                    {doses.length === 0 && <div style={{ color: 'var(--silver)' }}>No Doses Logged Yet.</div>}
                   </div>
                 </div>
 
               ) : activeTab === 'biometrics' ? (
-                <div>
+<div>
+                  {/* Quick Log */}
                   <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
-                    <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)' }}>Log Biometrics</h2>
-                    <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
-                      <select 
-                        value={bioName} 
-                        onChange={e => {
-                          setBioName(e.target.value);
-                          if (e.target.value === 'Weight') setBioUnit('lbs');
-                          else if (e.target.value === 'Sleep Quality' || e.target.value === 'Pain Level') setBioUnit('/10');
-                          else setBioUnit('');
-                        }}
-                        style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
-                      >
-                        <option value="">Select Metric</option>
-                        <option value="Weight">Weight</option>
-                        <option value="Sleep Quality">Sleep Quality (1-10)</option>
-                        <option value="Pain Level">Pain Level (1-10)</option>
-                        <option value="Blood Pressure">Blood Pressure</option>
-                        <option value="Body Fat %">Body Fat %</option>
-                      </select>
-                      <input 
-                        type="number" 
-                        placeholder="Value" 
-                        value={bioValue} 
+                    <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 8 }}><Activity size={20} style={{ color: 'var(--teal)' }} /> Log Biometrics</h2>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 'var(--space-4)' }}>
+                      {BIOMETRIC_PRESETS.map(p => {
+                        const active = bioName === p.name;
+                        const PIcon = p.icon;
+                        return (
+                          <button key={p.name} onClick={() => { setBioName(p.name); setBioUnit(p.unit); }} style={{ display: 'flex', alignItems: 'center', gap: 6, background: active ? 'var(--teal)' : 'rgba(255,255,255,0.04)', color: active ? 'var(--black)' : 'var(--silver)', border: `1px solid ${active ? 'var(--teal)' : 'rgba(255,255,255,0.1)'}`, padding: '6px 12px', borderRadius: 999, fontSize: '0.82rem', cursor: 'pointer', fontWeight: active ? 700 : 500 }}>
+                            <PIcon size={13} /> {p.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <input
+                        type="text"
+                        placeholder="Metric Name"
+                        value={bioName}
+                        onChange={e => setBioName(e.target.value)}
+                        style={{ flex: 1, minWidth: 160, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                      />
+                      <input
+                        type="number"
+                        placeholder="Value"
+                        value={bioValue}
                         onChange={e => setBioValue(e.target.value)}
                         style={{ width: 120, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
                       />
-                      <input 
-                        type="text" 
-                        placeholder="Unit" 
-                        value={bioUnit} 
+                      <input
+                        type="text"
+                        placeholder="Unit"
+                        value={bioUnit}
                         onChange={e => setBioUnit(e.target.value)}
                         style={{ width: 100, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
                       />
@@ -1949,33 +2115,94 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     </div>
                   </div>
 
-                  {/* Protocol Correlation Charts via Recharts */}
-                  <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
-                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>Protocol Correlation & Trends</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                      {biometrics.length === 0 ? <div style={{ color: 'var(--silver)' }}>No biometrics logged yet.</div> : null}
-                      {Array.from(new Set(biometrics.map(b => b.metric_name))).map(metric => renderCombinedChart(metric))}
+                  {/* Metric Stat Cards */}
+                  {trackedMetrics.length > 0 && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+                      {trackedMetrics.map(metric => {
+                        const s = metricStats(metric);
+                        if (!s) return null;
+                        const deltaColor = (d: number) => {
+                          if (d === 0 || s.better === 'none') return 'var(--silver)';
+                          const good = s.better === 'up' ? d > 0 : d < 0;
+                          return good ? 'var(--teal)' : 'var(--red)';
+                        };
+                        const fmt = (d: number) => `${d > 0 ? '+' : ''}${Math.round(d * 100) / 100}`;
+                        return (
+                          <div key={metric} className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
+                            <div style={{ color: 'var(--silver)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{metric}</div>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                              <div style={{ color: 'var(--white)', fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>{s.current}</div>
+                              <div style={{ color: 'var(--silver)', fontSize: '0.8rem' }}>{s.unit}</div>
+                            </div>
+                            <div style={{ height: 34, margin: '6px 0' }}>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={s.spark} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+                                  <defs>
+                                    <linearGradient id={`sp-${metric.replace(/\W/g, '')}`} x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="0%" stopColor="#00E5FF" stopOpacity={0.4} />
+                                      <stop offset="100%" stopColor="#00E5FF" stopOpacity={0} />
+                                    </linearGradient>
+                                  </defs>
+                                  <Area type="monotone" dataKey="v" stroke="#00E5FF" strokeWidth={1.5} fill={`url(#sp-${metric.replace(/\W/g, '')})`} dot={false} />
+                                </AreaChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                              <span style={{ color: deltaColor(s.d7), display: 'flex', alignItems: 'center', gap: 2 }}>
+                                {s.d7 >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {fmt(s.d7)} 7D
+                              </span>
+                              <span style={{ color: deltaColor(s.d30) }}>{fmt(s.d30)} 30D</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Trend Charts */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 'var(--space-4)' }}>
+                    <h3 style={{ color: 'var(--white)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><TrendingUp size={18} style={{ color: 'var(--teal)' }} /> Trends & Protocol Correlation</h3>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      {trackedMetrics.length > 1 && (
+                        <select value={bioMetricFilter} onChange={e => setBioMetricFilter(e.target.value)} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)', padding: '6px 12px', borderRadius: 8, fontSize: '0.85rem' }}>
+                          <option value="">All Metrics</option>
+                          {trackedMetrics.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                      )}
+                      {rangeSwitcher(bioRange, setBioRange)}
                     </div>
                   </div>
+                  {trackedMetrics.length === 0 ? (
+                    <div className="glass-panel" style={{ padding: 'var(--space-8)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
+                      <Activity size={44} style={{ color: 'var(--teal)', opacity: 0.7, marginBottom: 'var(--space-3)' }} />
+                      <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)' }}>No Biometrics Logged Yet</h3>
+                      <p style={{ color: 'var(--silver)', maxWidth: 420, margin: '0 auto' }}>Pick A Metric Above And Log Your First Reading To Unlock Trend Lines, Deltas, And Dose Correlation.</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                      {(bioMetricFilter ? [bioMetricFilter] : trackedMetrics).map(metric => renderBioTrendChart(metric))}
+                    </div>
+                  )}
 
+                  {/* Recent list */}
                   <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginTop: 'var(--space-6)' }}>
-                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>Recent Biometrics</h3>
+                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 8 }}><History size={18} style={{ color: 'var(--teal)' }} /> Recent Biometrics</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                      {biometrics.map(b => (
-                        <div key={b.id} className="glass-panel" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+                      {[...biometrics].sort((a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime()).slice(0, 40).map(b => (
+                        <div key={b.id} className="glass-panel" style={{ padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
                           <div>
-                            <div style={{ color: 'var(--teal)', fontWeight: 'bold' }}>{b.metric_name}</div>
+                            <div style={{ color: 'var(--teal)', fontWeight: 700 }}>{b.metric_name}</div>
                             <div style={{ color: 'var(--white)' }}>{b.metric_value} {b.unit}</div>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                            <div style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>
-                              {new Date(b.measured_at).toLocaleDateString()} at {new Date(b.measured_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            <div style={{ color: 'var(--silver)', fontSize: '0.82rem', textAlign: 'right' }}>
+                              {new Date(b.measured_at).toLocaleDateString()}<br />{new Date(b.measured_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
-                            <button onClick={() => deleteBiometric(b.id)} className="btn btn-ghost btn-sm" style={{ padding: 4, color: 'var(--red)' }}><Trash2 size={16}/></button>
+                            <button onClick={() => deleteBiometric(b.id)} className="btn btn-ghost btn-sm" style={{ padding: 4, color: 'var(--red)' }}><Trash2 size={16} /></button>
                           </div>
                         </div>
                       ))}
-                      {biometrics.length === 0 && <div style={{ color: 'var(--silver)' }}>No biometrics logged yet.</div>}
+                      {biometrics.length === 0 && <div style={{ color: 'var(--silver)' }}>No Biometrics Logged Yet.</div>}
                     </div>
                   </div>
                 </div>
@@ -2250,6 +2477,9 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       <style dangerouslySetInnerHTML={{__html: `
         .slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        @media (max-width: 820px) {
+          .dose-grid { grid-template-columns: 1fr !important; }
+        }
       `}} />
     </div>
   );
