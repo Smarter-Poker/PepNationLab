@@ -69,6 +69,12 @@ const PUBLIC_ROUTES = [
   // SEO surfaces
   '/sitemap.xml',
   '/feed.xml',
+  // AI/LLM discoverability — llms.txt and robots.ts advertise these
+  // machine-readable markdown endpoints to anonymous crawlers (GPTBot,
+  // ClaudeBot, PerplexityBot), so they must not require auth.
+  '/llms.txt',
+  '/llms-full.txt',
+  '/api/llm',
   '/api/analytics/faq-click',
   '/invite',
   '/api/agent-invitations/redeem',

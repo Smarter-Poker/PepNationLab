@@ -143,7 +143,9 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
   {
     name: 'CJC-1295 + Ipamorelin',
     popularName: 'The GH Stack',
-    slug: 'cjc-1295',
+    // Must match the compounds table slug — 'cjc-1295' does not exist and
+    // 404'd the "View Research" link on every city landing page.
+    slug: 'cjc-ipamorelin',
     category: 'Growth & Longevity',
     description: 'GHRH analogue blend studied for sustained growth hormone pulse amplification and recovery research.',
     image: '/images/products/cjc-1295-ipamorelin.png',
