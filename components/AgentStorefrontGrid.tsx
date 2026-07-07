@@ -2062,15 +2062,22 @@ export default function AgentStorefrontGrid({
           maxWidth: 960,
           margin: '0 auto 24px',
           aspectRatio: '2 / 1',
-          backgroundImage: 'url(/images/store_discovery_hero_v3.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
           borderRadius: 20,
           overflow: 'hidden',
           boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
           border: '1px solid rgba(255,255,255,0.08)',
         }}
       >
+        {/* LCP element for the storefront. absolute fill behind content */}
+        <Image 
+          src="/images/store_discovery_hero_v3.png" 
+          alt="Store Hero" 
+          fill 
+          priority 
+          quality={45} 
+          sizes="(max-width: 960px) 100vw, 960px" 
+          style={{ objectFit: 'cover' }} 
+        />
         {/* Search input mapped precisely over the search input bar in the image */}
         <input
           type="text"

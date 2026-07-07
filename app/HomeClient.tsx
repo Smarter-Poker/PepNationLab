@@ -122,7 +122,7 @@ export default function HomeClient() {
           height={1672}
           priority
           fetchPriority="high"
-          quality={60}
+          quality={40}
           sizes="(max-width: 941px) 100vw, 941px"
           style={{ width: '100%', height: 'auto', display: 'block' }}
         />
