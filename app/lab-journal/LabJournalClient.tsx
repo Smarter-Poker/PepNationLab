@@ -1106,8 +1106,8 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
         <div style={{ display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', paddingBottom: 'var(--space-2)', flex: 1, minWidth: 0 }}>
           {[
-            { id: 'goals', label: 'Research Goals', icon: Target },
             { id: 'notes', label: 'My Notes', icon: Info },
+            { id: 'goals', label: 'Research Goals', icon: Target },
             { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
             { id: 'favorites', label: 'Saved Compounds', icon: Heart },
             { id: 'inventory', label: 'Inventory', icon: PackageOpen },
