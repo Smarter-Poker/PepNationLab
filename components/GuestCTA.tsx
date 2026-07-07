@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useCart } from '@/components/CartContext';
 
 /**
- * GuestCTA — Sticky conversion banner for unauthenticated visitors.
+ * GuestCTA - Sticky conversion banner for unauthenticated visitors.
  *
  * - Renders ONLY for unauthenticated visitors
  * - Auto-hides the moment a session is detected

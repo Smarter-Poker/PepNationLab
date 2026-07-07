@@ -33,7 +33,7 @@ export interface StoreTop10Item {
   name: string;
   /** Parenthetical portion of the store name, e.g. "BPC 10mg + TB 10mg" */
   subtitle: string | null;
-  /** e.g. "10mg Vials" — same format as the store card */
+  /** e.g. "10mg Vials" - same format as the store card */
   sizeLabel: string;
   /** Per-vial display price, same math as the store card (retail / 10, sale-aware) */
   price: number;
@@ -41,7 +41,7 @@ export interface StoreTop10Item {
   originalPrice: number | null;
   /** Resolved product image (custom > master > category fallback) */
   image: string;
-  /** products.id of the default variant — the store grid opens ?product=<id> */
+  /** products.id of the default variant - the store grid opens ?product=<id> */
   productId: string;
 }
 
@@ -265,7 +265,7 @@ async function fetchStoreTop10(): Promise<StoreTop10Item[]> {
       };
     });
   } catch {
-    // Never break a city page over a catalog fetch — callers fall back to
+    // Never break a city page over a catalog fetch - callers fall back to
     // the static FEATURED_PEPTIDES list.
     return [];
   }

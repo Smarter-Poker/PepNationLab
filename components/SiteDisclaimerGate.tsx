@@ -30,7 +30,7 @@ function subscribeToAcceptance(callback: () => void) {
  * re-acknowledgment.
  *
  * SEO-CRITICAL RENDERING CONTRACT (do not regress):
- * Children are ALWAYS rendered — on the server and on the client. The gate
+ * Children are ALWAYS rendered - on the server and on the client. The gate
  * is a fixed full-screen overlay (`.modal-overlay`, z-index 1000, opaque
  * backdrop) painted ON TOP of the page after hydration when acceptance has
  * not been recorded. The previous implementation returned `null` until the

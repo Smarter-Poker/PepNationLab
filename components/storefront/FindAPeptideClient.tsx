@@ -38,7 +38,7 @@ interface Props {
   primaryColor: string;
   compoundsBySlug: Record<string, Compound>;
   isStorefrontOwner: boolean;
-  /** When true the user is not authenticated — hide pricing/cart, show sign-in nudge */
+  /** When true the user is not authenticated - hide pricing/cart, show sign-in nudge */
   isGuest?: boolean;
 }
 
@@ -240,7 +240,7 @@ export default function FindAPeptideClient({
         resolveProducts={resolveProducts}
       />
 
-      {/* Guest pricing nudge — shown below the discovery engine */}
+      {/* Guest pricing nudge - shown below the discovery engine */}
       {isGuest && (
         <div
           style={{

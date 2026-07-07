@@ -5,7 +5,7 @@
  * These power the /research/compare/[matchup] landing pages, which target
  * comparison queries the individual monographs do not (e.g. "BPC-157 vs
  * TB-500", "Semaglutide vs Tirzepatide"). Each page is a genuine, data-rich
- * side-by-side built from the compound database — not thin templated content.
+ * side-by-side built from the compound database - not thin templated content.
  *
  * Slugs MUST exist in the compounds database. Pairs are canonical and curated
  * (a fixed set), so the routes are a controlled, high-quality collection rather

@@ -86,7 +86,7 @@ export async function getAreaProducts(
 
   if (!agentId) {
     if (role === 'admin') {
-      // Admins always preview the house researchstore — never pick a random agent via .limit(1)
+      // Admins always preview the house researchstore - never pick a random agent via .limit(1)
       const { data: fallbackAgent } = await supabase
         .from('agent_profiles')
         .select('id')

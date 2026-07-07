@@ -180,7 +180,7 @@ export async function isBlockedEither(a: string, b: string): Promise<boolean> {
 export function getCronAuth(
   req: Request,
 ): { ok: true } | { ok: false; status: number; error: string } {
-  // NOTE: x-vercel-cron header was intentionally removed as an auth bypass —
+  // NOTE: x-vercel-cron header was intentionally removed as an auth bypass -
   // it is a user-controlled header and can be forged by any caller.
   // CRON_SECRET is the sole auth mechanism for all cron endpoints.
 

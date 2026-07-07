@@ -195,7 +195,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
   useEffect(() => {
     const supabase = createClient();
 
-    // Shared helper — fetches profile + agent slug/name for a given session user.
+    // Shared helper - fetches profile + agent slug/name for a given session user.
     // Extracted to avoid duplicating this logic between getSession and onAuthStateChange.
     const fetchUserProfile = async (userId: string) => {
       try {

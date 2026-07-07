@@ -272,7 +272,7 @@ export default function AgentStorefrontGrid({
   // These three state declarations must live before any callbacks that reference
   // their setters (closeGrid calls setFilterArea, setFilterCategory, setSearchQuery).
   // They depend on getInit which is defined below, but that’s fine since
-  // useState’s initializer only runs once on mount — it’s not re-evaluated on re-renders.
+  // useState’s initializer only runs once on mount - it’s not re-evaluated on re-renders.
   // We forward-declare the helper inline.
   const _getSearchParam = (key: string): string => {
     if (typeof window === 'undefined') return '';
@@ -1874,7 +1874,7 @@ export default function AgentStorefrontGrid({
         .sf-wishlist-btn:hover { transform: scale(1.12); }
         /* ── Product detail: inline full-page view (no overlay) ── */
         .sf-modal-overlay {
-          /* Not an overlay — just a wrapper so CSS class names are preserved */
+          /* Not an overlay - just a wrapper so CSS class names are preserved */
           display: block;
           width: 100%;
           min-height: 100vh;
@@ -2198,7 +2198,7 @@ export default function AgentStorefrontGrid({
         })}
       </div>
 
-      {/* Grid section — hidden when product detail is shown */}
+      {/* Grid section - hidden when product detail is shown */}
       <div style={{ display: detailProduct ? 'none' : undefined }}>
 
       {/* Did You Mean Banner */}
@@ -3233,7 +3233,7 @@ export default function AgentStorefrontGrid({
           )}
         </div>
 
-      {/* Product detail: inline in-page view — replaces the grid, no fixed overlay */}
+      {/* Product detail: inline in-page view - replaces the grid, no fixed overlay */}
       {detailProduct && (
         <div className="sf-modal-overlay">
           <div className="sf-modal-sheet">

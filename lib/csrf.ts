@@ -86,7 +86,7 @@ export function assertSameOrigin(req: NextRequest): NextResponse | null {
   }
 
   if (process.env.NODE_ENV === 'production') {
-    console.warn('[csrf] no Origin/Referer header — allowed by fallback (fetch/json)', {
+    console.warn('[csrf] no Origin/Referer header - allowed by fallback (fetch/json)', {
       method: req.method,
       path: req.nextUrl.pathname,
     });

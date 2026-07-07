@@ -70,7 +70,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   if (PROVIDER === 'resend') {
     const key = process.env.RESEND_API_KEY;
     if (!key) {
-      console.warn('[email] RESEND_API_KEY not set — skipping send to', to.join(','));
+      console.warn('[email] RESEND_API_KEY not set - skipping send to', to.join(','));
       return { ok: true, skipped: true };
     }
     try {
@@ -180,7 +180,7 @@ export async function sendOrderConfirmationEmail(params: {
   `);
   return sendEmail({
     to: params.to,
-    subject: `Order Confirmed — #${params.orderId}`,
+    subject: `Order Confirmed - #${params.orderId}`,
     html,
     text: `Thank you, ${name}. Order #${params.orderId} confirmed. Total $${Number(params.total).toFixed(2)}. View it at ${SITE}/orders/${params.orderId}`,
   });

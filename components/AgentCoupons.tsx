@@ -178,7 +178,7 @@ function RedemptionsModal({
             <td style={{ fontFamily: 'monospace' }}>{r.order_id?.slice(0, 8)}…</td>
             <td>{r.buyer_name || r.buyer_email || 'Unknown'}</td>
             <td>${Number(r.discount_amount || 0).toFixed(2)}</td>
-            <td>{r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</td>
+            <td>{r.created_at ? new Date(r.created_at).toLocaleDateString() : '-'}</td>
           </tr>
         ))}
       </tbody>
@@ -558,7 +558,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
       const res = await fetch(`/api/agent/coupons/${coupon.id}/notify-downline`, { method: 'POST' });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed To Notify Downline');
-      toast.success(`Downline Notified — ${json.count ?? 0} Message${json.count === 1 ? '' : 's'} Sent`);
+      toast.success(`Downline Notified - ${json.count ?? 0} Message${json.count === 1 ? '' : 's'} Sent`);
     } catch (err: any) {
       toast.error(err.message || 'Failed To Notify Downline');
     }
@@ -873,7 +873,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
       {/* QR Modal */}
       <AnimatePresence>
         {qrCoupon && storefrontUrl && (
-          <ModalShell title={`QR Code — ${qrCoupon.code}`} onClose={() => setQrCoupon(null)}>
+          <ModalShell title={`QR Code - ${qrCoupon.code}`} onClose={() => setQrCoupon(null)}>
             <QrModal coupon={qrCoupon} storefront={storefrontUrl} />
           </ModalShell>
         )}
@@ -882,7 +882,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
       {/* Redemptions Modal */}
       <AnimatePresence>
         {redemptionsCoupon && (
-          <ModalShell title={`Redemptions — ${redemptionsCoupon.code}`} onClose={() => setRedemptionsCoupon(null)} wide>
+          <ModalShell title={`Redemptions - ${redemptionsCoupon.code}`} onClose={() => setRedemptionsCoupon(null)} wide>
             <RedemptionsModal coupon={redemptionsCoupon} agentSlug={resolvedSlug} />
           </ModalShell>
         )}

@@ -75,7 +75,7 @@ export default function MonographSeoContent({ compound }: { compound: Compound }
   // engines and featured snippets extract before longer prose. Composed only
   // from existing fields, and RUO-framed. Tagged .compound-summary so it feeds
   // the page's existing speakable selector. compound_class / molecular_target
-  // are often long, semicolon-separated descriptors — take only the first
+  // are often long, semicolon-separated descriptors - take only the first
   // short clause so the sentence stays crisp.
   const firstClause = (s: string) => s.split(/[;,(]/)[0].trim();
   const defClass = compound.compound_class ? firstClause(compound.compound_class) : 'research compound';
@@ -117,13 +117,13 @@ export default function MonographSeoContent({ compound }: { compound: Compound }
           }}
         >
           <strong>{compound.display_name}</strong> is a research-grade {defClass}{defTarget} studied in {defArea}.
-          It is supplied strictly for in vitro laboratory research use only — not for human or animal consumption,
+          It is supplied strictly for in vitro laboratory research use only - not for human or animal consumption,
           and not FDA-approved.
         </p>
 
         {tier && (
           <p style={{ margin: '0 0 16px', fontSize: '0.9rem' }}>
-            <strong>Evidence Tier:</strong> {tier.label} — {tier.blurb}
+            <strong>Evidence Tier:</strong> {tier.label} - {tier.blurb}
           </p>
         )}
 

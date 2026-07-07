@@ -315,7 +315,7 @@ function PasswordStep({ onDone }: { onDone: () => void }) {
       <StepIntro icon={Lock} title="Secure Your Password"
         blurb="Your Account Was Created With A Temporary Password. Choose Your Own Private Password To Continue." />
       <GuidePanel steps={[
-        'Type A New Password — At Least 8 Characters.',
+        'Type A New Password - At Least 8 Characters.',
         'Type It A Second Time To Confirm It Matches.',
         'Click "Set Password And Continue".',
       ]} />
@@ -549,7 +549,7 @@ function ProfileStep({ state, onDone }: { state: OnboardingState; onDone: () => 
         blurb="Make Sure Your Name, Phone, And Email Are Correct. We Use These For Order Updates And Account Recovery." />
       <GuidePanel steps={[
         'Check That Your First And Last Name Are Spelled Correctly.',
-        'Make Sure Your Email Address Is One You Can Access — It Is Used For Account Recovery.',
+        'Make Sure Your Email Address Is One You Can Access - It Is Used For Account Recovery.',
         'Enter A Phone Number We Can Reach You At For Order Updates.',
         'Click "Save And Continue" Below.',
       ]} />
@@ -687,7 +687,7 @@ function WarehouseStep({ state, onDone }: { state: OnboardingState; onDone: () =
         'Start Typing Your Street Address, Then Pick A Suggestion To Auto-Fill City, State, And Zip.',
         'Add Any Suite Or Unit Number (Optional).',
         'Double-Check The City, State, And Zip.',
-        'Click "Save And Continue" — We Will Check The Address For You.',
+        'Click "Save And Continue" - We Will Check The Address For You.',
         'If We Suggest A Corrected Version, Pick The One You Want To Use.',
       ]} />
       <Field label="Street Address">
@@ -816,7 +816,7 @@ function StorefrontStep({ state, onDone }: { state: OnboardingState; onDone: () 
       <GuidePanel steps={[
         'In The Web Address Box, Type The Word You Want After pepnationlab.com/ (Lowercase Letters, Numbers, And Hyphens Only).',
         'Wait For The Green "Available" Check. If It Is Taken, Tap One Of The Suggested Names.',
-        'Enter A Display Name — This Is The Store Name Your Researchers See.',
+        'Enter A Display Name - This Is The Store Name Your Researchers See.',
         'Click "Save And Continue".',
       ]} />
       <Field label="Storefront Web Address">
@@ -1028,7 +1028,7 @@ function DownstreamStep({ state, onDone }: { state: OnboardingState; onDone: () 
           'Pick A Method Below: "Flat Markup" For One Set Percentage, Or "Gamification Scale" For Volume-Based Pricing.',
           'For Flat Markup, Type The Percentage You Want To Add On Top Of Wholesale Cost.',
           'Check The Example To See What Your Agents Will Pay.',
-          'Click "Save Default And Continue". This Only Sets The Default For New Agents — You Can Change Any Agent Later.',
+          'Click "Save Default And Continue". This Only Sets The Default For New Agents - You Can Change Any Agent Later.',
         ]} />
 
         <div style={{ display: 'flex', gap: 'var(--space-2, 8px)', marginBottom: 'var(--space-4, 16px)' }}>

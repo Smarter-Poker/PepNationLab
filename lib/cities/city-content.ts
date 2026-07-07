@@ -80,7 +80,7 @@ const INTRO_VARIANTS = [
   (city: City) =>
     `Researchers in ${city.name}, ${city.state} and the surrounding ${getRegionLabel(city)} area rely on Pep Nation Lab for wholesale access to 100+ research peptides, growth factors, and bioactive compounds. Every product is batch-tested, fully documented, and available with priority fulfillment for verified accounts.`,
   (city: City) =>
-    `Home to roughly ${formatPopulation(city.population)} residents, ${city.name}, ${city.stateAbbr} sits within the ${getRegionLabel(city)} — a region with an active independent research community. Pep Nation Lab supplies that community with batch-tested, research-grade peptides at wholesale pricing, shipped directly to verified labs with full documentation.`,
+    `Home to roughly ${formatPopulation(city.population)} residents, ${city.name}, ${city.stateAbbr} sits within the ${getRegionLabel(city)} - a region with an active independent research community. Pep Nation Lab supplies that community with batch-tested, research-grade peptides at wholesale pricing, shipped directly to verified labs with full documentation.`,
   (city: City) =>
     `From ${city.name} to the wider ${getRegionLabel(city)}, verified researchers turn to Pep Nation Lab for dependable access to research-grade peptides. Same-day fulfillment on qualifying orders, full COA documentation on every batch, and a 100+ compound catalog built for in vitro laboratory work.`,
 ];
@@ -144,7 +144,7 @@ function faqPool(city: City): { core: FAQ[]; rotating: FAQ[] } {
       },
       {
         question: `Which research areas does the Pep Nation Lab catalog cover for ${region} researchers?`,
-        answer: `The catalog spans metabolic health, tissue repair and recovery, growth and longevity, cognitive research, and skin and cosmetic science — including BPC-157, Semaglutide, Tirzepatide, TB-500, GHK-Cu, and Epithalon. Researchers in ${city.name} can browse the full research library at PepNationLab.com/research.`,
+        answer: `The catalog spans metabolic health, tissue repair and recovery, growth and longevity, cognitive research, and skin and cosmetic science - including BPC-157, Semaglutide, Tirzepatide, TB-500, GHK-Cu, and Epithalon. Researchers in ${city.name} can browse the full research library at PepNationLab.com/research.`,
       },
     ],
   };
@@ -191,7 +191,7 @@ export function getCityFacts(city: City): CityFact[] {
     { label: 'Catalog', value: '100+ Research-Grade Peptides And Compounds' },
     { label: 'Documentation', value: 'Batch COA Included With Every Order' },
     { label: 'Access', value: 'Verified Researcher Accounts Only' },
-    { label: 'Intended Use', value: 'In Vitro Laboratory Research Only — Not For Human Or Animal Use' },
+    { label: 'Intended Use', value: 'In Vitro Laboratory Research Only - Not For Human Or Animal Use' },
   );
   return facts;
 }

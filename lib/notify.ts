@@ -97,7 +97,7 @@ export async function notify(
       .maybeSingle();
 
     if (outboxErr) {
-      console.error('[notify] push_outbox insert failed — skipping push to preserve audit trail:', outboxErr);
+      console.error('[notify] push_outbox insert failed - skipping push to preserve audit trail:', outboxErr);
       return;
     }
 

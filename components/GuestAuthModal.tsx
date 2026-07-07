@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 
 /**
- * GuestAuthModal — slide-up modal that prompts unauthenticated visitors
+ * GuestAuthModal - slide-up modal that prompts unauthenticated visitors
  * to sign in or create an account when they click a personalization button
  * (Save, Reading Queue, Subscribe, etc.).
  *

@@ -261,7 +261,7 @@ export const GUIDES: Guide[] = [
         heading: 'Chromatographic Purity Versus Net Peptide Content',
         paragraphs: [
           'Chromatographic purity, usually reported by HPLC, describes the proportion of the target peptide relative to other peptide-related impurities in the sample. Net peptide content is a different measurement: it describes how much of the total dry mass is actually peptide, versus water, counter-ions, and residual salts left over from synthesis.',
-          'A vial can be high in chromatographic purity yet contain a meaningful fraction of non-peptide mass. Both numbers describe real, useful things — they simply answer different questions, and a rigorous researcher reads them together rather than treating a single figure as the whole story.',
+          'A vial can be high in chromatographic purity yet contain a meaningful fraction of non-peptide mass. Both numbers describe real, useful things - they simply answer different questions, and a rigorous researcher reads them together rather than treating a single figure as the whole story.',
         ],
       },
       {
@@ -278,7 +278,7 @@ export const GUIDES: Guide[] = [
       {
         heading: 'Why It Matters For Reproducibility',
         paragraphs: [
-          'Inconsistent purity introduces uncontrolled variables into research. Two batches with different impurity profiles or different net peptide content can produce different results even when nominally identical. This is why documented, batch-specific purity data — not a generic claim — is what supports reproducible experimental design.',
+          'Inconsistent purity introduces uncontrolled variables into research. Two batches with different impurity profiles or different net peptide content can produce different results even when nominally identical. This is why documented, batch-specific purity data - not a generic claim - is what supports reproducible experimental design.',
         ],
       },
     ],
@@ -296,7 +296,7 @@ export const GUIDES: Guide[] = [
     slug: 'peptide-research-areas-explained',
     title: 'Peptide Research Areas Explained',
     description:
-      'An overview of the major research areas peptides are studied in — metabolic, tissue repair and recovery, growth and longevity, cognitive, and skin and cosmetic science.',
+      'An overview of the major research areas peptides are studied in - metabolic, tissue repair and recovery, growth and longevity, cognitive, and skin and cosmetic science.',
     datePublished: '2026-07-07',
     dateModified: '2026-07-07',
     readingTimeMin: 5,
@@ -344,13 +344,13 @@ export const GUIDES: Guide[] = [
     slug: 'glp-1-receptor-agonists-in-research',
     title: 'GLP-1 Receptor Agonists In Research: Semaglutide, Tirzepatide, And Retatrutide',
     description:
-      'A research overview of the incretin-mimetic peptide class — GLP-1 and dual GIP/GLP-1 receptor agonists such as Semaglutide, Tirzepatide, and Retatrutide — and how they are studied.',
+      'A research overview of the incretin-mimetic peptide class - GLP-1 and dual GIP/GLP-1 receptor agonists such as Semaglutide, Tirzepatide, and Retatrutide - and how they are studied.',
     datePublished: '2026-07-07',
     dateModified: '2026-07-07',
     readingTimeMin: 6,
     keywords: ['GLP-1', 'semaglutide research', 'tirzepatide research', 'retatrutide', 'incretin', 'metabolic research'],
     intro:
-      'The incretin-mimetic peptides are among the most studied research compounds in metabolic science. This guide gives a research-context overview of the class — what a GLP-1 receptor agonist is, how single- versus multi-receptor compounds differ, and the compounds most commonly referenced in the literature. It contains no dosing or human-use guidance.',
+      'The incretin-mimetic peptides are among the most studied research compounds in metabolic science. This guide gives a research-context overview of the class - what a GLP-1 receptor agonist is, how single- versus multi-receptor compounds differ, and the compounds most commonly referenced in the literature. It contains no dosing or human-use guidance.',
     sections: [
       {
         heading: 'What A GLP-1 Receptor Agonist Is',
@@ -438,7 +438,7 @@ export const GUIDES: Guide[] = [
     slug: 'growth-hormone-secretagogues-explained',
     title: 'Growth Hormone Secretagogues Explained',
     description:
-      'A research overview of the growth hormone secretagogue class — GHRH analogues and ghrelin-receptor agonists such as Sermorelin, CJC-1295, and Ipamorelin — and how they are studied.',
+      'A research overview of the growth hormone secretagogue class - GHRH analogues and ghrelin-receptor agonists such as Sermorelin, CJC-1295, and Ipamorelin - and how they are studied.',
     datePublished: '2026-07-07',
     dateModified: '2026-07-07',
     readingTimeMin: 5,
@@ -501,7 +501,7 @@ export const GUIDES: Guide[] = [
       {
         heading: 'Why Sequence Fidelity And Purification Matter',
         paragraphs: [
-          'Every coupling step is an opportunity for a small fraction of chains to deviate — a missing residue, an incomplete coupling, or a side reaction. These produce closely related impurities that must be separated from the target during purification, typically by preparative HPLC. The quality of both synthesis and purification determines the final purity profile.',
+          'Every coupling step is an opportunity for a small fraction of chains to deviate - a missing residue, an incomplete coupling, or a side reaction. These produce closely related impurities that must be separated from the target during purification, typically by preparative HPLC. The quality of both synthesis and purification determines the final purity profile.',
         ],
         bullets: [
           'Chains are assembled residue by residue on a solid support.',

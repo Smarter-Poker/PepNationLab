@@ -703,8 +703,8 @@ export default function AdminAgents() {
                     {newPassword.length === 0
                       ? 'Minimum 8 Characters Required'
                       : newPassword.length < 8
-                      ? `${newPassword.length}/8 — Need ${8 - newPassword.length} More Character${8 - newPassword.length !== 1 ? 's' : ''}`
-                      : `${newPassword.length} Characters — Good To Go`}
+                      ? `${newPassword.length}/8 - Need ${8 - newPassword.length} More Character${8 - newPassword.length !== 1 ? 's' : ''}`
+                      : `${newPassword.length} Characters - Good To Go`}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', marginTop: 'var(--space-6)' }}>

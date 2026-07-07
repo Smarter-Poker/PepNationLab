@@ -24,7 +24,7 @@ export function assertCronAuth(req: Request): Response | null {
 
   try {
     // Hash both sides to fixed-length SHA-256 digests before comparing.
-    // This prevents length-based timing attacks — the comparison always
+    // This prevents length-based timing attacks - the comparison always
     // runs in O(32) regardless of how long the secret or token is.
     const expectedBuf = crypto.createHash('sha256').update(expected).digest();
     const gotBuf = crypto.createHash('sha256').update(got).digest();

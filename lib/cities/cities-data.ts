@@ -126,11 +126,11 @@ export const CITIES: City[] = [
   { name: 'Lubbock', slug: 'lubbock', state: 'Texas', stateSlug: 'texas', stateAbbr: 'TX', population: 258000, medianIncome: 50000, tier: 3 },
 
   // ─────────────────────────────────────────────
-  // ILLINOIS — full state build-out, targeted by wealth + population.
+  // ILLINOIS - full state build-out, targeted by wealth + population.
   // County, ZIPs, and a unique localBlurb per city (doorway-page mitigation).
   // ─────────────────────────────────────────────
 
-  // — Chicago Core —
+  // - Chicago Core -
   {
     name: 'Chicago', slug: 'chicago', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 2721000, medianIncome: 71000, tier: 1, region: 'Chicagoland area', county: 'Cook',
@@ -138,7 +138,7 @@ export const CITIES: City[] = [
     localBlurb: 'The third-largest city in the nation anchors one of the densest medical and research corridors in the country, home to the University of Chicago, Northwestern University Feinberg School of Medicine, UIC, and the Illinois Medical District on the Near West Side.',
   },
 
-  // — North Shore And North Cook —
+  // - North Shore And North Cook -
   {
     name: 'Evanston', slug: 'evanston', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 75000, medianIncome: 95000, tier: 2, region: 'Chicagoland area', county: 'Cook',
@@ -200,7 +200,7 @@ export const CITIES: City[] = [
     localBlurb: 'Park Ridge is anchored by Advocate Lutheran General Hospital, one of the largest teaching hospitals in the Chicago suburbs.',
   },
 
-  // — Lake County —
+  // - Lake County -
   {
     name: 'Highland Park', slug: 'highland-park', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 30000, medianIncome: 155000, tier: 1, region: 'Chicagoland area', county: 'Lake',
@@ -304,7 +304,7 @@ export const CITIES: City[] = [
     localBlurb: 'Deer Park combines the Deer Park Town Center lifestyle district with large-lot residential neighborhoods on the Lake-Cook county line.',
   },
 
-  // — Barrington Area And Northwest Cook —
+  // - Barrington Area And Northwest Cook -
   {
     name: 'Barrington', slug: 'barrington', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 10300, medianIncome: 130000, tier: 1, region: 'Chicagoland area', county: 'Cook',
@@ -372,7 +372,7 @@ export const CITIES: City[] = [
     localBlurb: 'A dense, transit-served suburb beside O’Hare International Airport with a large healthcare and logistics workforce.',
   },
 
-  // — McHenry County —
+  // - McHenry County -
   {
     name: 'Crystal Lake', slug: 'crystal-lake', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 40000, medianIncome: 100000, tier: 2, region: 'Chicagoland area', county: 'McHenry',
@@ -410,7 +410,7 @@ export const CITIES: City[] = [
     localBlurb: 'The Fox River city that gives its county its name, served by Northwestern Medicine McHenry Hospital.',
   },
 
-  // — Kane County And Fox Valley —
+  // - Kane County And Fox Valley -
   {
     name: 'St. Charles', slug: 'st-charles', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 33000, medianIncome: 120000, tier: 1, region: 'Chicagoland area', county: 'Kane',
@@ -478,7 +478,7 @@ export const CITIES: City[] = [
     localBlurb: 'A commuter village on the Milwaukee District West Metra line straddling the DuPage-Cook county line.',
   },
 
-  // — DuPage County —
+  // - DuPage County -
   {
     name: 'Naperville', slug: 'naperville', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 149000, medianIncome: 145000, tier: 1, region: 'Chicagoland area', county: 'DuPage',
@@ -564,7 +564,7 @@ export const CITIES: City[] = [
     localBlurb: 'One of Chicago’s wealthiest suburbs, Hinsdale is home to UChicago Medicine AdventHealth Hinsdale and a landmark BNSF downtown.',
   },
 
-  // — West Cook —
+  // - West Cook -
   {
     name: 'Oak Park', slug: 'oak-park', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 52000, medianIncome: 105000, tier: 2, region: 'Chicagoland area', county: 'Cook',
@@ -596,7 +596,7 @@ export const CITIES: City[] = [
     localBlurb: 'La Grange’s historic downtown and UChicago Medicine AdventHealth La Grange anchor the near-west BNSF corridor.',
   },
 
-  // — Southwest Cook —
+  // - Southwest Cook -
   {
     name: 'Oak Lawn', slug: 'oak-lawn', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 55000, medianIncome: 78000, tier: 2, region: 'Chicagoland area', county: 'Cook',
@@ -628,7 +628,7 @@ export const CITIES: City[] = [
     localBlurb: 'Home to Trinity Christian College and Northwestern Medicine Palos Hospital along the Route 83 corridor.',
   },
 
-  // — Will County And Southwest Corridor —
+  // - Will County And Southwest Corridor -
   {
     name: 'Frankfort', slug: 'frankfort', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 21000, medianIncome: 145000, tier: 1, region: 'Chicagoland area', county: 'Will',
@@ -696,7 +696,7 @@ export const CITIES: City[] = [
     localBlurb: 'The historic heart of Will County, served by Ascension Saint Joseph - Joliet and home to the University of St. Francis.',
   },
 
-  // — Kendall County —
+  // - Kendall County -
   {
     name: 'Oswego', slug: 'oswego', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 35000, medianIncome: 115000, tier: 2, region: 'Chicagoland area', county: 'Kendall',
@@ -710,7 +710,7 @@ export const CITIES: City[] = [
     localBlurb: 'The Kendall County seat on the Fox River, one of the fastest-growing county centers in the state.',
   },
 
-  // — Northern Illinois —
+  // - Northern Illinois -
   {
     name: 'Rockford', slug: 'rockford', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 147000, medianIncome: 55000, tier: 3, region: 'Northern Illinois', county: 'Winnebago',
@@ -718,7 +718,7 @@ export const CITIES: City[] = [
     localBlurb: 'A northern Illinois manufacturing and aerospace hub served by three hospital systems and the University of Illinois College of Medicine Rockford.',
   },
 
-  // — Central Illinois —
+  // - Central Illinois -
   {
     name: 'Springfield', slug: 'springfield', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 114000, medianIncome: 62000, tier: 3, region: 'Central Illinois', county: 'Sangamon',
@@ -768,7 +768,7 @@ export const CITIES: City[] = [
     localBlurb: 'A manufacturing and agribusiness center anchored by ADM’s North American headquarters and Millikin University.',
   },
 
-  // — Metro East And Quad Cities —
+  // - Metro East And Quad Cities -
   {
     name: 'Edwardsville', slug: 'edwardsville', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 26000, medianIncome: 90000, tier: 2, region: 'Metro East', county: 'Madison',
@@ -1169,7 +1169,7 @@ export const CITIES: City[] = [
 /**
  * Bump this date ONLY when city page content materially changes (copy, FAQs,
  * schema, layout). It feeds sitemap <lastmod> and schema dateModified. Do NOT
- * use `new Date()` for lastmod — stamping every build teaches crawlers to
+ * use `new Date()` for lastmod - stamping every build teaches crawlers to
  * ignore the signal.
  */
 export const CITY_CONTENT_UPDATED = new Date('2026-07-07');

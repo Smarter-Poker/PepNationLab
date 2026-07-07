@@ -145,7 +145,7 @@ export async function withIdempotency(opts: IdempotencyOptions): Promise<NextRes
 
     if (!existing) {
       // Race lost the conflict and now the row is gone (idempotency_sweep?).
-      // Do NOT call handler() — that would double-execute a money mutation.
+      // Do NOT call handler() - that would double-execute a money mutation.
       // Force the client to retry with a fresh key instead.
       console.warn('[idempotency] key row disappeared mid-flight, returning 503', { key, route });
       return NextResponse.json(
@@ -210,9 +210,9 @@ export async function withIdempotency(opts: IdempotencyOptions): Promise<NextRes
     .eq('key', key);
 
   if (updateErr) {
-    // Don't re-throw — response is already computed and will be sent.
+    // Don't re-throw - response is already computed and will be sent.
     // Log so ops can detect if the cache is consistently failing.
-    console.error('[idempotency] failed to cache response — duplicate requests may re-execute:', updateErr);
+    console.error('[idempotency] failed to cache response - duplicate requests may re-execute:', updateErr);
   }
 
   return response;

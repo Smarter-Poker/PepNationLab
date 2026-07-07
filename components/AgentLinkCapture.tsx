@@ -3,12 +3,12 @@
 import { useEffect } from 'react';
 
 /**
- * AgentLinkCapture — invisible client component that saves the current
+ * AgentLinkCapture - invisible client component that saves the current
  * agent's slug to localStorage when an unauthenticated visitor browses
  * a storefront.
  *
  * This ensures that when the guest signs up (via /signup), their new account
- * is automatically linked to the agent they were browsing — not the default
+ * is automatically linked to the agent they were browsing - not the default
  * house store.
  *
  * Storage key:  pnl_referral_agent
@@ -38,7 +38,7 @@ export default function AgentLinkCapture({ agentSlug }: Props) {
         const existing = JSON.parse(raw) as { slug?: string; savedAt?: number };
         const age = Date.now() - (existing.savedAt ?? 0);
         if (existing.slug && existing.slug !== agentSlug && age < 10 * 60 * 1000) {
-          // There's a fresh attribution to a different agent — don't overwrite.
+          // There's a fresh attribution to a different agent - don't overwrite.
           return;
         }
       }
@@ -48,7 +48,7 @@ export default function AgentLinkCapture({ agentSlug }: Props) {
         JSON.stringify({ slug: agentSlug, savedAt: Date.now() })
       );
     } catch {
-      // localStorage unavailable (private mode, etc.) — fail silently.
+      // localStorage unavailable (private mode, etc.) - fail silently.
     }
 
     // GC: remove stale entries older than 30 days

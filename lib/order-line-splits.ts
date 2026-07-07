@@ -20,7 +20,7 @@ export interface ItemFulfillmentSplit {
  * @param qty             quantity ordered on this line (>= 1)
  * @param localAgentStock the agent's on-hand local stock for this product
  * @param useLocal        whether local fulfillment applies at all (false for
- *                        agent self-buys, pickup, and any non-ship fulfillment —
+ *                        agent self-buys, pickup, and any non-ship fulfillment -
  *                        everything then ships from China)
  */
 export function computeLineSplit(

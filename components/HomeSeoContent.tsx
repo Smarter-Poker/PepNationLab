@@ -59,13 +59,13 @@ export default function HomeSeoContent() {
     >
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
         <h1 style={{ fontSize: 'clamp(1.8rem, 4.5vw, 2.8rem)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.15 }}>
-          Pep Nation Lab — Premium Research Peptide Distribution And Peptide Research Library
+          Pep Nation Lab - Premium Research Peptide Distribution And Peptide Research Library
         </h1>
 
         <p style={{ fontSize: '1.1rem', lineHeight: 1.65, margin: '0 0 16px', maxWidth: '72ch' }}>
           Pep Nation Lab Is A Wholesale Research Peptide Distribution Platform And Comprehensive Research
-          Library Built For Qualified Researchers And Institutions. Access 300+ Research-Grade Compounds —
-          Including BPC-157, TB-500, Semaglutide, Tirzepatide, GHK-Cu, Ipamorelin, And More — Alongside Full
+          Library Built For Qualified Researchers And Institutions. Access 300+ Research-Grade Compounds -
+          Including BPC-157, TB-500, Semaglutide, Tirzepatide, GHK-Cu, Ipamorelin, And More - Alongside Full
           Scientific Monographs, Reconstitution Calculators, A Comparison Engine, And An AI Match Engine.
         </p>
 

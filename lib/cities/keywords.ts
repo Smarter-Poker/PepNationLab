@@ -143,7 +143,7 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
   {
     name: 'CJC-1295 + Ipamorelin',
     popularName: 'The GH Stack',
-    // Must match the compounds table slug — 'cjc-1295' does not exist and
+    // Must match the compounds table slug - 'cjc-1295' does not exist and
     // 404'd the "View Research" link on every city landing page.
     slug: 'cjc-ipamorelin',
     category: 'Growth & Longevity',
