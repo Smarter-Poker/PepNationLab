@@ -80,6 +80,7 @@ export const KEYWORD_CLUSTERS: KeywordCluster[] = [
  */
 export interface FeaturedPeptide {
   name: string;
+  popularName: string;    // well-known brand/common name
   slug: string;           // links to /research/[slug]
   category: string;
   description: string;
@@ -90,29 +91,33 @@ export interface FeaturedPeptide {
 export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
   {
     name: 'BPC-157',
+    popularName: 'Body Protection Compound',
     slug: 'bpc-157',
     category: 'Healing & Recovery',
-    description: 'Body Protection Compound. One of the most studied peptides for tissue repair, gut health, and recovery research.',
+    description: 'One of the most studied peptides for tissue repair, gut health, and recovery research.',
     image: '/images/products/bpc-157.png',
     badge: 'Most Researched',
   },
   {
     name: 'Semaglutide',
+    popularName: 'Ozempic / Wegovy',
     slug: 'semaglutide',
     category: 'Metabolic Health',
-    description: 'GLP-1 receptor agonist widely studied for metabolic regulation and weight management research applications.',
+    description: 'GLP-1 receptor agonist widely studied for metabolic regulation and weight management research.',
     image: '/images/products/semaglutide.png',
     badge: 'High Demand',
   },
   {
     name: 'TB-500',
+    popularName: 'Thymosin Beta-4',
     slug: 'tb-500',
     category: 'Recovery & Performance',
-    description: 'Thymosin Beta-4 fragment studied for cellular recovery, tissue regeneration, and angiogenesis research.',
+    description: 'Thymosin Beta-4 fragment studied for cellular recovery, tissue regeneration, and angiogenesis.',
     image: '/images/products/tb-500.png',
   },
   {
     name: 'Tirzepatide',
+    popularName: 'Mounjaro / Zepbound',
     slug: 'tirzepatide',
     category: 'Metabolic Health',
     description: 'Dual GIP/GLP-1 receptor agonist. Cutting-edge metabolic and weight regulation research compound.',
@@ -121,30 +126,52 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
   },
   {
     name: 'Ipamorelin',
+    popularName: 'GH Secretagogue',
     slug: 'ipamorelin',
     category: 'Growth & Longevity',
-    description: 'Selective growth hormone secretagogue widely used in anti-aging and longevity peptide research protocols.',
+    description: 'Selective growth hormone secretagogue widely used in anti-aging and longevity peptide research.',
     image: '/images/products/ipamorelin.png',
   },
   {
     name: 'CJC-1295 + Ipamorelin',
+    popularName: 'The GH Stack',
     slug: 'cjc-1295',
     category: 'Growth & Longevity',
     description: 'GHRH analogue blend studied for sustained growth hormone pulse amplification and recovery research.',
     image: '/images/products/cjc-1295-ipamorelin.png',
+    badge: 'Top Combo',
   },
   {
     name: 'Sermorelin',
+    popularName: 'GHRH Analogue',
     slug: 'sermorelin',
     category: 'Growth & Longevity',
-    description: 'First-generation GHRH analogue with a long safety research profile. Widely studied for GH stimulation.',
+    description: 'First-generation GHRH analogue with a long research safety profile. Widely studied for GH stimulation.',
     image: '/images/products/sermorelin.png',
   },
   {
     name: 'PT-141',
+    popularName: 'Bremelanotide',
     slug: 'pt-141',
     category: 'Sexual Health',
-    description: 'Melanocortin receptor agonist (Bremelanotide) studied for sexual function and libido research.',
+    description: 'Melanocortin receptor agonist studied for sexual function and libido research protocols.',
     image: '/images/products/pt-141.png',
+  },
+  {
+    name: 'GHK-Cu',
+    popularName: 'Copper Peptide',
+    slug: 'ghk-cu',
+    category: 'Skin, Hair & Cosmetic',
+    description: 'Naturally occurring copper complex studied for wound healing, collagen synthesis, and skin regeneration.',
+    image: '/images/products/ghk-cu.png',
+  },
+  {
+    name: 'Epithalon',
+    popularName: 'Youth Peptide',
+    slug: 'epithalon',
+    category: 'Anti-Aging & Longevity',
+    description: 'Tetrapeptide studied for telomere elongation, melatonin regulation, and longevity research protocols.',
+    image: '/images/products/epithalon.png',
+    badge: 'Longevity',
   },
 ];

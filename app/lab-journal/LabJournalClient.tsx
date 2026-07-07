@@ -33,10 +33,18 @@ interface Props {
   recentlyViewed: Item[];
   bundles: Item[];
   catalog: Item[];
-  trending: { id: string; name: string; image_url: string | null; category: string | null; }[];
+  trending: Item[];
   categories: string[];
   storefrontSlug: string | null;
 }
+
+const GOAL_MAPPINGS: Record<string, string[]> = {
+  'Muscle Growth': ['CJC-1295', 'Ipamorelin', 'IGF-1 LR3', 'Tesamorelin'],
+  'Fat Loss': ['Tirzepatide', 'Semaglutide', 'Retatrutide', 'AOD-9604', 'Tesofensine', 'Cagrilintide'],
+  'Healing & Recovery': ['BPC-157', 'TB-500'],
+  'Anti-Aging': ['Epitalon', 'GHK-Cu', 'NAD+', 'MOTS-c'],
+  'Cognitive Enhancement': ['Dihexa', 'Semax', 'Selank'],
+};
 
 export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed: initialRecentlyViewed, bundles, catalog, trending, categories, storefrontSlug }: Props) {
   const [favorites, setFavorites] = useState<Item[]>(initialFavorites);
@@ -1205,6 +1213,39 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
               {activeTab === 'inventory' && (
                 <>
+                  {/* FRONTIER RADAR / RECOMMENDATIONS */}
+                  {(() => {
+                    const activeGoalObj = goals.find(g => g.is_active);
+                    if (!activeGoalObj) return null;
+                    const goalName = activeGoalObj.goal_name;
+                    // Find matching key (partial match if needed, but we'll assume exact or substring)
+                    const mappingKey = Object.keys(GOAL_MAPPINGS).find(k => goalName.toLowerCase().includes(k.toLowerCase())) || Object.keys(GOAL_MAPPINGS)[0];
+                    const recommendedSlugs = GOAL_MAPPINGS[mappingKey] || [];
+                    const recommendedItems = catalog.filter(c => recommendedSlugs.some(rs => c.name.toLowerCase().includes(rs.toLowerCase())));
+                    
+                    if (recommendedItems.length === 0) return null;
+                    
+                    return (
+                      <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-4)' }}>
+                        <h3 style={{ color: 'var(--teal)', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Target size={18} /> Frontier Radar: Recommended for "{goalName}"
+                        </h3>
+                        <div style={{ display: 'flex', gap: 'var(--space-4)', overflowX: 'auto', paddingBottom: 'var(--space-2)' }} className="hide-scrollbar">
+                          {recommendedItems.map(item => (
+                            <div key={item.product_id} style={{ minWidth: 200, flexShrink: 0, background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: 'var(--space-3)', position: 'relative' }}>
+                               <div style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: 8, overflow: 'hidden', marginBottom: 'var(--space-3)', background: '#111' }}>
+                                  <Image src={item.image_url || getProductImage(item.category || '')} alt={item.name} fill style={{ objectFit: 'cover', mixBlendMode: 'screen' }} />
+                                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIntelligenceCompound(item.name); }} style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--white)', padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, backdropFilter: 'blur(4px)' }}><FlaskConical size={12}/> Intel</button>
+                               </div>
+                               <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--white)' }}>{item.name}</h4>
+                               <p style={{ margin: 0, color: 'var(--silver)', fontSize: '0.85rem' }}>{item.category}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)', display: 'flex', flexWrap: 'wrap', gap: 'var(--space-6)' }}>
                     <div style={{ flex: '1 1 300px' }}>
                       <h3 style={{ color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Reconstitution Calculator</h3>
