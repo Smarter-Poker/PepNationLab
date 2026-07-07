@@ -242,6 +242,282 @@ export const GUIDES: Guide[] = [
     ],
     related: ['what-research-use-only-means', 'how-to-read-a-certificate-of-analysis'],
   },
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'understanding-peptide-purity',
+    title: 'Understanding Peptide Purity In Research',
+    description:
+      'What peptide purity means, how HPLC and mass spectrometry quantify it, why net peptide content differs from chromatographic purity, and why it matters for reproducible research.',
+    datePublished: '2026-07-07',
+    dateModified: '2026-07-07',
+    readingTimeMin: 6,
+    keywords: ['peptide purity', 'HPLC purity', 'net peptide content', 'mass spectrometry', 'research reproducibility'],
+    intro:
+      'Purity is one of the most important quality attributes of a research peptide, yet it is frequently misunderstood. A single percentage on a label can describe different things depending on the method behind it. This guide explains what purity means in a research context, how it is measured, and why the distinction between chromatographic purity and net peptide content matters for reproducible work.',
+    sections: [
+      {
+        heading: 'Chromatographic Purity Versus Net Peptide Content',
+        paragraphs: [
+          'Chromatographic purity, usually reported by HPLC, describes the proportion of the target peptide relative to other peptide-related impurities in the sample. Net peptide content is a different measurement: it describes how much of the total dry mass is actually peptide, versus water, counter-ions, and residual salts left over from synthesis.',
+          'A vial can be high in chromatographic purity yet contain a meaningful fraction of non-peptide mass. Both numbers describe real, useful things — they simply answer different questions, and a rigorous researcher reads them together rather than treating a single figure as the whole story.',
+        ],
+      },
+      {
+        heading: 'How Purity Is Measured',
+        paragraphs: [
+          'HPLC separates the components of a sample so the target peak can be quantified against impurity peaks. Mass spectrometry confirms that the main peak is the intended molecule by matching its measured mass to the theoretical mass. Together, HPLC and MS answer the two core questions: how pure is it, and is it the right compound.',
+        ],
+        bullets: [
+          'HPLC: proportion of target peptide versus peptide-related impurities.',
+          'Mass spectrometry: confirmation of molecular identity by mass.',
+          'Net peptide content: fraction of dry mass that is peptide, not salt or water.',
+        ],
+      },
+      {
+        heading: 'Why It Matters For Reproducibility',
+        paragraphs: [
+          'Inconsistent purity introduces uncontrolled variables into research. Two batches with different impurity profiles or different net peptide content can produce different results even when nominally identical. This is why documented, batch-specific purity data — not a generic claim — is what supports reproducible experimental design.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'Chromatographic purity (HPLC) and net peptide content measure different things and should be read together.',
+      'Mass spectrometry confirms identity; HPLC quantifies purity.',
+      'A high purity percentage can still accompany significant non-peptide mass (salt, water).',
+      'Batch-specific purity documentation is what supports reproducible research.',
+    ],
+    related: ['how-to-read-a-certificate-of-analysis', 'how-research-peptides-are-synthesized'],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'peptide-research-areas-explained',
+    title: 'Peptide Research Areas Explained',
+    description:
+      'An overview of the major research areas peptides are studied in — metabolic, tissue repair and recovery, growth and longevity, cognitive, and skin and cosmetic science.',
+    datePublished: '2026-07-07',
+    dateModified: '2026-07-07',
+    readingTimeMin: 5,
+    keywords: ['peptide research areas', 'metabolic research', 'tissue repair', 'longevity peptides', 'cognitive peptides'],
+    intro:
+      'Research peptides are studied across a wide range of scientific areas. Grouping compounds by research area helps researchers navigate a large catalog and understand where a given peptide sits in the broader literature. This guide summarizes the major areas, framed strictly around in vitro and preclinical research context.',
+    sections: [
+      {
+        heading: 'Metabolic Research',
+        paragraphs: [
+          'This area includes the widely studied incretin-related compounds such as Semaglutide and Tirzepatide, investigated in the context of metabolic regulation and energy balance. It is one of the most active areas in current peptide research literature.',
+        ],
+      },
+      {
+        heading: 'Tissue Repair And Recovery',
+        paragraphs: [
+          'Compounds like BPC-157 and TB-500 are studied for their roles in cellular repair, angiogenesis, and tissue-regeneration research models. This area draws significant interest from researchers focused on recovery mechanisms.',
+        ],
+      },
+      {
+        heading: 'Growth, Longevity, And Other Areas',
+        paragraphs: [
+          'Growth hormone secretagogues such as Ipamorelin and CJC-1295 are studied for growth-axis signaling. Longevity-focused compounds like Epithalon are studied in aging models. Additional areas include cognitive research and skin and cosmetic science, where copper peptides such as GHK-Cu are studied for collagen and wound-healing pathways.',
+        ],
+        bullets: [
+          'Metabolic: Semaglutide, Tirzepatide, Retatrutide.',
+          'Tissue repair and recovery: BPC-157, TB-500.',
+          'Growth and longevity: Ipamorelin, CJC-1295, Sermorelin, Epithalon.',
+          'Skin and cosmetic: GHK-Cu.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'Research peptides are grouped by research area to navigate a large catalog.',
+      'Major areas include metabolic, tissue repair and recovery, growth and longevity, cognitive, and skin and cosmetic science.',
+      'Each area maps to well-studied compounds documented in the research literature.',
+      'All study is framed around in vitro and preclinical research context only.',
+    ],
+    related: ['glp-1-receptor-agonists-in-research', 'growth-hormone-secretagogues-explained'],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'glp-1-receptor-agonists-in-research',
+    title: 'GLP-1 Receptor Agonists In Research: Semaglutide, Tirzepatide, And Retatrutide',
+    description:
+      'A research overview of the incretin-mimetic peptide class — GLP-1 and dual GIP/GLP-1 receptor agonists such as Semaglutide, Tirzepatide, and Retatrutide — and how they are studied.',
+    datePublished: '2026-07-07',
+    dateModified: '2026-07-07',
+    readingTimeMin: 6,
+    keywords: ['GLP-1', 'semaglutide research', 'tirzepatide research', 'retatrutide', 'incretin', 'metabolic research'],
+    intro:
+      'The incretin-mimetic peptides are among the most studied research compounds in metabolic science. This guide gives a research-context overview of the class — what a GLP-1 receptor agonist is, how single- versus multi-receptor compounds differ, and the compounds most commonly referenced in the literature. It contains no dosing or human-use guidance.',
+    sections: [
+      {
+        heading: 'What A GLP-1 Receptor Agonist Is',
+        paragraphs: [
+          'GLP-1 (glucagon-like peptide-1) is an incretin hormone involved in glucose-dependent signaling. A GLP-1 receptor agonist is a compound that binds and activates the GLP-1 receptor. In research, these compounds are studied as tools for investigating metabolic and energy-balance pathways.',
+        ],
+      },
+      {
+        heading: 'Single Versus Multi-Receptor Compounds',
+        paragraphs: [
+          'Semaglutide is a GLP-1 receptor agonist. Tirzepatide is a dual agonist that acts at both the GIP and GLP-1 receptors. Retatrutide is studied as a triple agonist adding glucagon-receptor activity. Moving from single to multi-receptor activity is a central theme in the current research literature on this class.',
+        ],
+        bullets: [
+          'Semaglutide: GLP-1 receptor agonist.',
+          'Tirzepatide: dual GIP / GLP-1 receptor agonist.',
+          'Retatrutide: triple GIP / GLP-1 / glucagon receptor agonist (research stage).',
+        ],
+      },
+      {
+        heading: 'How The Class Is Studied',
+        paragraphs: [
+          'In a research setting these compounds are handled as reference agonists for receptor-signaling and metabolic-pathway studies. As with all research peptides, they are for in vitro laboratory research only and are not for human or animal use.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'GLP-1 receptor agonists are incretin-mimetic peptides studied in metabolic research.',
+      'Semaglutide targets GLP-1; Tirzepatide is a dual GIP/GLP-1 agonist; Retatrutide is a triple agonist.',
+      'Multi-receptor activity is a central theme in this research class.',
+      'These compounds are for in vitro research only, not human or animal use.',
+    ],
+    related: ['peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides'],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'bpc-157-research-overview',
+    title: 'BPC-157 Research Overview',
+    description:
+      'A research-context overview of BPC-157, one of the most studied peptides in tissue-repair research: what it is, the pathways it is studied in, and its Research Use Only status.',
+    datePublished: '2026-07-07',
+    dateModified: '2026-07-07',
+    readingTimeMin: 5,
+    keywords: ['BPC-157', 'body protection compound', 'tissue repair research', 'angiogenesis', 'research peptide'],
+    intro:
+      'BPC-157, sometimes referred to as Body Protection Compound 157, is among the most frequently studied peptides in tissue-repair research. This guide provides a neutral, research-context overview: what the compound is, the pathways researchers study it in, and the strict Research Use Only framework it belongs to. It contains no dosing or human-use guidance.',
+    sections: [
+      {
+        heading: 'What BPC-157 Is',
+        paragraphs: [
+          'BPC-157 is a synthetic peptide derived from a sequence originally identified in a gastric protein. In the research literature it is studied as a tool compound in models of cellular repair and tissue regeneration.',
+        ],
+      },
+      {
+        heading: 'Research Pathways',
+        paragraphs: [
+          'BPC-157 is most often referenced in research on angiogenesis (the formation of new blood vessels), tendon and ligament repair models, and gut-tissue studies. It is one of the anchor compounds in the tissue repair and recovery research area.',
+        ],
+        bullets: [
+          'Angiogenesis and vascular-repair research models.',
+          'Tendon, ligament, and connective-tissue repair studies.',
+          'Gastrointestinal-tissue research.',
+        ],
+      },
+      {
+        heading: 'Research Use Only Status',
+        paragraphs: [
+          'BPC-157 supplied as a research peptide is for in vitro laboratory research only. It is not an FDA-approved drug and is not for human or animal consumption, ingestion, or injection. Researchers should consult the primary literature and batch documentation for their protocols.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'BPC-157 is a synthetic peptide widely studied in tissue-repair research.',
+      'It is referenced in angiogenesis, connective-tissue repair, and gut-tissue research models.',
+      'It is a Research Use Only compound, not FDA-approved and not for human or animal use.',
+      'Protocols should draw on the primary literature and batch documentation.',
+    ],
+    related: ['peptide-research-areas-explained', 'what-research-use-only-means'],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'growth-hormone-secretagogues-explained',
+    title: 'Growth Hormone Secretagogues Explained',
+    description:
+      'A research overview of the growth hormone secretagogue class — GHRH analogues and ghrelin-receptor agonists such as Sermorelin, CJC-1295, and Ipamorelin — and how they are studied.',
+    datePublished: '2026-07-07',
+    dateModified: '2026-07-07',
+    readingTimeMin: 5,
+    keywords: ['growth hormone secretagogue', 'GHRH', 'ipamorelin', 'CJC-1295', 'sermorelin', 'GHRP'],
+    intro:
+      'Growth hormone secretagogues are a widely studied peptide class in growth-axis research. This guide explains the two main mechanisms in the class, the compounds most often referenced, and how they are handled in a research context. It contains no dosing or human-use guidance.',
+    sections: [
+      {
+        heading: 'Two Mechanisms In One Class',
+        paragraphs: [
+          'The class divides into two mechanisms. GHRH analogues, such as Sermorelin and CJC-1295, mimic growth-hormone-releasing hormone. Ghrelin-receptor agonists (also called GHRPs), such as Ipamorelin, act through a separate receptor. Researchers frequently study the two mechanisms together because they engage the growth axis through complementary pathways.',
+        ],
+        bullets: [
+          'GHRH analogues: Sermorelin, CJC-1295.',
+          'Ghrelin-receptor agonists (GHRPs): Ipamorelin, GHRP-2, GHRP-6.',
+        ],
+      },
+      {
+        heading: 'Why The Combination Is Studied',
+        paragraphs: [
+          'A common research pairing is a GHRH analogue with a ghrelin-receptor agonist, studied because the two mechanisms address different points in growth-axis signaling. This pairing is one of the most referenced combinations in the growth and longevity research area.',
+        ],
+      },
+      {
+        heading: 'Research Context',
+        paragraphs: [
+          'These compounds are studied as reference agonists for receptor and signaling research. As research peptides they are for in vitro laboratory research only and are not for human or animal use.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'Growth hormone secretagogues split into GHRH analogues and ghrelin-receptor agonists (GHRPs).',
+      'Sermorelin and CJC-1295 are GHRH analogues; Ipamorelin is a ghrelin-receptor agonist.',
+      'A GHRH analogue paired with a GHRP is a commonly studied combination.',
+      'All are Research Use Only, not for human or animal use.',
+    ],
+    related: ['peptide-research-areas-explained', 'glp-1-receptor-agonists-in-research'],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'how-research-peptides-are-synthesized',
+    title: 'How Research Peptides Are Synthesized',
+    description:
+      'A plain-language overview of solid-phase peptide synthesis (SPPS), why sequence fidelity and purification matter, and how synthesis quality shows up in a Certificate of Analysis.',
+    datePublished: '2026-07-07',
+    dateModified: '2026-07-07',
+    readingTimeMin: 6,
+    keywords: ['peptide synthesis', 'solid-phase peptide synthesis', 'SPPS', 'purification', 'sequence fidelity'],
+    intro:
+      'Understanding how research peptides are made clarifies why documentation like a Certificate of Analysis exists and what it is verifying. This guide gives a plain-language overview of solid-phase peptide synthesis, the dominant method, and explains how synthesis quality translates into the purity and identity data researchers rely on.',
+    sections: [
+      {
+        heading: 'Solid-Phase Peptide Synthesis',
+        paragraphs: [
+          'Most research peptides are made by solid-phase peptide synthesis (SPPS). The peptide is assembled one amino acid at a time on a solid resin support, with each residue added in a controlled coupling step and protecting groups removed between steps. Building the chain on a solid support allows excess reagents to be washed away at each stage, which drives the reaction toward completion.',
+        ],
+      },
+      {
+        heading: 'Why Sequence Fidelity And Purification Matter',
+        paragraphs: [
+          'Every coupling step is an opportunity for a small fraction of chains to deviate — a missing residue, an incomplete coupling, or a side reaction. These produce closely related impurities that must be separated from the target during purification, typically by preparative HPLC. The quality of both synthesis and purification determines the final purity profile.',
+        ],
+        bullets: [
+          'Chains are assembled residue by residue on a solid support.',
+          'Imperfect couplings create closely related peptide impurities.',
+          'Preparative HPLC purifies the target from those impurities.',
+        ],
+      },
+      {
+        heading: 'How This Shows Up In A COA',
+        paragraphs: [
+          'The Certificate of Analysis is where synthesis quality becomes visible to the researcher. HPLC purity reflects how cleanly the target was synthesized and purified; mass spectrometry confirms the assembled sequence matches the intended molecule. Reading a COA is, in effect, reading the outcome of the synthesis process.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'Most research peptides are made by solid-phase peptide synthesis (SPPS), assembled residue by residue on a resin.',
+      'Imperfect coupling steps create related impurities that purification (preparative HPLC) must remove.',
+      'Synthesis and purification quality determine the final purity profile.',
+      'A Certificate of Analysis reports the outcome: HPLC purity and mass-spectrometry identity.',
+    ],
+    related: ['understanding-peptide-purity', 'how-to-read-a-certificate-of-analysis'],
+  },
 ];
 
 export function getGuide(slug: string): Guide | undefined {
