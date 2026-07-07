@@ -79,7 +79,7 @@ export interface FeaturedPeptide {
   slug: string;           // links to /research/[slug]
   category: string;
   tagline: string;
-  icon: string;           // emoji shorthand for the card icon
+  icon: string;           // icon key for SVG lookup map in CityPage
   badge?: string;
 }
 
@@ -89,7 +89,7 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     slug: 'bpc-157',
     category: 'Healing & Recovery',
     tagline: 'Body Protection Compound — one of the most studied peptides for tissue repair research.',
-    icon: '🧬',
+    icon: 'FlaskConical',
     badge: 'Most Researched',
   },
   {
@@ -97,7 +97,7 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     slug: 'semaglutide',
     category: 'Metabolic Health',
     tagline: 'GLP-1 receptor agonist widely studied for metabolic and weight regulation research.',
-    icon: '⚗️',
+    icon: 'Beaker',
     badge: 'High Demand',
   },
   {
@@ -105,14 +105,14 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     slug: 'tb-500',
     category: 'Recovery & Performance',
     tagline: 'Thymosin Beta-4 fragment studied for cellular recovery and tissue regeneration.',
-    icon: '💉',
+    icon: 'Syringe',
   },
   {
     name: 'Tirzepatide',
     slug: 'tirzepatide',
     category: 'Metabolic Health',
     tagline: 'Dual GIP/GLP-1 agonist — cutting-edge metabolic research compound.',
-    icon: '🔬',
+    icon: 'Microscope',
     badge: 'Trending',
   },
   {
@@ -120,27 +120,27 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     slug: 'ipamorelin',
     category: 'Growth & Longevity',
     tagline: 'Selective growth hormone secretagogue — widely used in longevity research.',
-    icon: '🧪',
+    icon: 'TestTube',
   },
   {
     name: 'CJC-1295',
     slug: 'cjc-1295',
     category: 'Growth & Longevity',
     tagline: 'GHRH analogue studied for growth hormone pulse amplification.',
-    icon: '🔭',
+    icon: 'Telescope',
   },
   {
     name: 'Sermorelin',
     slug: 'sermorelin',
     category: 'Growth & Longevity',
     tagline: 'First-generation GHRH analogue with a long safety research profile.',
-    icon: '🌡️',
+    icon: 'Thermometer',
   },
   {
     name: 'PT-141',
     slug: 'pt-141',
     category: 'Sexual Health',
     tagline: 'Melanocortin receptor agonist studied for sexual function and libido research.',
-    icon: '💊',
+    icon: 'Pill',
   },
 ];

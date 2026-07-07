@@ -12,6 +12,27 @@ import type { City } from '@/lib/cities/cities-data';
 import { FEATURED_PEPTIDES } from '@/lib/cities/keywords';
 import { getCityIntro, getCityFAQs, VALUE_PROPS, getRegionLabel } from '@/lib/cities/city-content';
 
+// ─── Icon SVG lookup maps (no emojis — platform rule) ────────────────────
+const PEPTIDE_ICON_SVG: Record<string, React.ReactNode> = {
+  FlaskConical: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5"><path d="M6 3h12"/><path d="M9 3v6l-5 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-5-9V3"/></svg>,
+  Beaker:       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5"><path d="M4.5 3h15"/><path d="M6 3v10l-2.8 6.4A1 1 0 0 0 4.1 21h15.8a1 1 0 0 0 .9-1.6L18 13V3"/><path d="M6 17h12"/></svg>,
+  Syringe:      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></svg>,
+  Microscope:   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></svg>,
+  TestTube:     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5"><path d="M14.5 2v17.5c0 1.4-1.1 2.5-2.5 2.5c-1.4 0-2.5-1.1-2.5-2.5V2"/><path d="M8.5 2h7"/><path d="M14.5 16h-5"/></svg>,
+  Telescope:    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5"><circle cx="12" cy="12" r="2"/><path d="M4 12 2 2l4 1 5 9"/><path d="m20 12 2-10-4 1-5 9"/><path d="M10.5 20.5 10 22l2 1 2-1-.5-1.5"/><path d="M12 19v-6.5"/></svg>,
+  Thermometer:  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>,
+  Pill:         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="M8.5 8.5 16 16"/></svg>,
+};
+
+const VALUE_ICON_SVG: Record<string, React.ReactNode> = {
+  Dna:            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5"><path d="M2 15c6.667-6 13.333 0 20-6"/><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/><path d="m17 6-2.5-2.5"/><path d="m14 8-1-1"/><path d="m7 18 2.5 2.5"/><path d="m10 16 1 1"/><path d="m2 9 4.5 4.5"/><path d="m21.5 10.5-1 1"/><path d="m22 15-4.5-4.5"/><path d="m2.5 13.5 1-1"/></svg>,
+  Zap:            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>,
+  BadgeDollarSign:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>,
+  FlaskConical:   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5"><path d="M6 3h12"/><path d="M9 3v6l-5 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-5-9V3"/></svg>,
+  Shield:         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>,
+  Package:        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/></svg>,
+};
+
 interface Props {
   city: City;
   stateSlug: string;
@@ -132,12 +153,19 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                 </svg>
                 Research Use Only
               </span>
-              <span className="badge badge-silver" style={{ fontSize: '0.68rem' }}>
-                📍 {city.name}, {city.stateAbbr}
+              <span className="badge badge-silver" style={{ fontSize: '0.68rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                {city.name}, {city.stateAbbr}
               </span>
               {city.tier === 1 && (
-                <span className="badge" style={{ fontSize: '0.68rem', background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.25)', color: 'var(--gold)' }}>
-                  ⭐ Priority Market
+                <span className="badge" style={{ fontSize: '0.68rem', background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.25)', color: 'var(--gold)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  </svg>
+                  Priority Market
                 </span>
               )}
             </div>
@@ -274,7 +302,9 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                       {peptide.badge}
                     </div>
                   )}
-                  <div style={{ fontSize: '2rem', marginBottom: 'var(--space-1)' }}>{peptide.icon}</div>
+                  <div style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-1)' }}>
+                    {PEPTIDE_ICON_SVG[peptide.icon] ?? PEPTIDE_ICON_SVG.FlaskConical}
+                  </div>
                   <div>
                     <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                       {peptide.category}
@@ -342,7 +372,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '1.4rem',
                   }}>
-                    {vp.icon}
+                    {VALUE_ICON_SVG[vp.icon] ?? VALUE_ICON_SVG.FlaskConical}
                   </div>
                   <div>
                     <h4 style={{ color: 'var(--silver-light)', marginBottom: 'var(--space-2)', fontSize: '0.95rem' }}>{vp.title}</h4>
@@ -463,7 +493,11 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
           textAlign: 'center',
         }}>
           <div className="container" style={{ maxWidth: 620 }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-4)' }}>🧬</div>
+            <div style={{ width: 56, height: 56, margin: '0 auto var(--space-4)', background: 'var(--teal-subtle)', border: 'var(--border-teal)', borderRadius: 'var(--radius-xl)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5">
+                <path d="M6 3h12"/><path d="M9 3v6l-5 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-5-9V3"/>
+              </svg>
+            </div>
             <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>
               Ready to Start Your Research in{' '}
               <span style={{ color: 'var(--teal)' }}>{city.name}?</span>
@@ -472,13 +506,13 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
               Create a verified researcher account today and unlock wholesale pricing on 300+ pharmaceutical-grade peptides — shipped fast to {city.name}, {city.stateAbbr}.
             </p>
             <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link href="/register" className="btn btn-primary btn-xl">
+              <Link href="/login" className="btn btn-primary btn-xl">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                  <polyline points="10 17 15 12 10 7"/>
+                  <line x1="15" y1="12" x2="3" y2="12"/>
                 </svg>
-                Create Research Account
+                Access the Lab
               </Link>
               <Link href="/research" className="btn btn-secondary btn-xl">
                 Explore Research Library

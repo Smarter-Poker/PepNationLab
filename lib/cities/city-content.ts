@@ -99,39 +99,39 @@ export function getCityFAQs(city: City): FAQ[] {
 
 // ─── Value props ──────────────────────────────────────────────────────────
 export interface ValueProp {
-  icon: string;
+  icon: string;  // icon key for SVG lookup map in CityPage
   title: string;
   body: string;
 }
 
 export const VALUE_PROPS: ValueProp[] = [
   {
-    icon: '🧬',
+    icon: 'Dna',
     title: 'Pharmaceutical-Grade Purity',
     body: 'Every compound is batch-tested with full COA documentation. We source only from certified synthesis facilities.',
   },
   {
-    icon: '⚡',
+    icon: 'Zap',
     title: 'Same-Day Fulfillment',
     body: 'Orders placed by verified researchers before 3PM CT ship same day. Cold-chain and standard shipping available.',
   },
   {
-    icon: '💰',
+    icon: 'BadgeDollarSign',
     title: 'True Wholesale Pricing',
     body: '3-tier agent structure means researchers access prices unavailable anywhere else. No retail markup.',
   },
   {
-    icon: '🔬',
+    icon: 'FlaskConical',
     title: '300+ Compounds',
     body: 'One of the largest catalogs in the industry. BPC-157, Semaglutide, Tirzepatide, TB-500, and hundreds more.',
   },
   {
-    icon: '🛡️',
+    icon: 'Shield',
     title: 'Verified Researchers Only',
     body: 'Every account is manually reviewed. We protect the integrity of our network and ensure compliance with all applicable laws.',
   },
   {
-    icon: '📦',
+    icon: 'Package',
     title: 'Nationwide Shipping',
     body: 'Shipping to all 50 states with discrete, lab-appropriate packaging and full documentation.',
   },

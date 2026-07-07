@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { Heart, Bell, ShieldCheck, Gift } from 'lucide-react';
 import LabJournalClient from './LabJournalClient';
-import Navbar from '@/components/Navbar';
+import PageShell from '@/components/PageShell';
 
 export const dynamic = 'force-dynamic';
 
@@ -234,9 +234,8 @@ export default async function LabJournalPage() {
   }
 
   return (
-    <>
-      <Navbar />
-      <div style={{ minHeight: '100dvh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)', paddingTop: 'calc(var(--nav-offset, 60px) + var(--space-6))' }}>
+    <PageShell>
+      <div style={{ minHeight: '100dvh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
         <div className="container" style={{ maxWidth: 1080 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
             <Heart size={22} aria-hidden="true" style={{ color: 'var(--teal)' }} />
@@ -247,8 +246,6 @@ export default async function LabJournalPage() {
           <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-6)' }}>
             Your Saved Compounds, Browsing History, And Past Orders All In One Place.
           </p>
-
-
 
           <LabJournalClient 
             favorites={favorites} 
@@ -262,7 +259,7 @@ export default async function LabJournalPage() {
           />
         </div>
       </div>
-    </>
+    </PageShell>
   );
 }
 

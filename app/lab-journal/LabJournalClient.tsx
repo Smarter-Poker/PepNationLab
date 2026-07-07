@@ -62,6 +62,8 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [aiGoal, setAiGoal] = useState('');
   const [aiCompounds, setAiCompounds] = useState<string[]>([]);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [aiExperience, setAiExperience] = useState('Beginner');
+  const [aiMetrics, setAiMetrics] = useState('');
 
   // Dose UI State
   const [doseCompound, setDoseCompound] = useState('');
@@ -210,6 +212,44 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     }
   }
 
+  async function toggleFavorite(item: Item) {
+    const isFav = favorites.some(f => f.product_id === item.product_id);
+    setPendingId(item.product_id);
+    try {
+      if (isFav) {
+        const res = await fetch('/api/researcher/wishlist', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ productId: item.product_id }),
+        });
+        if (res.ok) {
+          startTransition(() => {
+            setFavorites(prev => prev.filter(f => f.product_id !== item.product_id));
+          });
+          toast.success('Removed From Saved Compounds');
+        }
+      } else {
+        const res = await fetch('/api/researcher/wishlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ productId: item.product_id }),
+        });
+        if (res.ok) {
+          startTransition(() => {
+            setFavorites(prev => [item, ...prev]);
+          });
+          toast.success('Added To Saved Compounds');
+        }
+      }
+    } catch (e) {
+      toast.error('Error updating saved compounds');
+    } finally {
+      setPendingId(null);
+    }
+  }
+
   async function clearRecentlyViewed() {
     if (!confirm('Are You Sure You Want To Clear Your Recently Viewed History?')) return;
     try {
@@ -277,7 +317,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       const res = await fetch('/api/researcher/ai-protocol', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ compounds: aiCompounds, goal: aiGoal })
+        body: JSON.stringify({ compounds: aiCompounds, goal: aiGoal, experienceLevel: aiExperience, subjectMetrics: aiMetrics })
       });
       const data = await res.json();
       if (res.ok && data.note) {
@@ -352,6 +392,25 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     }
   };
 
+  const deleteDose = async (id: string) => {
+    if (!confirm('Delete This Dose Log?')) return;
+    try {
+      const res = await fetch('/api/researcher/doses', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        setDoses(prev => prev.filter(d => d.id !== id));
+        toast.success('Dose Deleted');
+      } else {
+        toast.error('Failed To Delete Dose');
+      }
+    } catch {
+      toast.error('Error Deleting Dose');
+    }
+  };
+
   const saveBiometric = async () => {
     if (!bioName || !bioValue) return;
     setBioSaving(true);
@@ -371,6 +430,25 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       toast.error('Failed To Log Biometric');
     } finally {
       setBioSaving(false);
+    }
+  };
+
+  const deleteBiometric = async (id: string) => {
+    if (!confirm('Delete This Biometric Log?')) return;
+    try {
+      const res = await fetch('/api/researcher/biometrics', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        setBiometrics(prev => prev.filter(b => b.id !== id));
+        toast.success('Biometric Deleted');
+      } else {
+        toast.error('Failed To Delete Biometric');
+      }
+    } catch {
+      toast.error('Error Deleting Biometric');
     }
   };
 
@@ -734,6 +812,13 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
               <Image src="/images/badges/badge_out_of_stock.png" alt="Out of Stock" width={80} height={26} unoptimized style={{ borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />
             </div>
           )}
+
+          {/* Heart Icon Overlay */}
+          <div style={{ position: 'absolute', bottom: 8, right: 8, zIndex: 10 }}>
+            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(item); }} disabled={pendingId === item.product_id} style={{ background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', padding: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: pendingId === item.product_id ? 0.5 : 1 }}>
+              <Heart size={16} color={favorites.some(f => f.product_id === item.product_id) ? 'var(--red)' : 'var(--silver)'} fill={favorites.some(f => f.product_id === item.product_id) ? 'var(--red)' : 'none'} />
+            </button>
+          </div>
         </div>
 
         <div style={{ padding: 'var(--space-3)', display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
@@ -770,35 +855,40 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
   return (
     <div style={{ paddingBottom: '100px' }}>
-      {/* Top Tabs */}
-      <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', overflowX: 'auto', paddingBottom: 'var(--space-2)' }}>
-        {[
-          { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
-          { id: 'favorites', label: 'Saved Compounds', icon: Heart },
-          { id: 'pastOrders', label: 'Helpful Data & Orders', icon: PackageOpen },
-          { id: 'doses', label: 'Dose Tracker', icon: Layers },
-          { id: 'biometrics', label: 'Biometrics', icon: Layers },
-          { id: 'recentlyViewed', label: 'Recently Viewed', icon: History },
-          { id: 'compareHistory', label: 'Compare History', icon: Search },
-          { id: 'notes', label: 'My Notes', icon: Info }
-        ].map(t => (
-          <button
-            key={t.id}
-            onClick={() => { setActiveTab(t.id as any); setShowBuilder(false); setSelectedItems(new Set()); }}
-            style={{
-              background: 'none', border: 'none',
-              color: activeTab === t.id ? 'var(--teal)' : 'var(--silver)',
-              fontWeight: activeTab === t.id ? 'bold' : 'normal',
-              padding: 'var(--space-2) var(--space-4)',
-              cursor: 'pointer', whiteSpace: 'nowrap',
-              borderBottom: activeTab === t.id ? '2px solid var(--teal)' : '2px solid transparent',
-              transition: 'all 0.2s ease', fontSize: '0.95rem',
-              display: 'flex', alignItems: 'center', gap: 8
-            }}
-          >
-            <t.icon size={16} /> {t.label}
-          </button>
-        ))}
+      {/* Top Controls */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', paddingBottom: 'var(--space-2)', flex: 1, minWidth: 0 }}>
+          {[
+            { id: 'notes', label: 'My Notes', icon: Info },
+            { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
+            { id: 'favorites', label: 'Saved Compounds', icon: Heart },
+            { id: 'pastOrders', label: 'Helpful Data & Orders', icon: PackageOpen },
+            { id: 'doses', label: 'Dose Tracker', icon: Layers },
+            { id: 'biometrics', label: 'Biometrics', icon: Layers },
+            { id: 'recentlyViewed', label: 'Recently Viewed', icon: History },
+            { id: 'compareHistory', label: 'Compare History', icon: Search }
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => { setActiveTab(t.id as any); setShowBuilder(false); setSelectedItems(new Set()); }}
+              style={{
+                background: 'none', border: 'none',
+                color: activeTab === t.id ? 'var(--teal)' : 'var(--silver)',
+                fontWeight: activeTab === t.id ? 'bold' : 'normal',
+                padding: 'var(--space-2) var(--space-4)',
+                cursor: 'pointer', whiteSpace: 'nowrap',
+                borderBottom: activeTab === t.id ? '2px solid var(--teal)' : '2px solid transparent',
+                transition: 'all 0.2s ease', fontSize: '0.95rem',
+                display: 'flex', alignItems: 'center', gap: 8
+              }}
+            >
+              <t.icon size={16} /> {t.label}
+            </button>
+          ))}
+        </div>
+        <button onClick={exportJournalToCSV} className="btn btn-secondary btn-sm" style={{ whiteSpace: 'nowrap', borderRadius: 20, flexShrink: 0 }}>
+          Export Journal to CSV
+        </button>
       </div>
 
       {activeTab === 'bundles' && (
@@ -836,7 +926,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
               <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--silver)' }} />
               <input 
                 type="text" 
-                placeholder="Search journal..." 
+                placeholder="Search Journal..." 
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px 8px 34px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }}
@@ -923,6 +1013,28 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                             ))}
                           </select>
                           <p style={{ fontSize: '0.8rem', color: 'var(--silver)', marginTop: 4 }}>Hold Cmd/Ctrl to select multiple.</p>
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', color: 'var(--silver)', marginBottom: 8 }}>Experience Level</label>
+                          <select 
+                            value={aiExperience} 
+                            onChange={e => setAiExperience(e.target.value)}
+                            style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                          >
+                            <option value="Beginner">Beginner (First Time Researcher)</option>
+                            <option value="Intermediate">Intermediate (1-3 Years)</option>
+                            <option value="Advanced">Advanced (3+ Years)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', color: 'var(--silver)', marginBottom: 8 }}>Subject Metrics (Optional)</label>
+                          <input 
+                            type="text" 
+                            placeholder="e.g. 180lbs, 15% body fat, age 35 male" 
+                            value={aiMetrics} 
+                            onChange={e => setAiMetrics(e.target.value)}
+                            style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                          />
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
@@ -1056,8 +1168,11 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                           <div style={{ color: 'var(--teal)', fontWeight: 'bold' }}>{d.compound_slug}</div>
                           <div style={{ color: 'var(--white)' }}>{d.dose_amount} {d.unit}</div>
                         </div>
-                        <div style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>
-                          {new Date(d.dosed_at).toLocaleDateString()} at {new Date(d.dosed_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                          <div style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>
+                            {new Date(d.dosed_at).toLocaleDateString()} at {new Date(d.dosed_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </div>
+                          <button onClick={() => deleteDose(d.id)} className="btn btn-ghost btn-sm" style={{ padding: 4, color: 'var(--red)' }}><Trash2 size={16}/></button>
                         </div>
                       </div>
                     ))}
@@ -1113,6 +1228,27 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                       {biometrics.length === 0 ? <div style={{ color: 'var(--silver)' }}>No biometrics logged yet.</div> : null}
                       {Array.from(new Set(biometrics.map(b => b.metric_name))).map(metric => renderCombinedChart(metric))}
+                    </div>
+                  </div>
+
+                  <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginTop: 'var(--space-6)' }}>
+                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>Recent Biometrics</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                      {biometrics.map(b => (
+                        <div key={b.id} className="glass-panel" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+                          <div>
+                            <div style={{ color: 'var(--teal)', fontWeight: 'bold' }}>{b.metric_name}</div>
+                            <div style={{ color: 'var(--white)' }}>{b.metric_value} {b.unit}</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                            <div style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>
+                              {new Date(b.measured_at).toLocaleDateString()} at {new Date(b.measured_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </div>
+                            <button onClick={() => deleteBiometric(b.id)} className="btn btn-ghost btn-sm" style={{ padding: 4, color: 'var(--red)' }}><Trash2 size={16}/></button>
+                          </div>
+                        </div>
+                      ))}
+                      {biometrics.length === 0 && <div style={{ color: 'var(--silver)' }}>No biometrics logged yet.</div>}
                     </div>
                   </div>
                 </div>
