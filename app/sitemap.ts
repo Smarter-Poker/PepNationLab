@@ -5,7 +5,7 @@
 import type { MetadataRoute } from 'next';
 import { createServiceClient } from '@/lib/supabase/server';
 import { CITIES, getStatesSlugs, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
-
+import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 const BASE = 'https://pepnationlab.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -19,6 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/contact`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE}/find-a-peptide`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE}/peptide-101`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${BASE}/${DEFAULT_STORE_SLUG}`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
 
     // Local SEO — Peptides by City (hub + states; city URLs are emitted once
     // below with tier-scored priority — do NOT list them twice)

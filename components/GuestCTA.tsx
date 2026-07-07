@@ -3,18 +3,24 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useCart } from '@/components/CartContext';
 
 /**
- * GuestCTA — Sticky "Ready To Get Started?" conversion banner.
+ * GuestCTA — Sticky conversion banner for unauthenticated visitors.
  *
  * - Renders ONLY for unauthenticated visitors
  * - Auto-hides the moment a session is detected
- * - Passes the current page URL as ?redirect= so the user returns to where
- *   they were after signing in or creating an account
+ * - CART-AWARE: when the guest has items in their cart, the banner switches to
+ *   a checkout-conversion message (create a free account to complete the order),
+ *   leads with "Create Account", and routes signup/login straight to /checkout.
+ *   The guest cart persists in localStorage through signup, so nothing is lost.
+ * - Otherwise passes the current page URL as ?redirect= so the user returns to
+ *   where they were after signing in or creating an account
  * - Has a session-level dismiss (×) so it's not permanently in-your-face
  * - Shows live member count as social proof when available
  */
 export default function GuestCTA() {
+  const { cartCount, cartSubtotal } = useCart();
   const [isGuest, setIsGuest] = useState<boolean | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [memberCount, setMemberCount] = useState<number | null>(null);
@@ -50,9 +56,23 @@ export default function GuestCTA() {
   // Don't render until we know auth state (avoids hydration flash)
   if (isGuest === null || isGuest === false || dismissed) return null;
 
-  const redirectParam = `?redirect=${encodeURIComponent(currentPath)}`;
+  // Cart-aware conversion mode: a guest with items is routed to checkout after
+  // auth so they can complete the order they already started.
+  const hasCart = cartCount > 0;
+  const authTarget = hasCart ? '/checkout' : currentPath;
+  const redirectParam = `?redirect=${encodeURIComponent(authTarget)}`;
   const loginHref = `/login${redirectParam}`;
   const signupHref = `/signup${redirectParam}`;
+
+  const headline = hasCart ? 'Complete Your Order' : 'Ready To Get Started?';
+  const subCopy = hasCart
+    ? 'Create A Free Researcher Account To Check Out. Your Cart Is Saved.'
+    : 'Already Have An Account? Sign In To Browse Your Storefront With Wholesale Pricing.';
+
+  // Cart summary shown in conversion mode.
+  const cartLabel = hasCart
+    ? `${cartCount} Item${cartCount === 1 ? '' : 's'} In Your Cart • $${Number(cartSubtotal || 0).toFixed(2)}`
+    : null;
 
   // Format member count with comma separator
   const countLabel = memberCount != null
@@ -121,7 +141,7 @@ export default function GuestCTA() {
           textAlign: 'center',
           lineHeight: 1.3,
         }}>
-          Ready To Get Started?
+          {headline}
         </p>
 
         {/* Sub-copy */}
@@ -133,8 +153,22 @@ export default function GuestCTA() {
           lineHeight: 1.5,
           maxWidth: 480,
         }}>
-          Already Have An Account? Sign In To Browse Your Storefront With Wholesale Pricing.
+          {subCopy}
         </p>
+
+        {/* Cart summary (conversion mode) */}
+        {cartLabel && (
+          <p style={{
+            margin: 0,
+            fontSize: '0.82rem',
+            fontWeight: 700,
+            color: 'var(--teal, #00C4BC)',
+            textAlign: 'center',
+            letterSpacing: '0.01em',
+          }}>
+            {cartLabel}
+          </p>
+        )}
 
         {/* Social proof */}
         {countLabel && (
@@ -159,8 +193,8 @@ export default function GuestCTA() {
           marginTop: 2,
         }}>
           <Link
-            href={loginHref}
-            id="guest-cta-sign-in"
+            href={hasCart ? signupHref : loginHref}
+            id="guest-cta-primary"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -180,12 +214,12 @@ export default function GuestCTA() {
             onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85'; }}
             onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
           >
-            Sign In
+            {hasCart ? 'Create Account & Check Out' : 'Sign In'}
           </Link>
 
           <Link
-            href={signupHref}
-            id="guest-cta-create-account"
+            href={hasCart ? loginHref : signupHref}
+            id="guest-cta-secondary"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -212,7 +246,7 @@ export default function GuestCTA() {
               e.currentTarget.style.color = 'var(--silver, #A8B4C0)';
             }}
           >
-            Create Account
+            {hasCart ? 'Sign In' : 'Create Account'}
           </Link>
         </div>
       </div>

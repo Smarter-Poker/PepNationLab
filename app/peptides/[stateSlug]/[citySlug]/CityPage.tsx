@@ -17,11 +17,26 @@ import type { City } from '@/lib/cities/cities-data';
 import { FEATURED_PEPTIDES } from '@/lib/cities/keywords';
 import { getCityIntro, getCityFAQs, getCityFacts, VALUE_PROPS, getRegionLabel } from '@/lib/cities/city-content';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+import type { StoreTop10Item } from '@/lib/cities/top10-server';
 
 interface Props {
   city: City;
   stateSlug: string;
   citySlug: string;
+  /** Live storefront Top 10 (same products, names, and prices as /researchstore). */
+  top10?: StoreTop10Item[];
+}
+
+/** Unified card shape: live store data when available, static fallback otherwise. */
+interface TopCard {
+  key: string;
+  href: string;
+  name: string;
+  subtitle: string | null;
+  image: string;
+  sizeLabel: string;
+  price: number;
+  originalPrice: number | null;
 }
 
 // Maps each value-prop icon key to its Nano Banana 3D image
@@ -346,11 +361,12 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
             <h2 style={{ color: 'var(--white)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 'var(--space-4)' }}>
               Research Peptide Supply In {city.name} — At A Glance
             </h2>
-            {city.localBlurb && (
-              <p style={{ fontSize: '0.92rem', color: 'var(--silver-light)', lineHeight: 1.75, maxWidth: 780, marginBottom: 'var(--space-5)' }}>
-                {city.localBlurb} Pep Nation Lab supplies verified researchers throughout the area with research-grade peptides, shipped with full batch documentation.
-              </p>
-            )}
+            {/* Intro is fact-oriented and does NOT repeat city.localBlurb
+                (which already renders as a standalone paragraph under the H1)
+                to avoid duplicate copy on the same page. */}
+            <p style={{ fontSize: '0.92rem', color: 'var(--silver-light)', lineHeight: 1.75, maxWidth: 780, marginBottom: 'var(--space-5)' }}>
+              Key facts for verified researchers sourcing research-grade peptides in {city.name}, {city.stateAbbr}. Every order ships nationwide with full batch COA documentation, strictly for in vitro laboratory use.
+            </p>
             <dl style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',

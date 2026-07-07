@@ -1,8 +1,9 @@
 export const dynamic = 'force-dynamic';
 
 import { Suspense } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import Link from 'next/link';
 import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
 import { getCompoundsBySlugs } from '@/lib/compounds-server';
@@ -232,6 +233,21 @@ export default async function AgentStorefrontPage({ params }: Props) {
     notFound(); // returns HTTP 404; prevents bots indexing dead storefronts as valid pages
   }
 
+  // OWNER RULE (2026-07-07): Guests ALWAYS browse the admin / house storefront
+  // (researchstore -- Daniel Bekavac) so they always see admin pricing. Any
+  // unauthenticated visitor who lands on a different agent's storefront is
+  // redirected to the house store. Signed-in researchers, agents, and store
+  // owners continue to see their own storefront and pricing untouched.
+  // NOTE: this intentionally consolidates the anonymous storefront experience
+  // onto researchstore (crawlers are anonymous, so agent-store URLs 302 here
+  // for bots too -- SEO focus is /research and /peptides, not agent stores).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user && agentSlug !== DEFAULT_STORE_SLUG) {
+    redirect(`/${DEFAULT_STORE_SLUG}`);
+  }
+
   if (agent.is_active === false) {
     const primaryColor = agent.primary_color ?? '#00C4BC';
     return (
@@ -251,9 +267,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
     );
   }
 
-  // We need user context JUST to determine the top navbar icons and rename banner,
-  // which is fine since getUser() is extremely fast (uses cookies)
-  // compared to resolving 50 product DB calls.
+  // `user` was already resolved above (for the guest-redirect rule). We reuse it
+  // here to determine the top navbar icons and rename banner.
   //
   // Note: AgentStorefrontDataLoader (rendered inside the Suspense boundary below)
   // also fetches userProfile independently with a broader column set
@@ -262,7 +277,6 @@ export default async function AgentStorefrontPage({ params }: Props) {
   // separate async Server Component rendered after the Suspense fallback resolves.
   // If this becomes a performance concern, the full profile could be passed as a
   // prop from here into the DataLoader instead of re-querying.
-  const { data: { user } } = await supabase.auth.getUser();
   let userProfile = null;
   if (user) {
     const { data } = await supabase
@@ -347,7 +361,7 @@ export async function generateMetadata({ params }: Props) {
   return {
     title,
     description,
-    robots: { index: true, follow: true },
+    robots: { index: agentSlug === DEFAULT_STORE_SLUG, follow: agentSlug === DEFAULT_STORE_SLUG },
     alternates: { canonical: `https://pepnationlab.com/${agentSlug}` },
     openGraph: {
       title,

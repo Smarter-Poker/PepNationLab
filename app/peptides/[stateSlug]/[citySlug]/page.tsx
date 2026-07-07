@@ -14,7 +14,13 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { CITIES, getCity, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
 import { getCityFAQs } from '@/lib/cities/city-content';
+import { getStoreTop10 } from '@/lib/cities/top10-server';
 import CityPage from './CityPage';
+
+// ISR: regenerate each city page at most every 5 minutes so the Top 10 grid
+// tracks the live storefront catalog — admin price/name changes flow through
+// without a redeploy.
+export const revalidate = 300;
 
 // ─── Static params (build-time pre-rendering) ─────────────────────────────
 export async function generateStaticParams() {
@@ -84,6 +90,10 @@ export default async function CityLandingPage({
   if (!city) notFound();
 
   const faqs = getCityFAQs(city);
+  // Live storefront Top 10 — identical products, names, sizes, and prices to
+  // the default store. Empty array on failure → CityPage falls back to the
+  // static FEATURED_PEPTIDES list.
+  const top10 = await getStoreTop10();
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -149,7 +159,7 @@ export default async function CityLandingPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <CityPage city={city} stateSlug={stateSlug} citySlug={citySlug} />
+      <CityPage city={city} stateSlug={stateSlug} citySlug={citySlug} top10={top10} />
     </>
   );
 }

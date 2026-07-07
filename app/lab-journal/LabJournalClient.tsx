@@ -1006,6 +1006,30 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     [biometrics]
   );
 
+  // Dose-day vs non-dose-day associational comparison (Bearable-style "Impacts")
+  const doseImpacts = useMemo(() => {
+    const doseDaySet = new Set(doses.map(d => dayKey(d.dosed_at)));
+    if (doseDaySet.size === 0) return [];
+    const round1 = (n: number) => Math.round(n * 100) / 100;
+    const results: { metric: string; unit: string; onAvg: number; offAvg: number; onN: number; offN: number; delta: number }[] = [];
+    trackedMetrics.forEach(metric => {
+      const rows = biometrics.filter(b => b.metric_name === metric);
+      const on: number[] = [], off: number[] = [];
+      let unit = '';
+      rows.forEach(b => {
+        unit = b.unit || unit;
+        (doseDaySet.has(dayKey(b.measured_at)) ? on : off).push(Number(b.metric_value));
+      });
+      // Need a meaningful sample in both buckets
+      if (on.length < 2 || off.length < 2) return;
+      const onAvg = round1(on.reduce((a, c) => a + c, 0) / on.length);
+      const offAvg = round1(off.reduce((a, c) => a + c, 0) / off.length);
+      results.push({ metric, unit, onAvg, offAvg, onN: on.length, offN: off.length, delta: round1(onAvg - offAvg) });
+    });
+    // Rank by magnitude of difference
+    return results.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  }, [doses, biometrics, trackedMetrics]);
+
   // Trend chart: raw dots + moving-average line + optional goal + dose-day markers
   const renderBioTrendChart = (metric: string) => {
     const cutoff = Date.now() - bioRange * 86400000;
@@ -2338,6 +2362,47 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                       {(bioMetricFilter ? [bioMetricFilter] : trackedMetrics).map(metric => renderBioTrendChart(metric))}
+                    </div>
+                  )}
+
+                  {/* Dose-Day vs Off-Day Impact Comparison */}
+                  {doseImpacts.length > 0 && (
+                    <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginTop: 'var(--space-6)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-2)' }}>
+                        <Layers size={18} style={{ color: 'var(--teal)' }} />
+                        <h3 style={{ color: 'var(--white)', margin: 0 }}>Dose-Day Impact</h3>
+                      </div>
+                      <p style={{ color: 'var(--silver)', fontSize: '0.8rem', marginTop: 0, marginBottom: 'var(--space-5)' }}>Average Reading On Days You Logged A Dose Versus Days You Did Not. This Is An Association In Your Own Log, Not Proof Of Cause.</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+                        {doseImpacts.map(imp => {
+                          const max = Math.max(imp.onAvg, imp.offAvg, 0.0001);
+                          const preset = BIOMETRIC_PRESETS.find(p => p.name === imp.metric);
+                          const better = preset?.better || 'none';
+                          const good = better === 'none' ? null : (better === 'up' ? imp.delta > 0 : imp.delta < 0);
+                          const deltaColor = good == null ? 'var(--silver)' : good ? 'var(--teal)' : '#F6AD55';
+                          const bar = (label: string, val: number, n: number, color: string) => (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <div style={{ width: 96, flexShrink: 0, color: 'var(--silver)', fontSize: '0.8rem', textAlign: 'right' }}>{label} <span style={{ opacity: 0.6 }}>({n})</span></div>
+                              <div style={{ flex: 1, height: 26, background: 'rgba(255,255,255,0.04)', borderRadius: 6, position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ width: `${(val / max) * 100}%`, height: '100%', background: color, borderRadius: 6, transition: 'width 0.4s' }} />
+                                <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--white)', fontSize: '0.82rem', fontWeight: 700 }}>{val} {imp.unit}</span>
+                              </div>
+                            </div>
+                          );
+                          return (
+                            <div key={imp.metric}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+                                <span style={{ color: 'var(--white)', fontWeight: 700 }}>{imp.metric}</span>
+                                <span style={{ color: deltaColor, fontSize: '0.82rem', fontWeight: 600 }}>{imp.delta > 0 ? '+' : ''}{imp.delta} {imp.unit} On Dose Days</span>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                {bar('Dose Days', imp.onAvg, imp.onN, 'var(--teal)')}
+                                {bar('Off Days', imp.offAvg, imp.offN, 'rgba(208,218,228,0.4)')}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 

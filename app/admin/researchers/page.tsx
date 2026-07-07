@@ -26,6 +26,10 @@ interface Profile {
   full_name: string | null;
   phone: string | null;
   parent_agent_id?: string | null;
+  referring_agent_id?: string | null;
+  referring_agent_name?: string | null;
+  referring_agent_slug?: string | null;
+  referring_agent_role?: string | null;
   role: 'researcher' | 'agent' | 'super_agent' | 'admin';
   is_super_agent?: boolean;
   tier: 'tier_1' | 'tier_2' | 'tier_3' | null;
@@ -74,7 +78,15 @@ function ResearchersAdminPageInner() {
   const [viewingDownlineFor, setViewingDownlineFor] = useState<Profile | null>(null);
 
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
-  const [modalMode, setModalMode] = useState<'upgrade' | 'edit' | 'qr' | 'balance' | 'create_agent' | null>(null);
+  const [modalMode, setModalMode] = useState<'upgrade' | 'edit' | 'qr' | 'balance' | 'create_agent' | 'assign' | null>(null);
+  // Researcher-ownership filter (Researchers tab only): 'house' shows only
+  // researchers still owned by the admin / house store, 'assigned' shows only
+  // those handed to a real agent, 'all' shows everyone.
+  const [ownerFilter, setOwnerFilter] = useState<'house' | 'assigned' | 'all'>(
+    (searchParams.get('owner') as 'house' | 'assigned' | 'all') ?? 'house'
+  );
+  // Assign-to-agent modal state.
+  const [assignAgentId, setAssignAgentId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState('');
   const [modalSuccess, setModalSuccess] = useState('');
@@ -273,6 +285,49 @@ function ResearchersAdminPageInner() {
     setModalMode('qr');
   }
 
+  function openAssignModal(profile: Profile) {
+    setSelectedProfile(profile);
+    setModalMode('assign');
+    setModalError('');
+    setModalSuccess('');
+    // Pre-select current owner if it is a real agent (not the house).
+    setAssignAgentId(isHouseOwned(profile) ? '' : (profile.referring_agent_id ?? ''));
+  }
+
+  async function handleAssignSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedProfile) return;
+    if (!assignAgentId) {
+      setModalError('Please Select An Agent Or Super Agent');
+      return;
+    }
+    setSubmitting(true);
+    setModalError('');
+    setModalSuccess('');
+    try {
+      const res = await fetch('/api/admin/researchers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: selectedProfile.id, action: 'assign_researcher', assign_to_agent_id: assignAgentId }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        const label = assignAgentId === '__HOUSE__'
+          ? 'The House Account'
+          : (agentOptions.find(a => a.id === assignAgentId)?.label ?? 'The Selected Agent');
+        toast.success(`${selectedProfile.full_name || 'Researcher'} Assigned To ${label}.`);
+        await fetchProfiles();
+        closeModal();
+      } else {
+        setModalError(json.error || 'Failed To Assign Researcher');
+      }
+    } catch (err: any) {
+      setModalError(err.message || 'Network Error');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   function closeModal() {
     setModalMode(null);
     setSelectedProfile(null);
@@ -396,9 +451,39 @@ function ResearchersAdminPageInner() {
     if (tierFilter !== 'all') params.set('tier', tierFilter);
     if (accountTypeFilter !== 'all') params.set('accountType', accountTypeFilter);
     if (outstandingOnly) params.set('outstanding', '1');
+    if (ownerFilter !== 'house') params.set('owner', ownerFilter);
     const qs = params.toString();
     router.replace(qs ? `/admin/researchers?${qs}` : '/admin/researchers', { scroll: false });
-  }, [searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly, router]);
+  }, [searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly, ownerFilter, router]);
+
+  // A researcher is "house-owned" (i.e. still the admin's) when they have no
+  // referring agent, or their referring agent is the house store (researchstore)
+  // or an admin account. Once reassigned to a real agent, they stop being
+  // house-owned and drop out of the admin's default Researchers list.
+  function isHouseOwned(p: Profile): boolean {
+    if (!p.referring_agent_id) return true;
+    if (p.referring_agent_slug === 'researchstore') return true;
+    if (p.referring_agent_role === 'admin') return true;
+    return false;
+  }
+
+  // Agents + super agents available as assignment targets.
+  const agentOptions = useMemo(() => {
+    return profiles
+      .filter(p => (p.role === 'agent' || p.role === 'super_agent') && p.is_active !== false)
+      .map(p => {
+        const ap = Array.isArray(p.agent_profiles) ? p.agent_profiles[0] : p.agent_profiles;
+        return {
+          id: p.id,
+          label: `${p.full_name || p.username || p.email}${p.is_super_agent ? ' (Super Agent)' : ''}${ap?.slug ? ` — @${ap.slug}` : ''}`,
+          slug: ap?.slug ?? null,
+        };
+      })
+      // Never list the house store itself as a normal assignment target; it is
+      // offered separately as the "Return To House" option.
+      .filter(a => a.slug !== 'researchstore')
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [profiles]);
 
   const filteredProfiles = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -411,6 +496,12 @@ function ResearchersAdminPageInner() {
         (p.email || '').toLowerCase().includes(q);
       if (!matchesSearch) return false;
       if (activeTab === 'researchers' && p.role !== 'researcher') return false;
+      // Researcher ownership filter: hide agent-assigned researchers from the
+      // admin's default "house" view; they reappear under "Assigned"/"All".
+      if (activeTab === 'researchers') {
+        if (ownerFilter === 'house' && !isHouseOwned(p)) return false;
+        if (ownerFilter === 'assigned' && isHouseOwned(p)) return false;
+      }
       if (activeTab === 'agents') {
         if (p.role !== 'agent' && p.role !== 'super_agent') return false;
         if (!q) {
@@ -430,7 +521,7 @@ function ResearchersAdminPageInner() {
       if (outstandingOnly && !unpaidAgentIds.has(p.id)) return false;
       return true;
     });
-  }, [profiles, searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly, unpaidAgentIds, viewingDownlineFor]);
+  }, [profiles, searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly, unpaidAgentIds, viewingDownlineFor, ownerFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProfiles.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -439,7 +530,7 @@ function ResearchersAdminPageInner() {
   useEffect(() => {
     setPage(1);
     if (activeTab !== 'agents') setViewingDownlineFor(null);
-  }, [searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly]);
+  }, [searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly, ownerFilter]);
 
   function resetResearcherFilters() {
     setSearchQuery('');
@@ -448,6 +539,7 @@ function ResearchersAdminPageInner() {
     setTierFilter('all');
     setAccountTypeFilter('all');
     setOutstandingOnly(false);
+    setOwnerFilter('house');
   }
 
   const inputStyle = { accentColor: 'var(--teal)', width: 18, height: 18 };
@@ -531,6 +623,13 @@ function ResearchersAdminPageInner() {
             <option value="deactivated">Deactivated</option>
           </select>
         )}
+        {activeTab === 'researchers' && (
+          <select className="form-input" value={ownerFilter} onChange={e => { setOwnerFilter(e.target.value as 'house' | 'assigned' | 'all'); setPage(1); }} style={{ maxWidth: 210 }} title="Filter Researchers By Owner">
+            <option value="house">House / Unassigned</option>
+            <option value="assigned">Assigned To Agents</option>
+            <option value="all">All Researchers</option>
+          </select>
+        )}
         {activeTab === 'agents' && (
           <>
             <select className="form-input" value={tierFilter} onChange={e => { setTierFilter(e.target.value); setPage(1); }} style={{ maxWidth: 160 }}>
@@ -550,7 +649,7 @@ function ResearchersAdminPageInner() {
             </label>
           </>
         )}
-        {(searchQuery || roleFilter !== 'all' || activeFilter !== 'all' || tierFilter !== 'all' || accountTypeFilter !== 'all' || outstandingOnly) && (
+        {(searchQuery || roleFilter !== 'all' || activeFilter !== 'all' || tierFilter !== 'all' || accountTypeFilter !== 'all' || outstandingOnly || (activeTab === 'researchers' && ownerFilter !== 'house')) && (
           <button type="button" onClick={resetResearcherFilters}
             style={{ fontSize: '0.78rem', color: 'var(--grey-400)', background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer' }}>
             Clear Filters
@@ -622,6 +721,14 @@ function ResearchersAdminPageInner() {
                           {profile.last_sign_in_at ? new Date(profile.last_sign_in_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never Logged In'}
                         </span>
                       </div>
+                      {profile.role === 'researcher' && (
+                        <div style={{ fontSize: '0.74rem', marginTop: 4, color: 'var(--grey-500)' }}>
+                          Owner:{' '}
+                          <span style={{ fontWeight: 600, color: isHouseOwned(profile) ? 'var(--grey-400)' : 'var(--teal)' }}>
+                            {isHouseOwned(profile) ? 'House (Admin)' : (profile.referring_agent_name || 'Assigned Agent')}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', alignItems: 'center' }}>
                       <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: profile.role === 'admin' ? 'rgba(229,62,62,0.15)' : profile.role === 'super_agent' || profile.is_super_agent ? 'rgba(0,196,188,0.15)' : 'rgba(192,184,168,0.1)', color: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' || profile.is_super_agent ? 'var(--teal)' : 'var(--silver)', border: `1px solid ${profile.role === 'admin' ? 'rgba(229,62,62,0.3)' : profile.role === 'super_agent' || profile.is_super_agent ? 'rgba(0,196,188,0.3)' : 'rgba(192,184,168,0.2)'}` }}>
@@ -663,9 +770,15 @@ function ResearchersAdminPageInner() {
                           )}
                         </>
                       )}
+                      {profile.role === 'researcher' && (
+                        <button onClick={() => openAssignModal(profile)}
+                          style={{ fontSize: '0.75rem', padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(0,196,188,0.3)', background: 'none', color: 'var(--teal)', cursor: 'pointer' }}>
+                          {isHouseOwned(profile) ? 'Assign' : 'Reassign'}
+                        </button>
+                      )}
                       {!isAgent && profile.role !== 'admin' && (
                         <button onClick={() => openUpgradeModal(profile)}
-                          style={{ fontSize: '0.75rem', padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(0,196,188,0.3)', background: 'none', color: 'var(--teal)', cursor: 'pointer' }}>
+                          style={{ fontSize: '0.75rem', padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(192,184,168,0.3)', background: 'none', color: 'var(--silver)', cursor: 'pointer' }}>
                           Upgrade
                         </button>
                       )}
@@ -1047,6 +1160,52 @@ function ResearchersAdminPageInner() {
           </div>
         );
       })()}
+
+      {/* ASSIGN RESEARCHER MODAL */}
+      {modalMode === 'assign' && selectedProfile && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 'var(--space-4)' }}>
+          <div className="hover-lift stagger-fade-in" style={{ borderRadius: 24, padding: 'var(--space-6)', background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)', boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)', width: '100%', maxWidth: 460 }}>
+            <div style={{ padding: 'var(--space-2)' }}>
+              <h2 style={{ fontSize: '1.15rem', marginBottom: 'var(--space-2)' }}>Assign Researcher To An Agent</h2>
+              <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
+                {selectedProfile.full_name || selectedProfile.username}
+                {' — '}Currently Owned By{' '}
+                <strong style={{ color: isHouseOwned(selectedProfile) ? 'var(--silver)' : 'var(--teal)' }}>
+                  {isHouseOwned(selectedProfile) ? 'House (Admin)' : (selectedProfile.referring_agent_name || 'An Agent')}
+                </strong>
+              </p>
+              {modalError && (
+                <div className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3)' }}>
+                  <p style={{ color: 'var(--red)', fontSize: '0.82rem' }}>{modalError}</p>
+                </div>
+              )}
+              <form onSubmit={handleAssignSubmit}>
+                <div className="form-group">
+                  <label className="form-label">Assign To Agent Or Super Agent</label>
+                  <select className="form-input" value={assignAgentId} onChange={e => setAssignAgentId(e.target.value)} required autoFocus>
+                    <option value="">Select An Agent...</option>
+                    {agentOptions.map(a => (
+                      <option key={a.id} value={a.id}>{a.label}</option>
+                    ))}
+                    {!isHouseOwned(selectedProfile) && (
+                      <option value="__HOUSE__">Return To House (Admin)</option>
+                    )}
+                  </select>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--grey-500)', marginTop: 6 }}>
+                    Once Assigned, This Researcher Moves To That Agent&apos;s Account And No Longer Appears Under Your House List.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-5)' }}>
+                  <button type="button" className="btn-silver" onClick={closeModal} disabled={submitting}>Cancel</button>
+                  <button type="submit" className="btn-neon-cyan" disabled={submitting || !assignAgentId}>
+                    {submitting ? 'Assigning...' : 'Assign Researcher'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

@@ -43,7 +43,48 @@ export async function GET(req: NextRequest) {
     dbQuery = dbQuery.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
     const { data, error, count } = await dbQuery;
     if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
-    return NextResponse.json({ data, total: count ?? 0, page, limit });
+
+    // Enrich each row with the display name / slug of its CURRENT owner
+    // (referring_agent_id). This powers the "Owner" label and the house-vs-agent
+    // filter on the admin Researchers tab so reassigned researchers can be
+    // filtered out of the admin's house list. Done as one extra batched query
+    // to avoid a fragile self-referential PostgREST embed.
+    const rows = data ?? [];
+    const ownerIds = Array.from(
+      new Set(
+        rows
+          .map((r: { referring_agent_id?: string | null }) => r.referring_agent_id)
+          .filter((v): v is string => !!v)
+      )
+    );
+    const ownerMap: Record<string, { name: string | null; slug: string | null; role: string | null }> = {};
+    if (ownerIds.length > 0) {
+      const { data: owners } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, role, agent_profiles(slug, display_name)')
+        .in('id', ownerIds);
+      for (const o of owners ?? []) {
+        const ap = Array.isArray((o as any).agent_profiles)
+          ? (o as any).agent_profiles[0]
+          : (o as any).agent_profiles;
+        ownerMap[(o as any).id] = {
+          name: ap?.display_name ?? (o as any).full_name ?? (o as any).username ?? null,
+          slug: ap?.slug ?? null,
+          role: (o as any).role ?? null,
+        };
+      }
+    }
+    const enriched = rows.map((r: any) => {
+      const owner = r.referring_agent_id ? ownerMap[r.referring_agent_id] : undefined;
+      return {
+        ...r,
+        referring_agent_name: owner?.name ?? null,
+        referring_agent_slug: owner?.slug ?? null,
+        referring_agent_role: owner?.role ?? null,
+      };
+    });
+
+    return NextResponse.json({ data: enriched, total: count ?? 0, page, limit });
   } catch (err) {
     console.error('[admin/researchers] GET error:', err);
     return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
@@ -60,12 +101,12 @@ export async function POST(req: NextRequest) {
     const supabase = createAdminClient();
     const body = await req.json().catch(() => ({}));
 
-    const { id, action, role, tier, account_type, credit_limit, is_active, slug, display_name, balance_delta, custom_markup_override } = body;
+    const { id, action, role, tier, account_type, credit_limit, is_active, slug, display_name, balance_delta, custom_markup_override, assign_to_agent_id } = body;
     if (!id) return NextResponse.json({ error: 'Missing User ID' }, { status: 400 });
 
     // Security: role must be one of the allowed non-admin values.
     const ALLOWED_ROLES = new Set(['researcher', 'agent', 'super_agent']);
-    if (action !== 'toggle_active' && action !== 'adjust_balance') {
+    if (action !== 'toggle_active' && action !== 'adjust_balance' && action !== 'assign_researcher') {
       if (!role || !ALLOWED_ROLES.has(role)) {
         return NextResponse.json(
           { error: 'Invalid Role. Must Be researcher, agent, Or super_agent.' },
@@ -123,6 +164,84 @@ export async function POST(req: NextRequest) {
       });
 
       return NextResponse.json({ success: true, new_balance: newBalance });
+    }
+
+    // Reassign a researcher to a different agent / super agent (or back to the
+    // house). The canonical ownership field is referring_agent_id -- an agent's
+    // "My Researchers" view filters on it (.eq('referring_agent_id', callerId)).
+    // We mirror the admin-create-researcher path by setting parent_agent_id too,
+    // and clear referring_sub_agent_id so a sub-agent-created researcher moves
+    // cleanly to the new owner. Passing '__HOUSE__' returns them to the house
+    // store (researchstore) so they reappear under the admin's list.
+    if (action === 'assign_researcher') {
+      if (!assign_to_agent_id || typeof assign_to_agent_id !== 'string') {
+        return NextResponse.json({ error: 'Please Select An Agent To Assign This Researcher To' }, { status: 400 });
+      }
+
+      // The target must be an existing researcher account (not an agent/admin).
+      const { data: target, error: targetErr } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('id', id)
+        .maybeSingle();
+      if (targetErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+      if (!target) return NextResponse.json({ error: 'Researcher Not Found' }, { status: 404 });
+      if (target.role !== 'researcher') {
+        return NextResponse.json({ error: 'Only Researcher Accounts Can Be Reassigned' }, { status: 400 });
+      }
+
+      let newReferringAgentId: string | null = null;
+      let newParentAgentId: string | null = null;
+
+      if (assign_to_agent_id === '__HOUSE__') {
+        // Resolve the house storefront (researchstore) owner id.
+        const { data: house } = await supabase
+          .from('agent_profiles')
+          .select('id')
+          .eq('slug', 'researchstore')
+          .maybeSingle();
+        // Fall back to the acting admin if the house store cannot be resolved,
+        // so the researcher is never left orphaned.
+        newReferringAgentId = house?.id ?? gate.userId;
+        newParentAgentId = null;
+      } else {
+        // Validate the target owner is an active agent or super agent.
+        const { data: owner, error: ownerErr } = await supabase
+          .from('profiles')
+          .select('id, role, is_active')
+          .eq('id', assign_to_agent_id)
+          .maybeSingle();
+        if (ownerErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+        if (!owner || (owner.role !== 'agent' && owner.role !== 'super_agent')) {
+          return NextResponse.json({ error: 'Selected Owner Must Be An Agent Or Super Agent' }, { status: 400 });
+        }
+        if (owner.is_active === false) {
+          return NextResponse.json({ error: 'Cannot Assign To A Deactivated Agent' }, { status: 400 });
+        }
+        newReferringAgentId = owner.id;
+        newParentAgentId = owner.id;
+      }
+
+      const { error: assignErr } = await supabase
+        .from('profiles')
+        .update({
+          referring_agent_id: newReferringAgentId,
+          parent_agent_id: newParentAgentId,
+          referring_sub_agent_id: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+      if (assignErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+
+      await supabase.from('admin_audit_log').insert({
+        actor_id: gate.userId,
+        action: 'researcher_reassigned',
+        entity_type: 'profile',
+        entity_id: id,
+        changes: { referring_agent_id: newReferringAgentId, assigned_to: assign_to_agent_id },
+      });
+
+      return NextResponse.json({ success: true, referring_agent_id: newReferringAgentId });
     }
 
     let locked_tier_level = null;
