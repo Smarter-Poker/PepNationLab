@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { Suspense } from 'react';
+import { preload } from 'react-dom';
 import { notFound, redirect } from 'next/navigation';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
@@ -287,6 +288,16 @@ export default async function AgentStorefrontPage({ params }: Props) {
     userProfile = data;
   }
   const isStorefrontOwner = userProfile?.id === agent.id;
+
+  // LCP fix: the storefront hero (AgentStorefrontGrid, Phase 3 Dynamic Image
+  // Hero) paints /images/store_discovery_hero_v3.png via a CSS
+  // background-image, which the browser preload scanner cannot see — the
+  // request only starts after CSSOM + JS hydration (measured LCP 9.0s).
+  // Hoisting a high-priority preload from this server component puts a
+  // <link rel="preload" as="image"> in the initial HTML head so the download
+  // starts with the document. If the hero file is renamed in
+  // AgentStorefrontGrid.tsx, update this path in lockstep.
+  preload('/images/store_discovery_hero_v3.png', { as: 'image', fetchPriority: 'high' });
 
   const primaryColor = agent.primary_color ?? '#00C4BC';
   const showRenameBanner =

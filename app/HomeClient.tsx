@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import DisclaimerGate from '@/components/DisclaimerGate';
@@ -110,13 +111,20 @@ export default function HomeClient() {
       </header>
 
       <div style={{ position: 'relative', width: '100%', maxWidth: '941px', margin: '0 auto' }}>
-        <img
+        {/* LCP element. next/image (not a raw <img>) so the 2.0MB source PNG
+            is served as a right-sized AVIF/WebP through the image optimizer —
+            requires the ydsaqnnuwyvtyxgvrnys.supabase.co remotePattern in
+            next.config.ts. priority emits a <link rel="preload"> in the head. */}
+        <Image
           src="https://ydsaqnnuwyvtyxgvrnys.supabase.co/storage/v1/object/public/storefront-assets/landing/pep-nation-landing.png"
           alt="Pep Nation Lab Research Academy — Wholesale Research-Grade Peptides For Qualified Researchers. Research Use Only."
           width={941}
           height={1672}
-          style={{ width: '100%', height: 'auto', display: 'block' }}
+          priority
           fetchPriority="high"
+          quality={60}
+          sizes="(max-width: 941px) 100vw, 941px"
+          style={{ width: '100%', height: 'auto', display: 'block' }}
         />
         {ZONES.map(zone => (
           <a

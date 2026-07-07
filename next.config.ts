@@ -1,6 +1,23 @@
 import type { NextConfig } from "next";
 
 const nextConfig = {
+  images: {
+    // Allow next/image to optimize Supabase-storage assets. The homepage
+    // landing artwork is a 2.0MB source PNG served from Supabase storage;
+    // routing it through the image optimizer serves a right-sized AVIF/WebP
+    // instead (measured LCP 15.9s -> target <2.5s). Scoped to the public
+    // storage path of the PepNationLab project only.
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "ydsaqnnuwyvtyxgvrnys.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+    formats: ["image/avif", "image/webp"],
+    // Quality values used across the app (city hero uses 45, landing uses 60).
+    qualities: [45, 60, 75],
+  },
   async redirects() {
     return [
       {
@@ -89,7 +106,7 @@ const nextConfig = {
               // every relative URL (forms, scripts) to an attacker host.
               "base-uri 'self'; " +
               // form-action 'self': forms can only submit back to us — blocks
-              // XSS-injected <form action="https://evil"> credential exfil.
+              // XSS-injected <form action=\"https://evil\"> credential exfil.
               "form-action 'self'; " +
               "frame-ancestors 'none'; " +
               // Auto-upgrade any stray http:// subresource to https.
