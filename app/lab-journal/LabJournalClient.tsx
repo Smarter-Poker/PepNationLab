@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import SmartStackBuilder from '@/components/researcher/SmartStackBuilder';
-import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, TrendingDown, XCircle, Layers, FlaskConical, Zap, Target, Activity, Calendar, Syringe, Flame, Clock, Droplet, MapPin, Repeat, ChevronRight, Beaker, Gauge } from 'lucide-react';
+import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, TrendingDown, XCircle, Layers, FlaskConical, Zap, Target, Activity, Calendar, Syringe, Flame, Clock, Droplet, MapPin, Repeat, ChevronRight, Beaker, Gauge, Camera } from 'lucide-react';
 import { Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ComposedChart, Bar, ReferenceLine, Area, AreaChart, Scatter, RadialBar, RadialBarChart, Cell, ReferenceArea } from 'recharts';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -159,7 +159,13 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   };
   
   // UX Features State
-  const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'inventory' | 'compareHistory' | 'notes' | 'doses' | 'biometrics' | 'goals'>('bundles');
+  const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'inventory' | 'compareHistory' | 'notes' | 'doses' | 'biometrics' | 'goals' | 'progress'>('bundles');
+
+  // Progress Photos state
+  const [progressPhotos, setProgressPhotos] = useState<any[]>([]);
+  const [photoCaption, setPhotoCaption] = useState('');
+  const [photoDate, setPhotoDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -555,6 +561,11 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     fetch('/api/researcher/goals')
       .then(res => res.json())
       .then(data => { if (data.goals) setGoals(data.goals); })
+      .catch(console.error);
+
+    fetch('/api/researcher/progress-photos')
+      .then(res => res.json())
+      .then(data => { if (data.photos) setProgressPhotos(data.photos); })
       .catch(console.error);
   }, []);
 
@@ -1206,6 +1217,73 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     );
   };
 
+  // Downscale an image file client-side to keep uploads small, return a JPEG data URL.
+  const resizeImage = (file: File, maxDim = 1400, quality = 0.82): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('read failed'));
+      reader.onload = () => {
+        const img = new window.Image();
+        img.onerror = () => reject(new Error('decode failed'));
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width >= height) { height = Math.round(height * (maxDim / width)); width = maxDim; }
+            else { width = Math.round(width * (maxDim / height)); height = maxDim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject(new Error('no canvas'));
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+
+  const uploadProgressPhoto = async (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Please Choose An Image File'); return; }
+    setPhotoUploading(true);
+    try {
+      const dataUrl = await resizeImage(file);
+      const res = await fetch('/api/researcher/progress-photos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_base64: dataUrl, caption: photoCaption || null, taken_at: photoDate }),
+      });
+      const data = await res.json();
+      if (res.ok && data.photo) {
+        setProgressPhotos(prev => [data.photo, ...prev].sort((a, b) => new Date(b.taken_at).getTime() - new Date(a.taken_at).getTime()));
+        setPhotoCaption('');
+        toast.success('Progress Photo Added');
+      } else throw new Error(data.error || 'Upload failed');
+    } catch (e) {
+      toast.error('Failed To Add Photo');
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
+  const deleteProgressPhoto = async (id: string) => {
+    if (!confirm('Delete This Progress Photo?')) return;
+    try {
+      const res = await fetch('/api/researcher/progress-photos', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        setProgressPhotos(prev => prev.filter(p => p.id !== id));
+        toast.success('Photo Deleted');
+      } else toast.error('Failed To Delete Photo');
+    } catch {
+      toast.error('Error Deleting Photo');
+    }
+  };
+
   const renderCombinedChart = (metric: string) => {
     // Group by day string
     const byDay: Record<string, any> = {};
@@ -1638,6 +1716,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
             { id: 'favorites', label: 'Saved Compounds', icon: Heart },
             { id: 'doses', label: 'Dose Tracker', icon: Syringe },
             { id: 'biometrics', label: 'Biometrics', icon: Activity },
+            { id: 'progress', label: 'Progress Photos', icon: Camera },
             { id: 'recentlyViewed', label: 'Recently Viewed', icon: History },
             { id: 'compareHistory', label: 'Compare History', icon: Search }
           ].map(t => (
@@ -1731,7 +1810,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
             </div>
           </div>
 
-          {currentItems.length === 0 && activeTab !== 'notes' && activeTab !== 'compareHistory' && activeTab !== 'doses' && activeTab !== 'biometrics' && activeTab !== 'goals' ? renderEmptyState() : (
+          {currentItems.length === 0 && activeTab !== 'notes' && activeTab !== 'compareHistory' && activeTab !== 'doses' && activeTab !== 'biometrics' && activeTab !== 'goals' && activeTab !== 'progress' ? renderEmptyState() : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
               {activeTab === 'inventory' && (
                 <>
@@ -2510,6 +2589,66 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                       {biometrics.length === 0 && <div style={{ color: 'var(--silver)' }}>No Biometrics Logged Yet.</div>}
                     </div>
                   </div>
+                </div>
+
+              ) : activeTab === 'progress' ? (
+                <div>
+                  <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
+                    <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 8 }}><Camera size={20} style={{ color: 'var(--teal)' }} /> Progress Photos</h2>
+                    <p style={{ color: 'var(--silver)', fontSize: '0.85rem', marginTop: 0, marginBottom: 'var(--space-4)' }}>Pin Dated Photos To Your Protocol Timeline To Track Visible Change Over A Cycle. Private To Your Account.</p>
+                    <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                      <div style={{ flex: '1 1 200px' }}>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Caption (Optional)</label>
+                        <input type="text" placeholder="e.g. Week 4, Front" value={photoCaption} onChange={e => setPhotoCaption(e.target.value)} maxLength={300} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 12px', borderRadius: 8, color: 'var(--white)' }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 4 }}>Date Taken</label>
+                        <input type="date" value={photoDate} onChange={e => setPhotoDate(e.target.value)} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 12px', borderRadius: 8, color: 'var(--white)' }} />
+                      </div>
+                      <label className="btn btn-primary" style={{ padding: '11px 22px', borderRadius: 8, cursor: photoUploading ? 'wait' : 'pointer', opacity: photoUploading ? 0.6 : 1, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <Camera size={16} /> {photoUploading ? 'Uploading...' : 'Add Photo'}
+                        <input type="file" accept="image/*" disabled={photoUploading} onChange={e => { uploadProgressPhoto(e.target.files?.[0]); e.target.value = ''; }} style={{ display: 'none' }} />
+                      </label>
+                    </div>
+                  </div>
+
+                  {progressPhotos.length === 0 ? (
+                    <div className="glass-panel" style={{ padding: 'var(--space-8)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
+                      <Camera size={44} style={{ color: 'var(--teal)', opacity: 0.7, marginBottom: 'var(--space-3)' }} />
+                      <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)' }}>No Progress Photos Yet</h3>
+                      <p style={{ color: 'var(--silver)', maxWidth: 420, margin: '0 auto' }}>Add Your First Dated Photo Above. They Stay Private And Are Ordered On Your Timeline So You Can Compare Across A Cycle.</p>
+                    </div>
+                  ) : (
+                    Object.entries(
+                      progressPhotos.reduce((acc: Record<string, any[]>, p) => {
+                        const key = new Date(p.taken_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+                        (acc[key] = acc[key] || []).push(p);
+                        return acc;
+                      }, {})
+                    ).map(([month, photos]) => (
+                      <div key={month} style={{ marginBottom: 'var(--space-6)' }}>
+                        <h3 style={{ color: 'var(--silver)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 'var(--space-3)' }}>{month}</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 'var(--space-3)' }}>
+                          {(photos as any[]).map(p => (
+                            <div key={p.id} className="glass-panel" style={{ padding: 0, borderRadius: 'var(--radius-lg)', overflow: 'hidden', position: 'relative' }}>
+                              <div style={{ position: 'relative', width: '100%', aspectRatio: '3 / 4', background: 'rgba(0,0,0,0.4)' }}>
+                                {p.url ? (
+                                  <img src={p.url} alt={p.caption || 'Progress Photo'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--silver)', fontSize: '0.8rem' }}>Image Unavailable</div>
+                                )}
+                                <button onClick={() => deleteProgressPhoto(p.id)} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--red)' }}><Trash2 size={15} /></button>
+                              </div>
+                              <div style={{ padding: 'var(--space-3)' }}>
+                                <div style={{ color: 'var(--white)', fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.caption || 'Untitled'}</div>
+                                <div style={{ color: 'var(--silver)', fontSize: '0.75rem', marginTop: 2 }}>{new Date(p.taken_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
 
               ) : activeTab === 'compareHistory' ? (

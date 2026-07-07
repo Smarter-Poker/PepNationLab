@@ -288,7 +288,7 @@ export default async function StateLandingPage({
           </div>
         </section>
 
-        {/* ── BROWSE BY REGION — geographic silo interlinking ────────────── */}
+        {/* ── BROWSE BY REGION — geographic silo interlinking ──────────── */}
         {regions.length > 1 && (
           <section style={{ padding: 'clamp(48px, 6vw, 80px) 0', borderTop: 'var(--border-subtle)', background: 'var(--black-2)' }}>
             <div className="container">
@@ -321,7 +321,7 @@ export default async function StateLandingPage({
           </section>
         )}
 
-        {/* ── STATE FAQ ───────────────────────────────────────────────────── */}
+        {/* ── STATE FAQ ─────────────────────────────────────────────── */}
         <section style={{ padding: 'clamp(60px, 8vw, 100px) 0', background: 'linear-gradient(to bottom, var(--black), var(--black-2))' }}>
           <div className="container" style={{ maxWidth: 780 }}>
             <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 800, marginBottom: 'var(--space-6)', textAlign: 'center' }}>
