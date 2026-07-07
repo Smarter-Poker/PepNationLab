@@ -163,12 +163,25 @@ export default function RootLayout({
                     email: 'research@pepnationlab.com',
                     availableLanguage: ['English'],
                   },
-                  // POPULATE THIS ARRAY with official brand profiles
-                  // (e.g. X, Instagram, LinkedIn, YouTube, Wikidata) to strengthen
-                  // entity/knowledge-graph resolution for AI answer engines.
+                  // Entity authority profiles — add each URL as accounts are created.
+                  // Consistency across all profiles (name/handle/website) is the ranking signal.
                   sameAs: [
+                    // ── Tier 1: Knowledge Graph anchors ──────────────────────────
+                    'https://www.wikidata.org/wiki/Q140460136', // ✅ confirmed
+                    // 'https://www.linkedin.com/company/pepnationlab',
                     // 'https://x.com/pepnationlab',
-                    // 'https://www.linkedin.com/company/pepnationlab'
+                    // ── Tier 2: Supporting authority profiles ────────────────────
+                    // 'https://www.youtube.com/@pepnationlab',
+                    // 'https://www.instagram.com/pepnationlab',
+                    // 'https://www.facebook.com/pepnationlab',
+                    // ── Tier 3: Niche / B2B entity signals ──────────────────────
+                    // 'https://www.crunchbase.com/organization/pep-nation-lab',
+                    // 'https://www.reddit.com/user/pepnationlab',
+                    // ── Additional: AI-model-weighted platforms ──────────────────
+                    // 'https://github.com/pepnationlab',
+                    // 'https://www.tiktok.com/@pepnationlab',
+                    // 'https://www.pinterest.com/pepnationlab',
+                    // 'https://www.trustpilot.com/review/pepnationlab.com',
                   ],
                 },
               ],
