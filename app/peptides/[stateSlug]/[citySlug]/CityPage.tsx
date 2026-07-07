@@ -16,6 +16,7 @@ import { CITIES } from '@/lib/cities/cities-data';
 import type { City } from '@/lib/cities/cities-data';
 import { FEATURED_PEPTIDES } from '@/lib/cities/keywords';
 import { getCityIntro, getCityFAQs, VALUE_PROPS, getRegionLabel } from '@/lib/cities/city-content';
+import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 
 interface Props {
   city: City;
@@ -243,7 +244,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
               <Link href="/research" className="city-img-btn" aria-label="Access the Lab">
                 <img src="/images/buttons/btn-access.png" alt="Access the Lab" />
               </Link>
-              <Link href="/research" className="city-img-btn" aria-label="Browse Catalog">
+              <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-img-btn" aria-label="Browse Catalog">
                 <img src="/images/buttons/btn-browse.png" alt="Browse Catalog" />
               </Link>
             </div>
@@ -368,7 +369,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
 
             {/* See full catalog CTA */}
             <div style={{ textAlign: 'center', marginTop: 'var(--space-12)' }}>
-              <Link href="/research/a-z" className="city-img-btn" aria-label="Browse Full Research Catalog">
+              <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-img-btn" aria-label="Browse Full Research Catalog">
                 <img src="/images/buttons/btn-browse-full.png" alt="Browse Full Research Catalog" />
               </Link>
             </div>

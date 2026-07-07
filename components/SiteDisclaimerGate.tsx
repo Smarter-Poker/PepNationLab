@@ -38,7 +38,9 @@ export default function SiteDisclaimerGate({
   };
 
   // The Landing Page Is Always Visible -- Its Click Zones Enforce The Gate.
-  if (pathname === '/') return <>{children}</>;
+  // We also bypass the gate for City Landing Pages so users can read the SEO content
+  // before being asked to accept the compliance agreement upon further navigation.
+  if (pathname === '/' || pathname.startsWith('/peptides')) return <>{children}</>;
 
   // Block render until we've checked localStorage (one RAF after mount).
   // This prevents a brief flash of site content before the disclaimer gate appears
