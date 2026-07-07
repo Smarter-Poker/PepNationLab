@@ -538,3 +538,150 @@ export function getRelatedGuides(guide: Guide): Guide[] {
 
 export const GUIDES_UPDATED = '2026-07-07';
 export const GUIDE_AUTHOR = AUTHOR;
+
+// Per-guide FAQs, keyed by guide slug. Appended to lib/research/guides.ts.
+// Each answer is 1-2 sentences, factual, and RUO-compliant (no dosing, no
+// human-use guidance). Rendered as a "Frequently Asked Questions" section and
+// emitted as FAQPage JSON-LD on each guide page.
+export const GUIDE_FAQS: Record<string, { q: string; a: string }[]> = {
+  'what-research-use-only-means': [
+    {
+      q: 'What does Research Use Only mean?',
+      a: 'Research Use Only (RUO) means a product is supplied exclusively for in vitro laboratory research and has not been evaluated or approved for use in humans or animals. It is a statement of intended use, not a quality grade.',
+    },
+    {
+      q: 'Are Research Use Only peptides the same as FDA-approved drugs?',
+      a: 'No. RUO peptides are laboratory reagents, not FDA-approved drugs. Even when the chemical name matches a pharmaceutical, the regulatory category, documentation, and permitted use are entirely different.',
+    },
+    {
+      q: 'Who is responsible for handling RUO peptides correctly?',
+      a: 'The qualified researcher is responsible for lawful, appropriate handling, storage, and disposal in line with institutional and local rules. The RUO designation defines the entire context in which the compound may be used.',
+    },
+  ],
+  'how-to-read-a-certificate-of-analysis': [
+    {
+      q: 'What is a Certificate of Analysis (COA)?',
+      a: 'A COA is the primary quality document for a research peptide. It reports the analytical testing performed on a specific batch, letting a researcher confirm the identity and purity of the material before use.',
+    },
+    {
+      q: 'How is peptide purity shown on a COA?',
+      a: 'Purity is typically reported by HPLC as a percentage, often with a supporting chromatogram. Mass spectrometry is used separately to confirm the compound identity against its theoretical molecular weight.',
+    },
+    {
+      q: 'How do I know a COA is trustworthy?',
+      a: 'A credible COA is batch-linked, names the analytical method, includes a mass-spectrometry identity result, and is supported by chromatograms or spectra. Always match the COA batch number to the physical vial.',
+    },
+  ],
+  'peptide-storage-and-reconstitution': [
+    {
+      q: 'How are lyophilized research peptides stored?',
+      a: 'In their dry, lyophilized form most research peptides are kept cold and protected from moisture, with longer-term storage typically in a freezer. Water and repeated temperature cycling are the main drivers of degradation.',
+    },
+    {
+      q: 'What is reconstitution?',
+      a: 'Reconstitution is dissolving the lyophilized powder into a suitable solvent for laboratory use. The appropriate solvent depends on the specific peptide, and the material is handled gently to protect the molecule.',
+    },
+    {
+      q: 'Why do peptides degrade faster once in solution?',
+      a: 'A reconstituted peptide is more vulnerable to hydrolysis, oxidation, and contamination than the dry powder. Researchers commonly limit time in solution, keep it cold, and aliquot to avoid repeated freeze-thaw cycles.',
+    },
+  ],
+  'research-vs-pharmaceutical-peptides': [
+    {
+      q: 'Can a research peptide and a pharmaceutical have the same name?',
+      a: 'Yes. Chemically, a peptide is defined by its amino-acid sequence, so two products with the same sequence are the same molecule. But they can occupy completely different regulatory categories.',
+    },
+    {
+      q: 'What is the difference between a research peptide and a pharmaceutical?',
+      a: 'A pharmaceutical is a molecule plus an approved manufacturing process, a defined indication, safety and efficacy data, and regulated labeling. A research peptide is the molecule supplied as a laboratory reagent with a Certificate of Analysis.',
+    },
+    {
+      q: 'What determines how a peptide product may be used?',
+      a: 'Permitted use is determined by regulatory category, not by the chemical name. Research peptides are for in vitro laboratory research only, never for human or animal use.',
+    },
+  ],
+  'understanding-peptide-purity': [
+    {
+      q: 'What is the difference between chromatographic purity and net peptide content?',
+      a: 'Chromatographic purity (HPLC) is the proportion of target peptide versus peptide-related impurities. Net peptide content is how much of the total dry mass is actually peptide, versus water, counter-ions, and residual salts.',
+    },
+    {
+      q: 'How is peptide purity measured?',
+      a: 'HPLC quantifies the target peptide against impurity peaks, and mass spectrometry confirms the main peak is the intended molecule by matching its mass. The two methods answer different questions and are read together.',
+    },
+    {
+      q: 'Why does purity matter for reproducible research?',
+      a: 'Inconsistent purity introduces uncontrolled variables. Two batches with different impurity profiles or net peptide content can produce different results, so documented batch-specific purity data supports reproducibility.',
+    },
+  ],
+  'peptide-research-areas-explained': [
+    {
+      q: 'What are the main peptide research areas?',
+      a: 'The major areas are metabolic research, tissue repair and recovery, growth and longevity, cognitive research, and skin and cosmetic science. Each maps to well-studied compounds documented in the literature.',
+    },
+    {
+      q: 'Which peptides are studied in metabolic research?',
+      a: 'Incretin-related compounds such as Semaglutide and Tirzepatide are the most active in metabolic research, studied in the context of metabolic regulation and energy balance.',
+    },
+    {
+      q: 'Which peptides are studied for tissue repair?',
+      a: 'BPC-157 and TB-500 are the anchor compounds in tissue repair and recovery research, studied in models of cellular repair, angiogenesis, and tissue regeneration.',
+    },
+  ],
+  'glp-1-receptor-agonists-in-research': [
+    {
+      q: 'What is a GLP-1 receptor agonist?',
+      a: 'GLP-1 (glucagon-like peptide-1) is an incretin hormone involved in glucose-dependent signaling. A GLP-1 receptor agonist is a compound that binds and activates the GLP-1 receptor, studied as a tool in metabolic research.',
+    },
+    {
+      q: 'How do Semaglutide, Tirzepatide, and Retatrutide differ?',
+      a: 'Semaglutide is a GLP-1 receptor agonist, Tirzepatide is a dual GIP/GLP-1 agonist, and Retatrutide is studied as a triple GIP/GLP-1/glucagon agonist. Moving from single to multi-receptor activity is a central theme in the class.',
+    },
+    {
+      q: 'Are GLP-1 research compounds for human use?',
+      a: 'No. Supplied as research peptides, they are for in vitro laboratory research only and are not for human or animal use.',
+    },
+  ],
+  'bpc-157-research-overview': [
+    {
+      q: 'What is BPC-157?',
+      a: 'BPC-157, sometimes called Body Protection Compound 157, is a synthetic peptide derived from a sequence originally identified in a gastric protein. It is studied as a tool compound in tissue-repair research.',
+    },
+    {
+      q: 'What is BPC-157 studied for?',
+      a: 'In the research literature it is most often referenced in angiogenesis models, tendon and ligament repair studies, and gut-tissue research. It is one of the anchor compounds in the tissue repair and recovery area.',
+    },
+    {
+      q: 'Is BPC-157 FDA-approved?',
+      a: 'No. BPC-157 supplied as a research peptide is for in vitro laboratory research only. It is not an FDA-approved drug and is not for human or animal use.',
+    },
+  ],
+  'growth-hormone-secretagogues-explained': [
+    {
+      q: 'What is a growth hormone secretagogue?',
+      a: 'A growth hormone secretagogue is a compound studied for its role in growth-axis signaling. The class splits into GHRH analogues and ghrelin-receptor agonists (GHRPs), which engage the axis through different receptors.',
+    },
+    {
+      q: 'How do Sermorelin, CJC-1295, and Ipamorelin differ?',
+      a: 'Sermorelin and CJC-1295 are GHRH analogues that mimic growth-hormone-releasing hormone, while Ipamorelin is a ghrelin-receptor agonist acting through a separate receptor.',
+    },
+    {
+      q: 'Why are a GHRH analogue and a GHRP studied together?',
+      a: 'The two mechanisms address different points in growth-axis signaling, so pairing them is one of the most referenced combinations in growth and longevity research.',
+    },
+  ],
+  'how-research-peptides-are-synthesized': [
+    {
+      q: 'How are research peptides made?',
+      a: 'Most are made by solid-phase peptide synthesis (SPPS), where the peptide is assembled one amino acid at a time on a solid resin support, allowing excess reagents to be washed away at each coupling step.',
+    },
+    {
+      q: 'Why does synthesis quality affect purity?',
+      a: 'Each coupling step can leave a small fraction of chains with a missing residue or incomplete coupling, creating closely related impurities that must be removed during purification, typically by preparative HPLC.',
+    },
+    {
+      q: 'How does synthesis quality show up in documentation?',
+      a: 'It appears in the Certificate of Analysis: HPLC purity reflects how cleanly the peptide was synthesized and purified, and mass spectrometry confirms the assembled sequence matches the intended molecule.',
+    },
+  ],
+};
