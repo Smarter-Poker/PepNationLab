@@ -20,7 +20,10 @@ export async function GET() {
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .eq('role', 'researcher')
-      .eq('is_approved', true);
+      // NOTE: profiles has no is_approved column — filtering on it made every
+      // query error, so this endpoint permanently returned { count: null }.
+      // Active researchers is the correct population for social proof.
+      .eq('is_active', true);
 
     if (error) throw error;
 

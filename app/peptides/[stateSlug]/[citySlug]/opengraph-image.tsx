@@ -3,7 +3,9 @@
  * File-based ImageResponse — auto-wired to og:image by Next.js.
  */
 import { ImageResponse } from 'next/og';
-import { CITIES } from '@/lib/cities/cities-data';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { getCity } from '@/lib/cities/cities-data';
 
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
@@ -15,18 +17,21 @@ function toTitleCase(str: string) {
 export default async function Image({ params }: { params: Promise<{ stateSlug: string; citySlug: string }> }) {
   const { stateSlug, citySlug } = await params;
 
-  const cityName = toTitleCase(citySlug);
-  const stateName = toTitleCase(stateSlug);
+  // Prefer real display names from the data set; fall back to slug title-casing.
+  const city = getCity(stateSlug, citySlug);
+  const cityName = city?.name ?? toTitleCase(citySlug);
+  const stateName = city?.state ?? toTitleCase(stateSlug);
 
-  // Find featured peptide count for this city
-  const cityEntry = (CITIES as any[]).find((c) => c.stateSlug === stateSlug && c.citySlug === citySlug);
-  const compoundCount = cityEntry?.featuredPeptides?.length ?? 8;
+  // Canonical store-catalog figure used across all city pages.
+  const compoundCount = '100+';
 
+  // Local font — no network fetch at render time (the old Google Fonts fetch
+  // added latency and failed silently when blocked).
   let fontData: ArrayBuffer | null = null;
   try {
-    const res = await fetch('https://fonts.gstatic.com/s/inter/v18/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.ttf');
-    if (res.ok) fontData = await res.arrayBuffer();
-  } catch { /* fallback */ }
+    const buf = await readFile(join(process.cwd(), 'public', 'fonts', 'Inter-Bold.otf'));
+    fontData = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+  } catch { /* fallback to default font */ }
 
   return new ImageResponse(
     (
@@ -67,7 +72,7 @@ export default async function Image({ params }: { params: Promise<{ stateSlug: s
           {/* Stats row */}
           <div style={{ display: 'flex', gap: 32, marginTop: 36 }}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 36, fontWeight: 800, color: '#00C4BC', lineHeight: 1 }}>{compoundCount}+</span>
+              <span style={{ fontSize: 36, fontWeight: 800, color: '#00C4BC', lineHeight: 1 }}>{compoundCount}</span>
               <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>Compounds</span>
             </div>
             <div style={{ width: 1, background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }} />

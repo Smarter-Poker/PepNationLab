@@ -4,7 +4,7 @@
  */
 import type { MetadataRoute } from 'next';
 import { createServiceClient } from '@/lib/supabase/server';
-import { CITIES, getStatesSlugs } from '@/lib/cities/cities-data';
+import { CITIES, getStatesSlugs, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
 
 const BASE = 'https://pepnationlab.com';
 
@@ -20,19 +20,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/find-a-peptide`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE}/peptide-101`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
 
-    // Local SEO — Peptides by City
-    { url: `${BASE}/peptides`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    // Local SEO — Peptides by City (hub + states; city URLs are emitted once
+    // below with tier-scored priority — do NOT list them twice)
+    { url: `${BASE}/peptides`, lastModified: CITY_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.8 },
     ...getStatesSlugs().map((stateSlug) => ({
       url: `${BASE}/peptides/${stateSlug}`,
-      lastModified: now,
+      lastModified: CITY_CONTENT_UPDATED,
       changeFrequency: 'monthly' as const,
       priority: 0.7,
-    })),
-    ...CITIES.map((city) => ({
-      url: `${BASE}/peptides/${city.stateSlug}/${city.slug}`,
-      lastModified: now,
-      changeFrequency: 'monthly' as const,
-      priority: 0.6,
     })),
 
     // Legal / Compliance
@@ -142,7 +137,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   };
   const cityPages: MetadataRoute.Sitemap = CITIES.map((city) => ({
     url: `${BASE}/peptides/${city.stateSlug}/${city.slug}`,
-    lastModified: now,
+    lastModified: CITY_CONTENT_UPDATED,
     changeFrequency: cityChangeFreq[city.tier] ?? 'monthly',
     priority: cityPriority[city.tier] ?? 0.6,
   }));

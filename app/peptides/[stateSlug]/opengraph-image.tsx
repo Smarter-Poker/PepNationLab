@@ -2,6 +2,9 @@
  * Dynamic OG image for state landing pages (/peptides/[stateSlug]).
  */
 import { ImageResponse } from 'next/og';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { getStateName } from '@/lib/cities/cities-data';
 
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
@@ -12,13 +15,15 @@ function toTitleCase(str: string) {
 
 export default async function Image({ params }: { params: Promise<{ stateSlug: string }> }) {
   const { stateSlug } = await params;
-  const stateName = toTitleCase(stateSlug);
+  const resolved = getStateName(stateSlug);
+  const stateName = resolved === stateSlug ? toTitleCase(stateSlug) : resolved;
 
+  // Local font — no network fetch at render time.
   let fontData: ArrayBuffer | null = null;
   try {
-    const res = await fetch('https://fonts.gstatic.com/s/inter/v18/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.ttf');
-    if (res.ok) fontData = await res.arrayBuffer();
-  } catch { /* fallback */ }
+    const buf = await readFile(join(process.cwd(), 'public', 'fonts', 'Inter-Bold.otf'));
+    fontData = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+  } catch { /* fallback to default font */ }
 
   return new ImageResponse(
     (

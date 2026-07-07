@@ -33,7 +33,22 @@ const PUBLIC_ROUTES = [
   '/api/storefront/register',
   '/api/storefront/search',
   '/api/storefront/recommendations',
+  // Public-by-design storefront + social-proof endpoints. These are called
+  // with credentials: 'omit' from guest-facing components (storefront grid
+  // cache refresh, semantic search, GuestCTA member count) and were being
+  // 401'd by this proxy before they could reach their own rate-limited,
+  // service-client handlers.
+  '/api/storefront/catalog',
+  '/api/storefront/semantic',
+  '/api/stats/member-count',
   '/research',
+  // Local SEO city landing pages — /peptides, /peptides/[state], AND
+  // /peptides/[state]/[city]. The 3-segment city URLs are NOT covered by
+  // isPublicDynamicRoute (it only allows 1-2 segments), so without this
+  // prefix guests hitting a city landing page were bounced to /login.
+  '/peptides',
+  '/find-a-peptide',
+  '/peptide-101',
   '/api/research/ask',
   '/api/research/cart-warnings',
   '/api/research/match',

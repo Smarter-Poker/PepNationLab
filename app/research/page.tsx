@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import ResearchLandingClient from './ResearchLandingClient';
+import ResearchHubSeoContent from '@/components/research/ResearchHubSeoContent';
 
 export const metadata: Metadata = {
   title: 'Research Library | Peptide Science Database | Pep Nation Lab',
@@ -48,6 +49,10 @@ export default function ResearchLandingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <ResearchLandingClient />
+      {/* Server-rendered crawlable index: emits the H1, intro, tool links, and
+          the full compound list into the initial HTML so search engines and
+          non-JS AI crawlers can read and enumerate the library. */}
+      <ResearchHubSeoContent />
     </>
   );
 }

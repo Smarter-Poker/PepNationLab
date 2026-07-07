@@ -2,8 +2,8 @@
 
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import SmartStackBuilder from '@/components/researcher/SmartStackBuilder';
-import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, XCircle, Layers, FlaskConical, Zap, Target } from 'lucide-react';
-import { Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ComposedChart, Bar, ReferenceLine } from 'recharts';
+import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, TrendingDown, XCircle, Layers, FlaskConical, Zap, Target, Activity, Calendar, Syringe, Flame, Clock, Droplet, MapPin, Repeat, ChevronRight, Beaker, Gauge } from 'lucide-react';
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ComposedChart, Bar, ReferenceLine, Area, AreaChart, Scatter, RadialBar, RadialBarChart, Cell, ReferenceArea } from 'recharts';
 import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
@@ -45,6 +45,55 @@ const GOAL_MAPPINGS: Record<string, string[]> = {
   'Anti-Aging': ['Epitalon', 'GHK-Cu', 'NAD+', 'MOTS-c'],
   'Cognitive Enhancement': ['Dihexa', 'Semax', 'Selank'],
 };
+
+// Estimated elimination half-lives (hours) for the informational "Active In System" model.
+// Values are approximate literature figures for research context only.
+const HALF_LIFE_HOURS: Record<string, number> = {
+  'bpc-157': 4, 'bpc157': 4, 'tb-500': 44, 'tb500': 44, 'thymosin': 44,
+  'cjc-1295': 144, 'cjc1295': 144, 'cjc-1295 no dac': 0.5, 'ipamorelin': 2,
+  'ghrp': 3, 'sermorelin': 0.2, 'tesamorelin': 0.6, 'hexarelin': 1,
+  'semaglutide': 168, 'tirzepatide': 120, 'retatrutide': 144, 'cagrilintide': 180,
+  'aod-9604': 0.5, 'tesofensine': 220, 'mots-c': 3, 'nad+': 2, 'nad': 2,
+  'epitalon': 1, 'ghk-cu': 0.5, 'ghk': 0.5, 'igf-1 lr3': 20, 'igf-1': 20,
+  'dihexa': 10, 'semax': 0.5, 'selank': 0.5, 'melanotan': 36, 'pt-141': 2.7,
+  'kisspeptin': 4, 'dsip': 2, 'll-37': 4, 'glutathione': 3,
+};
+
+function estimateHalfLifeHours(compound: string): number {
+  const key = compound.toLowerCase().trim();
+  if (HALF_LIFE_HOURS[key] != null) return HALF_LIFE_HOURS[key];
+  for (const [k, v] of Object.entries(HALF_LIFE_HOURS)) {
+    if (key.includes(k) || k.includes(key)) return v;
+  }
+  return 24; // conservative default
+}
+
+// Curated biometric presets with sensible default units and directional intent.
+const BIOMETRIC_PRESETS: { name: string; unit: string; icon: any; better: 'up' | 'down' | 'none' }[] = [
+  { name: 'Weight', unit: 'lbs', icon: Gauge, better: 'none' },
+  { name: 'Body Fat %', unit: '%', icon: Activity, better: 'down' },
+  { name: 'Waist', unit: 'in', icon: Activity, better: 'down' },
+  { name: 'Resting HR', unit: 'bpm', icon: Heart, better: 'down' },
+  { name: 'Blood Pressure', unit: 'mmHg', icon: Activity, better: 'down' },
+  { name: 'HRV', unit: 'ms', icon: Activity, better: 'up' },
+  { name: 'Sleep', unit: 'hrs', icon: Clock, better: 'up' },
+  { name: 'Sleep Quality', unit: '/10', icon: Clock, better: 'up' },
+  { name: 'Energy', unit: '/10', icon: Zap, better: 'up' },
+  { name: 'Mood', unit: '/10', icon: Heart, better: 'up' },
+  { name: 'Fasting Glucose', unit: 'mg/dL', icon: Droplet, better: 'down' },
+  { name: 'Pain Level', unit: '/10', icon: Activity, better: 'down' },
+];
+
+const CHART_COLORS = ['#00E5FF', '#F6AD55', '#68D391', '#D6BCFA', '#FC8181', '#63B3ED', '#F687B3'];
+
+function daysBetween(a: number, b: number): number {
+  return Math.floor((a - b) / 86400000);
+}
+
+function dayKey(d: Date | string | number): string {
+  const dt = new Date(d);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
 
 export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed: initialRecentlyViewed, bundles, catalog, trending, categories, storefrontSlug }: Props) {
   const [favorites, setFavorites] = useState<Item[]>(initialFavorites);
@@ -167,6 +216,108 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     });
     return sites;
   }, [doses]);
+
+  // Dose time-range state for charts
+  const [doseRange, setDoseRange] = useState<7 | 30 | 90 | 365>(30);
+  const [bioRange, setBioRange] = useState<7 | 30 | 90 | 365>(30);
+  const [bioMetricFilter, setBioMetricFilter] = useState<string>('');
+  const [doseNote, setDoseNote] = useState('');
+  const [doseWhen, setDoseWhen] = useState('now');
+
+  // --- Dose analytics ---
+  const doseStats = useMemo(() => {
+    const now = Date.now();
+    const activeCompounds = new Set(doses.map(d => d.compound_slug)).size;
+    const last7 = doses.filter(d => daysBetween(now, new Date(d.dosed_at).getTime()) < 7).length;
+    const last30 = doses.filter(d => daysBetween(now, new Date(d.dosed_at).getTime()) < 30).length;
+
+    // Streak: consecutive days (ending today or yesterday) with at least one dose.
+    const daySet = new Set(doses.map(d => dayKey(d.dosed_at)));
+    let streak = 0;
+    const cursor = new Date();
+    if (!daySet.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+    while (daySet.has(dayKey(cursor))) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    // Adherence over trailing 30 days from scheduled protocols.
+    const perWeekFromFreq = (f: string): number => {
+      const s = (f || '').toLowerCase();
+      if (s.includes('every day') || s.includes('daily')) return 7;
+      if (s.includes('every other')) return 3.5;
+      if (s.includes('5 days')) return 5;
+      if (s.includes('twice')) return 2;
+      if (s.includes('once') || s.includes('weekly')) return 1;
+      return 7;
+    };
+    const expected30 = scheduledDoses.reduce((sum, s) => sum + perWeekFromFreq(s.frequency) * (30 / 7), 0);
+    const adherence = expected30 > 0 ? Math.min(100, Math.round((last30 / expected30) * 100)) : null;
+
+    return { total: doses.length, activeCompounds, last7, last30, streak, adherence, expected30: Math.round(expected30) };
+  }, [doses, scheduledDoses]);
+
+  // --- Dose calendar heatmap (last ~119 days => 17 weeks) ---
+  const calendarWeeks = useMemo(() => {
+    const counts: Record<string, number> = {};
+    doses.forEach(d => { const k = dayKey(d.dosed_at); counts[k] = (counts[k] || 0) + 1; });
+    const weeks: { key: string; count: number; date: Date }[][] = [];
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(start.getDate() - (16 * 7 + today.getDay()));
+    let cur = new Date(start);
+    for (let w = 0; w < 17; w++) {
+      const col: { key: string; count: number; date: Date }[] = [];
+      for (let dow = 0; dow < 7; dow++) {
+        const k = dayKey(cur);
+        col.push({ key: k, count: counts[k] || 0, date: new Date(cur) });
+        cur.setDate(cur.getDate() + 1);
+      }
+      weeks.push(col);
+    }
+    return weeks;
+  }, [doses]);
+
+  // --- Active In System concentration model (informational) ---
+  const activeInSystem = useMemo(() => {
+    const now = Date.now();
+    const rangeMs = doseRange * 86400000;
+    const windowStart = now - rangeMs;
+    const relevant = doses.filter(d => {
+      const hl = estimateHalfLifeHours(d.compound_slug) * 3600000;
+      // include doses whose influence still matters within window (up to ~6 half-lives before window)
+      return new Date(d.dosed_at).getTime() > windowStart - hl * 6;
+    });
+    const compounds = Array.from(new Set(relevant.map(d => d.compound_slug)));
+    if (compounds.length === 0) return { data: [], compounds: [], nowIndex: 0 };
+
+    // Normalize each compound's contribution to a 0-100 scale by its own peak for readability.
+    const stepMs = rangeMs / 60; // 60 sample points across window + projection
+    const projectMs = 3 * 86400000; // project 3 days forward
+    const points: any[] = [];
+    for (let t = windowStart; t <= now + projectMs; t += stepMs) {
+      const row: any = { t, label: new Date(t).toLocaleDateString([], { month: 'short', day: 'numeric' }), isFuture: t > now };
+      compounds.forEach(c => {
+        const hl = estimateHalfLifeHours(c);
+        let level = 0;
+        relevant.filter(d => d.compound_slug === c).forEach(d => {
+          const dt = new Date(d.dosed_at).getTime();
+          if (dt <= t) {
+            const hoursSince = (t - dt) / 3600000;
+            level += Number(d.dose_amount) * Math.pow(0.5, hoursSince / hl);
+          }
+        });
+        row[c] = level;
+      });
+      points.push(row);
+    }
+    // Normalize per compound to its peak
+    compounds.forEach(c => {
+      const peak = Math.max(...points.map(p => p[c] || 0), 0.0001);
+      points.forEach(p => { p[c] = Math.round(((p[c] || 0) / peak) * 100); });
+    });
+    return { data: points, compounds, nowIndex: now };
+  }, [doses, doseRange]);
 
   useEffect(() => {
     const syncLegacyData = async () => {
@@ -605,24 +756,53 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         dose_amount: parseFloat(doseAmount),
         unit: doseUnit,
         dosed_at: new Date().toISOString(),
-        injection_site: selectedSite
+        injection_site: selectedSite,
+        notes: doseNote || null,
       };
-      
+
       const res = await fetch('/api/researcher/doses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
+
       const data = await res.json();
       if (res.ok && data.dose) {
         setDoses(prev => [data.dose, ...prev]);
         setDoseAmount('');
         setSelectedSite('');
-        toast.success('Dose logged!');
+        setDoseNote('');
+        toast.success('Dose Logged');
       } else throw new Error(data.error || 'Failed to log dose');
     } catch (e) {
       toast.error('Failed To Log Dose');
+    } finally {
+      setDoseSaving(false);
+    }
+  };
+
+  const repeatLastDose = async (last: any) => {
+    if (!last) return;
+    setDoseSaving(true);
+    try {
+      const res = await fetch('/api/researcher/doses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          compound_slug: last.compound_slug,
+          dose_amount: Number(last.dose_amount),
+          unit: last.unit,
+          dosed_at: new Date().toISOString(),
+          injection_site: last.injection_site || null,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.dose) {
+        setDoses(prev => [data.dose, ...prev]);
+        toast.success(`Repeated ${last.compound_slug}`);
+      } else throw new Error();
+    } catch {
+      toast.error('Failed To Repeat Dose');
     } finally {
       setDoseSaving(false);
     }
@@ -686,6 +866,130 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     } catch {
       toast.error('Error Deleting Biometric');
     }
+  };
+
+  // Per-metric analytics: current value, deltas, sparkline series
+  const metricStats = (name: string) => {
+    const rows = biometrics
+      .filter(b => b.metric_name === name)
+      .map(b => ({ v: Number(b.metric_value), t: new Date(b.measured_at).getTime() }))
+      .sort((a, b) => a.t - b.t);
+    if (rows.length === 0) return null;
+    const now = Date.now();
+    const current = rows[rows.length - 1].v;
+    const valAt = (daysAgo: number) => {
+      const cutoff = now - daysAgo * 86400000;
+      const before = rows.filter(r => r.t <= cutoff);
+      return before.length ? before[before.length - 1].v : rows[0].v;
+    };
+    const d7 = current - valAt(7);
+    const d30 = current - valAt(30);
+    const preset = BIOMETRIC_PRESETS.find(p => p.name === name);
+    const spark = rows.slice(-12).map((r, i) => ({ i, v: r.v }));
+    return { current, d7, d30, unit: biometrics.filter(b => b.metric_name === name).slice(-1)[0]?.unit || preset?.unit || '', better: preset?.better || 'none', spark, count: rows.length };
+  };
+
+  const trackedMetrics = useMemo(
+    () => Array.from(new Set(biometrics.map(b => b.metric_name))),
+    [biometrics]
+  );
+
+  // Trend chart: raw dots + moving-average line + optional goal + dose-day markers
+  const renderBioTrendChart = (metric: string) => {
+    const cutoff = Date.now() - bioRange * 86400000;
+    const rows = biometrics
+      .filter(b => b.metric_name === metric && new Date(b.measured_at).getTime() >= cutoff)
+      .map(b => ({ t: new Date(b.measured_at).getTime(), v: Number(b.metric_value), label: dayKey(b.measured_at) }))
+      .sort((a, b) => a.t - b.t);
+    if (rows.length === 0) return (
+      <div key={metric} style={{ color: 'var(--silver)', padding: 'var(--space-4)', fontSize: '0.9rem' }}>No {metric} Data In This Range.</div>
+    );
+
+    // Exponentially weighted trend line
+    const alpha = 0.35;
+    let ema = rows[0].v;
+    const data = rows.map((r, i) => {
+      ema = i === 0 ? r.v : alpha * r.v + (1 - alpha) * ema;
+      return { ...r, raw: r.v, trend: Math.round(ema * 100) / 100 };
+    });
+    const goal = biometricGoals[metric];
+    // Dose days within range for overlay markers
+    const doseDays = Array.from(new Set(
+      doses.filter(d => new Date(d.dosed_at).getTime() >= cutoff).map(d => dayKey(d.dosed_at))
+    ));
+    const yVals = data.map(d => d.raw);
+    const yMin = Math.min(...yVals), yMax = Math.max(...yVals);
+
+    return (
+      <div key={metric} className="glass-panel" style={{ padding: 'var(--space-5)', borderRadius: 'var(--radius-lg)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)', flexWrap: 'wrap', gap: 8 }}>
+          <h3 style={{ color: 'var(--white)', margin: 0, fontSize: '1.05rem' }}>{metric} Trend</h3>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span style={{ color: 'var(--silver)', fontSize: '0.8rem' }}>Target</span>
+            <input
+              type="number"
+              placeholder="Goal"
+              value={goal ?? ''}
+              onChange={e => setGoal(metric, parseFloat(e.target.value))}
+              style={{ width: 84, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: 6, color: 'var(--white)', fontSize: '0.85rem' }}
+            />
+          </div>
+        </div>
+        <div style={{ width: '100%', height: 300 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={data} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
+              <defs>
+                <linearGradient id={`grad-${metric.replace(/\W/g, '')}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#00E5FF" stopOpacity={0.25} />
+                  <stop offset="100%" stopColor="#00E5FF" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis dataKey="label" stroke="rgba(255,255,255,0.3)" tick={{ fill: 'var(--silver)', fontSize: 10 }} tickLine={false} axisLine={false} minTickGap={24} />
+              <YAxis domain={[Math.floor(yMin * 0.97), Math.ceil(yMax * 1.03)]} stroke="rgba(255,255,255,0.3)" tick={{ fill: 'var(--silver)', fontSize: 10 }} tickLine={false} axisLine={false} />
+              <RechartsTooltip contentStyle={{ backgroundColor: '#1A202C', borderColor: 'rgba(255,255,255,0.1)', borderRadius: 8 }} itemStyle={{ color: '#fff', fontSize: '0.85rem' }} labelStyle={{ color: 'var(--silver)' }} />
+              {goal != null && !isNaN(goal) && <ReferenceLine y={goal} stroke="var(--teal)" strokeDasharray="5 4" label={{ value: `Goal ${goal}`, fill: 'var(--teal)', fontSize: 10, position: 'insideTopRight' }} />}
+              {doseDays.map(dd => {
+                const pt = data.find(d => d.label === dd);
+                return pt ? <ReferenceLine key={dd} x={dd} stroke="rgba(246,173,85,0.25)" strokeWidth={1} /> : null;
+              })}
+              <Area type="monotone" dataKey="trend" stroke="none" fill={`url(#grad-${metric.replace(/\W/g, '')})`} />
+              <Scatter dataKey="raw" fill="rgba(208,218,228,0.55)" />
+              <Line type="monotone" dataKey="trend" name="Trend" stroke="#00E5FF" strokeWidth={3} dot={false} activeDot={{ r: 5 }} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+        <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: '0.75rem', color: 'var(--silver)' }}>
+          <span><span style={{ display: 'inline-block', width: 10, height: 3, background: '#00E5FF', verticalAlign: 'middle', marginRight: 4 }} />Weighted Trend</span>
+          <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'rgba(208,218,228,0.55)', verticalAlign: 'middle', marginRight: 4 }} />Raw Reading</span>
+          <span><span style={{ display: 'inline-block', width: 2, height: 10, background: 'rgba(246,173,85,0.6)', verticalAlign: 'middle', marginRight: 4 }} />Dose Day</span>
+        </div>
+      </div>
+    );
+  };
+
+  const rangeSwitcher = (value: number, onChange: (v: any) => void) => (
+    <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.25)', borderRadius: 999, padding: 4, border: '1px solid rgba(255,255,255,0.08)' }}>
+      {[7, 30, 90, 365].map(r => (
+        <button key={r} onClick={() => onChange(r)} style={{ background: value === r ? 'var(--teal)' : 'transparent', color: value === r ? 'var(--black)' : 'var(--silver)', border: 'none', borderRadius: 999, padding: '4px 12px', fontSize: '0.8rem', fontWeight: value === r ? 700 : 500, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          {r === 365 ? 'All' : `${r}D`}
+        </button>
+      ))}
+    </div>
+  );
+
+  const statCard = (label: string, value: React.ReactNode, sub?: React.ReactNode, icon?: any, accent = 'var(--teal)') => {
+    const Icon = icon;
+    return (
+      <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: accent, opacity: 0.06 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--silver)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          {Icon && <Icon size={14} style={{ color: accent }} />} {label}
+        </div>
+        <div style={{ color: 'var(--white)', fontSize: '1.7rem', fontWeight: 800, fontFamily: 'var(--font-brand)', lineHeight: 1 }}>{value}</div>
+        {sub && <div style={{ color: 'var(--silver)', fontSize: '0.78rem' }}>{sub}</div>}
+      </div>
+    );
   };
 
   const renderCombinedChart = (metric: string) => {
@@ -1118,9 +1422,8 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
             { id: 'goals', label: 'Research Goals', icon: Target },
             { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
             { id: 'favorites', label: 'Saved Compounds', icon: Heart },
-            { id: 'inventory', label: 'Inventory', icon: PackageOpen },
-            { id: 'doses', label: 'Dose Tracker', icon: Layers },
-            { id: 'biometrics', label: 'Biometrics', icon: Layers },
+            { id: 'doses', label: 'Dose Tracker', icon: Syringe },
+            { id: 'biometrics', label: 'Biometrics', icon: Activity },
             { id: 'recentlyViewed', label: 'Recently Viewed', icon: History },
             { id: 'compareHistory', label: 'Compare History', icon: Search }
           ].map(t => (

@@ -15,7 +15,7 @@ import Image from 'next/image';
 import { CITIES } from '@/lib/cities/cities-data';
 import type { City } from '@/lib/cities/cities-data';
 import { FEATURED_PEPTIDES } from '@/lib/cities/keywords';
-import { getCityIntro, getCityFAQs, VALUE_PROPS, getRegionLabel } from '@/lib/cities/city-content';
+import { getCityIntro, getCityFAQs, getCityFacts, VALUE_PROPS, getRegionLabel } from '@/lib/cities/city-content';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 
 interface Props {
@@ -38,6 +38,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
   const intro = getCityIntro(city);
   const faqs = getCityFAQs(city);
   const region = getRegionLabel(city);
+  const facts = getCityFacts(city);
 
   return (
     <>
@@ -279,6 +280,36 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         </section>
 
         {/* ═══════════════════════════════════════════════════════════
+            AT A GLANCE — dense, quotable fact box (answer-engine bait:
+            AI assistants and featured snippets quote exactly this kind
+            of self-contained factual block)
+        ═══════════════════════════════════════════════════════════ */}
+        <section style={{ padding: 'clamp(40px, 5vw, 64px) 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="container">
+            <h2 style={{ color: 'var(--white)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 'var(--space-5)' }}>
+              Research Peptide Supply In {city.name} — At A Glance
+            </h2>
+            <dl style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: 'var(--space-3)',
+              margin: 0,
+            }}>
+              {facts.map(({ label, value }) => (
+                <div key={label} className="glass-panel" style={{ padding: 'var(--space-4) var(--space-5)', border: 'var(--border-subtle)' }}>
+                  <dt style={{ fontSize: '0.65rem', color: 'var(--grey-500)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>
+                    {label}
+                  </dt>
+                  <dd style={{ fontSize: '0.85rem', color: 'var(--silver-light)', margin: 0, lineHeight: 1.55 }}>
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════
             FEATURED PEPTIDES — dynamic BG + store cards + popular name
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
@@ -313,13 +344,6 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                   <div className="city-pcard-wrapper">
                     <div className="city-pcard-inner">
 
-                    {/* Badge */}
-                    {peptide.badge && (
-                      <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 2, padding: '3px 10px', borderRadius: 'var(--radius-full)', background: 'rgba(0,196,188,0.12)', border: '1px solid rgba(0,196,188,0.3)', fontSize: '0.6rem', fontWeight: 700, color: 'var(--teal)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                        {peptide.badge}
-                      </div>
-                    )}
-
                     {/* Image header (same as store card) */}
                     <div style={{ height: 140, background: 'radial-gradient(circle at 35% 35%, rgba(192,184,168,0.1) 0%, var(--surface-2) 80%)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                       <Image
@@ -332,33 +356,35 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                     </div>
 
                     {/* Card body */}
-                    <div className="product-card-body" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                      {/* Category */}
-                      <div style={{ fontSize: '0.6rem', color: 'var(--grey-500)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 5 }}>
-                        {peptide.category}
+                    <div style={{ padding: 'var(--space-5)', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ textAlign: 'center', marginBottom: 'var(--space-2)' }}>
+                        <h4 style={{
+                          fontFamily: 'var(--font-brand)',
+                          fontSize: '1.15rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2,
+                          marginBottom: peptide.popularName ? 2 : 0
+                        }}>
+                          {peptide.name}
+                        </h4>
+                        {peptide.popularName && (
+                          <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', fontWeight: 500 }}>
+                            ({peptide.popularName})
+                          </span>
+                        )}
                       </div>
 
-                      {/* Product name */}
-                      <h3 style={{ color: 'var(--white)', fontSize: '1.05rem', fontWeight: 700, margin: '0 0 4px', lineHeight: 1.2 }}>
-                        {peptide.name}
-                      </h3>
-
-                      {/* Popular name */}
-                      <span className="popular-name-tag">
-                        {peptide.popularName}
-                      </span>
-
-                      {/* Description */}
-                      <p style={{ fontSize: '0.79rem', color: 'var(--grey-400)', lineHeight: 1.6, margin: '0 0 var(--space-4)', flex: 1 }}>
-                        {peptide.description}
-                      </p>
-
-                      {/* View link */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--teal)', fontSize: '0.8rem', fontWeight: 700, paddingTop: 'var(--space-3)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                        View Research
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
+                      <div style={{
+                        marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)',
+                        textAlign: 'center'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                          <span className="sf-product-price-nickel" style={{
+                            fontSize: '1.2rem', fontWeight: 800,
+                            fontFamily: 'var(--font-brand)',
+                            color: 'var(--white)',
+                          }}>
+                            {peptide.size} &nbsp;${peptide.price?.toFixed(2)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -519,7 +545,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
               <span style={{ color: '#d4cdbb' }}>In {city.name}?</span>
             </h2>
             <p style={{ color: 'var(--grey-400)', lineHeight: 1.7, marginBottom: 'var(--space-8)', fontSize: '0.95rem' }}>
-              Create a verified researcher account today and unlock wholesale pricing on 100+ pharmaceutical-grade peptides shipped fast to {city.name}, {city.stateAbbr}.
+              Create a verified researcher account today and unlock wholesale pricing on 100+ research-grade peptides shipped fast to {city.name}, {city.stateAbbr}.
             </p>
 
             <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>

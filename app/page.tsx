@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import HomeClient from './HomeClient';
+import HomeSeoContent from '@/components/HomeSeoContent';
 
 export const metadata: Metadata = {
   title: 'Pep Nation Lab | Premium Research Peptide Distribution',
@@ -64,6 +65,10 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <HomeClient />
+      {/* Server-rendered crawlable homepage content: gives the root domain a
+          real H1, intro copy, and descriptive internal links beneath the
+          image-based landing artwork. */}
+      <HomeSeoContent />
     </>
   );
 }

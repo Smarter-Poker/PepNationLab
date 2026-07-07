@@ -454,6 +454,15 @@ export const CITIES: City[] = [
   { name: 'Kailua', slug: 'kailua', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 50000, medianIncome: 90000, tier: 2 },
 ];
 
+// ─── Content versioning ─────────────────────────────────────────────────────
+/**
+ * Bump this date ONLY when city page content materially changes (copy, FAQs,
+ * schema, layout). It feeds sitemap <lastmod> and schema dateModified. Do NOT
+ * use `new Date()` for lastmod — stamping every build teaches crawlers to
+ * ignore the signal.
+ */
+export const CITY_CONTENT_UPDATED = new Date('2026-07-07');
+
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 /** Returns all unique state slugs present in the city data */

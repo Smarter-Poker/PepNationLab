@@ -10,21 +10,38 @@ export async function GET() {
     .select('slug, display_name, category')
     .order('display_name', { ascending: true });
 
+  const base = 'https://pepnationlab.com';
+
   let text = `# Pep Nation Lab\n\n`;
-  text += `> Premium wholesale research peptide distribution and comprehensive research library for qualified institutions. All products are strictly for in vitro laboratory research use only. Not for human consumption.\n\n`;
+  text += `> Premium wholesale research peptide distribution and comprehensive research library for qualified researchers and institutions. Pep Nation Lab provides 300+ research-grade peptide monographs covering mechanism of action, evidence tier, pharmacokinetics, molecular identity, handling, and referenced findings, plus reconstitution calculators, a comparison engine, and an AI match engine. All products and content are strictly for in vitro laboratory research use only. Not for human consumption.\n\n`;
+
   text += `## Full Site Context\n`;
-  text += `- [Full Compound Database](/llms-full.txt) - A single, massive markdown file containing all compound monographs.\n\n`;
+  text += `- [Full Compound Database (markdown)](${base}/llms-full.txt): A single markdown file containing every compound monograph in full.\n\n`;
+
+  text += `## Key Pages\n`;
+  text += `- [Research Library](${base}/research): Browsable database of all research compounds.\n`;
+  text += `- [Find A Peptide](${base}/find-a-peptide): Discover compounds by research goal and attributes.\n`;
+  text += `- [Peptide 101 Academy](${base}/peptide-101): Foundational peptide science education.\n`;
+  text += `- [Compound Catalog](${base}/research/catalog): Full catalog view.\n`;
+  text += `- [A To Z Index](${base}/research/a-z): Alphabetical compound index.\n`;
+  text += `- [Glossary](${base}/research/glossary): Peptide science terms and definitions.\n`;
+  text += `- [Reconstitution Calculators](${base}/research/calculators): Research dosing and dilution math.\n`;
+  text += `- [Compare Compounds](${base}/research/compare): Side-by-side comparison tool.\n`;
+  text += `- [Research FAQ](${base}/research/faq): Frequently asked questions.\n`;
+  text += `- [About Pep Nation Lab](${base}/about): Company and platform overview.\n\n`;
 
   text += `## Individual Compound Monographs\n`;
+  text += `Each entry links to the human-readable monograph. A machine-readable markdown version is available at /api/llm/compound/{slug}.\n`;
   if (compounds) {
     compounds.forEach((c) => {
-      text += `- [${c.display_name}](/api/llm/compound/${c.slug}): ${c.category}\n`;
+      text += `- [${c.display_name}](${base}/research/${c.slug}): ${c.category ?? 'Research Compound'} (markdown: ${base}/api/llm/compound/${c.slug})\n`;
     });
   }
 
   text += `\n## Policies\n`;
-  text += `- [Compliance & Disclaimer](/disclaimer)\n`;
-  text += `- [Terms of Service](/terms)\n`;
+  text += `- [Compliance & Disclaimer](${base}/disclaimer): Research-use-only compliance and safety framing.\n`;
+  text += `- [Terms of Service](${base}/terms)\n`;
+  text += `- [Privacy Policy](${base}/privacy)\n`;
 
   return new NextResponse(text, {
     headers: {

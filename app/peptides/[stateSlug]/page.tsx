@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { CITIES, getStatesSlugs, getCitiesByState, getStateName } from '@/lib/cities/cities-data';
+import { CITIES, getStatesSlugs, getCitiesByState, getStateName, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
 
 // ─── Static params ─────────────────────────────────────────────────────────
 export async function generateStaticParams() {
@@ -19,22 +19,39 @@ export async function generateMetadata({
   if (cities.length === 0) return {};
 
   const stateName = getStateName(stateSlug);
-  const stateAbbr = cities[0].stateAbbr;
   const title = `Research Peptides In ${stateName} | ${cities.length} Cities | Pep Nation Lab`;
-  const description = `Pep Nation Lab supplies research-grade peptides to qualified researchers across ${cities.length} cities in ${stateName}. BPC-157, Semaglutide, Tirzepatide, TB-500 and 300+ more. Wholesale pricing. Verified accounts only.`;
+  const description = `Pep Nation Lab supplies research-grade peptides to qualified researchers across ${cities.length} cities in ${stateName}. BPC-157, Semaglutide, Tirzepatide, TB-500 and 100+ more research compounds. Wholesale pricing. Verified accounts only.`;
 
   return {
     title,
     description,
     alternates: { canonical: `https://pepnationlab.com/peptides/${stateSlug}` },
+    // No `images` — the file-based opengraph-image.tsx in this segment
+    // generates a unique per-state OG card; a static image would override it.
     openGraph: {
       title,
       description,
       url: `https://pepnationlab.com/peptides/${stateSlug}`,
+      siteName: 'Pep Nation Lab',
       type: 'website',
-      images: [{ url: '/og-card.png', width: 1200, height: 630, alt: `Research Peptides in ${stateName}` }],
+      locale: 'en_US',
     },
-    robots: { index: true, follow: true },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-snippet': -1,
+        'max-image-preview': 'large',
+        'max-video-preview': -1,
+      },
+    },
   };
 }
 
@@ -74,7 +91,22 @@ export default async function StateLandingPage({
         name: `Research Peptides In ${stateName}`,
         url: `https://pepnationlab.com/peptides/${stateSlug}`,
         description: `Research-grade peptide coverage across ${cities.length} cities in ${stateName}.`,
-        publisher: { '@type': 'Organization', name: 'Pep Nation Lab', url: 'https://pepnationlab.com' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' },
+        datePublished: '2026-07-01',
+        dateModified: CITY_CONTENT_UPDATED.toISOString().slice(0, 10),
+      },
+      // ItemList of every covered city — lets search engines and AI models
+      // enumerate coverage ("what cities does Pep Nation Lab serve in X?").
+      {
+        '@type': 'ItemList',
+        name: `Cities Covered In ${stateName}`,
+        numberOfItems: sorted.length,
+        itemListElement: sorted.map((c, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          name: `${c.name}, ${c.stateAbbr}`,
+          url: `https://pepnationlab.com/peptides/${stateSlug}/${c.slug}`,
+        })),
       },
     ],
   };
@@ -147,16 +179,16 @@ export default async function StateLandingPage({
             </p>
 
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-              <Link href="/login" className="btn btn-primary btn-xl">
+              {/* Primary CTA points at an indexable page — /login is robots-disallowed,
+                  so it stays as the secondary link only. */}
+              <Link href="/research" className="btn btn-primary btn-xl">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                  <polyline points="10 17 15 12 10 7"/>
-                  <line x1="15" y1="12" x2="3" y2="12"/>
+                  <path d="M6 3h12"/><path d="M9 3v6l-5 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-5-9V3"/>
                 </svg>
-                Access the Lab
-              </Link>
-              <Link href="/research" className="btn btn-secondary btn-xl">
                 Browse Research Library
+              </Link>
+              <Link href="/login" className="btn btn-secondary btn-xl">
+                Access The Lab
               </Link>
             </div>
           </div>

@@ -13,10 +13,29 @@ import { isDisclaimerAccepted, recordDisclaimerAcceptance } from '@/lib/disclaim
  * under a version-scoped key so bumping the disclaimer version forces
  * re-acknowledgment.
  *
+ * SEO-CRITICAL RENDERING CONTRACT (do not regress):
+ * Children are ALWAYS rendered — on the server and on the client. The gate
+ * is a fixed full-screen overlay (`.modal-overlay`, z-index 1000, opaque
+ * backdrop) painted ON TOP of the page after hydration when acceptance has
+ * not been recorded. The previous implementation returned `null` until the
+ * localStorage check completed, which meant every server-rendered page
+ * (city landing pages, the research library, everything) shipped an EMPTY
+ * <body> to crawlers. Search engines and AI crawlers (GPTBot, ClaudeBot,
+ * PerplexityBot) do not execute JavaScript or accept the gate, so the site
+ * was invisible to them. Rendering content beneath a legally required
+ * interstitial keeps the compliance gate fully intact for human visitors
+ * (the overlay blocks all interaction and scrolling until accepted) while
+ * letting crawlers index the page. Google explicitly exempts legally
+ * required interstitials from its intrusive-interstitial policy.
+ *
  * EXCEPTION: The Public Landing Page ("/") Renders Without The Gate.
  * First-Time Visitors Must See The Landing Artwork First; The Landing
  * Page Itself Intercepts Every Button Click And Shows This Same
  * Disclaimer Before Navigating Anywhere (See app/page.tsx).
+ *
+ * EXCEPTION: City Landing Pages ("/peptides...") Render Without The Gate
+ * So Visitors Can Read The Local SEO Content First; The Gate Appears On
+ * Any Further Navigation Into The Platform.
  */
 export default function SiteDisclaimerGate({
   children,
@@ -32,23 +51,29 @@ export default function SiteDisclaimerGate({
     setReady(true);
   }, [pathname]);
 
+  const exempt = pathname === '/' || pathname.startsWith('/peptides');
+  const showGate = ready && !accepted && !exempt;
+
+  // Lock body scroll while the gate overlay is up so the page behind it
+  // cannot be scrolled or interacted with until the acknowledgment.
+  useEffect(() => {
+    if (!showGate) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [showGate]);
+
   const handleAccept = () => {
     recordDisclaimerAcceptance();
     setAccepted(true);
   };
 
-  // The Landing Page Is Always Visible -- Its Click Zones Enforce The Gate.
-  // We also bypass the gate for City Landing Pages so users can read the SEO content
-  // before being asked to accept the compliance agreement upon further navigation.
-  if (pathname === '/' || pathname.startsWith('/peptides')) return <>{children}</>;
-
-  // Block render until we've checked localStorage (one RAF after mount).
-  // This prevents a brief flash of site content before the disclaimer gate appears
-  // on a first-visit or after a version bump forces re-acknowledgment.
-  if (!ready) return null;
-
-  // Once ready: if accepted, show children; otherwise show the gate (no children behind it).
-  if (!accepted) return <DisclaimerGate onAccept={handleAccept} />;
-
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {showGate && <DisclaimerGate onAccept={handleAccept} />}
+    </>
+  );
 }

@@ -12,7 +12,7 @@
 
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { CITIES, getCity } from '@/lib/cities/cities-data';
+import { CITIES, getCity, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
 import { getCityFAQs } from '@/lib/cities/city-content';
 import CityPage from './CityPage';
 
@@ -35,35 +35,41 @@ export async function generateMetadata({
   if (!city) return {};
 
   const title = `Peptide Research In ${city.name}, ${city.stateAbbr} — Pep Nation Lab`;
-  const description = `Pep Nation Lab supplies research-grade peptides to qualified researchers in ${city.name}, ${city.state}. BPC-157, Semaglutide, Tirzepatide, TB-500 & 300+ more. Wholesale pricing. Verified accounts only.`;
+  const description = `Pep Nation Lab supplies research-grade peptides to qualified researchers in ${city.name}, ${city.state}. BPC-157, Semaglutide, Tirzepatide, TB-500 & 100+ more research compounds. Wholesale pricing. Verified accounts only.`;
 
   return {
     title,
     description,
-    keywords: [
-      `peptide therapy ${city.name}`,
-      `research peptides ${city.name} ${city.stateAbbr}`,
-      `BPC-157 ${city.name}`,
-      `semaglutide ${city.name}`,
-      `tirzepatide ${city.name}`,
-      `TB-500 ${city.name}`,
-      `weight loss peptides ${city.name}`,
-      `peptide clinic ${city.name}`,
-      `anti-aging peptides ${city.name} ${city.stateAbbr}`,
-      `research peptides ${city.state}`,
-    ].join(', '),
     alternates: {
       canonical: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
     },
+    // NOTE: no `images` here on purpose — the file-based opengraph-image.tsx
+    // in this route segment generates a unique per-city OG card. Declaring a
+    // static image in metadata would override and kill the dynamic one.
     openGraph: {
       title,
       description,
       url: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
       siteName: 'Pep Nation Lab',
       type: 'website',
-      images: [{ url: '/og-card.png', width: 1200, height: 630, alt: title }],
+      locale: 'en_US',
     },
-    robots: { index: true, follow: true },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-snippet': -1,
+        'max-image-preview': 'large',
+        'max-video-preview': -1,
+      },
+    },
   };
 }
 
@@ -99,24 +105,40 @@ export default async function CityLandingPage({
           acceptedAnswer: { '@type': 'Answer', text: faq.answer },
         })),
       },
+      // Service (not MedicalBusiness/LocalBusiness): Pep Nation Lab is a
+      // research supply distributor with no physical premises in this city.
+      // Claiming a local business with a PostalAddress here would be
+      // misleading structured data (manual-action risk). Service + areaServed
+      // accurately describes remote coverage of the city.
       {
-        '@type': 'MedicalBusiness',
-        '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#business`,
-        name: `Pep Nation Lab — ${city.name} Research Peptides`,
+        '@type': 'Service',
+        '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#service`,
+        serviceType: 'Research Peptide Supply',
+        name: `Research Peptide Supply — ${city.name}, ${city.stateAbbr}`,
         url: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
-        image: 'https://pepnationlab.com/logo-mark.svg',
-        description: `Research-grade peptide supply for qualified researchers in ${city.name}, ${city.state}.`,
+        description: `Research-grade peptide supply for qualified researchers in ${city.name}, ${city.state}. In vitro laboratory use only. Verified researcher accounts required.`,
+        provider: { '@id': 'https://pepnationlab.com/#organization' },
         areaServed: {
           '@type': 'City',
           name: city.name,
+          containedInPlace: {
+            '@type': 'State',
+            name: city.state,
+          },
         },
-        address: {
-          '@type': 'PostalAddress',
-          addressLocality: city.name,
-          addressRegion: city.stateAbbr,
-          addressCountry: 'US',
+        audience: {
+          '@type': 'Audience',
+          audienceType: 'Qualified Researchers And Scientific Institutions',
         },
-        priceRange: '$$',
+      },
+      {
+        '@type': 'WebPage',
+        '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
+        url: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
+        name: `Peptide Research In ${city.name}, ${city.stateAbbr}`,
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        datePublished: '2026-07-01',
+        dateModified: CITY_CONTENT_UPDATED.toISOString().slice(0, 10),
       },
     ],
   };

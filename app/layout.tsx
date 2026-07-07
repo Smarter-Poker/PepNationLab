@@ -70,6 +70,13 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-snippet': -1,
+      'max-image-preview': 'large',
+      'max-video-preview': -1,
+    },
   },
   other: {
     'format-detection': 'telephone=no, address=no, email=no, date=no',
@@ -137,6 +144,17 @@ export default function RootLayout({
                   image: { '@id': 'https://pepnationlab.com/#logo' },
                   description: 'Wholesale research peptide distribution for qualified researchers. All products for in vitro research use only. Not for human consumption.',
                   slogan: 'Research-First Peptide Distribution',
+                  email: 'research@pepnationlab.com',
+                  contactPoint: {
+                    '@type': 'ContactPoint',
+                    contactType: 'Customer Support',
+                    email: 'research@pepnationlab.com',
+                    availableLanguage: ['English'],
+                  },
+                  // sameAs intentionally omitted until official brand profiles
+                  // (X, Instagram, LinkedIn, YouTube, Wikidata) exist. Populate
+                  // this array with those URLs to strengthen entity/knowledge-graph
+                  // resolution for search engines and AI answer engines.
                 },
               ],
             }),

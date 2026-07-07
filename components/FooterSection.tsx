@@ -63,6 +63,11 @@ export default function FooterSection() {
             }}>Platform</h6>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {[
+                { label: 'Research Library', href: '/research' },
+                { label: 'Find A Peptide', href: '/find-a-peptide' },
+                { label: 'Peptide 101 Academy', href: '/peptide-101' },
+                { label: 'Reconstitution Calculators', href: '/research/calculators' },
+                { label: 'Compare Compounds', href: '/research/compare' },
                 { label: 'Products', href: '/products' },
                 { label: 'Agent Dashboard', href: '/dashboard' },
                 { label: 'Sign In', href: '/login' },

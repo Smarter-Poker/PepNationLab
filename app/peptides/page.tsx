@@ -1,21 +1,37 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { CITIES, getCitiesGroupedByState } from '@/lib/cities/cities-data';
+import { CITIES, getCitiesGroupedByState, getStatesSlugs, getStateName, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
 
 export const metadata: Metadata = {
   title: 'Research Peptides By City | Nationwide Coverage | Pep Nation Lab',
-  description:
-    'Pep Nation Lab ships research-grade peptides to qualified researchers in 300+ US cities across all 50 states. Browse by state and city to find local research peptide coverage.',
+  description: `Pep Nation Lab ships research-grade peptides to qualified researchers in ${CITIES.length} US cities. Browse by state and city to find local research peptide coverage. 100+ research compounds at wholesale pricing.`,
   alternates: { canonical: 'https://pepnationlab.com/peptides' },
   openGraph: {
     title: 'Research Peptides By City | Pep Nation Lab',
-    description:
-      'Browse research-grade peptide coverage by state and city. 300+ compounds, wholesale pricing, verified accounts.',
+    description: `Browse research-grade peptide coverage by state and city. ${CITIES.length} cities, 100+ research compounds, wholesale pricing, verified accounts.`,
     url: 'https://pepnationlab.com/peptides',
+    siteName: 'Pep Nation Lab',
     type: 'website',
+    locale: 'en_US',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab — Peptides By City' }],
   },
-  robots: { index: true, follow: true },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Research Peptides By City | Pep Nation Lab',
+    description: `Browse research-grade peptide coverage by state and city. ${CITIES.length} cities, 100+ research compounds.`,
+    images: ['/og-card.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-snippet': -1,
+      'max-image-preview': 'large',
+      'max-video-preview': -1,
+    },
+  },
 };
 
 const jsonLd = {
@@ -32,9 +48,23 @@ const jsonLd = {
       '@type': 'CollectionPage',
       name: 'Research Peptides By City',
       url: 'https://pepnationlab.com/peptides',
-      description:
-        'Pep Nation Lab local coverage directory — research-grade peptides available nationwide across 300+ US cities.',
-      publisher: { '@type': 'Organization', name: 'Pep Nation Lab', url: 'https://pepnationlab.com' },
+      description: `Pep Nation Lab local coverage directory — research-grade peptides available nationwide across ${CITIES.length} US cities.`,
+      publisher: { '@id': 'https://pepnationlab.com/#organization' },
+      datePublished: '2026-07-01',
+      dateModified: CITY_CONTENT_UPDATED.toISOString().slice(0, 10),
+    },
+    // ItemList of state directory pages — lets search engines and AI models
+    // enumerate coverage by state.
+    {
+      '@type': 'ItemList',
+      name: 'Research Peptide Coverage By State',
+      numberOfItems: getStatesSlugs().length,
+      itemListElement: getStatesSlugs().map((slug, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: getStateName(slug),
+        url: `https://pepnationlab.com/peptides/${slug}`,
+      })),
     },
   ],
 };
@@ -88,16 +118,16 @@ export default function PeptidesByStatePage() {
 
             <p style={{ fontSize: '1.05rem', maxWidth: 620, color: 'var(--silver-light)', lineHeight: 1.75, marginBottom: 'var(--space-8)' }}>
               Pep Nation Lab supplies research-grade peptides to qualified researchers across{' '}
-              <strong style={{ color: 'var(--white)' }}>{totalCities}+ US cities</strong>. Browse by state to find local
+              <strong style={{ color: 'var(--white)' }}>{totalCities} US cities</strong>. Browse by state to find local
               coverage, pricing tiers, and nearby agents.
             </p>
 
             {/* Stats row */}
             <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap', paddingTop: 'var(--space-6)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
               {[
-                { num: `${totalCities}+`, label: 'Cities Covered' },
+                { num: `${totalCities}`, label: 'Cities Covered' },
                 { num: `${stateEntries.length}`, label: 'States' },
-                { num: '300+', label: 'Research Compounds' },
+                { num: '100+', label: 'Research Compounds' },
                 { num: '3 Tiers', label: 'Wholesale Pricing' },
               ].map(({ num, label }) => (
                 <div key={label}>
@@ -225,16 +255,14 @@ export default function PeptidesByStatePage() {
               Pep Nation Lab ships to all 50 states. If your city is not listed, you can still create a verified researcher account and access the full catalog with nationwide shipping.
             </p>
             <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link href="/login" className="btn btn-primary">
+              <Link href="/research" className="btn btn-primary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                  <polyline points="10 17 15 12 10 7"/>
-                  <line x1="15" y1="12" x2="3" y2="12"/>
+                  <path d="M6 3h12"/><path d="M9 3v6l-5 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-5-9V3"/>
                 </svg>
-                Access the Lab
-              </Link>
-              <Link href="/research" className="btn btn-secondary">
                 Browse Research Library
+              </Link>
+              <Link href="/login" className="btn btn-secondary">
+                Access The Lab
               </Link>
             </div>
           </div>

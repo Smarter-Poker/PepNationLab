@@ -85,7 +85,8 @@ export interface FeaturedPeptide {
   category: string;
   description: string;
   image: string;          // /images/products/[filename]
-  badge?: string;
+  size?: string;
+  price?: number;
 }
 
 export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
@@ -96,7 +97,8 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     category: 'Healing & Recovery',
     description: 'One of the most studied peptides for tissue repair, gut health, and recovery research.',
     image: '/images/products/bpc-157.png',
-    badge: 'Most Researched',
+    size: '10mg Vials',
+    price: 14.50,
   },
   {
     name: 'Semaglutide',
@@ -105,7 +107,8 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     category: 'Metabolic Health',
     description: 'GLP-1 receptor agonist widely studied for metabolic regulation and weight management research.',
     image: '/images/products/semaglutide.png',
-    badge: 'High Demand',
+    size: '5mg Vials',
+    price: 18.00,
   },
   {
     name: 'TB-500',
@@ -114,6 +117,8 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     category: 'Recovery & Performance',
     description: 'Thymosin Beta-4 fragment studied for cellular recovery, tissue regeneration, and angiogenesis.',
     image: '/images/products/tb-500.png',
+    size: '10mg Vials',
+    price: 16.00,
   },
   {
     name: 'Tirzepatide',
@@ -122,7 +127,8 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     category: 'Metabolic Health',
     description: 'Dual GIP/GLP-1 receptor agonist. Cutting-edge metabolic and weight regulation research compound.',
     image: '/images/products/tirzepatide.png',
-    badge: 'Trending',
+    size: '10mg Vials',
+    price: 22.00,
   },
   {
     name: 'Ipamorelin',
@@ -131,6 +137,8 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     category: 'Growth & Longevity',
     description: 'Selective growth hormone secretagogue widely used in anti-aging and longevity peptide research.',
     image: '/images/products/ipamorelin.png',
+    size: '5mg Vials',
+    price: 11.00,
   },
   {
     name: 'CJC-1295 + Ipamorelin',
@@ -139,7 +147,8 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     category: 'Growth & Longevity',
     description: 'GHRH analogue blend studied for sustained growth hormone pulse amplification and recovery research.',
     image: '/images/products/cjc-1295-ipamorelin.png',
-    badge: 'Top Combo',
+    size: '10mg Vials',
+    price: 19.00,
   },
   {
     name: 'Sermorelin',
@@ -148,6 +157,8 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     category: 'Growth & Longevity',
     description: 'First-generation GHRH analogue with a long research safety profile. Widely studied for GH stimulation.',
     image: '/images/products/sermorelin.png',
+    size: '5mg Vials',
+    price: 13.50,
   },
   {
     name: 'PT-141',
@@ -156,6 +167,8 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     category: 'Sexual Health',
     description: 'Melanocortin receptor agonist studied for sexual function and libido research protocols.',
     image: '/images/products/pt-141.png',
+    size: '10mg Vials',
+    price: 15.00,
   },
   {
     name: 'GHK-Cu',
@@ -164,6 +177,8 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     category: 'Skin, Hair & Cosmetic',
     description: 'Naturally occurring copper complex studied for wound healing, collagen synthesis, and skin regeneration.',
     image: '/images/products/ghk-cu.png',
+    size: '50mg Vials',
+    price: 9.50,
   },
   {
     name: 'Epithalon',
@@ -172,6 +187,7 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
     category: 'Anti-Aging & Longevity',
     description: 'Tetrapeptide studied for telomere elongation, melatonin regulation, and longevity research protocols.',
     image: '/images/products/epithalon.png',
-    badge: 'Longevity',
+    size: '10mg Vials',
+    price: 17.50,
   },
 ];

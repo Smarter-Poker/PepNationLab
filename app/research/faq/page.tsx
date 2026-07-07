@@ -39,6 +39,17 @@ export default function FaqPage() {
           '@type': 'FAQPage',
           name: 'Peptide Research FAQ',
           url: 'https://pepnationlab.com/research/faq',
+          // mainEntity carries the real Q&A pairs so this is a valid FAQPage
+          // eligible for rich results and directly extractable by AI answer
+          // engines. Answers are plain-text-stripped for schema cleanliness.
+          mainEntity: items.map((f) => ({
+            '@type': 'Question',
+            name: f.q,
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: String(f.a).replace(/<[^>]+>/g, '').trim(),
+            },
+          })),
         }) }}
       />
     <div style={{ maxWidth: '820px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
