@@ -397,11 +397,8 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
 
             {/* See full catalog CTA */}
             <div style={{ textAlign: 'center', marginTop: 'var(--space-12)' }}>
-              <Link href="/research/a-z" className="btn btn-secondary btn-xl">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                </svg>
-                Browse Full Research Catalog
+              <Link href="/research/a-z" className="city-img-btn" aria-label="Browse Full Research Catalog">
+                <img src="/images/buttons/btn-browse-full.png" alt="Browse Full Research Catalog" />
               </Link>
             </div>
           </div>
@@ -482,12 +479,8 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                 </p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                <Link href="/become-agent" className="btn btn-primary btn-xl">
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-                  </svg>
-                  Become an Agent
+                <Link href="/become-agent" className="city-img-btn" aria-label="Become an Agent">
+                  <img src="/images/buttons/btn-agent.png" alt="Become an Agent" />
                 </Link>
                 <Link href="/login" style={{ fontSize: '0.8rem', color: 'var(--grey-500)', textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center' }}>
                   Already an agent? Sign in
@@ -567,7 +560,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                 <img src="/images/buttons/btn-access.png" alt="Access the Lab" />
               </Link>
               <Link href="/research" className="city-img-btn" aria-label="Explore Research Library">
-                <img src="/images/buttons/btn-browse.png" alt="Explore Research Library" />
+                <img src="/images/buttons/btn-explore.png" alt="Explore Research Library" />
               </Link>
             </div>
 
