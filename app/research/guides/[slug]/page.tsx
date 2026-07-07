@@ -77,6 +77,15 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         publisher: { '@id': 'https://pepnationlab.com/#organization' },
         isPartOf: { '@id': 'https://pepnationlab.com/#website' },
         about: 'Research Use Only peptides for in vitro laboratory research',
+        ...(guide.compounds && guide.compounds.length
+          ? {
+              mentions: guide.compounds.map((c) => ({
+                '@type': 'ChemicalSubstance',
+                name: c.name,
+                url: `https://pepnationlab.com/research/${c.slug}`,
+              })),
+            }
+          : {}),
       },
     ],
   };
@@ -147,6 +156,19 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                   <strong style={{ color: 'var(--red)' }}>Research Use Only:</strong> This guide is informational and describes research-context handling of compounds intended strictly for in vitro laboratory research. Products are not for human or animal consumption, ingestion, or injection, and are not FDA-approved. Nothing here is medical, clinical, or dosing advice.
                 </p>
               </div>
+
+              {guide.compounds && guide.compounds.length > 0 && (
+                <div style={{ marginTop: 'var(--space-10)' }}>
+                  <h2 style={{ color: 'var(--white)', fontSize: '1.1rem', fontWeight: 800, marginBottom: 'var(--space-4)' }}>Compounds Referenced In This Guide</h2>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+                    {guide.compounds.map((c) => (
+                      <Link key={c.slug} href={`/research/${c.slug}`} className="card" style={{ padding: 'var(--space-3) var(--space-5)', textDecoration: 'none', color: 'var(--teal)', fontSize: '0.88rem', fontWeight: 600 }}>
+                        {c.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {related.length > 0 && (
                 <div style={{ marginTop: 'var(--space-10)' }}>
