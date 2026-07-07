@@ -793,6 +793,76 @@ export const CITIES: City[] = [
     zips: ['61265'],
     localBlurb: 'Part of the Quad Cities, Moline is home to John Deere’s world headquarters and a UnityPoint Health regional campus.',
   },
+  {
+    name: 'Cicero', slug: 'cicero', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
+    population: 80000, medianIncome: 55000, tier: 2, region: 'Chicagoland area', county: 'Cook',
+    localBlurb: 'From the historic architecture along Cermak Road to the vibrant industrial parks, Pep Nation Lab provides Cicero research professionals with rapid access to 99%+ pure research peptides. Our secure fulfillment network ensures next-day processing for critical in vitro studies across Cook County.'
+  },
+  {
+    name: 'Waukegan', slug: 'waukegan', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
+    population: 87000, medianIncome: 60000, tier: 2, region: 'Chicagoland area', county: 'Lake',
+    localBlurb: 'Supporting the scientific community near the Lake County medical and bioscience corridor, Pep Nation Lab delivers third-party tested research peptides to Waukegan. Whether conducting trials near the harbor district or inland labs, researchers trust our verifiable COAs and consistent wholesale pricing.'
+  },
+  {
+    name: 'DeKalb', slug: 'dekalb', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
+    population: 40000, medianIncome: 45000, tier: 3, region: 'Northern Illinois', county: 'DeKalb',
+    localBlurb: 'Home to major academic and agricultural research institutions, DeKalb relies on Pep Nation Lab for premium analytical compounds. We supply Northern Illinois University affiliates and independent investigators with strictly regulated, high-purity peptides for advanced structural and binding assays.'
+  },
+  {
+    name: 'Urbana', slug: 'urbana', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
+    population: 38000, medianIncome: 50000, tier: 3, region: 'Central Illinois', county: 'Champaign',
+    localBlurb: 'As a global hub for scientific innovation and home to leading research parks, Urbana demands uncompromising quality. Pep Nation Lab provides Urbana researchers with lyophilized, synthesis-verified peptides perfectly suited for the rigorous analytical environments of the Silicon Prairie.'
+  },
+  {
+    name: 'Quincy', slug: 'quincy', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
+    population: 40000, medianIncome: 52000, tier: 3, region: 'Central Illinois', county: 'Adams',
+    localBlurb: 'Serving the "Gem City" and the broader Tri-State area, Pep Nation Lab is Quincy’s premier source for research peptides. We offer fast, discreet shipping along the Mississippi corridor, equipping local scientific teams with the reference materials needed for complex cellular research.'
+  },
+  {
+    name: 'Rock Island', slug: 'rock-island', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
+    population: 37000, medianIncome: 50000, tier: 3, region: 'Quad Cities', county: 'Rock Island',
+    localBlurb: 'Nestled in the Quad Cities, Rock Island’s clinical and environmental researchers trust Pep Nation Lab for domestic, USA-verified compounds. From the Arsenal district to Augustana’s academic labs, we provide BPC-157, TB-500, and more with guaranteed mass spectroscopy reports.'
+  },
+  {
+    name: 'O\'Fallon', slug: 'ofallon', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
+    population: 32000, medianIncome: 90000, tier: 2, region: 'Metro East', county: 'St. Clair',
+    localBlurb: 'Supporting the rapidly growing medical sectors near Scott Air Force Base, Pep Nation Lab delivers ultra-pure research peptides to O\'Fallon. We are the trusted wholesale partner for Southern Illinois bio-analytical labs requiring strict quality control and lot-to-lot consistency.'
+  },
+  {
+    name: 'Carbondale', slug: 'carbondale', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
+    population: 21000, medianIncome: 30000, tier: 3, region: 'Southern Illinois', county: 'Jackson',
+    localBlurb: 'As the educational and medical center of Little Egypt, Carbondale is a key hub for physiological research. Pep Nation Lab supplies investigators across the SIU corridor with premium research peptides, backed by transparent NMR testing for demanding in vitro applications.'
+  },
+  {
+    name: 'Macomb', slug: 'macomb', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
+    population: 15000, medianIncome: 35000, tier: 3, region: 'Western Illinois', county: 'McDonough',
+    localBlurb: 'Serving the academic and scientific communities of McDonough County, Pep Nation Lab is Macomb’s reliable supplier for research-grade peptides. We streamline procurement for Western Illinois University labs and private clinics conducting localized cellular receptor studies.'
+  },
+  {
+    name: 'Alton', slug: 'alton', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
+    population: 25000, medianIncome: 45000, tier: 3, region: 'Metro East', county: 'Madison',
+    localBlurb: 'Located along the historic Mississippi River bluffs, Alton’s medical and research facilities depend on Pep Nation Lab for fast, secure compound delivery. We provide the Riverbend region with third-party tested peptides designed explicitly for high-precision analytical research.'
+  },
+  {
+    name: 'Galesburg', slug: 'galesburg', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
+    population: 30000, medianIncome: 40000, tier: 3, region: 'Western Illinois', county: 'Knox',
+    localBlurb: 'From the Knox College campus to the thriving local medical districts, Galesburg researchers choose Pep Nation Lab for unparalleled peptide purity. Our strict US-based fulfillment ensures your lab receives stable, properly stored compounds ready for immediate reconstitution.'
+  },
+  {
+    name: 'Marion', slug: 'marion', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
+    population: 16000, medianIncome: 45000, tier: 3, region: 'Southern Illinois', county: 'Williamson',
+    localBlurb: 'As the retail and medical hub of Southern Illinois, Marion’s scientific investigators require dependable access to research chemicals. Pep Nation Lab offers Marion labs wholesale access to Semaglutide, Tirzepatide, and other peptides with verifiable certificates of analysis.'
+  },
+  {
+    name: 'Mount Vernon', slug: 'mount-vernon', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
+    population: 14000, medianIncome: 48000, tier: 3, region: 'Southern Illinois', county: 'Jefferson',
+    localBlurb: 'Situated at the crossroads of Southern Illinois, Mount Vernon is a strategic center for regional healthcare and bio-research. Pep Nation Lab equips Jefferson County facilities with research-grade peptides, guaranteeing fast logistics and uncompromising batch purity.'
+  },
+  {
+    name: 'Effingham', slug: 'effingham', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
+    population: 12000, medianIncome: 55000, tier: 3, region: 'Central Illinois', county: 'Effingham',
+    localBlurb: 'Known as the Crossroads of Opportunity, Effingham’s growing clinical research footprint relies on Pep Nation Lab. We supply specialized research peptides to local investigators, providing the crucial raw materials needed for advanced metabolic and regenerative tissue assays.'
+  },
 
   // ─────────────────────────────────────────────
   // NEW YORK

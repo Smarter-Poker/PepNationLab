@@ -165,6 +165,19 @@ export default async function CityLandingPage({
                 url: `https://pepnationlab.com/${DEFAULT_STORE_SLUG}?product=${p.productId}`,
               })),
             },
+            ...top10.map(p => ({
+              '@type': 'Product',
+              name: p.subtitle ? `${p.name} (${p.subtitle})` : p.name,
+              image: p.image ? `https://pepnationlab.com${p.image}` : undefined,
+              description: `Research-grade ${p.name} for qualified researchers.`,
+              offers: {
+                '@type': 'Offer',
+                price: p.price,
+                priceCurrency: 'USD',
+                availability: 'https://schema.org/InStock',
+                url: `https://pepnationlab.com/${DEFAULT_STORE_SLUG}?product=${p.productId}`,
+              },
+            })),
           ]
         : []),
       {

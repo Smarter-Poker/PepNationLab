@@ -1498,13 +1498,15 @@ export default function AgentStorefrontGrid({
     [minPrice, maxPrice]
   );
   const matchesWeight = useCallback(
-    (g: GroupedProduct) =>
-      g.variants.some(v => {
+    (g: GroupedProduct) => {
+      if (minWeight === weightBounds.min && maxWeight === weightBounds.max) return true;
+      return g.variants.some(v => {
         const w = Number(v.products?.weight_oz);
-        if (!Number.isFinite(w) || w <= 0) return weightBounds.max === 0;
+        if (!Number.isFinite(w) || w <= 0) return false;
         return w >= minWeight && w <= maxWeight;
-      }),
-    [minWeight, maxWeight, weightBounds.max]
+      });
+    },
+    [minWeight, maxWeight, weightBounds.min, weightBounds.max]
   );
   const matchesInStock = useCallback(
     (g: GroupedProduct) => {
