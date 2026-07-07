@@ -313,7 +313,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
       ctx.fillStyle = col + '1A';
       if ((ctx as any).roundRect) { (ctx as any).roundRect(20, y, W - 40, 66, 10); ctx.fill(); } else { ctx.fillRect(20, y, W - 40, 66); }
       ctx.fillStyle = col; ctx.font = 'bold 16px system-ui,sans-serif'; ctx.textAlign = 'left'; ctx.fillText(c.display_name.slice(0, 30), 36, y + 26);
-      if (isTop) { ctx.fillStyle = '#00C4BC'; ctx.font = '11px system-ui,sans-serif'; ctx.fillText('★ TOP PICK', 36, y + 46); }
+      if (isTop) { ctx.fillStyle = '#00C4BC'; ctx.font = '11px system-ui,sans-serif'; ctx.fillText('\\u2605 TOP PICK', 36, y + 46); }
       ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = 'bold 28px system-ui,sans-serif'; ctx.textAlign = 'right'; ctx.fillText(`${sc.total}`, W - 60, y + 32);
       ctx.font = 'bold 13px system-ui,sans-serif'; ctx.fillStyle = col; ctx.fillText(`Grade ${sc.letter}`, W - 60, y + 52); ctx.textAlign = 'left';
     });
