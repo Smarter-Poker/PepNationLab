@@ -49,11 +49,38 @@ const VALUE_ICON_IMAGE: Record<string, string> = {
   Package:          '/images/icons/icon-shipping.jpg',
 };
 
-export default function CityPage({ city, stateSlug, citySlug }: Props) {
+export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
   const intro = getCityIntro(city);
   const faqs = getCityFAQs(city);
   const region = getRegionLabel(city);
   const facts = getCityFacts(city);
+
+  // The Top 10 grid mirrors the storefront's "Top 10 Best Peptides" card:
+  // identical products, names, sizes, and live prices. Cards deep-link into
+  // the store (?product=) so shoppers land on the exact same item. Static
+  // FEATURED_PEPTIDES only renders if the live fetch returned nothing.
+  const topCards: TopCard[] =
+    top10 && top10.length > 0
+      ? top10.map((p) => ({
+          key: p.productId,
+          href: `/${DEFAULT_STORE_SLUG}?product=${p.productId}`,
+          name: p.name,
+          subtitle: p.subtitle,
+          image: p.image,
+          sizeLabel: p.sizeLabel,
+          price: p.price,
+          originalPrice: p.originalPrice,
+        }))
+      : FEATURED_PEPTIDES.map((p) => ({
+          key: p.slug,
+          href: `/research/${p.slug}`,
+          name: p.name,
+          subtitle: p.popularName ?? null,
+          image: p.image,
+          sizeLabel: p.size ?? '10mg Vials',
+          price: p.price ?? 0,
+          originalPrice: null,
+        }));
 
   return (
     <>
@@ -173,45 +200,6 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
       `}</style>
 
       <div style={{ background: 'var(--black)', minHeight: '100dvh' }}>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@graph': [
-                {
-                  '@type': 'Service',
-                  '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#service`,
-                  serviceType: 'Research Peptide Supply',
-                  provider: {
-                    '@type': 'MedicalOrganization',
-                    '@id': 'https://pepnationlab.com/#organization',
-                    name: 'Pep Nation Lab',
-                    url: 'https://pepnationlab.com',
-                  },
-                  areaServed: {
-                    '@type': 'City',
-                    name: city.name,
-                    containsPlace: {
-                      '@type': 'State',
-                      name: city.state,
-                    },
-                  },
-                  description: `Premium research-grade peptides and compounds shipped to ${city.name}, ${city.stateAbbr} for verified researchers.`,
-                },
-                {
-                  '@type': 'BreadcrumbList',
-                  itemListElement: [
-                    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
-                    { '@type': 'ListItem', position: 2, name: 'Peptides By City', item: 'https://pepnationlab.com/peptides' },
-                    { '@type': 'ListItem', position: 3, name: city.state, item: `https://pepnationlab.com/peptides/${stateSlug}` },
-                    { '@type': 'ListItem', position: 4, name: city.name, item: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}` },
-                  ],
-                },
-              ],
-            }),
-          }}
-        />
 
         {/* ═══════════════════════════════════════════════════════
             HERO — 3D peptide helix full-bleed
@@ -416,19 +404,19 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
 
             {/* Products grid — 10 cards, store card design */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 'var(--space-5)' }}>
-              {FEATURED_PEPTIDES.map((peptide) => (
-                <Link key={peptide.slug} href={`/research/${peptide.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
+              {topCards.map((card) => (
+                <Link key={card.key} href={card.href} style={{ textDecoration: 'none', display: 'block' }}>
                   <div className="city-pcard-wrapper">
                     <div className="city-pcard-inner">
 
                     {/* Image header (same as store card) */}
                     <div style={{ height: 140, background: 'radial-gradient(circle at 35% 35%, rgba(192,184,168,0.1) 0%, var(--surface-2) 80%)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                       <Image
-                        src={peptide.image}
-                        alt={peptide.name}
+                        src={card.image}
+                        alt={card.name}
                         width={120} height={120}
                         className="city-pcard-img"
-                       
+                        unoptimized={card.image.startsWith('http')}
                       />
                     </div>
 
@@ -438,13 +426,13 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                         <h4 style={{
                           fontFamily: 'var(--font-brand)',
                           fontSize: '1.15rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2,
-                          marginBottom: peptide.popularName ? 2 : 0
+                          marginBottom: card.subtitle ? 2 : 0
                         }}>
-                          {peptide.name}
+                          {card.name}
                         </h4>
-                        {peptide.popularName && (
+                        {card.subtitle && (
                           <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', fontWeight: 500 }}>
-                            ({peptide.popularName})
+                            ({card.subtitle})
                           </span>
                         )}
                       </div>
@@ -454,12 +442,17 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                         textAlign: 'center'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                          {card.originalPrice !== null && (
+                            <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
+                              ${card.originalPrice.toFixed(2)}
+                            </span>
+                          )}
                           <span className="sf-product-price-nickel" style={{
                             fontSize: '1.2rem', fontWeight: 800,
                             fontFamily: 'var(--font-brand)',
                             color: 'var(--white)',
                           }}>
-                            {peptide.size} &nbsp;${peptide.price?.toFixed(2)}
+                            {card.sizeLabel} &nbsp;${card.price.toFixed(2)}
                           </span>
                         </div>
                       </div>

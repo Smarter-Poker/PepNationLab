@@ -107,14 +107,6 @@ export default async function CityLandingPage({
           { '@type': 'ListItem', position: 4, name: city.name, item: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}` },
         ],
       },
-      {
-        '@type': 'FAQPage',
-        mainEntity: faqs.map((faq) => ({
-          '@type': 'Question',
-          name: faq.question,
-          acceptedAnswer: { '@type': 'Answer', text: faq.answer },
-        })),
-      },
       // Service (not MedicalBusiness/LocalBusiness): Pep Nation Lab is a
       // research supply distributor with no physical premises in this city.
       // Claiming a local business with a PostalAddress here would be
