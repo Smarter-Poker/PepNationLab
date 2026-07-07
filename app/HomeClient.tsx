@@ -60,7 +60,7 @@ export default function HomeClient() {
   };
 
   return (
-    <div style={{ backgroundColor: '#020617', minHeight: '100dvh', display: 'flex', justifyContent: 'center' }}>
+    <div style={{ backgroundColor: '#020617', minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{ position: 'relative', width: '100%', maxWidth: '941px', margin: '0 auto' }}>
         <img
           src="https://ydsaqnnuwyvtyxgvrnys.supabase.co/storage/v1/object/public/storefront-assets/landing/pep-nation-landing.png"
@@ -89,6 +89,39 @@ export default function HomeClient() {
           />
         ))}
       </div>
+
+      {/* Crawlable Text Footer — The Artwork Above Is An Image, So These Are
+          The Only Real Text Links On The Domain Root. They Give Search
+          Engines And AI Crawlers A Direct Path Into The Public Directory
+          Pages From The Homepage. */}
+      <footer style={{ width: '100%', maxWidth: '941px', margin: '0 auto', padding: '18px 16px 26px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <nav aria-label="Site Links" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px 20px' }}>
+          {[
+            { label: 'Peptides By City', href: '/peptides' },
+            { label: 'Research Library', href: '/research' },
+            { label: 'Peptide 101', href: '/peptide-101' },
+            { label: 'Find A Peptide', href: '/find-a-peptide' },
+            { label: 'Become An Agent', href: '/become-agent' },
+            { label: 'Compliance', href: '/compliance' },
+            { label: 'Disclaimer', href: '/disclaimer' },
+            { label: 'Terms', href: '/terms' },
+            { label: 'Privacy', href: '/privacy' },
+          ].map(({ label, href }) => (
+            <a
+              key={label}
+              href={href}
+              onClick={e => handleZoneClick(e, href)}
+              style={{ fontSize: '0.74rem', color: 'rgba(168,180,192,0.55)', textDecoration: 'none' }}
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+        <p style={{ fontSize: '0.68rem', color: 'rgba(168,180,192,0.35)', textAlign: 'center', margin: '12px 0 0' }}>
+          {new Date().getFullYear()} Pep Nation Lab LLC. All Products For In Vitro Research Use Only.
+        </p>
+      </footer>
+
       {pendingHref !== null && <DisclaimerGate onAccept={handleAccept} />}
     </div>
   );

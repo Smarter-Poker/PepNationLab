@@ -17,7 +17,9 @@ const ACKNOWLEDGMENTS = [
 
 type AckKey = (typeof ACKNOWLEDGMENTS)[number]['key'];
 
-export default function SignupPage() {
+import { Suspense } from 'react';
+
+function SignupForm() {
   const searchParams = useSearchParams();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -333,5 +335,13 @@ export default function SignupPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner"></div></div>}>
+      <SignupForm />
+    </Suspense>
   );
 }

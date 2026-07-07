@@ -26,8 +26,9 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // Pinch zoom intentionally left enabled: maximumScale:1 / userScalable:false
+  // fail accessibility audits (WCAG 1.4.4) and carry a Lighthouse penalty
+  // that indirectly hurts search ranking.
   viewportFit: "cover",
   // Shrinks the visual viewport when the software keyboard appears.
   // This lets CSS flex layouts (like the messenger) adjust naturally
@@ -77,6 +78,9 @@ export const metadata: Metadata = {
       'max-image-preview': 'large',
       'max-video-preview': -1,
     },
+  },
+  verification: {
+    google: 'jydQ-YGi1jcmcK2C8gSJGS5wItC_ndEPdn_AbCsE20k',
   },
   other: {
     'format-detection': 'telephone=no, address=no, email=no, date=no',

@@ -170,7 +170,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', minHeight: 'clamp(640px, 95vh, 980px)', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
           {/* BG image */}
-          <Image src="/images/city-hero-peptide.jpg" alt="3D peptide helix" fill priority unoptimized
+          <Image src="/images/city-hero-peptide.jpg" alt="3D peptide helix" fill priority
             style={{ objectFit: 'cover', objectPosition: 'center right', opacity: 0.75 }} />
           {/* Left gradient overlay */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, var(--black) 35%, rgba(5,10,15,0.6) 65%, transparent 100%)', zIndex: 1 }} />
@@ -314,7 +314,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
           {/* Dynamic molecule BG */}
-          <Image src="/images/section-bg-catalog.jpg" alt="" fill unoptimized
+          <Image src="/images/section-bg-catalog.jpg" alt="" fill
             style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.18, pointerEvents: 'none' }} />
           {/* Dark overlay */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,15,20,0.85) 40%, var(--black-2) 100%)', zIndex: 1 }} />
@@ -351,7 +351,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                         alt={peptide.name}
                         width={120} height={120}
                         className="city-pcard-img"
-                        unoptimized
+                       
                       />
                     </div>
 
@@ -407,7 +407,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
           {/* Dynamic neural/hex BG */}
-          <Image src="/images/section-bg-trust.jpg" alt="" fill unoptimized
+          <Image src="/images/section-bg-trust.jpg" alt="" fill
             style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.22, pointerEvents: 'none' }} />
           {/* Overlay */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,15,20,0.8) 50%, var(--black) 100%)', zIndex: 1 }} />
@@ -435,7 +435,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
                       src={VALUE_ICON_IMAGE[vp.icon] ?? '/images/icons/icon-compounds.jpg'}
                       alt={vp.title}
                       fill
-                      unoptimized
+                     
                       style={{ objectFit: 'cover' }}
                     />
                   </div>
@@ -458,7 +458,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', borderTop: 'var(--border-subtle)', borderBottom: 'var(--border-subtle)', padding: 'clamp(48px, 6vw, 80px) 0', overflow: 'hidden' }}>
           {/* Reuse the catalog BG at a different opacity */}
-          <Image src="/images/section-bg-catalog.jpg" alt="" fill unoptimized
+          <Image src="/images/section-bg-catalog.jpg" alt="" fill
             style={{ objectFit: 'cover', objectPosition: 'center bottom', opacity: 0.12, pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'var(--black-2)', opacity: 0.75, zIndex: 1 }} />
 
@@ -492,7 +492,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
             FAQ — dynamic hero BG reused at low opacity
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
-          <Image src="/images/city-hero-peptide.jpg" alt="" fill unoptimized
+          <Image src="/images/city-hero-peptide.jpg" alt="" fill
             style={{ objectFit: 'cover', objectPosition: 'right center', opacity: 0.06, pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,10,15,0.9) 50%, var(--black) 100%)', zIndex: 1 }} />
 
@@ -534,7 +534,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
             FINAL CTA
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', borderTop: 'var(--border-subtle)', padding: 'clamp(64px, 8vw, 100px) 0', textAlign: 'center', overflow: 'hidden' }}>
-          <Image src="/images/section-bg-trust.jpg" alt="" fill unoptimized
+          <Image src="/images/section-bg-trust.jpg" alt="" fill
             style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.15, pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'var(--black-2)', opacity: 0.8, zIndex: 1 }} />
 
@@ -558,7 +558,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
             </div>
 
             <div style={{ marginTop: 'var(--space-8)', display: 'flex', justifyContent: 'center' }}>
-              <Image src="/images/badges/research_use_pill_transparent.png" alt="Research Use Only" width={300} height={56} unoptimized style={{ height: 'auto', maxWidth: 300, opacity: 0.5 }} />
+              <Image src="/images/badges/research_use_pill_transparent.png" alt="Research Use Only" width={300} height={56} style={{ height: 'auto', maxWidth: 300, opacity: 0.5 }} />
             </div>
           </div>
         </section>
@@ -566,7 +566,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         {/* ═══════════════════════════════════════════════════════════
             NEARBY CITIES STRIP
         ═══════════════════════════════════════════════════════════ */}
-        <NearbyStrip stateSlug={stateSlug} currentCitySlug={citySlug} stateName={city.state} />
+        <NearbyStrip stateSlug={stateSlug} currentCitySlug={citySlug} stateName={city.state} region={city.region} />
 
         {/* ═══════════════════════════════════════════════════════════
             FOOTER
@@ -610,13 +610,21 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
 }
 
 // ─── Nearby cities strip ──────────────────────────────────────────────────
-function NearbyStrip({ stateSlug, currentCitySlug, stateName }: {
-  stateSlug: string; currentCitySlug: string; stateName: string;
+// Links same-state cities PLUS same-region cities across state lines (metro
+// areas like Kansas City or the NYC tri-state span states), strengthening the
+// internal link mesh between related pages.
+function NearbyStrip({ stateSlug, currentCitySlug, stateName, region }: {
+  stateSlug: string; currentCitySlug: string; stateName: string; region?: string;
 }) {
-  const nearby = CITIES
+  const sameState = CITIES
     .filter((c) => c.stateSlug === stateSlug && c.slug !== currentCitySlug)
-    .sort((a, b) => b.population - a.population)
-    .slice(0, 10);
+    .sort((a, b) => b.population - a.population);
+  const crossState = region
+    ? CITIES.filter((c) => c.stateSlug !== stateSlug && c.region === region)
+        .sort((a, b) => b.population - a.population)
+        .slice(0, 3)
+    : [];
+  const nearby = [...sameState.slice(0, 10 - crossState.length), ...crossState];
 
   if (nearby.length === 0) return null;
 
@@ -628,8 +636,10 @@ function NearbyStrip({ stateSlug, currentCitySlug, stateName }: {
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
           {nearby.map((c) => (
-            <Link key={c.slug} href={`/peptides/${stateSlug}/${c.slug}`} className="city-pill" style={{ padding: '5px 14px', fontSize: '0.78rem', color: 'var(--grey-500)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--radius-full)', textDecoration: 'none', transition: 'all 0.2s' }}>
-              {c.name}
+            /* Use each city's OWN stateSlug — cross-state metro cities must
+               link into their own state path. */
+            <Link key={`${c.stateSlug}-${c.slug}`} href={`/peptides/${c.stateSlug}/${c.slug}`} className="city-pill" style={{ padding: '5px 14px', fontSize: '0.78rem', color: 'var(--grey-500)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--radius-full)', textDecoration: 'none', transition: 'all 0.2s' }}>
+              {c.stateSlug === stateSlug ? c.name : `${c.name}, ${c.stateAbbr}`}
             </Link>
           ))}
           <Link href={`/peptides/${stateSlug}`} style={{ padding: '5px 14px', fontSize: '0.78rem', color: 'var(--teal)', background: 'var(--teal-subtle)', border: 'var(--border-teal)', borderRadius: 'var(--radius-full)', textDecoration: 'none', fontWeight: 600 }}>

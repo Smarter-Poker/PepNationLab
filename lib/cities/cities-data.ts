@@ -16,6 +16,9 @@ export interface City {
   medianIncome: number;   // Approximate median household income (USD)
   tier: 1 | 2 | 3;
   region?: string;        // Optional regional label, e.g. "Chicagoland area"
+  county?: string;        // County name WITHOUT the word "County", e.g. "Cook"
+  zips?: string[];        // Representative ZIP codes for the city
+  localBlurb?: string;    // Unique city-specific copy rendered on the landing page
 }
 
 export const CITIES: City[] = [

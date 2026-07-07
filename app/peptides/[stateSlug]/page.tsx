@@ -172,10 +172,22 @@ export default async function StateLandingPage({
               <span style={{ color: 'var(--teal)' }}>{stateName}</span>
             </h1>
 
-            <p style={{ fontSize: '1.05rem', maxWidth: 620, color: 'var(--silver-light)', lineHeight: 1.75, marginBottom: 'var(--space-7)' }}>
+            <p style={{ fontSize: '1.05rem', maxWidth: 620, color: 'var(--silver-light)', lineHeight: 1.75, marginBottom: 'var(--space-4)' }}>
               Pep Nation Lab serves qualified researchers across{' '}
               <strong style={{ color: 'var(--white)' }}>{cities.length} cities in {stateName}</strong>. Select your city
               for local peptide research coverage, wholesale pricing, and nearby agent support.
+            </p>
+
+            {/* Unique per-state summary — generated from real market data so
+                every state page carries copy no other page has. */}
+            <p style={{ fontSize: '0.92rem', maxWidth: 620, color: 'var(--grey-400)', lineHeight: 1.7, marginBottom: 'var(--space-7)' }}>
+              {sorted.length > 2
+                ? `Coverage In ${stateName} Spans ${sorted[0].name}, ${sorted[1].name}, ${sorted[2].name}, And ${sorted.length - 3 > 0 ? `${sorted.length - 3} More ${sorted.length - 3 === 1 ? 'City' : 'Cities'}` : 'More'}.`
+                : `Coverage In ${stateName} Includes ${sorted.map((c) => c.name).join(' And ')}.`}{' '}
+              {tier1.length > 0
+                ? `${tier1.map((c) => c.name).slice(0, 3).join(', ')} ${tier1.length === 1 ? 'Is A Priority Market' : 'Are Priority Markets'} With The Fastest Fulfillment Tier.`
+                : `All ${stateName} Orders Ship With Standard Nationwide Fulfillment.`}{' '}
+              Verified researchers in every listed city order from the same 100+ compound wholesale catalog with batch COA documentation.
             </p>
 
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
