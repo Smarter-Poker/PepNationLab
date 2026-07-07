@@ -554,6 +554,7 @@ export default function AgentStorefrontGrid({
   }, [products]);
 
   const clampNum = (v: string, fallback: number): number => {
+    if (!v) return fallback;
     const n = Number(v);
     return Number.isFinite(n) ? n : fallback;
   };

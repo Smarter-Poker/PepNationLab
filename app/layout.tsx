@@ -18,6 +18,14 @@ import SessionKeepalive from "@/components/messenger/SessionKeepalive";
 import FirstRunNotificationPrompt from "@/components/FirstRunNotificationPrompt";
 import FlashSaleBanner from "@/components/FlashSaleBanner";
 
+import { Inter } from "next/font/google";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 export const viewport: Viewport = {
   themeColor: [
@@ -96,7 +104,7 @@ const NO_FLASH_SCRIPT = `
     document.documentElement.setAttribute('data-theme', 'dark');
   }
 })();
-`;
+\`;
 
 export default function RootLayout({
   children,
@@ -104,20 +112,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
-        {/* Fonts: preconnect + direct stylesheet so the Inter fetch starts with
-            the HTML instead of waiting on the render-blocking globals.css
-            @import chain (HTML -> CSS -> Google CSS -> woff2 costs seconds of
-            FCP/LCP on throttled 4G). The URL matches the globals.css @import
-            exactly so the two requests dedupe in the browser cache. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
-        />
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />/>
         {/* Global WebSite + Organization JSON-LD — present on every page.
             SearchAction enables Google Sitelinks Search Box in SERPs. */}
         <script
