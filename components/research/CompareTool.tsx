@@ -43,5 +43,4 @@ import { useCart } from '@/components/CartContext';
 const MAX_COLUMNS = 4;
 const NL = 'Not Listed';
 
-// ─── Style constants ─────────────────────────────────────────────────
-cons
+// PLACEHOLDER
