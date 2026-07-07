@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 import DisclaimerGate from './DisclaimerGate';
 import { isDisclaimerAccepted, recordDisclaimerAcceptance } from '@/lib/disclaimer-client';
@@ -59,16 +59,16 @@ export default function SiteDisclaimerGate({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [accepted, setAccepted] = useState(false);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    setAccepted(isDisclaimerAccepted());
-    setReady(true);
-  }, [pathname]);
+  const accepted = useSyncExternalStore(
+    subscribeToAcceptance,
+    isDisclaimerAccepted,
+    // Server snapshot: report "accepted" so SSR HTML never contains the gate
+    // (crawlers see clean content); the client snapshot corrects post-hydration.
+    () => true,
+  );
 
   const exempt = pathname === '/' || pathname.startsWith('/peptides');
-  const showGate = ready && !accepted && !exempt;
+  const showGate = !accepted && !exempt;
 
   // Lock body scroll while the gate overlay is up so the page behind it
   // cannot be scrolled or interacted with until the acknowledgment.
@@ -83,7 +83,9 @@ export default function SiteDisclaimerGate({
 
   const handleAccept = () => {
     recordDisclaimerAcceptance();
-    setAccepted(true);
+    // Notify the external-store subscription so this (and any other mounted
+    // reader) re-reads acceptance and unmounts the gate immediately.
+    window.dispatchEvent(new Event(ACCEPTED_EVENT));
   };
 
   return (

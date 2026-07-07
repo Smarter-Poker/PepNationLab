@@ -65,6 +65,8 @@ export default function HomeClient() {
         <img
           src="https://ydsaqnnuwyvtyxgvrnys.supabase.co/storage/v1/object/public/storefront-assets/landing/pep-nation-landing.png"
           alt="Pep Nation Peptide 101 Research Academy -- Your Source For Peptide Education And Research"
+          width={941}
+          height={1672}
           style={{ width: '100%', height: 'auto', display: 'block' }}
           fetchPriority="high"
         />

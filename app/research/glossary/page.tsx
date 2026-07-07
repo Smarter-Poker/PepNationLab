@@ -25,11 +25,61 @@ export const metadata: Metadata = {
   },
 };
 
+// DefinedTermSet JSON-LD: makes every glossary term a machine-readable
+// term/definition pair. This is one of the most directly extractable schema
+// types for AI answer engines (ChatGPT, Claude, Perplexity), which quote
+// definitions verbatim. BreadcrumbList aids SERP breadcrumb display.
+const glossaryJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'DefinedTermSet',
+      '@id': 'https://pepnationlab.com/research/glossary#termset',
+      name: 'Pep Nation Lab Peptide Research Glossary',
+      description:
+        'A-to-Z definitions of peptide-science terminology used throughout the Pep Nation Lab Research Library. For in vitro laboratory research context only.',
+      url: 'https://pepnationlab.com/research/glossary',
+      hasDefinedTerm: PEPTIDE_GLOSSARY.map((e) => ({
+        '@type': 'DefinedTerm',
+        name: e.term,
+        description: e.def,
+        inDefinedTermSet: 'https://pepnationlab.com/research/glossary#termset',
+      })),
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+        { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+        { '@type': 'ListItem', position: 3, name: 'Glossary', item: 'https://pepnationlab.com/research/glossary' },
+      ],
+    },
+  ],
+};
+
 export default function GlossaryPage() {
   const terms: GlossaryTermEntry[] = PEPTIDE_GLOSSARY.map((e) => ({ term: e.term, def: e.def }));
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(glossaryJsonLd) }}
+      />
+      {/* Server-rendered term list: emits every glossary term + definition into
+          the initial HTML (the interactive GlossaryExplorer below is a client
+          component). Visually hidden but fully crawlable by non-JS AI crawlers. */}
+      <div style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>
+        <h2>Peptide Research Glossary Terms</h2>
+        <dl>
+          {PEPTIDE_GLOSSARY.map((e) => (
+            <div key={e.term}>
+              <dt>{e.term}</dt>
+              <dd>{e.def}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
           Back To Research Library

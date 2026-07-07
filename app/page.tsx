@@ -7,11 +7,11 @@ export const metadata: Metadata = {
   description: 'Wholesale research peptide distribution for qualified researchers. Access 300+ compounds including BPC-157, TB-500, Semaglutide, and Tirzepatide. Research use only.',
   keywords: 'research peptides, BPC-157, TB-500, Semaglutide, Tirzepatide, peptide wholesale, research grade peptides, RUO compounds, peptide distribution platform',
   robots: { index: true, follow: true },
-  alternates: { canonical: 'https://pepnationlab.com/' },
+  alternates: { canonical: 'https://pepnationlab.com' },
   openGraph: {
     title: 'Pep Nation Lab | Premium Research Peptide Distribution',
     description: 'Access 300+ research-grade peptides. Wholesale pricing for qualified researchers. Full research library, calculators, and AI match engine included.',
-    url: 'https://pepnationlab.com/',
+    url: 'https://pepnationlab.com',
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab — Premium Research Peptide Distribution' }],
   },

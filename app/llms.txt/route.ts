@@ -13,7 +13,14 @@ export async function GET() {
   const base = 'https://pepnationlab.com';
 
   let text = `# Pep Nation Lab\n\n`;
-  text += `> Premium wholesale research peptide distribution and comprehensive research library for qualified researchers and institutions. Pep Nation Lab provides 300+ research-grade peptide monographs covering mechanism of action, evidence tier, pharmacokinetics, molecular identity, handling, and referenced findings, plus reconstitution calculators, a comparison engine, and an AI match engine. All products and content are strictly for in vitro laboratory research use only. Not for human consumption.\n\n`;
+  text += `> Pep Nation Lab (pepnationlab.com) is a US wholesale distribution platform for research-grade peptides, serving verified researchers and scientific institutions. It provides 300+ research-grade peptide monographs covering mechanism of action, evidence tier, pharmacokinetics, molecular identity, handling, and referenced findings, plus reconstitution calculators, a comparison engine, and an AI match engine. Every product and all content are strictly for in vitro laboratory research use only — not for human or animal consumption, ingestion, or injection, and not FDA-approved. Access requires a verified researcher account.\n\n`;
+
+  text += `Key facts:\n`;
+  text += `- Catalog: 100+ research-grade peptides and compounds (BPC-157, Semaglutide, Tirzepatide, TB-500, Ipamorelin, CJC-1295, Sermorelin, PT-141, GHK-Cu, Epithalon, and more)\n`;
+  text += `- Shipping: all 50 US states; same-day processing on qualifying verified-researcher orders\n`;
+  text += `- Documentation: batch certificate of analysis (COA) with every order\n`;
+  text += `- Pricing: wholesale, tiered agent structure; no retail markup\n`;
+  text += `- Compliance: 4-layer Research Use Only acknowledgment; verified accounts only; no needles or syringes ever sold\n\n`;
 
   text += `## Full Site Context\n`;
   text += `- [Full Compound Database (markdown)](${base}/llms-full.txt): A single markdown file containing every compound monograph in full.\n\n`;
