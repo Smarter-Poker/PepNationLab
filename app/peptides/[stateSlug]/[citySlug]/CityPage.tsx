@@ -158,6 +158,45 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
       `}</style>
 
       <div style={{ background: 'var(--black)', minHeight: '100dvh' }}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@graph': [
+                {
+                  '@type': 'Service',
+                  '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#service`,
+                  serviceType: 'Research Peptide Supply',
+                  provider: {
+                    '@type': 'MedicalOrganization',
+                    '@id': 'https://pepnationlab.com/#organization',
+                    name: 'Pep Nation Lab',
+                    url: 'https://pepnationlab.com',
+                  },
+                  areaServed: {
+                    '@type': 'City',
+                    name: city.name,
+                    containsPlace: {
+                      '@type': 'State',
+                      name: city.state,
+                    },
+                  },
+                  description: `Premium research-grade peptides and compounds shipped to ${city.name}, ${city.stateAbbr} for verified researchers.`,
+                },
+                {
+                  '@type': 'BreadcrumbList',
+                  itemListElement: [
+                    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+                    { '@type': 'ListItem', position: 2, name: 'Peptides By City', item: 'https://pepnationlab.com/peptides' },
+                    { '@type': 'ListItem', position: 3, name: city.state, item: `https://pepnationlab.com/peptides/${stateSlug}` },
+                    { '@type': 'ListItem', position: 4, name: city.name, item: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}` },
+                  ],
+                },
+              ],
+            }),
+          }}
+        />
 
         {/* ═══════════════════════════════════════════════════════════
             HERO — 3D peptide helix full-bleed
@@ -165,7 +204,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         <section style={{ position: 'relative', minHeight: 'clamp(640px, 95vh, 980px)', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
           {/* BG image */}
           <Image src="/images/city-hero-peptide.jpg" alt="3D peptide helix" fill priority
-            sizes="100vw" quality={60}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1400px" quality={60}
             style={{ objectFit: 'cover', objectPosition: 'center right', opacity: 0.75 }} />
           {/* Left gradient overlay */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, var(--black) 35%, rgba(5,10,15,0.6) 65%, transparent 100%)', zIndex: 1 }} />
@@ -231,9 +270,32 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
             </h1>
 
             {/* Subheading */}
-            <p style={{ fontSize: 'clamp(1rem, 1.8vw, 1.15rem)', maxWidth: 560, color: 'var(--silver-light)', lineHeight: 1.7, marginBottom: 'var(--space-8)', opacity: 0.9 }}>
+            <p style={{ fontSize: 'clamp(1rem, 1.8vw, 1.15rem)', maxWidth: 560, color: 'var(--silver-light)', lineHeight: 1.7, marginBottom: 'var(--space-5)', opacity: 0.9 }}>
               {intro}
             </p>
+
+            {/* Local Blurb */}
+            {city.localBlurb && (
+              <p style={{ fontSize: '0.95rem', maxWidth: 560, color: 'var(--teal)', lineHeight: 1.6, marginBottom: 'var(--space-6)', fontStyle: 'italic', opacity: 0.9 }}>
+                {city.localBlurb}
+              </p>
+            )}
+
+            {/* Local Geography Data */}
+            {(city.county || city.zips) && (
+              <div style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 'var(--space-4)', marginBottom: 'var(--space-8)', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 'var(--radius-md)' }}>
+                {city.county && (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
+                    <strong style={{ color: 'var(--silver)' }}>County:</strong> {city.county}
+                  </span>
+                )}
+                {city.zips && (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
+                    <strong style={{ color: 'var(--silver)' }}>ZIPs:</strong> {city.zips.join(', ')}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* CTAs */}
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 'var(--space-10)', alignItems: 'center' }}>
@@ -314,9 +376,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
           {/* Dynamic molecule BG */}
-          <Image src="/images/section-bg-catalog.jpg" alt="" fill
-            sizes="100vw" quality={50}
-            style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.18, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(0,196,188,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
           {/* Dark overlay */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,15,20,0.85) 40%, var(--black-2) 100%)', zIndex: 1 }} />
 
@@ -408,9 +468,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
           {/* Dynamic neural/hex BG */}
-          <Image src="/images/section-bg-trust.jpg" alt="" fill
-            sizes="100vw" quality={50}
-            style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.22, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 70% 30%, rgba(192,184,168,0.08) 0%, transparent 60%)', pointerEvents: 'none' }} />
           {/* Overlay */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,15,20,0.8) 50%, var(--black) 100%)', zIndex: 1 }} />
 
@@ -460,9 +518,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', borderTop: 'var(--border-subtle)', borderBottom: 'var(--border-subtle)', padding: 'clamp(48px, 6vw, 80px) 0', overflow: 'hidden' }}>
           {/* Reuse the catalog BG at a different opacity */}
-          <Image src="/images/section-bg-catalog.jpg" alt="" fill
-            sizes="100vw" quality={50}
-            style={{ objectFit: 'cover', objectPosition: 'center bottom', opacity: 0.12, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center bottom, rgba(0,196,188,0.04) 0%, transparent 80%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'var(--black-2)', opacity: 0.75, zIndex: 1 }} />
 
           <div className="container" style={{ position: 'relative', zIndex: 2 }}>
@@ -495,9 +551,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
             FAQ — dynamic hero BG reused at low opacity
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
-          <Image src="/images/city-hero-peptide.jpg" alt="" fill
-            sizes="100vw" quality={50}
-            style={{ objectFit: 'cover', objectPosition: 'right center', opacity: 0.06, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at right center, rgba(0,196,188,0.03) 0%, transparent 60%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,10,15,0.9) 50%, var(--black) 100%)', zIndex: 1 }} />
 
           <div className="container" style={{ position: 'relative', zIndex: 2, maxWidth: 780, margin: '0 auto' }}>
@@ -538,9 +592,7 @@ export default function CityPage({ city, stateSlug, citySlug }: Props) {
             FINAL CTA
         ═══════════════════════════════════════════════════════════ */}
         <section style={{ position: 'relative', borderTop: 'var(--border-subtle)', padding: 'clamp(64px, 8vw, 100px) 0', textAlign: 'center', overflow: 'hidden' }}>
-          <Image src="/images/section-bg-trust.jpg" alt="" fill
-            sizes="100vw" quality={50}
-            style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.15, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(192,184,168,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'var(--black-2)', opacity: 0.8, zIndex: 1 }} />
 
           <div className="container" style={{ position: 'relative', zIndex: 2, maxWidth: 620 }}>

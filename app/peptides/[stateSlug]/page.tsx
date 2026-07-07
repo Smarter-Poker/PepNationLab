@@ -68,6 +68,22 @@ export default async function StateLandingPage({
   const stateName = getStateName(stateSlug);
   const stateAbbr = cities[0].stateAbbr;
 
+  // Generic but localized FAQs for the state page
+  const stateFaqs = [
+    {
+      question: `Are research peptides legal in ${stateName}?`,
+      answer: `Yes, research peptides are legally available in ${stateName} when purchased strictly for in vitro laboratory research and analytical purposes. They are not intended for human consumption or therapeutic use.`,
+    },
+    {
+      question: `How fast do you ship to ${stateName}?`,
+      answer: `Most orders destined for ${stateName} are processed and shipped within 24 hours. Depending on your exact location and the selected shipping tier, delivery typically takes 2-4 business days.`,
+    },
+    {
+      question: `Do you provide COAs for orders in ${stateName}?`,
+      answer: `Yes, every batch of our research compounds undergoes rigorous third-party analytical testing. Certificates of Analysis (COAs) confirming purity and mass are available for all researchers in ${stateName}.`,
+    },
+  ];
+
   // Sort: Tier 1 first, then by population desc within each tier
   const sorted = [...cities].sort((a, b) => a.tier - b.tier || b.population - a.population);
 
@@ -106,6 +122,18 @@ export default async function StateLandingPage({
           position: i + 1,
           name: `${c.name}, ${c.stateAbbr}`,
           url: `https://pepnationlab.com/peptides/${stateSlug}/${c.slug}`,
+        })),
+      },
+      // FAQPage schema
+      {
+        '@type': 'FAQPage',
+        mainEntity: stateFaqs.map((faq) => ({
+          '@type': 'Question',
+          name: faq.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: faq.answer,
+          },
         })),
       },
     ],
@@ -246,6 +274,32 @@ export default async function StateLandingPage({
               </div>
             )}
 
+          </div>
+        </section>
+
+        {/* ── STATE FAQ ─────────────────────────────────────────────── */}
+        <section style={{ padding: 'clamp(60px, 8vw, 100px) 0', background: 'linear-gradient(to bottom, var(--black), var(--black-2))' }}>
+          <div className="container" style={{ maxWidth: 780 }}>
+            <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 800, marginBottom: 'var(--space-6)', textAlign: 'center' }}>
+              Frequently Asked Questions in <span style={{ color: 'var(--teal)' }}>{stateName}</span>
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              {stateFaqs.map((faq, i) => (
+                <details key={i} className="glass-panel" style={{ overflow: 'hidden' }}>
+                  <summary style={{ padding: 'var(--space-5) var(--space-6)', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: 'var(--silver-light)', listStyle: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-4)' }}>
+                    <span>{faq.question}</span>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2" style={{ flexShrink: 0 }}>
+                      <path d="M6 9l6 6 6-6"/>
+                    </svg>
+                  </summary>
+                  <div style={{ padding: '0 var(--space-6) var(--space-5)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                    <p style={{ fontSize: '0.87rem', color: 'var(--grey-400)', lineHeight: 1.78, margin: 0, paddingTop: 'var(--space-4)' }}>
+                      {faq.answer}
+                    </p>
+                  </div>
+                </details>
+              ))}
+            </div>
           </div>
         </section>
 

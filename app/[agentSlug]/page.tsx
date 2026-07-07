@@ -160,22 +160,47 @@ async function AgentStorefrontDataLoader({
 
   const primaryColor = agent.primary_color ?? '#00C4BC';
 
+  const productJsonLds = productsWithCost.map(p => ({
+    '@type': 'Product',
+    name: (p as any).custom_name || (p as any).products?.name,
+    description: (p as any).custom_description || (p as any).products?.description,
+    image: (p as any).custom_image_url || (p as any).products?.image_url,
+    offers: {
+      '@type': 'Offer',
+      price: (p as any).is_on_sale ? (p as any).sale_price : (p as any).retail_price,
+      priceCurrency: 'USD',
+      availability: (inventoryMap.get((p as any).product_id) ?? 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url: `https://pepnationlab.com/${agentSlug}`,
+    },
+  }));
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': productJsonLds,
+  };
+
   return (
-    <AgentStorefrontGrid
-      products={productsWithCost as any}
-      inventoryMap={Object.fromEntries(inventoryMap)}
-      primaryColor={primaryColor}
-      agentSlug={agentSlug}
-      initialWishlistIds={initialWishlistIds}
-      agentId={agent.id}
-      coaByProductId={coaByProductId}
-      volumePricingEnabled={(agent as any).volume_pricing_enabled !== false}
-      isStorefrontOwner={isStorefrontOwner}
-      viewerTier={(userProfile as any)?.tier ?? 'tier_3'}
-      minOrderQty={agent.min_order_qty ?? 1}
-      minOverallQty={agent.min_overall_qty ?? 1}
-      compoundsBySlug={compoundsBySlug}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <AgentStorefrontGrid
+        products={productsWithCost as any}
+        inventoryMap={Object.fromEntries(inventoryMap)}
+        primaryColor={primaryColor}
+        agentSlug={agentSlug}
+        initialWishlistIds={initialWishlistIds}
+        agentId={agent.id}
+        coaByProductId={coaByProductId}
+        volumePricingEnabled={(agent as any).volume_pricing_enabled !== false}
+        isStorefrontOwner={isStorefrontOwner}
+        viewerTier={(userProfile as any)?.tier ?? 'tier_3'}
+        minOrderQty={agent.min_order_qty ?? 1}
+        minOverallQty={agent.min_overall_qty ?? 1}
+        compoundsBySlug={compoundsBySlug}
+      />
+    </>
   );
 }
 

@@ -319,6 +319,108 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     return { data: points, compounds, nowIndex: now };
   }, [doses, doseRange]);
 
+  // --- Week In Review + rule-based Signals (auto-insights) ---
+  const weekReview = useMemo(() => {
+    const now = Date.now();
+    const wk = 7 * 86400000;
+    const inWindow = (ts: number, startDaysAgo: number, endDaysAgo: number) =>
+      ts <= now - endDaysAgo * 86400000 && ts > now - startDaysAgo * 86400000;
+
+    const dosesThisWeek = doses.filter(d => inWindow(new Date(d.dosed_at).getTime(), 7, 0));
+    const dosesLastWeek = doses.filter(d => inWindow(new Date(d.dosed_at).getTime(), 14, 7));
+
+    // Injection site usage this week
+    const siteCounts: Record<string, number> = {};
+    dosesThisWeek.forEach(d => { if (d.injection_site) siteCounts[d.injection_site] = (siteCounts[d.injection_site] || 0) + 1; });
+    const siteEntries = Object.entries(siteCounts).sort((a, b) => b[1] - a[1]);
+    const topSite = siteEntries[0] || null;
+    const totalSited = siteEntries.reduce((s, [, n]) => s + n, 0);
+
+    // Adherence: last 7d vs prior 3 weeks average (using scheduled expectation)
+    const perWeekFromFreq = (f: string): number => {
+      const s = (f || '').toLowerCase();
+      if (s.includes('every day') || s.includes('daily')) return 7;
+      if (s.includes('every other')) return 3.5;
+      if (s.includes('5 days')) return 5;
+      if (s.includes('twice')) return 2;
+      if (s.includes('once') || s.includes('weekly')) return 1;
+      return 7;
+    };
+    const expectedWeek = scheduledDoses.reduce((sum, s) => sum + perWeekFromFreq(s.frequency), 0);
+    const adherenceThis = expectedWeek > 0 ? Math.min(100, Math.round((dosesThisWeek.length / expectedWeek) * 100)) : null;
+    const prior3 = doses.filter(d => inWindow(new Date(d.dosed_at).getTime(), 28, 7)).length / 3;
+    const adherencePrior = expectedWeek > 0 ? Math.min(100, Math.round((prior3 / expectedWeek) * 100)) : null;
+
+    const fmtSite = (s: string) => s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+    return {
+      dosesThisWeek: dosesThisWeek.length,
+      dosesLastWeek: dosesLastWeek.length,
+      doseDelta: dosesThisWeek.length - dosesLastWeek.length,
+      topSite: topSite ? { name: fmtSite(topSite[0]), count: topSite[1], share: totalSited ? Math.round((topSite[1] / totalSited) * 100) : 0 } : null,
+      adherenceThis, adherencePrior,
+      hasData: doses.length > 0,
+    };
+  }, [doses, scheduledDoses]);
+
+  const insights = useMemo(() => {
+    const out: { tone: 'good' | 'warn' | 'info'; text: string }[] = [];
+    const now = Date.now();
+
+    // Lapsed logging
+    if (doses.length > 0) {
+      const last = Math.max(...doses.map(d => new Date(d.dosed_at).getTime()));
+      const daysSince = Math.floor((now - last) / 86400000);
+      if (daysSince >= 3) out.push({ tone: 'warn', text: `No Doses Logged In ${daysSince} Days. Your Streak And Adherence Are Slipping.` });
+    }
+
+    // Streak callout
+    if (doseStats.streak >= 3) out.push({ tone: 'good', text: `You Are On A ${doseStats.streak}-Day Logging Streak. Consistency Looks Strong.` });
+
+    // Adherence trend
+    if (weekReview.adherenceThis != null && weekReview.adherencePrior != null) {
+      const diff = weekReview.adherenceThis - weekReview.adherencePrior;
+      if (diff >= 10) out.push({ tone: 'good', text: `Adherence Up ${diff} Points Versus Your Prior 3-Week Average.` });
+      else if (diff <= -10) out.push({ tone: 'warn', text: `Adherence Down ${Math.abs(diff)} Points Versus Your Prior 3-Week Average.` });
+    }
+
+    // Injection site overuse
+    if (weekReview.topSite && weekReview.topSite.share >= 50 && weekReview.topSite.count >= 3) {
+      out.push({ tone: 'warn', text: `${weekReview.topSite.name} Accounted For ${weekReview.topSite.share}% Of This Week's Injections. Rotate Sites To Rest The Tissue.` });
+    }
+
+    // Biggest biometric mover (7d) — computed inline from biometrics
+    const metricNames = Array.from(new Set(biometrics.map(b => b.metric_name)));
+    let biggest: { name: string; delta: number; unit: string } | null = null;
+    metricNames.forEach(m => {
+      const rows = biometrics.filter(b => b.metric_name === m)
+        .map(b => ({ v: Number(b.metric_value), t: new Date(b.measured_at).getTime(), unit: b.unit }))
+        .sort((a, b) => a.t - b.t);
+      if (rows.length < 2) return;
+      const current = rows[rows.length - 1].v;
+      const cutoff = now - 7 * 86400000;
+      const before = rows.filter(r => r.t <= cutoff);
+      const past = before.length ? before[before.length - 1].v : rows[0].v;
+      const delta = current - past;
+      if (Math.abs(delta) > (biggest ? Math.abs(biggest.delta) : 0)) {
+        biggest = { name: m, delta, unit: rows[rows.length - 1].unit || '' };
+      }
+    });
+    if (biggest) {
+      const b = biggest as { name: string; delta: number; unit: string };
+      if (Math.abs(b.delta) > 0) {
+        out.push({ tone: 'info', text: `Biggest 7-Day Metric Move: ${b.name} ${b.delta > 0 ? 'Up' : 'Down'} ${Math.abs(Math.round(b.delta * 100) / 100)} ${b.unit}.` });
+      }
+    }
+
+    // Compounds tracked
+    if (doseStats.activeCompounds >= 2) {
+      out.push({ tone: 'info', text: `You Are Actively Tracking ${doseStats.activeCompounds} Compounds Across Your Protocol.` });
+    }
+
+    return out;
+  }, [doses, doseStats, weekReview, biometrics]);
+
   useEffect(() => {
     const syncLegacyData = async () => {
       try {
@@ -1805,6 +1907,61 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     {statCard('Active Compounds', doseStats.activeCompounds, 'Being Tracked', Beaker)}
                     {statCard('Doses This Week', doseStats.last7, `${doseStats.total} All Time`, Syringe)}
                   </div>
+
+                  {/* Week In Review + Signals */}
+                  {weekReview.hasData && (
+                    <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)', background: 'linear-gradient(135deg, rgba(0,196,188,0.06), rgba(0,0,0,0))' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-4)' }}>
+                        <Zap size={20} style={{ color: 'var(--teal)' }} />
+                        <h3 style={{ color: 'var(--white)', margin: 0 }}>Week In Review</h3>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'var(--space-4)', marginBottom: insights.length ? 'var(--space-5)' : 0 }}>
+                        <div>
+                          <div style={{ color: 'var(--silver)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Doses This Week</div>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                            <span style={{ color: 'var(--white)', fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>{weekReview.dosesThisWeek}</span>
+                            {weekReview.doseDelta !== 0 && (
+                              <span style={{ color: weekReview.doseDelta > 0 ? 'var(--teal)' : 'var(--silver)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 2 }}>
+                                {weekReview.doseDelta > 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />} {weekReview.doseDelta > 0 ? '+' : ''}{weekReview.doseDelta} Vs Last Week
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ color: 'var(--silver)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Adherence</div>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                            <span style={{ color: 'var(--white)', fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>{weekReview.adherenceThis != null ? `${weekReview.adherenceThis}%` : '--'}</span>
+                            {weekReview.adherenceThis != null && weekReview.adherencePrior != null && (
+                              <span style={{ color: 'var(--silver)', fontSize: '0.8rem' }}>Vs {weekReview.adherencePrior}% Prior</span>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ color: 'var(--silver)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current Streak</div>
+                          <div style={{ color: 'var(--white)', fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>{doseStats.streak} <span style={{ fontSize: '0.85rem', color: 'var(--silver)', fontWeight: 400 }}>Days</span></div>
+                        </div>
+                        <div>
+                          <div style={{ color: 'var(--silver)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top Site This Week</div>
+                          <div style={{ color: 'var(--white)', fontSize: '1.1rem', fontWeight: 700, marginTop: 4 }}>{weekReview.topSite ? `${weekReview.topSite.name}` : 'None Logged'}</div>
+                          {weekReview.topSite && <div style={{ color: 'var(--silver)', fontSize: '0.78rem' }}>{weekReview.topSite.count} Times · {weekReview.topSite.share}%</div>}
+                        </div>
+                      </div>
+                      {insights.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {insights.map((ins, i) => {
+                            const c = ins.tone === 'good' ? 'var(--teal)' : ins.tone === 'warn' ? '#F6AD55' : 'var(--silver)';
+                            const Ico = ins.tone === 'good' ? Check : ins.tone === 'warn' ? Info : Activity;
+                            return (
+                              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${ins.tone === 'warn' ? 'rgba(246,173,85,0.25)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 10, padding: '10px 14px' }}>
+                                <Ico size={16} style={{ color: c, flexShrink: 0, marginTop: 1 }} />
+                                <span style={{ color: 'var(--white)', fontSize: '0.88rem', lineHeight: 1.4 }}>{ins.text}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="dose-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
                     <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
