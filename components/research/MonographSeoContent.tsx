@@ -74,9 +74,12 @@ export default function MonographSeoContent({ compound }: { compound: Compound }
   // Answer-first definition: a single, self-contained sentence that AI answer
   // engines and featured snippets extract before longer prose. Composed only
   // from existing fields, and RUO-framed. Tagged .compound-summary so it feeds
-  // the page's existing speakable selector.
-  const defClass = compound.compound_class || 'research compound';
-  const defTarget = compound.molecular_target ? ` targeting ${compound.molecular_target}` : '';
+  // the page's existing speakable selector. compound_class / molecular_target
+  // are often long, semicolon-separated descriptors — take only the first
+  // short clause so the sentence stays crisp.
+  const firstClause = (s: string) => s.split(/[;,(]/)[0].trim();
+  const defClass = compound.compound_class ? firstClause(compound.compound_class) : 'research compound';
+  const defTarget = compound.molecular_target ? ` targeting ${firstClause(compound.molecular_target)}` : '';
   const defArea = compound.category ? `${compound.category} research` : 'laboratory research';
 
   return (
