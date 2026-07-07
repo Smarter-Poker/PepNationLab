@@ -1,0 +1,360 @@
+
+  // 1. Overall ranking
+  const rankStr = ranked.map(({ c, s }) => `${c.display_name} (${s.total}/100, ${s.letter})`).join(', ');
+  paragraphs.push(`Overall research index ranking: ${rankStr}. ${leader.c.display_name} leads driven by its ${leader.s.verdict.toLowerCase()}${leader.s.strengths.length ? ` and strong ${leader.s.strengths.join(' and ')}` : ''}.`);
+
+  // 2. Evidence comparison
+  const evidenceRanked = [...selected].sort((a, b) => {
+    const r = (e: string) => e === 'approved_drug' ? 4 : e === 'investigational' ? 3 : e === 'preclinical' ? 2 : 1;
+    return r(b.evidence_tier) - r(a.evidence_tier);
+  });
+  const topEvidence = evidenceRanked[0];
+  const bottomEvidence = evidenceRanked[evidenceRanked.length - 1];
+  if (topEvidence.slug !== bottomEvidence.slug) {
+    paragraphs.push(`Evidence hierarchy is significant in this comparison. ${topEvidence.display_name} sits at the ${evidenceTier(topEvidence.evidence_tier).label} tier, while ${bottomEvidence.display_name} operates at the ${evidenceTier(bottomEvidence.evidence_tier).label} level - a gap that should meaningfully inform protocol design decisions and researcher expectations around established efficacy data.`);
+  }
+
+  // 3. Safety divergence
+  const safetyRanked = [...selected].sort((a, b) => {
+    const r = (x: string) => x === 'low' ? 1 : x === 'moderate' ? 2 : x === 'high' ? 3 : 4;
+    return r(a.risk_level) - r(b.risk_level);
+  });
+  const safest = safetyRanked[0];
+  const riskiest = safetyRanked[safetyRanked.length - 1];
+  if (safest.slug !== riskiest.slug) {
+    const riskiestMeta = RISK_META[riskiest.risk_level];
+    paragraphs.push(`Safety profiles diverge across this selection. ${safest.display_name} presents the most favorable documented risk profile, while ${riskiest.display_name} carries a ${riskiestMeta?.label ?? riskiest.risk_level} designation${riskiest.risk_reasons?.length ? ` (key considerations: ${riskiest.risk_reasons.slice(0, 2).join('; ')})` : ''} - a factor that should directly inform lab protocol safeguards and handling procedures.`);
+  }
+
+  // 4. Pharmacokinetics / Half-life
+  const hlData = selected.map(c => ({ c, hl: parseHalfLifeHours(c.half_life) })).filter(x => x.hl > 0).sort((a, b) => b.hl - a.hl);
+  if (hlData.length >= 2) {
+    const longest = hlData[0];
+    const shortest = hlData[hlData.length - 1];
+    if (longest.c.slug !== shortest.c.slug) {
+      const ratio = (longest.hl / shortest.hl).toFixed(1);
+      paragraphs.push(`Pharmacokinetically, ${longest.c.display_name} provides a ${ratio}x longer half-life (${longest.c.half_life}) versus ${shortest.c.display_name} (${shortest.c.half_life}). For sustained-exposure research designs, ${longest.c.display_name} reduces administration frequency significantly; for pulse-modeling studies, ${shortest.c.display_name}'s rapid clearance may be preferable.`);
+    }
+  }
+
+  // 5. Scientific backing divergence
+  const citeRanked = [...selected].sort((a, b) => (b.pubmed_citation_count ?? 0) - (a.pubmed_citation_count ?? 0));
+  const mostCited = citeRanked[0];
+  const leastCited = citeRanked[citeRanked.length - 1];
+  if (mostCited.slug !== leastCited.slug && (mostCited.pubmed_citation_count ?? 0) > 0) {
+    paragraphs.push(`Scientific literature depth varies considerably. ${mostCited.display_name} has the deepest research footprint with ${(mostCited.pubmed_citation_count ?? 0).toLocaleString()} indexed PubMed publications${mostCited.active_trial_count ? ` and ${mostCited.active_trial_count} active clinical trials` : ''}. ${leastCited.display_name} has the smallest evidence base with ${(leastCited.pubmed_citation_count ?? 0).toLocaleString()} citations, meaning researchers should weigh conclusions with proportionally greater caution.`);
+  }
+
+  // 6. Mechanism / target divergence
+  const withMech = selected.filter(c => c.molecular_target || c.mechanism || c.pk_summary);
+  if (withMech.length >= 2) {
+    const mechLines = withMech.slice(0, 3).map(c => `${c.display_name} (${c.molecular_target ?? c.compound_class ?? 'mechanism TBD'})`).join(', ');
+    paragraphs.push(`Mechanistically, these compounds operate through distinct pathways: ${mechLines}. This differentiation means they are unlikely to be directly interchangeable in research protocols - target specificity should be primary criteria for selection.`);
+  }
+
+  // 7. Unique use-case differentiation
+  const uniqueAreas = selected.flatMap(c =>
+    (c.research_areas ?? []).filter(a =>
+      selected.filter(o => o.slug !== c.slug).every(o => !(o.research_areas ?? []).includes(a))
+    ).map(a => ({ compound: c.display_name, area: researchAreaLabel(a) }))
+  );
+  if (uniqueAreas.length > 0) {
+    const grouped = uniqueAreas.reduce<Record<string, string[]>>((acc, { compound, area }) => {
+      if (!acc[compound]) acc[compound] = [];
+      acc[compound].push(area);
+      return acc;
+    }, {});
+    const parts = Object.entries(grouped).map(([name, areas]) => `${name} uniquely covers ${areas.join(' and ')}`);
+    paragraphs.push(`Research scope differentiation: ${parts.join('; ')}. When multi-area coverage is the research objective, these non-overlapping domains suggest combinatorial protocols may be more effective than single-compound selection.`);
+  }
+
+  // 8. Stack recommendation
+  const stackPairs = selected.flatMap(c =>
+    selected
+      .filter(other => other.slug !== c.slug && (c.best_stacked_with ?? []).some(s => s.toLowerCase().includes(other.slug) || other.slug.includes(s.toLowerCase())))
+      .map(other => `${c.display_name} + ${other.display_name}`)
+  );
+  if (stackPairs.length > 0) {
+    const uniquePairs = [...new Set(stackPairs)];
+    paragraphs.push(`Combination potential: ${uniquePairs.join('; ')} ${uniquePairs.length === 1 ? 'is' : 'are'} explicitly noted as compatible research stack partner${uniquePairs.length > 1 ? 's' : ''} in compound metadata. Researchers designing multi-compound protocols should prioritize these established relationships.`);
+  }
+
+  return paragraphs;
+}
+
+// ─── RECOMMENDATION ENGINE ─────────────────────────────────────────────────────
+interface Recommendation {
+  compound: Compound;
+  score: CompoundScore;
+  reason: string;
+  secondaryLabel: string;
+}
+
+function generateRecommendations(selected: Compound[], scores: CompoundScore[]): {
+  overall: Recommendation;
+  safest: Recommendation;
+  mostStudied: Recommendation;
+  mostPractical: Recommendation;
+} | null {
+  if (selected.length < 2) return null;
+
+  const ranked = selected.map((c, i) => ({ c, s: scores[i] }));
+
+  const overall = ranked.sort((a, b) => b.s.total - a.s.total)[0];
+  const safest = [...ranked].sort((a, b) => b.s.breakdown.safety - a.s.breakdown.safety)[0];
+  const mostStudied = [...ranked].sort((a, b) => b.s.breakdown.science - a.s.breakdown.science)[0];
+  const mostPractical = [...ranked].sort((a, b) => b.s.breakdown.handling - a.s.breakdown.handling)[0];
+
+  return {
+    overall: { compound: overall.c, score: overall.s, reason: `Highest composite research score (${overall.s.total}/100) - best across all evaluated dimensions`, secondaryLabel: `Grade ${overall.s.letter}` },
+    safest: { compound: safest.c, score: safest.s, reason: `Best safety-to-evidence ratio - lowest documented risk profile in this comparison`, secondaryLabel: RISK_META[safest.c.risk_level]?.label ?? 'Low Risk' },
+    mostStudied: { compound: mostStudied.c, score: mostStudied.s, reason: `Deepest scientific foundation - ${(mostStudied.c.pubmed_citation_count ?? 0).toLocaleString()} citations + ${(mostStudied.c.active_trial_count ?? 0) + (mostStudied.c.completed_trial_count ?? 0)} trials`, secondaryLabel: 'Most Published' },
+    mostPractical: { compound: mostPractical.c, score: mostPractical.s, reason: `Best handling & protocol practicality - longest half-life or shelf life advantage`, secondaryLabel: mostPractical.c.half_life ? `HL: ${mostPractical.c.half_life}` : 'Best Handling' },
+  };
+}
+
+// ─── ROW DEFINITIONS ───────────────────────────────────────────────────────────
+type Row =
+  | { kind: 'group'; label: string }
+  | {
+      kind: 'data';
+      label: string;
+      glossaryTerm?: string;
+      bestLogic?: 'max' | 'min';
+      getRawScore?: (c: Compound) => number;
+      getValue: (c: Compound) => unknown;
+      render: (c: Compound, maxHl?: number, maxCites?: number) => React.ReactNode;
+    };
+
+const ROWS: Row[] = [
+  { kind: 'group', label: 'Overview' },
+  {
+    kind: 'data', label: 'Research Summary',
+    getValue: c => c.eli5_summary ?? c.plain_summary,
+    render: c => {
+      const text = c.eli5_summary ?? c.plain_summary;
+      if (!text) return <span style={{ color: 'rgba(168,180,192,0.4)', fontStyle: 'italic', fontSize: '0.8rem' }}>No summary available</span>;
+      return <span style={{ fontSize: '0.82rem', lineHeight: 1.55, display: 'block', maxHeight: 120, overflowY: 'auto', color: 'rgba(255,255,255,0.8)' }}>{text}</span>;
+    }
+  },
+  {
+    kind: 'data', label: 'Studied For',
+    getValue: c => c.studied_for?.join(','),
+    render: c => {
+      const items = c.studied_for ?? [];
+      if (!items.length) return NL;
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+          {items.map(s => <span key={s} style={{ background: 'rgba(0,196,188,0.1)', color: '#FFF', padding: '1px 6px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600 }}>{s}</span>)}
+        </div>
+      );
+    }
+  },
+  {
+    kind: 'data', label: 'Research Areas',
+    getValue: c => c.research_areas?.join(','),
+    render: c => {
+      const areas = c.research_areas ?? [];
+      if (!areas.length) return NL;
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+          {areas.map(a => <span key={a} style={{ background: 'rgba(159,122,234,0.1)', color: '#9F7AEA', padding: '1px 6px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600 }}>{researchAreaLabel(a)}</span>)}
+        </div>
+      );
+    }
+  },
+  {
+    kind: 'data', label: 'Best Stacked With',
+    getValue: c => c.best_stacked_with?.join(','),
+    render: c => c.best_stacked_with?.length ? (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+        {c.best_stacked_with.map(s => <span key={s} style={{ background: 'rgba(246,173,85,0.1)', color: '#F6AD55', padding: '1px 6px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600 }}>{s}</span>)}
+      </div>
+    ) : NL
+  },
+
+  { kind: 'group', label: 'Identity' },
+  { kind: 'data', label: 'Category', getValue: c => c.category, render: c => txt(c.category) },
+  { kind: 'data', label: 'Compound Class', getValue: c => c.compound_class, render: c => txt(c.compound_class) },
+  { kind: 'data', label: 'Molecular Target', getValue: c => c.molecular_target, render: c => txt(c.molecular_target) },
+  {
+    kind: 'data', label: 'Aliases / AKA',
+    getValue: c => (c.aliases ?? []).join(', '),
+    render: c => {
+      const items = (c.aliases ?? []).slice(0, 6);
+      if (!items.length) return NL;
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+          {items.map(a => <span key={a} style={{ background: 'rgba(168,180,192,0.08)', color: 'rgba(255,255,255,0.55)', padding: '1px 6px', borderRadius: 4, fontSize: '0.68rem', fontWeight: 600, border: '1px solid rgba(168,180,192,0.12)' }}>{a}</span>)}
+        </div>
+      );
+    }
+  },
+  { kind: 'data', label: 'Parent Compound', getValue: c => c.identity?.parent, render: c => txt(c.identity?.parent) },
+  {
+    kind: 'data', label: 'Molecular Weight', glossaryTerm: 'Molecular Weight',
+    bestLogic: 'min',
+    getRawScore: c => c.molecular_weight_da ? Number(c.molecular_weight_da) : Number(c.identity?.molecular_weight) || Infinity,
+    getValue: c => c.molecular_weight_da ?? c.identity?.molecular_weight,
+    render: c => c.molecular_weight_da ? `${c.molecular_weight_da} Da` : txt(c.identity?.molecular_weight)
+  },
+  { kind: 'data', label: 'Amino Acid Sequence', getValue: c => c.identity?.sequence, render: c => c.identity?.sequence ? <code style={{ fontSize: '0.7rem', wordBreak: 'break-all', color: '#FFF', background: 'rgba(0,196,188,0.08)', padding: '2px 4px', borderRadius: 4, display: 'block' }}>{c.identity.sequence}</code> : NL },
+  { kind: 'data', label: 'CAS Number', getValue: c => c.identity?.cas, render: c => txt(c.identity?.cas) },
+  { kind: 'data', label: 'Year Discovered', getValue: c => c.year_discovered, render: c => txt(c.year_discovered) },
+  {
+    kind: 'data', label: 'Pro-Angiogenic',
+    getValue: c => c.is_pro_angiogenic ? 'Yes' : 'No',
+    render: c => c.is_pro_angiogenic
+      ? <span style={{ color: '#F6AD55', fontWeight: 700, fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={12} /> Yes - Promotes New Vessel Growth</span>
+      : <span style={{ color: 'rgba(104,211,145,0.7)', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> No</span>
+  },
+  {
+    kind: 'data', label: 'GLP-1 Class',
+    getValue: c => c.is_glp1 ? 'Yes' : 'No',
+    render: c => c.is_glp1
+      ? <Image src="/images/badges/badge_glp1.png" alt="GLP-1 Incretin" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
+      : <span style={{ color: 'rgba(168,180,192,0.4)', fontSize: '0.78rem' }}>No</span>
+  },
+  {
+    kind: 'data', label: 'Purity', getValue: c => c.purity_percentage,
+    bestLogic: 'max', getRawScore: c => c.purity_percentage ?? 0,
+    render: c => c.purity_percentage ? (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontWeight: 700, color: c.purity_percentage >= 99 ? '#68D391' : c.purity_percentage >= 95 ? '#F6AD55' : '#FFF' }}>{c.purity_percentage}%</span>
+        <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', maxWidth: 80 }}>
+          <div style={{ height: '100%', width: `${c.purity_percentage}%`, background: c.purity_percentage >= 99 ? '#68D391' : '#F6AD55' }} />
+        </div>
+      </div>
+    ) : NL
+  },
+
+  { kind: 'group', label: 'Evidence & Regulatory' },
+  {
+    kind: 'data', label: 'Evidence Tier', glossaryTerm: 'Evidence Tier',
+    bestLogic: 'max',
+    getRawScore: c => c.evidence_tier === 'approved_drug' ? 5 : c.evidence_tier === 'investigational' ? 4 : c.evidence_tier === 'preclinical' ? 3 : c.evidence_tier === 'research_chemical' ? 2 : 1,
+    getValue: c => c.evidence_tier,
+    render: c => {
+      const t = evidenceTier(c.evidence_tier);
+      if (t.badgeUrl) {
+        return <Image src={t.badgeUrl} alt={t.label} width={200} height={200} unoptimized style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />;
+      }
+      return <span style={{ display: 'inline-block', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: t.color, border: `1px solid ${t.color}`, borderRadius: 999, padding: '2px 10px' }}>{t.label}</span>;
+    },
+  },
+  {
+    kind: 'data', label: 'Risk Level',
+    bestLogic: 'min', getRawScore: c => c.risk_level === 'low' ? 1 : c.risk_level === 'moderate' ? 2 : c.risk_level === 'high' ? 3 : 4,
+    getValue: c => c.risk_level,
+    render: c => {
+      const r = RISK_META[c.risk_level];
+      return r ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {r.badgeUrl ? (
+            <Image src={r.badgeUrl} alt={r.label} width={200} height={200} unoptimized style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', alignSelf: 'flex-start', flexShrink: 0 }} />
+          ) : (
+            <span style={{ color: r.color, fontWeight: 700 }}>{r.label}</span>
+          )}
+          {c.risk_reasons?.length ? <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>{c.risk_reasons.slice(0, 1).join(', ')}</div> : null}
+        </div>
+      ) : NL;
+    },
+  },
+  {
+    kind: 'data', label: 'PubMed Citations',
+    bestLogic: 'max', getRawScore: c => c.pubmed_citation_count || 0,
+    getValue: c => c.pubmed_citation_count,
+    render: (c, maxHl, maxCites) => {
+      const n = c.pubmed_citation_count;
+      if (!n) return NL;
+      const tier = n >= 1000 ? { color: '#68D391', label: 'Extensive' } : n >= 200 ? { color: '#FFF', label: 'Good' } : n >= 50 ? { color: '#F6AD55', label: 'Moderate' } : { color: '#FFF', label: 'Sparse' };
+      const pct = maxCites && maxCites > 0 ? (n / maxCites) * 100 : 0;
+      return (
+        <div>
+          <span>{n.toLocaleString()} <span style={{ fontSize: '0.68rem', color: tier.color, fontWeight: 700, marginLeft: 4 }}>{tier.label}</span></span>
+          {pct > 0 && <div style={{ marginTop: 4, height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', width: '100%', maxWidth: 140 }}><div style={{ height: '100%', width: `${pct}%`, background: '#F6AD55', transition: 'width 0.5s ease' }} /></div>}
+        </div>
+      );
+    }
+  },
+  {
+    kind: 'data', label: 'Clinical Trials',
+    bestLogic: 'max', getRawScore: c => (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0),
+    getValue: c => (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0),
+    render: c => {
+      const total = (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0);
+      if (!total) return NL;
+      return (
+        <span>
+          {total.toLocaleString()}
+          {c.active_trial_count ? <span style={{ marginLeft: 6, fontSize: '0.7rem', background: 'rgba(104,211,145,0.15)', color: '#68D391', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>{c.active_trial_count} Active</span> : null}
+        </span>
+      );
+    }
+  },
+  { kind: 'data', label: 'Regulatory Status', getValue: c => c.regulatory, render: c => txt(c.regulatory) },
+
+
+  { kind: 'group', label: 'Pharmacology' },
+  {
+    kind: 'data', label: 'Half-Life', glossaryTerm: 'half-life',
+    bestLogic: 'max', getRawScore: c => parseHalfLifeHours(c.half_life),
+    getValue: c => c.half_life,
+    render: (c, maxHl) => {
+      if (!c.half_life) return NL;
+      const hlVal = parseHalfLifeHours(c.half_life);
+      const pct = maxHl && maxHl > 0 ? (hlVal / maxHl) * 100 : 0;
+      return (
+        <div>
+          <div style={{ color: '#FFF', fontWeight: 700, marginBottom: 4 }}>{c.half_life}</div>
+          {pct > 0 && <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', width: '100%', maxWidth: 140 }}><div style={{ height: '100%', width: `${pct}%`, background: '#00C4BC', transition: 'width 0.5s ease' }} /></div>}
+          {c.measured_half_life_hours && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Measured: {c.measured_half_life_hours}h</div>}
+          {c.predicted_half_life_hours && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>Predicted: {c.predicted_half_life_hours}h</div>}
+        </div>
+      );
+    },
+  },
+  { kind: 'data', label: 'Typical Frequency', getValue: c => c.typical_frequency, render: c => txt(c.typical_frequency) },
+  { kind: 'data', label: 'Administration Route', getValue: c => intranasalDisplay(c).routesLabel, render: c => { const n = intranasalDisplay(c); return <span style={{ color: n.color, fontWeight: 700 }}>{n.routesLabel}</span>; } },
+  {
+    kind: 'data', label: 'Mechanism / PK',
+    getValue: c => c.pk_summary,
+    render: c => c.pk_summary ? <span style={{ fontSize: '0.8rem', lineHeight: 1.5, display: 'block', color: 'rgba(255,255,255,0.8)' }}>{c.pk_summary}</span> : NL
+  },
+  {
+    kind: 'data', label: 'Reported Findings',
+    getValue: c => c.benefits,
+    render: c => c.benefits ? <span style={{ fontSize: '0.8rem', lineHeight: 1.5, display: 'block', color: 'rgba(255,255,255,0.8)', maxHeight: 100, overflowY: 'auto' }}>{c.benefits}</span> : NL
+  },
+  {
+    kind: 'data', label: 'Side Effects Noted',
+    getValue: c => c.side_effects,
+    render: c => c.side_effects ? <span style={{ fontSize: '0.8rem', lineHeight: 1.5, display: 'block', color: 'rgba(252,129,129,0.9)', maxHeight: 80, overflowY: 'auto' }}>{c.side_effects}</span> : NL
+  },
+  {
+    kind: 'data', label: 'Warnings',
+    getValue: c => c.warnings,
+    render: c => c.warnings ? <span style={{ fontSize: '0.8rem', lineHeight: 1.5, display: 'block', color: 'rgba(246,173,85,0.9)' }}><AlertTriangle size={11} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />{c.warnings}</span> : NL
+  },
+
+  { kind: 'group', label: 'Handling & Storage' },
+  { kind: 'data', label: 'Form', getValue: c => c.handling?.form, render: c => txt(c.handling?.form) },
+  { kind: 'data', label: 'Diluent', glossaryTerm: 'reconstitution', getValue: c => c.handling?.diluent, render: c => txt(c.handling?.diluent) },
+  { kind: 'data', label: 'Storage Temp', getValue: c => c.handling?.storage_temp, render: c => txt(c.handling?.storage_temp) },
+  { kind: 'data', label: 'Light Sensitive', getValue: c => c.handling?.light_sensitive, render: c => c.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? <span style={{ color: '#F6AD55', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={12} /> Yes</span> : <span style={{ color: '#68D391', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> No</span> },
+  { kind: 'data', label: 'Freeze / Thaw', getValue: c => c.handling?.freeze_thaw, render: c => txt(c.handling?.freeze_thaw) },
+  { kind: 'data', label: 'Handling Notes', getValue: c => c.handling?.notes, render: c => txt(c.handling?.notes) },
+  {
+    kind: 'data', label: 'Reconstituted Shelf Life',
+    bestLogic: 'max', getRawScore: c => c.reconstitution_shelf_days ?? c.handling?.reconstituted_days ?? 0,
+    getValue: c => c.reconstitution_shelf_days ?? c.handling?.reconstituted_days,
+    render: c => {
+      const d = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days;
+      if (d == null) return NL;
+      const color = d >= 28 ? '#68D391' : d < 14 ? '#FFF' : '#F6AD55';
+      return <span style={{ color, fontWeight: 700 }}>{d} Days <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>Refrigerated</span></span>;
+    },
+  },
+];
+
+// ─── ROW EXPLANATIONS (Feature 9 - Explain This) ────────────────────────────
