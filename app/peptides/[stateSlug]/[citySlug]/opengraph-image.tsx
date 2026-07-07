@@ -19,7 +19,7 @@ export default async function Image({ params }: { params: Promise<{ stateSlug: s
   const stateName = toTitleCase(stateSlug);
 
   // Find featured peptide count for this city
-  const cityEntry = CITIES.find((c) => c.stateSlug === stateSlug && c.citySlug === citySlug);
+  const cityEntry = (CITIES as any[]).find((c) => c.stateSlug === stateSlug && c.citySlug === citySlug);
   const compoundCount = cityEntry?.featuredPeptides?.length ?? 8;
 
   let fontData: ArrayBuffer | null = null;

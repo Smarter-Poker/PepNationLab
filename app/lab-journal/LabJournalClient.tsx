@@ -1234,7 +1234,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                           {recommendedItems.map(item => (
                             <div key={item.product_id} style={{ minWidth: 200, flexShrink: 0, background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: 'var(--space-3)', position: 'relative' }}>
                                <div style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: 8, overflow: 'hidden', marginBottom: 'var(--space-3)', background: '#111' }}>
-                                  <Image src={item.image_url || getProductImage(item.category || '')} alt={item.name} fill style={{ objectFit: 'cover', mixBlendMode: 'screen' }} />
+                                  <Image src={item.image_url || getProductImage(null, item.category || 'Other', item.name)} alt={item.name} fill style={{ objectFit: 'cover', mixBlendMode: 'screen' }} />
                                   <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIntelligenceCompound(item.name); }} style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--white)', padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, backdropFilter: 'blur(4px)' }}><FlaskConical size={12}/> Intel</button>
                                </div>
                                <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--white)' }}>{item.name}</h4>
@@ -1772,11 +1772,11 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                 </div>
               );
               return storefrontSlug ? (
-                <Link key={t.id} href={`/${storefrontSlug}?product=${encodeURIComponent(t.id)}`} style={{ textDecoration: 'none' }}>
+                <Link key={t.product_id} href={`/${storefrontSlug}?product=${encodeURIComponent(t.product_id)}`} style={{ textDecoration: 'none' }}>
                   {inner}
                 </Link>
               ) : (
-                <div key={t.id}>{inner}</div>
+                <div key={t.product_id}>{inner}</div>
               );
             })}
           </div>
