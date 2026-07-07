@@ -676,7 +676,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         setError(`This Storefront Requires A Minimum Overall Order Of ${minOverallQty} Items. Please Add More Items To Proceed.`);
         return;
       }
-      const violatingItem = cart.find(item => item.quantity < minOrderQty);
+      const violatingItem = cart.find(item => !isDiluentName(item.name) && item.quantity < minOrderQty);
       if (violatingItem) {
         setError(`This Storefront Requires A Minimum Of ${minOrderQty} Per Peptide. "${violatingItem.name}" Has Only ${violatingItem.quantity}.`);
         return;
@@ -756,7 +756,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       setError(`This Storefront Requires A Minimum Overall Order Of ${minOverallQty} Items. Please Add More Items To Proceed.`);
       return;
     }
-    const violatingItem = cart.find(item => item.quantity < minOrderQty);
+    const violatingItem = cart.find(item => !isDiluentName(item.name) && item.quantity < minOrderQty);
     if (violatingItem) {
       setError(`This Storefront Requires A Minimum Of ${minOrderQty} Per Peptide. "${violatingItem.name}" Has Only ${violatingItem.quantity}.`);
       return;
@@ -783,7 +783,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         && zip.trim()
       ) {
         try {
-          await fetch('/api/researcher/addresses', {
+          const addressRes = await fetch('/api/researcher/addresses', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -797,6 +797,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               is_default: savedAddresses.length === 0,
             }),
           });
+          if (!addressRes.ok) {
+            console.error('Failed to save address');
+            // We can still proceed with the order even if address save fails,
+            // but we log it to console.
+          }
         } catch { }
       }
 
@@ -815,8 +820,19 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         })
       });
 
+      if (!response.ok) {
+        let errStr = 'Failed To Process Order.';
+        try { 
+          const data = await response.json(); 
+          errStr = data.error ?? errStr; 
+        } catch { 
+          // If response is not valid JSON (e.g., 500 HTML page)
+          throw new Error('Failed to process order. The server encountered an unexpected error.');
+        }
+        throw new Error(errStr);
+      }
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? 'Failed To Process Order.');
 
       if (typeof data.total === 'number') {
         const srv = Number(data.total);

@@ -363,31 +363,49 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
     };
   }, [tab, orders.length, favorites.length]);
 
-  const handleReorder = (e: React.MouseEvent, items: Order['order_items']) => {
+  const handleReorder = async (e: React.MouseEvent, items: Order['order_items']) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    const productIds = items.map(item => item.product_id).filter(Boolean) as string[];
+    if (productIds.length === 0) {
+      toast.error('Could not reorder: Product IDs missing.');
+      return;
+    }
+
+    const supabase = createClient();
+    const { data: currentProducts } = await supabase
+      .from('products')
+      .select('id, name, sku, base_cost, weight_oz')
+      .in('id', productIds);
+
     let added = 0;
     items.forEach(item => {
       if (!item.product_id) return;
+      const current = currentProducts?.find(p => p.id === item.product_id);
+      
       addToCart({
         id: item.product_id,
         productId: item.product_id,
-        name: item.product_name,
-        sku: '',
-        retailPrice: Number(item.unit_retail_price),
-        costPrice: Number(item.unit_retail_price),
-        weightOz: 0
+        name: current?.name || item.product_name,
+        sku: current?.sku || '',
+        retailPrice: current?.base_cost ? Number(current.base_cost) : Number(item.unit_retail_price),
+        costPrice: current?.base_cost ? Number(current.base_cost) : Number(item.unit_retail_price),
+        weightOz: current?.weight_oz ? Number(current.weight_oz) : 0.5
       }, item.quantity);
       added++;
     });
-    if (added === 0) {
-      toast.error('Could not reorder: Product IDs missing.');
+
+    if (added > 0) {
+      toast.success('Items added to cart!');
+      router.push('/checkout');
     }
   };
 
   async function removeFavorite(productId: string) {
     try {
-      await fetch('/api/researcher/favorites', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
+      const res = await fetch('/api/researcher/favorites', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
+      if (!res.ok) throw new Error('Failed');
       setFavorites(prev => prev.filter(f => f.product_id !== productId));
       toast.success('Removed from favorites');
     } catch { toast.error('Failed'); }
@@ -403,14 +421,18 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
       if (phone !== (profile.phone || '')) updates.phone = phone;
 
       if (Object.keys(updates).length > 0) {
-        await supabase.from('profiles').update(updates).eq('id', userId);
+        const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
+        if (error) throw new Error(error.message);
       }
       if (newPassword) {
-        await supabase.auth.updateUser({ password: newPassword });
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) throw new Error(error.message);
         setNewPassword('');
       }
       toast.success('Profile Updated');
-    } catch { toast.error('Failed'); }
+    } catch (err: any) { 
+      toast.error(err.message || 'Failed to update profile'); 
+    }
     setSaving(false);
   }
 
