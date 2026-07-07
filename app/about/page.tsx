@@ -25,19 +25,6 @@ const organizationJsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
     {
-      '@type': 'Organization',
-      '@id': 'https://pepnationlab.com/#organization',
-      name: 'Pep Nation Lab',
-      url: 'https://pepnationlab.com',
-      logo: 'https://pepnationlab.com/logo-mark.svg',
-      description: 'Wholesale research peptide distribution platform for qualified researchers and institutions. All products for in vitro research use only.',
-      contactPoint: {
-        '@type': 'ContactPoint',
-        contactType: 'customer support',
-        url: 'https://pepnationlab.com/contact',
-      },
-    },
-    {
       '@type': 'AboutPage',
       '@id': 'https://pepnationlab.com/about#webpage',
       url: 'https://pepnationlab.com/about',

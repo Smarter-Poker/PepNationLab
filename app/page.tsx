@@ -23,47 +23,9 @@ export const metadata: Metadata = {
   },
 };
 
-// Organization + WebSite JSON-LD with SearchAction for Google Sitelinks Search Box
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'Organization',
-      '@id': 'https://pepnationlab.com/#organization',
-      name: 'Pep Nation Lab',
-      url: 'https://pepnationlab.com',
-      logo: {
-        '@type': 'ImageObject',
-        url: 'https://pepnationlab.com/logo-mark.svg',
-      },
-      description: 'Wholesale research peptide distribution platform for qualified researchers and institutions. All products for in vitro research use only.',
-      sameAs: [],
-    },
-    {
-      '@type': 'WebSite',
-      '@id': 'https://pepnationlab.com/#website',
-      url: 'https://pepnationlab.com',
-      name: 'Pep Nation Lab',
-      publisher: { '@id': 'https://pepnationlab.com/#organization' },
-      potentialAction: {
-        '@type': 'SearchAction',
-        target: {
-          '@type': 'EntryPoint',
-          urlTemplate: 'https://pepnationlab.com/research?q={search_term_string}',
-        },
-        'query-input': 'required name=search_term_string',
-      },
-    },
-  ],
-};
-
 export default function HomePage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
       <HomeClient />
       {/* Server-rendered crawlable homepage content: gives the root domain a
           real H1, intro copy, and descriptive internal links beneath the
