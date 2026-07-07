@@ -1,0 +1,360 @@
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {c.sources.slice(0, 4).map((src, si) => (
+                        <a key={si} href={src.startsWith('http') ? src : undefined} onClick={src.startsWith('http') ? (e) => { e.preventDefault(); setModalUrl(src); } : undefined}
+                          style={{ fontSize: '0.72rem', color: '#FFF', opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none', cursor: src.startsWith('http') ? 'pointer' : 'default' }}>
+                          {src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si + 1}</span> : src}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {/* Stack rationale if stack compound */}
+                {c.is_stack && c.stack_rationale && (
+                  <div>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Stack Rationale</div>
+                    <div style={{ fontSize: '0.82rem', color: '#FFF', lineHeight: 1.55, fontStyle: 'italic' }}>{c.stack_rationale}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {/* Efficacy Scores section */}
+      {selected.some(c => c.efficacy_scores && Object.keys(c.efficacy_scores).length > 0) && (
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16 }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--white)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <BarChart3 size={15} color="#00C4BC" /> Efficacy Score Comparison
+            <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', marginLeft: 6, fontWeight: 400 }}>(0–100 per application domain, sourced from compound metadata)</span>
+          </div>
+          <EfficacyHeatmap selected={selected} />
+        </div>
+      )}
+      {modalUrl && (
+        <IframeModal url={modalUrl} onClose={() => setModalUrl(null)} />
+      )}
+    </div>
+  );
+}
+
+function CompoundReconstitutionCalc({ c, color }: { c: Compound, color: string }) {
+  const [vialMg, setVialMg] = useState<number>(5);
+  const [waterMl, setWaterMl] = useState<number>(2);
+  const [doseMcg, setDoseMcg] = useState<number>(250);
+
+  const mcgPerUnit = (vialMg * 1000) / (waterMl * 100);
+  const unitsToPull = doseMcg / mcgPerUnit;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0.8 }}
+      whileHover={{ opacity: 1, scale: 1.01 }}
+      style={{ background: 'rgba(15,22,30,0.5)', padding: 16, borderRadius: 14, marginTop: 12, border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+      <div style={{ fontSize: '0.75rem', color, fontWeight: 900, textTransform: 'uppercase', marginBottom: 12, display: 'flex', gap: 6, alignItems: 'center', letterSpacing: '0.05em' }}>
+        <Beaker size={14} style={{ filter: `drop-shadow(0 0 6px ${color}40)` }} /> Interactive Calculator
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+        <div>
+          <label style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: 6, fontWeight: 700 }}>Vial Size (mg)</label>
+          <input type="number" value={vialMg} onChange={e => setVialMg(Number(e.target.value))} style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', borderRadius: 8, fontSize: '0.85rem', outline: 'none', transition: 'border-color 0.2s', fontWeight: 600 }} onFocus={e => e.currentTarget.style.borderColor = color} onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+        </div>
+        <div>
+          <label style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: 6, fontWeight: 700 }}>BAC Water (mL)</label>
+          <input type="number" value={waterMl} onChange={e => setWaterMl(Number(e.target.value))} style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', borderRadius: 8, fontSize: '0.85rem', outline: 'none', transition: 'border-color 0.2s', fontWeight: 600 }} onFocus={e => e.currentTarget.style.borderColor = color} onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+        </div>
+        <div style={{ gridColumn: 'span 2' }}>
+          <label style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: 6, fontWeight: 700 }}>Target Dose (mcg)</label>
+          <input type="number" value={doseMcg} onChange={e => setDoseMcg(Number(e.target.value))} style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', borderRadius: 8, fontSize: '0.85rem', outline: 'none', transition: 'border-color 0.2s', fontWeight: 600 }} onFocus={e => e.currentTarget.style.borderColor = color} onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+        </div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: `linear-gradient(135deg, ${color}20 0%, transparent 100%)`, padding: '12px 16px', borderRadius: 10, border: `1px solid ${color}40`, boxShadow: `inset 0 1px 1px rgba(255,255,255,0.05)` }}>
+        <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 700 }}>Syringe Draw:</span>
+        <span style={{ fontSize: '1.25rem', color, fontWeight: 900, textShadow: `0 2px 8px ${color}30` }}>{unitsToPull > 0 && isFinite(unitsToPull) ? unitsToPull.toFixed(1) : 0} units</span>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Protocol Tab ─────────────────────────────────────────────────────────────
+function ProtocolTab({ selected }: { selected: Compound[] }) {
+  const [modalUrl, setModalUrl] = useState<string | null>(null);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(260px, 1fr))`, gap: 14 }}>
+        {/* Protocol Timeline Visualizer */}
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 20, gridColumn: '1 / -1', marginBottom: 8 }}>
+          <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}><Hourglass size={16} /> 8-Week Protocol Timeline</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '120px repeat(8, 1fr)', gap: 4, overflowX: 'auto' }}>
+            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(255,255,255,0.3)', alignSelf: 'end', paddingBottom: 8 }}>COMPOUND</div>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(w => <div key={w} style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textAlign: 'center', paddingBottom: 8 }}>WK {w}</div>)}
+            
+            {selected.map((c, i) => {
+              const hl = parseHalfLifeHours(c.half_life);
+              const isDaily = hl > 0 && hl <= 24;
+              const isTwiceWeekly = hl > 24 && hl <= 72;
+              const isOnceWeekly = hl > 72;
+              const color = colors[i % colors.length];
+              
+              return (
+                <div style={{ display: 'contents' }} key={c.slug}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: color, alignSelf: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={c.display_name}>{c.display_name}</div>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map(w => (
+                    <div key={w} style={{ height: 32, background: 'rgba(255,255,255,0.03)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                      {isDaily && <div style={{ position: 'absolute', inset: '8px 4px', background: `${color}40`, borderRadius: 4, border: `1px solid ${color}80` }} title="Daily Administration" />}
+                      {isTwiceWeekly && (
+                        <div style={{ position: 'absolute', inset: '8px 4px', display: 'flex', justifyContent: 'space-around' }}>
+                          <div style={{ width: '30%', height: '100%', background: `${color}40`, borderRadius: 4, border: `1px solid ${color}80` }} title="2x Weekly Administration" />
+                          <div style={{ width: '30%', height: '100%', background: `${color}40`, borderRadius: 4, border: `1px solid ${color}80` }} title="2x Weekly Administration" />
+                        </div>
+                      )}
+                      {isOnceWeekly && <div style={{ width: '30%', height: 16, background: `${color}40`, borderRadius: 4, border: `1px solid ${color}80` }} title="Weekly Administration" />}
+                      {!isDaily && !isTwiceWeekly && !isOnceWeekly && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)' }}>?</div>}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {selected.map((c, i) => {
+          const color = colors[i % colors.length];
+          const shelf = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days;
+          const hlH = parseHalfLifeHours(c.half_life);
+          const dosesPerWeek = hlH > 0 ? Math.max(1, Math.round(168 / (hlH * 2))) : null;
+          return (
+            <div key={c.slug} className="inner-card-nickel" style={{ padding: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                <span style={{ fontWeight: 900, fontSize: '0.95rem', color: 'var(--white)' }}>{c.display_name}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {/* Reconstitution info */}
+                <div style={{ background: `${color}08`, borderRadius: 8, padding: '10px 12px' }}>
+                  <div style={{ fontSize: '0.65rem', color, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Reconstitution</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '0.78rem' }}>
+                    <div style={{ color: 'rgba(255,255,255,0.4)' }}>Form</div>
+                    <div style={{ color: 'rgba(255,255,255,0.8)' }}>{c.handling?.form ?? NL}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.4)' }}>Diluent</div>
+                    <div style={{ color: 'rgba(255,255,255,0.8)' }}>{c.handling?.diluent ?? NL}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.4)' }}>Storage</div>
+                    <div style={{ color: 'rgba(255,255,255,0.8)' }}>{c.handling?.storage_temp ?? NL}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.4)' }}>Light</div>
+                    <div style={{ color: 'rgba(255,255,255,0.8)' }}>{c.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? <span style={{ color: '#F6AD55', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={11} /> Sensitive</span> : <span style={{ color: '#68D391', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={11} /> Safe</span>}</div>
+                    {shelf && <>
+                      <div style={{ color: 'rgba(255,255,255,0.4)' }}>Shelf Life</div>
+                      <div style={{ color: shelf >= 28 ? '#68D391' : shelf < 14 ? '#FC8181' : '#F6AD55', fontWeight: 700 }}>{shelf} days</div>
+                    </>}
+                  </div>
+                </div>
+                {/* Dosing guidance */}
+                {(c.half_life || c.typical_frequency) && (
+                  <div className="inner-card-nickel" style={{ padding: '10px 12px', borderRadius: 8 }}>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Administration</div>
+                    {c.half_life && <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}><Clock size={10} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Half-life: <strong style={{ color }}>{c.half_life}</strong></div>}
+                    {c.typical_frequency && <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}><Zap size={10} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Typical frequency: <strong style={{ color: 'rgba(255,255,255,0.9)' }}>{c.typical_frequency}</strong></div>}
+                    {dosesPerWeek && <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', marginTop: 4, fontStyle: 'italic' }}>Estimated ~{dosesPerWeek}× per week based on half-life</div>}
+                  </div>
+                )}
+                {/* Feature 8: Interactive Reconstitution Calculator */}
+                <CompoundReconstitutionCalc c={c} color={color} />
+                {/* Freeze-thaw */}
+                {c.handling?.freeze_thaw && (
+                  <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                    <Thermometer size={12} color="#F6AD55" style={{ marginTop: 1, flexShrink: 0 }} />
+                    <span>{c.handling.freeze_thaw}</span>
+                  </div>
+                )}
+                {/* Handling notes */}
+                {c.handling?.notes && (
+                  <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, borderLeft: '2px solid rgba(255,255,255,0.1)', paddingLeft: 8 }}>
+                    {c.handling.notes}
+                  </div>
+                )}
+                {/* COA Link */}
+                {c.coa_url && (
+                  <a href={c.coa_url} onClick={(e) => { e.preventDefault(); setModalUrl(c.coa_url as string); }} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color, textDecoration: 'none', fontWeight: 700, cursor: 'pointer' }}>
+                    <BookOpen size={12} /> View Certificate of Analysis
+                  </a>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {modalUrl && (
+        <IframeModal url={modalUrl} onClose={() => setModalUrl(null)} />
+      )}
+    </div>
+  );
+}
+
+const TruncatedCell = ({ children }: { children: React.ReactNode }) => {
+  const [expanded, setExpanded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      setIsTruncated(containerRef.current.scrollHeight > containerRef.current.clientHeight);
+    }
+  }, [children]);
+
+  return (
+    <div>
+      <div ref={containerRef} style={expanded ? {} : { display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        {children}
+      </div>
+      {isTruncated && !expanded && (
+        <button type="button" onClick={() => setExpanded(true)} aria-expanded={false} style={{ color: '#FFF', background: 'transparent', border: 'none', padding: 0, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', marginTop: 4 }}>Read More</button>
+      )}
+      {expanded && (
+        <button type="button" onClick={() => setExpanded(false)} aria-expanded={true} style={{ color: 'rgba(255,255,255,0.4)', background: 'transparent', border: 'none', padding: 0, fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', marginTop: 4 }}>Show Less</button>
+      )}
+    </div>
+  );
+};
+
+// Custom 3D SVG Icons
+const MatrixIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))', flexShrink: 0 }}>
+    <path d="M12 2L20 6.5L12 11L4 6.5L12 2Z" fill="url(#mtx-silver-top)" />
+    <path d="M4 6.5L12 11V20L4 15.5V6.5Z" fill="url(#mtx-silver-left)" />
+    <path d="M12 11L20 6.5V15.5L12 20V11Z" fill="url(#mtx-silver-right)" />
+    <path d="M6.67 5L14.67 9.5" stroke="#101419" strokeWidth="0.75" />
+    <path d="M9.33 3.5L17.33 8" stroke="#101419" strokeWidth="0.75" />
+    <path d="M17.33 3.5L9.33 8" stroke="#101419" strokeWidth="0.75" />
+    <path d="M14.67 5L6.67 9.5" stroke="#101419" strokeWidth="0.75" />
+    <path d="M4 11L12 15.5" stroke="#101419" strokeWidth="0.75" />
+    <path d="M4 14L12 18.5" stroke="#101419" strokeWidth="0.75" />
+    <path d="M6.67 8V17" stroke="#101419" strokeWidth="0.75" />
+    <path d="M9.33 9.5V18.5" stroke="#101419" strokeWidth="0.75" />
+    <path d="M12 15.5L20 11" stroke="#101419" strokeWidth="0.75" />
+    <path d="M12 18.5L20 14" stroke="#101419" strokeWidth="0.75" />
+    <path d="M14.67 9.5V18.5" stroke="#101419" strokeWidth="0.75" />
+    <path d="M17.33 8V17" stroke="#101419" strokeWidth="0.75" />
+    <path d="M14.67 5L17.33 6.5L14.67 8L12 6.5L14.67 5Z" fill="url(#mtx-blue-accent-top)" />
+    <path d="M17.33 6.5L20 8L17.33 9.5L14.67 8L17.33 6.5Z" fill="url(#mtx-blue-accent-top)" />
+    <path d="M17.33 9.5L20 8V11L17.33 12.5V9.5Z" fill="url(#mtx-blue-accent-right)" />
+    <path d="M14.67 11L17.33 9.5V12.5L14.67 14V11Z" fill="url(#mtx-blue-accent-right)" />
+    <defs>
+      <linearGradient id="mtx-silver-top" x1="12" y1="2" x2="12" y2="11" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#e8ecef" />
+        <stop offset="100%" stopColor="#8c97a5" />
+      </linearGradient>
+      <linearGradient id="mtx-silver-left" x1="4" y1="6.5" x2="12" y2="20" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#4e5866" />
+        <stop offset="100%" stopColor="#242b35" />
+      </linearGradient>
+      <linearGradient id="mtx-silver-right" x1="20" y1="6.5" x2="12" y2="20" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#6d7b8d" />
+        <stop offset="35%" stopColor="#353e4c" />
+      </linearGradient>
+      <linearGradient id="mtx-blue-accent-top" x1="12" y1="5" x2="20" y2="9.5" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#00e5ff" />
+        <stop offset="100%" stopColor="#0083b0" />
+      </linearGradient>
+      <linearGradient id="mtx-blue-accent-right" x1="17.33" y1="8" x2="20" y2="12.5" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#00b4d8" />
+        <stop offset="100%" stopColor="#005f73" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+const ProsConsIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))', flexShrink: 0 }}>
+    <path d="M12 4V19" stroke="url(#pc-metal-grad)" strokeWidth="2" strokeLinecap="round" />
+    <path d="M9 19H15" stroke="url(#pc-metal-grad)" strokeWidth="2.5" strokeLinecap="round" />
+    <path d="M11 4.5H13" stroke="url(#pc-metal-grad)" strokeWidth="2" strokeLinecap="round" />
+    <path d="M5 7L12 5.5L19 7" stroke="url(#pc-metal-grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M5 7L3.5 13H6.5L5 7Z" stroke="url(#pc-metal-grad)" strokeWidth="1" fill="none" />
+    <path d="M2.5 13C2.5 14.5 4.5 15 5 15C5.5 15 7.5 14.5 7.5 13H2.5Z" fill="url(#pc-blue-plate-grad)" stroke="url(#pc-metal-grad)" strokeWidth="0.75" />
+    <path d="M19 7L17.5 13H20.5L19 7Z" stroke="url(#pc-metal-grad)" strokeWidth="1" fill="none" />
+    <path d="M16.5 13C16.5 14.5 18.5 15 19 15C19.5 15 21.5 14.5 21.5 13H16.5Z" fill="url(#pc-blue-plate-grad)" stroke="url(#pc-metal-grad)" strokeWidth="0.75" />
+    <defs>
+      <linearGradient id="pc-metal-grad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="30%" stopColor="#a0a8b5" />
+        <stop offset="70%" stopColor="#707885" />
+        <stop offset="100%" stopColor="#404855" />
+      </linearGradient>
+      <linearGradient id="pc-blue-plate-grad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#00b4d8" />
+        <stop offset="100%" stopColor="#005f73" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+const BriefIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))', flexShrink: 0 }}>
+    <path d="M6 3H14L19 8V20C19 21.1 18.1 22 17 22H7C5.9 22 5 21.1 5 20V5C5 3.9 5.9 3 7 3H6Z" fill="url(#brf-sheet-grad)" stroke="url(#brf-metal-grad)" strokeWidth="1" />
+    <path d="M14 3V8H19L14 3Z" fill="url(#brf-fold-grad)" stroke="url(#brf-metal-grad)" strokeWidth="0.5" />
+    <path d="M8 11H16" stroke="url(#brf-blue-line-grad)" strokeWidth="2" strokeLinecap="round" />
+    <path d="M8 14H16" stroke="url(#brf-line-grad)" strokeWidth="2" strokeLinecap="round" />
+    <path d="M8 17H13" stroke="url(#brf-line-grad)" strokeWidth="2" strokeLinecap="round" />
+    <defs>
+      <linearGradient id="brf-sheet-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="100%" stopColor="#c0c8d0" />
+      </linearGradient>
+      <linearGradient id="brf-metal-grad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="100%" stopColor="#707885" />
+      </linearGradient>
+      <linearGradient id="brf-fold-grad" x1="14" y1="8" x2="19" y2="3" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#a0a8b5" />
+        <stop offset="100%" stopColor="#505865" />
+      </linearGradient>
+      <linearGradient id="brf-blue-line-grad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="#00e5ff" />
+        <stop offset="100%" stopColor="#007799" />
+      </linearGradient>
+      <linearGradient id="brf-line-grad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="#606875" />
+        <stop offset="100%" stopColor="#404855" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+const MechanismIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))', flexShrink: 0 }}>
+    <line x1="6" y1="18" x2="12" y2="15" stroke="url(#mec-bond-grad)" strokeWidth="2.5" />
+    <line x1="12" y1="15" x2="18" y2="18" stroke="url(#mec-bond-grad)" strokeWidth="2.5" />
+    <line x1="12" y1="15" x2="12" y2="7" stroke="url(#mec-bond-grad)" strokeWidth="2.5" />
+    <line x1="12" y1="7" x2="6" y2="4" stroke="url(#mec-bond-grad)" strokeWidth="2.5" />
+    <line x1="12" y1="7" x2="18" y2="4" stroke="url(#mec-bond-grad)" strokeWidth="2.5" />
+    <circle cx="6" cy="18" r="3" fill="url(#mec-atom-silver)" stroke="#404855" strokeWidth="0.5" />
+    <circle cx="18" cy="18" r="3" fill="url(#mec-atom-silver)" stroke="#404855" strokeWidth="0.5" />
+    <circle cx="6" cy="4" r="3" fill="url(#mec-atom-silver)" stroke="#404855" strokeWidth="0.5" />
+    <circle cx="18" cy="4" r="3" fill="url(#mec-atom-silver)" stroke="#404855" strokeWidth="0.5" />
+    <circle cx="12" cy="15" r="4.5" fill="url(#mec-atom-blue)" stroke="#005f73" strokeWidth="0.75" />
+    <circle cx="12" cy="7" r="4" fill="url(#mec-atom-blue-light)" stroke="#007e94" strokeWidth="0.5" />
+    <defs>
+      <linearGradient id="mec-bond-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#a0a8b5" />
+        <stop offset="100%" stopColor="#505865" />
+      </linearGradient>
+      <radialGradient id="mec-atom-silver" cx="35%" cy="35%" r="65%">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="40%" stopColor="#cfd4da" />
+        <stop offset="100%" stopColor="#606875" />
+      </radialGradient>
+      <radialGradient id="mec-atom-blue" cx="35%" cy="35%" r="65%">
+        <stop offset="0%" stopColor="#00f6ff" />
+        <stop offset="50%" stopColor="#00b4d8" />
+        <stop offset="100%" stopColor="#005f73" />
+      </radialGradient>
+      <radialGradient id="mec-atom-blue-light" cx="35%" cy="35%" r="65%">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="30%" stopColor="#00f6ff" />
+        <stop offset="100%" stopColor="#007e94" />
+      </radialGradient>
+    </defs>
+  </svg>
+);
+
+const ProtocolIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))', flexShrink: 0 }}>
