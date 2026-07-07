@@ -14,6 +14,7 @@
 
 import Link from 'next/link';
 import { getAllCompounds } from '@/lib/compounds-server';
+import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
 
 const TOOL_LINKS: Array<{ href: string; label: string }> = [
   { href: '/research/catalog', label: 'Full Compound Catalog' },
@@ -47,6 +48,11 @@ export default async function ResearchHubSeoContent() {
   }
   const categories = Array.from(byCategory.entries()).sort((a, b) => a[0].localeCompare(b[0]));
 
+  // Slug -> display name for rendering readable comparison labels.
+  const nameBySlug = new Map<string, string>();
+  for (const c of compounds) nameBySlug.set(c.slug, c.display_name);
+  const prettify = (slug: string) => nameBySlug.get(slug) ?? slug.replace(/-/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
+
   return (
     <section
       aria-label="Research Library Overview"
@@ -78,6 +84,19 @@ export default async function ResearchHubSeoContent() {
             <li key={t.href}>
               <Link href={t.href} style={{ color: 'var(--teal, #00C4BC)', fontWeight: 600 }}>
                 {t.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <nav aria-label="Popular Research Comparisons" style={{ margin: '0 0 28px' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 10px' }}>Popular Research Comparisons</h2>
+        <ul style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 18px', listStyle: 'none', padding: 0, margin: 0 }}>
+          {COMPARISON_PAIRS.map((p) => (
+            <li key={`${p.a}-${p.b}`}>
+              <Link href={`/research/compare/${matchupSlug(p.a, p.b)}`} style={{ color: 'var(--teal, #00C4BC)', fontWeight: 600 }}>
+                {prettify(p.a)} vs {prettify(p.b)}
               </Link>
             </li>
           ))}
