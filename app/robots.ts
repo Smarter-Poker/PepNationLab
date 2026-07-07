@@ -18,10 +18,17 @@ export default function robots(): MetadataRoute.Robots {
           // Core public pages
           '/',
           '/about',
+          '/become-agent',
           '/contact',
           '/find-a-peptide',
           '/peptide-101',
           '/peptide-101/',
+          '/products',
+          '/shipping',
+
+          // Local SEO — Peptides by City
+          '/peptides',
+          '/peptides/',
 
           // Legal / Compliance
           '/compliance',
@@ -33,10 +40,13 @@ export default function robots(): MetadataRoute.Robots {
           '/research',
           '/research/',
           '/research/areas',
+          '/research/about-areas',
           '/research/catalog',
           '/research/a-z',
           '/research/glossary',
           '/research/faq',
+          '/research/learn',
+          '/research/evidence',
 
           // Research Library — Tools
           '/research/calculators',
@@ -64,7 +74,7 @@ export default function robots(): MetadataRoute.Robots {
           '/research/orphan-drugs',
           '/research/correlated',
 
-          // Research Library — Dynamic paths
+          // Research Library — Dynamic paths (compound monographs + area/target sub-pages)
           '/research/area/',
           '/research/by-target/',
 
