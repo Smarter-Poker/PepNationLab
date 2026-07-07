@@ -8,10 +8,9 @@ import { calculateShippingCost, getCarrierName } from '@/lib/shipping';
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 import { computeLineSplit, type ItemFulfillmentSplit } from '@/lib/order-line-splits';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
-
-
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
 import { notifyOrderPlaced, notify, notifyCouponRedeemed } from '@/lib/notify';
+import { sendOrderConfirmationEmail } from '@/lib/email';
 
 
 const CheckoutSchema = z.object({
@@ -117,7 +116,7 @@ export async function POST(request: NextRequest) {
     // Get researcher profile (full_name added for buyer_name on order insert)
     const { data: profile, error: profileError } = await serviceSupabase
       .from('profiles')
-      .select('id, full_name, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id')
+      .select('id, full_name, contact_email, email_verified, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -1193,6 +1192,20 @@ export async function POST(request: NextRequest) {
       });
     } catch {
       // Never propagate - notifications are best-effort
+    }
+
+    // Send order confirmation email (best-effort, non-blocking)
+    if (profile?.contact_email) {
+      try {
+        const itemsSummary = computedItems.map((i: any) => `${i.quantity}x ${i.product_name}`).join(', ');
+        sendOrderConfirmationEmail({
+          to: profile.contact_email,
+          fullName: profile.full_name,
+          orderId: order.id,
+          total: Number(order.total) || 0,
+          itemsSummary,
+        }).catch(() => { /* ignore */ });
+      } catch { /* ignore */ }
     }
 
     return NextResponse.json({

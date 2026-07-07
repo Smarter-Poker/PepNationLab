@@ -17,7 +17,7 @@ const ProfilePatchSchema = z
   .strict();
 
 const PROFILE_COLUMNS =
-  'id, full_name, first_name, last_name, email, phone, timezone, ' +
+  'id, full_name, first_name, last_name, email, contact_email, email_verified, phone, timezone, ' +
   'avatar_url, username, username_changed_at, phone_verified_at';
 
 export async function GET() {

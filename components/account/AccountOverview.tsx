@@ -60,6 +60,7 @@ function getIcon(id: string) {
     case 'last-name':
       return <User {...common} />;
     case 'email':
+    case 'email-verified':
       return <Mail {...common} />;
     case 'phone':
       return <Phone {...common} />;
@@ -89,7 +90,7 @@ function getCompletenessData(p: AccountProfile | null, ap?: any) {
 
   filled += check(!!p.first_name?.trim(), 'first-name', 'First Name', 'Add Now', 'focus:first-name');
   filled += check(!!p.last_name?.trim(), 'last-name', 'Last Name', 'Add Now', 'focus:last-name');
-  filled += check(!!p.email?.trim() && !p.email.includes('@internal.auth') && !p.email.includes('@pepnationlab.com'), 'email', 'Email Address', 'Add Now', 'focus:email');
+  filled += check(!!p.contact_email?.trim() && p.email_verified === true, 'email-verified', 'Verified Email', 'Verify Now', 'inline:email-verified');
   filled += check(!!p.phone?.trim(), 'phone', 'Phone Number', 'Add Now', 'focus:phone');
   filled += check(!!p.timezone?.trim(), 'timezone', 'Timezone', 'Select Now', 'focus:timezone');
   filled += check(!!p.avatar_url, 'avatar', 'Profile Picture', 'Upload', 'focus:avatar');

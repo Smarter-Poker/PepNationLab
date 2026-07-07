@@ -13,6 +13,7 @@ import {
   normalizeEmail,
   codeExpiryDate,
   CODE_PURPOSE_SIGNUP,
+  CODE_PURPOSE_VERIFY_EMAIL,
 } from '@/lib/verification';
 
 /**
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const email = normalizeEmail(body?.email);
+  const purpose = body?.purpose === CODE_PURPOSE_VERIFY_EMAIL ? CODE_PURPOSE_VERIFY_EMAIL : CODE_PURPOSE_SIGNUP;
 
   if (!isValidEmail(email)) {
     return NextResponse.json({ error: 'Please Enter A Valid Email Address.' }, { status: 400 });
@@ -51,7 +53,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Per-email throttle so one address can't be spammed with codes.
-  const emailLimit = await rateLimit({ key: 'request_code_email', limit: 4, windowSeconds: 600, identifier: email });
+  const emailLimit = await rateLimit({ key: `request_code_${purpose}_email`, limit: 4, windowSeconds: 600, identifier: email });
   if (!emailLimit.allowed) {
     return NextResponse.json({ error: 'Too Many Codes Requested For This Email. Please Wait A Few Minutes.' }, { status: 429 });
   }
@@ -66,13 +68,13 @@ export async function POST(req: NextRequest) {
       .from('email_verification_codes')
       .delete()
       .eq('email', email)
-      .eq('purpose', CODE_PURPOSE_SIGNUP)
+      .eq('purpose', purpose)
       .eq('consumed', false);
 
     const { error: insertErr } = await admin.from('email_verification_codes').insert({
       email,
       code_hash,
-      purpose: CODE_PURPOSE_SIGNUP,
+      purpose,
       expires_at: codeExpiryDate().toISOString(),
     });
     if (insertErr) {

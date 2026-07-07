@@ -11,6 +11,7 @@ import { createHash, randomInt } from 'crypto';
 export const CODE_TTL_MINUTES = 10;
 export const MAX_CODE_ATTEMPTS = 5;
 export const CODE_PURPOSE_SIGNUP = 'signup';
+export const CODE_PURPOSE_VERIFY_EMAIL = 'verify_email';
 
 /** Generate a zero-padded 6-digit numeric code (cryptographically random). */
 export function generateCode(): string {

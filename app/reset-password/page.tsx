@@ -1,36 +1,59 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Key, ArrowRight, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
+export default function ResetPasswordPage() {
+  const router = useRouter();
+  const supabase = createClient();
+
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // We rely on Supabase client automatically picking up the session from the #access_token in the URL.
+  // We can just verify the user is logged in, but we don't strictly have to wait for it before showing the form.
+  useEffect(() => {
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        console.log('Recovery session detected.');
+      }
+    });
+  }, [supabase.auth]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (password !== confirmPassword) {
+      setError('Passwords Do Not Match.');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Password Must Be At Least 8 Characters.');
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password,
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed To Request Password Reset.');
+      if (updateError) {
+        throw new Error(updateError.message);
       }
 
       setSuccess(true);
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
     } catch (err: any) {
       setError(err.message || 'An Unexpected Error Occurred.');
     } finally {
@@ -67,7 +90,7 @@ export default function ForgotPasswordPage() {
             <Image src="/logo.svg" alt="Pep Nation Lab" width={108} height={108} unoptimized style={{ height: 108, width: 'auto', display: 'inline-block' }} />
           </Link>
           <p style={{ marginTop: 'var(--space-2)', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-            Reset Your Password
+            Choose A New Password
           </p>
         </div>
 
@@ -83,7 +106,7 @@ export default function ForgotPasswordPage() {
           }}>
             <Key size={22} aria-hidden="true" />
           </div>
-          <h2 className="animated-gradient-text" style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)', textAlign: 'center' }}>Password Reset</h2>
+          <h2 className="animated-gradient-text" style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)', textAlign: 'center' }}>New Password</h2>
           
           {success ? (
             <div style={{ textAlign: 'center', margin: 'var(--space-6) 0' }}>
@@ -91,21 +114,16 @@ export default function ForgotPasswordPage() {
                 <CheckCircle2 size={48} />
               </div>
               <p style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-2)', fontWeight: 600 }}>
-                Reset Link Sent
+                Password Updated Successfully
               </p>
               <p style={{ fontSize: '0.85rem', color: 'var(--silver)', lineHeight: 1.6 }}>
-                If That Email Exists In Our System, You Will Receive A Password Reset Link Shortly. Please Check Your Spam Folder If You Don't See It.
+                Taking You To Your Dashboard...
               </p>
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-6)' }}>
-                <Link href="/login" className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
-                  Return To Sign In
-                </Link>
-              </div>
             </div>
           ) : (
             <>
               <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.6, textAlign: 'center', marginBottom: 'var(--space-6)' }}>
-                Enter The Email Address Associated With Your Account To Receive A Password Reset Link.
+                Enter Your New Password Below.
               </p>
 
               {error && (
@@ -125,20 +143,36 @@ export default function ForgotPasswordPage() {
               )}
 
               <form onSubmit={handleSubmit}>
-                <div style={{ marginBottom: 'var(--space-6)' }}>
-                  <label htmlFor="email" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--grey-300)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Email Address
+                <div style={{ marginBottom: 'var(--space-4)' }}>
+                  <label htmlFor="password" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--grey-300)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    New Password
                   </label>
                   <input
-                    id="email"
-                    type="email"
+                    id="password"
+                    type="password"
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="form-input"
-                    placeholder="Enter Your Email"
+                    placeholder="At least 8 characters"
                     style={{ width: '100%' }}
                     autoFocus
+                  />
+                </div>
+
+                <div style={{ marginBottom: 'var(--space-6)' }}>
+                  <label htmlFor="confirmPassword" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--grey-300)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Confirm Password
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="form-input"
+                    placeholder="Must match"
+                    style={{ width: '100%' }}
                   />
                 </div>
 
@@ -147,11 +181,11 @@ export default function ForgotPasswordPage() {
                     {loading ? (
                       <>
                         <Loader2 size={18} className="spin" style={{ marginRight: '0.5rem' }} />
-                        Sending...
+                        Saving...
                       </>
                     ) : (
                       <>
-                        Send Reset Link
+                        Update Password
                         <ArrowRight size={18} style={{ marginLeft: '0.5rem' }} />
                       </>
                     )}

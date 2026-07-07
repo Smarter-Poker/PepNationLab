@@ -14,6 +14,8 @@ export interface AccountProfile {
   last_name: string | null;
   full_name: string | null;
   email: string | null;
+  contact_email: string | null;
+  email_verified: boolean | null;
   username: string | null;
   role: string | null;
   phone: string | null;
