@@ -26,7 +26,7 @@ const ZONES: Zone[] = [
   { href: '/products', label: 'Products', top: '1.4%', left: '52.8%', width: '6.4%', height: '2.7%' },
   { href: '/research', label: 'Research', top: '1.4%', left: '60.2%', width: '6.6%', height: '2.7%' },
   { href: '/about', label: 'About', top: '1.4%', left: '67.9%', width: '4.8%', height: '2.7%' },
-  { href: 'mailto:support@pepnationlab.com', label: 'Contact', top: '1.4%', left: '73.8%', width: '5.8%', height: '2.7%' },
+  { href: '/contact', label: 'Contact', top: '1.4%', left: '73.8%', width: '5.8%', height: '2.7%' },
   { href: '/login', label: 'Sign In', top: '1.2%', left: '85.7%', width: '11%', height: '2.9%' },
 
   // Hero: Our Mission Button (Scrolls To The Mission Panel In The Artwork)
@@ -44,7 +44,7 @@ const ZONES: Zone[] = [
   // Footer: Research Use Only Pill
   { href: '/disclaimer', label: 'Research Use Only', top: '89.4%', left: '9.2%', width: '14.6%', height: '1.7%' },
   // Footer: Social / Contact Icons
-  { href: 'mailto:support@pepnationlab.com', label: 'Contact Icons', top: '91.2%', left: '8.8%', width: '15.6%', height: '2.1%' },
+  { href: '/contact', label: 'Contact Icons', top: '91.2%', left: '8.8%', width: '15.6%', height: '2.1%' },
 
   // Footer: Platform Column
   { href: '/products', label: 'Footer Products', top: '86.2%', left: '34.2%', width: '7%', height: '1.4%' },
@@ -58,7 +58,7 @@ const ZONES: Zone[] = [
   { href: '/compliance', label: 'Compliance', top: '90.6%', left: '52.2%', width: '8%', height: '1.4%' },
 
   // Footer: Contact Column
-  { href: 'mailto:support@pepnationlab.com', label: 'Email Support', top: '86.2%', left: '73.7%', width: '17.4%', height: '1.4%' },
+  { href: '/contact', label: 'Email Support', top: '86.2%', left: '73.7%', width: '17.4%', height: '1.4%' },
 
   // Bottom Red Disclaimer Box
   { href: '/disclaimer', label: 'Research Use Only Disclaimer', top: '93.5%', left: '3.4%', width: '93.2%', height: '3.6%' },

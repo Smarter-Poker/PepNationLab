@@ -17,6 +17,7 @@ const PUBLIC_ROUTES = [
   '/forgot-password',
   '/become-agent',
   '/about',
+  '/contact',
   '/terms',
   '/privacy',
   '/compliance',
@@ -106,7 +107,7 @@ function isPublicDynamicRoute(pathname: string): boolean {
   const protectedPrefixes = [
     '/admin', '/dashboard', '/api', '/orders', '/products', '/account',
     '/checkout', '/messages', '/messenger', '/register', '/signup', '/auth', '/login', '/forgot-password',
-    '/become-agent', '/about', '/terms', '/privacy', '/compliance',
+    '/become-agent', '/about', '/contact', '/terms', '/privacy', '/compliance',
     '/disclaimer', '/shipping', '/invite',
   ];
   if (protectedPrefixes.some(p => pathname.startsWith(p))) return false;
@@ -297,6 +298,6 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|logo.*|.*\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|css|js|map)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|logo.*|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|css|js|map)$).*)',
   ],
 };
