@@ -10,8 +10,17 @@ import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
-  title: 'In Development Pipeline | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Peptides In Clinical Pipeline | Compounds In Development | Pep Nation Lab',
+  description: 'Research peptides and compounds currently in clinical development pipeline — Phase 1, 2, and 3 trials. Track emerging peptide drug development. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/in-pipeline' },
+  openGraph: {
+    title: 'Peptides In Clinical Pipeline | Pep Nation Lab',
+    description: 'Research peptides in Phase 1, 2, and 3 clinical development pipeline.',
+    url: 'https://pepnationlab.com/research/in-pipeline',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptides In Clinical Pipeline' }],
+  },
 };
 
 export const dynamic = 'force-dynamic';

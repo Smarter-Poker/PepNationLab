@@ -10,8 +10,17 @@ import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
-  title: 'Browse By Mechanism | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Browse Peptides By Mechanism Of Action | Research Library | Pep Nation Lab',
+  description: 'Browse research-grade peptides organized by their mechanism of action — receptor agonists, antagonists, signal modulators, and more. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/by-mechanism' },
+  openGraph: {
+    title: 'Browse Peptides By Mechanism | Pep Nation Lab',
+    description: 'Research peptides organized by mechanism of action — receptor agonists, antagonists, and modulators.',
+    url: 'https://pepnationlab.com/research/by-mechanism',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptides By Mechanism' }],
+  },
 };
 
 export const dynamic = 'force-dynamic';

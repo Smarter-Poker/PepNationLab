@@ -1,6 +1,6 @@
 /**
  * Next.js native sitemap generator. Emits /sitemap.xml.
- * Lists every public /research/* path.
+ * Lists every public path: static info pages, legal, research library, and compound monographs.
  */
 import type { MetadataRoute } from 'next';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -11,31 +11,57 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const staticPaths: MetadataRoute.Sitemap = [
+    // Core
     { url: `${BASE}/`, lastModified: now, changeFrequency: 'weekly', priority: 1.0 },
+    { url: `${BASE}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${BASE}/contact`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/find-a-peptide`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/peptide-101`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
+
+    // Legal / Compliance
+    { url: `${BASE}/compliance`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/disclaimer`, lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${BASE}/privacy`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/terms`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+
+    // Research Library — Hub Pages
     { url: `${BASE}/research`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+    { url: `${BASE}/research/areas`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${BASE}/research/catalog`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/research/a-z`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${BASE}/research/glossary`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/faq`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+
+    // Research Library — Tools
     { url: `${BASE}/research/calculators`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE}/research/compare`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${BASE}/research/stacks`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${BASE}/research/match`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/research/api-docs`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${BASE}/research/a-z`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
-    { url: `${BASE}/research/timeline`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE}/research/most-cited`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
-    { url: `${BASE}/research/new-additions`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
-    { url: `${BASE}/research/approved-drugs`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+
+    // Research Library — Browse Filters
     { url: `${BASE}/research/by-class`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${BASE}/research/by-target`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${BASE}/research/by-mechanism`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${BASE}/research/by-route`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
     { url: `${BASE}/research/by-half-life`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
     { url: `${BASE}/research/by-mw`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
-    { url: `${BASE}/research/intranasal-peptides`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+
+    // Research Library — Curated Lists
+    { url: `${BASE}/research/most-cited`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${BASE}/research/most-studied-2026`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE}/research/correlated`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
-    { url: `${BASE}/research/discontinued`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/research/new-additions`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
+    { url: `${BASE}/research/approved-drugs`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/intranasal-peptides`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/research/timeline`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+
+    // Research Library — Pipeline / Status
     { url: `${BASE}/research/in-pipeline`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/discontinued`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE}/research/orphan-drugs`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${BASE}/research/repurposed`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/research/correlated`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
+
+    // Research Library — API Docs
+    { url: `${BASE}/research/api-docs`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
   ];
 
   let compounds: MetadataRoute.Sitemap = [];

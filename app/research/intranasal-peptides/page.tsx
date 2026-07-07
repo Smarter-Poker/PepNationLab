@@ -15,9 +15,16 @@ import IframeLink from '@/components/ui/IframeLink';
 
 export const metadata: Metadata = {
   title: 'Intranasal Peptides: Which Research Compounds Are Studied As Nasal Sprays | Pep Nation Lab',
-  description:
-    'A research-use-only overview of which peptides are studied via the intranasal (nasal spray) route instead of injection, graded established vs emerging by strength of evidence.',
-  robots: { index: false, follow: false },
+  description: 'A research-use-only overview of which peptides are studied via the intranasal (nasal spray) route instead of injection, graded established vs emerging by strength of evidence.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/intranasal-peptides' },
+  openGraph: {
+    title: 'Intranasal Peptides | Nasal Spray Research Compounds | Pep Nation Lab',
+    description: 'Which research peptides are studied via intranasal (nasal spray) route, graded by evidence strength.',
+    url: 'https://pepnationlab.com/research/intranasal-peptides',
+    type: 'article',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Intranasal Research Peptides' }],
+  },
 };
 
 export const dynamic = 'force-dynamic';

@@ -10,8 +10,17 @@ import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
-  title: 'Browse By Half-Life | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Browse Peptides By Half-Life | Short vs Long Acting | Pep Nation Lab',
+  description: 'Compare research peptides by pharmacokinetic half-life. Filter from short-acting compounds (minutes) to long-acting variants (days). Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/by-half-life' },
+  openGraph: {
+    title: 'Peptides By Half-Life | Pep Nation Lab',
+    description: 'Compare research peptides by half-life from short-acting to long-acting variants.',
+    url: 'https://pepnationlab.com/research/by-half-life',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptides By Half-Life' }],
+  },
 };
 
 export const dynamic = 'force-dynamic';

@@ -5,7 +5,16 @@ import LegalDocument from '@/components/LegalDocument';
 export const metadata: Metadata = {
   title: 'Privacy Policy | Pep Nation Lab',
   description:
-    'How Pep Nation Lab collects, uses, stores, and protects information on the research peptide distribution platform.',
+    'How Pep Nation Lab collects, uses, stores, and protects information on the research peptide distribution platform. GDPR and CCPA aligned.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/privacy' },
+  openGraph: {
+    title: 'Privacy Policy | Pep Nation Lab',
+    description: 'How Pep Nation Lab handles, protects, and uses your information on the research peptide platform.',
+    url: 'https://pepnationlab.com/privacy',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab Privacy Policy' }],
+  },
 };
 
 export default function PrivacyPage() {

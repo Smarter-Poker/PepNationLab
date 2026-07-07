@@ -10,8 +10,17 @@ import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
-  title: 'Most Cited | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Most Cited Research Peptides | Top Referenced Compounds | Pep Nation Lab',
+  description: 'The most-cited and referenced research peptides ranked by publication count and scientific evidence. Discover the most-studied compounds in research literature. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/most-cited' },
+  openGraph: {
+    title: 'Most Cited Research Peptides | Pep Nation Lab',
+    description: 'Top research peptides ranked by citation count and scientific evidence in published literature.',
+    url: 'https://pepnationlab.com/research/most-cited',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Most Cited Research Peptides' }],
+  },
 };
 
 export const dynamic = 'force-dynamic';

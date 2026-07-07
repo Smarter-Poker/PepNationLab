@@ -10,8 +10,17 @@ import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
-  title: 'Discontinued Compounds | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Discontinued Research Compounds | Pep Nation Lab',
+  description: 'Research reference data on discontinued and withdrawn peptide compounds. Full historical data including mechanism, evidence, and discontinuation context. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/discontinued' },
+  openGraph: {
+    title: 'Discontinued Research Compounds | Pep Nation Lab',
+    description: 'Historical reference data on discontinued and withdrawn peptide compounds.',
+    url: 'https://pepnationlab.com/research/discontinued',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Discontinued Research Compounds' }],
+  },
 };
 
 export const dynamic = 'force-dynamic';

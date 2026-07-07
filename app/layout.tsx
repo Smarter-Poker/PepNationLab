@@ -37,9 +37,9 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://pepnationlab.com"),
-  title: "Pep Nation Lab | Premium Research Peptides",
-  description: "Pep Nation Lab - Wholesale research peptide distribution for qualified researchers and institutions. All products for in vitro research use only.",
-  keywords: "research peptides, peptide wholesale, laboratory research compounds",
+  title: "Pep Nation Lab | Premium Research Peptide Distribution",
+  description: "Wholesale research peptide distribution for qualified researchers. Access 300+ compounds including BPC-157, TB-500, Semaglutide, and Tirzepatide. All products for in vitro research use only.",
+  keywords: "research peptides, peptide wholesale, laboratory research compounds, BPC-157, TB-500, Semaglutide, Tirzepatide, peptide research, RUO peptides, research grade peptides, peptide distribution",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -52,16 +52,24 @@ export const metadata: Metadata = {
     apple: "/logo-mark.svg",
   },
   openGraph: {
-    title: "Pep Nation Lab",
-    description: "Premium research peptide distribution platform for qualified researchers.",
+    title: "Pep Nation Lab | Premium Research Peptide Distribution",
+    description: "Wholesale research peptide distribution platform for qualified researchers. 300+ RUO compounds with full research library, calculators, and match engine.",
     url: "https://pepnationlab.com",
     siteName: "Pep Nation Lab",
     type: "website",
-    images: ["/logo.svg"],
+    images: [{ url: "/og-card.png", width: 1200, height: 630, alt: "Pep Nation Lab — Premium Research Peptide Distribution" }],
   },
+  twitter: {
+    card: "summary_large_image",
+    site: "@pepnationlab",
+    title: "Pep Nation Lab | Premium Research Peptide Distribution",
+    description: "Wholesale research peptide distribution for qualified researchers. 300+ RUO compounds.",
+    images: ["/og-card.png"],
+  },
+  // Default: allow indexing. Private/authenticated pages override this with index:false.
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
   },
   other: {
     'format-detection': 'telephone=no, address=no, email=no, date=no',

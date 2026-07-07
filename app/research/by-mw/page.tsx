@@ -9,8 +9,17 @@ import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
-  title: 'Browse By Molecular Weight | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Browse Peptides By Molecular Weight | Research Library | Pep Nation Lab',
+  description: 'Browse research peptides sorted by molecular weight (Daltons). Understand bioavailability and delivery implications of molecular weight differences. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/by-mw' },
+  openGraph: {
+    title: 'Peptides By Molecular Weight | Pep Nation Lab',
+    description: 'Browse research peptides sorted by molecular weight with bioavailability context.',
+    url: 'https://pepnationlab.com/research/by-mw',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptides By Molecular Weight' }],
+  },
 };
 
 export const dynamic = 'force-dynamic';

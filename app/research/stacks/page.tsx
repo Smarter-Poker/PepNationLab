@@ -4,8 +4,17 @@ import { getAreaProducts } from '@/lib/area-products-server';
 import StacksClient from '@/components/research/StacksClient';
 
 export const metadata: Metadata = {
-  title: 'Stacks And Combinations',
-  robots: { index: false, follow: false },
+  title: 'Research Stacks & Combinations | Pep Nation Lab',
+  description: 'Explore curated peptide research stacks and multi-compound combinations. Study synergistic compound protocols organized by research goal. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/stacks' },
+  openGraph: {
+    title: 'Research Stacks & Combinations | Pep Nation Lab',
+    description: 'Curated peptide research stacks and multi-compound combinations organized by research goal.',
+    url: 'https://pepnationlab.com/research/stacks',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab Research Stacks' }],
+  },
 };
 
 export const dynamic = 'force-dynamic';

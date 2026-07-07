@@ -18,8 +18,17 @@ import TrendingCarousel from '@/components/research/TrendingCarousel';
 import ResearchEcosystemMap from '@/components/research/ResearchEcosystemMap';
 
 export const metadata: Metadata = {
-  title: 'Research Intelligence Center | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Research Catalog | All Peptides & Compounds | Pep Nation Lab',
+  description: 'Browse the complete Pep Nation Lab research catalog. All research-grade peptides and compounds with full monographs, evidence tiers, and mechanism data. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/catalog' },
+  openGraph: {
+    title: 'Research Catalog | All Peptides | Pep Nation Lab',
+    description: 'Complete catalog of 300+ research-grade peptides with full monographs and evidence data.',
+    url: 'https://pepnationlab.com/research/catalog',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab Research Catalog' }],
+  },
 };
 
 export default async function ResearchLibraryPage({

@@ -4,14 +4,47 @@ import PageShell from '@/components/PageShell';
 import { Mail, MessageSquare, ShieldCheck, Building2 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Contact | Pep Nation Lab',
+  title: 'Contact Pep Nation Lab | Research Peptide Support',
   description:
-    'Contact Pep Nation Lab. Qualified Researchers Only -- All Inquiries Are Verified Before Account Approval.',
+    'Contact Pep Nation Lab for support, partnership, or research inquiries. Qualified researchers only. All inquiries verified before account approval.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/contact' },
+  openGraph: {
+    title: 'Contact Pep Nation Lab | Research Peptide Support',
+    description: 'Get in touch with Pep Nation Lab for research support, partnership, or account inquiries.',
+    url: 'https://pepnationlab.com/contact',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Contact Pep Nation Lab' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contact Pep Nation Lab',
+    description: 'Research support, partnership, and account inquiries for qualified researchers.',
+    images: ['/og-card.png'],
+  },
+};
+
+const contactJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ContactPage',
+  name: 'Contact Pep Nation Lab',
+  url: 'https://pepnationlab.com/contact',
+  description: 'Contact Pep Nation Lab for research support, partnership, or account inquiries.',
+  publisher: {
+    '@type': 'Organization',
+    name: 'Pep Nation Lab',
+    url: 'https://pepnationlab.com',
+  },
 };
 
 export default function ContactPage() {
   return (
-    <PageShell>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(contactJsonLd) }}
+      />
+      <PageShell>
       <section className="section">
         <div className="container-sm">
           {/* Header */}
@@ -165,6 +198,7 @@ export default function ContactPage() {
           .contact-options-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
-    </PageShell>
+      </PageShell>
+    </>
   );
 }

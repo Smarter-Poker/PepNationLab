@@ -5,7 +5,16 @@ import LegalDocument from '@/components/LegalDocument';
 export const metadata: Metadata = {
   title: 'Terms Of Service | Pep Nation Lab',
   description:
-    'The Terms of Service governing use of the Pep Nation Lab research peptide distribution platform.',
+    'The Terms of Service governing use of the Pep Nation Lab research peptide distribution platform. Read before creating an account or purchasing research compounds.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/terms' },
+  openGraph: {
+    title: 'Terms Of Service | Pep Nation Lab',
+    description: 'Terms governing use of the Pep Nation Lab research peptide distribution platform.',
+    url: 'https://pepnationlab.com/terms',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab Terms of Service' }],
+  },
 };
 
 export default function TermsPage() {

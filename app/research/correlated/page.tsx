@@ -9,8 +9,17 @@ import { getAllCompounds } from '@/lib/compounds-server';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
-  title: 'Correlated Compounds | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Correlated Peptides | Research Compound Correlations | Pep Nation Lab',
+  description: 'Explore research peptides with correlated mechanisms and overlapping therapeutic applications. Identify compound relationships for advanced research protocols. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/correlated' },
+  openGraph: {
+    title: 'Correlated Peptides | Pep Nation Lab',
+    description: 'Research peptides with correlated mechanisms and overlapping therapeutic applications.',
+    url: 'https://pepnationlab.com/research/correlated',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Correlated Research Peptides' }],
+  },
 };
 
 export const dynamic = 'force-dynamic';

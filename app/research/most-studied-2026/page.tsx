@@ -10,8 +10,17 @@ import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
-  title: 'Most Studied 2026 | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Most Studied Research Peptides 2026 | Trending Compounds | Pep Nation Lab',
+  description: 'The most studied and searched research peptides in 2026. Data-driven rankings of trending research compounds based on research activity and publication velocity. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/most-studied-2026' },
+  openGraph: {
+    title: 'Most Studied Peptides 2026 | Pep Nation Lab',
+    description: 'Trending research peptides ranked by research activity and publication velocity in 2026.',
+    url: 'https://pepnationlab.com/research/most-studied-2026',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Most Studied Peptides 2026' }],
+  },
 };
 
 export const dynamic = 'force-dynamic';

@@ -12,8 +12,17 @@ import { PEPTIDE_FAQ, FAQ_CATEGORY_ORDER } from '@/lib/research-education';
 import FaqExplorer, { type FaqItem } from '@/components/research/FaqExplorer';
 
 export const metadata: Metadata = {
-  title: 'FAQ | Peptide Questions | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Peptide Research FAQ | Frequently Asked Questions | Pep Nation Lab',
+  description: 'Frequently asked questions about research peptides, ordering, reconstitution, storage, and the Pep Nation Lab platform. Answers for qualified researchers.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/faq' },
+  openGraph: {
+    title: 'Peptide Research FAQ | Pep Nation Lab',
+    description: 'Answers to common questions about research peptides, ordering, reconstitution, and storage.',
+    url: 'https://pepnationlab.com/research/faq',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptide Research FAQ' }],
+  },
 };
 
 export default function FaqPage() {
@@ -22,6 +31,16 @@ export default function FaqPage() {
   const categories = FAQ_CATEGORY_ORDER.filter((c) => present.has(c));
 
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          name: 'Peptide Research FAQ',
+          url: 'https://pepnationlab.com/research/faq',
+        }) }}
+      />
     <div style={{ maxWidth: '820px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
@@ -48,5 +67,6 @@ export default function FaqPage() {
         Or Browse The Full Catalog.
       </p>
     </div>
+    </>
   );
 }

@@ -308,14 +308,34 @@ export async function generateMetadata({ params }: Props) {
   const supabase = await createClient();
   const { data: agent } = await supabase
     .from('agent_profiles')
-    .select('display_name')
+    .select('display_name, tagline')
     .eq('slug', agentSlug)
     .maybeSingle();
 
   if (!agent) return { title: 'Store Not Found | Pep Nation Lab' };
 
+  const title = `${agent.display_name} | Pep Nation Lab`;
+  const description = agent.tagline
+    ? `${agent.tagline} — Research-grade peptides for qualified researchers. Research use only.`
+    : `Research compounds from ${agent.display_name}. Premium RUO peptides for qualified researchers. Research use only.`;
+
   return {
-    title: `${agent.display_name} | Pep Nation Lab`,
-    description: `Research compounds from ${agent.display_name} - Research use only.`,
+    title,
+    description,
+    robots: { index: true, follow: true },
+    alternates: { canonical: `https://pepnationlab.com/${agentSlug}` },
+    openGraph: {
+      title,
+      description,
+      url: `https://pepnationlab.com/${agentSlug}`,
+      type: 'website',
+      images: [{ url: '/og-card.png', width: 1200, height: 630, alt: `${agent.display_name} — Pep Nation Lab` }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/og-card.png'],
+    },
   };
 }

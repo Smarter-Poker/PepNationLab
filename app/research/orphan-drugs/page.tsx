@@ -9,8 +9,17 @@ import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
-  title: 'Orphan Drug Designations | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Orphan Drug Peptides | Rare Disease Research Compounds | Pep Nation Lab',
+  description: 'Research peptides and compounds with orphan drug designation for rare disease research. Full reference data on FDA orphan-designated peptide therapeutics. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/orphan-drugs' },
+  openGraph: {
+    title: 'Orphan Drug Peptides | Pep Nation Lab',
+    description: 'Research peptides with FDA orphan drug designation for rare disease applications.',
+    url: 'https://pepnationlab.com/research/orphan-drugs',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Orphan Drug Research Peptides' }],
+  },
 };
 
 export const dynamic = 'force-dynamic';

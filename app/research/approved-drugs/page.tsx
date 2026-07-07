@@ -10,8 +10,17 @@ import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
-  title: 'Approved Drugs | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'FDA Approved Peptide Drugs | Research Compounds With Regulatory Approval | Pep Nation Lab',
+  description: 'Research peptides that have received FDA or international regulatory approval as drug products. Full reference data on approved peptide pharmaceuticals. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/approved-drugs' },
+  openGraph: {
+    title: 'FDA Approved Peptide Drugs | Pep Nation Lab',
+    description: 'Research peptides with FDA or international regulatory approval, with full reference data.',
+    url: 'https://pepnationlab.com/research/approved-drugs',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Approved Peptide Drugs' }],
+  },
 };
 
 export const dynamic = 'force-dynamic';

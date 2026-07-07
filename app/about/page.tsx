@@ -1,9 +1,39 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
-  title: 'About | Pep Nation Lab',
+  title: 'About Pep Nation Lab | Research Peptide Distribution Platform',
   description:
-    'Pep Nation Lab Is A Research-First Peptide Distribution Platform Built To Support Qualified Researchers With Access To High-Quality Compounds, Transparent Pricing, And Unmatched Service.',
+    'Pep Nation Lab is a research-first peptide distribution platform built to support qualified researchers with access to high-quality RUO compounds, transparent wholesale pricing, and unmatched service.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/about' },
+  openGraph: {
+    title: 'About Pep Nation Lab | Research Peptide Distribution Platform',
+    description: 'Science, transparency, and trust. Learn about Pep Nation Lab's mission, compliance framework, and research-only commitment.',
+    url: 'https://pepnationlab.com/about',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'About Pep Nation Lab' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About Pep Nation Lab',
+    description: 'Science, transparency, and trust — research-first peptide distribution for qualified researchers.',
+    images: ['/og-card.png'],
+  },
+};
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Pep Nation Lab',
+  url: 'https://pepnationlab.com',
+  logo: 'https://pepnationlab.com/logo-mark.svg',
+  description: 'Wholesale research peptide distribution platform for qualified researchers and institutions. All products for in vitro research use only.',
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'customer support',
+    url: 'https://pepnationlab.com/contact',
+  },
 };
 
 // About Page -- Renders The Supplied Artwork Exactly As Provided, With
@@ -66,7 +96,12 @@ const ZONES: Zone[] = [
 
 export default function AboutPage() {
   return (
-    <div style={{ backgroundColor: '#020617', minHeight: '100dvh', display: 'flex', justifyContent: 'center' }}>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <div style={{ backgroundColor: '#020617', minHeight: '100dvh', display: 'flex', justifyContent: 'center' }}>
       <div style={{ position: 'relative', width: '100%', maxWidth: '1024px', margin: '0 auto' }}>
         <img
           src="https://ydsaqnnuwyvtyxgvrnys.supabase.co/storage/v1/object/public/storefront-assets/about/pep-nation-about.png"
@@ -93,6 +128,7 @@ export default function AboutPage() {
           />
         ))}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

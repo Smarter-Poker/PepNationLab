@@ -5,7 +5,16 @@ import LegalDocument from '@/components/LegalDocument';
 export const metadata: Metadata = {
   title: 'Research-Only Disclaimer | Pep Nation Lab',
   description:
-    'The mandatory research-only disclaimer governing the purchase and use of all products distributed through PepNationLab.com.',
+    'The mandatory research-only disclaimer governing the purchase and use of all products distributed through PepNationLab.com. All compounds for in vitro research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/disclaimer' },
+  openGraph: {
+    title: 'Research-Only Disclaimer | Pep Nation Lab',
+    description: 'Research-only disclaimer governing all products on PepNationLab.com. For in vitro research use only.',
+    url: 'https://pepnationlab.com/disclaimer',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab Research Disclaimer' }],
+  },
 };
 
 export default function DisclaimerPage() {

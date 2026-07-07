@@ -12,8 +12,17 @@ import { PEPTIDE_GLOSSARY } from '@/lib/research-education';
 import GlossaryExplorer, { type GlossaryTermEntry } from '@/components/research/GlossaryExplorer';
 
 export const metadata: Metadata = {
-  title: 'Glossary | Peptide Terms | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Peptide Glossary | Research Terms Dictionary | Pep Nation Lab',
+  description: 'Comprehensive glossary of peptide research terminology. Definitions for peptide biology, pharmacokinetics, receptor mechanisms, and laboratory protocols. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/glossary' },
+  openGraph: {
+    title: 'Peptide Research Glossary | Pep Nation Lab',
+    description: 'Comprehensive definitions for peptide research terminology, pharmacokinetics, and mechanisms.',
+    url: 'https://pepnationlab.com/research/glossary',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptide Research Glossary' }],
+  },
 };
 
 export default function GlossaryPage() {

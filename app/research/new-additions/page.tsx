@@ -10,8 +10,17 @@ import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
-  title: 'New Additions | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'New Peptide Additions | Recently Added Research Compounds | Pep Nation Lab',
+  description: 'The most recently added research-grade peptides and compounds to the Pep Nation Lab Research Library. Stay current with new compound additions. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/new-additions' },
+  openGraph: {
+    title: 'New Peptide Additions | Pep Nation Lab',
+    description: 'Recently added research peptides and compounds to the Pep Nation Lab research library.',
+    url: 'https://pepnationlab.com/research/new-additions',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'New Research Peptide Additions' }],
+  },
 };
 
 export const dynamic = 'force-dynamic';

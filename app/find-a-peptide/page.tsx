@@ -9,8 +9,23 @@ import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Find A Peptide | Pep Nation Lab',
-  description: 'Find peptides by your research goal using the match engine.',
+  title: 'Find A Peptide | AI-Powered Research Peptide Finder | Pep Nation Lab',
+  description: 'Find the right research peptide for your study goals. Browse BPC-157, TB-500, Semaglutide, Tirzepatide, and 300+ more compounds by therapeutic area, mechanism, and evidence tier. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/find-a-peptide' },
+  openGraph: {
+    title: 'Find A Peptide | Pep Nation Lab',
+    description: 'Discover the right research peptide for your goals. Browse 300+ RUO compounds by therapeutic area, mechanism, and evidence tier.',
+    url: 'https://pepnationlab.com/find-a-peptide',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Find A Research Peptide' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Find A Peptide | Pep Nation Lab',
+    description: 'Discover the right research peptide for your goals. 300+ RUO compounds.',
+    images: ['/og-card.png'],
+  },
 };
 
 export default async function FindAPeptidePage() {

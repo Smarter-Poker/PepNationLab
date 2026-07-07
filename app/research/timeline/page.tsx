@@ -10,8 +10,17 @@ import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
-  title: 'Historical Timeline | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Peptide Research Timeline | Historical Discovery Decades | Pep Nation Lab',
+  description: 'Explore the historical timeline of peptide research discoveries from the 1960s to today. Compounds plotted by decade with evidence tiers and mechanism data. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/timeline' },
+  openGraph: {
+    title: 'Peptide Research Timeline | Pep Nation Lab',
+    description: 'Explore peptide research history from the 1960s to present day, organized by decade of discovery.',
+    url: 'https://pepnationlab.com/research/timeline',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab Research Timeline' }],
+  },
 };
 
 export const dynamic = 'force-dynamic';

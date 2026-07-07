@@ -11,8 +11,17 @@ import Link from 'next/link';
 import MatchForm from '@/components/research/MatchForm';
 
 export const metadata: Metadata = {
-  title: 'Match Me To A Peptide | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  title: 'Match Me To A Peptide | AI Research Match Engine | Pep Nation Lab',
+  description: 'Describe your research goal and let the Pep Nation Lab AI match engine identify the most relevant research-grade peptides. Powered by evidence-tier data. Research use only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/match' },
+  openGraph: {
+    title: 'Peptide Match Engine | Pep Nation Lab',
+    description: 'Find the most relevant research peptides for your goals using the AI-powered match engine.',
+    url: 'https://pepnationlab.com/research/match',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab Peptide Match Engine' }],
+  },
 };
 
 export default function MatchPage() {

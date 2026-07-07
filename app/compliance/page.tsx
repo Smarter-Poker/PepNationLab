@@ -3,9 +3,18 @@ import PageShell from '@/components/PageShell';
 import LegalDocument from '@/components/LegalDocument';
 
 export const metadata: Metadata = {
-  title: 'Compliance | Pep Nation Lab',
+  title: 'Compliance Policy | Research Peptide Distribution Standards | Pep Nation Lab',
   description:
-    'The compliance framework and research-only distribution policy that govern the Pep Nation Lab platform.',
+    'The compliance framework and research-only distribution policy governing the Pep Nation Lab platform. Standards for researchers, agents, and compound handling.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/compliance' },
+  openGraph: {
+    title: 'Compliance Policy | Pep Nation Lab',
+    description: 'Compliance standards and research-only distribution policy for the Pep Nation Lab platform.',
+    url: 'https://pepnationlab.com/compliance',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab Compliance Policy' }],
+  },
 };
 
 export default function CompliancePage() {
