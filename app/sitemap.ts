@@ -6,6 +6,7 @@ import type { MetadataRoute } from 'next';
 import { createServiceClient } from '@/lib/supabase/server';
 import { CITIES, getStatesSlugs, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+import { GUIDES, GUIDES_UPDATED } from '@/lib/research/guides';
 const BASE = 'https://pepnationlab.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -78,6 +79,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Research Library — API Docs
     { url: `${BASE}/research/api-docs`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+
+    // Research Library — Editorial Guides
+    { url: `${BASE}/research/guides`, lastModified: new Date(GUIDES_UPDATED), changeFrequency: 'monthly', priority: 0.7 },
+    ...GUIDES.map((g) => ({
+      url: `${BASE}/research/guides/${g.slug}`,
+      lastModified: new Date(g.dateModified),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
   ];
 
   let compounds: MetadataRoute.Sitemap = [];
