@@ -118,11 +118,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   if (compound.mechanism) medicalSubstance.mechanismOfAction = compound.mechanism;
   if (compound.warnings) medicalSubstance.warning = compound.warnings;
   if (compound.side_effects) medicalSubstance.adverseOutcome = compound.side_effects;
-  const code: Record<string, unknown> = {};
-  if (c.chembl_id) { code.codingSystem = 'ChEMBL'; code.codeValue = c.chembl_id; }
-  if (c.uniprot_id) { code.codingSystem = 'UniProt'; code.codeValue = c.uniprot_id; }
-  if (c.unii) { code.codingSystem = 'UNII'; code.codeValue = c.unii; }
-  if (Object.keys(code).length > 0) medicalSubstance.code = code;
+  const codes: Array<Record<string, unknown>> = [];
+  if (c.chembl_id) codes.push({ '@type': 'MedicalCode', codingSystem: 'ChEMBL', codeValue: c.chembl_id });
+  if (c.uniprot_id) codes.push({ '@type': 'MedicalCode', codingSystem: 'UniProt', codeValue: c.uniprot_id });
+  if (c.unii) codes.push({ '@type': 'MedicalCode', codingSystem: 'UNII', codeValue: c.unii });
+  if (codes.length > 0) medicalSubstance.code = codes;
 
   // Directive C: ChemicalSubstance - lets AI crawlers treat this as a molecular
   // entity (weight, sequence, identifiers) rather than generic web copy.
@@ -134,7 +134,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   };
   if (compound.aliases && compound.aliases.length > 0) chemicalSubstance.alternateName = compound.aliases;
   const mw = (c.molecular_weight_da as number | null) ?? compound.identity?.molecular_weight ?? null;
-  if (mw != null) chemicalSubstance.molecularWeight = typeof mw === 'number' ? `${mw} Da` : mw;
+  if (mw != null) {
+    const mwNum = typeof mw === 'number' ? mw : parseFloat(String(mw));
+    chemicalSubstance.molecularWeight = Number.isFinite(mwNum)
+      ? { '@type': 'QuantitativeValue', value: mwNum, unitText: 'Da' }
+      : mw;
+  }
   const seqOne = (c.sequence_one_letter as string | null) ?? compound.identity?.sequence ?? null;
   if (seqOne) chemicalSubstance.description = `Amino acid sequence: ${seqOne}`;
   if (compound.identity?.cas) chemicalSubstance.identifier = compound.identity.cas;
@@ -185,9 +190,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         maintainer: { '@id': 'https://pepnationlab.com/#organization' },
         lastReviewed: '2026-07-07',
         audience: {
-          '@type': 'MedicalAudience',
-          audienceType: 'Researchers',
-          healthCondition: { '@type': 'MedicalCondition', name: 'Research Use Only' },
+          '@type': 'Audience',
+          audienceType: 'Qualified Researchers And Scientific Institutions',
         },
         speakable: {
           '@type': 'SpeakableSpecification',
