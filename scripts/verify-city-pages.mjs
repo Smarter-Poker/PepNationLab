@@ -156,9 +156,14 @@ async function verifyCity(city) {
       if (failures.length === 0) {
         return { city, ok: true, warnings };
       }
-      // Content failures on a cold ISR page can heal on regeneration; retry once.
+      // ISR serves the STALE copy and regenerates in the background - the
+      // first request triggers regeneration, so a content failure on a stale
+      // page heals on the next fetch only after regeneration completes.
+      // Wait long enough (12s) for the background render before retrying.
+      // (O'Fallon false-alarmed with a 2.5s retry: the stale pre-blurb copy
+      // was served three times inside the regeneration window.)
       lastError = failures.join('; ');
-      if (attempt < RETRIES) await new Promise((r) => setTimeout(r, 2500));
+      if (attempt < RETRIES) await new Promise((r) => setTimeout(r, 12000));
     } catch (err) {
       lastError = String(err?.message || err);
       if (attempt < RETRIES) await new Promise((r) => setTimeout(r, 2500));
