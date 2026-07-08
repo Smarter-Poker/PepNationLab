@@ -1,0 +1,43 @@
+name: Apply TX FL City Expansion
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-tx-fl-cities.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-tx-fl-cities
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Apply City Expansion
+        run: node scripts/city-expansion/apply.cjs
+
+      - name: Validate Expanded Data
+        run: node --experimental-strip-types scripts/city-expansion/validate.mjs
+
+      - name: Commit And Push
+        run: |
+          git config user.name "tx-fl-cities-bot"
+          git config user.email "tx-fl-cities-bot@users.noreply.github.com"
+          git rm -q .github/workflows/apply-tx-fl-cities.yml
+          git rm -rq scripts/city-expansion
+          git add lib/cities/cities-data.ts
+          git commit -m "feat(seo): expand Texas to 100 and Florida to 108 city pages with county, ZIP, region, and unique local anchor blurbs; remove stale duplicate O'Fallon IL entry"
+          git pull --rebase origin main
+          git push origin HEAD:main
