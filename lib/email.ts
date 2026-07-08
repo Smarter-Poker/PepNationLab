@@ -231,3 +231,28 @@ export async function sendPasswordResetEmail(params: {
     text: `Reset your Pep Nation Lab password: ${params.resetUrl}`,
   });
 }
+
+/** Code-based password reset: emails a 6-digit code (no link to click). */
+export async function sendPasswordResetCodeEmail(params: {
+  to: string;
+  code: string;
+  fullName?: string | null;
+}): Promise<SendEmailResult> {
+  const name = (params.fullName || '').trim() || 'Researcher';
+  const html = layout(`
+    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">Reset Your Password</h1>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 20px;">
+      Hi ${name}, use this code to reset your Pep Nation Lab password. It expires in 10 minutes.
+    </p>
+    <div style="font-size:34px;font-weight:800;letter-spacing:10px;color:#00C4BC;background:#0F1923;border:1px solid rgba(0,196,188,0.3);border-radius:12px;padding:18px 0;text-align:center;margin:0 0 20px;">${params.code}</div>
+    <p style="font-size:12px;line-height:1.6;color:#8b95a3;margin:0;">
+      If you did not request this, you can safely ignore this email. Your password will not change.
+    </p>
+  `);
+  return sendEmail({
+    to: params.to,
+    subject: `Your Pep Nation Lab Password Reset Code: ${params.code}`,
+    html,
+    text: `Your Pep Nation Lab password reset code is ${params.code}. It expires in 10 minutes.`,
+  });
+}

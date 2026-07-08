@@ -1194,8 +1194,9 @@ export async function POST(request: NextRequest) {
       // Never propagate - notifications are best-effort
     }
 
-    // Send order confirmation email (best-effort, non-blocking)
-    if (profile?.contact_email) {
+    // Send order confirmation email (best-effort, non-blocking). Only to a
+    // VERIFIED contact email, to protect sender reputation / deliverability.
+    if (profile?.contact_email && (profile as { email_verified?: boolean }).email_verified) {
       try {
         const itemsSummary = computedItems.map((i: any) => `${i.quantity}x ${i.product_name}`).join(', ');
         sendOrderConfirmationEmail({

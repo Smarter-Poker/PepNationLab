@@ -70,6 +70,9 @@ const PUBLIC_ROUTES = [
   '/api/auth/change-password',
   // Public signup email-verification code issuer (rate-limited inside the route).
   '/api/auth/request-code',
+  // Public code-based password reset (both steps are for logged-out users;
+  // each is rate-limited + CSRF-checked inside its route).
+  '/api/auth/reset-password',
   '/api/auth/verify-agent-access',
   '/api/health',
   '/api/availability',
