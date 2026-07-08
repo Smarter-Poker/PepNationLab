@@ -31,6 +31,7 @@ function SignupForm() {
   const [acks, setAcks] = useState<Record<AckKey, boolean>>({ c1: false, c2: false, c3: false });
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   // Two-step flow: 'form' collects details; 'code' collects the 6-digit email
@@ -228,14 +229,10 @@ function SignupForm() {
     }
   }
 
-  async function handleGoogleSignup() {
-    if (googleLoading) return;
-    if (!allAcked) {
-      setError('Please Confirm All Three Acknowledgments Before Continuing With Google.');
-      return;
-    }
+  async function proceedWithGoogle() {
     setGoogleLoading(true);
     setError('');
+    setShowGoogleModal(false);
     try {
       const supabase = createClient();
       // Pass redirect through the OAuth callback, plus registration ack flag
@@ -265,6 +262,15 @@ function SignupForm() {
       setError('Google Sign-In Is Not Available Right Now. Please Use The Form Below.');
       setGoogleLoading(false);
     }
+  }
+
+  function handleGoogleSignup() {
+    if (googleLoading) return;
+    if (!allAcked) {
+      setShowGoogleModal(true);
+      return;
+    }
+    proceedWithGoogle();
   }
 
   // Build the "Sign In" link so if the user switches to login, redirect is preserved
@@ -489,6 +495,65 @@ function SignupForm() {
           For Qualified Researchers Only. Research Use Only.
         </p>
       </div>
+
+      {showGoogleModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 'var(--space-4)'
+        }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: 460, padding: 'var(--space-6)', position: 'relative' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
+              Required Acknowledgments
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
+              Before connecting your Google account to a Pep Nation Lab researcher profile, please confirm the following:
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
+              {ACKNOWLEDGMENTS.map(a => (
+                <label key={a.key} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={acks[a.key]}
+                    onChange={e => setAcks(prev => ({ ...prev, [a.key]: e.target.checked }))}
+                    style={{ marginTop: 3, accentColor: 'var(--teal)', flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: '0.78rem', color: 'var(--grey-300)', lineHeight: 1.5 }}>
+                    {a.key === 'c3' ? (
+                      <>
+                        I Have Read And Accept The <a href="/terms" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--teal)', textDecoration: 'underline' }}>Terms Of Service</a>, <a href="/privacy" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--teal)', textDecoration: 'underline' }}>Privacy Policy</a>, And <a href="/compliance" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--teal)', textDecoration: 'underline' }}>Research-Only Compliance Requirements</a>.
+                      </>
+                    ) : (
+                      a.text
+                    )}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setShowGoogleModal(false)}
+                style={{ flex: 1, justifyContent: 'center' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={!allAcked || googleLoading}
+                onClick={proceedWithGoogle}
+                style={{ flex: 2, justifyContent: 'center' }}
+              >
+                {googleLoading ? 'Redirecting...' : 'Confirm & Continue'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
