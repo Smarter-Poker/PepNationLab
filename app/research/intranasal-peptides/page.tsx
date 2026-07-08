@@ -79,7 +79,9 @@ function CompoundCard({ c }: { c: Compound }) {
 
 function SectionTitle({ color, kicker, title, blurb }: { color: string; kicker: string; title: string; blurb: string }) {
   return (
-    <div style={{ marginBottom: 'var(--space-4, 16px)' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div style={{ marginBottom: 'var(--space-4, 16px)' }}>
       <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color }}>{kicker}</div>
       <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--white, #FFFFFF)', margin: '4px 0 0' }}>{title}</h2>
       <p style={{ fontSize: '0.95rem', color: 'var(--silver, #A8B4C0)', margin: '6px 0 0', maxWidth: 760, lineHeight: 1.6 }}>{blurb}</p>
@@ -88,6 +90,29 @@ function SectionTitle({ color, kicker, title, blurb }: { color: string; kicker: 
 }
 
 export default async function IntranasalPeptidesPage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': 'https://pepnationlab.com/research/intranasal-peptides#webpage',
+        url: 'https://pepnationlab.com/research/intranasal-peptides',
+        name: 'Intranasal Peptides: Which Research Compounds Are Studied As Nasal Sprays | Pep Nation Lab',
+        description: 'A research-use-only overview of which peptides are studied via the intranasal (nasal spray) route instead of injection, graded established vs emerging by strength of evidence.',
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' }
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: 'intranasal peptides', item: 'https://pepnationlab.com/research/intranasal-peptides' }
+        ]
+      }
+    ]
+  };
+
   const all = await getAllCompounds();
   const established = all
     .filter((c) => c.intranasal_status === 'established')
@@ -205,5 +230,6 @@ export default async function IntranasalPeptidesPage() {
         Research Use Only. Not For Human Or Veterinary Use. Information Provided For Laboratory Research Purposes Only.
       </p>
     </div>
+      </>
   );
 }

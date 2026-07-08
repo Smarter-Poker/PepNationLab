@@ -39,13 +39,15 @@ function coerceCompound(row: Record<string, unknown>): Compound {
   };
 }
 
+const PUBLIC_COMPOUND_COLUMNS = 'id, slug, display_name, aliases, category, evidence_tier, compound_class, molecular_target, identity, mechanism, studied_for, research_areas, benefits, side_effects, warnings, handling, regulatory, wada_status, sources, plain_summary, is_temp_sensitive, is_pro_angiogenic, is_glp1, is_stack, stack_components, stack_rationale, reconstitution_shelf_days, best_stacked_with, efficacy_scores, eli5_summary, quality_score, updated_at, created_at';
+
 export const getAllCompounds = unstable_cache(
   async (): Promise<Compound[]> => {
     if (!supabaseEnvReady()) return [];
     const supabase = await createServiceClient();
     const { data, error } = await supabase
       .from('compounds')
-      .select('*')
+      .select(PUBLIC_COMPOUND_COLUMNS)
       .order('display_name', { ascending: true });
     if (error || !data) return [];
     return data.map((row) => coerceCompound(row as Record<string, unknown>));
@@ -65,7 +67,7 @@ const fetchCompoundsBatch = unstable_cache(
     const unique = slugStr.split(',');
     const { data, error } = await supabase
       .from('compounds')
-      .select('*')
+      .select(PUBLIC_COMPOUND_COLUMNS)
       .in('slug', unique);
     if (error || !data) return {} as Record<string, Compound>;
     const map: Record<string, Compound> = {};
@@ -97,7 +99,7 @@ export const getCompound = unstable_cache(
     const supabase = await createServiceClient();
     const { data, error } = await supabase
       .from('compounds')
-      .select('*')
+      .select(PUBLIC_COMPOUND_COLUMNS)
       .eq('slug', slug)
       .maybeSingle();
     if (error || !data) return null;

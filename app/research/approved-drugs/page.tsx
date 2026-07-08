@@ -21,6 +21,14 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Approved Peptide Drugs' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@PepNationLab',
+    creator: '@PepNationLab',
+    title: 'FDA Approved Peptide Drugs | Research Compounds With Regulatory Approval | Pep Nation Lab',
+    description: 'Research peptides that have received FDA or international regulatory approval as drug products. Full reference data on approved peptide pharmaceuticals. Research use only.',
+    images: ['https://pepnationlab.com/images/og-card.jpg'],
+  },
 };
 
 export const dynamic = 'force-dynamic';
@@ -82,6 +90,29 @@ function ApprovalCard({ c }: { c: ApprovedDrug }) {
 }
 
 export default async function ResearchApprovedDrugsPage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': 'https://pepnationlab.com/research/approved-drugs#webpage',
+        url: 'https://pepnationlab.com/research/approved-drugs',
+        name: 'FDA Approved Peptide Drugs | Research Compounds With Regulatory Approval | Pep Nation Lab',
+        description: 'Research peptides that have received FDA or international regulatory approval as drug products. Full reference data on approved peptide pharmaceuticals. Research use only.',
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' }
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: 'approved drugs', item: 'https://pepnationlab.com/research/approved-drugs' }
+        ]
+      }
+    ]
+  };
+
   const compounds = ((await getAllCompounds()).filter(
     (c) => c.evidence_tier === 'approved_drug'
   ) as unknown) as ApprovedDrug[];
@@ -128,7 +159,9 @@ export default async function ResearchApprovedDrugsPage() {
   ];
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
           Back To Research Library
@@ -151,5 +184,6 @@ export default async function ResearchApprovedDrugsPage() {
         <BrowseFilterShell groups={shellGroups} emptyMessage="No Approved Drugs In This Category." />
       )}
     </div>
+      </>
   );
 }

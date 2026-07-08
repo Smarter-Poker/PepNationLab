@@ -20,6 +20,14 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Orphan Drug Research Peptides' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@PepNationLab',
+    creator: '@PepNationLab',
+    title: 'Orphan Drug Peptides | Rare Disease Research Compounds | Pep Nation Lab',
+    description: 'Research peptides and compounds with orphan drug designation for rare disease research. Full reference data on FDA orphan-designated peptide therapeutics. Research use only.',
+    images: ['https://pepnationlab.com/images/og-card.jpg'],
+  },
 };
 
 export const dynamic = 'force-dynamic';
@@ -79,6 +87,29 @@ function CompoundCard({ c }: { c: OrphanRow }) {
 }
 
 export default async function ResearchOrphanDrugsPage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': 'https://pepnationlab.com/research/orphan-drugs#webpage',
+        url: 'https://pepnationlab.com/research/orphan-drugs',
+        name: 'Orphan Drug Peptides | Rare Disease Research Compounds | Pep Nation Lab',
+        description: 'Research peptides and compounds with orphan drug designation for rare disease research. Full reference data on FDA orphan-designated peptide therapeutics. Research use only.',
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' }
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: 'orphan drugs', item: 'https://pepnationlab.com/research/orphan-drugs' }
+        ]
+      }
+    ]
+  };
+
   const all = await getAllCompounds();
   const rows = all.filter((c) => ((c as unknown) as { is_orphan_drug?: boolean }).is_orphan_drug === true) as unknown as OrphanRow[];
 
@@ -151,7 +182,9 @@ export default async function ResearchOrphanDrugsPage() {
   ];
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
           Back To Research Library
@@ -174,5 +207,6 @@ export default async function ResearchOrphanDrugsPage() {
         <BrowseFilterShell groups={shellGroups} emptyMessage="No Compounds In This Category." />
       )}
     </div>
+      </>
   );
 }

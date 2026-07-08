@@ -21,6 +21,14 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptides By Half-Life' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@PepNationLab',
+    creator: '@PepNationLab',
+    title: 'Browse Peptides By Half-Life | Short vs Long Acting | Pep Nation Lab',
+    description: 'Compare research peptides by pharmacokinetic half-life. Filter from short-acting compounds (minutes) to long-acting variants (days). Research use only.',
+    images: ['https://pepnationlab.com/images/og-card.jpg'],
+  },
 };
 
 export const dynamic = 'force-dynamic';
@@ -76,6 +84,29 @@ function CompoundCard({ c }: { c: HalfLifeRow }) {
 }
 
 export default async function ResearchByHalfLifePage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': 'https://pepnationlab.com/research/by-half-life#webpage',
+        url: 'https://pepnationlab.com/research/by-half-life',
+        name: 'Browse Peptides By Half-Life | Short vs Long Acting | Pep Nation Lab',
+        description: 'Compare research peptides by pharmacokinetic half-life. Filter from short-acting compounds (minutes) to long-acting variants (days). Research use only.',
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' }
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: 'by half life', item: 'https://pepnationlab.com/research/by-half-life' }
+        ]
+      }
+    ]
+  };
+
   const rows = (await getAllCompounds()) as unknown as HalfLifeRow[];
 
   const groups = BUCKETS.map((b) => ({ ...b, compounds: [] as HalfLifeRow[] }));
@@ -132,7 +163,9 @@ export default async function ResearchByHalfLifePage() {
   ];
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
           Back To Research Library
@@ -149,5 +182,6 @@ export default async function ResearchByHalfLifePage() {
 
       <BrowseFilterShell groups={shellGroups} emptyMessage="No Compounds In This Half-Life Range Yet." />
     </div>
+      </>
   );
 }

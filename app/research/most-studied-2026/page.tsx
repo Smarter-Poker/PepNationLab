@@ -79,6 +79,29 @@ function TrialCard({ c, rank }: { c: TrialCompound; rank: number }) {
 }
 
 export default async function ResearchMostStudied2026Page() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': 'https://pepnationlab.com/research/most-studied-2026#webpage',
+        url: 'https://pepnationlab.com/research/most-studied-2026',
+        name: 'Most Studied Research Peptides 2026 | Trending Compounds | Pep Nation Lab',
+        description: 'The most studied and searched research peptides in 2026. Data-driven rankings of trending research compounds based on research activity and publication velocity. Research use only.',
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' }
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: 'most studied 2026', item: 'https://pepnationlab.com/research/most-studied-2026' }
+        ]
+      }
+    ]
+  };
+
   const compounds = await getAllCompounds();
   const ranked = [...compounds]
     .map((r) => ({
@@ -166,7 +189,9 @@ export default async function ResearchMostStudied2026Page() {
   ];
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
           Back To Research Library
@@ -183,5 +208,6 @@ export default async function ResearchMostStudied2026Page() {
 
       <BrowseFilterShell groups={shellGroups} emptyMessage="No Data In This Category." />
     </div>
+      </>
   );
 }

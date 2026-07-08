@@ -21,6 +21,14 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Most Cited Research Peptides' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@PepNationLab',
+    creator: '@PepNationLab',
+    title: 'Most Cited Research Peptides | Top Referenced Compounds | Pep Nation Lab',
+    description: 'The most-cited and referenced research peptides ranked by publication count and scientific evidence. Discover the most-studied compounds in research literature. Research use only.',
+    images: ['https://pepnationlab.com/images/og-card.jpg'],
+  },
 };
 
 export const dynamic = 'force-dynamic';
@@ -66,6 +74,29 @@ function RankCard({ c, rank }: { c: CitedCompound; rank: number }) {
 }
 
 export default async function ResearchMostCitedPage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': 'https://pepnationlab.com/research/most-cited#webpage',
+        url: 'https://pepnationlab.com/research/most-cited',
+        name: 'Most Cited Research Peptides | Top Referenced Compounds | Pep Nation Lab',
+        description: 'The most-cited and referenced research peptides ranked by publication count and scientific evidence. Discover the most-studied compounds in research literature. Research use only.',
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' }
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: 'most cited', item: 'https://pepnationlab.com/research/most-cited' }
+        ]
+      }
+    ]
+  };
+
   const compounds = await getAllCompounds();
   const ranked = [...compounds]
     .map((c) => ({
@@ -154,7 +185,9 @@ export default async function ResearchMostCitedPage() {
   ];
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
           Back To Research Library
@@ -171,5 +204,6 @@ export default async function ResearchMostCitedPage() {
 
       <BrowseFilterShell groups={shellGroups} emptyMessage="No Data In This Category." />
     </div>
+      </>
   );
 }

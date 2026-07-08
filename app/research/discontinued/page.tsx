@@ -21,6 +21,14 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Discontinued Research Compounds' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@PepNationLab',
+    creator: '@PepNationLab',
+    title: 'Discontinued Research Compounds | Pep Nation Lab',
+    description: 'Research reference data on discontinued and withdrawn peptide compounds. Full historical data including mechanism, evidence, and discontinuation context. Research use only.',
+    images: ['https://pepnationlab.com/images/og-card.jpg'],
+  },
 };
 
 export const dynamic = 'force-dynamic';
@@ -86,6 +94,29 @@ function CompoundCard({ c }: { c: DiscontinuedRow }) {
 }
 
 export default async function ResearchDiscontinuedPage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': 'https://pepnationlab.com/research/discontinued#webpage',
+        url: 'https://pepnationlab.com/research/discontinued',
+        name: 'Discontinued Research Compounds | Pep Nation Lab',
+        description: 'Research reference data on discontinued and withdrawn peptide compounds. Full historical data including mechanism, evidence, and discontinuation context. Research use only.',
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' }
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: 'discontinued', item: 'https://pepnationlab.com/research/discontinued' }
+        ]
+      }
+    ]
+  };
+
   const all = await getAllCompounds();
   const rows = all
     .filter((c) => ((c as unknown) as { is_discontinued?: boolean }).is_discontinued === true)
@@ -130,7 +161,9 @@ export default async function ResearchDiscontinuedPage() {
   ];
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
           Back To Research Library
@@ -153,5 +186,6 @@ export default async function ResearchDiscontinuedPage() {
         <BrowseFilterShell groups={shellGroups} emptyMessage="No Compounds In This Period." />
       )}
     </div>
+      </>
   );
 }

@@ -9,11 +9,53 @@ export const metadata: Metadata = {
   title: 'Research API Documentation - Pep Nation Lab',
   description: 'Public Research API V1 - Endpoints, Authentication, And Rate Limits.',
   robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/api-docs' },
+  openGraph: {
+    title: 'Research API Documentation - Pep Nation Lab',
+    description: 'Public Research API V1 - Endpoints, Authentication, And Rate Limits.',
+    url: 'https://pepnationlab.com/research/api-docs',
+    siteName: 'Pep Nation Lab',
+    images: [{ url: 'https://pepnationlab.com/images/og-card.jpg', width: 1200, height: 630 }],
+    type: 'article',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@PepNationLab',
+    creator: '@PepNationLab',
+    title: 'Research API Documentation - Pep Nation Lab',
+    description: 'Public Research API V1 - Endpoints, Authentication, And Rate Limits.',
+    images: ['https://pepnationlab.com/images/og-card.jpg'],
+  },
 };
 
 export default function ApiDocsPage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'TechArticle',
+        '@id': 'https://pepnationlab.com/research/api-docs#webpage',
+        url: 'https://pepnationlab.com/research/api-docs',
+        name: 'Research API Documentation',
+        description: 'Public Research API V1 - Endpoints, Authentication, And Rate Limits.',
+        publisher: { '@id': 'https://pepnationlab.com/#organization' },
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: 'API Docs', item: 'https://pepnationlab.com/research/api-docs' }
+        ]
+      }
+    ]
+  };
+
   return (
-    <main className="container" style={{ padding: '40px 20px', maxWidth: 880, margin: '0 auto' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <main className="container" style={{ padding: '40px 20px', maxWidth: 880, margin: '0 auto' }}>
       <h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 8 }}>Research API Documentation</h1>
       <p style={{ color: 'var(--text-secondary, #A8B4C0)', marginBottom: 32 }}>
         Public, Read-Only Access To The Pep Nation Lab Research Library. For Research Use Only.
@@ -84,5 +126,6 @@ export default function ApiDocsPage() {
         For Research Use Only. This Restates Stored Laboratory Facts And Is Not Dosing Or Medical Advice.
       </p>
     </main>
+    </>
   );
 }

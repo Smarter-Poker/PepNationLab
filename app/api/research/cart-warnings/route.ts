@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ warnings: [] });
   }
 
-  const { data, error } = await supabase.from('compounds').select('*').in('slug', slugs);
+  const { data, error } = await supabase.from('compounds').select('id, slug, display_name, aliases, category, evidence_tier, compound_class, molecular_target, identity, mechanism, studied_for, research_areas, benefits, side_effects, warnings, handling, regulatory, wada_status, sources, plain_summary, is_temp_sensitive, is_pro_angiogenic, is_glp1, is_stack, stack_components, stack_rationale, reconstitution_shelf_days, best_stacked_with, efficacy_scores, eli5_summary, quality_score, updated_at, created_at').in('slug', slugs);
 
   if (error || !data) {
     return NextResponse.json({ warnings: [] });

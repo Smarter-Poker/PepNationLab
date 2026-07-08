@@ -29,6 +29,29 @@ export const metadata: Metadata = {
 };
 
 export default async function ResearchAZPage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': 'https://pepnationlab.com/research/a-z#webpage',
+        url: 'https://pepnationlab.com/research/a-z',
+        name: 'Peptide A-Z Index | Research Library | Pep Nation Lab',
+        description: 'Complete alphabetical index of research-grade peptides and compounds. Find BPC-157, Semaglutide, TB-500, Tirzepatide, and hundreds more RUO compounds.',
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' }
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: 'a z', item: 'https://pepnationlab.com/research/a-z' }
+        ]
+      }
+    ]
+  };
+
   const compounds = await getAllCompounds();
   const sorted = [...compounds].sort((a, b) => a.display_name.localeCompare(b.display_name));
 
@@ -46,7 +69,9 @@ export default async function ResearchAZPage() {
   });
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
           Back To Research Library
@@ -108,5 +133,6 @@ export default async function ResearchAZPage() {
         </section>
       ))}
     </div>
+      </>
   );
 }

@@ -21,6 +21,14 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab Research Timeline' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@PepNationLab',
+    creator: '@PepNationLab',
+    title: 'Peptide Research Timeline | Historical Discovery Decades | Pep Nation Lab',
+    description: 'Explore the historical timeline of peptide research discoveries from the 1960s to today. Compounds plotted by decade with evidence tiers and mechanism data. Research use only.',
+    images: ['https://pepnationlab.com/images/og-card.jpg'],
+  },
 };
 
 export const dynamic = 'force-dynamic';
@@ -48,6 +56,29 @@ function decadeOf(year: number): string {
 }
 
 export default async function ResearchTimelinePage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': 'https://pepnationlab.com/research/timeline#webpage',
+        url: 'https://pepnationlab.com/research/timeline',
+        name: 'Peptide Research Timeline | Historical Discovery Decades | Pep Nation Lab',
+        description: 'Explore the historical timeline of peptide research discoveries from the 1960s to today. Compounds plotted by decade with evidence tiers and mechanism data. Research use only.',
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' }
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: 'timeline', item: 'https://pepnationlab.com/research/timeline' }
+        ]
+      }
+    ]
+  };
+
   const all = await getAllCompounds();
 
   type C = (typeof all)[0] & {
@@ -105,7 +136,9 @@ export default async function ResearchTimelinePage() {
   });
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
           Back To Research Library
@@ -122,5 +155,6 @@ export default async function ResearchTimelinePage() {
 
       <BrowseFilterShell groups={shellGroups} emptyMessage="No Compounds In This Decade Yet." />
     </div>
+      </>
   );
 }

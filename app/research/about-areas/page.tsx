@@ -25,8 +25,33 @@ export const metadata: Metadata = {
 };
 
 export default function AboutAreasPage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': 'https://pepnationlab.com/research/about-areas#webpage',
+        url: 'https://pepnationlab.com/research/about-areas',
+        name: 'Therapeutic Research Areas | Peptide Research Categories | Pep Nation Lab',
+        description: 'Explore peptide research organized by therapeutic area: metabolic health, recovery, longevity, cognition, immune function, and more. Browse all research categories. Research use only.',
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' }
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: 'about areas', item: 'https://pepnationlab.com/research/about-areas' }
+        ]
+      }
+    ]
+  };
+
   return (
-    <div style={{ textTransform: 'capitalize' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div style={{ textTransform: 'capitalize' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)', minHeight: '100dvh' }}>
         
         {/* Navigation Breadcrumbs */}
@@ -157,5 +182,6 @@ export default function AboutAreasPage() {
 
       </div>
     </div>
+      </>
   );
 }

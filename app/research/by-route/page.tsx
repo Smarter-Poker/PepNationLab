@@ -21,6 +21,14 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptides By Route' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@PepNationLab',
+    creator: '@PepNationLab',
+    title: 'Browse Peptides By Administration Route | Research Library | Pep Nation Lab',
+    description: 'Browse research peptides by administration route - subcutaneous, intramuscular, intranasal, oral, and topical. Understand delivery method differences. Research use only.',
+    images: ['https://pepnationlab.com/images/og-card.jpg'],
+  },
 };
 
 export const dynamic = 'force-dynamic';
@@ -96,6 +104,29 @@ function CompoundCard({ c }: { c: RouteRow }) {
 }
 
 export default async function ResearchByRoutePage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': 'https://pepnationlab.com/research/by-route#webpage',
+        url: 'https://pepnationlab.com/research/by-route',
+        name: 'Browse Peptides By Administration Route | Research Library | Pep Nation Lab',
+        description: 'Browse research peptides by administration route - subcutaneous, intramuscular, intranasal, oral, and topical. Understand delivery method differences. Research use only.',
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' }
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: 'by route', item: 'https://pepnationlab.com/research/by-route' }
+        ]
+      }
+    ]
+  };
+
   const rows = (await getAllCompounds()) as unknown as RouteRow[];
 
   const buckets = new Map<string, RouteRow[]>();
@@ -131,7 +162,9 @@ export default async function ResearchByRoutePage() {
   });
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <ArrowLeft size={16} /> Back To Research Library
@@ -154,5 +187,6 @@ export default async function ResearchByRoutePage() {
         <BrowseFilterShell groups={shellGroups} emptyMessage="No Compounds In This Route Category Yet." />
       )}
     </div>
+      </>
   );
 }

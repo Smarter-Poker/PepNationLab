@@ -15,11 +15,42 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab Research Stacks' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@PepNationLab',
+    creator: '@PepNationLab',
+    title: 'Research Stacks & Combinations | Pep Nation Lab',
+    description: 'Explore curated peptide research stacks and multi-compound combinations. Study synergistic compound protocols organized by research goal. Research use only.',
+    images: ['https://pepnationlab.com/images/og-card.jpg'],
+  },
 };
 
 export const dynamic = 'force-dynamic';
 
 export default async function StacksPage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': 'https://pepnationlab.com/research/stacks#webpage',
+        url: 'https://pepnationlab.com/research/stacks',
+        name: 'Research Stacks & Combinations | Pep Nation Lab',
+        description: 'Explore curated peptide research stacks and multi-compound combinations. Study synergistic compound protocols organized by research goal. Research use only.',
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' }
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: 'stacks', item: 'https://pepnationlab.com/research/stacks' }
+        ]
+      }
+    ]
+  };
+
   const compounds = await getAllCompounds();
   const stacks = compounds.filter((c) => c.is_stack);
   const allSlugs = Array.from(new Set([
@@ -30,7 +61,9 @@ export default async function StacksPage() {
   const products = productCtx.products;
 
   return (
-    <div style={{ position: 'relative', minHeight: '100dvh', overflowX: 'hidden', background: 'var(--black, #050A0F)' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div style={{ position: 'relative', minHeight: '100dvh', overflowX: 'hidden', background: 'var(--black, #050A0F)' }}>
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
         <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(0, 196, 188, 0.15) 0%, transparent 70%)', filter: 'blur(80px)' }} />
         <div style={{ position: 'absolute', top: '20%', right: '-15%', width: '60vw', height: '60vw', background: 'radial-gradient(circle, rgba(0, 229, 255, 0.1) 0%, transparent 70%)', filter: 'blur(100px)' }} />
@@ -43,5 +76,6 @@ export default async function StacksPage() {
         <StacksClient compounds={compounds} stacks={stacks} products={products} />
       </div>
     </div>
+      </>
   );
 }
