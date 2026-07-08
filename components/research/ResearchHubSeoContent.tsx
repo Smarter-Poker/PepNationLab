@@ -56,11 +56,23 @@ export default async function ResearchHubSeoContent() {
   return (
     <section
       aria-label="Research Library Overview"
+      // Visually hidden, crawler- and screen-reader-accessible (same pattern
+      // as the homepage content layer). The interactive ResearchLandingClient
+      // presents this exact library visually; this block is its no-JS
+      // equivalent so search engines and AI crawlers can read and enumerate
+      // the compound index from the initial HTML. It is NOT hidden keyword
+      // stuffing - the content mirrors what the client UI renders. Do not
+      // remove: without it the hub has no crawlable H1 or compound links.
       style={{
-        maxWidth: '1100px',
-        margin: '0 auto',
-        padding: 'var(--space-6, 32px) var(--space-4, 16px)',
-        color: 'var(--white, #fff)',
+        position: 'absolute',
+        width: 1,
+        height: 1,
+        padding: 0,
+        margin: -1,
+        overflow: 'hidden',
+        clip: 'rect(0, 0, 0, 0)',
+        whiteSpace: 'nowrap',
+        border: 0,
       }}
     >
       <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 800, margin: '0 0 12px' }}>
