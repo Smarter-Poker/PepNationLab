@@ -166,21 +166,31 @@ export default async function CityLandingPage({
                 url: `https://pepnationlab.com/${DEFAULT_STORE_SLUG}?product=${p.productId}`,
               })),
             },
-            ...top10.map(p => ({
-              '@type': 'Product',
-              name: p.subtitle ? `${p.name} (${p.subtitle})` : p.name,
-              image: p.image ? `https://pepnationlab.com${p.image}` : undefined,
-              description: `Research-grade ${p.name} for qualified researchers.`,
-              brand: { '@id': 'https://pepnationlab.com/#organization' },
-              offers: {
-                '@type': 'Offer',
-                price: p.price,
-                priceCurrency: 'USD',
-                availability: 'https://schema.org/InStock',
-                url: `https://pepnationlab.com/${DEFAULT_STORE_SLUG}?product=${p.productId}`,
-                seller: { '@id': 'https://pepnationlab.com/#organization' },
-              },
-            })),
+            ...top10
+              .filter((p) => String(p.name || '').trim() !== '')
+              .map((p) => {
+                const name = p.subtitle ? `${p.name} (${p.subtitle})` : p.name;
+                const node: Record<string, unknown> = {
+                  '@type': 'Product',
+                  // name is REQUIRED by Google's Product spec — never omit it.
+                  name,
+                  description: `Research-grade ${p.name} for qualified researchers.`,
+                  brand: { '@id': 'https://pepnationlab.com/#organization' },
+                };
+                if (p.image) node.image = `https://pepnationlab.com${p.image}`;
+                const price = Number(p.price);
+                if (Number.isFinite(price) && price > 0) {
+                  node.offers = {
+                    '@type': 'Offer',
+                    price: price.toFixed(2),
+                    priceCurrency: 'USD',
+                    availability: 'https://schema.org/InStock',
+                    url: `https://pepnationlab.com/${DEFAULT_STORE_SLUG}?product=${p.productId}`,
+                    seller: { '@id': 'https://pepnationlab.com/#organization' },
+                  };
+                }
+                return node;
+              }),
           ]
         : []),
       {
