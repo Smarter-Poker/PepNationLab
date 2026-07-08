@@ -1538,13 +1538,13 @@ export default function DiscoveryHero({
         </div>
 
         {/* Quick Select Buttons */}
-        <button title="Weight Management" onClick={() => setShowAllAreas(true)} style={{ position: 'absolute', top: '23%', left: '5%', width: '21%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Tissue Repair" onClick={() => setShowAllAreas(true)} style={{ position: 'absolute', top: '23%', left: '27%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Healing & Recovery" onClick={() => setShowAllAreas(true)} style={{ position: 'absolute', top: '23%', left: '50%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Performance" onClick={() => setShowAllAreas(true)} style={{ position: 'absolute', top: '23%', left: '73%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Skin & Hair" onClick={() => setShowAllAreas(true)} style={{ position: 'absolute', top: '42%', left: '5%', width: '21%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Cognitive" onClick={() => setShowAllAreas(true)} style={{ position: 'absolute', top: '42%', left: '27%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Pain & Inflammation" onClick={() => setShowAllAreas(true)} style={{ position: 'absolute', top: '42%', left: '50%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Weight Management" onClick={() => onSelectArea('weight_management')} style={{ position: 'absolute', top: '23%', left: '5%', width: '21%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Tissue Repair" onClick={() => onSelectArea('tissue_repair')} style={{ position: 'absolute', top: '23%', left: '27%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Healing & Recovery" onClick={() => onSelectArea('healing')} style={{ position: 'absolute', top: '23%', left: '50%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Performance" onClick={() => onSelectArea('performance')} style={{ position: 'absolute', top: '23%', left: '73%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Skin & Hair" onClick={() => onSelectArea('cosmetic')} style={{ position: 'absolute', top: '42%', left: '5%', width: '21%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Cognitive" onClick={() => onSelectArea('cognitive')} style={{ position: 'absolute', top: '42%', left: '27%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Pain & Inflammation" onClick={() => onSelectArea('pain_inflammation')} style={{ position: 'absolute', top: '42%', left: '50%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
         <button title="More" onClick={() => {
           setShowAllAreas(true);
         }} style={{ position: 'absolute', top: '42%', left: '73%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />

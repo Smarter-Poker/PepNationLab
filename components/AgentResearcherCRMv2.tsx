@@ -18,7 +18,7 @@
  *  - Full mobile-first layout
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -848,6 +848,12 @@ export default function AgentResearcherCRMv2({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>('list');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Keep typing responsive on large lists: the input updates immediately while
+  // the (potentially expensive) filter/sort recompute lags one frame behind.
+  const deferredSearch = useDeferredValue(search);
+  // Cap rendered rows so the DOM stays light for agents with big teams.
+  const PAGE_SIZE = 30;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const toggleSelect = useCallback((id: string) => {
     setSelected(prev => {
@@ -992,7 +998,7 @@ export default function AgentResearcherCRMv2({
   /* -- Filtering + sorting -- */
   const filtered = useMemo(() => {
     if (!data) return [];
-    const term = search.trim().toLowerCase();
+    const term = deferredSearch.trim().toLowerCase();
     const base = data.researchers.filter(r => {
       switch (filter) {
         case 'vip': return r.status === 'vip';
@@ -1017,7 +1023,7 @@ export default function AgentResearcherCRMv2({
         default: return (a.lifetime_value - b.lifetime_value) * dir;
       }
     });
-  }, [data, filter, search, sortBy, sortDir]);
+  }, [data, filter, deferredSearch, sortBy, sortDir]);
 
   const kanbanRows: KanbanResearcher[] = useMemo(() => (data?.researchers ?? []).map(r => ({ id: r.id, full_name: r.full_name, username: r.username, lifetime_value: r.lifetime_value, orders_count: r.orders_count, last_order_at: r.last_order_at, status: r.status, churn_risk: r.churn_risk })), [data]);
 
@@ -1164,7 +1170,7 @@ export default function AgentResearcherCRMv2({
             <div style={{ borderRadius: 16, overflow: 'hidden', background: 'linear-gradient(160deg, rgba(16,24,40,0.97) 0%, rgba(10,16,28,0.97) 100%)', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 4px 28px rgba(0,0,0,0.30)' }}>
               {/* Header */}
               <div role="row" style={{ display: 'grid', gridTemplateColumns: 'minmax(160px,2fr) 90px 80px 110px 100px 110px', alignItems: 'center', gap: 8, padding: '9px 16px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.06)' }} className="crm-row-head">
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <span role="columnheader" aria-sort={sortBy === 'name' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                   <input type="checkbox" className="crm-checkbox" aria-label="Select All"
                     checked={filtered.length > 0 && filtered.every(r => selected.has(r.id))}
                     ref={el => { if (el) el.indeterminate = selected.size > 0 && !filtered.every(r => selected.has(r.id)); }}
@@ -1178,9 +1184,9 @@ export default function AgentResearcherCRMv2({
                     }} />
                   {sortBtn('name', 'Researcher')}
                 </span>
-                <span style={{ textAlign: 'right' }}>{sortBtn('ltv', 'LTV')}</span>
-                <span style={{ textAlign: 'right' }}>{sortBtn('orders', 'Orders')}</span>
-                <span>{sortBtn('login', 'Last Login')}</span>
+                <span role="columnheader" aria-sort={sortBy === 'ltv' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} style={{ textAlign: 'right' }}>{sortBtn('ltv', 'LTV')}</span>
+                <span role="columnheader" aria-sort={sortBy === 'orders' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} style={{ textAlign: 'right' }}>{sortBtn('orders', 'Orders')}</span>
+                <span role="columnheader" aria-sort={sortBy === 'login' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}>{sortBtn('login', 'Last Login')}</span>
                 <span style={{ fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#5A6A7A' }}>Status</span>
                 <span style={{ textAlign: 'right', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#5A6A7A' }}>Actions</span>
               </div>
@@ -1188,7 +1194,7 @@ export default function AgentResearcherCRMv2({
               {filtered.length === 0 ? (
                 <div style={{ padding: '32px', textAlign: 'center', color: '#5A6A7A', fontSize: '0.83rem' }}>No Researchers Match This Filter.</div>
               ) : (
-                filtered.map(r => (
+                filtered.slice(0, visibleCount).map(r => (
                   <ResearcherRow key={r.id} r={r}
                     expanded={expandedId === r.id}
                     onExpand={() => setExpandedId(id => id === r.id ? null : r.id)}
@@ -1201,6 +1207,16 @@ export default function AgentResearcherCRMv2({
                     onNoteUpdate={updateNote}
                   />
                 ))
+              )}
+
+              {filtered.length > visibleCount && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '14px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ fontSize: '0.74rem', color: '#7A8B9E' }}>Showing {visibleCount} Of {filtered.length}</span>
+                  <button type="button" onClick={() => setVisibleCount(v => v + PAGE_SIZE)}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 9, background: 'rgba(0,196,188,0.12)', border: '1px solid rgba(0,196,188,0.34)', color: '#00C4BC', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
+                    <ChevronDown size={13} /> Load More
+                  </button>
+                </div>
               )}
             </div>
           )}

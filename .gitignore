@@ -82,3 +82,4 @@ __pycache__/
 *.pyc
 tsconfig.cmpcheck.json
 tsconfig.cmp2.json
+tsconfig.trkcheck.json

@@ -557,7 +557,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
                   Join the Pep Nation Lab agent network and build your business in the {region} area. Earn recurring commissions by connecting qualified researchers with premium compounds at wholesale pricing.
                 </p>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', alignItems: 'center' }}>
                 <Link href="/become-agent" className="city-btn-link">
                   <Image src="/images/buttons/btn-agent.png" alt="Become An Agent" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
                 </Link>
