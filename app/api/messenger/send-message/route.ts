@@ -9,6 +9,7 @@ import { hasAdminMention, recordAdminMention } from '@/lib/messenger/admin-menti
 import { enqueuePush } from '@/lib/push-enqueue';
 import { notifyNewMessage, notifySupportMessage } from '@/lib/notify';
 import { sendBroadcast } from '@/lib/messenger/broadcast';
+import { signMessengerMediaUrl } from '@/lib/messenger/signMedia';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -100,7 +101,10 @@ export async function POST(req: NextRequest) {
       .eq('sender_id', user.id)
       .eq('client_message_id', parsed.data.clientMessageId)
       .maybeSingle();
-    if (existing) return NextResponse.json({ message: existing, idempotent: true });
+    if (existing) {
+      const signed = { ...existing, media_url: await signMessengerMediaUrl((existing as { media_url?: string | null }).media_url) };
+      return NextResponse.json({ message: signed, idempotent: true });
+    }
   }
 
   if (parsed.data.replyToId) {
@@ -160,13 +164,23 @@ export async function POST(req: NextRequest) {
         .eq('sender_id', user.id)
         .eq('client_message_id', parsed.data.clientMessageId)
         .maybeSingle();
-      if (existing) return NextResponse.json({ message: existing, idempotent: true });
+      if (existing) {
+        const signed = { ...existing, media_url: await signMessengerMediaUrl((existing as { media_url?: string | null }).media_url) };
+        return NextResponse.json({ message: signed, idempotent: true });
+      }
     }
     return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
   if (!inserted) {
     return NextResponse.json({ error: 'Insert Failed' }, { status: 500 });
   }
+
+  // Re-sign private-bucket media once; the signed object feeds both the
+  // realtime broadcasts and the JSON response (optimistic UI).
+  const outgoing = {
+    ...inserted,
+    media_url: await signMessengerMediaUrl((inserted as { media_url?: string | null }).media_url),
+  };
 
   if (cleanText && hasAdminMention(cleanText)) {
     await recordAdminMention(svc, {
@@ -293,7 +307,7 @@ export async function POST(req: NextRequest) {
             await sendBroadcast({
               topic: `user_notify:${p.user_id}`,
               event: 'new_message_notify',
-              payload: { message: inserted },
+              payload: { message: outgoing },
             });
             // Broadcast to the user's unread channel (for the red badge)
             await sendBroadcast({
@@ -315,15 +329,15 @@ export async function POST(req: NextRequest) {
   await sendBroadcast({
     topic: `user_notify:${user.id}`,
     event: 'new_message_notify',
-    payload: { message: inserted },
+    payload: { message: outgoing },
   });
 
   // Broadcast the message payload to the conversation channel
   await sendBroadcast({
     topic: `conversation:${parsed.data.conversationId}`,
     event: 'new_message',
-    payload: { message: inserted },
+    payload: { message: outgoing },
   });
 
-  return NextResponse.json({ message: inserted });
+  return NextResponse.json({ message: outgoing });
 }

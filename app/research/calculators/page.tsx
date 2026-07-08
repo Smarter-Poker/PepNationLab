@@ -42,11 +42,7 @@ const softwareJsonLd = {
         priceCurrency: 'USD',
       },
       operatingSystem: 'Web Browser',
-      provider: {
-        '@type': 'Organization',
-        name: 'Pep Nation Lab',
-        url: 'https://pepnationlab.com',
-      },
+      provider: { '@id': 'https://pepnationlab.com/#organization' },
     },
     // HowTo: reconstitution steps as machine-readable, AI-extractable procedure.
     // Framed strictly for in vitro laboratory research handling.

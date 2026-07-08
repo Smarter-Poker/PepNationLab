@@ -46,17 +46,14 @@ export default async function ResearchLibraryPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
-            '@context': 'https://schema.org/',
+            '@context': 'https://schema.org',
             '@type': 'Dataset',
             name: 'Pep Nation Lab Research Peptide Database',
             description: 'A comprehensive database of research-grade peptides and chemical compounds for laboratory use. Includes molecular weights, sequences, and evidence tiers.',
             url: 'https://pepnationlab.com/research/catalog',
             license: 'https://pepnationlab.com/terms',
             isAccessibleForFree: true,
-            creator: {
-              '@type': 'Organization',
-              name: 'Pep Nation Lab'
-            }
+            creator: { '@id': 'https://pepnationlab.com/#organization' }
           })
         }}
       />

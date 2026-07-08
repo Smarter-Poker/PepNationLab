@@ -30,11 +30,7 @@ const contactJsonLd = {
   name: 'Contact Pep Nation Lab',
   url: 'https://pepnationlab.com/contact',
   description: 'Contact Pep Nation Lab for research support, partnership, or account inquiries.',
-  publisher: {
-    '@type': 'Organization',
-    name: 'Pep Nation Lab',
-    url: 'https://pepnationlab.com',
-  },
+  publisher: { '@id': 'https://pepnationlab.com/#organization' },
 };
 
 export default function ContactPage() {

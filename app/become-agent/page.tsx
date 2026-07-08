@@ -32,11 +32,7 @@ const jsonLd = {
   url: 'https://pepnationlab.com/become-agent',
   description:
     'Apply to operate a branded research peptide distribution storefront on the Pep Nation Lab platform. Earn commissions, access wholesale pricing, and serve your local research community.',
-  publisher: {
-    '@type': 'Organization',
-    name: 'Pep Nation Lab',
-    url: 'https://pepnationlab.com',
-  },
+  publisher: { '@id': 'https://pepnationlab.com/#organization' },
   breadcrumb: {
     '@type': 'BreadcrumbList',
     itemListElement: [

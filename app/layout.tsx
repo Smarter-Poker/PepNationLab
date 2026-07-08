@@ -144,6 +144,8 @@ export default function RootLayout({
                   '@type': 'Organization',
                   '@id': 'https://pepnationlab.com/#organization',
                   name: 'Pep Nation Lab',
+                  legalName: 'Pep Nation Lab LLC',
+                  foundingDate: '2025',
                   url: 'https://pepnationlab.com',
                   logo: {
                     '@type': 'ImageObject',
@@ -173,7 +175,7 @@ export default function RootLayout({
                     // 'https://www.linkedin.com/company/pepnationlab',
                     'https://x.com/PepNationLab',                     // ✅ confirmed
                     // ── Tier 2: Supporting authority profiles ────────────────────
-                    'https://www.youtube.com/channel/UCvPX1ho_av0jxctz4yER0Og', // ✅ confirmed
+                    'https://www.youtube.com/@pepnationlab',              // ✅ handle format
                     'https://www.instagram.com/pepnationlab/',         // ✅ confirmed
                     'https://www.facebook.com/profile.php?id=61591787160330', // ✅ Page confirmed
                     // ── Tier 3: Niche / B2B entity signals ──────────────────────

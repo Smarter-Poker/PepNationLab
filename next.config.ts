@@ -13,6 +13,16 @@ const nextConfig = {
         hostname: "ydsaqnnuwyvtyxgvrnys.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
+      {
+        // Signed URLs for the now-private messenger_media bucket. media_url is
+        // re-signed at read time by lib/messenger/signMedia.ts into
+        // /object/sign/ URLs. MessageBubble renders these with `unoptimized`
+        // today, but allowlisting the path keeps them working if anyone later
+        // removes that flag and routes them through the image optimizer.
+        protocol: "https",
+        hostname: "ydsaqnnuwyvtyxgvrnys.supabase.co",
+        pathname: "/storage/v1/object/sign/**",
+      },
     ],
     formats: ["image/avif", "image/webp"],
     // Quality allowlist. Every quality={n} used anywhere in the app MUST be

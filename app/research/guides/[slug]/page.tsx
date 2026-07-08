@@ -89,6 +89,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           : {}),
       },
       ...(faqs.length ? [{ '@type': 'FAQPage', mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) }] : []),
+      ...(guide.howTo ? [{ '@type': 'HowTo', name: guide.howTo.name, description: guide.howTo.description, step: guide.howTo.steps.map((s, i) => ({ '@type': 'HowToStep', position: i + 1, name: s.name, text: s.text })) }] : []),
     ],
   };
 

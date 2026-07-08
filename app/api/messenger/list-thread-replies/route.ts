@@ -4,6 +4,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { ListThreadRepliesSchema } from '@/lib/messenger/schemas';
+import { signMessengerMediaUrl, signMessengerMediaUrls } from '@/lib/messenger/signMedia';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -66,5 +67,9 @@ export async function POST(req: NextRequest) {
   }
   const visibleMessages = rawMessages.filter((m) => !dismissedSet.has(m.id));
 
-  return NextResponse.json({ parent, messages: visibleMessages });
+  // Re-sign private-bucket media into short-lived signed URLs at read time.
+  const signedParent = { ...parent, media_url: await signMessengerMediaUrl(parent.media_url) };
+  const signedMessages = await signMessengerMediaUrls(visibleMessages);
+
+  return NextResponse.json({ parent: signedParent, messages: signedMessages });
 }

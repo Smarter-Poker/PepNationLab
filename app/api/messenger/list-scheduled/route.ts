@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
+import { signMessengerMediaUrls } from '@/lib/messenger/signMedia';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -57,5 +58,8 @@ export async function POST(req: NextRequest) {
     conversation_title: byId.get(r.conversation_id)?.title ?? null,
   }));
 
-  return NextResponse.json({ scheduled });
+  // Re-sign private-bucket media into short-lived signed URLs at read time.
+  const signedScheduled = await signMessengerMediaUrls(scheduled);
+
+  return NextResponse.json({ scheduled: signedScheduled });
 }

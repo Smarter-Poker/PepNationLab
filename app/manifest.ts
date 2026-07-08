@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Pep Nation Lab',
     short_name: 'PNL',
     description: 'Premium Research Peptide Distribution',
-    start_url: '/login',
+    start_url: '/',
     display: 'standalone',
     background_color: '#0A1018',
     theme_color: '#0A1018',

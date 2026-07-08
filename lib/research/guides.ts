@@ -28,6 +28,11 @@ export interface Guide {
   keyTakeaways: string[]; // dense, quotable summary for AEO
   related: string[];      // slugs of related guides
   compounds?: { name: string; slug: string }[];  // linked compound monographs
+  howTo?: {
+    name: string;
+    description: string;
+    steps: { name: string; text: string }[];
+  };
 }
 
 const AUTHOR = 'Pep Nation Lab Research Desk';
@@ -141,6 +146,16 @@ export const GUIDES: Guide[] = [
       'Always match the COA batch number to the physical vial before relying on the data.',
     ],
     related: ['what-research-use-only-means', 'peptide-storage-and-reconstitution'],
+    howTo: {
+      name: 'How to verify a Certificate of Analysis (COA) for a research peptide',
+      description: 'A step-by-step process for reviewing and verifying the purity and identity data on a peptide COA before use in vitro.',
+      steps: [
+        { name: 'Match the Batch Number', text: 'Ensure the batch or lot number stated on the COA perfectly matches the identifier printed on the physical vial.' },
+        { name: 'Check HPLC Purity', text: 'Look for a stated purity percentage determined by High-Performance Liquid Chromatography (HPLC) and verify it is supported by a chromatogram.' },
+        { name: 'Verify Mass Identity', text: 'Review the mass spectrometry (MS) result to confirm the observed mass matches the theoretical mass calculated from the peptide sequence.' },
+        { name: 'Confirm Third-Party Testing', text: 'Check if the testing was performed and validated by an independent or accredited third-party analytical laboratory.' }
+      ]
+    },
   },
 
   // ───────────────────────────────────────────────────────────────────────
@@ -195,6 +210,16 @@ export const GUIDES: Guide[] = [
       'Storage and reconstitution details are compound-specific and for in vitro research only.',
     ],
     related: ['how-to-read-a-certificate-of-analysis', 'what-research-use-only-means'],
+    howTo: {
+      name: 'How to store and reconstitute lyophilized research peptides',
+      description: 'General laboratory principles for preserving stability during storage and properly reconstituting peptide powders for in vitro research.',
+      steps: [
+        { name: 'Store the Lyophilized Powder', text: 'Keep the dry, lyophilized peptide powder in a cold, dry environment (refrigerator for short-term, freezer for long-term) and avoid repeated temperature cycling.' },
+        { name: 'Select the Solvent', text: 'Choose a reconstitution solvent appropriate for the specific peptide\'s chemistry, as documented in peer-reviewed literature.' },
+        { name: 'Reconstitute Gently', text: 'Direct the solvent slowly down the side of the vial and allow the peptide to dissolve without vigorous agitation.' },
+        { name: 'Minimize Time in Solution', text: 'Once dissolved, keep the solution cold during use, limit its time in solution, and aliquot if necessary to prevent freeze-thaw degradation.' }
+      ]
+    },
   },
 
   // ───────────────────────────────────────────────────────────────────────

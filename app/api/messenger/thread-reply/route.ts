@@ -7,6 +7,7 @@ import { ThreadReplySchema } from '@/lib/messenger/schemas';
 import { sanitizeMessageText } from '@/lib/messenger/sanitize';
 import { hasAdminMention, recordAdminMention } from '@/lib/messenger/admin-mentions';
 import { sendBroadcast } from '@/lib/messenger/broadcast';
+import { signMessengerMediaUrl } from '@/lib/messenger/signMedia';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -83,6 +84,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
   }
 
+  // Re-sign private-bucket media once; the signed object feeds both the
+  // realtime broadcast and the JSON response.
+  const outgoing = {
+    ...inserted,
+    media_url: await signMessengerMediaUrl((inserted as { media_url?: string | null }).media_url),
+  };
+
   if (cleanText && hasAdminMention(cleanText)) {
     await recordAdminMention(svc, {
       messageId: (inserted as { id: string }).id,
@@ -97,8 +105,8 @@ export async function POST(req: NextRequest) {
   await sendBroadcast({
     topic: `conversation:${parent.conversation_id}`,
     event: 'new_message',
-    payload: { message: inserted },
+    payload: { message: outgoing },
   });
 
-  return NextResponse.json({ message: inserted });
+  return NextResponse.json({ message: outgoing });
 }

@@ -4,6 +4,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { GetMessagesSchema } from '@/lib/messenger/schemas';
+import { signMessengerMediaUrls } from '@/lib/messenger/signMedia';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -133,7 +134,10 @@ export async function POST(req: NextRequest) {
     reactions = r ?? [];
   }
 
-  const res = NextResponse.json({ messages: messagesWithSenders.reverse(), reactions });
+  // Re-sign private-bucket media into short-lived signed URLs at read time.
+  const signedMessages = await signMessengerMediaUrls(messagesWithSenders);
+
+  const res = NextResponse.json({ messages: signedMessages.reverse(), reactions });
   res.headers.set('Cache-Control', 'private, no-store, max-age=0');
   return res;
 }

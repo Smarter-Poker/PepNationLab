@@ -4,6 +4,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { ListPinsSchema } from '@/lib/messenger/schemas';
+import { signMessengerMediaUrls } from '@/lib/messenger/signMedia';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -65,8 +66,11 @@ export async function POST(req: NextRequest) {
     .in('id', activeMessageIds);
   if (mErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
+  // Re-sign private-bucket media into short-lived signed URLs at read time.
+  const signedMsgs = await signMessengerMediaUrls(msgs ?? []);
+
   const byId = new Map<string, NonNullable<typeof msgs>[number]>();
-  (msgs ?? []).forEach((m) => byId.set(m.id, m));
+  signedMsgs.forEach((m) => byId.set(m.id, m));
 
   const pins = visiblePins.map((p) => ({
     id: p.id,
