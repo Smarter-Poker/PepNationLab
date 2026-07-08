@@ -1,0 +1,104 @@
+name: Apply Downline Button To AdminAgents
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-downline-button.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Apply anchored patch
+        run: |
+          python3 - <<'EOF'
+          import sys
+          path = "components/AdminAgents.tsx"
+          s = open(path).read()
+
+          if "DownlineTree" in s:
+              print("Already applied - nothing to do")
+              sys.exit(0)
+
+          a1 = "import AgentAccountDetail from '@/components/AgentAccountDetail';"
+          a2 = "const [viewingDownlineFor, setViewingDownlineFor] = useState<any | null>(null);"
+          a3 = """                  <button onClick={() => openEditAccountModal(agent)} className="btn-silver" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                    Edit Details
+                  </button>"""
+          a4 = "      {/* Create Agent Modal */}"
+
+          for i, anchor in enumerate([a1, a2, a3, a4], 1):
+              if anchor not in s:
+                  print(f"ABORT: anchor {i} not found - AdminAgents.tsx has drifted; apply manually")
+                  sys.exit(78)
+
+          s = s.replace(a1, a1 + "\nimport DownlineTree from '@/components/DownlineTree';", 1)
+          s = s.replace(a2, a2 + "\n  const [downlineTreeFor, setDownlineTreeFor] = useState<{ id: string; name: string } | null>(null);", 1)
+          b3 = a3 + """
+                  <button
+                    onClick={() => setDownlineTreeFor({ id: agent.id, name: agent.full_name || agent.username || 'Agent' })}
+                    className="btn-silver"
+                    style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                  >
+                    View Downlines
+                  </button>"""
+          s = s.replace(a3, b3, 1)
+
+          modal = """      {/* Downline Tree Modal */}
+                {downlineTreeFor && (
+                  <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.8)', zIndex: 1000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: 'var(--space-4)',
+                  }}>
+                    <div className="glass-panel" style={{ width: '100%', maxWidth: 760, maxHeight: '90vh', overflowY: 'auto' }}>
+                      <div style={{ padding: 'var(--space-6)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+                          <h3 className="metal-text" style={{ margin: 0, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            Downline: {downlineTreeFor.name}
+                          </h3>
+                          <button type="button" className="btn-silver" style={{ padding: '6px 14px', fontSize: '0.8rem' }} onClick={() => { setDownlineTreeFor(null); fetchAgents(); }}>
+                            Close
+                          </button>
+                        </div>
+                        <DownlineTree mode="admin" rootId={downlineTreeFor.id} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+          """
+          # Reindent the modal block to match the file (10-space JSX indent is
+          # produced by the literal above; normalize to the anchor's indent).
+          modal_lines = []
+          for line in modal.splitlines():
+              stripped = line.lstrip()
+              if not stripped:
+                  modal_lines.append("")
+                  continue
+              # First line keeps 6 spaces; nested content uses relative depth.
+              modal_lines.append(line.replace("          ", "      ", 1) if line.startswith("          ") else line)
+          s = s.replace(a4, "\n".join(modal_lines) + a4, 1)
+
+          open(path, "w").write(s)
+          print("Patched AdminAgents.tsx")
+          EOF
+      - name: Type check
+        run: |
+          npm ci --ignore-scripts 2>/dev/null || npm install --ignore-scripts
+          npx tsc --noEmit
+      - name: Commit, self-delete, push
+        run: |
+          git config user.name "downline-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-downline-button.yml
+          git add components/AdminAgents.tsx
+          git commit -m "Admin My Agents: View Downlines button + downline tree modal (applied by one-shot workflow, now removed)"
+          git push origin main
