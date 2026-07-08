@@ -19,7 +19,7 @@ const CANONICAL_SUPABASE_URL = 'https://ydsaqnnuwyvtyxgvrnys.supabase.co';
 
 // Hostnames that must never be used for Supabase traffic until they are
 // activated as a real Supabase custom domain.
-const DEAD_HOSTS = ['auth.pepnationlab.com'];
+const DEAD_HOSTS: string[] = [];
 
 export function getSupabaseUrl(): string {
   const raw = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim().replace(/\/+$/, '');
