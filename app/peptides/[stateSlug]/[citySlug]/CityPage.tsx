@@ -306,21 +306,8 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
               </p>
             )}
 
-            {/* Local Geography Data */}
-            {(city.county || city.zips) && (
-              <div style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 'var(--space-4)', marginBottom: 'var(--space-8)', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 'var(--radius-md)' }}>
-                {city.county && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
-                    <strong style={{ color: 'var(--silver)' }}>County:</strong> {city.county}
-                  </span>
-                )}
-                {city.zips && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
-                    <strong style={{ color: 'var(--silver)' }}>ZIPs:</strong> {city.zips.join(', ')}
-                  </span>
-                )}
-              </div>
-            )}
+
+
 
             {/* CTAs — custom PNG buttons */}
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 'var(--space-10)', alignItems: 'center' }}>
