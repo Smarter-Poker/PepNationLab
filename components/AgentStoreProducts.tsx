@@ -115,6 +115,8 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost' }:
   const [viewMode, setViewMode] = useState<'flat' | 'category'>('flat');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<AgentProduct>>({});
+  // Raw Text While Editing The Price So Typing Is Never Reformatted Mid-Keystroke.
+  const [priceText, setPriceText] = useState('');
   const [saving, setSaving] = useState(false);
   const [bulkMargin, setBulkMargin] = useState('50');
   const [bulkSaving, setBulkSaving] = useState(false);
@@ -224,6 +226,8 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost' }:
       is_on_sale: p.is_on_sale,
       sale_price: p.sale_price,
     } as any);
+    const isBacInit = /bac\.?\s*water/i.test(p.products?.name || '');
+    setPriceText(p.retail_price > 0 ? (p.retail_price / (isBacInit ? 1 : 10)).toFixed(2) : '');
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -516,17 +520,25 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost' }:
                             <div style={{ position: 'relative' }}>
                               <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#00E5FF', fontWeight: 700, fontSize: '0.85rem', pointerEvents: 'none' }}>$</span>
                               <input
-                                type="number"
-                                step="0.01"
+                                type="text"
+                                inputMode="decimal"
                                 autoFocus
                                 className="form-input"
                                 style={{ width: 80, padding: '4px 4px 4px 18px', height: 28, fontSize: '0.85rem', background: 'var(--bg-metal-dark)', border: '1px solid #00E5FF', boxShadow: '0 0 5px rgba(0,229,255,0.3)', color: '#fff' }}
-                                value={Number((editForm as any).retail_price) >= 0 ? (Number((editForm as any).retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2) : ''}
+                                value={priceText}
                                 onChange={e => {
-                                  const perVial = parseFloat(e.target.value) || 0;
-                                  const per10 = perVial * 10;
-                                  const newMargin = p.agent_cost && p.agent_cost > 0 ? Math.round((per10 / p.agent_cost - 1) * 100) : (editForm as any).margin_percent ?? 50;
-                                  setEditForm({ ...editForm, retail_price: per10, margin_percent: newMargin } as any);
+                                  // Free Typing: Digits Plus One Decimal Point, Two Decimals Max.
+                                  let clean = e.target.value.replace(/[^0-9.]/g, '');
+                                  const dot = clean.indexOf('.');
+                                  if (dot !== -1) {
+                                    clean = clean.slice(0, dot + 1) + clean.slice(dot + 1).replace(/\./g, '');
+                                    clean = clean.slice(0, dot + 3);
+                                  }
+                                  setPriceText(clean);
+                                  const perVial = parseFloat(clean) || 0;
+                                  const stored = perVial * (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10);
+                                  const newMargin = p.agent_cost && p.agent_cost > 0 ? Math.round((stored / p.agent_cost - 1) * 100) : (editForm as any).margin_percent ?? 50;
+                                  setEditForm({ ...editForm, retail_price: stored, margin_percent: newMargin } as any);
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
                               />
@@ -535,14 +547,16 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost' }:
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(0,229,255,0.1)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(0,229,255,0.3)' }}>
                               <span style={{ fontSize: '0.65rem', color: '#00E5FF', fontWeight: 700 }}>+</span>
                               <input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
                                 className="form-input"
                                 style={{ width: 40, padding: 0, height: 20, fontSize: '0.75rem', background: 'transparent', border: 'none', color: '#00E5FF', fontWeight: 700, textAlign: 'center' }}
                                 value={(editForm as any).margin_percent ?? 50}
                                 onChange={e => {
-                                  const pct = Number(e.target.value);
+                                  const pct = Number(e.target.value.replace(/[^0-9-]/g, '')) || 0;
                                   const newPrice = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost * (1 + pct / 100) : (editForm as any).retail_price;
                                   setEditForm({ ...editForm, margin_percent: pct, retail_price: newPrice } as any);
+                                  setPriceText(Number(newPrice) > 0 ? (Number(newPrice) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2) : '');
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
                               />
@@ -722,17 +736,25 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost' }:
                             <div style={{ position: 'relative' }}>
                               <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#00E5FF', fontWeight: 700, fontSize: '0.85rem', pointerEvents: 'none' }}>$</span>
                               <input
-                                type="number"
-                                step="0.01"
+                                type="text"
+                                inputMode="decimal"
                                 autoFocus
                                 className="form-input"
                                 style={{ width: 80, padding: '4px 4px 4px 18px', height: 28, fontSize: '0.85rem', background: 'var(--bg-metal-dark)', border: '1px solid #00E5FF', boxShadow: '0 0 5px rgba(0,229,255,0.3)', color: '#fff' }}
-                                value={Number((editForm as any).retail_price) >= 0 ? (Number((editForm as any).retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2) : ''}
+                                value={priceText}
                                 onChange={e => {
-                                  const perVial = parseFloat(e.target.value) || 0;
-                                  const per10 = perVial * 10;
-                                  const newMargin = p.agent_cost && p.agent_cost > 0 ? Math.round((per10 / p.agent_cost - 1) * 100) : (editForm as any).margin_percent ?? 50;
-                                  setEditForm({ ...editForm, retail_price: per10, margin_percent: newMargin } as any);
+                                  // Free Typing: Digits Plus One Decimal Point, Two Decimals Max.
+                                  let clean = e.target.value.replace(/[^0-9.]/g, '');
+                                  const dot = clean.indexOf('.');
+                                  if (dot !== -1) {
+                                    clean = clean.slice(0, dot + 1) + clean.slice(dot + 1).replace(/\./g, '');
+                                    clean = clean.slice(0, dot + 3);
+                                  }
+                                  setPriceText(clean);
+                                  const perVial = parseFloat(clean) || 0;
+                                  const stored = perVial * (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10);
+                                  const newMargin = p.agent_cost && p.agent_cost > 0 ? Math.round((stored / p.agent_cost - 1) * 100) : (editForm as any).margin_percent ?? 50;
+                                  setEditForm({ ...editForm, retail_price: stored, margin_percent: newMargin } as any);
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
                               />
@@ -741,14 +763,16 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost' }:
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(0,229,255,0.1)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(0,229,255,0.3)' }}>
                               <span style={{ fontSize: '0.65rem', color: '#00E5FF', fontWeight: 700 }}>+</span>
                               <input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
                                 className="form-input"
                                 style={{ width: 40, padding: 0, height: 20, fontSize: '0.75rem', background: 'transparent', border: 'none', color: '#00E5FF', fontWeight: 700, textAlign: 'center' }}
                                 value={(editForm as any).margin_percent ?? 50}
                                 onChange={e => {
-                                  const pct = Number(e.target.value);
+                                  const pct = Number(e.target.value.replace(/[^0-9-]/g, '')) || 0;
                                   const newPrice = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost * (1 + pct / 100) : (editForm as any).retail_price;
                                   setEditForm({ ...editForm, margin_percent: pct, retail_price: newPrice } as any);
+                                  setPriceText(Number(newPrice) > 0 ? (Number(newPrice) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2) : '');
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
                               />
