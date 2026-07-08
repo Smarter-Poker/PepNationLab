@@ -170,23 +170,23 @@ export default function RootLayout({
                   // Entity authority profiles — updated 2026-07-07.
                   // Consistency across all profiles (name/handle/website) is the ranking signal.
                   sameAs: [
-                    // ── Tier 1: Knowledge Graph anchors ──────────────────────
-                    'https://www.wikidata.org/wiki/Q140460136',       // ✅ confirmed
+                    // ── Tier 1: Knowledge Graph anchors ──────────────────────────
+                    'https://www.wikidata.org/wiki/Q140460136',       // confirmed
                     // LinkedIn company page — add tomorrow after 24-hr new-account lockout lifts:
                     // 'https://www.linkedin.com/company/pepnationlab',
-                    'https://x.com/PepNationLab',                     // ✅ confirmed
+                    'https://x.com/PepNationLab',                     // confirmed
                     // ── Tier 2: Supporting authority profiles ────────────────────
-                    'https://www.youtube.com/@pepnationlab',              // ✅ handle format
-                    'https://www.instagram.com/pepnationlab/',         // ✅ confirmed
-                    'https://www.facebook.com/profile.php?id=61591787160330', // ✅ Page confirmed
-                    // ── Tier 3: Niche / B2B entity signals ──────────────────
-                    'https://www.crunchbase.com/organization/pep-nation-lab', // ✅ confirmed
-                    'https://www.reddit.com/user/PepNationLab/',      // ✅ confirmed
+                    'https://www.youtube.com/@pepnationlab',              // handle format
+                    'https://www.instagram.com/pepnationlab/',         // confirmed
+                    'https://www.facebook.com/profile.php?id=61591787160330', // Page confirmed
+                    // ── Tier 3: Niche / B2B entity signals ──────────────────────
+                    'https://www.crunchbase.com/organization/pep-nation-lab', // confirmed
+                    'https://www.reddit.com/user/PepNationLab/',      // confirmed
                     // ── Additional: AI-model-weighted platforms ──────────────────
-                    'https://www.bing.com/forbusiness/singleEntity?bizid=cefae10a-706b-4455-acdf-fbc9094f60a3', // ✅ Bing entity confirmed
-                    'https://www.trustpilot.com/review/pepnationlab.com', // ✅ confirmed
-                    'https://www.tiktok.com/@pepnationlab',            // ✅ confirmed
-                    'https://www.pinterest.com/PepNationLab/',         // ✅ confirmed
+                    'https://www.bing.com/forbusiness/singleEntity?bizid=cefae10a-706b-4455-acdf-fbc9094f60a3', // Bing entity confirmed
+                    'https://www.trustpilot.com/review/pepnationlab.com', // confirmed
+                    'https://www.tiktok.com/@pepnationlab',            // confirmed
+                    'https://www.pinterest.com/PepNationLab/',         // confirmed
                     // GitHub org — add when created:
                     // 'https://github.com/pepnationlab',
                   ],
