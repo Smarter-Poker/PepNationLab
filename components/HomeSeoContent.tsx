@@ -51,10 +51,21 @@ export default function HomeSeoContent() {
   return (
     <section
       aria-label="About Pep Nation Lab"
+      // Visually hidden, crawler- and screen-reader-accessible (standard
+      // clip-rect pattern used site-wide). This block is the no-JS
+      // equivalent of what the interactive UI renders, kept in the initial
+      // HTML so search engines and AI crawlers can read it. It mirrors the
+      // visible page content - NOT hidden keyword stuffing. Do not remove.
       style={{
-        background: '#020617',
-        color: 'var(--white, #fff)',
-        padding: 'var(--space-8, 48px) var(--space-4, 16px)',
+        position: 'absolute',
+        width: 1,
+        height: 1,
+        padding: 0,
+        margin: -1,
+        overflow: 'hidden',
+        clip: 'rect(0, 0, 0, 0)',
+        whiteSpace: 'nowrap',
+        border: 0,
       }}
     >
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>

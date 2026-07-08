@@ -87,11 +87,21 @@ export default function MonographSeoContent({ compound }: { compound: Compound }
   return (
     <article
       aria-label={`${compound.display_name} Research Summary`}
+      // Visually hidden, crawler- and screen-reader-accessible (standard
+      // clip-rect pattern used site-wide). This block is the no-JS
+      // equivalent of what the interactive UI renders, kept in the initial
+      // HTML so search engines and AI crawlers can read it. It mirrors the
+      // visible page content - NOT hidden keyword stuffing. Do not remove.
       style={{
-        maxWidth: '1100px',
-        margin: '0 auto',
-        padding: 'var(--space-6, 32px) var(--space-4, 16px) var(--space-2, 8px)',
-        color: 'var(--white, #fff)',
+        position: 'absolute',
+        width: 1,
+        height: 1,
+        padding: 0,
+        margin: -1,
+        overflow: 'hidden',
+        clip: 'rect(0, 0, 0, 0)',
+        whiteSpace: 'nowrap',
+        border: 0,
       }}
     >
       <header>

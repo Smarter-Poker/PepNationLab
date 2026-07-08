@@ -161,6 +161,27 @@ export default async function FindAPeptidePage() {
       />
       <Navbar />
       <div style={{ paddingTop: '60px', minHeight: '100dvh', backgroundColor: '#05070a' }}>
+        {/* Crawlable finder content layer - visually hidden (clip-rect).
+            The finder itself is client-rendered, so this is the no-JS
+            equivalent for search engines and AI crawlers. */}
+        <header style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}>
+          <h1>Find A Peptide - Match Research Compounds To Your Research Goal</h1>
+          <p>
+            Discover The Right Research Peptide By Therapeutic Research Area: Weight Loss And
+            Metabolism Research (Semaglutide, Tirzepatide, Retatrutide, AOD9604), Healing And
+            Recovery (BPC-157, TB-500), Anti-Aging And Longevity (Epithalon, NAD+, GHK-Cu),
+            Muscle Growth And Performance (CJC-1295, Ipamorelin, Sermorelin), Skin And Cosmetic
+            Research, Immunity And Wellness, And Sexual Health. Answer A Few Questions And The
+            Match Engine Recommends Citation-Backed Compounds For In Vitro Laboratory Research.
+            Research Use Only - Not For Human Consumption.
+          </p>
+          <nav aria-label="Finder Resources">
+            <a href="/research/areas">Browse By Research Area</a>
+            <a href="/research/match">AI Match Engine</a>
+            <a href="/research/catalog">Full Compound Catalog</a>
+            <a href="/research">Peptide Research Library</a>
+          </nav>
+        </header>
         <FindAPeptideClient
           products={productList as any}
           agentSlug={agent.slug}
