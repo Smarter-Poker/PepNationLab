@@ -27,7 +27,7 @@ import {
   Target, Flame, X, ChevronDown, ChevronUp, Mail, Activity as ActivityIcon,
   Table as TableIcon, LayoutGrid, BarChart3, GitBranch, Printer, Bell,
   CheckCircle2, UserCheck, ArrowUpRight, StickyNote, Shield, RefreshCw,
-  UserPlus, Share2, ShoppingBag, Rocket, Link as LinkIcon, Copy, CheckSquare, XCircle,
+  UserPlus, Share2, ShoppingBag, Rocket, Link as LinkIcon, Copy, XCircle,
 } from 'lucide-react';
 import {
   KanbanView, ChartsView, AcquisitionView, useInsights,
@@ -494,13 +494,19 @@ function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMess
       <div
         onClick={onExpand} role="button" tabIndex={0}
         onKeyDown={e => e.key === 'Enter' && onExpand()}
-        style={{ display: 'grid', gridTemplateColumns: 'minmax(160px,2fr) 90px 80px 110px 100px 110px', alignItems: 'center', gap: 8, padding: '13px 16px', cursor: 'pointer', borderLeft: `3px solid ${s.border}`, transition: 'background 0.13s' }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.022)'; }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+        style={{ display: 'grid', gridTemplateColumns: 'minmax(160px,2fr) 90px 80px 110px 100px 110px', alignItems: 'center', gap: 8, padding: '13px 16px', cursor: 'pointer', borderLeft: `3px solid ${selected ? '#00C4BC' : s.border}`, background: selected ? 'rgba(0,196,188,0.06)' : 'transparent', transition: 'background 0.13s' }}
+        onMouseEnter={e => { e.currentTarget.style.background = selected ? 'rgba(0,196,188,0.10)' : 'rgba(255,255,255,0.022)'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = selected ? 'rgba(0,196,188,0.06)' : 'transparent'; }}
         className="crm-row"
       >
         {/* Name + meta */}
-        <div style={{ minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, minWidth: 0 }}>
+          {onToggleSelect && (
+            <input type="checkbox" className="crm-checkbox" aria-label="Select Researcher"
+              checked={!!selected} onClick={e => e.stopPropagation()} onChange={onToggleSelect}
+              style={{ marginTop: 3 }} />
+          )}
+          <div style={{ minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
               {r.is_pinned && <Pin size={10} color="#00C4BC" aria-hidden />}
@@ -520,6 +526,7 @@ function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMess
               {r.tags.map(t => <span key={t.id} style={{ fontSize: '0.6rem', padding: '1px 6px', borderRadius: 999, background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.28)', color: '#00C4BC', fontWeight: 700 }}>{t.tag}</span>)}
             </div>
           )}
+          </div>
         </div>
 
         {/* LTV */}
