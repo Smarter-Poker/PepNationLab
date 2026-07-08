@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import ViewAsButton from '@/components/ViewAsButton';
 import AdminTierOverrideControl from '@/components/AdminTierOverrideControl';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
+import DownlineTree from '@/components/DownlineTree';
 import { freshDefaultLadder, GAMIFICATION_MAX_PCT } from '@/lib/gamification';
 
 const AvailabilityIndicator = ({ status }: { status: 'idle' | 'checking' | 'available' | 'taken' }) => {
@@ -98,6 +99,7 @@ export default function AdminAgents() {
   const [caCustomSteps, setCaCustomSteps] = useState(freshDefaultLadder());
   const [showGamificationInfo, setShowGamificationInfo] = useState(false);
   const [viewingDownlineFor, setViewingDownlineFor] = useState<any | null>(null);
+  const [downlineTreeFor, setDownlineTreeFor] = useState<{ id: string; name: string } | null>(null);
 
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
@@ -638,6 +640,13 @@ export default function AdminAgents() {
                   <button onClick={() => openEditAccountModal(agent)} className="btn-silver" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
                     Edit Details
                   </button>
+                  <button
+                    onClick={() => setDownlineTreeFor({ id: agent.id, name: agent.full_name || agent.username || 'Agent' })}
+                    className="btn-silver"
+                    style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                  >
+                    View Downlines
+                  </button>
                 </div>
 
               </div>
@@ -923,6 +932,30 @@ export default function AdminAgents() {
             setEditingFullAgent(null);
           }}
         />
+      )}
+
+      {/* Downline Tree Modal */}
+      {downlineTreeFor && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 'var(--space-4)',
+        }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: 760, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ padding: 'var(--space-6)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+                <h3 className="metal-text" style={{ margin: 0, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Downline: {downlineTreeFor.name}
+                </h3>
+                <button type="button" className="btn-silver" style={{ padding: '6px 14px', fontSize: '0.8rem' }} onClick={() => { setDownlineTreeFor(null); fetchAgents(); }}>
+                  Close
+                </button>
+              </div>
+              <DownlineTree mode="admin" rootId={downlineTreeFor.id} />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Create Agent Modal */}
