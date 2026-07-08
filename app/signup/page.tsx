@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { UserPlus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
 
 // Public Researcher Signup -- Every Account Created Here Is Linked To The
 // House Storefront (Pep Nation Research Store) Via The Storefront Register API.
@@ -38,6 +39,20 @@ function SignupForm() {
   const [step, setStep] = useState<'form' | 'code'>('form');
   const [code, setCode] = useState('');
   const [resending, setResending] = useState(false);
+
+  const [usernameDirty, setUsernameDirty] = useState(false);
+
+  const usernameCheck = useAvailability({
+    field: 'username',
+    value: username,
+    minLength: 2,
+    disabled: false,
+  });
+  const usernameMsg = availabilityMessage(usernameCheck);
+  const usernameBlocked =
+    usernameCheck.status === 'taken' ||
+    usernameCheck.status === 'reserved' ||
+    usernameCheck.status === 'invalid';
 
   // Capture the agent slug from localStorage so the new account is linked
   // to the agent the guest was browsing when they decided to sign up.
@@ -396,10 +411,15 @@ function SignupForm() {
               <label className="form-label" htmlFor="username">Username</label>
               <input
                 id="username" type="text" className="form-input" placeholder="Choose A Username"
-                value={username} onChange={e => setUsername(e.target.value)}
+                value={username} onChange={e => { setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); setUsernameDirty(true); }}
                 required minLength={2} maxLength={30}
                 autoComplete="username" autoCapitalize="none" spellCheck={false}
               />
+              {usernameMsg && (
+                <p style={{ fontSize: '0.72rem', marginTop: 4, color: usernameMsg.color }}>
+                  {usernameMsg.text}
+                </p>
+              )}
             </div>
 
             <div className="form-group">
@@ -447,9 +467,15 @@ function SignupForm() {
               type="submit"
               className="btn btn-primary hover-lift"
               style={{ width: '100%', justifyContent: 'center' }}
-              disabled={loading || !allAcked || !firstName || !lastName || !username || !email || password.length < 8}
+              disabled={loading || !allAcked || !firstName || !lastName || !username || !email || password.length < 8 || usernameBlocked || usernameCheck.status === 'checking'}
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading
+                ? 'Creating Account...'
+                : usernameBlocked
+                  ? 'Pick A Different Username'
+                  : usernameCheck.status === 'checking'
+                    ? 'Checking Username...'
+                    : 'Create Account'}
             </button>
           </form>
           </>
