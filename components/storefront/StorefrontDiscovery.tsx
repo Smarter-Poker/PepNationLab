@@ -1294,6 +1294,8 @@ export default function DiscoveryHero({
     budget?: 'conservative' | 'standard' | 'unlimited';
     excludeInjectables?: boolean;
     requireLongHalfLife?: boolean;
+    /** When set, /match parses this raw goal server-side (single round trip). */
+    prompt?: string;
   }, summary: string) => {
     setLoading(true);
     setResults([]);
@@ -1306,18 +1308,22 @@ export default function DiscoveryHero({
       const res = await fetch('/api/research/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          input: {
-            goal: input.goal,
-            goals: input.goals,
-            evidenceComfort: input.evidenceComfort || 'preclinical_ok',
-            riskTolerance: input.riskTolerance || 'moderate_ok',
-            preference: input.preference,
-            budget: input.budget || 'standard',
-            excludeInjectables: input.excludeInjectables,
-            requireLongHalfLife: input.requireLongHalfLife,
-          },
-        }),
+        body: JSON.stringify(
+          input.prompt
+            ? { prompt: input.prompt }
+            : {
+                input: {
+                  goal: input.goal,
+                  goals: input.goals,
+                  evidenceComfort: input.evidenceComfort || 'preclinical_ok',
+                  riskTolerance: input.riskTolerance || 'moderate_ok',
+                  preference: input.preference,
+                  budget: input.budget || 'standard',
+                  excludeInjectables: input.excludeInjectables,
+                  requireLongHalfLife: input.requireLongHalfLife,
+                },
+              }
+        ),
       });
       if (!res.ok) { setMatchError(true); return; }
       const json = await res.json().catch(() => null) as {
@@ -1366,34 +1372,10 @@ export default function DiscoveryHero({
     if (!g) return;
     
     setSuggestOpen(false);
-    
-    setLoading(true);
-    setDrawerOpen(true);
-    setGoalSummary(g);
-    setMatchError(false);
-    setResults([]);
-    setExcluded([]);
-
-    try {
-      const res = await fetch('/api/research/ai-match', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: g })
-      });
-      const data = res.ok ? await res.json().catch(() => null) : null;
-
-      if (data?.result) {
-        await runMatch(data.result, g);
-      } else {
-        // Keep the drawer open and surface an error instead of silently
-        // closing it (which looked like a broken button).
-        setMatchError(true);
-        setLoading(false);
-      }
-    } catch {
-      setMatchError(true);
-      setLoading(false);
-    }
+    // Single round trip: /api/research/match now parses a raw prompt server-side,
+    // so we skip the separate /ai-match call. runMatch owns the loading, drawer,
+    // error, and result state (including the "Something Went Wrong" panel).
+    await runMatch({ goal: g, prompt: g }, g);
   }, [query, runMatch]);
 
   useEffect(() => {

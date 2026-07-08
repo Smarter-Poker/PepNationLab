@@ -15,6 +15,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { parsePromptToMatchInput } from '@/lib/goal-nlp';
 import {
   scoreCompounds,
   type MatchInput,
@@ -86,8 +87,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const candidate = (body as { input?: unknown } | null)?.input ?? body;
-  const input = parseInput(candidate);
+  // Accept either a structured { input } (or bare structured body) or a raw
+  // { prompt } which we parse server-side -- letting the typed-goal search hit
+  // this endpoint in a single round trip instead of pre-calling /ai-match.
+  const rawBody = body as { input?: unknown; prompt?: unknown } | null;
+  const input =
+    rawBody && typeof rawBody.prompt === 'string' && rawBody.prompt.trim()
+      ? parseInput(parsePromptToMatchInput(rawBody.prompt))
+      : parseInput(rawBody?.input ?? body);
   if (!input) {
     return NextResponse.json(
       {
