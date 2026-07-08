@@ -21,7 +21,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { BellRing, CheckCircle2 } from 'lucide-react';
+import { BellRing, BellOff, CheckCircle2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { isWebPushSupported, notificationPermission, enablePush } from '@/lib/push-client';
 
@@ -33,6 +33,9 @@ export default function FirstRunNotificationPrompt() {
   const [role, setRole] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [enabled, setEnabled] = useState(false);
+  // Browser-level notification permission is 'denied' for this site: the Enable
+  // button can no longer prompt, so we show unblock instructions instead.
+  const [blocked, setBlocked] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // The onboarding wizard has its own notifications step; never double-prompt there.
@@ -80,7 +83,10 @@ export default function FirstRunNotificationPrompt() {
         if (!cancelled) setRole((prof?.role as string) ?? null);
       } catch { /* ignore */ }
 
-      if (!cancelled) setShow(true);
+      if (!cancelled) {
+        setBlocked(notificationPermission() === 'denied');
+        setShow(true);
+      }
     })();
     return () => { cancelled = true; };
   }, [onOnboarding, onLanding]);
@@ -133,7 +139,7 @@ export default function FirstRunNotificationPrompt() {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={enabled ? "You're All Set" : 'Turn On Notifications'}
+      aria-label={enabled ? "You're All Set" : blocked ? 'Notifications Are Blocked' : 'Turn On Notifications'}
       style={{
         position: 'fixed', inset: 0, zIndex: 3000,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -142,10 +148,30 @@ export default function FirstRunNotificationPrompt() {
     >
       <div className="glass-panel stagger-fade-in" style={cardStyle}>
         <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: '50%', background: 'rgba(0,196,188,0.14)', border: '1px solid rgba(0,196,188,0.4)', color: 'var(--teal)', marginBottom: 'var(--space-4, 16px)' }}>
-          {enabled ? <CheckCircle2 size={28} /> : <BellRing size={28} />}
+          {enabled ? <CheckCircle2 size={28} /> : blocked ? <BellOff size={28} /> : <BellRing size={28} />}
         </div>
 
-        {!enabled ? (
+        {!enabled && blocked ? (
+          <>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--white)', margin: '0 0 8px' }}>Notifications Are Blocked</h2>
+            <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.55, margin: '0 auto', maxWidth: 380 }}>
+              Your Browser Has Blocked Notifications For This Site, So We Cannot Ask For Permission Here. To Turn Them On:
+            </p>
+            <ol style={{ textAlign: 'left', fontSize: '0.85rem', color: 'var(--grey-300)', lineHeight: 1.6, margin: '14px auto 0', maxWidth: 340, paddingLeft: 20 }}>
+              <li>Click The Site Settings Icon On The Left Of The Address Bar.</li>
+              <li>Find Notifications And Set It To Allow.</li>
+              <li>Reload This Page And Try Again.</li>
+            </ol>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ ...primaryBtn, marginTop: 'var(--space-5, 20px)' }}
+              className="btn btn-primary"
+            >
+              Got It
+            </button>
+          </>
+        ) : !enabled ? (
           <>
             <h2 style={{ fontSize: '1.4rem', color: 'var(--white)', margin: '0 0 8px' }}>Turn On Notifications</h2>
             <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.55, margin: '0 auto', maxWidth: 380 }}>

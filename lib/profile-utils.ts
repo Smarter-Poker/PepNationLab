@@ -22,7 +22,18 @@ export function getCompletenessData(p: any, ap?: any) {
 
   filled += check(!!p.first_name?.trim(), 'first-name', 'First Name', 'Add Now', 'nav:/account#first-name');
   filled += check(!!p.last_name?.trim(), 'last-name', 'Last Name', 'Add Now', 'nav:/account#last-name');
-  filled += check(!!p.email?.trim() && !p.email.includes('@internal.auth') && !p.email.includes('@pepnationlab.com'), 'email', 'Email Address', 'Add Now', 'nav:/account#email');
+  // A real email may live in either `email` (Google/OAuth signups) or
+  // `contact_email` (storefront/username signups, where `email` is null and the
+  // auth record carries a synthetic <username>@internal.auth address). Treat the
+  // task as complete when EITHER column holds a genuine, non-synthetic address —
+  // otherwise we ask users to re-enter an email we already captured at signup.
+  const isRealEmail = (e: unknown): boolean =>
+    typeof e === 'string' &&
+    e.trim() !== '' &&
+    !e.includes('@internal.auth') &&
+    !e.includes('@pepnationlab.com');
+  const hasRealEmail = isRealEmail(p.email) || isRealEmail(p.contact_email);
+  filled += check(hasRealEmail, 'email', 'Email Address', 'Add Now', 'nav:/account#email');
   filled += check(!!p.phone?.trim(), 'phone', 'Phone Number', 'Add Now', 'nav:/account#phone');
   filled += check(!!p.timezone?.trim(), 'timezone', 'Timezone', 'Select Now', 'nav:/account#timezone');
   filled += check(!!p.avatar_url, 'avatar', 'Profile Picture', 'Upload', 'nav:/account#avatar');
