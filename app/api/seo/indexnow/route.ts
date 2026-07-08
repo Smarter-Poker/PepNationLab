@@ -17,6 +17,8 @@ import { NextResponse } from 'next/server';
 import { pingIndexNow } from '@/lib/indexnow';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
+import { CITIES, getStatesSlugs } from '@/lib/cities/cities-data';
+import { GUIDES } from '@/lib/research/guides';
 
 const BASE = 'https://pepnationlab.com';
 
@@ -33,13 +35,23 @@ const STATIC_PATHS = [
   '/research/compare',
   '/research/faq',
   '/research/methodology',
+  '/research/guides',
   '/peptides',
+  '/researchstore',
 ];
 
 async function importantUrls(): Promise<string[]> {
   const urls = new Set<string>();
   for (const p of STATIC_PATHS) urls.add(`${BASE}${p}`);
   for (const pair of COMPARISON_PAIRS) urls.add(`${BASE}/research/compare/${matchupSlug(pair.a, pair.b)}`);
+  // Local-SEO surface: every state hub and every city landing page. These
+  // were previously missing, so Bing/Yandex (and the AI answer engines that
+  // read Bing's index) never got pinged about the city build-out at all.
+  // IndexNow accepts up to 10,000 URLs per submission - the full set here
+  // is well under 1,000.
+  for (const stateSlug of getStatesSlugs()) urls.add(`${BASE}/peptides/${stateSlug}`);
+  for (const city of CITIES) urls.add(`${BASE}/peptides/${city.stateSlug}/${city.slug}`);
+  for (const guide of GUIDES) urls.add(`${BASE}/research/guides/${guide.slug}`);
   try {
     const all = await getAllCompounds();
     for (const c of all) urls.add(`${BASE}/research/${c.slug}`);
