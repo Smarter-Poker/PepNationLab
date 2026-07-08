@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { RESEARCH_AREAS } from '@/lib/compounds';
 import TherapeuticAreasClient from './TherapeuticAreasClient';
 
 export const metadata: Metadata = {
@@ -22,7 +23,24 @@ export const metadata: Metadata = {
   },
 };
 
+// Visually-hidden pattern: present in the DOM + accessibility tree (read by
+// crawlers/screen readers), painted 1px + clipped so it never disturbs the
+// image-based visual design.
+const srOnly: React.CSSProperties = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: 'hidden',
+  clip: 'rect(0, 0, 0, 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+};
+
 export default function TherapeuticAreasPage() {
+  const areaKeys = Object.keys(RESEARCH_AREAS);
+
   return (
     <>
       <script
@@ -50,6 +68,30 @@ export default function TherapeuticAreasPage() {
           ],
         }) }}
       />
+
+      {/* Server-rendered, crawlable header. The visual page below is an image
+          header + image-card grid, so this supplies the real <h1>, an intro,
+          and a text index of every therapeutic area — visually hidden so the
+          artwork-led design is unchanged. */}
+      <header style={srOnly}>
+        <h1>Research Peptides By Therapeutic Area</h1>
+        <p>
+          Browse the Pep Nation Lab research library by therapeutic research area. Each area groups the
+          research-grade peptides most studied for that category of in vitro laboratory research — from
+          weight management and tissue repair to cognitive, gut health, immune, longevity, and skin and
+          hair research. All compounds are for Research Use Only.
+        </p>
+        <nav aria-label="Therapeutic Research Areas">
+          <ul>
+            {areaKeys.map((key) => (
+              <li key={key}>
+                <a href={`/research/area/${key}`}>{RESEARCH_AREAS[key].label}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </header>
+
       <TherapeuticAreasClient />
     </>
   );
