@@ -13,6 +13,7 @@ import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/l
 import { notifyAdminOrderStatusChange, notifyOrderShipped } from '@/lib/notify';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 import { purchaseLabelForOrder } from '@/lib/shippo';
+import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail } from '@/lib/email';
 
 // Labels are purchased synchronously from Shippo in this request (manual, on
 // admin click) - never via a background cron - so allow extra wall-clock time.
@@ -144,6 +145,24 @@ export async function POST(req: NextRequest) {
           else if (target === 'delivered') event = 'order_delivered';
           if (event) {
             await enqueueOrderPush(supabase, { userId: buyerId, orderId: id, event, tracking: trackingNum });
+          }
+
+          // Transactional email for shipped/delivered. Best-effort, non-blocking,
+          // verified email only. canTransition already blocks no-op transitions,
+          // and current !== target is asserted again so no duplicate sends.
+          if ((target === 'shipped' || target === 'delivered') && current !== target && emailConfigured()) {
+            const { data: buyer } = await supabase
+              .from('profiles')
+              .select('contact_email, email_verified, full_name')
+              .eq('id', buyerId)
+              .maybeSingle();
+            if (buyer?.contact_email && buyer.email_verified) {
+              if (target === 'shipped') {
+                void sendOrderShippedEmail({ to: buyer.contact_email, fullName: buyer.full_name, orderId: id, trackingNumber: trackingNum }).catch(() => {});
+              } else {
+                void sendOrderDeliveredEmail({ to: buyer.contact_email, fullName: buyer.full_name, orderId: id }).catch(() => {});
+              }
+            }
           }
         }
       } catch { /* notifications must not block bulk response */ }
