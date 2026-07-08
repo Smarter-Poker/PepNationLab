@@ -29,6 +29,12 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab Research Catalog' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Research Catalog | All Peptides | Pep Nation Lab',
+    description: 'Complete catalog of 300+ research-grade peptides with full monographs and evidence data.',
+    images: ['/og-card.png'],
+  },
 };
 
 export default async function ResearchLibraryPage({

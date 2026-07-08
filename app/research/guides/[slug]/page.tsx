@@ -14,7 +14,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const guide = getGuide(slug);
-  if (!guide) return {};
+  if (!guide) return { title: 'Guide Not Found | Pep Nation Lab', robots: { index: false } };
 
   const url = `https://pepnationlab.com/research/guides/${guide.slug}`;
   return {
@@ -32,7 +32,7 @@ export async function generateMetadata({
       modifiedTime: guide.dateModified,
       images: [{ url: '/og-card.png', width: 1200, height: 630, alt: guide.title }],
     },
-    twitter: { card: 'summary_large_image', title: guide.title, description: guide.description },
+    twitter: { card: 'summary_large_image', title: guide.title, description: guide.description, images: ['/og-card.png'] },
     robots: {
       index: true,
       follow: true,
@@ -74,7 +74,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         inLanguage: 'en-US',
         keywords: guide.keywords.join(', '),
         image: 'https://pepnationlab.com/og-card.png',
-        author: { '@type': 'Organization', name: GUIDE_AUTHOR, url: 'https://pepnationlab.com' },
+        author: { '@id': 'https://pepnationlab.com/#organization' },
         publisher: { '@id': 'https://pepnationlab.com/#organization' },
         isPartOf: { '@id': 'https://pepnationlab.com/#website' },
         about: 'Research Use Only peptides for in vitro laboratory research',

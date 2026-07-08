@@ -21,6 +21,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Research Peptide Guides | Pep Nation Lab',
     description: 'In-depth, RUO-compliant guides for qualified researchers.',
+    images: ['/og-card.png'],
   },
   robots: {
     index: true,

@@ -15,6 +15,12 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab Compliance Policy' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Compliance Policy | Pep Nation Lab',
+    description: 'Compliance standards and research-only distribution policy for the Pep Nation Lab platform.',
+    images: ['/og-card.png'],
+  },
 };
 
 export default function CompliancePage() {

@@ -16,7 +16,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { stateSlug } = await params;
   const cities = getCitiesByState(stateSlug);
-  if (cities.length === 0) return {};
+  if (cities.length === 0) return { robots: { index: false } };
 
   const stateName = getStateName(stateSlug);
   const title = `Research Peptides In ${stateName} | ${cities.length} Cities | Pep Nation Lab`;

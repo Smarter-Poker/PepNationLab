@@ -33,7 +33,7 @@ const softwareJsonLd = {
     {
       '@type': 'SoftwareApplication',
       name: 'Pep Nation Lab Peptide Research Calculators',
-      applicationCategory: 'LifestyleApplication',
+      applicationCategory: 'ScienceApplication',
       description: 'Free online calculators for peptide research: dosing by body weight, BAC water reconstitution, half-life decay curves, and injection site scheduling.',
       url: 'https://pepnationlab.com/research/calculators',
       offers: {

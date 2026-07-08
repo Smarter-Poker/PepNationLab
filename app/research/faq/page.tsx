@@ -23,6 +23,12 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptide Research FAQ' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Peptide Research FAQ | Pep Nation Lab',
+    description: 'Answers to common questions about research peptides, ordering, reconstitution, and storage.',
+    images: ['/og-card.png'],
+  },
 };
 
 export default function FaqPage() {
@@ -41,6 +47,8 @@ export default function FaqPage() {
               '@type': 'FAQPage',
               name: 'Peptide Research FAQ',
               url: 'https://pepnationlab.com/research/faq',
+              isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+              publisher: { '@id': 'https://pepnationlab.com/#organization' },
               // mainEntity carries the real Q&A pairs so this is a valid FAQPage
               // eligible for rich results and directly extractable by AI answer
               // engines. Answers are plain-text-stripped for schema cleanliness.

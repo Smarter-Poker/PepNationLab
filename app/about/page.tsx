@@ -30,6 +30,7 @@ const organizationJsonLd = {
       url: 'https://pepnationlab.com/about',
       name: 'About Pep Nation Lab',
       isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+      publisher: { '@id': 'https://pepnationlab.com/#organization' },
       about: { '@id': 'https://pepnationlab.com/#organization' },
     },
     {

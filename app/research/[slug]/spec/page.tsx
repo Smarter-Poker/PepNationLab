@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const name = compound?.display_name ?? 'Compound';
   return {
     title: `${name} Spec Sheet | Research | Pep Nation Lab`,
-    robots: { index: false, follow: false },
+    robots: { index: false, follow: true },
   };
 }
 

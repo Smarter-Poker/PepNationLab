@@ -48,9 +48,9 @@ function tierLabel(c: Compound): string {
 export async function generateMetadata({ params }: { params: Promise<{ matchup: string }> }): Promise<Metadata> {
   const { matchup } = await params;
   const pair = findPair(matchup);
-  if (!pair) return { title: 'Compound Comparison | Pep Nation Lab' };
+  if (!pair) return { title: 'Compound Comparison | Pep Nation Lab', robots: { index: false } };
   const [a, b] = await Promise.all([getCompound(pair.a), getCompound(pair.b)]);
-  if (!a || !b) return { title: 'Compound Comparison | Pep Nation Lab' };
+  if (!a || !b) return { title: 'Compound Comparison | Pep Nation Lab', robots: { index: false } };
 
   const title = `${a.display_name} vs ${b.display_name}: Research Comparison | Pep Nation Lab`;
   const description = `A side-by-side research comparison of ${a.display_name} and ${b.display_name} - ${pair.angle}. Mechanism, evidence tier, molecular weight, half-life, and references. Research use only.`;

@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const name = compound?.display_name ?? 'Compound';
   return {
     title: `3D Structure Of ${name} | Research Library | Pep Nation Lab`,
-    robots: { index: false, follow: false },
+    robots: { index: false, follow: true },
   };
 }
 

@@ -38,10 +38,10 @@ export async function GET() {
     for (const c of ((compounds ?? []) as Array<{ slug: string; display_name: string; plain_summary: string | null; created_at: string | null }>)) {
       items.push({
         title: `New Compound: ${c.display_name}`,
-        link: `${BASE}/research/compounds/${c.slug}`,
+        link: `${BASE}/research/${c.slug}`,
         pubDate: toRfc822(c.created_at),
         description: c.plain_summary ?? '',
-        guid: `${BASE}/research/compounds/${c.slug}#compound`,
+        guid: `${BASE}/research/${c.slug}#compound`,
       });
     }
   } catch {
@@ -57,10 +57,10 @@ export async function GET() {
     for (const r of ((refs ?? []) as Array<{ compound_slug: string; title: string | null; source_type: string; url: string | null; added_at: string | null }>)) {
       items.push({
         title: `New Evidence (${r.source_type}): ${r.title ?? r.compound_slug}`,
-        link: r.url ?? `${BASE}/research/compounds/${r.compound_slug}`,
+        link: r.url ?? `${BASE}/research/${r.compound_slug}`,
         pubDate: toRfc822(r.added_at),
         description: `New ${r.source_type} Reference Added For ${r.compound_slug}.`,
-        guid: `${BASE}/research/compounds/${r.compound_slug}#${r.source_type}-${r.added_at}`,
+        guid: `${BASE}/research/${r.compound_slug}#${r.source_type}-${r.added_at}`,
       });
     }
   } catch {

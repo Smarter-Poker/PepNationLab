@@ -80,6 +80,8 @@ const ALLOW = [
   // Research Library - Dynamic paths (compound monographs + area/target sub-pages)
   '/research/area/',
   '/research/by-target/',
+  '/research/guides/',
+  '/research/compare/',
 
   // Research Library - API Docs
   '/research/api-docs',

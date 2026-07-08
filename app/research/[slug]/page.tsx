@@ -51,7 +51,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const compound = await getCompound(slug);
-  if (!compound) return { title: 'Compound | Research | Pep Nation Lab' };
+  if (!compound) return { title: 'Compound | Research | Pep Nation Lab', robots: { index: false } };
   const name = compound.display_name;
   const summary = (compound.plain_summary ?? '').slice(0, 155);
   // Open this monograph to indexing - it's pure RUO reference content.

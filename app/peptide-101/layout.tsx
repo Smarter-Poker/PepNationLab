@@ -27,11 +27,7 @@ const courseJsonLd = {
   name: 'Peptide 101',
   description: 'A free 14-module course covering peptide biology, mechanisms of action, peptide families, reconstitution protocols, safety considerations, and research applications.',
   url: 'https://pepnationlab.com/peptide-101',
-  provider: {
-    '@type': 'Organization',
-    name: 'Pep Nation Lab',
-    url: 'https://pepnationlab.com',
-  },
+  provider: { '@id': 'https://pepnationlab.com/#organization' },
   numberOfCredits: 14,
   educationalLevel: 'Advanced',
   teaches: 'Peptide research, peptide biology, reconstitution protocols, peptide mechanisms',

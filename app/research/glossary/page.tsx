@@ -23,6 +23,12 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptide Research Glossary' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Peptide Research Glossary | Pep Nation Lab',
+    description: 'Comprehensive definitions for peptide research terminology, pharmacokinetics, and mechanisms.',
+    images: ['/og-card.png'],
+  },
 };
 
 // DefinedTermSet JSON-LD: makes every glossary term a machine-readable
@@ -39,6 +45,7 @@ const glossaryJsonLd = {
       description:
         'A-to-Z definitions of peptide-science terminology used throughout the Pep Nation Lab Research Library. For in vitro laboratory research context only.',
       url: 'https://pepnationlab.com/research/glossary',
+      publisher: { '@id': 'https://pepnationlab.com/#organization' },
       hasDefinedTerm: PEPTIDE_GLOSSARY.map((e) => ({
         '@type': 'DefinedTerm',
         name: e.term,

@@ -24,12 +24,12 @@ export async function GET() {
       text += `- **Mechanism**: ${c.mechanism || 'N/A'}\n\n`;
       text += `## Description\n${c.description}\n\n`;
       
-      if (c.half_life_hours) text += `- **Half-life**: ${c.half_life_hours} hours\n`;
-      if (c.molecular_weight) text += `- **Molecular Weight**: ${c.molecular_weight} Da\n`;
-      if (c.sequence) text += `- **Sequence**: ${c.sequence}\n`;
-      if (c.cas_number) text += `- **CAS Number**: ${c.cas_number}\n`;
+      if (c.measured_half_life_hours ?? c.predicted_half_life_hours) text += `- **Half-life**: ${c.measured_half_life_hours ?? c.predicted_half_life_hours} hours\n`;
+      if (c.molecular_weight_da ?? c.identity?.molecular_weight) text += `- **Molecular Weight**: ${c.molecular_weight_da ?? c.identity?.molecular_weight} Da\n`;
+      if (c.sequence_one_letter ?? c.identity?.sequence) text += `- **Sequence**: ${c.sequence_one_letter ?? c.identity?.sequence}\n`;
+      if (c.identity?.cas ?? c.cas_number) text += `- **CAS Number**: ${c.identity?.cas ?? c.cas_number}\n`;
       
-      text += `\n## Content Outline\n${c.content_outline || 'N/A'}\n\n`;
+      text += `\n## Summary\n${c.plain_summary || c.description || 'N/A'}\n\n`;
       text += `---\n\n`;
     });
   }

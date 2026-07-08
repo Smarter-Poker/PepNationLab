@@ -50,7 +50,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { stateSlug, citySlug } = await params;
   const city = getCity(stateSlug, citySlug);
-  if (!city) return {};
+  if (!city) return { robots: { index: false } };
 
   const title = `Peptide Research In ${city.name}, ${city.stateAbbr} - Pep Nation Lab`;
   const description = `Pep Nation Lab supplies research-grade peptides to qualified researchers in ${city.name}, ${city.state}. BPC-157, Semaglutide, Tirzepatide, TB-500 & 100+ more research compounds. Wholesale pricing. Verified accounts only.`;
@@ -186,6 +186,7 @@ export default async function CityLandingPage({
         url: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
         name: `Peptide Research In ${city.name}, ${city.stateAbbr}`,
         isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' },
         datePublished: '2026-07-01',
         dateModified: CITY_CONTENT_UPDATED.toISOString().slice(0, 10),
       },
