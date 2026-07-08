@@ -9,7 +9,14 @@ import { getAllCompounds } from '@/lib/compounds-server';
 
 export const metadata: Metadata = {
   title: 'Browse By Receptor Target | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: true },
+  description:
+    'Browse research compounds by receptor target. An alphabetized index of every annotated receptor in the Pep Nation Lab research library — select a target to see every compound studied against it. Research Use Only.',
+  alternates: { canonical: 'https://pepnationlab.com/research/by-target' },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-snippet': -1, 'max-image-preview': 'large', 'max-video-preview': -1 },
+  },
 };
 
 export const dynamic = 'force-dynamic';
