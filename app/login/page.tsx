@@ -269,13 +269,12 @@ function LoginPageInner() {
             </div>
 
             <div style={{ textAlign: 'right', marginBottom: 'var(--space-6)', marginTop: 'var(--space-2)' }}>
-              <button
-                type="button"
-                onClick={() => setShowForgotPopup(true)}
-                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.8rem', color: 'var(--teal)' }}
+              <a
+                href="/forgot-password"
+                style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}
               >
                 Forgot Password?
-              </button>
+              </a>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
