@@ -21,6 +21,12 @@ export async function GET() {
   text += `---\n\n`;
 
   compounds.forEach((c) => {
+      // identity is a JSONB column; read it once into a narrowly-typed local so
+      // the optional-chained fallbacks below typecheck (c is Record<string, unknown>).
+      const identity = (c.identity ?? undefined) as
+        | { molecular_weight?: unknown; sequence?: unknown; cas?: unknown }
+        | undefined;
+
       text += `# ${c.display_name}\n\n`;
       text += `- **Category**: ${c.category}\n`;
       text += `- **Aliases**: ${Array.isArray(c.aliases) ? c.aliases.join(', ') : c.aliases}\n`;
@@ -29,9 +35,9 @@ export async function GET() {
       text += `## Description\n${c.description}\n\n`;
       
       if (c.measured_half_life_hours ?? c.predicted_half_life_hours) text += `- **Half-life**: ${c.measured_half_life_hours ?? c.predicted_half_life_hours} hours\n`;
-      if (c.molecular_weight_da ?? c.identity?.molecular_weight) text += `- **Molecular Weight**: ${c.molecular_weight_da ?? c.identity?.molecular_weight} Da\n`;
-      if (c.sequence_one_letter ?? c.identity?.sequence) text += `- **Sequence**: ${c.sequence_one_letter ?? c.identity?.sequence}\n`;
-      if (c.identity?.cas ?? c.cas_number) text += `- **CAS Number**: ${c.identity?.cas ?? c.cas_number}\n`;
+      if (c.molecular_weight_da ?? identity?.molecular_weight) text += `- **Molecular Weight**: ${c.molecular_weight_da ?? identity?.molecular_weight} Da\n`;
+      if (c.sequence_one_letter ?? identity?.sequence) text += `- **Sequence**: ${c.sequence_one_letter ?? identity?.sequence}\n`;
+      if (identity?.cas ?? c.cas_number) text += `- **CAS Number**: ${identity?.cas ?? c.cas_number}\n`;
       
       text += `\n## Summary\n${c.plain_summary || c.description || 'N/A'}\n\n`;
       text += `---\n\n`;
