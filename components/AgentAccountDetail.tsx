@@ -6,6 +6,7 @@ import { freshDefaultLadder } from '@/lib/gamification';
 import AgentFreezeToggle from '@/components/AgentFreezeToggle';
 import AdminTierOverrideControl from '@/components/AdminTierOverrideControl';
 import ViewAsButton from '@/components/ViewAsButton';
+import { createClient } from '@/lib/supabase/client';
 
 /**
  * AgentAccountDetail - full management drawer for a single downline FULL agent.
@@ -126,6 +127,19 @@ export default function AgentAccountDetail({
   onViewDownline?: (agent: any) => void;
 }) {
   const [detail, setDetail] = useState<Detail | null>(null);
+  // PLATFORM RULE: super agents may ONLY promote researchers in their own
+  // downline to full Agent. Granting or revoking SUPER agent status is an
+  // admin-only action (the API already rejects non-admins), so the Make
+  // Super button must only render for admin viewers.
+  const [viewerIsAdmin, setViewerIsAdmin] = useState(false);
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      setViewerIsAdmin(data?.role === 'admin');
+    });
+  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -344,7 +358,7 @@ export default function AgentAccountDetail({
                   View Downline
                 </button>
               )}
-              {detail && (
+              {detail && viewerIsAdmin && (
                 <button 
                   onClick={async () => {
                     try {
