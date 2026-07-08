@@ -36,6 +36,18 @@ export default function AdminAgents() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [researchers, setResearchers] = useState<any[]>([]);
+  const [researchersLoading, setResearchersLoading] = useState(true);
+  const [researchersExpanded, setResearchersExpanded] = useState(true);
+  const [revealedResearcherPasswords, setRevealedResearcherPasswords] = useState<Set<string>>(new Set());
+  const toggleRevealResearcherPassword = (id: string) => {
+    setRevealedResearcherPasswords(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
+      return next;
+    });
+  };
+
   const [editingAgent, setEditingAgent] = useState<any | null>(null);
   const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
@@ -105,8 +117,22 @@ export default function AdminAgents() {
     }
   };
 
+  const fetchResearchers = async () => {
+    try {
+      const res = await fetch('/api/admin/agents/researchers');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed To Fetch Researchers');
+      setResearchers(json.data || []);
+    } catch {
+      // non-fatal
+    } finally {
+      setResearchersLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchAgents();
+    fetchResearchers();
   }, []);
 
   const checkUsernameAvailability = useCallback((raw: string) => {
@@ -619,6 +645,140 @@ export default function AdminAgents() {
           });
         })()}
       </div>
+
+      {/* ── Researchers Section ─────────────────────────────────── */}
+      <div style={{ marginTop: 'var(--space-8)' }}>
+        <button
+          onClick={() => setResearchersExpanded(p => !p)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none',
+            cursor: 'pointer', padding: 0, marginBottom: 'var(--space-4)', width: '100%',
+          }}
+        >
+          <h2 style={{ fontSize: '1.2rem', margin: 0, color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>
+            Researchers
+            <span style={{ marginLeft: 8, fontSize: '0.85rem', color: 'var(--grey-400)', fontWeight: 400, fontFamily: 'inherit' }}>
+              ({researchersLoading ? '…' : researchers.length})
+            </span>
+          </h2>
+          <svg
+            width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="var(--grey-400)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: researchersExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0, marginTop: 2 }}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+
+        {researchersExpanded && (
+          researchersLoading ? (
+            <div style={{ color: 'var(--silver)', padding: 'var(--space-4)' }}>Loading Researchers...</div>
+          ) : researchers.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 'var(--space-6)', opacity: 0.5 }}>No Researchers Found.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              {researchers.map(r => {
+                const isDefaultEmail = r.email?.includes('@internal.auth') || r.email?.includes('@pepnationlab.com');
+                return (
+                  <div
+                    key={r.id}
+                    style={{
+                      background: 'var(--bg-metal-dark)',
+                      borderTop: '1px solid rgba(0,0,0,0.8)',
+                      borderBottom: '1px solid rgba(255,255,255,0.08)',
+                      borderLeft: '3px solid rgba(139,92,246,0.5)',
+                      borderRight: '1px solid rgba(255,255,255,0.03)',
+                      boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)',
+                      borderRadius: '16px',
+                      padding: '14px 20px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '16px',
+                    }}
+                  >
+                    {/* Name + status */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 180px' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'rgba(139,92,246,0.8)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Researcher</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--white)' }}>{r.full_name}</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--silver)', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4 }}>
+                          ID: {r.id.split('-')[0]}
+                        </span>
+                      </div>
+                      <span style={{ color: r.is_active ? 'var(--green)' : 'var(--red)', fontSize: '0.75rem', fontWeight: 600 }}>
+                        {r.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                      {r.parent_agent_name && (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginTop: 2 }}>
+                          Under: <span style={{ color: 'var(--silver)', fontWeight: 600 }}>{r.parent_agent_name}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Login credentials */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 180 }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Login Credentials</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', minWidth: 54 }}>Username</span>
+                        <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--teal)', fontWeight: 700 }}>{r.username || '-'}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', minWidth: 54 }}>Password</span>
+                        {r.provisioned_password ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: revealedResearcherPasswords.has(r.id) ? '#FFD700' : 'var(--silver)', letterSpacing: revealedResearcherPasswords.has(r.id) ? 'normal' : '0.1em' }}>
+                              {revealedResearcherPasswords.has(r.id) ? r.provisioned_password : '••••••••'}
+                            </span>
+                            <button
+                              onClick={() => toggleRevealResearcherPassword(r.id)}
+                              title={revealedResearcherPasswords.has(r.id) ? 'Hide' : 'Reveal'}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', color: revealedResearcherPasswords.has(r.id) ? 'var(--teal)' : 'var(--grey-500)', lineHeight: 1 }}
+                            >
+                              {revealedResearcherPasswords.has(r.id) ? (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                              ) : (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.8rem', color: 'var(--grey-500)', fontStyle: 'italic' }}>Not Set By Admin</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Contact */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 160 }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Contact</span>
+                      {!isDefaultEmail && r.email && (
+                        <span style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{r.email}</span>
+                      )}
+                      {r.phone ? (
+                        <span style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{r.phone}</span>
+                      ) : (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--grey-500)', fontStyle: 'italic' }}>No Phone</span>
+                      )}
+                    </div>
+
+                    {/* Last login */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 140 }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Last Logged In</span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: r.last_sign_in_at ? 'var(--silver)' : 'var(--grey-500)', fontStyle: r.last_sign_in_at ? 'normal' : 'italic' }}>
+                        {r.last_sign_in_at
+                          ? new Date(r.last_sign_in_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+                          : 'Never Logged In'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        )}
+      </div>
+      {/* ── End Researchers Section ──────────────────────────────── */}
 
       {/* Edit Contact Modal */}
       {editingAgent && (
