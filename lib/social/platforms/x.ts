@@ -53,7 +53,7 @@ async function uploadMedia(token: string, input: PostInput): Promise<string> {
     form.append('command', 'APPEND');
     form.append('media_id', mediaId);
     form.append('segment_index', String(segment));
-    form.append('media', new Blob([chunk]));
+    form.append('media', new Blob([new Uint8Array(chunk)]));
     const appendRes = await fetch(UPLOAD_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
