@@ -295,7 +295,7 @@ function SignupForm() {
 
       <div style={{ width: '100%', maxWidth: 460, position: 'relative' }}>
         <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', boxShadow: '0 0 40px rgba(104,211,145,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
             <div style={{
               width: 40, height: 40, borderRadius: '50%',
               background: 'rgba(0,196,188,0.12)', border: '1px solid rgba(0,196,188,0.3)',
@@ -303,9 +303,9 @@ function SignupForm() {
             }}>
               <UserPlus size={20} aria-hidden="true" />
             </div>
-            <h2 className="animated-gradient-text" style={{ fontSize: '1.4rem' }}>Create Researcher Account</h2>
+            <h2 className="animated-gradient-text" style={{ fontSize: '1.4rem', textAlign: 'center' }}>Create Researcher Account</h2>
           </div>
-          <p style={{ marginBottom: 'var(--space-6)', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
+          <p style={{ marginBottom: 'var(--space-6)', fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center' }}>
             Join Pep Nation Lab For Peptide Education And Research
           </p>
 
