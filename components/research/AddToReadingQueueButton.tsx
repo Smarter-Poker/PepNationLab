@@ -34,6 +34,7 @@ export default function AddToReadingQueueButton({ compoundSlug, compoundName }: 
         disabled={queued || busy}
         className={queued ? 'btn-primary' : 'btn-secondary'}
         title={queued ? `${compoundName} Is In Your Reading Queue` : `Queue ${compoundName} For Reading`}
+        aria-label={queued ? `${compoundName} is in your reading queue` : `Add ${compoundName} to reading queue`}
         style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2, 8px)', opacity: busy ? 0.6 : 1 }}
       >
         <Icon size={16} aria-hidden="true" />

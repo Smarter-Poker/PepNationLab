@@ -34,6 +34,7 @@ export default function SaveToCollectionButton({ compoundSlug, compoundName }: {
         disabled={busy}
         className={saved ? 'btn-primary' : 'btn-secondary'}
         title={saved ? `${compoundName} Is In Your Saved Collection` : `Save ${compoundName} To Your Collection`}
+        aria-label={saved ? `Remove ${compoundName} from saved collection` : `Save ${compoundName} to collection`}
         style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2, 8px)', opacity: busy ? 0.6 : 1 }}
       >
         <Icon size={16} aria-hidden="true" />

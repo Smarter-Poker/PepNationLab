@@ -138,6 +138,7 @@ export default function PinToCompareButton({
         type="button"
         onClick={toggle}
         title="Remove From Compare"
+        aria-label={`Remove ${compoundName} from compare`}
         style={{
           background: 'none',
           border: 'none',
@@ -194,6 +195,7 @@ export default function PinToCompareButton({
       onClick={toggle}
       disabled={full}
       title={full ? 'Compare Tray Is Full (Max 4)' : `Add ${compoundName} To Compare`}
+      aria-label={full ? 'Compare tray is full' : `Add ${compoundName} to compare`}
       style={{
         background: 'none',
         border: 'none',

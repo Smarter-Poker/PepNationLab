@@ -2963,7 +2963,7 @@ export default function AgentStorefrontGrid({
                           if (cur - dec <= 0) delete next[variantId];
                           else next[variantId] = cur - dec;
                           return next;
-                        })} style={{
+                        })} aria-label="Decrease quantity" style={{
                           width: 36, height: 36, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)',
                           background: 'transparent', color: 'var(--white)', cursor: 'pointer', fontSize: '0.85rem',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -2971,6 +2971,7 @@ export default function AgentStorefrontGrid({
                         }}>-</button>
                         <input
                           type="number"
+                          aria-label="Quantity"
                           min="0"
                           value={displayCount || ''}
                           onChange={(e) => {
@@ -3019,7 +3020,7 @@ export default function AgentStorefrontGrid({
                           } else {
                             addToCart(variantId);
                           }
-                        }} style={{
+                        }} aria-label="Increase quantity" style={{
                           width: 36, height: 36, borderRadius: '50%', border: 'none',
                           background: primaryColor, color: 'var(--white)', cursor: 'pointer', fontSize: '0.85rem',
                           display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800,

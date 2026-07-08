@@ -45,6 +45,7 @@ export default function FaqPage() {
           '@graph': [
             {
               '@type': 'FAQPage',
+              '@id': 'https://pepnationlab.com/research/faq#webpage',
               name: 'Peptide Research FAQ',
               url: 'https://pepnationlab.com/research/faq',
               isPartOf: { '@id': 'https://pepnationlab.com/#website' },

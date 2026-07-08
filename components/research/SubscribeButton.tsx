@@ -34,6 +34,7 @@ export default function SubscribeButton({ compoundSlug, compoundName }: { compou
         disabled={busy}
         className={subscribed ? 'btn-primary' : 'btn-secondary'}
         title={subscribed ? `You Are Subscribed To ${compoundName} Updates` : `Get Notified When ${compoundName} Has New Evidence Or A Recall Update`}
+        aria-label={subscribed ? `Unsubscribe from ${compoundName} updates` : `Subscribe to ${compoundName} updates`}
         style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2, 8px)', opacity: busy ? 0.6 : 1 }}
       >
         <Icon size={16} aria-hidden="true" />

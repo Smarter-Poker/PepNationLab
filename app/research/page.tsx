@@ -26,17 +26,28 @@ export const metadata: Metadata = {
 // CollectionPage JSON-LD for the research library hub
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'CollectionPage',
-  '@id': 'https://pepnationlab.com/research#webpage',
-  name: 'Pep Nation Lab Research Library',
-  description: 'A comprehensive database of 300+ research-grade peptides and compounds with full research monographs, mechanism analysis, evidence tiers, and pharmacokinetic data.',
-  url: 'https://pepnationlab.com/research',
-  isPartOf: { '@id': 'https://pepnationlab.com/#website' },
-  publisher: { '@id': 'https://pepnationlab.com/#organization' },
-  about: {
-    '@type': 'Thing',
-    name: 'Research Peptides',
-  },
+  '@graph': [
+    {
+      '@type': 'CollectionPage',
+      '@id': 'https://pepnationlab.com/research#webpage',
+      name: 'Pep Nation Lab Research Library',
+      description: 'A comprehensive database of 300+ research-grade peptides and compounds with full research monographs, mechanism analysis, evidence tiers, and pharmacokinetic data.',
+      url: 'https://pepnationlab.com/research',
+      isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+      publisher: { '@id': 'https://pepnationlab.com/#organization' },
+      about: {
+        '@type': 'Thing',
+        name: 'Research Peptides',
+      },
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+        { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+      ],
+    },
+  ],
 };
 
 export default function ResearchLandingPage() {
