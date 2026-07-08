@@ -1,6 +1,20 @@
 {
   "_doc": "Allowlist for the RLS policy guard at scripts/check_rls_policies.js. Every entry MUST include a real reason that survives review. The guard fails CI if anything outside this file goes permissive or RLS-off.",
   "rls_disabled_tables": [],
+  "deny_all_tables": [
+    {
+      "table": "messenger_link_previews",
+      "reason": "Intentional lockdown (20260707205002): all reads/upserts flow through app/api/messenger/link-preview using the service-role client. RLS on + zero policies = deny-by-default for anon/authenticated."
+    },
+    {
+      "table": "shared_research_protocols",
+      "reason": "Intentional lockdown (20260707205002): share links are read via the server page and inserted via API, both service-client. Direct PostgREST access denied."
+    },
+    {
+      "table": "email_verification_codes",
+      "reason": "Signup verification codes (20260707223000): issued and checked exclusively by service-client auth routes. Must never be readable by anon/authenticated."
+    }
+  ],
   "permissive_policies": [
     {
       "table": "agent_storefront_events",
@@ -11,11 +25,6 @@
       "table": "message_reactions",
       "policy": "Users can view reactions",
       "reason": "Reactions are visible to any participant of the conversation. Legacy policy from messenger v1; safe because participation is enforced on the parent messenger_messages SELECT policy and reactions only ever join through it."
-    },
-    {
-      "table": "messenger_link_previews",
-      "policy": "mlp_select_authenticated",
-      "reason": "Link previews are unfurled URLs (title, image, description). They contain no user-specific data; visible to all authenticated users so any participant who later sees the message can render the preview."
     },
     {
       "table": "referral_settings",
@@ -90,7 +99,7 @@
     {
       "table": "shared_research_protocols",
       "policy": "Anyone can view shared protocols",
-      "reason": "Public share-link feature: rows are addressed by unguessable uuid and are meant to be viewable by anyone holding the link. RLS cannot express 'only if you know the id'; payload contains no account data."
+      "reason": "Historical: dropped by 20260707205002 (service-client lockdown). Entry kept only because the policy still appears in older migration files' final-state reconstruction if the drop migration is edited; harmless either way."
     }
   ]
 }

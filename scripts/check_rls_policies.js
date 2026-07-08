@@ -53,15 +53,22 @@ function readAllowlist() {
     const parsed = JSON.parse(raw);
     const rlsDisabled = new Set();
     const permissive = new Set();
+    const denyAll = new Set();
     for (const entry of parsed.rls_disabled_tables ?? []) {
       rlsDisabled.add(entry.table.toLowerCase());
     }
     for (const entry of parsed.permissive_policies ?? []) {
       permissive.add(`${entry.table}::${entry.policy}`.toLowerCase());
     }
-    return { rlsDisabled, permissive };
+    // deny_all_tables: RLS enabled with intentionally NO policies — a valid
+    // lockdown pattern where all access flows through the service-role client
+    // (which bypasses RLS). anon/authenticated get deny-by-default.
+    for (const entry of parsed.deny_all_tables ?? []) {
+      denyAll.add(entry.table.toLowerCase());
+    }
+    return { rlsDisabled, permissive, denyAll };
   } catch {
-    return { rlsDisabled: new Set(), permissive: new Set() };
+    return { rlsDisabled: new Set(), permissive: new Set(), denyAll: new Set() };
   }
 }
 
@@ -266,7 +273,7 @@ function main() {
     return;
   }
 
-  const { rlsDisabled, permissive } = readAllowlist();
+  const { rlsDisabled, permissive, denyAll } = readAllowlist();
   const tables = reconstructFinalState(files);
 
   const offenders = [];
@@ -279,11 +286,11 @@ function main() {
         detail: 'RLS is disabled and table is not in rls_disabled_tables allowlist.',
       });
     }
-    if (t.rlsEnabled && t.policies.size === 0) {
+    if (t.rlsEnabled && t.policies.size === 0 && !denyAll.has(key)) {
       offenders.push({
         kind: 'no_policies',
         table: t.original,
-        detail: 'RLS is enabled but no CREATE POLICY survives to the final state.',
+        detail: 'RLS is enabled but no CREATE POLICY survives to the final state. If this is an intentional service-role-only lockdown, add it to deny_all_tables in the allowlist.',
       });
     }
     for (const pol of t.policies.values()) {
