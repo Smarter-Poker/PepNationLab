@@ -252,6 +252,9 @@ function SignupForm() {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(callbackRedirect)}`,
+          // Force Google to show the account chooser instead of silently
+          // reusing the last authorized account.
+          queryParams: { prompt: 'select_account' },
         },
       });
 
