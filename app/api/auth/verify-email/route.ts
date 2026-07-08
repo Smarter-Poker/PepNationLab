@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import {
   hashCode,
@@ -14,6 +15,11 @@ import {
 import { emailConfigured } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
+  // CSRF: same-origin check on this state-changing route, matching the
+  // platform-wide posture from the 2026-05-28 audit.
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   // Rate limit
   const ip = getClientIp(req);
   const limited = await rateLimit({
