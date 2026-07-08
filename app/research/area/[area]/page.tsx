@@ -28,10 +28,40 @@ type PageProps = { params: Promise<{ area: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { area } = await params;
-  const label = RESEARCH_AREAS[area]?.label ?? 'Research Area';
+  const meta = RESEARCH_AREAS[area];
+  if (!meta) {
+    return { title: 'Research Area | Pep Nation Lab', robots: { index: false } };
+  }
+  const label = meta.label;
+  const content = RESEARCH_AREA_CONTENT[area];
+  const description = ((content?.overview ?? meta.blurb) || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 157);
+  const url = `https://pepnationlab.com/research/area/${area}`;
+  // These hubs are deep, editorial, use-case landing pages (Overview/Compounds/
+  // Evidence/Safety/References) targeting high-intent category queries. They
+  // were previously noindex despite being the site's richest category content --
+  // now open to indexing.
   return {
-    title: `${label} | Research Library | Pep Nation Lab`,
-    robots: { index: false, follow: true },
+    title: `${label} Peptides - Research Compounds & Evidence | Pep Nation Lab`,
+    description,
+    keywords: [`${label} peptides`, `${label} research compounds`, 'research peptides', 'RUO compounds', 'Pep Nation Lab'].join(', '),
+    robots: { index: true, follow: true },
+    alternates: { canonical: url },
+    openGraph: {
+      title: `${label} Research Compounds | Pep Nation Lab`,
+      description,
+      url,
+      type: 'website',
+      images: [{ url: '/og-card.png', width: 1200, height: 630, alt: `${label} Research Compounds - Pep Nation Lab` }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${label} Research Compounds | Pep Nation Lab`,
+      description,
+      images: ['/og-card.png'],
+    },
   };
 }
 
@@ -107,6 +137,44 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     coaUrl: c.coa_url ?? '#',
     researchAreas: c.research_areas ?? [],
   }));
+
+  // Structured data: CollectionPage + Breadcrumb + ItemList of the area's
+  // compounds. Gives search + AI answer engines an explicit, crawlable map of
+  // this category and its member compounds (rich-result + entity signals).
+  const areaUrl = `https://pepnationlab.com/research/area/${area}`;
+  const areaJsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': `${areaUrl}#page`,
+        url: areaUrl,
+        name: `${researchAreaLabel(area)} Research Compounds`,
+        description: (content?.overview ?? meta.blurb),
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        about: { '@type': 'Thing', name: researchAreaLabel(area) },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Research', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 2, name: 'Research Areas', item: 'https://pepnationlab.com/research/areas' },
+          { '@type': 'ListItem', position: 3, name: researchAreaLabel(area), item: areaUrl },
+        ],
+      },
+      {
+        '@type': 'ItemList',
+        name: `${researchAreaLabel(area)} Research Compounds`,
+        numberOfItems: compounds.length,
+        itemListElement: compounds.slice(0, 40).map((c, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          url: `https://pepnationlab.com/research/${c.slug}`,
+          name: c.display_name,
+        })),
+      },
+    ],
+  };
 
   // Build tabs
   const tabs: AreaTab[] = [];
@@ -289,6 +357,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(areaJsonLd) }} />
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research/areas" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
           All Areas
