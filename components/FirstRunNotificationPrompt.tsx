@@ -157,7 +157,7 @@ export default function FirstRunNotificationPrompt() {
             <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.55, margin: '0 auto', maxWidth: 380 }}>
               Your Browser Has Blocked Notifications For This Site, So We Cannot Ask For Permission Here. To Turn Them On:
             </p>
-            <ol style={{ textAlign: 'left', fontSize: '0.85rem', color: 'var(--grey-300)', lineHeight: 1.6, margin: '14px auto 0', maxWidth: 340, paddingLeft: 20 }}>
+            <ol style={{ textAlign: 'left', fontSize: '0.45rem', color: 'var(--grey-300)', lineHeight: 1.6, margin: '14px auto 0', maxWidth: 340, paddingLeft: 20 }}>
               <li>Click The Site Settings Icon On The Left Of The Address Bar.</li>
               <li>Find Notifications And Set It To Allow.</li>
               <li>Reload This Page And Try Again.</li>
