@@ -43,6 +43,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { pickOne } from '@/lib/relations';
 import { decryptSecret } from '@/lib/shippo-crypto';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
+import { getSupabaseUrl } from '@/lib/supabase/url';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -181,7 +182,7 @@ export interface TrackingState {
 let cachedAdmin: SupabaseClient | null = null;
 function getAdminClient(): SupabaseClient {
   if (cachedAdmin) return cachedAdmin;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const url = getSupabaseUrl();
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
     throw new Error(

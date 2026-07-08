@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+import { getSupabaseUrl } from '@/lib/supabase/url';
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
   const steps: StepResult[] = [];
   let probeUserId: string | null = null;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseUrl = getSupabaseUrl();
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
   async function cleanup() {

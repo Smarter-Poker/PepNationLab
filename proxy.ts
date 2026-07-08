@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { getSupabaseUrl } from '@/lib/supabase/url';
 
 // ─── Global API Rate Limiting ────────────────────────────────────────────────
 // Edge-level backstop against scrape bots and abuse across all ~80 /api/*
@@ -211,7 +212,7 @@ function isPublicDynamicRoute(pathname: string): boolean {
 }
 
 export default async function proxy(request: NextRequest) {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next({ request });
   }
 
@@ -238,7 +239,7 @@ export default async function proxy(request: NextRequest) {
     let storeResponse = NextResponse.next({ request });
     try {
       const storeSupabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        getSupabaseUrl(),
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
           cookies: {
@@ -273,7 +274,7 @@ export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    getSupabaseUrl(),
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {

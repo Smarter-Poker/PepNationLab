@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSupabaseUrl } from '@/lib/supabase/url';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
     try {
       const mediaUrlObj = new URL(parsed.data.mediaUrl);
       const hostname = mediaUrlObj.hostname.toLowerCase();
-      const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || '').hostname.toLowerCase();
+      const supabaseHost = new URL(getSupabaseUrl()).hostname.toLowerCase();
       const allowedHosts = [supabaseHost, 'c.tenor.com', 'media.tenor.com'];
       if (!allowedHosts.some((h) => hostname === h || hostname.endsWith(`.${h}`))) {
         return NextResponse.json({ error: 'Media URL Domain Not Allowed' }, { status: 400 });

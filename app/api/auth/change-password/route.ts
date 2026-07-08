@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSupabaseUrl } from '@/lib/supabase/url';
 import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
   // Create a response-aware server client so cookies modified by auth.updateUser
   // are properly written to the outgoing HTTP headers returned to the browser.
   const supabase = createServerClient(
-    (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
+    getSupabaseUrl(),
     (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim(),
     {
       cookies: {

@@ -1,4 +1,5 @@
 
+import { getSupabaseUrl } from '@/lib/supabase/url';
 
 interface BroadcastMessage {
   topic: string;
@@ -7,7 +8,7 @@ interface BroadcastMessage {
 }
 
 export async function sendBroadcast(messages: BroadcastMessage | BroadcastMessage[]) {
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/realtime/v1/api/broadcast`;
+  const url = `${getSupabaseUrl()}/realtime/v1/api/broadcast`;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!key) return;
 
