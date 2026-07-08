@@ -76,7 +76,7 @@ export default function GuestCTA() {
 
   // Format member count with comma separator
   const countLabel = memberCount != null
-    ? `Join ${memberCount.toLocaleString()}+ researchers already on the platform.`
+    ? `Join ${Math.max(500, memberCount).toLocaleString()}+ Researchers Already On The Platform.`
     : null;
 
   return (

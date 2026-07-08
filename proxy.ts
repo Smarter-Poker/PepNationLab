@@ -152,6 +152,8 @@ const PUBLIC_ROUTES = [
   '/api/agent-invitations/redeem',
   '/api/cron/invoices',
   '/api/cron/reminders',
+  // Social autoposter cron — CRON_SECRET enforced in-route; gated by SOCIAL_AUTOPOST_ENABLED.
+  '/api/cron/social-autopost',
   '/api/cron/sms-dispatch',
   '/api/cron/abandoned-cart-recovery',
   '/api/cron/apply-price-changes',
