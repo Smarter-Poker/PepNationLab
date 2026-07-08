@@ -1,0 +1,80 @@
+name: Social Video Generation (Grok)
+
+# Generates branded, dynamic vertical Shorts by calling the xAI Grok Imagine
+# video API, then compositing Pep Nation Lab branding + the RUO footer over the
+# footage with ffmpeg. Runs here (not on Vercel) because video generation is a
+# multi-minute async job that needs open network + ffmpeg.
+#
+# Trigger manually from the Actions tab ("Run workflow"), or on the weekly
+# schedule. Requires repo secret XAI_API_KEY. Optional: SUPABASE_URL +
+# SUPABASE_SERVICE_ROLE_KEY to auto-upload finished clips to a public bucket.
+
+on:
+  workflow_dispatch:
+    inputs:
+      topics:
+        description: "Comma-separated topics (peptide-101,bpc-157,reconstitution,coa,tb-500,molecule,lab)"
+        required: true
+        default: "peptide-101,bpc-157,molecule"
+      duration:
+        description: "Clip duration in seconds (1-15)"
+        required: true
+        default: "12"
+      upload:
+        description: "Upload finished clips to the Supabase public bucket (true/false)"
+        required: true
+        default: "true"
+  schedule:
+    # Mondays 08:00 UTC - a fresh weekly batch.
+    - cron: "0 8 * * 1"
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+          python -m pip install --upgrade pip
+          pip install pillow
+
+      - name: Generate branded Shorts
+        env:
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_BUCKET: social-media
+        run: |
+          set -e
+          mkdir -p out
+          DURATION="${{ github.event.inputs.duration || '12' }}"
+          UPLOAD_FLAG=""
+          if [ "${{ github.event.inputs.upload || 'true' }}" = "true" ]; then
+            UPLOAD_FLAG="--upload"
+          fi
+          TOPICS="${{ github.event.inputs.topics || 'peptide-101,bpc-157,molecule' }}"
+          IFS=',' read -ra ARR <<< "$TOPICS"
+          for t in "${ARR[@]}"; do
+            t="$(echo "$t" | xargs)"   # trim whitespace
+            echo "::group::Generating $t"
+            python scripts/social/grok_video.py --topic "$t" --duration "$DURATION" --out "out/${t}.mp4" $UPLOAD_FLAG
+            echo "::endgroup::"
+          done
+          ls -la out
+
+      - name: Upload finished Shorts as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pepnationlab-shorts
+          path: out/*.mp4
+          retention-days: 14
