@@ -200,16 +200,24 @@ function SignupForm() {
       }
 
       // Sign The New Researcher In Immediately.
+      // We retry up to 3 times to account for potential Supabase Auth read replica replication lag.
       const supabase = createClient();
       const internalEmail = `${data.username}@internal.auth`;
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: internalEmail,
-        password,
-      });
+      let authError = null;
+      
+      for (let i = 0; i < 3; i++) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: internalEmail,
+          password,
+        });
+        authError = error;
+        if (!error) break;
+        await new Promise(r => setTimeout(r, 500));
+      }
 
       if (authError) {
-        const loginFallback = `/login${redirectTo !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`;
-        window.location.replace(loginFallback);
+        setError(`Auto-login failed: ${authError.message}. Please click 'Sign In' at the top right to log in manually.`);
+        setLoading(false);
         return;
       }
 
