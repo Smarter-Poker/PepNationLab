@@ -76,3 +76,7 @@ tsconfig.regcheck.json
 err_reg.txt
 tsconfig.vecheck.json
 tsconfig.rescheck.json
+
+# Python bytecode
+__pycache__/
+*.pyc

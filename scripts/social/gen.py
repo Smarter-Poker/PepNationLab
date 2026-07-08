@@ -215,12 +215,28 @@ def _text_w(draw: ImageDraw.ImageDraw, text: str, fnt) -> int:
     return int(draw.textbbox((0, 0), text, font=fnt)[2])
 
 
+def _split_tokens(text: str) -> list[str]:
+    """Split on spaces, but keep hyphens as breakable points so long
+    hyphen-joined sequences (Gly-Glu-Pro-...) can wrap instead of overflowing."""
+    out: list[str] = []
+    for word in text.split():
+        if "-" in word and len(word) > 12:
+            parts = word.split("-")
+            for i, p in enumerate(parts):
+                out.append(p + ("-" if i < len(parts) - 1 else ""))
+        else:
+            out.append(word)
+    return out
+
+
 def wrap(draw, text: str, fnt, max_w: int) -> list[str]:
-    words = text.split()
+    tokens = _split_tokens(text)
     lines: list[str] = []
     cur = ""
-    for w in words:
-        trial = (cur + " " + w).strip()
+    for w in tokens:
+        # join hyphen-continuations without a space
+        sep = "" if cur.endswith("-") else " "
+        trial = (cur + sep + w) if cur else w
         if _text_w(draw, trial, fnt) <= max_w or not cur:
             cur = trial
         else:
@@ -229,6 +245,19 @@ def wrap(draw, text: str, fnt, max_w: int) -> list[str]:
     if cur:
         lines.append(cur)
     return lines
+
+
+def wrap_cap(draw, text: str, fnt, max_w: int, max_lines: int) -> list[str]:
+    """Wrap and cap to max_lines, adding an ellipsis if truncated."""
+    lines = wrap(draw, text, fnt, max_w)
+    if len(lines) <= max_lines:
+        return lines
+    kept = lines[:max_lines]
+    last = kept[-1].rstrip("-")
+    while last and _text_w(draw, last + "…", fnt) > max_w:
+        last = last[:-1]
+    kept[-1] = last + "…"
+    return kept
 
 
 def draw_centered_block(draw, text, fnt, cx, top, max_w, fill, line_gap=14):
@@ -435,22 +464,27 @@ def render_comparison_pin(a: dict, b: dict, out_path: Path) -> None:
     top = 360
     row_h = 132
     col_label_x = 70
-    col_a_x = 400
-    col_b_x = 740
+    col_a_x = 380
+    col_b_x = 730
+    col_a_w = col_b_x - col_a_x - 24
+    col_b_w = CARD_W - 70 - col_b_x
+    line_h = 38
     lf = font("semibold", 30)
-    vf = font("body", 30)
+    vf = font("body", 28)
+
+    def draw_cell(value, x, y, max_w):
+        lines = wrap_cap(d, str(value), vf, max_w, 3)
+        for j, ln in enumerate(lines):
+            d.text((x, y + 22 + j * line_h), ln, font=vf, fill=SILVER_2)
+
     for i, (label, va, vb) in enumerate(rows):
         y = top + i * row_h
         if i % 2 == 0:
             d.rounded_rectangle([50, y, CARD_W - 50, y + row_h - 16],
                                 radius=16, fill=SURFACE_2)
-        d.text((col_label_x, y + 20), label, font=lf, fill=TEAL)
-        for ln in wrap(d, str(va), vf, col_b_x - col_a_x - 30)[:3]:
-            d.text((col_a_x, y + 20 + wrap(d, str(va), vf, col_b_x - col_a_x - 30).index(ln) * 40),
-                   ln, font=vf, fill=SILVER_2)
-        for ln in wrap(d, str(vb), vf, CARD_W - 70 - col_b_x)[:3]:
-            d.text((col_b_x, y + 20 + wrap(d, str(vb), vf, CARD_W - 70 - col_b_x).index(ln) * 40),
-                   ln, font=vf, fill=SILVER_2)
+        d.text((col_label_x, y + 22), label, font=lf, fill=TEAL)
+        draw_cell(va, col_a_x, y, col_a_w)
+        draw_cell(vb, col_b_x, y, col_b_w)
 
     ruo_footer(d, CARD_W, CARD_H)
     img.save(out_path)
