@@ -873,7 +873,7 @@ function ResearchersAdminPageInner() {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">First Name</label>
                   <input type="text" className="form-input" placeholder="First Name" value={newFirstName}
                     onChange={e => {
@@ -884,7 +884,7 @@ function ResearchersAdminPageInner() {
                       }
                     }} required />
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">Last Name</label>
                   <input type="text" className="form-input" placeholder="Last Name" value={newLastName}
                     onChange={e => setNewLastName(e.target.value)} />

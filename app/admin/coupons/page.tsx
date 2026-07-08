@@ -446,7 +446,7 @@ export default function AdminCouponsPage() {
                   gap: 'var(--space-4)',
                 }}
               >
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">Coupon Code</label>
                   <input
                     type="text"
@@ -457,7 +457,7 @@ export default function AdminCouponsPage() {
                     required
                   />
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">Discount Type</label>
                   <select
                     className="form-input"
@@ -477,7 +477,7 @@ export default function AdminCouponsPage() {
                   gap: 'var(--space-4)',
                 }}
               >
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">
                     {discountType === 'percent' ? 'Percent Off' : 'Amount Off ($)'}
                   </label>
@@ -492,7 +492,7 @@ export default function AdminCouponsPage() {
                     required
                   />
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">Minimum Order ($)</label>
                   <input
                     type="number"
@@ -504,7 +504,7 @@ export default function AdminCouponsPage() {
                     onChange={(e) => setMinOrderAmount(e.target.value)}
                   />
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">Max Uses</label>
                   <input
                     type="number"

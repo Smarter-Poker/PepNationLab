@@ -1,5 +1,25 @@
 # Social Autoposter — Human Setup + Antigravity Handoff
 
+> **BUILD STATUS (updated 2026-07-07): THE AUTOPOSTER ENGINE IS NOW BUILT.**
+> Section C is implemented in-repo and typechecks clean:
+> - Migration `supabase/migrations/20260707120000_social_autoposter.sql` — `social_posts`
+>   queue + `social_accounts` token store, RLS locked to service-role. **Applied to
+>   `ydsaqnnuwyvtyxgvrnys`.**
+> - `lib/social/` — compliance gate, token resolver/refresh, per-platform posters
+>   (X, YouTube, Instagram, Facebook, Pinterest), and the `dispatchPost` router.
+> - `app/api/cron/social-autopost/route.ts` — hourly queue drain (CRON_SECRET +
+>   `SOCIAL_AUTOPOST_ENABLED` kill switch, atomic claim, compliance gate).
+> - `app/api/social/oauth/[provider]/{start,callback}` — one-time connect flow
+>   (PKCE) that captures tokens into `social_accounts`.
+> - `app/api/admin/social/enqueue` — admin/generator hook to load the queue.
+> - Wired: `proxy.ts` (cron public route), `vercel.json` (hourly cron), `.env.local.example`.
+>
+> **Still gated on the human step:** nothing posts until (a) `SOCIAL_AUTOPOST_ENABLED=true`
+> and (b) you complete the Section B OAuth for at least one platform. The building
+> agent must still verify a real post lands in a real account before calling a
+> platform "done." The Grok video generator is `scripts/social/grok_video.py`
+> (runs in GitHub Actions). The old Pillow slideshow `gen.py` has been removed.
+
 **Prepared:** 2026-07-07
 **Goal:** Fully automated social publishing (zero ongoing human input) of Claude-generated videos + images + captions across X, YouTube, Instagram, Facebook, Pinterest, (TikTok optional).
 
