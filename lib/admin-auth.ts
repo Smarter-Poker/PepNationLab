@@ -126,6 +126,50 @@ export async function requireAgent(): Promise<
 }
 
 /**
+ * Guards agent-storefront routes that the ADMIN may also use on their OWN
+ * house storefront (e.g. the admin Product Manager reuses the agent product
+ * editor against the admin-owned main store).
+ *
+ * This does NOT reintroduce BUG 7: it is only safe for routes where every
+ * query is scoped to agent_id = caller id, so an admin passing through can
+ * only ever read or write the house store's own rows - never another
+ * agent's. Do NOT use this on routes that accept a foreign agentId or that
+ * perform cross-agent ownership checks; those must keep requireAgent /
+ * requireAdmin separation.
+ */
+export async function requireAgentOrAdmin(): Promise<
+  | { ok: true; user: { id: string }; isAdmin: boolean }
+  | { ok: false; response: NextResponse }
+> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+    };
+  }
+
+  const service = await createServiceClient();
+  const { data: profile } = await service
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const role = profile?.role;
+  if (role !== 'agent' && role !== 'super_agent' && role !== 'admin') {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Forbidden. Agent Access Required.' }, { status: 403 }),
+    };
+  }
+
+  return { ok: true, user: { id: user.id }, isAdmin: role === 'admin' };
+}
+
+/**
  * Guards API routes that need ANY signed-in user (researcher / agent /
  * super_agent / admin). Returns the same { ok, user: { id }, response }
  * shape used by requireAgent so existing callers can swap freely.

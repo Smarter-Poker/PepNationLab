@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { computeAgentCostForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
 
+// requireAgentOrAdmin is ownership-safe here: every query below is scoped to
+// agent_id = caller id, so an admin passing through only ever touches the
+// house store's own rows. The admin's cost basis is base_cost (COGS), not a
+// tier-multiplied agent cost.
+
 export async function GET(req: NextRequest) {
-  const gate = await requireAgent();
+  const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
 
   try {
@@ -43,9 +48,13 @@ export async function GET(req: NextRequest) {
         ? Number((ap.products as any).base_cost)
         : 0;
 
+      // Admin cost basis is base_cost (true COGS on the house store); agents
+      // get their tier-multiplied / custom-scaled cost.
       let agentCost = 0;
       if (baseCost > 0) {
-         agentCost = await computeAgentCostForAgent(supabase, productId, agentId, tier);
+         agentCost = gate.isAdmin
+           ? baseCost
+           : await computeAgentCostForAgent(supabase, productId, agentId, tier);
       }
 
       const { base_cost: _stripped, ...safeProducts } = (ap.products as any) ?? {};
@@ -72,7 +81,7 @@ export async function PATCH(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  const gate = await requireAgent();
+  const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
 
   const body = await req.json().catch(() => ({}));
@@ -99,7 +108,7 @@ export async function PATCH(req: NextRequest) {
       .from('agent_products')
       .select(`
         id, retail_price, margin_percent, product_id, agent_id, sale_price, is_on_sale,
-        products ( min_retail_price, max_margin_percent )
+        products ( min_retail_price, max_margin_percent, base_cost )
       `)
       .eq('id', id)
       .eq('agent_id', gate.user.id)
@@ -109,8 +118,13 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized Or Not Found' }, { status: 403 });
     }
 
+    // Cost floor: base_cost (COGS) for the admin house store, tier-derived
+    // cost for agents. All price/margin guardrails below key off this value.
     let agentCostPer10 = 0;
-    {
+    if (gate.isAdmin) {
+      const rawBase = (check.products as any)?.base_cost;
+      agentCostPer10 = rawBase != null ? Number(rawBase) : 0;
+    } else {
       const { data: profData } = await supabase
         .from('profiles')
         .select('tier')

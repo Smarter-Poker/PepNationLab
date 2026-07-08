@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { computeAgentCostForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   if (csrf) return csrf;
 
   try {
-    const gate = await requireAgent();
+    const gate = await requireAgentOrAdmin();
     if (!gate.ok) return gate.response;
 
     const supabase = await createServiceClient();
@@ -91,7 +91,11 @@ export async function POST(req: NextRequest) {
         // make the product free. Agent must set price manually for these.
         if (!Number.isFinite(baseCost) || baseCost <= 0) return null;
 
-        const agentCostPer10 = await computeAgentCostForAgent(supabase, productId, agentId, tier);
+        // Admin cost basis on the house store is base_cost (COGS); agents
+        // get their tier-derived cost.
+        const agentCostPer10 = gate.isAdmin
+          ? baseCost
+          : await computeAgentCostForAgent(supabase, productId, agentId, tier);
         const maxMargin = Number((ap.products as any)?.max_margin_percent || 300);
         const minRetailPrice = Number((ap.products as any)?.min_retail_price || agentCostPer10);
 

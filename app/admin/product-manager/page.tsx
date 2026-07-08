@@ -30,7 +30,10 @@ export default async function AdminProductManagerPage() {
           Changes Go Live On The Storefront Immediately And Reach All City Landing Pages Within 5 Minutes.
         </p>
       </div>
-      <AgentStoreProducts agentId={gate.userId} />
+      {/* costLabel: the admin's cost basis is the product base cost (COGS),
+          not a tier-multiplied agent cost - the API returns base_cost as the
+          cost for admin sessions. */}
+      <AgentStoreProducts agentId={gate.userId} costLabel="Base Cost" />
     </div>
   );
 }
