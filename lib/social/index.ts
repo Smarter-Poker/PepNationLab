@@ -13,6 +13,7 @@ import { postX } from './platforms/x';
 import { postYouTube } from './platforms/youtube';
 import { postInstagram, postFacebook } from './platforms/meta';
 import { postPinterest } from './platforms/pinterest';
+import { postTikTok } from './platforms/tiktok';
 
 export { runComplianceGate } from './compliance';
 export type { Platform, PostInput, PostResult, SocialPost } from './types';
@@ -34,6 +35,7 @@ const POSTERS: Record<Platform, (input: PostInput) => Promise<PostResult>> = {
   instagram: postInstagram,
   facebook: postFacebook,
   pinterest: postPinterest,
+  tiktok: postTikTok,
 };
 
 /** Whether the autoposter is enabled at all (kill switch / half-config guard). */

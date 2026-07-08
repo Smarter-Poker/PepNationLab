@@ -1,6 +1,6 @@
 /** Shared types for the social autoposter engine. */
 
-export type Platform = 'x' | 'youtube' | 'instagram' | 'facebook' | 'pinterest';
+export type Platform = 'x' | 'youtube' | 'instagram' | 'facebook' | 'pinterest' | 'tiktok';
 export type Provider = 'x' | 'google' | 'meta' | 'pinterest' | 'tiktok';
 export type MediaType = 'video' | 'image' | 'none';
 
@@ -51,7 +51,6 @@ export interface PostResult {
   url?: string; // permalink, when derivable
 }
 
-/** Maps a queue platform to the OAuth provider that authenticates it. */
 export function providerForPlatform(platform: Platform): Provider {
   switch (platform) {
     case 'x':
@@ -63,5 +62,7 @@ export function providerForPlatform(platform: Platform): Provider {
       return 'meta';
     case 'pinterest':
       return 'pinterest';
+    case 'tiktok':
+      return 'tiktok';
   }
 }
