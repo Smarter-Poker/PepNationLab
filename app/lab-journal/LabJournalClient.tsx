@@ -1842,48 +1842,56 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   };
 
   return (
-    <div style={{ paddingBottom: '100px' }}>
-      {/* Top Controls */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
-        <div style={{ display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', paddingBottom: 'var(--space-2)', flex: 1, minWidth: 0 }}>
-          {[
-            { id: 'notes', label: 'My Notes', icon: Info },
-            { id: 'goals', label: 'Research Goals', icon: Target },
-            { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
-            { id: 'favorites', label: 'Saved Compounds', icon: Heart },
-            { id: 'doses', label: 'Dose Tracker', icon: Syringe },
-            { id: 'biometrics', label: 'Biometrics', icon: Activity },
-            { id: 'progress', label: 'Progress Photos', icon: Camera },
-            { id: 'recentlyViewed', label: 'Recently Viewed', icon: History },
-            { id: 'compareHistory', label: 'Compare History', icon: Search }
-          ].map(t => (
-            <button
-              key={t.id}
-              onClick={() => { setActiveTab(t.id as any); setShowBuilder(false); setSelectedItems(new Set()); }}
-              style={{
-                background: 'none', border: 'none',
-                color: activeTab === t.id ? 'var(--teal)' : 'var(--silver)',
-                fontWeight: activeTab === t.id ? 'bold' : 'normal',
-                padding: 'var(--space-2) var(--space-4)',
-                cursor: 'pointer', whiteSpace: 'nowrap',
-                borderBottom: activeTab === t.id ? '2px solid var(--teal)' : '2px solid transparent',
-                transition: 'all 0.2s ease', fontSize: '0.95rem',
-                display: 'flex', alignItems: 'center', gap: 8
-              }}
-            >
-              <t.icon size={16} /> {t.label}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
-          <button onClick={generateLabReport} className="btn btn-secondary btn-sm" style={{ whiteSpace: 'nowrap', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+    <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 'var(--space-6)', paddingBottom: '100px', alignItems: 'flex-start' }}>
+      {/* Left Sidebar Menu */}
+      <div style={{ flex: '0 0 240px', display: 'flex', flexDirection: 'column', position: 'sticky', top: '100px', gap: 'var(--space-2)' }}>
+        {[
+          { id: 'notes', label: 'My Notes', icon: Info },
+          { id: 'goals', label: 'Research Goals', icon: Target },
+          { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
+          { id: 'favorites', label: 'Saved Compounds', icon: Heart },
+          { id: 'doses', label: 'Dose Tracker', icon: Syringe },
+          { id: 'biometrics', label: 'Biometrics', icon: Activity },
+          { id: 'progress', label: 'Progress Photos', icon: Camera },
+          { id: 'recentlyViewed', label: 'Recently Viewed', icon: History },
+          { id: 'compareHistory', label: 'Compare History', icon: Search }
+        ].map(t => (
+          <button
+            key={t.id}
+            onClick={() => { setActiveTab(t.id as any); setShowBuilder(false); setSelectedItems(new Set()); }}
+            style={{
+              background: activeTab === t.id ? 'rgba(192, 184, 168, 0.1)' : 'transparent',
+              border: activeTab === t.id ? '1px solid rgba(192, 184, 168, 0.2)' : '1px solid transparent',
+              borderRadius: 8,
+              color: activeTab === t.id ? 'var(--teal)' : 'var(--silver)',
+              fontWeight: activeTab === t.id ? 'bold' : 'normal',
+              padding: '12px 16px',
+              cursor: 'pointer',
+              textAlign: 'left',
+              transition: 'all 0.2s ease',
+              fontSize: '0.95rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12
+            }}
+          >
+            <t.icon size={18} /> {t.label}
+          </button>
+        ))}
+        
+        {/* Actions inside sidebar below navigation */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)', borderTop: 'var(--border-subtle)' }}>
+          <button onClick={generateLabReport} className="btn btn-secondary btn-sm" style={{ whiteSpace: 'nowrap', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             <FlaskConical size={14} /> Print Lab Report
           </button>
-          <button onClick={exportJournalToCSV} className="btn btn-secondary btn-sm" style={{ whiteSpace: 'nowrap', borderRadius: 20 }}>
+          <button onClick={exportJournalToCSV} className="btn btn-secondary btn-sm" style={{ whiteSpace: 'nowrap', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             Export Journal to CSV
           </button>
         </div>
       </div>
+
+      {/* Main Content Area */}
+      <div style={{ flex: '1 1 500px', minWidth: 0 }}>
 
       {activeTab === 'bundles' && (
         <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
@@ -3201,6 +3209,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           .dose-grid { grid-template-columns: 1fr !important; }
         }
       `}} />
+      </div>
     </div>
   );
 }

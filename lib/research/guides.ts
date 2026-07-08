@@ -549,6 +549,260 @@ export const GUIDES: Guide[] = [
     ],
     related: ['understanding-peptide-purity', 'how-to-read-a-certificate-of-analysis'],
   },
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'tirzepatide-vs-semaglutide-research',
+    title: 'Tirzepatide vs. Semaglutide: A Research Comparison',
+    description:
+      'A neutral, research-context comparison of Tirzepatide and Semaglutide - how the dual GIP/GLP-1 agonist and the GLP-1 agonist differ in receptor targets, mechanism, and how each is studied. Research use only.',
+    datePublished: '2026-07-07',
+    dateModified: '2026-07-07',
+    readingTimeMin: 6,
+    keywords: ['tirzepatide vs semaglutide', 'GLP-1 vs GIP', 'incretin research', 'dual agonist', 'metabolic research peptides'],
+    intro:
+      'Tirzepatide and Semaglutide are two of the most studied compounds in metabolic peptide research, and researchers frequently ask how they compare. This guide gives a neutral, research-context comparison - what each compound is, how their receptor targets differ, and how they are studied. It contains no dosing, efficacy claims, or human-use guidance; both are supplied strictly for in vitro laboratory research.',
+    sections: [
+      {
+        heading: 'The Core Difference: Single Versus Dual Receptor Activity',
+        paragraphs: [
+          'Semaglutide is a GLP-1 receptor agonist - it binds and activates a single incretin receptor, GLP-1. Tirzepatide is a dual agonist that acts at both the GIP receptor and the GLP-1 receptor. This single-versus-dual distinction is the central theme researchers examine when comparing the two compounds.',
+          'Because the two engage different receptor combinations, they are studied as distinct tools for investigating incretin signaling, even though both sit in the same metabolic research area.',
+        ],
+      },
+      {
+        heading: 'Molecular And Structural Notes',
+        paragraphs: [
+          'Both are peptide analogs designed for extended stability. In the research literature they are handled as reference agonists, and each is characterized by its own sequence, molecular weight, and receptor-binding profile documented on its monograph.',
+        ],
+        bullets: [
+          'Semaglutide: GLP-1 receptor agonist.',
+          'Tirzepatide: dual GIP / GLP-1 receptor agonist.',
+          'Both are studied in metabolic and energy-balance pathway research.',
+          'Retatrutide extends the theme further as a triple GIP/GLP-1/glucagon agonist.',
+        ],
+      },
+      {
+        heading: 'How Researchers Choose Between Them',
+        paragraphs: [
+          'The choice of reference compound depends on the research question. A study focused on GLP-1 signaling alone may use Semaglutide, while research examining combined incretin activity may use Tirzepatide. Reviewing each compound monograph - receptor targets, mechanism, and referenced findings - is the appropriate way to inform that selection.',
+        ],
+      },
+      {
+        heading: 'Research Use Only',
+        paragraphs: [
+          'Both compounds, supplied as research peptides, are for in vitro laboratory research only. They are not for human or animal consumption, ingestion, or injection, and are not FDA-approved for such use. This guide compares them only as research reference compounds.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'Semaglutide is a GLP-1 receptor agonist; Tirzepatide is a dual GIP/GLP-1 receptor agonist.',
+      'The single-versus-dual receptor distinction is the core difference researchers study.',
+      'Both belong to the metabolic research area and are handled as reference agonists.',
+      'Both are Research Use Only - not for human or animal use.',
+    ],
+    related: ['glp-1-receptor-agonists-in-research', 'research-vs-pharmaceutical-peptides'],
+    compounds: [{ name: 'Semaglutide', slug: 'semaglutide' }, { name: 'Tirzepatide', slug: 'tirzepatide' }],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'bpc-157-vs-tb-500-research',
+    title: 'BPC-157 vs. TB-500: A Research Comparison',
+    description:
+      'A research-context comparison of BPC-157 and TB-500 (Thymosin Beta-4) - the two anchor compounds of tissue-repair research: what each is, how their mechanisms differ, and why they are often studied together. Research use only.',
+    datePublished: '2026-07-07',
+    dateModified: '2026-07-07',
+    readingTimeMin: 6,
+    keywords: ['BPC-157 vs TB-500', 'tissue repair peptides', 'thymosin beta-4', 'angiogenesis research', 'recovery peptides'],
+    intro:
+      'BPC-157 and TB-500 are the two most referenced compounds in tissue-repair research, and they are frequently compared and studied side by side. This guide explains what each is, how their mechanisms differ, and why researchers often examine them together - framed strictly around in vitro laboratory research context, with no dosing or human-use guidance.',
+    sections: [
+      {
+        heading: 'Two Different Origins',
+        paragraphs: [
+          'BPC-157 is a synthetic pentadecapeptide derived from a sequence identified in a gastric protein. TB-500 is a synthetic fragment related to Thymosin Beta-4, a naturally occurring regenerative peptide. They come from different biological origins and are structurally distinct.',
+        ],
+      },
+      {
+        heading: 'Different Mechanisms, Overlapping Research Areas',
+        paragraphs: [
+          'In the research literature, BPC-157 is studied heavily in angiogenesis and connective-tissue repair models, while TB-500 is studied for actin regulation, cell migration, and tissue regeneration. Their mechanisms differ, but both sit within the tissue repair and recovery research area, which is why they are often examined together in comparative studies.',
+        ],
+        bullets: [
+          'BPC-157: angiogenesis, tendon/ligament and gut-tissue repair models.',
+          'TB-500: actin binding, cell migration, and regeneration research.',
+          'Both are anchor compounds of the tissue repair and recovery area.',
+        ],
+      },
+      {
+        heading: 'Why They Are Studied Together',
+        paragraphs: [
+          'Because the two engage repair pathways through different mechanisms, researchers sometimes study them in combination to examine complementary effects in tissue-repair models. This pairing is one of the more referenced combinations in recovery research.',
+        ],
+      },
+      {
+        heading: 'Research Use Only',
+        paragraphs: [
+          'Both compounds are supplied strictly for in vitro laboratory research. They are not FDA-approved and are not for human or animal consumption, ingestion, or injection. This comparison is informational and research-focused only.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'BPC-157 is a synthetic gastric-derived pentadecapeptide; TB-500 is a synthetic Thymosin Beta-4 fragment.',
+      'BPC-157 is studied in angiogenesis and connective-tissue repair; TB-500 in actin regulation and cell migration.',
+      'Both are anchor compounds of the tissue repair and recovery research area and are sometimes studied together.',
+      'Both are Research Use Only - not for human or animal use.',
+    ],
+    related: ['bpc-157-research-overview', 'peptide-research-areas-explained'],
+    compounds: [{ name: 'BPC-157', slug: 'bpc-157' }, { name: 'TB-500', slug: 'tb-500' }],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'understanding-peptide-half-life',
+    title: 'Understanding Peptide Half-Life In Research',
+    description:
+      'What peptide half-life means, how it is measured and reported, why it varies so widely between compounds, and how modifications extend it - a plain-language pharmacokinetics primer for research context.',
+    datePublished: '2026-07-07',
+    dateModified: '2026-07-07',
+    readingTimeMin: 6,
+    keywords: ['peptide half-life', 'pharmacokinetics', 'peptide stability', 'DAC', 'half-life extension', 'research peptides'],
+    intro:
+      'Half-life is one of the most frequently cited pharmacokinetic properties on a peptide monograph, and it strongly shapes how a compound behaves in research models. This guide explains what half-life means, how it is measured and reported, why it varies so widely, and how structural modifications extend it - framed for in vitro and preclinical research context.',
+    sections: [
+      {
+        heading: 'What Half-Life Actually Describes',
+        paragraphs: [
+          'Half-life is the time it takes for the concentration of a compound to fall to half its starting value. A short half-life means the compound clears quickly; a long half-life means it persists. For research, half-life is a key variable in experimental design because it influences how a compound is modeled over time.',
+        ],
+      },
+      {
+        heading: 'Why Half-Life Varies So Widely',
+        paragraphs: [
+          'Native peptides are often broken down rapidly by enzymes, giving very short half-lives measured in minutes. Structural strategies - such as amino-acid substitutions, fatty-acid conjugation, or a drug-affinity complex (DAC) that binds albumin - slow degradation and extend half-life dramatically, sometimes from minutes to days. This is why two compounds in the same class can have completely different half-life profiles.',
+        ],
+        bullets: [
+          'Unmodified peptides: often minutes to a few hours.',
+          'Substituted / stabilized analogs: hours.',
+          'Albumin-binding or DAC-modified analogs: up to days.',
+        ],
+      },
+      {
+        heading: 'How It Is Reported On A Monograph',
+        paragraphs: [
+          'Half-life on a compound monograph may be measured (from pharmacokinetic studies) or predicted (estimated from structure). A well-documented monograph distinguishes the two. Reading half-life alongside the mechanism and route notes gives the clearest picture of a compound behavior in a research setting.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'Half-life is the time for a compound concentration to fall by half - a core pharmacokinetic variable.',
+      'It varies from minutes (native peptides) to days (albumin-binding or DAC-modified analogs).',
+      'Structural modifications like fatty-acid conjugation or a DAC extend half-life by slowing degradation.',
+      'Monographs may report measured or predicted half-life; the distinction matters for research design.',
+    ],
+    related: ['how-research-peptides-are-synthesized', 'understanding-peptide-purity'],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'peptide-receptor-targets-explained',
+    title: 'Peptide Receptor Targets Explained',
+    description:
+      'What a receptor target is, what it means for a peptide to be an agonist, and why receptor targets are the most useful way to organize and compare research peptides. A plain-language primer for research context.',
+    datePublished: '2026-07-07',
+    dateModified: '2026-07-07',
+    readingTimeMin: 5,
+    keywords: ['receptor target', 'peptide agonist', 'GPCR', 'receptor binding', 'mechanism of action', 'research peptides'],
+    intro:
+      'Many research peptides are described by the receptor they act on - GLP-1 receptor, ghrelin receptor, melanocortin receptor, and so on. Understanding what a receptor target is, and what agonism means, is the key to reading a monograph mechanism section and comparing compounds. This guide is a plain-language primer for research context.',
+    sections: [
+      {
+        heading: 'What A Receptor Target Is',
+        paragraphs: [
+          'A receptor is a protein, often on the cell surface, that a signaling molecule binds to in order to trigger a response inside the cell. Many peptides are studied specifically because they bind a particular receptor. That receptor is the peptide target, and it defines much of how the compound behaves in a research model.',
+        ],
+      },
+      {
+        heading: 'Agonists, Antagonists, And Selectivity',
+        paragraphs: [
+          'A compound that binds a receptor and activates it is an agonist; one that binds and blocks it is an antagonist. Many of the most studied research peptides are agonists. Selectivity describes how specifically a compound targets one receptor versus several - a single-receptor agonist versus a dual or triple agonist, for example.',
+        ],
+        bullets: [
+          'Agonist: binds and activates the receptor.',
+          'Antagonist: binds and blocks the receptor.',
+          'Selectivity: how specifically a compound targets one receptor versus multiple.',
+        ],
+      },
+      {
+        heading: 'Why Receptor Targets Organize The Catalog',
+        paragraphs: [
+          'Grouping compounds by receptor target is one of the most useful ways to navigate a research library, because compounds that share a target are often studied for related questions. The Pep Nation Lab research library lets researchers browse by receptor target to see every compound annotated against a given receptor.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'A receptor target is the protein a peptide binds to trigger a cellular response.',
+      'An agonist activates its receptor; an antagonist blocks it - most studied peptides are agonists.',
+      'Selectivity describes single- versus multi-receptor targeting (e.g., dual and triple agonists).',
+      'Browsing by receptor target is an efficient way to compare related research compounds.',
+    ],
+    related: ['glp-1-receptor-agonists-in-research', 'growth-hormone-secretagogues-explained'],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'evaluating-peptide-research-evidence',
+    title: 'How To Evaluate Peptide Research Evidence',
+    description:
+      'A practical primer on evaluating peptide research: the difference between in vitro, in vivo, and clinical evidence, what evidence tiers mean, and how to read the strength of the literature behind a compound.',
+    datePublished: '2026-07-07',
+    dateModified: '2026-07-07',
+    readingTimeMin: 6,
+    keywords: ['peptide research evidence', 'in vitro vs in vivo', 'preclinical', 'evidence tier', 'evaluating studies', 'research peptides'],
+    intro:
+      'Not all research findings carry the same weight, and evaluating the strength of the evidence behind a compound is a core research skill. This guide explains the difference between in vitro, in vivo, and clinical evidence, what evidence tiers communicate, and how to read the literature behind a research peptide critically.',
+    sections: [
+      {
+        heading: 'In Vitro, In Vivo, And Clinical: A Hierarchy Of Evidence',
+        paragraphs: [
+          'In vitro research is conducted outside a living organism - in cell cultures or isolated systems. In vivo research uses living organisms, typically animal models. Clinical evidence comes from controlled human studies. These represent increasing levels of complexity and, generally, increasing strength of evidence for a given claim.',
+          'A compound with strong in vitro or animal data but little or no human evidence is common in peptide research. Recognizing where a compound sits on this hierarchy is essential to interpreting what is actually known about it.',
+        ],
+      },
+      {
+        heading: 'What Evidence Tiers Communicate',
+        paragraphs: [
+          'Some research libraries assign an evidence tier to each compound to summarize how much and how strong the supporting research is. A tier is a shorthand: it tells a researcher, at a glance, whether a compound is backed by extensive study or by early, limited data. It is a starting point for judgment, not a substitute for reading the primary literature.',
+        ],
+        bullets: [
+          'In vitro: cell-culture and isolated-system studies.',
+          'In vivo: animal-model studies.',
+          'Clinical: controlled human studies (rare for many research peptides).',
+          'Evidence tier: a summary of how much and how strong the research is.',
+        ],
+      },
+      {
+        heading: 'Reading The Literature Critically',
+        paragraphs: [
+          'Strong evaluation means checking the source of a claim: is it a peer-reviewed study, a review, or anecdote; is it in vitro, animal, or human; and is it a single finding or a replicated result. A compound monograph that cites its sources and states its evidence context is far more useful than one that simply asserts effects.',
+        ],
+      },
+      {
+        heading: 'Research Use Only',
+        paragraphs: [
+          'This guide is about evaluating research evidence, not about human use. All compounds referenced across the Pep Nation Lab research library are for in vitro laboratory research only and are not for human or animal use.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'Evidence strength generally increases from in vitro, to in vivo (animal), to clinical (human) research.',
+      'Many research peptides have strong in vitro or animal data but little human evidence - know where a compound sits.',
+      'An evidence tier summarizes how much and how strong the research is; it is a starting point, not a verdict.',
+      'Evaluate claims by source, study type, and whether findings are replicated.',
+    ],
+    related: ['research-vs-pharmaceutical-peptides', 'what-research-use-only-means'],
+  },
+
 ];
 
 export function getGuide(slug: string): Guide | undefined {
@@ -707,6 +961,76 @@ export const GUIDE_FAQS: Record<string, { q: string; a: string }[]> = {
     {
       q: 'How does synthesis quality show up in documentation?',
       a: 'It appears in the Certificate of Analysis: HPLC purity reflects how cleanly the peptide was synthesized and purified, and mass spectrometry confirms the assembled sequence matches the intended molecule.',
+    },
+  ],
+  'tirzepatide-vs-semaglutide-research': [
+    {
+      q: 'What is the main difference between Tirzepatide and Semaglutide?',
+      a: 'Semaglutide is a single GLP-1 receptor agonist, while Tirzepatide is a dual agonist that acts at both the GIP and GLP-1 receptors. That single-versus-dual receptor activity is the core difference researchers study.',
+    },
+    {
+      q: 'Are Tirzepatide and Semaglutide studied in the same research area?',
+      a: 'Yes. Both sit in the metabolic research area and are handled as reference incretin agonists, but they engage different receptor combinations, so they are studied as distinct tools.',
+    },
+    {
+      q: 'Are these compounds for human use?',
+      a: 'No. Supplied as research peptides, both are strictly for in vitro laboratory research and are not for human or animal use.',
+    },
+  ],
+  'bpc-157-vs-tb-500-research': [
+    {
+      q: 'How do BPC-157 and TB-500 differ?',
+      a: 'They have different origins and mechanisms: BPC-157 is a synthetic gastric-derived pentadecapeptide studied in angiogenesis and connective-tissue repair, while TB-500 is a Thymosin Beta-4 fragment studied for actin regulation and cell migration.',
+    },
+    {
+      q: 'Why are BPC-157 and TB-500 studied together?',
+      a: 'Because they engage tissue-repair pathways through different mechanisms, researchers sometimes study them in combination to examine complementary effects in repair models.',
+    },
+    {
+      q: 'Are BPC-157 and TB-500 FDA-approved?',
+      a: 'No. Both are Research Use Only compounds, not FDA-approved, and are not for human or animal use.',
+    },
+  ],
+  'understanding-peptide-half-life': [
+    {
+      q: 'What does peptide half-life mean?',
+      a: 'Half-life is the time it takes for a compound concentration to fall to half its starting value. A short half-life means fast clearance; a long half-life means the compound persists.',
+    },
+    {
+      q: 'Why do peptide half-lives vary so much?',
+      a: 'Native peptides are broken down quickly (minutes), but structural modifications such as amino-acid substitutions, fatty-acid conjugation, or a drug-affinity complex (DAC) that binds albumin slow degradation and can extend half-life to days.',
+    },
+    {
+      q: 'What is the difference between measured and predicted half-life?',
+      a: 'Measured half-life comes from pharmacokinetic studies; predicted half-life is estimated from a compound structure. A well-documented monograph distinguishes the two.',
+    },
+  ],
+  'peptide-receptor-targets-explained': [
+    {
+      q: 'What is a receptor target?',
+      a: 'A receptor is a protein, often on the cell surface, that a signaling molecule binds to trigger a cellular response. A peptide receptor target is the receptor it is studied for binding.',
+    },
+    {
+      q: 'What is the difference between an agonist and an antagonist?',
+      a: 'An agonist binds a receptor and activates it; an antagonist binds and blocks it. Most widely studied research peptides are agonists.',
+    },
+    {
+      q: 'What does receptor selectivity mean?',
+      a: 'Selectivity describes how specifically a compound targets one receptor versus several - for example, a single-receptor agonist versus a dual or triple agonist.',
+    },
+  ],
+  'evaluating-peptide-research-evidence': [
+    {
+      q: 'What is the difference between in vitro and in vivo research?',
+      a: 'In vitro research is done outside a living organism, in cell cultures or isolated systems; in vivo research uses living organisms, typically animal models. Clinical research uses controlled human studies.',
+    },
+    {
+      q: 'What does an evidence tier tell me?',
+      a: 'An evidence tier summarizes how much and how strong the research behind a compound is. It is a quick starting point for judgment, not a substitute for reading the primary literature.',
+    },
+    {
+      q: 'How should I evaluate a research claim about a peptide?',
+      a: 'Check the source (peer-reviewed study, review, or anecdote), the study type (in vitro, animal, or human), and whether the finding has been replicated rather than reported once.',
     },
   ],
 };
