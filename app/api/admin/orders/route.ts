@@ -9,6 +9,7 @@ import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyAdminOrderStatusChange } from '@/lib/notify';
+import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail } from '@/lib/email';
 
 type OrderPushEvent = 'order_approved' | 'order_shipped' | 'order_delivered';
 
@@ -221,6 +222,24 @@ export async function POST(req: NextRequest) {
         else if (status === 'delivered') event = 'order_delivered';
         if (event) {
           await enqueueOrderPush(supabase, { userId: orderRow.buyer_id, orderId: id, event, tracking: trk });
+        }
+
+        // Transactional email for shipped/delivered. Best-effort, non-blocking,
+        // only to a verified contact email, and only on an actual transition so
+        // re-saving the same status cannot re-send. Never breaks the response.
+        if ((status === 'shipped' || status === 'delivered') && currentStatus !== status && emailConfigured()) {
+          const { data: buyer } = await supabase
+            .from('profiles')
+            .select('contact_email, email_verified, full_name')
+            .eq('id', orderRow.buyer_id)
+            .maybeSingle();
+          if (buyer?.contact_email && buyer.email_verified) {
+            if (status === 'shipped') {
+              void sendOrderShippedEmail({ to: buyer.contact_email, fullName: buyer.full_name, orderId: id, trackingNumber: trk }).catch(() => {});
+            } else {
+              void sendOrderDeliveredEmail({ to: buyer.contact_email, fullName: buyer.full_name, orderId: id }).catch(() => {});
+            }
+          }
         }
       }
     } catch { /* notifications must not break admin response */ }
