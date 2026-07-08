@@ -8,6 +8,7 @@ import { CITIES, getStatesSlugs, CITY_CONTENT_UPDATED } from '@/lib/cities/citie
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { GUIDES, GUIDES_UPDATED } from '@/lib/research/guides';
 import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
+import { RESEARCH_AREAS } from '@/lib/compounds';
 const BASE = 'https://pepnationlab.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -98,6 +99,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
+
+    // Research Areas - deep use-case hub pages (now indexable). High-intent
+    // category landing pages (weight management, tissue repair, cognitive, etc).
+    ...Object.keys(RESEARCH_AREAS).map((area) => ({
+      url: `${BASE}/research/area/${area}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    })),
   ];
 
   let compounds: MetadataRoute.Sitemap = [];
@@ -129,8 +139,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const t of ((targetData ?? []) as Array<{ receptors: string[] | null }>)) {
       if (Array.isArray(t.receptors)) for (const r of t.receptors) targets.add(r);
     }
-    // NOTE: /research/area/ and /research/by-target/ pages are noindexed (robots: index:false)
-    // so they are intentionally excluded from the sitemap to avoid Search Console warnings.
+    // NOTE: /research/area/ hubs are now indexable and emitted above (in
+    // staticPaths). /research/by-target/ pages remain noindexed (thin filter
+    // pages) and are intentionally excluded to avoid Search Console warnings.
   } catch {
     // best-effort: fall back to static paths only
   }
