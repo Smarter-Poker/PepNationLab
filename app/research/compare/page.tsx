@@ -11,26 +11,59 @@ import { ArrowLeft } from 'lucide-react';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { getAreaProducts, type AreaProduct } from '@/lib/area-products-server';
 import CompareTool from '@/components/research/CompareTool';
+import CompareSeoContent from '@/components/research/CompareSeoContent';
 
-export const metadata: Metadata = {
-  title: 'Compare Research Compounds | Pep Nation Lab',
-  description: 'Side-by-side comparison of research-grade peptides and compounds. Compare mechanisms, half-lives, research evidence, and handling for informed research decisions.',
-  robots: { index: true, follow: true },
-  alternates: { canonical: 'https://pepnationlab.com/research/compare' },
-  openGraph: {
-    title: 'Compare Research Compounds | Pep Nation Lab',
-    description: 'Side-by-side peptide comparison: mechanisms, half-lives, evidence, and dosing guides.',
-    url: 'https://pepnationlab.com/research/compare',
-    type: 'website',
-    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Research Compound Comparison Tool' }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Compare Research Compounds | Pep Nation Lab',
-    description: 'Side-by-side peptide comparison: mechanisms, half-lives, research evidence, and handling.',
-    images: ['/og-card.png'],
-  },
-};
+const DEFAULT_TITLE = 'Compare Research Compounds | Pep Nation Lab';
+const DEFAULT_DESC = 'Side-by-side comparison of research-grade peptides and compounds. Compare mechanisms, half-lives, research evidence, and handling for informed research decisions.';
+
+// Dynamic metadata: a shared /research/compare?compare=x,y link gets a
+// search-targeted title/description (great for social unfurls and specific
+// intent), while the canonical always points at the base page so the infinite
+// query-param combinations never create duplicate-content bloat -- the curated
+// /research/compare/[matchup] pages are the indexable ranking targets.
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ add?: string; compare?: string }>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const raw = String(params.compare ?? params.add ?? '');
+  const slugs = raw.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 4);
+
+  let title = DEFAULT_TITLE;
+  let description = DEFAULT_DESC;
+
+  if (slugs.length >= 2) {
+    const compounds = await getAllCompounds();
+    const names = slugs
+      .map((s) => compounds.find((c) => c.slug === s)?.display_name)
+      .filter((v): v is string => !!v);
+    if (names.length >= 2) {
+      title = `${names.join(' vs ')}: Side-By-Side Research Comparison | Pep Nation Lab`;
+      description = `Compare ${names.join(', ')} side by side - mechanism, evidence tier, half-life, molecular identity, and research focus. Research use only.`;
+    }
+  }
+
+  return {
+    title,
+    description,
+    robots: { index: true, follow: true },
+    alternates: { canonical: 'https://pepnationlab.com/research/compare' },
+    openGraph: {
+      title,
+      description,
+      url: 'https://pepnationlab.com/research/compare',
+      type: 'website',
+      images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Research Compound Comparison Tool' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/og-card.png'],
+    },
+  };
+}
 
 export default async function CompareCompoundsPage({
   searchParams,
@@ -112,6 +145,11 @@ export default async function CompareCompoundsPage({
         <Suspense fallback={<div style={{ textAlign: 'center', padding: '60px', color: 'var(--silver, #A8B4C0)' }}>Loading Compare Tool…</div>}>
           <CompareTool compounds={compounds} initialSlugs={initialSlugs} products={products} />
         </Suspense>
+
+        {/* Server-rendered, crawlable content: internally links every curated
+            /research/compare/[matchup] page and gives the otherwise client-only
+            tool page real content + an FAQ for search + AI answer engines. */}
+        <CompareSeoContent compounds={compounds} />
       </div>
     </div>
   );
