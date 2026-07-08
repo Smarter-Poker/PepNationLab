@@ -67,7 +67,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    site: "@pepnationlab",
+    site: "@PepNationLab",
+    creator: "@PepNationLab",
     title: "Pep Nation Lab | Premium Research Peptide Distribution",
     description: "Wholesale research peptide distribution for qualified researchers. 300+ RUO compounds.",
     images: ["/og-card.png"],
