@@ -3643,6 +3643,7 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
      that actually match in production. Prefix matching ("0.6" / "0.7")
      covers every hundredth value in one selector. The legacy spaced
      variants are kept for any hand-written HTML. */
+  [style*="font-size:0.5"],
   [style*="font-size:0.6"],
   [style*="font-size:0.7"],
   [style*="font-size: 0.62rem"],
@@ -3743,30 +3744,33 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
 }
 
 @media (max-width: 768px) {
+  div[role="toolbar"][style*="overflow-x"],
   div[role="toolbar"][style*="overflowX"],
-  div[style*="display: 'flex'"][style*="overflowX: 'auto'"],
-  div[style*="display: \"flex\""][style*="overflowX: \"auto\""] {
+  div[style*="display:flex"][style*="overflow-x:auto"],
+  div[style*="display: flex"][style*="overflow-x: auto"] {
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: thin !important;
     padding-bottom: 4px !important;
     scroll-snap-type: x proximity !important;
   }
+  div[role="toolbar"][style*="overflow-x"] > *,
   div[role="toolbar"][style*="overflowX"] > *,
-  div[style*="display: 'flex'"][style*="overflowX: 'auto'"] > *,
-  div[style*="display: \"flex\""][style*="overflowX: \"auto\""] > * {
+  div[style*="display:flex"][style*="overflow-x:auto"] > *,
+  div[style*="display: flex"][style*="overflow-x: auto"] > * {
     flex-shrink: 0 !important;
     scroll-snap-align: start !important;
   }
 }
 
 @media (max-width: 380px) {
-  a.card-metal[style*="alignItems: 'center'"] > span[style*="width: 56"],
+  a.card-metal[style*="align-items:center"] > span[style*="width:56"],
   a.card-metal[style*="align-items: center"] > span[style*="width: 56"] {
     width: 44px !important;
     height: 44px !important;
     flex-shrink: 0 !important;
   }
-  a.card-metal[style*="alignItems: 'center'"] {
+  a.card-metal[style*="align-items:center"],
+  a.card-metal[style*="align-items: center"] {
     padding: var(--space-3, 12px) var(--space-4, 16px) !important;
   }
 }

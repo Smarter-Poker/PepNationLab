@@ -163,25 +163,27 @@ export default function RootLayout({
                     email: 'research@pepnationlab.com',
                     availableLanguage: ['English'],
                   },
-                  // Entity authority profiles — add each URL as accounts are created.
+                  // Entity authority profiles — updated 2026-07-07.
                   // Consistency across all profiles (name/handle/website) is the ranking signal.
                   sameAs: [
                     // ── Tier 1: Knowledge Graph anchors ──────────────────────────
-                    'https://www.wikidata.org/wiki/Q140460136', // ✅ confirmed
+                    'https://www.wikidata.org/wiki/Q140460136',       // ✅ confirmed
+                    // LinkedIn company page — add tomorrow after 24-hr new-account lockout lifts:
                     // 'https://www.linkedin.com/company/pepnationlab',
-                    // 'https://x.com/pepnationlab',
+                    'https://x.com/PepNationLab',                     // ✅ confirmed
                     // ── Tier 2: Supporting authority profiles ────────────────────
-                    // 'https://www.youtube.com/@pepnationlab',
-                    // 'https://www.instagram.com/pepnationlab',
-                    // 'https://www.facebook.com/pepnationlab',
+                    'https://www.youtube.com/channel/UCvPX1ho_av0jxctz4yER0Og', // ✅ confirmed
+                    'https://www.instagram.com/pepnationlab/',         // ✅ confirmed
+                    'https://www.facebook.com/profile.php?id=61591787160330', // ✅ Page confirmed
                     // ── Tier 3: Niche / B2B entity signals ──────────────────────
-                    // 'https://www.crunchbase.com/organization/pep-nation-lab',
-                    // 'https://www.reddit.com/user/pepnationlab',
+                    'https://www.crunchbase.com/organization/pep-nation-lab', // ✅ confirmed
+                    'https://www.reddit.com/user/PepNationLab/',      // ✅ confirmed
                     // ── Additional: AI-model-weighted platforms ──────────────────
+                    'https://www.trustpilot.com/review/pepnationlab.com', // ✅ confirmed
+                    'https://www.tiktok.com/@pepnationlab',            // ✅ confirmed
+                    'https://www.pinterest.com/PepNationLab/',         // ✅ confirmed
+                    // GitHub org — add when created:
                     // 'https://github.com/pepnationlab',
-                    // 'https://www.tiktok.com/@pepnationlab',
-                    // 'https://www.pinterest.com/pepnationlab',
-                    // 'https://www.trustpilot.com/review/pepnationlab.com',
                   ],
                 },
               ],
