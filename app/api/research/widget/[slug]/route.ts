@@ -60,7 +60,7 @@ export async function GET(
     .note{color:var(--silver);font-size:10px;padding-top:8px;margin-top:8px}
     .footer{font-size:10px;color:var(--silver);margin-top:6px;text-align:right}
     .footer a{color:var(--teal);text-decoration:none}
-  </style></head><body><div class="card"><h1 class="h1">${esc(data.display_name)}</h1>${aliases ? `<div class="aliases">Also Known As ${esc(aliases)}</div>` : ''}<div class="row">${tier ? `<span class="pill">Evidence: ${esc(tier)}</span>` : ""}${areas ? `<span class="pill">${esc(areas)}</span>` : ""}</div>${data.plain_summary ? `<p class="summary">${esc(data.plain_summary)}</p>` : ''}${data.mechanism ? `<div class="mech"><strong>Mechanism:</strong> ${esc(data.mechanism)}</div>` : ''}<div class="note">${esc(RESEARCH_NOTE)}</div><div class="footer">Powered By <a href="https://pepnationlab.com/research/compounds/${esc(cleaned)}" target="_blank" rel="noopener">Pep Nation Lab</a></div></div></body></html>`;
+  </style></head><body><div class="card"><h1 class="h1">${esc(data.display_name)}</h1>${aliases ? `<div class="aliases">Also Known As ${esc(aliases)}</div>` : ''}<div class="row">${tier ? `<span class="pill">Evidence: ${esc(tier)}</span>` : ""}${areas ? `<span class="pill">${esc(areas)}</span>` : ""}</div>${data.plain_summary ? `<p class="summary">${esc(data.plain_summary)}</p>` : ''}${data.mechanism ? `<div class="mech"><strong>Mechanism:</strong> ${esc(data.mechanism)}</div>` : ''}<div class="note">${esc(RESEARCH_NOTE)}</div><div class="footer">Powered By <a href="https://pepnationlab.com/research/${esc(cleaned)}" target="_blank" rel="noopener">Pep Nation Lab</a></div></div></body></html>`;
     return new Response(html, {
       status: 200,
       headers: {

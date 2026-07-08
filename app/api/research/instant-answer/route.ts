@@ -115,7 +115,7 @@ async function buildPayload(
             mechanism: primary.mechanism,
             molecular_target: primary.molecular_target,
             studied_for: primary.studied_for ?? [],
-            url: `/research/compounds/${primary.slug}`,
+            url: `/research/${primary.slug}`,
           },
         },
         kind: intent.kind,
@@ -133,7 +133,7 @@ async function buildPayload(
             evidence_tier: c.evidence_tier,
             mechanism: c.mechanism,
             studied_for: c.studied_for ?? [],
-            url: `/research/compounds/${c.slug}`,
+            url: `/research/${c.slug}`,
           })),
           compare_url: `/research/compare?slugs=${encodeURIComponent(cards.map((c) => c.slug).join(','))}`,
         },
@@ -154,7 +154,7 @@ async function buildPayload(
           compound: {
             slug: primary.slug,
             name: primary.display_name,
-            url: `/research/compounds/${primary.slug}`,
+            url: `/research/${primary.slug}`,
           },
           handling: {
             form: handling.form ?? null,
@@ -176,7 +176,7 @@ async function buildPayload(
           compound: {
             slug: primary.slug,
             name: primary.display_name,
-            url: `/research/compounds/${primary.slug}`,
+            url: `/research/${primary.slug}`,
           },
           side_effects: primary.side_effects,
           warnings: primary.warnings,
@@ -202,7 +202,7 @@ async function buildPayload(
           compound: {
             slug: primary.slug,
             name: primary.display_name,
-            url: `/research/compounds/${primary.slug}`,
+            url: `/research/${primary.slug}`,
           },
           half_life_text: halfLifeText,
           measured_hours: primary.measured_half_life_hours,
@@ -221,7 +221,7 @@ async function buildPayload(
             name: c.display_name,
             plain_summary: c.plain_summary,
             evidence_tier: c.evidence_tier,
-            url: `/research/compounds/${c.slug}`,
+            url: `/research/${c.slug}`,
           })),
           rationale: primary.stack_rationale,
         },
@@ -240,7 +240,7 @@ async function buildPayload(
           compound: {
             slug: primary.slug,
             name: primary.display_name,
-            url: `/research/compounds/${primary.slug}`,
+            url: `/research/${primary.slug}`,
           },
           storage_temp: handling.storage_temp ?? null,
           reconstituted_days: handling.reconstituted_days ?? null,
@@ -256,7 +256,7 @@ async function buildPayload(
           compound: {
             slug: primary.slug,
             name: primary.display_name,
-            url: `/research/compounds/${primary.slug}`,
+            url: `/research/${primary.slug}`,
           },
           calculator_url: `/research/calculators?compound=${primary.slug}`,
         },

@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const label = RESEARCH_AREAS[area]?.label ?? 'Research Area';
   return {
     title: `${label} | Research Library | Pep Nation Lab`,
-    robots: { index: false, follow: false },
+    robots: { index: false, follow: true },
   };
 }
 

@@ -11,5 +11,5 @@ export default function LabToolsRedirectPage() {
 
 export const metadata = {
   title: 'Lab Tools | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };

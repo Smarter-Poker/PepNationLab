@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,18 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
+  // Defense-in-depth brute-force cap on MFA code verification, keyed per user
+  // and per IP (in addition to Supabase GoTrue's own throttling).
+  const mfaRl = await rateLimit({
+    key: 'mfa_verify',
+    limit: 10,
+    windowSeconds: 300,
+    identifier: `${user.id}:${getClientIp(req)}`,
+  });
+  if (!mfaRl.allowed) {
+    return NextResponse.json({ error: 'Too Many Attempts. Please Wait And Try Again.' }, { status: 429 });
   }
 
   const body = await req.json().catch(() => null);

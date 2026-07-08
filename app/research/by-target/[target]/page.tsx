@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const decoded = decodeURIComponent(target);
   return {
     title: `${decoded} | Receptor Target | Research Library | Pep Nation Lab`,
-    robots: { index: false, follow: false },
+    robots: { index: false, follow: true },
   };
 }
 

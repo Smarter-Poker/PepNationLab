@@ -9,7 +9,7 @@ import { getAllCompounds } from '@/lib/compounds-server';
 
 export const metadata: Metadata = {
   title: 'Browse By Receptor Target | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };
 
 export const dynamic = 'force-dynamic';

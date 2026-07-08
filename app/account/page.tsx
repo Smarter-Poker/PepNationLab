@@ -129,5 +129,5 @@ export default async function AccountHubPage() {
 
 export const metadata = {
   title: 'Your Account Settings | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };

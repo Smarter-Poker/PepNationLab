@@ -40,7 +40,7 @@ The item exists. Wikidata is the single most valuable entity anchor because Goog
 | **country (P17)** | United States of America (Q30) |
 | **legal form (P1454)** | limited liability company (Q10467345) |
 | **industry (P452)** | biotechnology (Q7108) — and/or chemical industry (Q167525) |
-| **inception (P571)** | *[FILL IN — the year Pep Nation Lab LLC was founded]* |
+| **inception (P571)** | 2025 |
 
 ### Official profiles (these mirror your on-site `sameAs` — Wikidata uses dedicated identifier properties, not generic URLs)
 | Property | Value |
@@ -210,12 +210,12 @@ Track monthly:
 
 ---
 
-## What I need from you to finish the on-site side of the entity work
-1. **Founding year** of Pep Nation Lab LLC → completes the Wikidata `inception` statement.
-2. **LinkedIn company-page URL** (once the account lockout lifts) → I add it to `Organization.sameAs` site-wide.
-3. **GitHub org URL** (optional) → same.
+## Outstanding entity items
+1. ~~Founding year~~ — **confirmed: 2025.** Wired into the on-site `Organization.foundingDate` schema and set as Wikidata `inception (P571)` above.
+2. **LinkedIn company-page URL** (available tomorrow after the new-account lockout lifts) → send it and I add it to `Organization.sameAs` site-wide, plus Wikidata.
+3. ~~GitHub org~~ — **not needed; skip.** Zero entity value for a research-supply brand, and your existing `Smarter-Poker` GitHub is a separate entity that should not be linked here.
 
-Send those and I'll wire the remaining `sameAs` entries and hand you the finished Wikidata statement list to paste.
+Send the LinkedIn URL tomorrow and that closes out the on-site entity work.
 
 ---
 

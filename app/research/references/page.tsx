@@ -14,7 +14,7 @@ import ReferencesBrowser, { type RefEntry } from '@/components/research/Referenc
 
 export const metadata: Metadata = {
   title: 'References Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };
 
 function hostOf(url: string): string {

@@ -42,5 +42,5 @@ export default async function AccountCompliancePage() {
 
 export const metadata = {
   title: 'Compliance & Disclaimers | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };

@@ -25,6 +25,12 @@ export const metadata: Metadata = {
     type: 'article',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Intranasal Research Peptides' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Intranasal Peptides | Nasal Spray Research Compounds | Pep Nation Lab',
+    description: 'Which research peptides are studied via intranasal (nasal spray) route, graded by evidence strength.',
+    images: ['/og-card.png'],
+  },
 };
 
 export const dynamic = 'force-dynamic';

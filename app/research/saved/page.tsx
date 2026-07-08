@@ -10,7 +10,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Saved Compounds | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };
 
 export default async function SavedCompoundsPage() {

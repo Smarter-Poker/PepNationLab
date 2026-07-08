@@ -159,7 +159,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       compound.plain_summary ??
       `Structured research reference data for ${compound.display_name}: mechanism, evidence tier, pharmacokinetics, molecular identity, and references. In vitro research use only.`,
     url: `https://pepnationlab.com/research/${compound.slug}`,
-    isPartOf: 'https://pepnationlab.com/research/catalog',
+    isPartOf: { '@id': 'https://pepnationlab.com/research/catalog#dataset' },
     license: 'https://pepnationlab.com/terms',
     isAccessibleForFree: true,
     creator: { '@id': 'https://pepnationlab.com/#organization' },
@@ -188,7 +188,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         publisher: { '@id': 'https://pepnationlab.com/#organization' },
         reviewedBy: { '@id': 'https://pepnationlab.com/#organization' },
         maintainer: { '@id': 'https://pepnationlab.com/#organization' },
-        lastReviewed: '2026-07-07',
+        lastReviewed: new Date().toISOString().slice(0, 10),
         audience: {
           '@type': 'Audience',
           audienceType: 'Qualified Researchers And Scientific Institutions',

@@ -5,18 +5,22 @@ export const revalidate = 3600; // Cache for 1 hour
 export const maxDuration = 60; // Allow more time on Vercel for building this large file
 
 export async function GET() {
-  const supabase = await createServiceClient();
-  const { data: compounds } = await supabase
-    .from('compounds')
-    .select('*')
-    .order('display_name', { ascending: true });
+  let compounds: Record<string, unknown>[] = [];
+  try {
+    const supabase = await createServiceClient();
+    const { data } = await supabase
+      .from('compounds')
+      .select('*')
+      .order('display_name', { ascending: true })
+      .limit(2000);
+    compounds = data ?? [];
+  } catch { /* best-effort — return empty text on failure */ }
 
   let text = `# Pep Nation Lab - Full Research Database\n\n`;
   text += `> Premium wholesale research peptide distribution and comprehensive research library for qualified institutions. All products are strictly for in vitro laboratory research use only. Not for human consumption.\n\n`;
   text += `---\n\n`;
 
-  if (compounds) {
-    compounds.forEach((c) => {
+  compounds.forEach((c) => {
       text += `# ${c.display_name}\n\n`;
       text += `- **Category**: ${c.category}\n`;
       text += `- **Aliases**: ${Array.isArray(c.aliases) ? c.aliases.join(', ') : c.aliases}\n`;
@@ -32,7 +36,6 @@ export async function GET() {
       text += `\n## Summary\n${c.plain_summary || c.description || 'N/A'}\n\n`;
       text += `---\n\n`;
     });
-  }
 
   return new NextResponse(text, {
     headers: {

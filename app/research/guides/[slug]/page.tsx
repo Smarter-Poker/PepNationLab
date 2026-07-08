@@ -68,7 +68,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         headline: guide.title,
         description: guide.description,
         url,
-        mainEntityOfPage: url,
+        mainEntityOfPage: { '@id': `${url}#article` },
         datePublished: guide.datePublished,
         dateModified: guide.dateModified,
         inLanguage: 'en-US',

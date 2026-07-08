@@ -265,5 +265,5 @@ export default async function LabJournalPage() {
 
 export const metadata = {
   title: 'Lab Journal | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };

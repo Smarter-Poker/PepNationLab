@@ -6,7 +6,7 @@ import AdminMessengerClient from './AdminMessengerClient';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Message Moderation | Admin | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };
 
 export default async function AdminModerationPage() {

@@ -107,7 +107,12 @@ const nextConfig = {
               "default-src 'self'; " +
               "img-src 'self' data: blob: https://*.supabase.co https://api.dicebear.com https://media.tenor.com; " +
               "media-src 'self' blob: https://*.supabase.co; " +
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+              // 'unsafe-eval' removed: audited all production client libs
+              // (mermaid, recharts, framer-motion, zustand, qrcode, livekit) —
+              // none call eval/new Function at runtime. 'unsafe-inline' stays
+              // for now because the app ships inline <style>/JSON-LD blocks that
+              // would need nonces/hashes before it can be dropped.
+              "script-src 'self' 'unsafe-inline'; " +
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
               "font-src 'self' data: https://fonts.gstatic.com; " +
               "connect-src 'self' https://*.supabase.co https://api.goshippo.com wss://*.supabase.co " +

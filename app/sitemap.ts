@@ -129,22 +129,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const t of ((targetData ?? []) as Array<{ receptors: string[] | null }>)) {
       if (Array.isArray(t.receptors)) for (const r of t.receptors) targets.add(r);
     }
-    for (const a of areas) {
-      compounds.push({
-        url: `${BASE}/research/area/${encodeURIComponent(a)}`,
-        lastModified: now,
-        changeFrequency: 'weekly',
-        priority: 0.7,
-      });
-    }
-    for (const t of targets) {
-      compounds.push({
-        url: `${BASE}/research/by-target/${encodeURIComponent(t)}`,
-        lastModified: now,
-        changeFrequency: 'weekly',
-        priority: 0.6,
-      });
-    }
+    // NOTE: /research/area/ and /research/by-target/ pages are noindexed (robots: index:false)
+    // so they are intentionally excluded from the sitemap to avoid Search Console warnings.
   } catch {
     // best-effort: fall back to static paths only
   }

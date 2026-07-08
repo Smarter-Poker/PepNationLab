@@ -17,5 +17,5 @@ export default async function AccountRefillsPage() {
 
 export const metadata = {
   title: 'Order History And Reorders | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };

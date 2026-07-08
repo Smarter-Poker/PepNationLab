@@ -5,7 +5,7 @@ import ShelfLifeTracker from '@/components/research/ShelfLifeTracker';
 
 export const metadata: Metadata = {
   title: 'Reconstitution & Shelf Life',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };
 
 export const dynamic = 'force-dynamic';

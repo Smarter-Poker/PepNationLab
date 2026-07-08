@@ -39,6 +39,7 @@ import InCellGlossaryTooltip from './InCellGlossaryTooltip';
 import type { AreaProduct } from '@/lib/area-products-server';
 import ResearchCartButton from './ResearchCartButton';
 import { useCart } from '@/components/CartContext';
+import { escapeWithLineBreaks } from '@/lib/sanitize-html';
 
 const MAX_COLUMNS = 4;
 const NL = 'Not Listed';
@@ -2915,7 +2916,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
                   
                   <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 24, marginBottom: 24 }}>
                     <h4 style={{ margin: '0 0 16px 0', fontSize: '1.1rem', color: '#fff' }}>Detailed Analysis</h4>
-                    <div style={{ color: 'rgba(255,255,255,0.8)', lineHeight: 1.7, fontSize: '0.95rem' }} dangerouslySetInnerHTML={{ __html: aiAnalysis.analysis.replace(/\\n/g, '<br/>') }} />
+                    <div style={{ color: 'rgba(255,255,255,0.8)', lineHeight: 1.7, fontSize: '0.95rem' }} dangerouslySetInnerHTML={{ __html: escapeWithLineBreaks(aiAnalysis.analysis) }} />
                   </div>
                 </div>
               )}

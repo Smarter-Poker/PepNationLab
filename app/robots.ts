@@ -154,6 +154,5 @@ export default function robots(): MetadataRoute.Robots {
       })),
     ],
     sitemap: 'https://pepnationlab.com/sitemap.xml',
-    host: 'https://pepnationlab.com',
   };
 }

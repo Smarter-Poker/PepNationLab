@@ -16,7 +16,7 @@ import type { InstantAnswerPayload } from '@/components/research/InstantAnswerCa
 
 export const metadata: Metadata = {
   title: 'Search The Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };
 
 type SP = { q?: string; offset?: string; autoCorrect?: string };
@@ -42,10 +42,10 @@ async function fetchSearch(query: string, offset: number, autoCorrect: string, b
   try {
     const url = `${base}/api/research/search?q=${encodeURIComponent(query)}&limit=20&offset=${offset}&autoCorrect=${autoCorrect}`;
     const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return {};
+    if (!res.ok) return { robots: { index: false } };
     return (await res.json()) as SearchApiResponse;
   } catch {
-    return {};
+    return { robots: { index: false } };
   }
 }
 

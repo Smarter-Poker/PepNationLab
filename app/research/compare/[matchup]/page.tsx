@@ -135,8 +135,8 @@ export default async function ComparisonPage({ params }: { params: Promise<{ mat
         isPartOf: { '@id': 'https://pepnationlab.com/#website' },
         publisher: { '@id': 'https://pepnationlab.com/#organization' },
         about: [
-          { '@type': 'ChemicalSubstance', name: a.display_name, url: `https://pepnationlab.com/research/${a.slug}` },
-          { '@type': 'ChemicalSubstance', name: b.display_name, url: `https://pepnationlab.com/research/${b.slug}` },
+          { '@id': `https://pepnationlab.com/research/${a.slug}#chemical` },
+          { '@id': `https://pepnationlab.com/research/${b.slug}#chemical` },
         ],
       },
       {

@@ -85,7 +85,7 @@ export default async function CompoundReferencesPage({ params }: PageProps) {
 
       {refs.length === 0 ? (
         <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
-          No References Currently Indexed For This Compound. The PubMed Sync Cron Will Populate Citations Weekly.
+          No References Are Currently Indexed For This Compound. Citations Are Added Periodically As New Research Is Published.
         </div>
       ) : (
         <CompoundReferencesClient references={refs} slug={slug} />

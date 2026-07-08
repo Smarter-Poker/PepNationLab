@@ -5,7 +5,7 @@ import PrintButton from '@/components/wallet/PrintButton';
 export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Invoice | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };
 
 const money = (n: number) =>

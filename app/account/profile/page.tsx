@@ -34,5 +34,5 @@ export default async function AccountProfilePage() {
 
 export const metadata = {
   title: 'Profile | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };

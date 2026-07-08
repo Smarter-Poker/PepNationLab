@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +53,14 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Uploads are the heaviest researcher write (storage + bandwidth); cap tightly.
+  const ip = getClientIp(req);
+  const rlMinute = await rateLimit({ key: 'rpp_upload_min', limit: 20, windowSeconds: 60, identifier: user.id || ip });
+  const rlDaily = await rateLimit({ key: 'rpp_upload_day', limit: 250, windowSeconds: 86400, identifier: user.id || ip });
+  if (!rlMinute.allowed || !rlDaily.allowed) {
+    return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
+  }
 
   try {
     const { image_base64, caption, taken_at } = await req.json();

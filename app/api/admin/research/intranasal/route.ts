@@ -81,7 +81,6 @@ export async function POST(req: NextRequest) {
   try {
     revalidateTag('compounds', { expire: 0 });
     revalidatePath(`/research/${slug}`);
-    revalidatePath(`/research/compounds/${slug}`);
   } catch { /* best-effort cache refresh */ }
 
   return NextResponse.json({ success: true });

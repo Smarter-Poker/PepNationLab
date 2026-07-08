@@ -8,7 +8,7 @@ import AdminIntranasalEditor, { type IntranasalRow } from '@/components/admin/Ad
 
 export const metadata: Metadata = {
   title: 'Intranasal Route | Admin | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };
 export const dynamic = 'force-dynamic';
 

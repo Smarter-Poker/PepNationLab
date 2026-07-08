@@ -76,6 +76,7 @@ export async function generateMetadata({
       card: 'summary_large_image',
       title,
       description,
+      images: ['/og-card.png'],
     },
     robots: {
       index: true,
@@ -170,12 +171,14 @@ export default async function CityLandingPage({
               name: p.subtitle ? `${p.name} (${p.subtitle})` : p.name,
               image: p.image ? `https://pepnationlab.com${p.image}` : undefined,
               description: `Research-grade ${p.name} for qualified researchers.`,
+              brand: { '@id': 'https://pepnationlab.com/#organization' },
               offers: {
                 '@type': 'Offer',
                 price: p.price,
                 priceCurrency: 'USD',
                 availability: 'https://schema.org/InStock',
                 url: `https://pepnationlab.com/${DEFAULT_STORE_SLUG}?product=${p.productId}`,
+                seller: { '@id': 'https://pepnationlab.com/#organization' },
               },
             })),
           ]

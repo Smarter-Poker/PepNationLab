@@ -66,7 +66,7 @@ async function runRankedSearch(
     evidence_tier: String(r.evidence_tier ?? ''),
     snippet: typeof r.snippet === 'string' ? r.snippet : '',
     score: typeof r.score === 'number' ? r.score : Number(r.score ?? 0),
-    knowledge_panel_url: `/research/compounds/${String(r.slug ?? '')}`,
+    knowledge_panel_url: `/research/${String(r.slug ?? '')}`,
   }));
 
   // total_count column is returned by the RPC on every row.
@@ -107,7 +107,7 @@ async function runFallbackTrigram(
     evidence_tier: String(r.evidence_tier ?? ''),
     snippet: typeof r.snippet === 'string' ? r.snippet : '',
     score: typeof r.score === 'number' ? r.score : Number(r.score ?? 0),
-    knowledge_panel_url: `/research/compounds/${String(r.slug ?? '')}`,
+    knowledge_panel_url: `/research/${String(r.slug ?? '')}`,
   }));
 }
 

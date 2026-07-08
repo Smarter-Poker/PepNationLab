@@ -11,6 +11,7 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { evidenceTier } from '@/lib/compounds';
+import { escapeAllowingMark } from '@/lib/sanitize-html';
 import InstantAnswerCard, { type InstantAnswerPayload } from './InstantAnswerCard';
 
 export interface SearchHit {
@@ -189,7 +190,7 @@ export default function SearchResults({
                   className="search-snippet"
                   style={{ color: '#D0DAE4', fontSize: 14, lineHeight: 1.6, marginTop: 8, marginBottom: 0 }}
                   dangerouslySetInnerHTML={{
-                    __html: hit.snippet || hit.plain_summary || 'No Summary Available Yet.',
+                    __html: escapeAllowingMark(hit.snippet || hit.plain_summary || 'No Summary Available Yet.'),
                   }}
                 />
               </li>

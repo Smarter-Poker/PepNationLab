@@ -12,7 +12,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 
 export const metadata: Metadata = {
   title: 'Compound Quality | Admin | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };
 export const dynamic = 'force-dynamic';
 

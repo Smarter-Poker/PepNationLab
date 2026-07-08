@@ -115,9 +115,9 @@ export default async function CompoundRegulatoryPage({ params }: PageProps) {
             agency="EMA (European Union)"
             status={reg.ema_approval_year ? `Approved ${reg.ema_approval_year}` : 'Not Approved'}
           />
-          <RegCard agency="Health Canada" status="Status Pending Sync" isPending />
-          <RegCard agency="TGA (Australia)" status="Status Pending Sync" isPending />
-          <RegCard agency="PMDA (Japan)" status="Status Pending Sync" isPending />
+          <RegCard agency="Health Canada" status="Not Available" isPending />
+          <RegCard agency="TGA (Australia)" status="Not Available" isPending />
+          <RegCard agency="PMDA (Japan)" status="Not Available" isPending />
           <RegCard
             agency="DEA Schedule (US)"
             status={reg.dea_schedule ?? 'Not Scheduled'}
@@ -125,7 +125,7 @@ export default async function CompoundRegulatoryPage({ params }: PageProps) {
 
           <RegCard
             agency="FDA FAERS"
-            status={reg.faers_event_count !== null ? `${reg.faers_event_count} Adverse Events Recorded` : 'Pending Sync'}
+            status={reg.faers_event_count !== null ? `${reg.faers_event_count} Adverse Events Recorded` : 'Data Not Available'}
             isPending={reg.faers_event_count === null}
           />
         </div>

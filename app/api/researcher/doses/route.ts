@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +36,11 @@ export async function POST(req: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const rl = await rateLimit({ key: 'researcher_dose', limit: 60, windowSeconds: 60, identifier: user.id || getClientIp(req) });
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
   }
 
   try {

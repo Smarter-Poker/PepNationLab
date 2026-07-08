@@ -12,7 +12,11 @@ export default function MermaidDiagram({ chart }: { chart: string }) {
     mermaid.initialize({
       startOnLoad: false,
       theme: 'dark',
-      securityLevel: 'loose',
+      // 'strict' keeps mermaid's built-in DOMPurify sanitization of rendered
+      // SVG and disables click/script directives. Charts are developer-authored
+      // today, but 'strict' means a future dynamic chart source can't become an
+      // XSS sink. (Was 'loose', which disables that sanitization.)
+      securityLevel: 'strict',
     });
 
     const renderChart = async () => {

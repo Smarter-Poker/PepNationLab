@@ -6,7 +6,7 @@ import WalletPage from '@/components/wallet/WalletPage';
 export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Wallet | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };
 
 export default async function WalletRoute() {

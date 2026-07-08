@@ -13,7 +13,7 @@ import CompoundDataTable, { type DataRow } from '@/components/research/CompoundD
 
 export const metadata: Metadata = {
   title: 'Full Data Table | Research Library | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };
 
 const dash = (v: unknown) => {

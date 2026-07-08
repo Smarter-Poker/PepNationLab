@@ -44,5 +44,5 @@ export default async function ReferralsPage() {
 
 export const metadata = {
   title: 'Referrals | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };

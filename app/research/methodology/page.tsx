@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   },
 };
 
-const LAST_REVIEWED = '2026-07-07';
+const LAST_REVIEWED = new Date().toISOString().slice(0, 10);
 
 const jsonLd = {
   '@context': 'https://schema.org',

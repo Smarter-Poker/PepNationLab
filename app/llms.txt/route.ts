@@ -5,11 +5,15 @@ import { GUIDES } from '@/lib/research/guides';
 export const revalidate = 3600; // Cache for 1 hour
 
 export async function GET() {
-  const supabase = await createServiceClient();
-  const { data: compounds } = await supabase
-    .from('compounds')
-    .select('slug, display_name, category')
-    .order('display_name', { ascending: true });
+  let compounds: Array<{ slug: string; display_name: string; category: string | null }> = [];
+  try {
+    const supabase = await createServiceClient();
+    const { data } = await supabase
+      .from('compounds')
+      .select('slug, display_name, category')
+      .order('display_name', { ascending: true });
+    compounds = data ?? [];
+  } catch { /* best-effort — render rest of file without compound list */ }
 
   const base = 'https://pepnationlab.com';
 
@@ -36,6 +40,11 @@ export async function GET() {
   text += `- [Reconstitution Calculators](${base}/research/calculators): Research dosing and dilution math.\n`;
   text += `- [Compare Compounds](${base}/research/compare): Side-by-side comparison tool.\n`;
   text += `- [Research FAQ](${base}/research/faq): Frequently asked questions.\n`;
+  text += `- [Research Guides](${base}/research/guides): In-depth RUO-compliant research guides.\n`;
+  text += `- [Evidence & Safety Reference](${base}/research/evidence): Evidence tiers and safety flags for all compounds.\n`;
+  text += `- [Therapeutic Areas](${base}/research/areas): Compounds organized by research area.\n`;
+  text += `- [Editorial Standards & Methodology](${base}/research/methodology): How compound data is curated and reviewed.\n`;
+  text += `- [Intranasal Peptide Research](${base}/research/intranasal-peptides): Which compounds are studied via nasal route.\n`;
   text += `- [About Pep Nation Lab](${base}/about): Company and platform overview.\n\n`;
 
   text += `## Local Coverage Directory\n`;
@@ -54,10 +63,8 @@ export async function GET() {
 
   text += `## Individual Compound Monographs\n`;
   text += `Each entry links to the human-readable monograph. A machine-readable markdown version is available at /api/llm/compound/{slug}.\n`;
-  if (compounds) {
-    compounds.forEach((c) => {
-      text += `- [${c.display_name}](${base}/research/${c.slug}): ${c.category ?? 'Research Compound'} (markdown: ${base}/api/llm/compound/${c.slug})\n`;
-    });
+  for (const c of compounds) {
+    text += `- [${c.display_name}](${base}/research/${c.slug}): ${c.category ?? 'Research Compound'} (markdown: ${base}/api/llm/compound/${c.slug})\n`;
   }
 
   text += `\n## Policies\n`;

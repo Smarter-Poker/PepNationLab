@@ -33,5 +33,5 @@ export default async function AdminCatalogRiskPage() {
 
 export const metadata = {
   title: 'Catalog Risk Audit | Pep Nation Lab',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };
