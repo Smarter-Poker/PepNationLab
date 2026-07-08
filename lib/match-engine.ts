@@ -2,9 +2,9 @@
  * Match Me To A Peptide - deterministic scoring engine.
  *
  * Pure TypeScript, no React, no I/O. Given a researcher's stated primary goal,
- * evidence-tier comfort, and risk tolerance, the engine ranks
- * the catalog and returns the top 5 candidate compounds with a plain-English
- * rationale.
+ * evidence-tier comfort, and risk tolerance, the engine ranks the catalog and
+ * returns the top candidate compounds (default cap 12) with a plain-English
+ * rationale and a transparent, additive score breakdown.
  *
  * Research-Use-Only: this is an educational suggestion engine for laboratory
  * research framing. It does not produce dosing or medical advice. Compounds
@@ -36,10 +36,12 @@ export interface MatchInput {
 }
 
 export interface ScoreBreakdown {
-  base: number;
-  keyword: number;
-  evidenceBonus: number;
-  classBonus: number;
+  base: number;        // exact research-area tag match
+  keyword: number;     // cumulative goal-keyword hits
+  evidenceBonus: number; // evidence-tier gradient
+  classBonus: number;  // class-aligned nudge
+  interest: number;    // research interest (citations + active trials)
+  budget: number;      // budget shaping (can be negative)
 }
 
 export interface ExcludedCompound {
@@ -97,13 +99,33 @@ function comfortMinRank(comfort: EvidenceComfort): number {
 }
 
 /**
- * "+15 if the compound's tier matches the user's comfort." We interpret this
- * generously: any compound that survives the comfort gate gets the +15 boost,
- * because the user said they were comfortable with that tier or better.
+ * Evidence-tier gradient. Stronger human evidence contributes more, so two
+ * compounds that are otherwise equally relevant separate by evidence quality
+ * instead of tying. Replaces the old flat "+15 if it clears the comfort gate",
+ * which compressed nearly every relevant result to the same score.
  */
-function evidenceComfortBonus(tier: string, comfort: EvidenceComfort): number {
-  if (comfort === 'any') return tierRank(tier) > 0 ? 15 : 0;
-  return tierRank(tier) >= comfortMinRank(comfort) ? 15 : 0;
+function evidenceGradient(tier: string): number {
+  switch (tier) {
+    case 'approved_drug': return 20;
+    case 'investigational': return 16;
+    case 'preclinical': return 12;
+    case 'research_chemical': return 8;
+    case 'cosmetic': return 5;
+    default: return 0;
+  }
+}
+
+/**
+ * Research-interest signal derived from cataloged bibliometrics. Gives real
+ * spread among relevant compounds: heavily studied compounds with active
+ * trials rank above obscure ones at the same evidence tier. Capped at 20.
+ */
+function interestBonus(c: Compound): number {
+  const cites = typeof c.pubmed_citation_count === 'number' ? c.pubmed_citation_count : 0;
+  const trials = typeof c.active_trial_count === 'number' ? c.active_trial_count : 0;
+  const citeScore = cites > 0 ? Math.min(12, Math.round(Math.log10(1 + cites) * 4)) : 0;
+  const trialScore = trials >= 5 ? 8 : trials > 0 ? 6 : 0;
+  return Math.min(20, citeScore + trialScore);
 }
 
 // --------------------------------------------------------------------------
@@ -130,7 +152,12 @@ const GOAL_KEYWORDS: Record<string, string[]> = {
   bone_joint: ['bone', 'joint', 'cartilage', 'osteo', 'density', 'fracture', 'synovial'],
 };
 
-function goalMentionsBonus(goal: string, c: Compound): number {
+/**
+ * Count how many distinct goal keywords appear in the compound's prose fields.
+ * Cumulative (not binary) so a compound studied across several facets of a goal
+ * scores higher than one with a single incidental mention.
+ */
+function goalKeywordHits(goal: string, c: Compound): number {
   const keywords = GOAL_KEYWORDS[goal] ?? [goal.replace(/_/g, ' ')];
   const haystack = [
     c.category ?? '',
@@ -142,12 +169,11 @@ function goalMentionsBonus(goal: string, c: Compound): number {
   ]
     .join(' ')
     .toLowerCase();
+  let hits = 0;
   for (const kw of keywords) {
-    if (kw && haystack.includes(kw.toLowerCase())) {
-      return 20;
-    }
+    if (kw && haystack.includes(kw.toLowerCase())) hits++;
   }
-  return 0;
+  return hits;
 }
 
 // --------------------------------------------------------------------------
@@ -268,39 +294,29 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
   if (failsPreferenceGate(c, input.preference)) return { failReason: 'Does not match preference (single/stack).' };
   if (input.excludeSlugs && input.excludeSlugs.includes(c.slug)) return { failReason: 'Manually excluded.' };
 
-  let score = 0;
-  const breakdown: ScoreBreakdown = { base: 0, keyword: 0, evidenceBonus: 0, classBonus: 0 };
+  const breakdown: ScoreBreakdown = { base: 0, keyword: 0, evidenceBonus: 0, classBonus: 0, interest: 0, budget: 0 };
 
-  // +50 for an exact research-area tag match (or 'any' goal grants base +50 to all).
+  // Goal relevance: an exact research-area tag is the strongest signal (+45).
   const taggedHit = input.goal === 'any' || (Array.isArray(c.research_areas) && c.research_areas.includes(input.goal));
-  if (taggedHit) {
-    score += 50;
-    breakdown.base = 50;
-  }
+  if (taggedHit) breakdown.base = 45;
 
-  // +20 if the goal's keywords appear in category / class / mechanism / studied_for.
-  let keywordBonus = 0;
-  if (input.goal === 'any') {
-    // If 'any' is selected, everyone gets a free keyword bump to level the playing field.
-    keywordBonus = 20;
-  } else {
-    keywordBonus = goalMentionsBonus(input.goal, c);
-  }
-  
-  if (keywordBonus > 0) {
-    score += keywordBonus;
-    breakdown.keyword = keywordBonus;
-  }
-  const keywordHit = keywordBonus > 0;
+  // Keyword strength: cumulative across prose fields (+10 per distinct hit).
+  // Tagged compounds use a smaller cap because the tag already proved relevance;
+  // untagged compounds can earn up to +30 purely from keyword evidence.
+  const hits = input.goal === 'any' ? 1 : goalKeywordHits(input.goal, c);
+  const keywordCap = taggedHit ? 10 : 30;
+  breakdown.keyword = Math.min(keywordCap, hits * 10);
+  const keywordHit = breakdown.keyword > 0;
 
-  // +15 if the compound's evidence tier matches the user's comfort level.
-  const eBonus = evidenceComfortBonus(c.evidence_tier, input.evidenceComfort);
-  score += eBonus;
-  breakdown.evidenceBonus = eBonus;
+  // If the compound has zero goal-signal at all, do not surface it. This keeps
+  // the candidate list relevant rather than padded by tier-only matches.
+  if (!taggedHit && !keywordHit) return { failReason: 'Not relevant to your goal.' };
 
-  // +5 nudge for class-aligned bonuses.
+  // Evidence-tier gradient (stronger human evidence ranks higher).
+  breakdown.evidenceBonus = evidenceGradient(c.evidence_tier);
+
+  // Class-aligned nudges.
   if (c.is_glp1 && (input.goal === 'metabolic' || input.goal === 'weight_management')) {
-    score += 5;
     breakdown.classBonus += 5;
   }
   if (
@@ -309,37 +325,34 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
       input.goal === 'healing' ||
       input.goal === 'pain_inflammation')
   ) {
-    score += 5;
     breakdown.classBonus += 5;
   }
 
-  // If the compound has zero goal-signal at all, do not surface it. This keeps
-  // the top-5 list relevant rather than padded by tier-only matches.
-  if (!taggedHit && !keywordHit) return { failReason: 'Not relevant to your goal.' };
+  // Research interest (citations + active trials) for spread among relevant hits.
+  breakdown.interest = interestBonus(c);
 
-  // Budget penalty for stacks if conservative
+  // Budget shaping.
   if (input.budget === 'conservative') {
-    if (c.is_stack) {
-      score -= 20; // Penalize expensive stacks
-    }
     const premiumSlugs = ['semaglutide', 'tirzepatide', 'retatrutide', 'igf-1-lr3', 'igf-1-des', 'dihexa', 'mots-c'];
-    if (premiumSlugs.includes(c.slug)) {
-      score -= 15;
-    } else {
-      score += 10;
-    }
+    if (c.is_stack) breakdown.budget -= 20;
+    if (premiumSlugs.includes(c.slug)) breakdown.budget -= 15;
+    else breakdown.budget += 10;
   } else if (input.budget === 'standard') {
-    if (c.is_stack) {
-      score -= 5;
-    }
+    if (c.is_stack) breakdown.budget -= 5;
     const premiumSlugs = ['tirzepatide', 'retatrutide', 'igf-1-lr3'];
-    if (premiumSlugs.includes(c.slug)) {
-      score -= 5;
-    }
+    if (premiumSlugs.includes(c.slug)) breakdown.budget -= 5;
   }
 
+  const raw =
+    breakdown.base +
+    breakdown.keyword +
+    breakdown.evidenceBonus +
+    breakdown.classBonus +
+    breakdown.interest +
+    breakdown.budget;
+
   // Clamp to 0..100 for the public score field.
-  const clamped = Math.max(0, Math.min(100, score));
+  const clamped = Math.max(0, Math.min(100, raw));
 
   return {
     score: clamped,

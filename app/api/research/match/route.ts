@@ -4,7 +4,7 @@
  * Public route. No authentication. The endpoint accepts a structured form
  * payload describing the researcher's stated goal and risk preferences, runs
  * the deterministic `scoreCompounds` engine over the compound catalog, and
- * returns the top 5 candidates with plain-English rationales.
+ * returns the top candidates (up to 12) with plain-English rationales.
  *
  * Research-Use-Only: results are factual catalog ranking; nothing here is
  * dosing or medical advice.
@@ -18,6 +18,8 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import {
   scoreCompounds,
   type MatchInput,
+  type MatchResult,
+  type ExcludedCompound,
   type EvidenceComfort,
   type RiskTolerance,
 } from '@/lib/match-engine';
@@ -98,10 +100,10 @@ export async function POST(req: NextRequest) {
   }
 
   const compounds = await getAllCompounds();
-  
+
   const goals = input.goals && input.goals.length > 0 ? input.goals : [input.goal];
-  const allMatchesMap = new Map<string, any>();
-  const allExcludedMap = new Map<string, any>();
+  const allMatchesMap = new Map<string, MatchResult>();
+  const allExcludedMap = new Map<string, ExcludedCompound>();
 
   for (const g of goals) {
     const singleInput = { ...input, goal: g };
@@ -146,9 +148,12 @@ export async function POST(req: NextRequest) {
 
   const excluded = Array.from(allExcludedMap.values()).slice(0, 5);
 
-  // Analytics log to db (awaited to prevent serverless termination)
+  // Fire-and-forget analytics: never block the response on a best-effort BI
+  // insert. Failures are logged, not surfaced. `wada_constraint` is a legacy
+  // NOT NULL column kept satisfied with 'none'; budget + result_count were
+  // added in migration 20260708170000 for richer aggregate reporting.
   const supabase = await createServiceClient();
-  const { error } = await supabase
+  void supabase
     .from('research_match_analytics')
     .insert({
       goal: input.goal,
@@ -157,13 +162,17 @@ export async function POST(req: NextRequest) {
       exclude_injectables: input.excludeInjectables ?? false,
       require_long_half_life: input.requireLongHalfLife ?? false,
       preference: input.preference ?? 'either',
+      budget: input.budget ?? 'standard',
+      result_count: matches.length,
       wada_constraint: 'none',
+    })
+    .then(({ error }) => {
+      if (error) console.error('[Match Analytics] Failed to insert', error);
     });
-  if (error) console.error('[Match Analytics] Failed to insert', error);
 
-  return NextResponse.json({ 
-    results: matches, 
-    excluded: excluded, 
-    note: RESEARCH_NOTE 
+  return NextResponse.json({
+    results: matches,
+    excluded: excluded,
+    note: RESEARCH_NOTE,
   });
 }

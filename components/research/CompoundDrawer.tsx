@@ -1,7 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ExternalLink, Activity, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { X, ExternalLink, Thermometer, Clock, AlertTriangle, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 interface ScoreBreakdown {
@@ -9,6 +10,19 @@ interface ScoreBreakdown {
   keyword: number;
   evidenceBonus: number;
   classBonus: number;
+  interest?: number;
+  budget?: number;
+}
+
+function tierLabel(tier: string): string {
+  switch (tier) {
+    case 'approved_drug': return 'Approved Drug';
+    case 'investigational': return 'Investigational';
+    case 'preclinical': return 'Preclinical';
+    case 'research_chemical': return 'Research Compound';
+    case 'cosmetic': return 'Cosmetic';
+    default: return tier.replace(/_/g, ' ');
+  }
 }
 
 interface MatchResult {
@@ -32,6 +46,19 @@ interface CompoundDrawerProps {
 }
 
 export default function CompoundDrawer({ isOpen, onClose, result }: CompoundDrawerProps) {
+  // Escape-to-close + lock background scroll while the drawer is open.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen, onClose]);
+
   if (!result) return null;
 
   return (
@@ -43,6 +70,7 @@ export default function CompoundDrawer({ isOpen, onClose, result }: CompoundDraw
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
+            aria-hidden="true"
             style={{
               position: 'fixed',
               top: 0,
@@ -55,6 +83,9 @@ export default function CompoundDrawer({ isOpen, onClose, result }: CompoundDraw
             }}
           />
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${result.displayName} details`}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -92,6 +123,7 @@ export default function CompoundDrawer({ isOpen, onClose, result }: CompoundDraw
               </div>
               <button
                 onClick={onClose}
+                aria-label="Close details"
                 style={{
                   background: 'rgba(255,255,255,0.05)',
                   border: 'none',
@@ -103,6 +135,7 @@ export default function CompoundDrawer({ isOpen, onClose, result }: CompoundDraw
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
+                  flexShrink: 0,
                 }}
               >
                 <X size={20} />
@@ -121,24 +154,22 @@ export default function CompoundDrawer({ isOpen, onClose, result }: CompoundDraw
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3, 12px)', marginBottom: 'var(--space-6, 32px)' }}>
                 <div style={{ background: 'var(--grey-400, #162230)', padding: 'var(--space-3, 12px)', borderRadius: 'var(--radius-md, 8px)' }}>
-                  <ShieldCheck size={20} color="var(--teal, #00C4BC)" style={{ marginBottom: '8px' }} />
+                  <ShieldCheck size={20} color="var(--teal, #00C4BC)" style={{ marginBottom: '8px' }} aria-hidden="true" />
                   <div style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>Evidence Tier</div>
-                  <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)', fontSize: '0.95rem' }}>{result.evidenceTier.replace('_', ' ')}</div>
+                  <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)', fontSize: '0.95rem' }}>{tierLabel(result.evidenceTier)}</div>
                 </div>
                 <div style={{ background: 'var(--grey-400, #162230)', padding: 'var(--space-3, 12px)', borderRadius: 'var(--radius-md, 8px)' }}>
-                  <AlertTriangle size={20} color="var(--orange, #FCA311)" style={{ marginBottom: '8px' }} />
+                  <AlertTriangle size={20} color="var(--orange, #FCA311)" style={{ marginBottom: '8px' }} aria-hidden="true" />
                   <div style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>Risk Level</div>
                   <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)', fontSize: '0.95rem', textTransform: 'capitalize' }}>{result.riskLevel}</div>
                 </div>
                 <div style={{ background: 'var(--grey-400, #162230)', padding: 'var(--space-3, 12px)', borderRadius: 'var(--radius-md, 8px)' }}>
-                  <Activity size={20} color="#63B3ED" style={{ marginBottom: '8px' }} />
+                  <Thermometer size={20} color="#63B3ED" style={{ marginBottom: '8px' }} aria-hidden="true" />
                   <div style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>Storage Temp</div>
                   <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)', fontSize: '0.95rem' }}>{result.isTempSensitive ? 'Cold Storage' : 'Room Temp'}</div>
                 </div>
                 <div style={{ background: 'var(--grey-400, #162230)', padding: 'var(--space-3, 12px)', borderRadius: 'var(--radius-md, 8px)' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '8px' }}>
-                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                  </svg>
+                  <Clock size={20} color="#FF6B6B" style={{ marginBottom: '8px' }} aria-hidden="true" />
                   <div style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>Half-Life</div>
                   <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)', fontSize: '0.95rem' }}>{result.halfLife || 'Unknown'}</div>
                 </div>
@@ -149,21 +180,24 @@ export default function CompoundDrawer({ isOpen, onClose, result }: CompoundDraw
                   Detailed Score Breakdown
                 </h3>
                 <div style={{ background: 'var(--grey-400, #162230)', borderRadius: 'var(--radius-md, 8px)', padding: 'var(--space-4, 16px)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem' }}>Base Suitability</span>
-                    <span style={{ color: 'var(--white, #FFFFFF)', fontWeight: 700 }}>+{result.scoreBreakdown.base}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem' }}>Goal Match (Keywords)</span>
-                    <span style={{ color: 'var(--teal, #00C4BC)', fontWeight: 700 }}>+{result.scoreBreakdown.keyword}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem' }}>Evidence Tier Bonus</span>
-                    <span style={{ color: '#63B3ED', fontWeight: 700 }}>+{result.scoreBreakdown.evidenceBonus}</span>
-                  </div>
+                  {([
+                    { label: 'Exact Goal Match', value: result.scoreBreakdown.base, color: 'var(--white, #FFFFFF)' },
+                    { label: 'Keyword Relevance', value: result.scoreBreakdown.keyword, color: 'var(--teal, #00C4BC)' },
+                    { label: 'Evidence Tier', value: result.scoreBreakdown.evidenceBonus, color: '#63B3ED' },
+                    { label: 'Class Synergy', value: result.scoreBreakdown.classBonus, color: '#F6AD55' },
+                    { label: 'Research Interest', value: result.scoreBreakdown.interest ?? 0, color: '#B794F4' },
+                    { label: 'Budget Adjustment', value: result.scoreBreakdown.budget ?? 0, color: (result.scoreBreakdown.budget ?? 0) < 0 ? '#FC8181' : '#68D391' },
+                  ] as const)
+                    .filter((row) => row.value !== 0)
+                    .map((row) => (
+                      <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem' }}>{row.label}</span>
+                        <span style={{ color: row.color, fontWeight: 700 }}>{row.value > 0 ? `+${row.value}` : row.value}</span>
+                      </div>
+                    ))}
                   <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                    <span style={{ color: 'var(--white, #FFFFFF)', fontSize: '0.95rem', fontWeight: 700 }}>Total Final Score</span>
-                    <span style={{ color: 'var(--teal, #00C4BC)', fontWeight: 800, fontSize: '1.1rem' }}>{result.score}</span>
+                    <span style={{ color: 'var(--white, #FFFFFF)', fontSize: '0.95rem', fontWeight: 700 }}>Total Match Score</span>
+                    <span style={{ color: 'var(--teal, #00C4BC)', fontWeight: 800, fontSize: '1.1rem' }}>{result.score} / 100</span>
                   </div>
                 </div>
               </div>
