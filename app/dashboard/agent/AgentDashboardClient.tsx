@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AgentCoupons from '@/components/AgentCoupons';
 import AgentStoreProducts from '@/components/AgentStoreProducts';
-import AgentSales from '@/components/AgentSales';
+import AgentSales from '@/components/LazyAgentSales';
 import AgentSubAgents from '@/components/AgentSubAgents';
 import AgentInventory from '@/components/AgentInventory';
 import AgentDownline from '@/components/AgentDownline';
