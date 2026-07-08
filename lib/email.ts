@@ -186,6 +186,86 @@ export async function sendOrderConfirmationEmail(params: {
   });
 }
 
+/** Order shipped notification, optionally carrying a tracking number. */
+export async function sendOrderShippedEmail(params: {
+  to: string;
+  fullName?: string | null;
+  orderId: string;
+  trackingNumber?: string | null;
+}): Promise<SendEmailResult> {
+  const name = (params.fullName || '').trim() || 'Researcher';
+  const trk = (params.trackingNumber || '').trim();
+  const tracking = trk
+    ? `<p style="font-size:14px;line-height:1.7;margin:0 0 16px;">Tracking Number: <strong style="color:#fff;">${trk}</strong></p>`
+    : '';
+  const html = layout(`
+    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">Your Order Has Shipped</h1>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 16px;">
+      Good news, ${name}. Your order <strong style="color:#fff;">#${params.orderId}</strong> is on its way.
+    </p>
+    ${tracking}
+    ${button(`${SITE}/orders/${params.orderId}`, 'Track Your Order')}
+  `);
+  return sendEmail({
+    to: params.to,
+    subject: `Your Order Has Shipped - #${params.orderId}`,
+    html,
+    text: `Hi ${name}, your order #${params.orderId} has shipped.${trk ? ` Tracking: ${trk}.` : ''} View it at ${SITE}/orders/${params.orderId}`,
+  });
+}
+
+/** Order delivered notification. */
+export async function sendOrderDeliveredEmail(params: {
+  to: string;
+  fullName?: string | null;
+  orderId: string;
+}): Promise<SendEmailResult> {
+  const name = (params.fullName || '').trim() || 'Researcher';
+  const html = layout(`
+    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">Your Order Has Been Delivered</h1>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Hi ${name}, your order <strong style="color:#fff;">#${params.orderId}</strong> has been marked as delivered. Thank you for choosing Pep Nation Lab.
+    </p>
+    ${button(`${SITE}/orders/${params.orderId}`, 'View Your Order')}
+  `);
+  return sendEmail({
+    to: params.to,
+    subject: `Your Order Has Been Delivered - #${params.orderId}`,
+    html,
+    text: `Hi ${name}, your order #${params.orderId} has been delivered. View it at ${SITE}/orders/${params.orderId}`,
+  });
+}
+
+/**
+ * Abandoned-cart recovery email. Mirrors the in-app step message (same subject
+ * and body) so a verified researcher gets the reminder in their inbox too. The
+ * caller owns dedup (one reminder-log row per step), so this only wraps the
+ * step's already-composed copy and adds a CTA back to checkout.
+ */
+export async function sendCartRecoveryEmail(params: {
+  to: string;
+  fullName?: string | null;
+  subject: string;
+  body: string;
+}): Promise<SendEmailResult> {
+  const name = (params.fullName || '').trim() || 'Researcher';
+  const bodyHtml = (params.body || '')
+    .split('\n')
+    .map((line) => (line.trim() ? `<p style="font-size:14px;line-height:1.7;margin:0 0 12px;">${line}</p>` : ''))
+    .join('');
+  const html = layout(`
+    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">${params.subject}</h1>
+    ${bodyHtml || `<p style="font-size:14px;line-height:1.7;margin:0 0 12px;">Hi ${name}, you left items in your cart.</p>`}
+    ${button(`${SITE}/checkout`, 'Return To Your Cart')}
+  `);
+  return sendEmail({
+    to: params.to,
+    subject: params.subject,
+    html,
+    text: `${params.body}\n\nReturn to your cart: ${SITE}/checkout`,
+  });
+}
+
 /** Email verification code (6-digit) for public account registration. */
 export async function sendVerificationCodeEmail(params: {
   to: string;
