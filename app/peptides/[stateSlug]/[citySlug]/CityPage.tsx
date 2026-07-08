@@ -181,7 +181,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
         /* PNG image buttons — transparent bg, full clickable area */
         .city-btn-img {
           display: block;
-          height: 56px;
+          height: 84px;
           width: auto;
           cursor: pointer;
           transition: transform 0.18s ease, filter 0.18s ease;
@@ -312,10 +312,10 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             {/* CTAs — custom PNG buttons */}
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 'var(--space-10)', alignItems: 'center' }}>
               <Link href="/research" className="city-btn-link">
-                <Image src="/images/buttons/btn-access.png" alt="Access The Lab" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 56 }} />
+                <Image src="/images/buttons/btn-access.png" alt="Access The Lab" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
               </Link>
               <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-btn-link">
-                <Image src="/images/buttons/btn-browse.png" alt="Browse Catalog" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 56 }} />
+                <Image src="/images/buttons/btn-browse.png" alt="Browse Catalog" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
               </Link>
             </div>
 
@@ -438,7 +438,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             {/* See full catalog CTA */}
             <div style={{ textAlign: 'center', marginTop: 'var(--space-12)' }}>
               <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-btn-link">
-                <Image src="/images/buttons/btn-browse-full.png" alt="Browse Full Research Catalog" width={420} height={56} className="city-btn-img" style={{ width: 'auto', height: 56 }} />
+                <Image src="/images/buttons/btn-browse-full.png" alt="Browse Full Research Catalog" width={420} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
               </Link>
             </div>
           </div>
@@ -559,7 +559,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
                 <Link href="/become-agent" className="city-btn-link">
-                  <Image src="/images/buttons/btn-agent.png" alt="Become An Agent" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 56 }} />
+                  <Image src="/images/buttons/btn-agent.png" alt="Become An Agent" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
                 </Link>
                 <Link href="/login" style={{ fontSize: '0.8rem', color: 'var(--grey-500)', textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center' }}>
                   Already An Agent? Sign In
@@ -633,10 +633,10 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
 
             <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
               <Link href="/research" className="city-btn-link">
-                <Image src="/images/buttons/btn-access.png" alt="Access The Lab" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 56 }} />
+                <Image src="/images/buttons/btn-access.png" alt="Access The Lab" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
               </Link>
               <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-btn-link">
-                <Image src="/images/buttons/btn-browse-full.png" alt="Browse Full Catalog" width={420} height={56} className="city-btn-img" style={{ width: 'auto', height: 56 }} />
+                <Image src="/images/buttons/btn-browse-full.png" alt="Browse Full Catalog" width={420} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
               </Link>
             </div>
 

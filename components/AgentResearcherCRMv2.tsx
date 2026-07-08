@@ -27,7 +27,7 @@ import {
   Target, Flame, X, ChevronDown, ChevronUp, Mail, Activity as ActivityIcon,
   Table as TableIcon, LayoutGrid, BarChart3, GitBranch, Printer, Bell,
   CheckCircle2, UserCheck, ArrowUpRight, StickyNote, Shield, RefreshCw,
-  UserPlus,
+  UserPlus, Share2, ShoppingBag, Rocket, Link as LinkIcon, Copy, CheckSquare, XCircle,
 } from 'lucide-react';
 import {
   KanbanView, ChartsView, AcquisitionView, useInsights,
@@ -256,15 +256,15 @@ function ToggleSwitch({ checked, onChange, disabled, id }: { checked: boolean; o
    KPI Card
 ----------------------------------------------------------------------- */
 
-function KpiCard({ label, value, spark, delta, color = '#00C4BC', onClick, subtitle }: {
+function KpiCard({ label, value, spark, delta, color = '#00C4BC', onClick, subtitle, muted }: {
   label: string; value: string; spark: number[]; delta: number;
-  color?: string; onClick?: () => void; subtitle?: string;
+  color?: string; onClick?: () => void; subtitle?: string; muted?: boolean;
 }) {
   const clickable = !!onClick;
   return (
     <button type="button" onClick={onClick} disabled={!clickable}
       className="hover-lift"
-      style={{ textAlign: 'left', padding: '14px 16px', borderRadius: 14, cursor: clickable ? 'pointer' : 'default', background: 'linear-gradient(160deg, rgba(24,34,52,0.98) 0%, rgba(14,20,34,0.98) 100%)', border: `1px solid ${clickable ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.06)'}`, boxShadow: '0 2px 12px rgba(0,0,0,0.35)', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 104, minWidth: 0, transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.15s' }}
+      style={{ textAlign: 'left', padding: '14px 16px', borderRadius: 14, cursor: clickable ? 'pointer' : 'default', background: 'linear-gradient(160deg, rgba(24,34,52,0.98) 0%, rgba(14,20,34,0.98) 100%)', border: `1px solid ${clickable ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.06)'}`, boxShadow: '0 2px 12px rgba(0,0,0,0.35)', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 104, minWidth: 0, opacity: muted ? 0.55 : 1, transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.15s, opacity 0.2s' }}
       onMouseEnter={e => { if (clickable) { e.currentTarget.style.borderColor = `${color}66`; e.currentTarget.style.boxShadow = `0 6px 24px rgba(0,0,0,0.4), 0 0 0 1px ${color}22`; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = clickable ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.35)'; e.currentTarget.style.transform = 'translateY(0)'; }}
     >
@@ -469,8 +469,9 @@ function NoteEditor({ researcherId, initialNote, onSave }: { researcherId: strin
    Researcher row (table + expanded detail)
 ----------------------------------------------------------------------- */
 
-function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag, onAddReminder, onTogglePin, isSuperAgent, onResetPassword, onPromote, onToggleAutoApprove, onNoteUpdate }: {
+function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMessage, onAddTag, onRemoveTag, onAddReminder, onTogglePin, isSuperAgent, onResetPassword, onPromote, onToggleAutoApprove, onNoteUpdate }: {
   r: Researcher; expanded: boolean; onExpand: () => void;
+  selected?: boolean; onToggleSelect?: () => void;
   onMessage: (r: Researcher) => void;
   onAddTag: (r: Researcher) => void;
   onRemoveTag: (r: Researcher, tag: string) => void;
@@ -765,6 +766,64 @@ function EmptyState({ slug }: { slug: string | null }) {
 }
 
 /* -----------------------------------------------------------------------
+   Getting-started strip (shown while the account is still ramping up)
+----------------------------------------------------------------------- */
+
+function GettingStarted({ slug, researcherCount }: { slug: string | null; researcherCount: number }) {
+  const url = typeof window !== 'undefined' && slug ? `${window.location.origin}/${slug}` : slug ? `https://pepnationlab.com/${slug}` : null;
+  const onCopy = useCallback(() => { if (!url) return; void navigator.clipboard.writeText(url); toast.success('Storefront Link Copied'); }, [url]);
+
+  const steps: { icon: React.ReactNode; title: string; done: boolean; hint: string }[] = [
+    { icon: <UserPlus size={14} />, title: 'Add Researchers', done: researcherCount > 0, hint: 'Use "Create Researcher Account" above or share your link.' },
+    { icon: <Share2 size={14} />, title: 'Share Your Storefront', done: false, hint: 'Send your link so researchers can browse and order.' },
+    { icon: <ShoppingBag size={14} />, title: 'Land The First Order', done: false, hint: 'Your revenue metrics light up on the first order.' },
+  ];
+
+  return (
+    <div style={{ borderRadius: 14, background: 'linear-gradient(160deg, rgba(0,196,188,0.06) 0%, rgba(14,22,34,0.85) 60%)', border: '1px solid rgba(0,196,188,0.20)', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(0,196,188,0.14)', flexShrink: 0 }}>
+          <Rocket size={16} color="#00C4BC" aria-hidden />
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FFFFFF' }}>Getting Started</div>
+          <div style={{ fontSize: '0.76rem', color: '#7A8B9E' }}>A Few Steps To Get Your Team Active And Ordering</div>
+        </div>
+      </div>
+
+      {url && (
+        <div className="crm-getstarted-link" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, padding: '8px 12px' }}>
+          <LinkIcon size={13} color="#2DD4BF" aria-hidden />
+          <span style={{ fontSize: '0.78rem', color: '#D0DAE4', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 1 160px', minWidth: 0 }}>{url}</span>
+          <button type="button" onClick={onCopy}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, background: 'rgba(0,196,188,0.14)', border: '1px solid rgba(0,196,188,0.34)', color: '#00C4BC', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <Copy size={12} /> Copy
+          </button>
+          <a href={url} target="_blank" rel="noopener noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', color: '#B0B8C4', fontSize: '0.72rem', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            <ArrowUpRight size={12} /> Open
+          </a>
+        </div>
+      )}
+
+      <div className="crm-getstarted-steps" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+        {steps.map((st, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 7, flexShrink: 0, background: st.done ? 'rgba(0,196,188,0.16)' : 'rgba(255,255,255,0.05)', color: st.done ? '#00C4BC' : '#7A8B9E' }}>
+              {st.done ? <CheckCircle2 size={15} /> : st.icon}
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: st.done ? '#2DD4BF' : '#FFFFFF' }}>{st.title}</div>
+              <div style={{ fontSize: '0.7rem', color: '#7A8B9E', lineHeight: 1.4, marginTop: 1 }}>{st.hint}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------------
    Main component
 ----------------------------------------------------------------------- */
 
@@ -781,6 +840,16 @@ export default function AgentResearcherCRMv2({
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>('list');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+  const clearSelection = useCallback(() => setSelected(new Set()), []);
 
   const insights = useInsights(tab === 'charts' || tab === 'acquisition');
 
@@ -894,6 +963,25 @@ export default function AgentResearcherCRMv2({
     router.push(`/messenger?participants=${encodeURIComponent(ids.join(','))}`);
   }, [data, router]);
 
+  const bulkMessage = useCallback(() => {
+    if (selected.size === 0) return;
+    router.push(`/messenger?participants=${encodeURIComponent(Array.from(selected).join(','))}`);
+  }, [selected, router]);
+
+  const bulkPin = useCallback(async () => {
+    if (!data || selected.size === 0) return;
+    const targets = data.researchers.filter(r => selected.has(r.id) && !r.is_pinned);
+    if (targets.length === 0) { toast('Selected Researchers Are Already Pinned'); return; }
+    await Promise.allSettled(targets.map(r =>
+      fetch('/api/agent/researchers/pins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ researcherId: r.id }) }),
+    ));
+    toast.success(`Pinned ${targets.length} Researcher${targets.length !== 1 ? 's' : ''}`);
+    clearSelection();
+    void refresh();
+  }, [data, selected, clearSelection, refresh]);
+
+  const clearFilters = useCallback(() => { setFilter('all'); setSearch(''); }, []);
+
   /* -- Filtering + sorting -- */
   const filtered = useMemo(() => {
     if (!data) return [];
@@ -982,17 +1070,22 @@ export default function AgentResearcherCRMv2({
         </div>
       )}
 
+      {/* Getting-started strip — while the account is still ramping up */}
+      {data.researchers.length > 0 && safe(k.total_orders.value) === 0 && (
+        <GettingStarted slug={data.storefront_slug} researcherCount={data.researchers.length} />
+      )}
+
       {/* KPI grid */}
-      <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fill, minmax(185px, 1fr))' }}>
+      <div className="crm-kpi-grid" style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fill, minmax(185px, 1fr))' }}>
         <KpiCard label="Total Researchers" value={fmtInt(k.researchers_count.value)} spark={k.researchers_count.spark ?? []} delta={k.researchers_count.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} />
-        <KpiCard label="Lifetime Revenue" value={fmtUSD(k.lifetime_value.value)} spark={k.lifetime_value.spark ?? []} delta={k.lifetime_value.delta_pct} color="#00C4BC" />
-        <KpiCard label="Total Orders" value={fmtInt(k.total_orders.value)} spark={k.total_orders.spark ?? []} delta={k.total_orders.delta_pct} color="#2DD4BF" />
-        <KpiCard label="Active Buyers" value={fmtInt(k.active_buyers.value)} spark={k.active_buyers.spark ?? []} delta={k.active_buyers.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} />
-        <KpiCard label="Avg Order Value" value={fmtUSD(k.avg_order_value.value)} spark={k.avg_order_value.spark ?? []} delta={k.avg_order_value.delta_pct} color="#2DD4BF" />
-        <KpiCard label="Repeat Rate" value={`${Math.round(safe(k.repeat_rate.value))}%`} spark={k.repeat_rate.spark ?? []} delta={k.repeat_rate.delta_pct} color="#5EEAD4" />
+        <KpiCard label="Lifetime Revenue" value={fmtUSD(k.lifetime_value.value)} spark={k.lifetime_value.spark ?? []} delta={k.lifetime_value.delta_pct} color="#00C4BC" muted={safe(k.lifetime_value.value) === 0} />
+        <KpiCard label="Total Orders" value={fmtInt(k.total_orders.value)} spark={k.total_orders.spark ?? []} delta={k.total_orders.delta_pct} color="#2DD4BF" muted={safe(k.total_orders.value) === 0} />
+        <KpiCard label="Active Buyers" value={fmtInt(k.active_buyers.value)} spark={k.active_buyers.spark ?? []} delta={k.active_buyers.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} muted={safe(k.active_buyers.value) === 0} />
+        <KpiCard label="Avg Order Value" value={fmtUSD(k.avg_order_value.value)} spark={k.avg_order_value.spark ?? []} delta={k.avg_order_value.delta_pct} color="#2DD4BF" muted={safe(k.avg_order_value.value) === 0} />
+        <KpiCard label="Repeat Rate" value={`${Math.round(safe(k.repeat_rate.value))}%`} spark={k.repeat_rate.spark ?? []} delta={k.repeat_rate.delta_pct} color="#5EEAD4" muted={safe(k.repeat_rate.value) === 0} />
         <KpiCard label="New This Month" value={fmtInt(k.new_this_month.value)} spark={k.new_this_month.spark ?? []} delta={k.new_this_month.delta_pct} onClick={() => { setTab('list'); setFilter('new'); }} />
-        <KpiCard label="At Risk" value={fmtInt(k.at_risk.value)} spark={k.at_risk.spark ?? []} delta={k.at_risk.delta_pct} color="#F87171" onClick={() => { setTab('list'); setFilter('at_risk'); }} />
-        <KpiCard label="Best Researcher" value={k.best_customer?.label || '-'} spark={k.best_customer?.spark ?? []} delta={k.best_customer?.delta_pct} color="#D0DAE4" subtitle={(k.best_customer?.value ?? 0) > 0 ? fmtUSD(k.best_customer!.value) : undefined} />
+        <KpiCard label="At Risk" value={fmtInt(k.at_risk.value)} spark={k.at_risk.spark ?? []} delta={k.at_risk.delta_pct} color="#F87171" onClick={() => { setTab('list'); setFilter('at_risk'); }} muted={safe(k.at_risk.value) === 0} />
+        <KpiCard label="Best Researcher" value={k.best_customer?.label || '-'} spark={k.best_customer?.spark ?? []} delta={k.best_customer?.delta_pct} color="#D0DAE4" subtitle={(k.best_customer?.value ?? 0) > 0 ? fmtUSD(k.best_customer!.value) : undefined} muted={!k.best_customer?.label} />
         <KpiCard label="Commission Earned" value={fmtUSD(k.lifetime_commission.value)} spark={k.lifetime_commission.spark ?? []} delta={k.lifetime_commission.delta_pct} color="#2DD4BF" />
       </div>
 
@@ -1015,8 +1108,14 @@ export default function AgentResearcherCRMv2({
             <FilterChip active={filter === 'new'} onClick={() => setFilter('new')} count={(data.kanban_counts.new ?? 0) + (data.kanban_counts.first_order ?? 0)}>New</FilterChip>
             <FilterChip active={filter === 'inactive'} onClick={() => setFilter('inactive')} count={data.kanban_counts.lead}>Inactive</FilterChip>
             <FilterChip active={filter === 'pinned'} onClick={() => setFilter('pinned')} count={data.researchers.filter(r => r.is_pinned).length}>Pinned</FilterChip>
+            {(filter !== 'all' || search.trim() !== '') && (
+              <button type="button" onClick={clearFilters} title="Clear Filters"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 11px', borderRadius: 999, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#7A8B9E', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>
+                <XCircle size={12} /> Clear
+              </button>
+            )}
             <div style={{ flex: 1 }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, padding: '0 11px', minWidth: 200, flex: '0 1 240px' }}>
+            <div className="crm-filter-search" style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, padding: '0 11px', minWidth: 200, flex: '0 1 240px' }}>
               <Search size={13} color="#7A8B9E" aria-hidden />
               <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search Name, Email, Username"
                 style={{ border: 0, background: 'transparent', color: '#FFFFFF', padding: '9px 0', fontSize: '0.77rem', outline: 'none', width: '100%' }} />
@@ -1031,6 +1130,26 @@ export default function AgentResearcherCRMv2({
             </button>
           </div>
 
+          {/* Bulk action bar */}
+          {selected.size > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '10px 14px', borderRadius: 12, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.28)' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#00C4BC' }}>{selected.size} Selected</span>
+              <div style={{ flex: 1 }} />
+              <button type="button" onClick={bulkMessage}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 13px', borderRadius: 9, background: 'rgba(0,196,188,0.14)', border: '1px solid rgba(0,196,188,0.34)', color: '#00C4BC', fontSize: '0.73rem', fontWeight: 700, cursor: 'pointer' }}>
+                <MessageSquare size={12} /> Message
+              </button>
+              <button type="button" onClick={() => void bulkPin()}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 13px', borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: '#B0B8C4', fontSize: '0.73rem', fontWeight: 700, cursor: 'pointer' }}>
+                <Pin size={12} /> Pin
+              </button>
+              <button type="button" onClick={clearSelection}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 13px', borderRadius: 9, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#7A8B9E', fontSize: '0.73rem', fontWeight: 700, cursor: 'pointer' }}>
+                <XCircle size={12} /> Clear
+              </button>
+            </div>
+          )}
+
           {/* Table */}
           {data.researchers.length === 0 ? (
             <EmptyState slug={data.storefront_slug} />
@@ -1038,7 +1157,20 @@ export default function AgentResearcherCRMv2({
             <div style={{ borderRadius: 16, overflow: 'hidden', background: 'linear-gradient(160deg, rgba(16,24,40,0.97) 0%, rgba(10,16,28,0.97) 100%)', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 4px 28px rgba(0,0,0,0.30)' }}>
               {/* Header */}
               <div role="row" style={{ display: 'grid', gridTemplateColumns: 'minmax(160px,2fr) 90px 80px 110px 100px 110px', alignItems: 'center', gap: 8, padding: '9px 16px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.06)' }} className="crm-row-head">
-                <span style={{ fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#5A6A7A' }}>Researcher</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <input type="checkbox" className="crm-checkbox" aria-label="Select All"
+                    checked={filtered.length > 0 && filtered.every(r => selected.has(r.id))}
+                    ref={el => { if (el) el.indeterminate = selected.size > 0 && !filtered.every(r => selected.has(r.id)); }}
+                    onChange={e => {
+                      setSelected(prev => {
+                        const next = new Set(prev);
+                        if (e.target.checked) filtered.forEach(r => next.add(r.id));
+                        else filtered.forEach(r => next.delete(r.id));
+                        return next;
+                      });
+                    }} />
+                  {sortBtn('name', 'Researcher')}
+                </span>
                 <span style={{ textAlign: 'right' }}>{sortBtn('ltv', 'LTV')}</span>
                 <span style={{ textAlign: 'right' }}>{sortBtn('orders', 'Orders')}</span>
                 <span>{sortBtn('login', 'Last Login')}</span>
@@ -1053,6 +1185,8 @@ export default function AgentResearcherCRMv2({
                   <ResearcherRow key={r.id} r={r}
                     expanded={expandedId === r.id}
                     onExpand={() => setExpandedId(id => id === r.id ? null : r.id)}
+                    selected={selected.has(r.id)}
+                    onToggleSelect={() => toggleSelect(r.id)}
                     onMessage={message} onAddTag={addTag} onRemoveTag={removeTag}
                     onAddReminder={addReminder} onTogglePin={togglePin}
                     isSuperAgent={isSuperAgent} onResetPassword={onResetPassword}

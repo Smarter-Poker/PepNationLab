@@ -2402,6 +2402,71 @@ html[data-theme="light"] .messenger-back-btn {
   color: #D0DAE4 !important;
 }
 
+/* -----------------------------------------------------------------------
+   Researcher CRM — interaction polish + responsive layout
+----------------------------------------------------------------------- */
+.crm-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: #A8B4C0;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+}
+.crm-icon-btn:hover {
+  background: rgba(0, 196, 188, 0.12);
+  border-color: rgba(0, 196, 188, 0.40);
+  color: #00C4BC;
+}
+.crm-icon-btn:active { transform: scale(0.93); }
+.crm-icon-btn:focus-visible { outline: 2px solid #00C4BC; outline-offset: 2px; }
+
+.crm-checkbox {
+  width: 15px;
+  height: 15px;
+  accent-color: #00C4BC;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.crm-row:focus-visible {
+  outline: 2px solid rgba(0, 196, 188, 0.6);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+/* Tablet / phone: collapse the researcher table into a compact 2-up card. */
+@media (max-width: 680px) {
+  .crm-row-head { display: none !important; }
+  .crm-row {
+    grid-template-columns: 1fr auto !important;
+    row-gap: 8px !important;
+    align-items: start !important;
+    padding: 12px 14px !important;
+  }
+  /* Hide the Orders + Last Login columns; keep Name / LTV / Status / Actions */
+  .crm-row > :nth-child(3),
+  .crm-row > :nth-child(4) { display: none !important; }
+  .crm-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .crm-filter-search { flex: 1 1 100% !important; order: 9; }
+}
+@media (max-width: 420px) {
+  .crm-kpi-grid { grid-template-columns: 1fr !important; }
+}
+
+/* Respect reduced-motion preferences across the CRM. */
+@media (prefers-reduced-motion: reduce) {
+  .vip-badge-glow { animation: none !important; }
+  .hover-lift,
+  .crm-icon-btn,
+  .crm-row { transition: none !important; }
+}
+
 /* Path drawing animation for Sparklines */
 @keyframes drawPath {
   to {
