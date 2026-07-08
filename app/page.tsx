@@ -30,14 +30,24 @@ export default function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify({
           '@context': 'https://schema.org',
-          '@type': 'WebPage',
-          '@id': 'https://pepnationlab.com/#webpage',
-          url: 'https://pepnationlab.com',
-          name: 'Pep Nation Lab | Premium Research Peptide Distribution',
-          description: 'Wholesale research peptide distribution for qualified researchers. Access 300+ compounds including BPC-157, TB-500, Semaglutide, and Tirzepatide. Research use only.',
-          isPartOf: { '@id': 'https://pepnationlab.com/#website' },
-          about: { '@id': 'https://pepnationlab.com/#organization' },
-          publisher: { '@id': 'https://pepnationlab.com/#organization' },
+          '@graph': [
+            {
+              '@type': 'WebPage',
+              '@id': 'https://pepnationlab.com/#webpage',
+              url: 'https://pepnationlab.com',
+              name: 'Pep Nation Lab | Premium Research Peptide Distribution',
+              description: 'Wholesale research peptide distribution for qualified researchers. Access 300+ compounds including BPC-157, TB-500, Semaglutide, and Tirzepatide. Research use only.',
+              isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+              about: { '@id': 'https://pepnationlab.com/#organization' },
+              publisher: { '@id': 'https://pepnationlab.com/#organization' },
+            },
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' }
+              ]
+            }
+          ]
         }) }}
       />
       <HomeClient />
