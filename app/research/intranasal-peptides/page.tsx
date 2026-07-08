@@ -79,9 +79,7 @@ function CompoundCard({ c }: { c: Compound }) {
 
 function SectionTitle({ color, kicker, title, blurb }: { color: string; kicker: string; title: string; blurb: string }) {
   return (
-    <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div style={{ marginBottom: 'var(--space-4, 16px)' }}>
+    <div style={{ marginBottom: 'var(--space-4, 16px)' }}>
       <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color }}>{kicker}</div>
       <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--white, #FFFFFF)', margin: '4px 0 0' }}>{title}</h2>
       <p style={{ fontSize: '0.95rem', color: 'var(--silver, #A8B4C0)', margin: '6px 0 0', maxWidth: 760, lineHeight: 1.6 }}>{blurb}</p>
@@ -123,7 +121,9 @@ export default async function IntranasalPeptidesPage() {
   const injectionOnly = all.filter((c) => !c.intranasal_status || c.intranasal_status === 'not_suitable');
 
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div style={{ maxWidth: 1080, margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <ArrowLeft size={16} /> Back To Research Library
