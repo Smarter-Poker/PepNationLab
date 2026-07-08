@@ -34,6 +34,9 @@ export interface EnsureProfileResult {
  *   4. Missing Username: Derive From The Email Local Part; The Final Fallback
  *      Suffixes The User Id So Uniqueness Is Guaranteed (No Collision Loop
  *      Can Exhaust).
+ *   5. Missing Identity Data (Email, Name, Avatar): Backfill From The OAuth
+ *      Provider On Every Sign-In. Existing Non-Null Values Are NEVER
+ *      Overwritten - Users Are Simply Not Asked For Data We Already Have.
  */
 export async function ensureOAuthResearcherProfile(
   admin: AdminClient,
@@ -56,7 +59,7 @@ export async function ensureOAuthResearcherProfile(
 
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, role, username, referring_agent_id, is_active')
+      .select('id, role, username, referring_agent_id, is_active, email, full_name, first_name, last_name, avatar_url')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -65,6 +68,15 @@ export async function ensureOAuthResearcherProfile(
       (typeof meta.full_name === 'string' && meta.full_name) ||
       (typeof meta.name === 'string' && meta.name) ||
       '';
+    // Google Provides The Account's Profile Picture As avatar_url (Supabase
+    // Normalized) Or picture (Raw OIDC Claim). Capture It So OAuth Users Do
+    // Not Get Asked To Upload A Photo They Already Have.
+    const metaAvatar =
+      (typeof meta.avatar_url === 'string' && meta.avatar_url.startsWith('https://') && meta.avatar_url) ||
+      (typeof meta.picture === 'string' && meta.picture.startsWith('https://') && meta.picture) ||
+      null;
+    const realEmail =
+      user.email && !user.email.endsWith('@internal.auth') ? user.email : null;
 
     if (!profile) {
       // SELF-HEAL: The Trigger Did Not Create A Row. Build The Full Profile.
@@ -76,11 +88,12 @@ export async function ensureOAuthResearcherProfile(
 
       const { error: insertErr } = await admin.from('profiles').upsert({
         id: user.id,
-        email: user.email && !user.email.endsWith('@internal.auth') ? user.email : null,
+        email: realEmail,
         username,
         full_name: metaName || null,
         first_name: firstName,
         last_name: lastName,
+        avatar_url: metaAvatar,
         role: 'researcher',
         referring_agent_id: houseStore?.id ?? null,
         disclaimer_v1_accepted: false,
@@ -116,6 +129,25 @@ export async function ensureOAuthResearcherProfile(
       updates.username = await deriveUniqueUsername(admin, user);
     }
     result.username = (updates.username as string) ?? profile.username ?? null;
+
+    // Backfill Identity Data The OAuth Provider Already Gave Us. Existing
+    // Non-Null Values Are NEVER Overwritten - This Only Fills Gaps So Users
+    // Are Not Asked For Information We Already Captured At Sign-In.
+    if (!profile.email && realEmail) {
+      updates.email = realEmail;
+    }
+    if (!profile.full_name && metaName) {
+      updates.full_name = metaName;
+    }
+    if (!profile.first_name && metaName) {
+      updates.first_name = metaName.split(' ')[0];
+    }
+    if (!profile.last_name && metaName && metaName.includes(' ')) {
+      updates.last_name = metaName.slice(metaName.indexOf(' ') + 1);
+    }
+    if (!profile.avatar_url && metaAvatar) {
+      updates.avatar_url = metaAvatar;
+    }
 
     if (Object.keys(updates).length > 0) {
       updates.updated_at = new Date().toISOString();
