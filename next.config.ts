@@ -33,6 +33,13 @@ const nextConfig = {
     qualities: [40, 45, 60, 75],
   },
   async redirects() {
+    // Bare/vanity city-slug redirects (e.g. /oaklawn or /oak-lawn ->
+    // /peptides/illinois/oak-lawn), generated from lib/cities/cities-data.ts.
+    // Applied at the edge BEFORE routing, so they work regardless of the
+    // [agentSlug] serverless route (whose runtime city-match fallback proved
+    // unreliable). Agent slugs and reserved routes have zero collisions.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const cityRedirects = require("./lib/cities/city-redirects.cjs");
     return [
       {
         source: "/:path*",
@@ -62,6 +69,7 @@ const nextConfig = {
         destination: "/account/lab-journal",
         permanent: true,
       },
+      ...cityRedirects,
     ];
   },
   async rewrites() {
