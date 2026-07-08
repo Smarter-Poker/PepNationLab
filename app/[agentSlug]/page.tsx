@@ -5,6 +5,7 @@ import { preload } from 'react-dom';
 import { notFound, redirect } from 'next/navigation';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+import { CITIES } from '@/lib/cities/cities-data';
 import Link from 'next/link';
 import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
 import { getCompoundsBySlugs } from '@/lib/compounds-server';
@@ -231,6 +232,22 @@ export default async function AgentStorefrontPage({ params }: Props) {
     .maybeSingle();
 
   if (error || !agent) {
+    // City shortcut fallback: people type short URLs like /oaklawn expecting
+    // the city landing page at /peptides/illinois/oak-lawn. When a slug
+    // matches no storefront but DOES match a known city (compared with
+    // punctuation stripped), redirect to that city page instead of 404ing.
+    // Ambiguous city names resolve to the highest-priority market
+    // (tier, then population).
+    const normalizedSlug = agentSlug.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cityMatches = CITIES.filter(
+      (c) => c.slug.replace(/[^a-z0-9]/g, '') === normalizedSlug
+    );
+    if (cityMatches.length > 0) {
+      const best = [...cityMatches].sort(
+        (a, b) => a.tier - b.tier || b.population - a.population
+      )[0];
+      redirect(`/peptides/${best.stateSlug}/${best.slug}`);
+    }
     notFound(); // returns HTTP 404; prevents bots indexing dead storefronts as valid pages
   }
 
