@@ -14,11 +14,11 @@
  */
 
 import { NextResponse } from 'next/server';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export async function GET() {
-  const gate = await requireAgent();
+  const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
 
   return NextResponse.json({

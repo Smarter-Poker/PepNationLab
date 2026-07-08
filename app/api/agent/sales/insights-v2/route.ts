@@ -3,7 +3,7 @@
 // All RPC calls use user-authed client so SECURITY DEFINER caller-check passes.
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,7 +11,7 @@ export const runtime = 'nodejs';
 type Insight = { id: string; kind: 'restock' | 'dormant' | 'anomaly' | 'goal' | 'first_sale'; title: string; body: string };
 
 export async function GET() {
-  const gate = await requireAgent();
+  const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
   const supabase = await createClient();
 

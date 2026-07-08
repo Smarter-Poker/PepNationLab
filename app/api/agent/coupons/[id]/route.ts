@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export const runtime = 'nodejs';
@@ -28,7 +28,7 @@ function bad(error: string, status = 400) {
 async function gateAndOwn(req: NextRequest, ctx: Ctx) {
   const csrf = assertSameOrigin(req);
   if (csrf) return { ok: false as const, response: csrf };
-  const gate = await requireAgent();
+  const gate = await requireAgentOrAdmin();
   if (!gate.ok) return { ok: false as const, response: gate.response };
   const { id } = await ctx.params;
   if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {

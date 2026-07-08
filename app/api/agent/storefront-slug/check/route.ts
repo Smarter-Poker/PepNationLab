@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { generateSlugSuggestions, containsProfanity } from '@/lib/availability-helpers';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
  * reservation/uniqueness still happens in POST /api/agent/storefront-slug.
  */
 export async function GET(req: NextRequest) {
-  const gate = await requireAgent();
+  const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
 
   const raw = req.nextUrl.searchParams.get('slug') ?? '';

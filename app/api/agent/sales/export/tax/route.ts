@@ -2,13 +2,13 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { NextRequest } from 'next/server';
 import { safeError } from '@/lib/api-error';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
-  const gate = await requireAgent();
+  const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
   const url = new URL(req.url);
   const year = parseInt(url.searchParams.get('year') ?? String(new Date().getFullYear()), 10);

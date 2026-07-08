@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export async function PATCH(req: NextRequest) {
@@ -8,7 +8,7 @@ export async function PATCH(req: NextRequest) {
   if (csrf) return csrf;
 
   try {
-    const gate = await requireAgent();
+    const gate = await requireAgentOrAdmin();
     if (!gate.ok) return gate.response;
 
     const body = await req.json().catch(() => ({}));

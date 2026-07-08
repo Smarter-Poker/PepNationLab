@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
 
 export async function GET(req: NextRequest) {
   try {
-    const gate = await requireAgent();
+    const gate = await requireAgentOrAdmin();
     if (!gate.ok) return gate.response;
 
     const supabase = createAdminClient();

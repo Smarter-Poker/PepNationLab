@@ -3,13 +3,13 @@ import { NextResponse } from 'next/server';
 import { safeError } from '@/lib/api-error';
 import { createServiceClient } from '@/lib/supabase/server';
 import { parseRange } from '@/lib/sales-range';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
-  const gate = await requireAgent();
+  const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
 
   const { start, end } = parseRange(new URL(req.url).searchParams);

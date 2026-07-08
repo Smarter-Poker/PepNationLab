@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { computeAgentCostForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
@@ -8,7 +8,7 @@ import type { AgentTier } from '@/lib/pricing';
 // GET: Fetch the agent's current inventory levels for all active products
 export async function GET() {
   try {
-    const gate = await requireAgent();
+    const gate = await requireAgentOrAdmin();
     if (!gate.ok) return gate.response;
 
     const supabase = createAdminClient();
@@ -65,9 +65,13 @@ export async function GET() {
 
     const resultPromises = products.map(async p => {
       const baseCost = p.base_cost != null ? Number(p.base_cost) : 0;
+      // Admin cost basis is base_cost (true COGS on the house store);
+      // agents get their tier-multiplied cost.
       let agentCost = 0;
       if (baseCost > 0) {
-        agentCost = await computeAgentCostForAgent(supabase, p.id, agentId, tier);
+        agentCost = gate.isAdmin
+          ? baseCost
+          : await computeAgentCostForAgent(supabase, p.id, agentId, tier);
       }
 
       const { base_cost: _stripped, ...safeProduct } = p;
@@ -95,7 +99,7 @@ export async function POST(req: NextRequest) {
   if (csrf) return csrf;
 
   try {
-    const gate = await requireAgent();
+    const gate = await requireAgentOrAdmin();
     if (!gate.ok) return gate.response;
 
     const supabase = createAdminClient();
