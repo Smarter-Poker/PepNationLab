@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { getSupabaseUrl } from '@/lib/supabase/url';
 
-// ─── Global API Rate Limiting ────────────────────────────────────────────────
+// ─── Global API Rate Limiting ────────────────────────────────────────
 // Edge-level backstop against scrape bots and abuse across all ~80 /api/*
 // endpoints. Individual hot routes keep their own tighter limits (register,
 // orders, disclaimer-log, research search) — this is the outer wall.
