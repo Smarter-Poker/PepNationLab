@@ -42,10 +42,10 @@ async function fetchSearch(query: string, offset: number, autoCorrect: string, b
   try {
     const url = `${base}/api/research/search?q=${encodeURIComponent(query)}&limit=20&offset=${offset}&autoCorrect=${autoCorrect}`;
     const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return { robots: { index: false } };
+    if (!res.ok) return {};
     return (await res.json()) as SearchApiResponse;
   } catch {
-    return { robots: { index: false } };
+    return {};
   }
 }
 
