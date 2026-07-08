@@ -1,0 +1,360 @@
+            <div className="no-print" style={{ background: 'rgba(229,62,62,0.15)', border: '1px solid rgba(229,62,62,0.4)', borderRadius: 12, padding: '16px 20px', marginBottom: 20, animation: 'fadeInDown 0.4s ease-out' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#FC8181', fontWeight: 900, fontSize: '1.05rem', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <ShieldAlert size={22} /> Critical Stack Warning
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 24, color: 'rgba(255,255,255,0.9)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                {aiAnalysis.warnings.map((w: string, i: number) => (
+                  <li key={i} style={{ marginBottom: 6 }}>{w}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Feature 6: Desktop-only tab strip (replaced by bottom tab bar on mobile) */}
+          {selected.length >= 2 && !isMobile && (
+            <div className="no-print" style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, width: '100%' }}>
+              <div style={{
+                position: 'relative',
+                width: '100%',
+                maxWidth: '993px',
+                aspectRatio: '993 / 148',
+                userSelect: 'none'
+              }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <Image src="/images/compare-pill-bar.png" alt="Compare Section Tabs" width={200} height={200} unoptimized style={{ width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }} />
+                {([
+                  ['matrix', 'Matrix', '2.5%'],
+                  ['proscons', 'Pros & Cons', '18.5%'],
+                  ['brief', 'Analyst Brief', '34.5%'],
+                  ['mechanism', 'Mechanism', '50.5%'],
+                  ['protocol', 'Protocol', '66.5%'],
+                  ['recommend', 'Verdict', '82.5%'],
+                ] as const).map(([id, label, leftOffset]) => {
+                  const isActive = activeTab === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setActiveTab(id)}
+                      title={label}
+                      style={{
+                        position: 'absolute',
+                        top: '13.5%',
+                        height: '73%',
+                        left: leftOffset,
+                        width: '15.5%',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        zIndex: 10,
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Score Summary Panel - always visible */}
+          {selected.length >= 2 && (
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* Top Pick Banner */}
+              {topPickSlug && (
+                <div style={{
+                  position: isMobile ? 'sticky' : 'relative', top: isMobile ? 10 : 'auto', zIndex: isMobile ? 40 : 'auto',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  border: '2px solid transparent',
+                  backgroundImage: 'linear-gradient(#0f2628, #0f2628), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
+                  backgroundOrigin: 'border-box',
+                  backgroundClip: 'padding-box, border-box',
+                  borderRadius: 10, padding: '10px 16px', backdropFilter: isMobile ? 'blur(10px)' : 'none', marginBottom: isMobile ? 12 : 0, cursor: 'pointer', boxShadow: isMobile ? '0 8px 24px rgba(0,0,0,0.5)' : 'none'
+                }} onClick={() => setActiveTab('recommend')}>
+                  <Trophy size={17} color="#00C4BC" style={{ flexShrink: 0 }} />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FFF' }}>Top Pick: {bySlug.get(topPickSlug)?.display_name}</span>
+                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.6)' }}>Tap to see full verdict & analysis <ArrowRight size={8} style={{ display: 'inline-block' }}/></span>
+                  </div>
+                </div>
+              )}
+
+              {/* Score Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`, gap: 16 }}>
+                {displayedSelected.map(c => {
+                  const origIdx = selected.findIndex(x => x.slug === c.slug);
+                  const score = scores[origIdx];
+                  const color = colors[origIdx % colors.length];
+                  const isTop = c.slug === topPickSlug;
+                  const sortedByScore = [...selected].map((x, idx) => ({ c: x, score: scores[idx].total })).sort((a, b) => b.score - a.score);
+                  const rankIndex = sortedByScore.findIndex(x => x.c.slug === c.slug);
+                  return (
+                    <div key={c.slug} style={{
+                      padding: 14, borderRadius: 12,
+                      border: '2px solid transparent',
+                      backgroundImage: isTop
+                        ? 'linear-gradient(#102127, #102127), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)'
+                        : 'linear-gradient(#0F161E, #0F161E), linear-gradient(135deg, #4a515a 0%, #9ba3ae 25%, #f0f2f5 50%, #68717c 75%, #b2bac4 100%)',
+                      backgroundOrigin: 'border-box',
+                      backgroundClip: 'padding-box, border-box'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        {getChoiceBadge(rankIndex)}
+                        {isTop && <Image src="/images/badges/badge_top_pick.png" alt="Top Pick" width={200} height={200} unoptimized style={{ height: 22, borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                        <Link href={`/research/${c.slug}`} style={{ color: (color === '#00C4BC' || color === '#FF6B6B') ? '#FFF' : color, fontWeight: 900, textDecoration: 'none', fontSize: '0.95rem' }}>{c.display_name}</Link>
+                      </div>
+                      <AnimatedScoreRing score={score} color={color} />
+                      {score.bestFor.length > 0 && (
+                        <div style={{ marginTop: 8, padding: '5px 8px', background: `${color}10`, borderRadius: 6, fontSize: '0.67rem', color: (color === '#00C4BC' || color === '#FF6B6B') ? '#FFF' : color, fontWeight: 700, lineHeight: 1.4 }}>
+                          Unique: {score.bestFor.map(researchAreaLabel).slice(0, 2).join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Radar Chart or Spark Bars */}
+              {radarData.length >= 2 && (
+                isMobile ? (
+                  <div className="inner-card-nickel" style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12, padding: '12px 16px' }}>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800, marginBottom: 4 }}>Profile Strength</div>
+                    {selected.map((c, i) => (
+                      <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                         <div style={{ width: 64, fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontWeight: 700 }}>{c.display_name}</div>
+                         <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{ width: `${scores[i].total}%`, height: '100%', background: colors[i % colors.length], borderRadius: 3, transition: 'width 1s ease-out' }} />
+                         </div>
+                         <div style={{ width: 28, fontSize: '0.7rem', fontWeight: 800, color: colors[i % colors.length], textAlign: 'right' }}>{scores[i].total}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 4 }}>
+                    <div style={{ textAlign: 'center', fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Research Profile Radar - hover axes for details</div>
+                    <AttributeRadarChart data={radarData} colors={colors} compoundNames={selected.map(c => c.display_name)} size={320} animated />
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginTop: 6 }}>
+                      {selected.map((c, i) => (
+                        <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)' }}>
+                          <div style={{ width: 10, height: 4, borderRadius: 2, background: colors[i % colors.length] }} />
+                          {c.display_name}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          )}
+
+          {/* ── TAB: PROS & CONS ── */}
+          {activeTab === 'proscons' && (
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24 }}>
+              <h3 style={{ margin: '0 0 18px 0', fontSize: '1.05rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Scale size={17} color="#00C4BC" /> Pros &amp; Cons Analysis
+                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontWeight: 400, marginLeft: 4 }}>Data-driven from compound attributes</span>
+              </h3>
+              <div className="hide-scroll" style={{ display: isMobile ? 'flex' : 'grid', gridTemplateColumns: isMobile ? undefined : `repeat(auto-fit, minmax(260px, 1fr))`, gap: 14, overflowX: isMobile ? 'auto' : 'visible', WebkitOverflowScrolling: 'touch', scrollSnapType: isMobile ? 'x mandatory' : 'none', paddingBottom: isMobile ? 12 : 0, margin: isMobile ? '0 -24px' : 0, paddingLeft: isMobile ? 24 : 0, paddingRight: isMobile ? 24 : 0 }}>
+                {displayedSelected.map(c => {
+                  const origIdx = selected.findIndex(x => x.slug === c.slug);
+                  const pc = prosCons[origIdx];
+                  const color = colors[origIdx % colors.length];
+                  return (
+                    <div key={c.slug} className="inner-card-nickel" style={{ padding: 16, minWidth: isMobile ? 280 : 'auto', scrollSnapAlign: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                        <span style={{ fontWeight: 900, fontSize: '0.9rem', color: '#fff' }}>{c.display_name}</span>
+                        <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color, fontWeight: 800 }}>Score: {scores[origIdx].total}/100</span>
+                      </div>
+                      <ProsConsCard pc={pc} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB: ANALYST BRIEF ── */}
+          {activeTab === 'brief' && selected.length >= 2 && (
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                <Info size={17} color="rgba(0,196,188,0.8)" />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>Analyst Brief</h3>
+                <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>For laboratory research reference only</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {analystBrief.map((para, i) => (
+                  <p key={i} className="brief-paragraph">
+                    {para}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB: MECHANISM ── */}
+          {activeTab === 'mechanism' && (
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                <FlaskConical size={17} color="rgba(0,196,188,0.8)" />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>Mechanism Deep-Dive</h3>
+                <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Receptor targets, MOA, risk factors, sources</span>
+              </div>
+              <MechanismTab selected={displayedSelected} />
+            </div>
+          )}
+
+          {/* ── TAB: PROTOCOL ── */}
+          {activeTab === 'protocol' && (
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                <Beaker size={17} color="rgba(0,196,188,0.8)" />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>Protocol Guide</h3>
+                <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Reconstitution, handling, frequency</span>
+              </div>
+              <ProtocolTab selected={displayedSelected} />
+            </div>
+          )}
+
+          {/* ── TAB: EFFICACY HEATMAP ── */}
+          {activeTab === 'efficacy' && selected.some(c => c.efficacy_scores && Object.keys(c.efficacy_scores).length > 0) && (
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <BarChart3 size={17} color="rgba(0,196,188,0.8)" />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>Efficacy Score Comparison</h3>
+                <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Per-domain scores 0–100 from compound metadata</span>
+              </div>
+              <p style={{ margin: '0 0 20px 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.55 }}>
+                Side-by-side efficacy profile comparison. Highlighted cells indicate the leader for each application domain. Use this to identify the best compound for a specific research use case.
+              </p>
+              {/* Leader summary callout */}
+              {(() => {
+                const allKeys = [...new Set(selected.flatMap(c => Object.keys(c.efficacy_scores ?? {})))];
+                const leaders: { domain: string; compound: string; score: number; color: string }[] = [];
+                allKeys.forEach(key => {
+                  let bestIdx = -1;
+                  let bestVal = -Infinity;
+                  selected.forEach((c, i) => {
+                    const v = (c.efficacy_scores ?? {})[key];
+                    if (v != null && v > bestVal) { bestVal = v; bestIdx = i; }
+                  });
+                  if (bestIdx >= 0 && bestVal >= 70) {
+                    leaders.push({ domain: key.replace(/_/g, ' '), compound: selected[bestIdx].display_name, score: bestVal, color: colors[bestIdx % colors.length] });
+                  }
+                });
+                if (!leaders.length) return null;
+                // Group by compound
+                const byCompound: Record<string, { domain: string; score: number }[]> = {};
+                leaders.forEach(l => { if (!byCompound[l.compound]) byCompound[l.compound] = []; byCompound[l.compound].push({ domain: l.domain, score: l.score }); });
+                return (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+                    {Object.entries(byCompound).map(([compound, domains], i) => {
+                      const c = selected.find(x => x.display_name === compound);
+                      const color = c ? colors[selected.indexOf(c) % colors.length] : '#00C4BC';
+                      return (
+                        <div key={compound} style={{ padding: '10px 14px', borderRadius: 10, background: `${color}08`, border: `1px solid ${color}25`, flex: '1 1 200px' }}>
+                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{compound} leads in:</div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            {domains.sort((a, b) => b.score - a.score).slice(0, 5).map(d => (
+                              <span key={d.domain} style={{ fontSize: '0.68rem', background: `${color}15`, color, border: `1px solid ${color}30`, padding: '1px 7px', borderRadius: 4, fontWeight: 600, textTransform: 'capitalize' }}>
+                                {d.domain} ({d.score})
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+              <div className="inner-card-nickel" style={{ padding: 12, borderRadius: 10 }}>
+                <EfficacyHeatmap selected={displayedSelected} />
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB: RECOMMENDATION / VERDICT ── */}
+          {activeTab === 'recommend' && selected.length >= 2 && recommendations && (
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <Star size={17} color="rgba(0,196,188,0.8)" />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>Research Verdict</h3>
+              </div>
+              <p style={{ margin: '0 0 20px 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
+                Which compound is best suited for different research contexts - based on composite scoring across evidence, safety, scientific backing, research coverage, and handling practicality.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 24 }}>
+                <RecommendationCard rec={recommendations.overall} label="Overall Best Pick" icon={<Image src="/images/badges/verdict_overall.png" alt="Overall Best" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#00C4BC" />
+                <RecommendationCard rec={recommendations.safest} label="Safest Profile" icon={<Image src="/images/badges/verdict_safest.png" alt="Safest Profile" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#68D391" />
+                <RecommendationCard rec={recommendations.mostStudied} label="Most Research-Backed" icon={<Image src="/images/badges/verdict_studied.png" alt="Most Studied" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#F6AD55" />
+                <RecommendationCard rec={recommendations.mostPractical} label="Most Practical" icon={<Image src="/images/badges/verdict_practical.png" alt="Most Practical" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'contain', flexShrink: 0 }} />} color="#9F7AEA" />
+              </div>
+              {/* Recommended contexts per compound */}
+              <div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>Best Research Contexts Per Compound</div>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`, gap: 10 }}>
+                  {displayedSelected.map(c => {
+                    const origIdx = selected.findIndex(x => x.slug === c.slug);
+                    const score = scores[origIdx];
+                    const color = colors[origIdx % colors.length];
+                    return (
+                      <div key={c.slug} style={{ padding: 12, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
+                          <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--white)' }}>{c.display_name}</span>
+                          <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color, fontWeight: 800 }}>{score.letter}</span>
+                        </div>
+                        {score.recommendedContexts.length ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {score.recommendedContexts.map((ctx, i) => (
+                              <div key={i} style={{ display: 'flex', gap: 5, alignItems: 'flex-start', fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.35 }}>
+                                <ArrowRight size={10} color={color} style={{ marginTop: 2, flexShrink: 0 }} />
+                                {ctx}
+                              </div>
+                            ))}
+                          </div>
+                        ) : <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)' }}>General-purpose research compound</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Stack Synergy Analysis */}
+              {(() => {
+                const synergy = calculateStackSynergy(displayedSelected);
+                const scoreColor = synergy.synergyIndex > 80 ? '#00C4BC' : synergy.synergyIndex > 50 ? '#F6AD55' : '#E53E3E';
+                return (
+                  <div style={{ marginTop: 24, padding: 20, borderRadius: 12, background: 'linear-gradient(135deg, rgba(0,0,0,0.2) 0%, rgba(255,255,255,0.02) 100%)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative', width: 100, height: 100, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="100" height="100" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
+                        <circle cx="50" cy="50" r="45" fill="none" stroke={scoreColor} strokeWidth="8" strokeDasharray={`${synergy.synergyIndex * 2.827} 282.7`} style={{ transition: 'stroke-dasharray 1s ease-out' }} />
+                      </svg>
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 900, color: scoreColor }}>{synergy.synergyIndex}</span>
+                        <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Synergy</span>
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 240 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#fff' }}>Stack Synergy & Risk Analysis</h4>
+                        <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', background: synergy.riskLevel === 'high' || synergy.riskLevel === 'critical' ? 'rgba(229,62,62,0.2)' : synergy.riskLevel === 'moderate' ? 'rgba(246,173,85,0.2)' : 'rgba(104,211,145,0.2)', color: synergy.riskLevel === 'high' || synergy.riskLevel === 'critical' ? '#FC8181' : synergy.riskLevel === 'moderate' ? '#FBD38D' : '#9AE6B4' }}>
+                          {synergy.riskLevel} Risk
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
+                        {synergy.synergyExplanation}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* ── TAB: AI ANALYST ── */}
+          {activeTab === 'ai' && (
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24, minHeight: 400 }}>
