@@ -467,20 +467,22 @@ function SignupForm() {
               ))}
             </div>
 
-            <button
-              type="submit"
-              className="btn btn-primary hover-lift"
-              style={{ width: '100%', justifyContent: 'center' }}
-              disabled={loading || !allAcked || !firstName || !lastName || !username || !email || password.length < 8 || usernameBlocked || usernameCheck.status === 'checking'}
-            >
-              {loading
-                ? 'Creating Account...'
-                : usernameBlocked
-                  ? 'Pick A Different Username'
-                  : usernameCheck.status === 'checking'
-                    ? 'Checking Username...'
-                    : 'Create Account'}
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <button
+                type="submit"
+                className="btn btn-primary hover-lift"
+                style={{ width: '100%', maxWidth: 300, justifyContent: 'center' }}
+                disabled={loading || !allAcked || !firstName || !lastName || !username || !email || password.length < 8 || usernameBlocked || usernameCheck.status === 'checking'}
+              >
+                {loading
+                  ? 'Creating Account...'
+                  : usernameBlocked
+                    ? 'Pick A Different Username'
+                    : usernameCheck.status === 'checking'
+                      ? 'Checking Username...'
+                      : 'Create Account'}
+              </button>
+            </div>
           </form>
           </>
           )}
