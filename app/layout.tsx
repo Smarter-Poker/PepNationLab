@@ -8,6 +8,7 @@ import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import PWAEnforcer from "@/components/PWAEnforcer";
 import SiteDisclaimerGate from "@/components/SiteDisclaimerGate";
 import StaleBrowserBanner from "@/components/StaleBrowserBanner";
+import OAuthErrorRedirect from "@/components/OAuthErrorRedirect";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
 import GlobalCallListener from "@/components/messenger/GlobalCallListener";
@@ -169,7 +170,7 @@ export default function RootLayout({
                   // Entity authority profiles — updated 2026-07-07.
                   // Consistency across all profiles (name/handle/website) is the ranking signal.
                   sameAs: [
-                    // ── Tier 1: Knowledge Graph anchors ──────────────────────────
+                    // ── Tier 1: Knowledge Graph anchors ──────────────────────
                     'https://www.wikidata.org/wiki/Q140460136',       // ✅ confirmed
                     // LinkedIn company page — add tomorrow after 24-hr new-account lockout lifts:
                     // 'https://www.linkedin.com/company/pepnationlab',
@@ -178,7 +179,7 @@ export default function RootLayout({
                     'https://www.youtube.com/@pepnationlab',              // ✅ handle format
                     'https://www.instagram.com/pepnationlab/',         // ✅ confirmed
                     'https://www.facebook.com/profile.php?id=61591787160330', // ✅ Page confirmed
-                    // ── Tier 3: Niche / B2B entity signals ──────────────────────
+                    // ── Tier 3: Niche / B2B entity signals ──────────────────
                     'https://www.crunchbase.com/organization/pep-nation-lab', // ✅ confirmed
                     'https://www.reddit.com/user/PepNationLab/',      // ✅ confirmed
                     // ── Additional: AI-model-weighted platforms ──────────────────
@@ -200,6 +201,7 @@ export default function RootLayout({
           {/* fix-56 #2: storefront-wide flash sale banner. Self-hides on /admin and /api. */}
           <FlashSaleBanner />
           <StaleBrowserBanner />
+          <OAuthErrorRedirect />
           <SiteDisclaimerGate>
             <CartProvider>
               <InAppBrowserProvider>
