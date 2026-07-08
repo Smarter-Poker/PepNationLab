@@ -227,7 +227,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
         ═════════════════════════════════════════════ */}
         <section style={{ position: 'relative', minHeight: 'clamp(640px, 95vh, 980px)', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
           {/* BG image */}
-          <Image src="/images/city-hero-peptide.jpg" alt="3D peptide helix" fill priority
+          <Image src="/images/city-hero-peptide.jpg" alt={`Research Peptides In ${city.name}, ${city.state}${city.county ? ` - ${city.county} County` : ''} - Research-Grade Peptide Supply For Verified Researchers`} fill priority
             fetchPriority="high"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1400px" quality={45}
             style={{ objectFit: 'cover', objectPosition: 'center right', opacity: 0.75 }} />
@@ -384,7 +384,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
                     <div style={{ position: 'relative', height: 180, overflow: 'hidden', background: 'var(--surface-2)' }}>
                       <Image
                         src={card.image}
-                        alt={card.name}
+                        alt={`${card.name}${card.subtitle ? ` (${card.subtitle})` : ''} Research Peptide ${card.sizeLabel} - Available To Researchers In ${city.name}, ${city.stateAbbr}`}
                         fill
                         sizes="(max-width: 768px) 50vw, 280px"
                         className="city-pcard-img"
@@ -449,7 +449,12 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             AI assistants and featured snippets quote exactly this kind
             of self-contained factual block)
         ═════════════════════════════════════════════ */}
-        <section style={{ position: 'relative', padding: 'clamp(40px, 5vw, 64px) 0', borderTop: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+        {/* Visually hidden (clip-rect) but fully present in the HTML and
+            accessibility tree. This dense fact block is answer-engine bait -
+            AI assistants and featured snippets quote exactly this kind of
+            self-contained factual content - but it read as a generic text
+            glob on the visible page. Do not remove; hide-only. */}
+        <section aria-label={`${city.name} Research Supply Facts`} style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}>
           {/* Nano Banana background */}
           <Image src="/images/city-sections/bg-facts.jpg" alt="" fill aria-hidden
             sizes="100vw" quality={35} style={{ objectFit: 'cover', objectPosition: 'center top', opacity: 0.22 }} />
