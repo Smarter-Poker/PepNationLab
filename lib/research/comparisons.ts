@@ -41,6 +41,25 @@ export const COMPARISON_PAIRS: ComparisonPair[] = [
   { a: 'thymosin-alpha-1', b: 'll-37', angle: 'two immune-modulating research peptides with distinct mechanisms' },
   { a: 'aod9604', b: 'hgh-fragment-176-191', angle: 'two HGH-fragment analogs studied for fat-metabolism research' },
   { a: 'retatrutide', b: 'survodutide', angle: 'next-generation multi-receptor incretin agonists in metabolic research' },
+  // Wave 2 curated pairs (all slugs verified in the compounds DB) - high-intent
+  // category matchups that expand the indexable comparison surface.
+  { a: 'bpc-157', b: 'ghk-cu', angle: 'two leading tissue-repair peptides with distinct healing mechanisms' },
+  { a: 'tb-500', b: 'ghk-cu', angle: 'a systemic repair peptide versus a copper peptide for tissue and skin research' },
+  { a: 'tesamorelin', b: 'ipamorelin', angle: 'a GHRH analog versus a selective ghrelin-receptor secretagogue on the GH axis' },
+  { a: 'tirzepatide', b: 'cagrilintide', angle: 'a dual incretin agonist versus an amylin analog in metabolic research' },
+  { a: 'retatrutide', b: 'cagrilintide', angle: 'a triple incretin agonist versus an amylin analog in weight research' },
+  { a: 'mots-c', b: '5-amino-1mq', angle: 'two metabolic research compounds targeting mitochondrial and NNMT pathways' },
+  { a: 'nad-plus', b: 'mots-c', angle: 'NAD+ metabolism versus a mitochondrial-derived peptide in longevity research' },
+  { a: 'ghk-cu', b: 'ahk-cu', angle: 'two copper research peptides studied for skin and hair' },
+  { a: 'cjc-1295-dac', b: 'sermorelin', angle: 'a long-acting versus a short-acting GHRH analog' },
+  { a: 'ipamorelin', b: 'ghrp-6', angle: 'a selective versus a first-generation ghrelin-receptor secretagogue' },
+  { a: 'semaglutide', b: 'cagrisema', angle: 'a GLP-1 agonist versus a GLP-1/amylin combination in metabolic research' },
+  { a: 'bpc-157', b: 'kpv', angle: 'two peptides studied for gut and mucosal repair' },
+  { a: 'pt-141', b: 'oxytocin', angle: 'melanocortin versus oxytocin pathways in intimacy and libido research' },
+  { a: 'thymosin-alpha-1', b: 'thymalin', angle: 'two thymic immune-modulating research peptides' },
+  { a: 'selank', b: 'dsip', angle: 'an anxiolytic nootropic versus a sleep-associated research peptide' },
+  { a: 'igf-1-lr3', b: 'follistatin', angle: 'direct IGF-1 signaling versus myostatin inhibition in muscle research' },
+  { a: 'ss-31', b: 'nad-plus', angle: 'a mitochondrial-targeted peptide versus NAD+ in cellular-energy research' },
 ];
 
 export function matchupSlug(a: string, b: string): string {
