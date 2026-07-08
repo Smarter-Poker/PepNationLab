@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { getSupabaseUrl } from '@/lib/supabase/url';
 
-// ─── Global API Rate Limiting ────────────────────────────────────────
+// ─── Global API Rate Limiting ────────────────────────────────────────────────
 // Edge-level backstop against scrape bots and abuse across all ~80 /api/*
 // endpoints. Individual hot routes keep their own tighter limits (register,
 // orders, disclaimer-log, research search) — this is the outer wall.
@@ -153,6 +153,8 @@ const PUBLIC_ROUTES = [
   '/api/agent-invitations/redeem',
   '/api/cron/invoices',
   '/api/cron/reminders',
+  // Daily auth flow canary — CRON_SECRET enforced in-route (lib/cron.ts).
+  '/api/cron/auth-canary',
   // Social autoposter cron — CRON_SECRET enforced in-route; gated by SOCIAL_AUTOPOST_ENABLED.
   '/api/cron/social-autopost',
   '/api/cron/sms-dispatch',
