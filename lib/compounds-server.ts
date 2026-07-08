@@ -39,7 +39,7 @@ function coerceCompound(row: Record<string, unknown>): Compound {
   };
 }
 
-const PUBLIC_COMPOUND_COLUMNS = 'id, slug, display_name, aliases, category, evidence_tier, compound_class, molecular_target, identity, mechanism, studied_for, research_areas, benefits, side_effects, warnings, handling, regulatory, wada_status, sources, plain_summary, is_temp_sensitive, is_pro_angiogenic, is_glp1, is_stack, stack_components, stack_rationale, reconstitution_shelf_days, best_stacked_with, efficacy_scores, eli5_summary, quality_score, updated_at, created_at';
+const PUBLIC_COMPOUND_COLUMNS = 'id, slug, display_name, aliases, category, evidence_tier, compound_class, molecular_target, identity, mechanism, studied_for, research_areas, benefits, side_effects, warnings, handling, regulatory, wada_status, sources, plain_summary, is_temp_sensitive, is_pro_angiogenic, is_glp1, is_stack, stack_components, stack_rationale, reconstitution_shelf_days, best_stacked_with, efficacy_scores, eli5_summary, quality_score, risk_level, half_life, molecular_weight_da, pubmed_citation_count, active_trial_count, updated_at, created_at';
 
 export const getAllCompounds = unstable_cache(
   async (): Promise<Compound[]> => {
