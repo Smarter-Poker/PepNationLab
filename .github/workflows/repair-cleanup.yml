@@ -1,0 +1,20 @@
+name: Repair Cleanup
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.repair/trigger-cleanup.txt'
+permissions:
+  contents: write
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove Probe And Self
+        run: |
+          git config user.name "repair-bot"
+          git config user.email "repair-bot@users.noreply.github.com"
+          git rm -f --ignore-unmatch .repair/comparetool/probe-delete-me.txt .repair/trigger-cleanup.txt .github/workflows/repair-cleanup.yml
+          git commit -m "repair: remove probe scaffolding"
+          git push
