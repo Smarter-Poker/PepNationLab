@@ -33,6 +33,9 @@ on:
     # Mondays 08:00 UTC - a fresh weekly batch.
     - cron: "0 8 * * 1"
 
+permissions:
+  contents: write
+
 jobs:
   generate:
     runs-on: ubuntu-latest
@@ -83,3 +86,27 @@ jobs:
           name: pepnationlab-shorts
           path: out/*.mp4
           retention-days: 14
+
+      - name: Build preview stills + audio report (self-verify)
+        continue-on-error: true
+        run: |
+          mkdir -p scripts/social/previews
+          : > scripts/social/previews/report.txt
+          for f in out/*.mp4; do
+            base=$(basename "$f" .mp4)
+            ffmpeg -y -v error -i "$f" -vf "select='eq(n,30)+eq(n,150)+eq(n,300)',scale=300:533,tile=3x1" -frames:v 1 "scripts/social/previews/${base}.png" || true
+            dur=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$f")
+            hasa=$(ffprobe -v error -select_streams a -show_entries stream=codec_name -of default=nw=1:nk=1 "$f")
+            vol=$(ffmpeg -v error -i "$f" -af volumedetect -f null - 2>&1 | grep -oE "mean_volume: [-0-9.]+ dB" || echo "mean_volume: n/a")
+            echo "clip=${base} duration=${dur}s audio=${hasa:-none} ${vol}" >> scripts/social/previews/report.txt
+          done
+          cat scripts/social/previews/report.txt
+
+      - name: Commit previews for agent verification (self-verify)
+        continue-on-error: true
+        run: |
+          git config user.name "pnl-bot"
+          git config user.email "bot@pepnationlab.com"
+          git add scripts/social/previews
+          git commit -m "Social video previews [skip ci]" || { echo "nothing to commit"; exit 0; }
+          git push
