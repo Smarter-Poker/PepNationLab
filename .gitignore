@@ -80,3 +80,5 @@ tsconfig.rescheck.json
 # Python bytecode
 __pycache__/
 *.pyc
+tsconfig.cmpcheck.json
+tsconfig.cmp2.json

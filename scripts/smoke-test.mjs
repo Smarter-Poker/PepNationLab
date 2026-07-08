@@ -17,6 +17,8 @@
 
 const BASE = (process.argv[2] || process.env.BASE_URL || 'https://pepnationlab.com').replace(/\/$/, '');
 
+// path -> expected status(es). Guest agent storefronts 302 -> /researchstore
+// then 200, so following redirects yields 200. Intentional 404s are asserted too.
 const CHECKS = [
   { path: '/', expect: [200] },
   { path: '/researchstore', expect: [200] },
@@ -33,6 +35,8 @@ const CHECKS = [
   { path: '/sitemap.xml', expect: [200] },
   { path: '/robots.txt', expect: [200] },
   { path: '/api/health', expect: [200] },
+  // A URL that must NOT resolve (nonexistent slug) - guards against a broken
+  // catch-all that would 200 or 500 instead of a clean 404.
   { path: '/this-slug-should-not-exist-xyz', expect: [404] },
 ];
 

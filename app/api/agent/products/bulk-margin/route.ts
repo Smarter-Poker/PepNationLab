@@ -99,7 +99,9 @@ export async function POST(req: NextRequest) {
         const maxMargin = Number((ap.products as any)?.max_margin_percent || 300);
         const minRetailPrice = Number((ap.products as any)?.min_retail_price || agentCostPer10);
 
-        if (marginPercent > maxMargin) {
+        // Margin ceiling applies to agents only; the admin's cost basis is
+        // raw COGS so the ceiling would wrongly block normal retail pricing.
+        if (!gate.isAdmin && marginPercent > maxMargin) {
           return null; // Skip if it exceeds ceiling (or we could reject, but skipping allows the rest to update)
         }
 

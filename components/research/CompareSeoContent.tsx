@@ -52,12 +52,32 @@ export default function CompareSeoContent({ compounds }: { compounds: Compound[]
     })),
   };
 
+  // ItemList of the curated comparison pages -> stronger entity/collection
+  // signal for search + AI answer engines, and eligible for list rich results.
+  const itemListJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Popular Research Compound Comparisons',
+    itemListElement: COMPARISON_PAIRS.map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: `https://pepnationlab.com/research/compare/${matchupSlug(p.a, p.b)}`,
+      name: `${nameOf.get(p.a) ?? p.a} vs ${nameOf.get(p.b) ?? p.b}`,
+    })),
+  };
+
   return (
     <section
       aria-label="About The Compound Comparison Tool"
+      // VISIBLE, crawlable content (do NOT clip/hide this). It is genuinely
+      // useful to users - a directory of popular comparisons, comparable
+      // compounds, and an FAQ - and it internally links every curated matchup
+      // page. Substantial text hidden only for crawlers (clip-rect / 1px) is an
+      // SEO risk (treated as hidden content), so this stays on-screen.
       style={{ maxWidth: 1200, margin: '48px auto 0', padding: '0 var(--space-4, 16px) var(--space-8, 48px)', color: 'var(--white, #fff)' }}
     >
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
 
       <div style={{ borderTop: '1px solid rgba(192,184,168,0.12)', paddingTop: 'var(--space-7, 40px)' }}>
         <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 800, margin: '0 0 12px' }}>
@@ -71,6 +91,7 @@ export default function CompareSeoContent({ compounds }: { compounds: Compound[]
         </p>
       </div>
 
+      {/* Popular comparisons: internal links to the curated matchup pages. */}
       <div style={{ marginTop: 'var(--space-7, 40px)' }}>
         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 16px' }}>Popular Research Comparisons</h2>
         <ul
@@ -103,6 +124,7 @@ export default function CompareSeoContent({ compounds }: { compounds: Compound[]
         </ul>
       </div>
 
+      {/* Directory of comparable compounds -> monographs (internal links). */}
       <div style={{ marginTop: 'var(--space-7, 40px)' }}>
         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 12px' }}>Compounds You Can Compare</h2>
         <ul style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 18px', listStyle: 'none', padding: 0, margin: '0 0 12px' }}>
@@ -121,6 +143,7 @@ export default function CompareSeoContent({ compounds }: { compounds: Compound[]
         </p>
       </div>
 
+      {/* FAQ (mirrors the FAQPage schema above). */}
       <div style={{ marginTop: 'var(--space-7, 40px)' }}>
         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 16px' }}>Comparison Tool FAQ</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3, 12px)' }}>

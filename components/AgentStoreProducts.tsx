@@ -107,7 +107,7 @@ function MarketIntel({ p, priceOverride }: { p: AgentProduct; priceOverride?: nu
   );
 }
 
-export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost' }: { agentId: string; costLabel?: string }) {
+export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', unlimitedMargin = false }: { agentId: string; costLabel?: string; unlimitedMargin?: boolean }) {
   const [products, setProducts] = useState<AgentProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -249,8 +249,8 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost' }:
       return;
     }
     
-    if (Number((editForm as any).margin_percent) > maxMarginPercent) {
-      toast.error(`Requested margin exceeds the platform maximum of ${maxMarginPercent}%.`);
+    if (!unlimitedMargin && Number((editForm as any).margin_percent) > maxMarginPercent) {
+      toast.error(`Requested Margin Exceeds The Platform Maximum Of ${maxMarginPercent}%.`);
       return;
     }
 
@@ -563,7 +563,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost' }:
                               <span style={{ fontSize: '0.65rem', color: '#00E5FF', fontWeight: 700 }}>%</span>
                             </div>
                             <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)' }}>
-                              Max: {p.products?.max_margin_percent ?? 300}%
+                              {unlimitedMargin ? 'No Margin Cap' : `Max: ${p.products?.max_margin_percent ?? 300}%`}
                             </span>
                           </div>
                         </div>
@@ -779,7 +779,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost' }:
                               <span style={{ fontSize: '0.65rem', color: '#00E5FF', fontWeight: 700 }}>%</span>
                             </div>
                             <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)' }}>
-                              Max: {p.products?.max_margin_percent ?? 300}%
+                              {unlimitedMargin ? 'No Margin Cap' : `Max: ${p.products?.max_margin_percent ?? 300}%`}
                             </span>
                           </div>
                         </div>

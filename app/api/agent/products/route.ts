@@ -168,7 +168,11 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    if (resolvedMarginPercent !== undefined && resolvedMarginPercent > maxMargin) {
+    // The margin ceiling protects the marketplace from agent price gouging.
+    // It does NOT apply to the admin house store: the admin's cost basis is
+    // raw COGS (base_cost), so healthy retail prices are naturally far above
+    // 300% of cost.
+    if (!gate.isAdmin && resolvedMarginPercent !== undefined && resolvedMarginPercent > maxMargin) {
       return NextResponse.json(
         {
           error: `Requested margin (${resolvedMarginPercent}%) exceeds the platform maximum of ${maxMargin}%.`,

@@ -3,8 +3,8 @@
 import { useMemo, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Sparkles, ChevronRight, ShieldCheck, Printer, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye, Clock, Atom, Snowflake } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, ChevronRight, ShieldCheck, Printer, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye, Clock, Atom, Snowflake, AlertTriangle, Check, RotateCcw } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 import type {
   EvidenceComfort,
@@ -56,9 +56,31 @@ function tierColor(tier: string): string {
   }
 }
 
+function riskMeta(level: string): { label: string; color: string } {
+  switch (level) {
+    case 'low': return { label: 'Low Risk', color: '#68D391' };
+    case 'moderate': return { label: 'Moderate Risk', color: '#F6AD55' };
+    case 'high': return { label: 'High Risk', color: '#FC8181' };
+    case 'critical': return { label: 'Critical Risk', color: '#FF6B6B' };
+    default: return { label: level, color: '#A8B4C0' };
+  }
+}
+
+// Ordered factors for the score-breakdown bars. Kept in one place so the card
+// and any future surface stay consistent with the engine's ScoreBreakdown.
+const BREAKDOWN_FACTORS: { key: 'base' | 'keyword' | 'evidenceBonus' | 'classBonus' | 'interest' | 'budget'; label: string; color: string }[] = [
+  { key: 'base', label: 'Exact Goal Match', color: '#00C4BC' },
+  { key: 'keyword', label: 'Keyword Relevance', color: '#3DD9A4' },
+  { key: 'evidenceBonus', label: 'Evidence Tier', color: '#63B3ED' },
+  { key: 'classBonus', label: 'Class Synergy', color: '#F6AD55' },
+  { key: 'interest', label: 'Research Interest', color: '#B794F4' },
+  { key: 'budget', label: 'Budget Adjustment', color: '#F08A8A' },
+];
+
 
 
 function CircularScore({ score }: { score: number }) {
+  const reduce = useReducedMotion();
   const size = 60;
   const stroke = 5;
   const radius = (size - stroke) / 2;
@@ -78,9 +100,9 @@ function CircularScore({ score }: { score: number }) {
           cx={size / 2} cy={size / 2} r={radius} fill="none"
           stroke={color} strokeWidth={stroke} strokeLinecap="round"
           strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
+          initial={reduce ? false : { strokeDashoffset: circumference }}
           animate={{ strokeDashoffset }}
-          transition={{ duration: 1, ease: 'easeOut' }}
+          transition={{ duration: reduce ? 0 : 1, ease: 'easeOut' }}
         />
       </svg>
       <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
@@ -124,6 +146,16 @@ function MatchFormInner() {
   const [excludedCompounds, setExcludedCompounds] = useState<{slug: string; displayName: string; reason: string}[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showCompare, setShowCompare] = useState(false);
+  const [compareSelection, setCompareSelection] = useState<string[]>([]);
+  const reduceMotion = useReducedMotion();
+
+  function toggleCompare(slug: string) {
+    setCompareSelection(prev => {
+      if (prev.includes(slug)) return prev.filter(s => s !== slug);
+      if (prev.length >= 2) return [prev[1], slug]; // keep the most recent two
+      return [...prev, slug];
+    });
+  }
 
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -190,6 +222,19 @@ function MatchFormInner() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [excludeSlugs]);
+
+  // Escape closes the compare modal + lock background scroll while it is open.
+  useEffect(() => {
+    if (!showCompare) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowCompare(false); };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [showCompare]);
 
   async function onAiSubmit() {
     if (!aiPrompt.trim()) return;
@@ -259,6 +304,25 @@ function MatchFormInner() {
   }
 
   const stackPartners = results?.filter(r => r.isStackPartner) || [];
+
+  // The two compounds shown in the compare modal: the user's picks if they
+  // selected exactly two, otherwise the top two results.
+  const comparePair: MatchResult[] = results
+    ? (compareSelection.length === 2
+        ? compareSelection.map(s => results.find(r => r.slug === s)).filter((r): r is MatchResult => Boolean(r))
+        : results.slice(0, 2))
+    : [];
+
+  // Human-readable summary of the active criteria, shown on the results view.
+  const criteriaChips: string[] = [
+    goalOptions.find(g => g.value === goal)?.label ?? goal,
+    EVIDENCE_OPTIONS.find(o => o.value === evidenceComfort)?.label ?? 'Any Evidence',
+    RISK_OPTIONS.find(o => o.value === riskTolerance)?.label ?? 'Any Risk',
+  ];
+  if (preference && preference !== 'either') criteriaChips.push(preference === 'single' ? 'Single Compounds' : 'Pre-Blended Stacks');
+  if (budget && budget !== 'standard') criteriaChips.push(budget === 'conservative' ? 'Cost-Sensitive' : 'Ignore Cost');
+  if (excludeInjectables) criteriaChips.push('No Injectables');
+  if (requireLongHalfLife) criteriaChips.push('Long Half-Life');
 
   return (
     <div className="match-container" style={{ position: 'relative', minHeight: '600px' }}>
@@ -345,6 +409,25 @@ function MatchFormInner() {
           .match-actions { flex-direction: row; width: 100%; }
           .match-actions button { flex: 1; }
         }
+        .criteria-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 20px; }
+        .criteria-chip {
+          font-size: 0.76rem; font-weight: 600; color: var(--silver-light, #D0DAE4);
+          background: rgba(0,196,188,0.08); border: 1px solid rgba(0,196,188,0.25);
+          border-radius: 999px; padding: 4px 11px;
+        }
+        .cmp-toggle {
+          display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+          background: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+          color: #A8B4C0; padding: 8px 12px; cursor: pointer; font-size: 0.85rem;
+        }
+        .cmp-toggle.on { border-color: var(--teal, #00C4BC); color: var(--teal, #00C4BC); background: rgba(0,196,188,0.08); }
+        .factor-row { display: grid; grid-template-columns: 130px 1fr 46px; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .factor-track { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
+        .factor-fill { height: 100%; border-radius: 999px; }
+        @keyframes skeleton-pulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.7; } }
+        .skeleton-shimmer { background: rgba(255,255,255,0.08); animation: skeleton-pulse 1.4s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) { .skeleton-shimmer { animation: none; } }
+        @media (max-width: 480px) { .factor-row { grid-template-columns: 108px 1fr 40px; } }
       `}</style>
 
       <div className="print-only">
@@ -362,7 +445,7 @@ function MatchFormInner() {
 
       <AnimatePresence mode="wait">
         {step === 1 && (
-          <motion.div key="step1" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+          <motion.div key="step1" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>What Is Your Primary Research Goal?</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '32px' }}>Select The Main Focus Of Your Protocol To Calibrate The Engine.</p>
             
@@ -441,7 +524,7 @@ function MatchFormInner() {
         )}
 
         {step === 2 && (
-          <motion.div key="step2" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+          <motion.div key="step2" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Evidence Tier Comfort</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>How Much Clinical Evidence Do You Require For These Compounds?</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
@@ -460,7 +543,7 @@ function MatchFormInner() {
         )}
 
         {step === 3 && (
-          <motion.div key="step3" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+          <motion.div key="step3" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Risk Tolerance</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Set Your Safety Constraints.</p>
             
@@ -481,7 +564,7 @@ function MatchFormInner() {
         )}
 
         {step === 4 && (
-          <motion.div key="step4" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+          <motion.div key="step4" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Advanced Preferences</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Fine-Tune Format And Handling Requirements.</p>
 
@@ -526,10 +609,10 @@ function MatchFormInner() {
         )}
 
         {step === 5 && (
-          <motion.div key="step5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }} className="no-print">
+          <motion.div key="step5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.5 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '24px' }} className="no-print">
               <button onClick={() => setStep(1)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><ArrowLeft size={18} /> Edit Criteria</button>
-              <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 {results && results.length > 0 && (
                   <>
                     <button onClick={handleSaveMatch} disabled={saving} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -542,23 +625,40 @@ function MatchFormInner() {
                 )}
                 {results && results.length >= 2 && (
                   <button onClick={() => setShowCompare(true)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Scale size={18} /> Compare Top 2
+                    <Scale size={18} /> {compareSelection.length === 2 ? 'Compare Selected' : 'Compare Top 2'}
                   </button>
                 )}
               </div>
             </div>
 
             {loading && !results && (
-              <div style={{ textAlign: 'center', padding: '64px', color: 'var(--teal)' }}>
-                <Sparkles size={48} className="animate-pulse mx-auto mb-4" />
-                <h3 style={{ fontSize: '1.5rem', color: 'white' }}>Running Deterministic Match Engine...</h3>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--teal)', marginBottom: '20px' }}>
+                  <Sparkles size={20} className="animate-pulse" />
+                  <span style={{ color: 'white', fontWeight: 700 }}>Ranking The Catalog...</span>
+                </div>
+                <div style={{ display: 'grid', gap: 'var(--space-4, 16px)' }}>
+                  {[0, 1, 2, 3].map(i => (
+                    <div key={i} className="glass-panel skeleton-card" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', display: 'flex', gap: '18px', alignItems: 'center' }}>
+                      <div className="skeleton-shimmer" style={{ width: 60, height: 60, borderRadius: '50%', flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <div className="skeleton-shimmer" style={{ width: '45%', height: 18, borderRadius: 6, marginBottom: 12 }} />
+                        <div className="skeleton-shimmer" style={{ width: '90%', height: 12, borderRadius: 6, marginBottom: 8 }} />
+                        <div className="skeleton-shimmer" style={{ width: '70%', height: 12, borderRadius: 6 }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
             {!loading && errorMsg && (
-              <p className="no-print" style={{ color: '#E53E3E', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.3)', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
-                {errorMsg}
-              </p>
+              <div className="no-print" style={{ color: '#F08A8A', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.3)', borderRadius: '8px', padding: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={18} /> {errorMsg}</span>
+                <button onClick={() => onSubmit()} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 14px' }}>
+                  <RotateCcw size={15} /> Try Again
+                </button>
+              </div>
             )}
 
             {results && stackPartners.length >= 2 && (
@@ -599,6 +699,13 @@ function MatchFormInner() {
                     </button>
                   )}
                 </div>
+                <div className="criteria-bar no-print" aria-label="Active match criteria">
+                  <span style={{ fontSize: '0.76rem', color: 'var(--grey-500, #6B7785)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Criteria</span>
+                  {criteriaChips.map((c, i) => (
+                    <span key={i} className="criteria-chip">{c}</span>
+                  ))}
+                  <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: 'var(--teal, #00C4BC)', fontSize: '0.76rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', padding: '4px' }}>Edit</button>
+                </div>
                 <div style={{ display: 'grid', gap: 'var(--space-4, 16px)' }}>
                   {results.map((r, idx) => (
                     <div key={r.slug} className="glass-panel match-result-card" style={{ position: 'relative', padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
@@ -612,23 +719,36 @@ function MatchFormInner() {
                           <p style={{ margin: '10px 0 0', color: 'var(--silver-light, #D0DAE4)', lineHeight: 1.6, fontSize: '0.98rem' }}>
                             {r.rationale}
                           </p>
-                          {(r.halfLife || r.molecularWeight || r.isTempSensitive) && (
-                            <div className="match-chips">
-                              {r.halfLife && (
-                                <span className="match-chip"><Clock size={13} aria-hidden="true" /> Half-Life: {r.halfLife}</span>
-                              )}
-                              {r.molecularWeight && (
-                                <span className="match-chip"><Atom size={13} aria-hidden="true" /> {r.molecularWeight} Da</span>
-                              )}
-                              {r.isTempSensitive && (
-                                <span className="match-chip"><Snowflake size={13} aria-hidden="true" /> Cold Storage</span>
-                              )}
-                            </div>
-                          )}
+                          <div className="match-chips">
+                            {(() => {
+                              const rm = riskMeta(r.riskLevel);
+                              return (
+                                <span className="match-chip" style={{ color: rm.color, borderColor: `${rm.color}55` }}>
+                                  <AlertTriangle size={12} aria-hidden="true" /> {rm.label}
+                                </span>
+                              );
+                            })()}
+                            {r.halfLife && (
+                              <span className="match-chip"><Clock size={13} aria-hidden="true" /> Half-Life: {r.halfLife}</span>
+                            )}
+                            {r.molecularWeight && (
+                              <span className="match-chip"><Atom size={13} aria-hidden="true" /> {r.molecularWeight} Da</span>
+                            )}
+                            {r.isTempSensitive && (
+                              <span className="match-chip"><Snowflake size={13} aria-hidden="true" /> Cold Storage</span>
+                            )}
+                          </div>
                         </div>
                         <div className="match-actions no-print">
                           <button onClick={() => { setSelectedDrawerCompound(r); setIsDrawerOpen(true); }} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}>
                             <Eye size={16} /> Quick View
+                          </button>
+                          <button
+                            onClick={() => toggleCompare(r.slug)}
+                            aria-pressed={compareSelection.includes(r.slug)}
+                            className={`cmp-toggle${compareSelection.includes(r.slug) ? ' on' : ''}`}
+                          >
+                            {compareSelection.includes(r.slug) ? <Check size={14} /> : <Scale size={14} />} Compare
                           </button>
                           <button onClick={() => setExcludeSlugs(prev => [...prev, r.slug])} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#A8B4C0', padding: '8px 12px', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <Trash2 size={14} /> Exclude
@@ -636,27 +756,28 @@ function MatchFormInner() {
                         </div>
                       </div>
                       
-                      <div className="no-print" style={{ marginTop: '16px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px' }}>
+                      <div className="no-print" style={{ marginTop: '16px', background: 'rgba(0,0,0,0.2)', padding: '14px', borderRadius: '8px' }}>
                         <details style={{ fontSize: '0.9rem', color: '#A8B4C0' }}>
                           <summary style={{ cursor: 'pointer', outline: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Search size={16} /> View Explainable AI Score Breakdown
+                            <Search size={16} /> How This Score Was Calculated
                           </summary>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginTop: '12px' }}>
-                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '6px' }}>
-                              <div style={{ fontSize: '0.8rem' }}>Exact Goal Match</div>
-                              <div style={{ color: 'white', fontWeight: 800, fontSize: '1.1rem' }}>+{r.scoreBreakdown.base} pts</div>
-                            </div>
-                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '6px' }}>
-                              <div style={{ fontSize: '0.8rem' }}>Keyword Mentions</div>
-                              <div style={{ color: 'var(--teal)', fontWeight: 800, fontSize: '1.1rem' }}>+{r.scoreBreakdown.keyword} pts</div>
-                            </div>
-                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '6px' }}>
-                              <div style={{ fontSize: '0.8rem' }}>Evidence Bonus</div>
-                              <div style={{ color: '#63B3ED', fontWeight: 800, fontSize: '1.1rem' }}>+{r.scoreBreakdown.evidenceBonus} pts</div>
-                            </div>
-                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '6px' }}>
-                              <div style={{ fontSize: '0.8rem' }}>Class Synergy</div>
-                              <div style={{ color: '#F6AD55', fontWeight: 800, fontSize: '1.1rem' }}>+{r.scoreBreakdown.classBonus} pts</div>
+                          <div style={{ marginTop: '14px' }}>
+                            {BREAKDOWN_FACTORS.filter(f => (r.scoreBreakdown[f.key] ?? 0) !== 0).map(f => {
+                              const val = r.scoreBreakdown[f.key] ?? 0;
+                              const width = `${Math.min(100, (Math.abs(val) / 45) * 100)}%`;
+                              const neg = val < 0;
+                              return (
+                                <div key={f.key} className="factor-row">
+                                  <span style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>{f.label}</span>
+                                  <span className="factor-track"><span className="factor-fill" style={{ width, background: neg ? '#FC8181' : f.color }} /></span>
+                                  <span style={{ fontSize: '0.85rem', fontWeight: 800, textAlign: 'right', color: neg ? '#FC8181' : 'var(--white, #FFFFFF)' }}>{val > 0 ? `+${val}` : val}</span>
+                                </div>
+                              );
+                            })}
+                            <div className="factor-row" style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--white, #FFFFFF)' }}>Total Match Score</span>
+                              <span className="factor-track" style={{ background: 'transparent' }} />
+                              <span style={{ fontSize: '0.95rem', fontWeight: 800, textAlign: 'right', color: 'var(--teal, #00C4BC)' }}>{r.score}</span>
                             </div>
                           </div>
                         </details>
@@ -686,54 +807,74 @@ function MatchFormInner() {
         )}
       </AnimatePresence>
 
-      {showCompare && results && results.length >= 2 && (
-        <div className="no-print" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', background: '#0F1923' }}>
+      {showCompare && comparePair.length >= 2 && (
+        <div
+          className="no-print"
+          onClick={() => setShowCompare(false)}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Head-to-head compound comparison"
+            onClick={(e) => e.stopPropagation()}
+            className="glass-panel"
+            style={{ width: '100%', maxWidth: '760px', maxHeight: '90vh', overflowY: 'auto', background: '#0F1923' }}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ margin: 0, color: 'white' }}>Head-To-Head Comparison</h3>
-              <button onClick={() => setShowCompare(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={24} /></button>
+              <button onClick={() => setShowCompare(false)} aria-label="Close comparison" style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={24} /></button>
             </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: 'white' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #1D2D3E' }}>
-                  <th style={{ padding: '12px', color: '#A8B4C0' }}>Feature</th>
-                  <th style={{ padding: '12px', fontSize: '1.1rem', color: 'var(--teal)' }}>{results[0].displayName}</th>
-                  <th style={{ padding: '12px', fontSize: '1.1rem', color: 'var(--teal)' }}>{results[1].displayName}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderBottom: '1px solid #1D2D3E' }}>
-                  <td style={{ padding: '12px', color: '#A8B4C0' }}>Match Score</td>
-                  <td style={{ padding: '12px', fontWeight: 'bold' }}>{results[0].score}</td>
-                  <td style={{ padding: '12px', fontWeight: 'bold' }}>{results[1].score}</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid #1D2D3E' }}>
-                  <td style={{ padding: '12px', color: '#A8B4C0' }}>Evidence Tier</td>
-                  <td style={{ padding: '12px' }}>
-                    <span style={{ color: tierColor(results[0].evidenceTier), fontWeight: 700 }}>{tierLabel(results[0].evidenceTier)}</span>
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    <span style={{ color: tierColor(results[1].evidenceTier), fontWeight: 700 }}>{tierLabel(results[1].evidenceTier)}</span>
-                  </td>
-                </tr>
-
-                <tr style={{ borderBottom: '1px solid #1D2D3E' }}>
-                  <td style={{ padding: '12px', color: '#A8B4C0' }}>Half-Life</td>
-                  <td style={{ padding: '12px' }}>{results[0].halfLife || 'Unknown'}</td>
-                  <td style={{ padding: '12px' }}>{results[1].halfLife || 'Unknown'}</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid #1D2D3E' }}>
-                  <td style={{ padding: '12px', color: '#A8B4C0' }}>Molecular Weight</td>
-                  <td style={{ padding: '12px' }}>{results[0].molecularWeight ? `${results[0].molecularWeight} Da` : 'Unknown'}</td>
-                  <td style={{ padding: '12px' }}>{results[1].molecularWeight ? `${results[1].molecularWeight} Da` : 'Unknown'}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '12px', color: '#A8B4C0' }}>Temp Sensitive</td>
-                  <td style={{ padding: '12px' }}>{results[0].isTempSensitive ? 'Yes (Cold Storage)' : 'No'}</td>
-                  <td style={{ padding: '12px' }}>{results[1].isTempSensitive ? 'Yes (Cold Storage)' : 'No'}</td>
-                </tr>
-              </tbody>
-            </table>
+            {(() => {
+              const [a, b] = comparePair;
+              const higher = (x: number, y: number) => (x === y ? 0 : x > y ? -1 : 1); // -1 => a wins
+              const win = higher(a.score, b.score);
+              const winStyle = { color: 'var(--teal, #00C4BC)', fontWeight: 800 };
+              const rows: { label: string; a: React.ReactNode; b: React.ReactNode }[] = [
+                {
+                  label: 'Match Score',
+                  a: <span style={win === -1 ? winStyle : { fontWeight: 700 }}>{a.score} / 100</span>,
+                  b: <span style={win === 1 ? winStyle : { fontWeight: 700 }}>{b.score} / 100</span>,
+                },
+                {
+                  label: 'Evidence Tier',
+                  a: <span style={{ color: tierColor(a.evidenceTier), fontWeight: 700 }}>{tierLabel(a.evidenceTier)}</span>,
+                  b: <span style={{ color: tierColor(b.evidenceTier), fontWeight: 700 }}>{tierLabel(b.evidenceTier)}</span>,
+                },
+                {
+                  label: 'Risk Level',
+                  a: <span style={{ color: riskMeta(a.riskLevel).color, fontWeight: 700 }}>{riskMeta(a.riskLevel).label}</span>,
+                  b: <span style={{ color: riskMeta(b.riskLevel).color, fontWeight: 700 }}>{riskMeta(b.riskLevel).label}</span>,
+                },
+                { label: 'Half-Life', a: a.halfLife || 'Unknown', b: b.halfLife || 'Unknown' },
+                { label: 'Molecular Weight', a: a.molecularWeight ? `${a.molecularWeight} Da` : 'Unknown', b: b.molecularWeight ? `${b.molecularWeight} Da` : 'Unknown' },
+                { label: 'Storage', a: a.isTempSensitive ? 'Cold Storage' : 'Room Temp', b: b.isTempSensitive ? 'Cold Storage' : 'Room Temp' },
+              ];
+              return (
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: 'white' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #1D2D3E' }}>
+                      <th style={{ padding: '12px', color: '#A8B4C0', fontWeight: 600 }}>Feature</th>
+                      <th style={{ padding: '12px', fontSize: '1.05rem', color: 'var(--teal)' }}>
+                        <Link href={`/research/${a.slug}`} style={{ color: 'var(--teal)', textDecoration: 'none' }}>{a.displayName}</Link>
+                      </th>
+                      <th style={{ padding: '12px', fontSize: '1.05rem', color: 'var(--teal)' }}>
+                        <Link href={`/research/${b.slug}`} style={{ color: 'var(--teal)', textDecoration: 'none' }}>{b.displayName}</Link>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row, i) => (
+                      <tr key={row.label} style={{ borderBottom: i < rows.length - 1 ? '1px solid #1D2D3E' : 'none' }}>
+                        <td style={{ padding: '12px', color: '#A8B4C0' }}>{row.label}</td>
+                        <td style={{ padding: '12px' }}>{row.a}</td>
+                        <td style={{ padding: '12px' }}>{row.b}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              );
+            })()}
           </div>
         </div>
       )}

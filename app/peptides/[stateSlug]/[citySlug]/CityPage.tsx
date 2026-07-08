@@ -178,14 +178,28 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
         }
         .city-fadein { animation: city-fadein 0.75s ease forwards; }
 
-        /* CTA text buttons (replaced PNG image buttons - crawlable anchor
-           text, zero image payload, Title Case per platform rule) */
-        .city-cta {
-          font-size: clamp(0.95rem, 1.6vw, 1.05rem);
-          padding: 14px 34px;
-          font-weight: 700;
-          letter-spacing: 0.01em;
-          white-space: nowrap;
+        /* PNG image buttons — transparent bg, full clickable area */
+        .city-btn-img {
+          display: block;
+          height: 56px;
+          width: auto;
+          cursor: pointer;
+          transition: transform 0.18s ease, filter 0.18s ease;
+          -webkit-user-drag: none;
+          user-select: none;
+        }
+        .city-btn-img:hover {
+          transform: translateY(-2px) scale(1.03);
+          filter: brightness(1.08);
+        }
+        .city-btn-img:active {
+          transform: translateY(0) scale(0.98);
+          filter: brightness(0.95);
+        }
+        a.city-btn-link {
+          display: inline-block;
+          line-height: 0;
+          text-decoration: none;
         }
 
         /* popular name tag */
@@ -308,13 +322,13 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
               </div>
             )}
 
-            {/* CTAs */}
+            {/* CTAs — custom PNG buttons */}
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 'var(--space-10)', alignItems: 'center' }}>
-              <Link href="/research" className="btn btn-primary city-cta">
-                Access The Lab
+              <Link href="/research" className="city-btn-link">
+                <Image src="/images/buttons/btn-access.png" alt="Access The Lab" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 56 }} />
               </Link>
-              <Link href={`/${DEFAULT_STORE_SLUG}`} className="btn btn-secondary city-cta">
-                Browse Catalog
+              <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-btn-link">
+                <Image src="/images/buttons/btn-browse.png" alt="Browse Catalog" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 56 }} />
               </Link>
             </div>
 
@@ -351,10 +365,11 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             FEATURED PEPTIDES - LIVE storefront Top 10 (same names + prices)
         ═════════════════════════════════════════════ */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
-          {/* Dynamic molecule BG */}
-          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(0,196,188,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
+          {/* Nano Banana background */}
+          <Image src="/images/city-sections/bg-catalog.jpg" alt="" fill aria-hidden
+            sizes="100vw" quality={40} style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.35 }} />
           {/* Dark overlay */}
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,15,20,0.85) 40%, var(--black-2) 100%)', zIndex: 1 }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,15,20,0.55) 40%, var(--black) 100%)', zIndex: 1 }} />
 
           <div className="container" style={{ position: 'relative', zIndex: 2 }}>
             {/* Section header */}
@@ -435,8 +450,8 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
 
             {/* See full catalog CTA */}
             <div style={{ textAlign: 'center', marginTop: 'var(--space-12)' }}>
-              <Link href={`/${DEFAULT_STORE_SLUG}`} className="btn btn-primary city-cta">
-                Browse Full Research Catalog
+              <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-btn-link">
+                <Image src="/images/buttons/btn-browse-full.png" alt="Browse Full Research Catalog" width={420} height={56} className="city-btn-img" style={{ width: 'auto', height: 56 }} />
               </Link>
             </div>
           </div>
@@ -447,8 +462,12 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             AI assistants and featured snippets quote exactly this kind
             of self-contained factual block)
         ═════════════════════════════════════════════ */}
-        <section style={{ padding: 'clamp(40px, 5vw, 64px) 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className="container">
+        <section style={{ position: 'relative', padding: 'clamp(40px, 5vw, 64px) 0', borderTop: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+          {/* Nano Banana background */}
+          <Image src="/images/city-sections/bg-facts.jpg" alt="" fill aria-hidden
+            sizes="100vw" quality={35} style={{ objectFit: 'cover', objectPosition: 'center top', opacity: 0.22 }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,10,18,0.7) 50%, var(--black) 100%)', zIndex: 1 }} />
+          <div className="container" style={{ position: 'relative', zIndex: 2 }}>
             <h2 style={{ color: 'var(--white)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 'var(--space-4)' }}>
               Research Peptide Supply In {city.name} - At A Glance
             </h2>
@@ -482,10 +501,10 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             WHY PEP NATION LAB - dynamic BG + Nano Banana 3D icons
         ═════════════════════════════════════════════ */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
-          {/* Dynamic neural/hex BG */}
-          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 70% 30%, rgba(192,184,168,0.08) 0%, transparent 60%)', pointerEvents: 'none' }} />
-          {/* Overlay */}
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,15,20,0.8) 50%, var(--black) 100%)', zIndex: 1 }} />
+          {/* Nano Banana background */}
+          <Image src="/images/city-sections/bg-why.jpg" alt="" fill aria-hidden
+            sizes="100vw" quality={40} style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.3 }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(4,8,16,0.55) 50%, var(--black) 100%)', zIndex: 1 }} />
 
           <div className="container" style={{ position: 'relative', zIndex: 2 }}>
             <div style={{ textAlign: 'center', marginBottom: 'clamp(40px, 5vw, 64px)' }}>
@@ -532,9 +551,10 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             AGENT NETWORK CTA
         ═════════════════════════════════════════════ */}
         <section style={{ position: 'relative', borderTop: 'var(--border-subtle)', borderBottom: 'var(--border-subtle)', padding: 'clamp(48px, 6vw, 80px) 0', overflow: 'hidden' }}>
-          {/* Reuse the catalog BG at a different opacity */}
-          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center bottom, rgba(0,196,188,0.04) 0%, transparent 80%)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'var(--black-2)', opacity: 0.75, zIndex: 1 }} />
+          {/* Nano Banana background */}
+          <Image src="/images/city-sections/bg-agent.jpg" alt="" fill aria-hidden
+            sizes="100vw" quality={40} style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.45 }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(3,8,12,0.5) 50%, var(--black) 100%)', zIndex: 1 }} />
 
           <div className="container" style={{ position: 'relative', zIndex: 2 }}>
             <div style={{ background: 'linear-gradient(135deg, rgba(0,196,188,0.06) 0%, rgba(0,0,0,0) 60%)', border: 'var(--border-teal)', borderRadius: 'var(--radius-2xl)', padding: 'clamp(28px, 4vw, 52px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
@@ -550,9 +570,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
                   Join the Pep Nation Lab agent network and build your business in the {region} area. Earn recurring commissions by connecting qualified researchers with premium compounds at wholesale pricing.
                 </p>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                <Link href="/become-agent" className="btn btn-primary city-cta">
-                  Become An Agent
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
+                <Link href="/become-agent" className="city-btn-link">
+                  <Image src="/images/buttons/btn-agent.png" alt="Become An Agent" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 56 }} />
                 </Link>
                 <Link href="/login" style={{ fontSize: '0.8rem', color: 'var(--grey-500)', textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center' }}>
                   Already An Agent? Sign In
@@ -566,8 +586,10 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             FAQ - dynamic hero BG reused at low opacity
         ═════════════════════════════════════════════ */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at right center, rgba(0,196,188,0.03) 0%, transparent 60%)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,10,15,0.9) 50%, var(--black) 100%)', zIndex: 1 }} />
+          {/* Nano Banana background */}
+          <Image src="/images/city-sections/bg-faq.jpg" alt="" fill aria-hidden
+            sizes="100vw" quality={35} style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.28 }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(3,6,8,0.55) 50%, var(--black) 100%)', zIndex: 1 }} />
 
           <div className="container" style={{ position: 'relative', zIndex: 2, maxWidth: 780, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 'clamp(40px, 5vw, 56px)' }}>
@@ -607,8 +629,10 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             FINAL CTA
         ═════════════════════════════════════════════ */}
         <section style={{ position: 'relative', borderTop: 'var(--border-subtle)', padding: 'clamp(64px, 8vw, 100px) 0', textAlign: 'center', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(192,184,168,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'var(--black-2)', opacity: 0.8, zIndex: 1 }} />
+          {/* Nano Banana background */}
+          <Image src="/images/city-sections/bg-cta.jpg" alt="" fill aria-hidden
+            sizes="100vw" quality={40} style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.5 }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(2,5,8,0.4) 50%, var(--black) 100%)', zIndex: 1 }} />
 
           <div className="container" style={{ position: 'relative', zIndex: 2, maxWidth: 620 }}>
 
@@ -621,11 +645,11 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             </p>
 
             <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
-              <Link href="/research" className="btn btn-primary city-cta">
-                Access The Lab
+              <Link href="/research" className="city-btn-link">
+                <Image src="/images/buttons/btn-access.png" alt="Access The Lab" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 56 }} />
               </Link>
-              <Link href={`/${DEFAULT_STORE_SLUG}`} className="btn btn-secondary city-cta">
-                Browse Full Catalog
+              <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-btn-link">
+                <Image src="/images/buttons/btn-browse-full.png" alt="Browse Full Catalog" width={420} height={56} className="city-btn-img" style={{ width: 'auto', height: 56 }} />
               </Link>
             </div>
 

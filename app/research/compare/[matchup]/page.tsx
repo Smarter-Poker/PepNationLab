@@ -204,6 +204,16 @@ export default async function ComparisonPage({ params }: { params: Promise<{ mat
         </table>
       </section>
 
+      {/* Deep-link into the interactive tool with this pair preselected. */}
+      <div style={{ margin: '0 0 28px' }}>
+        <Link
+          href={`/research/compare?compare=${a.slug},${b.slug}`}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--teal, #00C4BC)', color: '#050A0F', fontWeight: 700, textDecoration: 'none', padding: '11px 22px', borderRadius: 10, fontSize: '0.95rem' }}
+        >
+          Open {a.display_name} And {b.display_name} In The Interactive Comparison Tool
+        </Link>
+      </div>
+
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--space-4, 16px)', margin: '0 0 28px' }}>
         {[a, b].map((c) => (
           <div key={c.slug} style={{ border: '1px solid rgba(192,184,168,0.14)', borderRadius: 12, padding: 'var(--space-4, 16px)' }}>
@@ -230,7 +240,7 @@ export default async function ComparisonPage({ params }: { params: Promise<{ mat
         <p style={{ margin: 0, lineHeight: 1.7 }}>
           <Link href={`/research/${a.slug}`} style={linkStyle}>{a.display_name}</Link>{' · '}
           <Link href={`/research/${b.slug}`} style={linkStyle}>{b.display_name}</Link>{' · '}
-          <Link href="/research/compare" style={linkStyle}>Compare Tool</Link>{' · '}
+          <Link href={`/research/compare?compare=${a.slug},${b.slug}`} style={linkStyle}>Compare Tool</Link>{' · '}
           <Link href="/research" style={linkStyle}>Research Library</Link>
         </p>
       </section>
