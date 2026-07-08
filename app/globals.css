@@ -3638,23 +3638,18 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
 }
 
 @media (max-width: 768px) {
-  /* React serializes inline styles WITHOUT a space after the colon
-     ("font-size:0.65rem"), so the no-space variants below are the ones
-     that actually match in production. Prefix matching ("0.6" / "0.7")
-     covers every hundredth value in one selector. The legacy spaced
-     variants are kept for any hand-written HTML. */
+  /* Inline font-size floor for legibility. Two serialization paths exist and
+     BOTH must be matched:
+       - Server-rendered markup emits NO space  -> "font-size:0.55rem"
+       - Client-rendered (React CSSOM) normalizes WITH a space -> "font-size: 0.55rem"
+     Prefix matching ("0.5"/"0.6"/"0.7") floors every hundredth value in one
+     selector across both paths. */
   [style*="font-size:0.5"],
   [style*="font-size:0.6"],
   [style*="font-size:0.7"],
-  [style*="font-size: 0.62rem"],
-  [style*="font-size: 0.65rem"],
-  [style*="font-size: 0.68rem"],
-  [style*="font-size: 0.7rem"],
-  [style*="font-size: 0.72rem"],
-  [style*="font-size: 0.74rem"],
-  [style*="font-size: 0.75rem"],
-  [style*="font-size: 0.76rem"],
-  [style*="font-size: 0.78rem"] {
+  [style*="font-size: 0.5"],
+  [style*="font-size: 0.6"],
+  [style*="font-size: 0.7"] {
     font-size: 0.82rem !important;
   }
 }

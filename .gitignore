@@ -74,3 +74,4 @@ SalesTimeseries_b64.txt
 *Timeseries_b64.txt
 tsconfig.regcheck.json
 err_reg.txt
+tsconfig.vecheck.json

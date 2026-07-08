@@ -180,6 +180,7 @@ export default function RootLayout({
                     'https://www.crunchbase.com/organization/pep-nation-lab', // ✅ confirmed
                     'https://www.reddit.com/user/PepNationLab/',      // ✅ confirmed
                     // ── Additional: AI-model-weighted platforms ──────────────────
+                    'https://www.bing.com/forbusiness/singleEntity?bizid=cefae10a-706b-4455-acdf-fbc9094f60a3', // ✅ Bing entity confirmed
                     'https://www.trustpilot.com/review/pepnationlab.com', // ✅ confirmed
                     'https://www.tiktok.com/@pepnationlab',            // ✅ confirmed
                     'https://www.pinterest.com/PepNationLab/',         // ✅ confirmed

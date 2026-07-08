@@ -123,6 +123,76 @@ export async function assertPublicUrl(raw: string): Promise<URL | null> {
 }
 
 /**
+ * Resolve a hostname to the set of IPs we consider safe, validating each one.
+ * Returns the validated IP list, or null if the host is a literal/resolves to
+ * anything unsafe (so callers fail closed). A literal-IP host validates itself.
+ */
+async function resolveSafeAddresses(
+  hostname: string,
+): Promise<Array<{ address: string; family: number }> | null> {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  const ipKind = isIP(host);
+  if (ipKind === 4) return isPrivateOrLoopbackIPv4(host) ? null : [{ address: host, family: 4 }];
+  if (ipKind === 6) return isPrivateOrLoopbackIPv6(host) ? null : [{ address: host, family: 6 }];
+
+  // Reuse the name blocklist from isSsrfTarget for non-IP hosts.
+  if (await isSsrfTarget(host)) return null;
+
+  try {
+    const addrs = await lookup(host, { all: true });
+    if (!addrs.length) return null;
+    for (const a of addrs) {
+      if (a.family === 4 && isPrivateOrLoopbackIPv4(a.address)) return null;
+      if (a.family === 6 && isPrivateOrLoopbackIPv6(a.address)) return null;
+    }
+    return addrs.map((a) => ({ address: a.address, family: a.family }));
+  } catch {
+    return null; // DNS failure -> fail closed
+  }
+}
+
+/**
+ * Build an undici Agent whose connect step is PINNED to a pre-validated IP set,
+ * closing the DNS-rebinding TOCTOU window: the address the socket connects to
+ * is the same one we validated, not a fresh (possibly re-poisoned) resolution.
+ * SNI/cert validation still uses the original hostname (undici passes the
+ * request host as `servername`), so HTTPS stays correct. Returns null when
+ * undici isn't resolvable, so callers can degrade to plain validated fetch.
+ */
+function buildPinnedDispatcher(
+  validated: Array<{ address: string; family: number }>,
+): unknown | null {
+  try {
+    // Resolve via a variable so bundlers don't hoist a hard dependency; undici
+    // ships inside Node 20's runtime that Next uses server-side.
+    const mod = 'undici';
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Agent } = require(mod);
+    const allowed = new Set(validated.map((v) => v.address));
+    const primary = validated[0];
+    return new Agent({
+      connect: {
+        // undici calls this in place of dns.lookup. Hand back ONLY the
+        // validated address; reject anything a re-resolution would introduce.
+        lookup(
+          _hostname: string,
+          _opts: unknown,
+          cb: (err: Error | null, address?: string, family?: number) => void,
+        ) {
+          if (allowed.has(primary.address)) {
+            cb(null, primary.address, primary.family);
+          } else {
+            cb(new Error('SSRF_BLOCKED: no validated address'));
+          }
+        },
+      },
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
  * SSRF-safe replacement for `fetch` when the destination is user-influenced.
  *
  * Validates the initial URL, then follows redirects MANUALLY (default
@@ -141,7 +211,25 @@ export async function safeFetch(
   if (!current) throw new Error('SSRF_BLOCKED: destination host is not allowed');
 
   for (let hop = 0; hop <= maxRedirects; hop++) {
-    const res = await fetch(current.toString(), { ...init, redirect: 'manual' });
+    // Re-resolve and validate the CURRENT host, then pin the socket to that
+    // exact validated IP for this hop. Without pinning, the IP validated by
+    // assertPublicUrl and the IP fetch() connects to are two independent DNS
+    // lookups — a 0-TTL attacker record can pass the first and rebind before
+    // the second (TOCTOU). With the pinned dispatcher they are the same IP.
+    const validated = await resolveSafeAddresses(current.hostname);
+    if (!validated) throw new Error('SSRF_BLOCKED: host resolves to a disallowed address');
+    const dispatcher = buildPinnedDispatcher(validated);
+
+    const fetchInit: RequestInit & { dispatcher?: unknown } = {
+      ...init,
+      redirect: 'manual',
+    };
+    // Only attach the pinned dispatcher when undici was resolvable. If not, we
+    // still have the (re-validated) host check above — strictly no weaker than
+    // the previous implementation.
+    if (dispatcher) fetchInit.dispatcher = dispatcher;
+
+    const res = await fetch(current.toString(), fetchInit as RequestInit);
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get('location');
       if (!location) return res; // redirect with no target -> hand back as-is
