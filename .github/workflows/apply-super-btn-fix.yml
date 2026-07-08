@@ -1,0 +1,90 @@
+# One-shot, self-deleting workflow: hide the Make Super / Revoke Super
+# button from non-admin viewers in AgentAccountDetail. PLATFORM RULE: super
+# agents may ONLY promote researchers in their own downline to full Agent -
+# granting super status is admin-only (the API already rejects non-admins;
+# this removes the misleading button). Assertion-guarded: aborts without
+# committing on any mismatch. Applied and tsc-verified locally first.
+
+name: Apply Super Button Visibility Fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-super-btn-fix.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply replacements with assertions
+        run: |
+          cat > /tmp/super-btn.js <<'BTN_EOF'
+          const fs = require('fs');
+          const FILE = 'components/AgentAccountDetail.tsx';
+          let s = fs.readFileSync(FILE, 'utf8');
+          function rep(from, to, expected) {
+            const parts = s.split(from);
+            if (parts.length - 1 !== expected) { console.error('ASSERTION FAILED (' + (parts.length - 1) + ' vs ' + expected + '): ' + JSON.stringify(from.slice(0, 80))); process.exit(1); }
+            s = parts.join(to);
+            console.log('OK: ' + JSON.stringify(from.slice(0, 50)));
+          }
+          rep(
+            "import ViewAsButton from '@/components/ViewAsButton';",
+            "import ViewAsButton from '@/components/ViewAsButton';\nimport { createClient } from '@/lib/supabase/client';",
+            1
+          );
+          rep(
+            '  const [detail, setDetail] = useState<Detail | null>(null);',
+            [
+              '  const [detail, setDetail] = useState<Detail | null>(null);',
+              '  // PLATFORM RULE: super agents may ONLY promote researchers in their own',
+              '  // downline to full Agent. Granting or revoking SUPER agent status is an',
+              '  // admin-only action (the API already rejects non-admins), so the Make',
+              '  // Super button must only render for admin viewers.',
+              '  const [viewerIsAdmin, setViewerIsAdmin] = useState(false);',
+              '  useEffect(() => {',
+              '    const supabase = createClient();',
+              '    supabase.auth.getUser().then(async ({ data: { user } }) => {',
+              '      if (!user) return;',
+              "      const { data } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();",
+              "      setViewerIsAdmin(data?.role === 'admin');",
+              '    });',
+              '  }, []);',
+            ].join('\n'),
+            1
+          );
+          rep(
+            "              {detail && (\n                <button \n                  onClick={async () => {\n                    try {\n                      const res = await fetch('/api/admin/agents/super-upgrade', {",
+            "              {detail && viewerIsAdmin && (\n                <button \n                  onClick={async () => {\n                    try {\n                      const res = await fetch('/api/admin/agents/super-upgrade', {",
+            1
+          );
+          fs.writeFileSync(FILE, s);
+          console.log('Done.');
+
+          BTN_EOF
+          node /tmp/super-btn.js
+
+      - name: Commit, remove this workflow, push
+        run: |
+          git config user.name 'gate-migration-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -q .github/workflows/apply-super-btn-fix.yml
+          git add components/AgentAccountDetail.tsx
+          git commit -m 'Hide Make Super button from non-admin viewers
+
+          PLATFORM RULE: super agents may ONLY promote researchers in their
+          own downline to full Agent. Granting or revoking super agent status
+          is admin-only - the /api/admin/agents/super-upgrade route already
+          rejects non-admins, but the button rendered for super agents and
+          produced a 403 toast. It now renders only when the signed-in viewer
+          is an admin.'
+          git pull --rebase origin main
+          git push origin main
