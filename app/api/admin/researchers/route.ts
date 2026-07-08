@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 
     if (rawQuery) {
       // P0 1.23: PostgREST .or() injection - sanitize syntax-significant chars.
-      const sanitized = rawQuery.replace(/[%,():"'\\_[\]]/g, '').trim().slice(0, 60);
+      const sanitized = rawQuery.replace(/[%,():\"'\\_[\]]/g, '').trim().slice(0, 60);
       if (sanitized) {
         dbQuery = dbQuery.or(
           `full_name.ilike.%${sanitized}%,username.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`
@@ -222,16 +222,21 @@ export async function POST(req: NextRequest) {
         newParentAgentId = owner.id;
       }
 
-      const { error: assignErr } = await supabase
-        .from('profiles')
-        .update({
-          referring_agent_id: newReferringAgentId,
-          parent_agent_id: newParentAgentId,
-          referring_sub_agent_id: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id);
-      if (assignErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+      // Ownership changes go through the sanctioned SECURITY DEFINER RPC.
+      // A direct profiles UPDATE is blocked by the
+      // enforce_researcher_agent_binding trigger, which makes
+      // referring_agent_id immutable to protect agents' researcher lists
+      // from being poached by any other write path. The RPC (service_role
+      // execute only) sets a transaction-local flag that trigger honors.
+      const { error: assignErr } = await supabase.rpc('admin_reassign_researcher', {
+        p_researcher_id: id,
+        p_new_referring_agent_id: newReferringAgentId,
+        p_new_parent_agent_id: newParentAgentId,
+      });
+      if (assignErr) {
+        console.error('[admin/researchers] assign_researcher rpc failed:', assignErr.message);
+        return NextResponse.json({ error: `Reassignment Failed: ${assignErr.message}` }, { status: 500 });
+      }
 
       await supabase.from('admin_audit_log').insert({
         actor_id: gate.userId,
