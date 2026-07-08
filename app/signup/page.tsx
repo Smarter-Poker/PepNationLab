@@ -446,7 +446,15 @@ function SignupForm() {
                     onChange={e => setAcks(prev => ({ ...prev, [a.key]: e.target.checked }))}
                     style={{ marginTop: 3, accentColor: 'var(--teal)', flexShrink: 0 }}
                   />
-                  <span style={{ fontSize: '0.78rem', color: 'var(--grey-300)', lineHeight: 1.5 }}>{a.text}</span>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--grey-300)', lineHeight: 1.5 }}>
+                    {a.key === 'c3' ? (
+                      <>
+                        I Have Read And Accept The <a href="/terms" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--teal)', textDecoration: 'underline' }}>Terms Of Service</a>, <a href="/privacy" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--teal)', textDecoration: 'underline' }}>Privacy Policy</a>, And <a href="/compliance" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--teal)', textDecoration: 'underline' }}>Research-Only Compliance Requirements</a>.
+                      </>
+                    ) : (
+                      a.text
+                    )}
+                  </span>
                 </label>
               ))}
             </div>
