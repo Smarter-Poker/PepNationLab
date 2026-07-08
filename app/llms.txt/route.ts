@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { GUIDES } from '@/lib/research/guides';
+import { CITIES, getStateName } from '@/lib/cities/cities-data';
 
 export const revalidate = 3600; // Cache for 1 hour
 
@@ -48,7 +49,21 @@ export async function GET() {
   text += `- [About Pep Nation Lab](${base}/about): Company and platform overview.\n\n`;
 
   text += `## Local Coverage Directory\n`;
-  text += `- [Peptides By City](${base}/peptides): Directory of covered US cities, organized by state. Nearly 300 city pages, each describing local research peptide supply, FAQs, and featured compounds.\n\n`;
+  text += `- [Peptides By City](${base}/peptides): Directory of covered US cities, organized by state. Each city page describes local research peptide supply, FAQs, and featured compounds.\n`;
+  // Factual state-hub index: enumerates each state directory with its city count
+  // so answer engines can resolve state-level availability queries to a concrete
+  // page. Data-driven from cities-data.ts; no promotional or ranking claims.
+  const stateCounts = new Map<string, number>();
+  for (const c of CITIES) stateCounts.set(c.stateSlug, (stateCounts.get(c.stateSlug) ?? 0) + 1);
+  const stateHubs = [...stateCounts.entries()]
+    .map(([slug, count]) => ({ slug, name: getStateName(slug), count }))
+    .sort((a, b) => b.count - a.count);
+  const totalCities = CITIES.length;
+  text += `\nPep Nation Lab publishes local research-availability directories for ${totalCities} cities across ${stateHubs.length} US states. State directories:\n`;
+  for (const h of stateHubs) {
+    text += `- [Research Peptides In ${h.name}](${base}/peptides/${h.slug}): ${h.count} cit${h.count === 1 ? 'y' : 'ies'} with local research peptide supply information.\n`;
+  }
+  text += `\n`;
 
   text += `## Research Guides\n`;
   text += `In-depth, RUO-compliant guides for qualified researchers.\n`;
