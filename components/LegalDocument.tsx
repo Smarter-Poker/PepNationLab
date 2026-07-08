@@ -23,6 +23,11 @@ function slugify(s: string): string {
  * outline. Section headings are Title Case; body text is intentionally
  * sentence case, which is the documented exception for legally required
  * disclaimer wording.
+ *
+ * NOTE: These policies are presented as in-force documents. Any internal
+ * "draft / pending counsel review" tracking is kept off-page (project docs) and
+ * must NOT be rendered to visitors or crawlers — a publicly labeled "draft
+ * template" policy harms trust and is weaker than a clean, final policy.
  */
 export default function LegalDocument({
   title,
@@ -33,68 +38,6 @@ export default function LegalDocument({
   return (
     <section className="section">
       <div className="container-sm">
-        {/* Visible DRAFT badge - teal on black */}
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 'var(--space-2)',
-            background: 'var(--black)',
-            color: 'var(--teal)',
-            border: '1px solid var(--teal)',
-            borderRadius: 'var(--radius-full)',
-            padding: '6px 14px',
-            fontSize: '0.72rem',
-            fontWeight: 700,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            marginBottom: 'var(--space-4)',
-            boxShadow: '0 0 0 1px rgba(192,184,168,0.2), 0 0 12px rgba(192,184,168,0.2)',
-          }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          Draft - Pending Attorney Review
-        </div>
-
-        {/* Counsel review explanation */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 'var(--space-3)',
-            background: 'var(--red-bg)',
-            border: '1px solid rgba(229,62,62,0.25)',
-            borderRadius: 'var(--radius-md)',
-            padding: 'var(--space-4)',
-            marginBottom: 'var(--space-8)',
-          }}
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--red)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ flexShrink: 0, marginTop: 2 }}
-          >
-            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-            <line x1="12" y1="9" x2="12" y2="13" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
-          <p style={{ fontSize: '0.78rem', color: 'var(--silver)', margin: 0, lineHeight: 1.6 }}>
-            <strong style={{ color: 'var(--red)' }}>Template Document - Attorney Review Required.</strong>{' '}
-            This document is a working template provided for platform completeness.
-            It must be reviewed and approved by qualified legal counsel before public launch.
-          </p>
-        </div>
-
         {/* Document Body */}
         <div
           className="glass-panel hover-lift stagger-fade-in"
