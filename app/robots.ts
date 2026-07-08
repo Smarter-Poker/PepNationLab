@@ -27,7 +27,6 @@ const ALLOW = [
   '/peptide-101',
   '/peptide-101/',
   '/products',
-  '/shipping',
 
   // Local SEO - Peptides by City (prefix covers /peptides/[state]/[city])
   '/peptides',
@@ -106,6 +105,7 @@ const DISALLOW = [
   '/api/',
   '/dashboard',
   '/dashboard/',
+  '/shipping',
   '/checkout',
   '/orders',
   '/messages',
