@@ -2390,16 +2390,16 @@ html[data-theme="light"] .messenger-back-btn {
 }
 
 /* VIP Pulse Glow */
-@keyframes gold-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); }
-  70% { box-shadow: 0 0 0 6px rgba(255, 215, 0, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+@keyframes vip-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(208, 218, 228, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(208, 218, 228, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(208, 218, 228, 0); }
 }
 
 .vip-badge-glow {
-  animation: gold-pulse 2s infinite;
-  border: 1px solid rgba(255, 215, 0, 0.5) !important;
-  color: #FFD700 !important;
+  animation: vip-pulse 2s infinite;
+  border: 1px solid rgba(208, 218, 228, 0.5) !important;
+  color: #D0DAE4 !important;
 }
 
 /* Path drawing animation for Sparklines */
@@ -3877,6 +3877,7 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
 @media (max-width: 768px) {
   /* No-space variants match React's serialized inline styles. */
   [style*="font-size:0.80rem"],
+  [style*="font-size: 0.80rem"],
   [style*="font-size:0.81rem"],
   [style*="font-size: 0.66rem"],
   [style*="font-size: 0.67rem"],

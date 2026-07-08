@@ -1426,22 +1426,11 @@ export default function DiscoveryHero({
           boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
         }}
       >
-        {/* Match Me Button Overlay — runs the AI match engine on the typed goal
-            (opening the results drawer). If nothing is typed yet, focus the
-            search box so the researcher can describe their goal, then match. */}
+        {/* Match Me Button Overlay */}
         <button
           type="button"
           onClick={() => {
-            if (query.trim()) {
-              void submitTypedGoal();
-            } else {
-              const el = document.getElementById('discovery-search-input') as HTMLInputElement | null;
-              if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                el.focus();
-                setSuggestOpen(true);
-              }
-            }
+            if (onAlreadyKnowClicked) onAlreadyKnowClicked();
           }}
           title="Match Me"
           style={{
@@ -1451,11 +1440,12 @@ export default function DiscoveryHero({
           aria-label="Match Me"
         />
 
-        {/* Let Us Guide You Button Overlay — opens the step-by-step guided wizard
-            that funnels answers into the match engine. */}
+        {/* Let Us Guide You Button Overlay */}
         <button
           type="button"
-          onClick={() => setWizardOpen(true)}
+          onClick={() => {
+            if (onAlreadyKnowClicked) onAlreadyKnowClicked();
+          }}
           title="Let Us Guide You"
           style={{
             position: 'absolute', top: '85%', left: '52%', width: '33%', height: '8%',
@@ -1486,15 +1476,12 @@ export default function DiscoveryHero({
               setSuggestOpen(true);
             }}
             onFocus={() => setSuggestOpen(true)}
-            onKeyDown={(e) => {
+            onKeyDown={(e) => { 
               if (e.key === 'Enter' && query.trim()) {
                 e.preventDefault();
                 addHistory(query.trim());
-                // Run the in-page AI match engine (opens the results drawer) rather
-                // than navigating away to the store grid. This makes the "Ask Us
-                // Anything" box, the Match Me button, and the guided wizard all funnel
-                // into the same match experience.
-                void submitTypedGoal();
+                onSelectArea(''); // Clear filter
+                if (onSearchStarted) onSearchStarted(query.trim());
               }
             }}
             placeholder="Ask Us Anything..."

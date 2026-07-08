@@ -27,6 +27,7 @@ import {
   Target, Flame, X, ChevronDown, ChevronUp, Mail, Activity as ActivityIcon,
   Table as TableIcon, LayoutGrid, BarChart3, GitBranch, Printer, Bell,
   CheckCircle2, UserCheck, ArrowUpRight, StickyNote, Shield, RefreshCw,
+  UserPlus,
 } from 'lucide-react';
 import {
   KanbanView, ChartsView, AcquisitionView, useInsights,
@@ -98,11 +99,11 @@ export interface CRMExternalProps {
 
 const STATUS_STYLES: Record<Status, { label: string; bg: string; fg: string; border: string }> = {
   lead:        { label: 'Lead',        bg: 'rgba(168,180,192,0.10)', fg: '#A8B4C0', border: 'rgba(168,180,192,0.40)' },
-  new:         { label: 'New',         bg: 'rgba(96,165,250,0.12)',  fg: '#60A5FA', border: 'rgba(96,165,250,0.45)' },
+  new:         { label: 'New',         bg: 'rgba(94,234,212,0.12)',  fg: '#5EEAD4', border: 'rgba(94,234,212,0.42)' },
   first_order: { label: 'First Order', bg: 'rgba(45,212,191,0.12)',  fg: '#2DD4BF', border: 'rgba(45,212,191,0.45)' },
   active:      { label: 'Active',      bg: 'rgba(0,196,188,0.12)',   fg: '#00C4BC', border: 'rgba(0,196,188,0.45)' },
-  vip:         { label: 'VIP',       bg: 'rgba(250,204,21,0.14)',  fg: '#FACC15', border: 'rgba(250,204,21,0.55)' },
-  at_risk:     { label: 'At Risk',     bg: 'rgba(245,158,11,0.14)',  fg: '#F59E0B', border: 'rgba(245,158,11,0.50)' },
+  vip:         { label: 'VIP',         bg: 'rgba(208,218,228,0.14)', fg: '#D0DAE4', border: 'rgba(208,218,228,0.55)' },
+  at_risk:     { label: 'At Risk',     bg: 'rgba(248,113,113,0.14)', fg: '#F87171', border: 'rgba(248,113,113,0.50)' },
   churned:     { label: 'Churned',     bg: 'rgba(239,68,68,0.14)',   fg: '#EF4444', border: 'rgba(239,68,68,0.50)' },
 };
 
@@ -143,7 +144,7 @@ function onboardScore(r: Researcher): { score: number; label: string; color: str
   const hasLogin = !!(r.last_login ?? r.last_sign_in_at);
   if (hasLogin) score += 25;
   if (r.orders_count > 0) score += 25;
-  const color = score === 100 ? '#00C4BC' : score >= 50 ? '#F59E0B' : '#EF4444';
+  const color = score === 100 ? '#00C4BC' : score >= 50 ? '#2DD4BF' : '#EF4444';
   const label = score === 100 ? 'Complete' : score >= 75 ? 'Almost' : score >= 50 ? 'Partial' : 'New';
   return { score, label, color };
 }
@@ -230,7 +231,7 @@ function StatusBadge({ status }: { status: Status }) {
 
 function ChurnBar({ risk }: { risk: number }) {
   const pct = Math.max(0, Math.min(100, Math.round(safe(risk))));
-  const color = pct >= 70 ? '#EF4444' : pct >= 40 ? '#F59E0B' : '#2DD4BF';
+  const color = pct >= 70 ? '#EF4444' : pct >= 40 ? '#A8B4C0' : '#2DD4BF';
   return (
     <Tooltip text={`Churn Risk ${pct}%`}>
       <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 999, overflow: 'hidden' }}>
@@ -328,7 +329,7 @@ function GoalHeader({ goal, onSetGoal }: {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <div style={{ fontSize: '0.69rem', color: '#7A8B9E', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Goal Progress</div>
           {goal.streak_months > 0 ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#F59E0B', fontWeight: 700, fontSize: '0.75rem' }}><Flame size={12} aria-hidden /> {goal.streak_months} Month Streak!</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#2DD4BF', fontWeight: 700, fontSize: '0.75rem' }}><Flame size={12} aria-hidden /> {goal.streak_months} Month Streak!</span>
           ) : (
             <span style={{ fontSize: '0.75rem', color: '#FFFFFF', fontWeight: 600 }}>Keep Pushing!</span>
           )}
@@ -501,8 +502,8 @@ function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag
         <div style={{ minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              {r.is_pinned && <Pin size={10} color="#FACC15" aria-hidden />}
-              {r.has_open_reminder && <Bell size={10} color="#60A5FA" aria-hidden />}
+              {r.is_pinned && <Pin size={10} color="#00C4BC" aria-hidden />}
+              {r.has_open_reminder && <Bell size={10} color="#2DD4BF" aria-hidden />}
               {r.full_name || r.username || r.email || 'Researcher'}
             </span>
             {/* Onboarding badge */}
@@ -631,8 +632,8 @@ function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag
 
           {/* Reminders */}
           {(r.reminders?.length ?? 0) > 0 && (
-            <div style={{ marginBottom: 16, padding: '10px 12px', borderRadius: 10, background: 'rgba(96,165,250,0.06)', border: '1px solid rgba(96,165,250,0.18)' }}>
-              <div style={{ fontSize: '0.63rem', color: '#60A5FA', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}><Bell size={10} /> Upcoming Reminders</div>
+            <div style={{ marginBottom: 16, padding: '10px 12px', borderRadius: 10, background: 'rgba(45,212,191,0.06)', border: '1px solid rgba(45,212,191,0.18)' }}>
+              <div style={{ fontSize: '0.63rem', color: '#2DD4BF', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}><Bell size={10} /> Upcoming Reminders</div>
               {r.reminders!.map(rem => (
                 <div key={rem.id} style={{ fontSize: '0.78rem', color: '#E6EEF6', marginBottom: 2 }}>
                   • {rem.title} <span style={{ color: '#7A8B9E', fontSize: '0.70rem' }}> - {new Date(rem.remind_at).toLocaleDateString()}</span>
@@ -676,9 +677,9 @@ function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag
             {isSuperAgent && onPromote && (
               <button type="button"
                 onClick={() => onPromote(r)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 9, background: 'rgba(250,204,21,0.08)', border: '1px solid rgba(250,204,21,0.25)', color: '#FACC15', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(250,204,21,0.15)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(250,204,21,0.08)'; }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 9, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.28)', color: '#00C4BC', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,196,188,0.16)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,196,188,0.08)'; }}>
                 <UserCheck size={12} /> Promote To Agent
               </button>
             )}
@@ -964,16 +965,18 @@ export default function AgentResearcherCRMv2({
 
       {/* Never-logged-in nudge banner */}
       {neverLoggedIn > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 18px', borderRadius: 12, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.22)', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AlertTriangle size={14} color="#F59E0B" aria-hidden />
-            <span style={{ fontSize: '0.8rem', color: '#F59E0B', fontWeight: 700 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 18px', borderRadius: 12, background: 'rgba(0,196,188,0.05)', border: '1px solid rgba(0,196,188,0.20)', borderLeft: '3px solid #00C4BC', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 7, background: 'rgba(0,196,188,0.12)', flexShrink: 0 }}>
+              <UserPlus size={14} color="#2DD4BF" aria-hidden />
+            </span>
+            <span style={{ fontSize: '0.8rem', color: '#FFFFFF', fontWeight: 700 }}>
               {neverLoggedIn} Researcher{neverLoggedIn !== 1 ? 's' : ''} Haven&apos;t Logged In Yet
             </span>
             <span style={{ fontSize: '0.75rem', color: '#7A8B9E' }}>- They Haven&apos;t Activated Their Account</span>
           </div>
           <button type="button" onClick={messageNeverLoggedIn}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 9, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.32)', color: '#F59E0B', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 9, background: 'rgba(0,196,188,0.14)', border: '1px solid rgba(0,196,188,0.34)', color: '#00C4BC', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
             <MessageSquare size={12} /> Message All
           </button>
         </div>
@@ -982,14 +985,14 @@ export default function AgentResearcherCRMv2({
       {/* KPI grid */}
       <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fill, minmax(185px, 1fr))' }}>
         <KpiCard label="Total Researchers" value={fmtInt(k.researchers_count.value)} spark={k.researchers_count.spark ?? []} delta={k.researchers_count.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} />
-        <KpiCard label="Lifetime Revenue" value={fmtUSD(k.lifetime_value.value)} spark={k.lifetime_value.spark ?? []} delta={k.lifetime_value.delta_pct} color="#FACC15" />
-        <KpiCard label="Total Orders" value={fmtInt(k.total_orders.value)} spark={k.total_orders.spark ?? []} delta={k.total_orders.delta_pct} color="#60A5FA" />
+        <KpiCard label="Lifetime Revenue" value={fmtUSD(k.lifetime_value.value)} spark={k.lifetime_value.spark ?? []} delta={k.lifetime_value.delta_pct} color="#00C4BC" />
+        <KpiCard label="Total Orders" value={fmtInt(k.total_orders.value)} spark={k.total_orders.spark ?? []} delta={k.total_orders.delta_pct} color="#2DD4BF" />
         <KpiCard label="Active Buyers" value={fmtInt(k.active_buyers.value)} spark={k.active_buyers.spark ?? []} delta={k.active_buyers.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} />
         <KpiCard label="Avg Order Value" value={fmtUSD(k.avg_order_value.value)} spark={k.avg_order_value.spark ?? []} delta={k.avg_order_value.delta_pct} color="#2DD4BF" />
-        <KpiCard label="Repeat Rate" value={`${Math.round(safe(k.repeat_rate.value))}%`} spark={k.repeat_rate.spark ?? []} delta={k.repeat_rate.delta_pct} color="#A78BFA" />
+        <KpiCard label="Repeat Rate" value={`${Math.round(safe(k.repeat_rate.value))}%`} spark={k.repeat_rate.spark ?? []} delta={k.repeat_rate.delta_pct} color="#5EEAD4" />
         <KpiCard label="New This Month" value={fmtInt(k.new_this_month.value)} spark={k.new_this_month.spark ?? []} delta={k.new_this_month.delta_pct} onClick={() => { setTab('list'); setFilter('new'); }} />
-        <KpiCard label="At Risk" value={fmtInt(k.at_risk.value)} spark={k.at_risk.spark ?? []} delta={k.at_risk.delta_pct} color="#F59E0B" onClick={() => { setTab('list'); setFilter('at_risk'); }} />
-        <KpiCard label="Best Researcher" value={k.best_customer?.label || '-'} spark={k.best_customer?.spark ?? []} delta={k.best_customer?.delta_pct} color="#FACC15" subtitle={(k.best_customer?.value ?? 0) > 0 ? fmtUSD(k.best_customer!.value) : undefined} />
+        <KpiCard label="At Risk" value={fmtInt(k.at_risk.value)} spark={k.at_risk.spark ?? []} delta={k.at_risk.delta_pct} color="#F87171" onClick={() => { setTab('list'); setFilter('at_risk'); }} />
+        <KpiCard label="Best Researcher" value={k.best_customer?.label || '-'} spark={k.best_customer?.spark ?? []} delta={k.best_customer?.delta_pct} color="#D0DAE4" subtitle={(k.best_customer?.value ?? 0) > 0 ? fmtUSD(k.best_customer!.value) : undefined} />
         <KpiCard label="Commission Earned" value={fmtUSD(k.lifetime_commission.value)} spark={k.lifetime_commission.spark ?? []} delta={k.lifetime_commission.delta_pct} color="#2DD4BF" />
       </div>
 

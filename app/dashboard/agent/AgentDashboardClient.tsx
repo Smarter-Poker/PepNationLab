@@ -1108,8 +1108,8 @@ export default function AgentDashboardClient({
                   )}
                   {researcherList.some(r => r.last_sign_in_at === null) && (
                     <span style={{
-                      fontSize: '0.72rem', fontWeight: 700, color: '#F59E0B',
-                      background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.25)',
+                      fontSize: '0.72rem', fontWeight: 700, color: '#A8B4C0',
+                      background: 'rgba(168,180,192,0.10)', border: '1px solid rgba(168,180,192,0.28)',
                       borderRadius: 999, padding: '4px 12px',
                     }}>
                       {researcherList.filter(r => !r.last_sign_in_at).length} Never Logged In
