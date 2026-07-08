@@ -163,19 +163,47 @@ async function AgentStorefrontDataLoader({
 
   const primaryColor = agent.primary_color ?? '#00C4BC';
 
-  const productJsonLds = productsWithCost.map(p => ({
-    '@type': 'Product',
-    name: (p as any).custom_name || (p as any).products?.name,
-    description: (p as any).custom_description || (p as any).products?.description,
-    image: (p as any).custom_image_url || (p as any).products?.image_url,
-    offers: {
-      '@type': 'Offer',
-      price: (p as any).is_on_sale ? (p as any).sale_price : (p as any).retail_price,
-      priceCurrency: 'USD',
-      availability: (inventoryMap.get((p as any).product_id) ?? 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-      url: `https://pepnationlab.com/${agentSlug}`,
-    },
-  }));
+  // Build schema.org/Product nodes defensively. `name` is REQUIRED by Google's
+  // Product structured-data spec; when it resolved to undefined, JSON.stringify
+  // dropped the key entirely and Search Console flagged "Missing field name".
+  // We now skip any product without a real name and only emit an Offer when the
+  // price is a valid positive number, so we never publish an invalid node.
+  // NOTE: review/aggregateRating are intentionally omitted — there is no genuine
+  // review data, and inventing ratings violates Google's structured-data policy.
+  const productJsonLds = productsWithCost
+    .map((p) => {
+      const pp = p as any;
+      const name = String(pp.custom_name || pp.products?.name || '').trim();
+      if (!name) return null;
+      const node: Record<string, unknown> = {
+        '@type': 'Product',
+        name,
+        brand: { '@type': 'Brand', name: 'Pep Nation Lab' },
+      };
+      const description = String(pp.custom_description || pp.products?.description || '').trim();
+      if (description) node.description = description;
+      const rawImage = pp.custom_image_url || pp.products?.image_url;
+      if (rawImage) {
+        node.image = String(rawImage).startsWith('http')
+          ? rawImage
+          : `https://pepnationlab.com${rawImage}`;
+      }
+      const price = Number(pp.is_on_sale ? pp.sale_price : pp.retail_price);
+      if (Number.isFinite(price) && price > 0) {
+        node.offers = {
+          '@type': 'Offer',
+          price: price.toFixed(2),
+          priceCurrency: 'USD',
+          availability:
+            (inventoryMap.get(pp.product_id) ?? 0) > 0
+              ? 'https://schema.org/InStock'
+              : 'https://schema.org/OutOfStock',
+          url: `https://pepnationlab.com/${agentSlug}`,
+        };
+      }
+      return node;
+    })
+    .filter((n): n is Record<string, unknown> => n !== null);
 
   const jsonLd = {
     '@context': 'https://schema.org',
