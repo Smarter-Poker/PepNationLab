@@ -1,0 +1,49 @@
+# One-shot repair: components/research/CompareTool.tsx was pushed to main as a
+# truncated placeholder stub by an earlier automated push. The full 3,626-line
+# file was split into 11 byte-exact parts under .repair/comparetool/ (each part
+# blob-sha verified against the source tree). This workflow reassembles the
+# file, verifies it against two independent hashes, commits it, and deletes
+# both the parts directory and itself. It is intentionally single-purpose and
+# self-removing.
+name: Repair CompareTool
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repair-comparetool
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Assemble, Verify, Commit, Self-Delete
+        run: |
+          set -euo pipefail
+          if [ ! -f .repair/comparetool/part10.txt ]; then
+            echo "Parts incomplete or already consumed; nothing to do."
+            exit 0
+          fi
+          cat .repair/comparetool/part*.txt > components/research/CompareTool.tsx
+          echo "f1dee0eb8fe2cc3a4a6fcf16cb18f1059edabf69f1344f94bc1a3b3969ebb64a  components/research/CompareTool.tsx" | sha256sum -c -
+          test "$(git hash-object components/research/CompareTool.tsx)" = "392b719fe6d5437364e1d9106b7252595ef23bf4"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -r --quiet .repair
+          git rm --quiet .github/workflows/repair-comparetool.yml
+          git add components/research/CompareTool.tsx
+          git commit -m "Fix: restore full CompareTool.tsx from verified parts (sha256 + blob sha checked)"
+          for i in 1 2 3 4 5; do
+            if git push origin main; then exit 0; fi
+            git pull --rebase origin main
+          done
+          exit 1
