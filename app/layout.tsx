@@ -15,6 +15,7 @@ import GlobalCallListener from "@/components/messenger/GlobalCallListener";
 import SessionKeepalive from "@/components/messenger/SessionKeepalive";
 import FirstRunNotificationPrompt from "@/components/FirstRunNotificationPrompt";
 import FlashSaleBanner from "@/components/FlashSaleBanner";
+import GlobalErrorReporter from "@/components/GlobalErrorReporter";
 
 import { Inter } from "next/font/google";
 
@@ -198,6 +199,8 @@ export default function RootLayout({
       </head>
       <body>
         <ThemeProvider>
+          {/* App-wide capture of uncaught errors + unhandled promise rejections. */}
+          <GlobalErrorReporter />
           {/* fix-56 #2: storefront-wide flash sale banner. Self-hides on /admin and /api. */}
           <FlashSaleBanner />
           <StaleBrowserBanner />

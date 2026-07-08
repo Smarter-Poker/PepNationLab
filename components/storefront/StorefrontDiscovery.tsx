@@ -32,6 +32,7 @@ import { ProtocolScheduler } from '../research/ProtocolScheduler';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RESEARCH_AREAS } from '../../lib/compounds';
 import { ShoppingCart, X, Sparkles, ArrowRight, Compass, Check, AlertTriangle } from 'lucide-react';
+import { reportClientError } from '@/lib/report-client-error';
 import AutocompleteDropdown, { type Suggestion } from '../research/AutocompleteDropdown';
 import TrendingSearchesDropdown from '../research/TrendingSearchesDropdown';
 import { useSearchHistory } from '../research/useSearchHistory';
@@ -1325,7 +1326,11 @@ export default function DiscoveryHero({
               }
         ),
       });
-      if (!res.ok) { setMatchError(true); return; }
+      if (!res.ok) {
+        setMatchError(true);
+        reportClientError('find-a-peptide.match', new Error(`match http ${res.status}`), { meta: { status: res.status } });
+        return;
+      }
       const json = await res.json().catch(() => null) as {
         results?: Array<{ 
           slug: string; 
@@ -1359,9 +1364,10 @@ export default function DiscoveryHero({
       });
       setResults(stitched);
       setExcluded(json?.excluded || []);
-    } catch {
+    } catch (e) {
       setResults([]);
       setMatchError(true);
+      reportClientError('find-a-peptide.match', e);
     } finally {
       setLoading(false);
     }
