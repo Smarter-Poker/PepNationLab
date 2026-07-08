@@ -3877,7 +3877,6 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
 @media (max-width: 768px) {
   /* No-space variants match React's serialized inline styles. */
   [style*="font-size:0.80rem"],
-  [style*="font-size: 0.80rem"],
   [style*="font-size:0.81rem"],
   [style*="font-size: 0.66rem"],
   [style*="font-size: 0.67rem"],

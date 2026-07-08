@@ -21,7 +21,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from('profiles')
       .select('*, auto_approve_orders, provisioned_password, agent_profiles(slug, is_active)')
-      .in('role', ['agent', 'super_agent'])
+      .in('role', ['agent', 'super_agent', 'researcher'])
       .order('created_at', { ascending: false })
       .limit(2000);
 
