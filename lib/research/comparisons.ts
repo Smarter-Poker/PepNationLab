@@ -34,6 +34,13 @@ export const COMPARISON_PAIRS: ComparisonPair[] = [
   { a: 'hexarelin', b: 'ipamorelin', angle: 'a potent versus a highly selective ghrelin-receptor secretagogue' },
   { a: 'cjc-1295-dac', b: 'tesamorelin', angle: 'two GHRH analogs with contrasting half-life profiles' },
   { a: 'igf-1-lr3', b: 'ipamorelin', angle: 'a direct IGF-1 analog versus a growth-hormone secretagogue' },
+  // Additional curated, high-intent pairs (all slugs verified in the compounds DB).
+  { a: 'cjc-1295-dac', b: 'cjc-1295-no-dac', angle: 'the DAC versus non-DAC forms of the CJC-1295 GHRH analog' },
+  { a: 'selank', b: 'semax', angle: 'two Russian-developed nootropic and anxiolytic research peptides' },
+  { a: 'ss-31', b: 'mots-c', angle: 'two mitochondrial-targeted peptides in cellular-energy research' },
+  { a: 'thymosin-alpha-1', b: 'll-37', angle: 'two immune-modulating research peptides with distinct mechanisms' },
+  { a: 'aod9604', b: 'hgh-fragment-176-191', angle: 'two HGH-fragment analogs studied for fat-metabolism research' },
+  { a: 'retatrutide', b: 'survodutide', angle: 'next-generation multi-receptor incretin agonists in metabolic research' },
 ];
 
 export function matchupSlug(a: string, b: string): string {
