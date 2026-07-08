@@ -136,8 +136,12 @@ export async function POST(req: NextRequest) {
       const cA = compounds.find(c => c.slug === matches[i].slug);
       const cB = compounds.find(c => c.slug === matches[j].slug);
       if (cA && cB) {
-        const aHasB = cA.stack_components?.includes(cB.slug);
-        const bHasA = cB.stack_components?.includes(cA.slug);
+        // Match the engine's own stack logic: case-insensitive, by slug OR display
+        // name. The previous case-sensitive slug-only check under-detected stacks.
+        const aComp = (cA.stack_components || []).map(s => s.toLowerCase());
+        const bComp = (cB.stack_components || []).map(s => s.toLowerCase());
+        const aHasB = aComp.includes(cB.slug.toLowerCase()) || (!!cB.display_name && aComp.includes(cB.display_name.toLowerCase()));
+        const bHasA = bComp.includes(cA.slug.toLowerCase()) || (!!cA.display_name && bComp.includes(cA.display_name.toLowerCase()));
         if (aHasB || bHasA) {
           matches[i].isStackPartner = true;
           matches[j].isStackPartner = true;

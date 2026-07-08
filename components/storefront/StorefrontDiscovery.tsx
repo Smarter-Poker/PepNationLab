@@ -31,7 +31,7 @@ import { useRouter } from 'next/navigation';
 import { ProtocolScheduler } from '../research/ProtocolScheduler';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RESEARCH_AREAS } from '../../lib/compounds';
-import { ShoppingCart, X, Sparkles, ArrowRight, Compass, Check } from 'lucide-react';
+import { ShoppingCart, X, Sparkles, ArrowRight, Compass, Check, AlertTriangle } from 'lucide-react';
 import AutocompleteDropdown, { type Suggestion } from '../research/AutocompleteDropdown';
 import TrendingSearchesDropdown from '../research/TrendingSearchesDropdown';
 import { useSearchHistory } from '../research/useSearchHistory';
@@ -197,6 +197,8 @@ function MatchResultsDrawer({
   goalSummary,
   followUp,
   submitFollowUp,
+  matchError,
+  onRetry,
   onClose,
   onAddToCart,
   onOpenProduct,
@@ -209,6 +211,8 @@ function MatchResultsDrawer({
   goalSummary: string;
   followUp: { question: string; originalGoal: string } | null;
   submitFollowUp: (answer: string) => void;
+  matchError: boolean;
+  onRetry: () => void;
   onClose: () => void;
   onAddToCart: (productId: string) => void;
   onOpenProduct: (productId: string) => void;
@@ -435,6 +439,18 @@ function MatchResultsDrawer({
                     Our AI Match Engine Is Analyzing Your Research Goal Against All Available Compounds And Data.
                   </div>
                 </div>
+              ) : matchError ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 24px', textAlign: 'center' }}>
+                  <AlertTriangle size={48} color="#E53E3E" style={{ marginBottom: 16, opacity: 0.85 }} />
+                  <h3 style={{ color: '#FFF', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8 }}>Something Went Wrong</h3>
+                  <p style={{ color: '#A8B4C0', marginBottom: 24, lineHeight: 1.5, maxWidth: 340 }}>
+                    We Couldn&apos;t Reach The Match Engine. This Is Usually Temporary — Please Try Again.
+                  </p>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button type="button" onClick={onRetry} style={{ padding: '10px 20px', background: primaryColor, color: '#0A1018', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 800 }}>Try Again</button>
+                    <button type="button" onClick={onClose} style={{ padding: '10px 16px', background: 'transparent', color: primaryColor, border: `1px solid ${primaryColor}`, borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Close</button>
+                  </div>
+                </div>
               ) : followUp ? (
                 <div style={{ padding: '32px 16px', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ marginBottom: 24, padding: 20, background: 'rgba(192,197,206,0.1)', borderRadius: 16, border: '1px solid rgba(192,197,206,0.2)' }}>
@@ -468,8 +484,8 @@ function MatchResultsDrawer({
                     We Couldn&apos;t Find A Protocol Matching All Of Your Strict Constraints (E.G. Oral-Only, Low-Risk).
                   </p>
                   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-                    <button type="button" onClick={() => setFilterOralOnly(false)} style={{ padding: '10px 16px', background: 'rgba(255,255,255,0.1)', color: '#FFF', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Drop Oral-Only</button>
-                    <button type="button" onClick={() => setFilterHumanOnly(false)} style={{ padding: '10px 16px', background: 'rgba(255,255,255,0.1)', color: '#FFF', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Drop Human-Only</button>
+                    {filterOralOnly && <button type="button" onClick={() => setFilterOralOnly(false)} style={{ padding: '10px 16px', background: 'rgba(255,255,255,0.1)', color: '#FFF', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Drop Oral-Only</button>}
+                    {filterHumanOnly && <button type="button" onClick={() => setFilterHumanOnly(false)} style={{ padding: '10px 16px', background: 'rgba(255,255,255,0.1)', color: '#FFF', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Drop Human-Only</button>}
                     <button type="button" onClick={onClose} style={{ padding: '10px 16px', background: 'transparent', color: primaryColor, border: `1px solid ${primaryColor}`, borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Start Over</button>
                   </div>
                 </div>
@@ -1180,6 +1196,7 @@ export default function DiscoveryHero({
   const [excluded, setExcluded] = useState<ExcludedCompound[]>([]);
   const [goalSummary, setGoalSummary] = useState('');
   const [followUp, setFollowUp] = useState<{ question: string; originalGoal: string } | null>(null);
+  const [matchError, setMatchError] = useState(false);
 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [suggestOpen, setSuggestOpen] = useState(false);
@@ -1284,6 +1301,7 @@ export default function DiscoveryHero({
     setGoalSummary(summary);
     setDrawerOpen(true);
     setFollowUp(null);
+    setMatchError(false);
     try {
       const res = await fetch('/api/research/match', {
         method: 'POST',
@@ -1301,6 +1319,7 @@ export default function DiscoveryHero({
           },
         }),
       });
+      if (!res.ok) { setMatchError(true); return; }
       const json = await res.json().catch(() => null) as {
         results?: Array<{ 
           slug: string; 
@@ -1336,6 +1355,7 @@ export default function DiscoveryHero({
       setExcluded(json?.excluded || []);
     } catch {
       setResults([]);
+      setMatchError(true);
     } finally {
       setLoading(false);
     }
@@ -1350,6 +1370,9 @@ export default function DiscoveryHero({
     setLoading(true);
     setDrawerOpen(true);
     setGoalSummary(g);
+    setMatchError(false);
+    setResults([]);
+    setExcluded([]);
 
     try {
       const res = await fetch('/api/research/ai-match', {
@@ -1357,16 +1380,18 @@ export default function DiscoveryHero({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: g })
       });
-      const data = await res.json().catch(() => null);
-      
+      const data = res.ok ? await res.json().catch(() => null) : null;
+
       if (data?.result) {
         await runMatch(data.result, g);
       } else {
-        setDrawerOpen(false);
+        // Keep the drawer open and surface an error instead of silently
+        // closing it (which looked like a broken button).
+        setMatchError(true);
         setLoading(false);
       }
     } catch {
-      setDrawerOpen(false);
+      setMatchError(true);
       setLoading(false);
     }
   }, [query, runMatch]);
@@ -1538,13 +1563,13 @@ export default function DiscoveryHero({
         </div>
 
         {/* Quick Select Buttons */}
-        <button title="Weight Management" onClick={() => onSelectArea('weight_management')} style={{ position: 'absolute', top: '23%', left: '5%', width: '21%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Tissue Repair" onClick={() => onSelectArea('tissue_repair')} style={{ position: 'absolute', top: '23%', left: '27%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Healing & Recovery" onClick={() => onSelectArea('healing')} style={{ position: 'absolute', top: '23%', left: '50%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Performance" onClick={() => onSelectArea('performance')} style={{ position: 'absolute', top: '23%', left: '73%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Skin & Hair" onClick={() => onSelectArea('cosmetic')} style={{ position: 'absolute', top: '42%', left: '5%', width: '21%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Cognitive" onClick={() => onSelectArea('cognitive')} style={{ position: 'absolute', top: '42%', left: '27%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Pain & Inflammation" onClick={() => onSelectArea('pain_inflammation')} style={{ position: 'absolute', top: '42%', left: '50%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button type="button" aria-label="Weight Management" title="Weight Management" onClick={() => onSelectArea('weight_management')} style={{ position: 'absolute', top: '23%', left: '5%', width: '21%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button type="button" aria-label="Tissue Repair" title="Tissue Repair" onClick={() => onSelectArea('tissue_repair')} style={{ position: 'absolute', top: '23%', left: '27%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button type="button" aria-label="Healing & Recovery" title="Healing & Recovery" onClick={() => onSelectArea('healing')} style={{ position: 'absolute', top: '23%', left: '50%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button type="button" aria-label="Performance" title="Performance" onClick={() => onSelectArea('performance')} style={{ position: 'absolute', top: '23%', left: '73%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button type="button" aria-label="Skin & Hair" title="Skin & Hair" onClick={() => onSelectArea('cosmetic')} style={{ position: 'absolute', top: '42%', left: '5%', width: '21%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button type="button" aria-label="Cognitive" title="Cognitive" onClick={() => onSelectArea('cognitive')} style={{ position: 'absolute', top: '42%', left: '27%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button type="button" aria-label="Pain & Inflammation" title="Pain & Inflammation" onClick={() => onSelectArea('pain_inflammation')} style={{ position: 'absolute', top: '42%', left: '50%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
         <button title="More" onClick={() => {
           setShowAllAreas(true);
         }} style={{ position: 'absolute', top: '42%', left: '73%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
@@ -1658,6 +1683,8 @@ export default function DiscoveryHero({
         goalSummary={goalSummary}
         followUp={followUp}
         submitFollowUp={submitFollowUp}
+        matchError={matchError}
+        onRetry={() => { if (goalSummary) submitTypedGoal(goalSummary); }}
         primaryColor={primaryColor}
         onClose={() => setDrawerOpen(false)}
         onAddToCart={(id) => { setDrawerOpen(false); onAddToCart(id); }}

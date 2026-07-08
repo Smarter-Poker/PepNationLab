@@ -3,7 +3,8 @@
  * `compounds` table via the server Supabase client. Pure presentation logic
  * lives in `@/lib/compounds`; this file only handles data fetching.
  */
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import 'server-only';
+import { createServiceClient } from '@/lib/supabase/server';
 import { unstable_cache } from 'next/cache';
 import type { Compound } from '@/lib/compounds';
 

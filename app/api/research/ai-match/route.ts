@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { safeError } from '@/lib/api-error';
+import { assertSameOrigin } from '@/lib/csrf';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,13 +33,25 @@ const STRICT_EVIDENCE = ['safe', 'proven', 'clinical', 'human study', 'human tri
 const PERMISSIVE_EVIDENCE = ['cutting edge', 'research chemical', 'experimental', 'novel', 'latest', 'frontier', 'investigational', 'preclinical'];
 const LOW_RISK = ['safe', 'gentle', 'low risk', 'minimal side', 'no side effect', 'well tolerated', 'conservative'];
 
+// Very short tokens (<=3 chars, e.g. 'gh','gi','age','fat','nad') are matched on
+// word boundaries so they don't false-match inside longer words ('gh' in 'weight',
+// 'gi' in 'region', 'age' in 'manage'). Longer keywords and multi-word phrases keep
+// substring matching (intentional prefix behavior, e.g. 'hate inject' -> 'injections').
+function kwMatch(lower: string, kw: string): boolean {
+  if (kw.length <= 3) {
+    const esc = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`\\b${esc}\\b`, 'i').test(lower);
+  }
+  return lower.includes(kw);
+}
+
 function scoreGoals(text: string): Array<{ key: string; score: number }> {
   const lower = text.toLowerCase();
   const scores: Array<{ key: string; score: number }> = [];
   for (const [area, keywords] of Object.entries(NLP_GOAL_KEYWORDS)) {
     let score = 0;
     for (const kw of keywords) {
-      if (lower.includes(kw)) {
+      if (kwMatch(lower, kw)) {
         score += kw.split(' ').length;
       }
     }
@@ -48,15 +62,24 @@ function scoreGoals(text: string): Array<{ key: string; score: number }> {
 
 function hasAny(text: string, keywords: string[]): boolean {
   const lower = text.toLowerCase();
-  return keywords.some(kw => lower.includes(kw));
+  return keywords.some(kw => kwMatch(lower, kw));
 }
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
+  const rl = await rateLimit({ key: 'research_ai_match', limit: 30, windowSeconds: 60, identifier: getClientIp(req) });
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+  }
+
   try {
-    const { prompt } = await req.json();
-    if (!prompt || typeof prompt !== 'string') {
+    const { prompt: rawPrompt } = await req.json();
+    if (!rawPrompt || typeof rawPrompt !== 'string') {
       return NextResponse.json({ error: 'Invalid prompt' }, { status: 400 });
     }
+    const prompt = rawPrompt.slice(0, 1000);
 
     const scored = scoreGoals(prompt);
     const topScore = scored[0]?.score ?? 0;
