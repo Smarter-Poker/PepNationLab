@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/client';
 import { calculateShippingCost as getShippingCost, ShippingOption } from '@/lib/shipping';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
+import { trackStorefrontEvent } from '@/lib/track';
 
 type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'apple_pay' | 'apple_cash';
 
@@ -735,6 +736,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   const removeCoupon = () => { setAppliedCoupon(null); setCouponInput(''); setCouponError(''); };
 
+  // Funnel analytics (best-effort): checkout viewed. Fires once per mount.
+  useEffect(() => {
+    trackStorefrontEvent(agentSlug, 'checkout_start');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentSlug]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -840,6 +847,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         setTotalAdjusted(Math.abs(srv - grandTotal) > 0.01);
       }
       setOrderSuccess(data.orderId);
+      // Funnel analytics (best-effort, non-blocking): order completed.
+      trackStorefrontEvent(agentSlug, 'order_complete', {
+        order_id: data.orderId,
+        amount_cents: Math.round((Number(data.total) || grandTotal || 0) * 100),
+      });
       clearAllCarts();
       resetIdempotencyKey();
       submittedRef.current = false;

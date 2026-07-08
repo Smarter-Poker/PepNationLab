@@ -19,6 +19,7 @@ import { evidenceTier, EVIDENCE_TIER, RISK_META, intranasalDisplay, type Compoun
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
 import GuestAuthModal from '@/components/GuestAuthModal';
+import { trackStorefrontEvent } from '@/lib/track';
 import { toast } from 'sonner';
 import { writeCatalogCache, isCatalogCacheFresh, readCatalogCache, CATALOG_TTL_MS, evictCatalogCache } from '@/lib/storefront-cache';
 import { createClient } from '@/lib/supabase/client';
@@ -306,6 +307,12 @@ export default function AgentStorefrontGrid({
   useEffect(() => {
     setMounted(true);
   }, []);
+  // Funnel analytics (best-effort, non-blocking): storefront pageview. Activates
+  // the existing agent analytics dashboard (agent_storefront_analytics_30d).
+  useEffect(() => {
+    trackStorefrontEvent(agentSlug, 'pageview');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentSlug]);
   const [wishlist, setWishlist] = useState<Set<string>>(() => new Set(initialWishlistIds));
   const toggleWishlist = useCallback(async (productId: string) => {
     if (!productId) return;
