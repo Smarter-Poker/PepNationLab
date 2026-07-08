@@ -1,0 +1,134 @@
+# City Pages Health - fully automated daily verification of every city
+# landing page in production against the "Oak Lawn checklist" (indexability,
+# canonical, H1/title, structured data, live storefront Top 10, local
+# content, sitemap membership). See scripts/verify-city-pages.mjs.
+#
+# Zero human intervention:
+#   - Runs daily on GitHub-hosted runners (and on any change to the verifier).
+#   - Posts every result as a comment on the pinned "City Pages Health Report"
+#     issue (creates it if missing), so agents and humans read status from the
+#     issue with no dashboards.
+#   - The job itself fails when any page is unhealthy, so regressions are loud.
+
+name: City Pages Health
+
+on:
+  schedule:
+    # Daily at 09:17 UTC (03:17 or 04:17 Chicago) - after the nightly
+    # IndexNow cron and Vercel deploys have settled.
+    - cron: '17 9 * * *'
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/verify-city-pages.mjs'
+      - '.github/workflows/city-pages-verify.yml'
+      - 'lib/cities/cities-data.ts'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: city-pages-health
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify every city page in production
+        id: verify
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node --experimental-strip-types scripts/verify-city-pages.mjs 2>&1 | tee verify-output.txt
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Extract summary JSON
+        id: summary
+        run: |
+          awk '/===CITY_HEALTH_JSON_START===/{flag=1;next}/===CITY_HEALTH_JSON_END===/{flag=0}flag' verify-output.txt > summary.json
+          if [ ! -s summary.json ]; then echo '{"error":"verifier produced no summary (crash)"}' > summary.json; fi
+          cat summary.json
+
+      - name: Post result to the pinned health issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let summary;
+            try { summary = JSON.parse(fs.readFileSync('summary.json', 'utf8')); }
+            catch { summary = { error: 'could not parse summary.json' }; }
+
+            const failed = (summary.failed ?? 1) > 0 || summary.sitemapOk === false || summary.error;
+            const status = failed ? 'UNHEALTHY' : 'HEALTHY';
+            const title = 'City Pages Health Report';
+
+            // Find or create the pinned report issue
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'city-health',
+              per_page: 1,
+            });
+            let issueNumber;
+            if (issues.length > 0) {
+              issueNumber = issues[0].number;
+            } else {
+              const { data: created } = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                labels: ['city-health'],
+                body: [
+                  'Automated daily verification of every city landing page in production.',
+                  'Each run posts a comment below. The checklist per page: HTTP 200,',
+                  'index/follow robots meta, self-canonical, city name in title and H1,',
+                  'Service + BreadcrumbList + ItemList JSON-LD, live storefront Top 10',
+                  '(10+ store deep links), county/ZIP/blurb local content, and sitemap',
+                  'membership. Source: scripts/verify-city-pages.mjs.',
+                ].join('\n'),
+              });
+              issueNumber = created.number;
+            }
+
+            const failureLines = (summary.failures || [])
+              .slice(0, 30)
+              .map(f => `- ${f.city}: ${f.error} (${f.url})`)
+              .join('\n');
+            const stateLines = Object.entries(summary.byState || {})
+              .map(([s, v]) => `${s}: ${v}`)
+              .join(' | ');
+
+            const body = [
+              `## ${status} - ${summary.checkedAt || new Date().toISOString()}`,
+              '',
+              summary.error
+                ? `Verifier error: ${summary.error}`
+                : [
+                    `Pages passed: ${summary.passed}/${summary.totalCities} (warnings: ${summary.warnings ?? 0})`,
+                    `Sitemap: ${summary.sitemapOk ? 'all city URLs present' : `MISSING ${summary.sitemapMissingCount} URLs`}`,
+                    `Duration: ${summary.durationSeconds}s | Base: ${summary.base}`,
+                    '',
+                    `By state: ${stateLines}`,
+                    failureLines ? `\n### Failures\n${failureLines}` : '',
+                  ].join('\n'),
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body,
+            });
+
+            if (failed) core.setFailed(`City pages ${status}: see issue #${issueNumber}`);
