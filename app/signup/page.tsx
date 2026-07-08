@@ -374,7 +374,7 @@ function SignupForm() {
 
           <form onSubmit={handleSignup}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
-              <div className="form-group">
+              <div className="form-group" style={{ marginTop: 0 }}>
                 <label className="form-label" htmlFor="firstName">First Name</label>
                 <input
                   id="firstName" type="text" className="form-input" placeholder="First Name"
@@ -382,7 +382,7 @@ function SignupForm() {
                   required maxLength={100} autoComplete="given-name"
                 />
               </div>
-              <div className="form-group">
+              <div className="form-group" style={{ marginTop: 0 }}>
                 <label className="form-label" htmlFor="lastName">Last Name</label>
                 <input
                   id="lastName" type="text" className="form-input" placeholder="Last Name"
