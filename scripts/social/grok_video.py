@@ -1,98 +1,64 @@
 #!/usr/bin/env python3
 """
-grok_video.py - Pep Nation Lab dynamic social video generator.
+grok_video.py - Pep Nation Lab dynamic social video generator (v2).
 
-Pipeline (per Short):
-  1. Build an on-brand, RUO-safe cinematic prompt (no people, no text in frame,
-     no benefit/human-use claims - visuals only).
-  2. Call the xAI Grok Imagine video API (grok-imagine-video), 9:16 vertical,
-     up to 15s, 720p+, then poll until the render is done.
-  3. Download the returned MP4.
-  4. Composite a branded overlay (hook headline + wordmark + RUO footer) with
-     ffmpeg. The overlay is rendered by Pillow to a transparent PNG so text
-     wrapping, scrims, and fonts are fully controlled (no drawtext escaping).
-  5. Optionally mux a background music track if provided.
-  6. Write the finished 1080x1920 Short; optionally upload to a public Supabase
-     bucket so it gets a shareable URL.
+Adds to v1: spoken voiceover narration (xAI Grok TTS), an ambient music bed
+mixed under the voice, on-screen captions timed to the narration, and the
+compound's POPULAR / common name shown on-screen AND spoken in every
+compound video.
 
-This runs where the network can reach api.x.ai and ffmpeg exists (GitHub
-Actions, a Linux box, etc.) - NOT inside the Cowork sandbox, which is
-firewalled off from api.x.ai.
+Per Short:
+  1. Pick a cinematic, RUO-safe visual prompt (no people, no on-screen text,
+     no human-use/benefit claims - visuals only).
+  2. Grok Imagine video (grok-imagine-video), 9:16 vertical, 720p.
+  3. Grok TTS (POST /v1/tts, voice 'orion') renders the narration script to MP3.
+     The script always names the popular/common name of the compound.
+  4. Build a branded overlay (hook + "Also Known As: <popular name>" +
+     wordmark + RUO footer) with Pillow.
+  5. Build sentence-level captions (.ass) timed across the voiceover.
+  6. ffmpeg composites overlay + burned captions over the footage, mixes the
+     voiceover (full) with a ducked ambient bed, and trims to the voiceover
+     length. Falls back to silent-with-music if TTS is unavailable.
+  7. Optionally upload the finished Short to a public Supabase bucket.
 
-Env:
-  XAI_API_KEY                 (required)
-  SUPABASE_URL                (optional - enables upload)
-  SUPABASE_SERVICE_ROLE_KEY   (optional - enables upload)
-  SUPABASE_BUCKET             (optional, default 'social-media')
+Runs where the network reaches api.x.ai and ffmpeg exists (GitHub Actions, a
+Linux box) - NOT the Cowork sandbox, which is firewalled from api.x.ai.
 
-Usage:
-  python3 grok_video.py --topic bpc-157 --out out.mp4
-  python3 grok_video.py --prompt "..." --hook "What Is BPC-157?" --out out.mp4
-  python3 grok_video.py --topic reconstitution --duration 12 --upload
+Env:  XAI_API_KEY (required); SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (upload).
 """
 
 import argparse
-import os
-import sys
-import time
-import textwrap
-import urllib.request
-import urllib.error
+import base64
 import json
+import os
+import re
 import subprocess
 import tempfile
+import time
+import textwrap
+import urllib.error
+import urllib.request
 
 from PIL import Image, ImageDraw, ImageFont
 
 API_BASE = "https://api.x.ai/v1"
 BRAND_TEAL = (0, 196, 188)
-BRAND_BG = (5, 10, 15)
 WHITE = (255, 255, 255)
 SILVER = (168, 180, 192)
 RUO_TEXT = "For In Vitro Laboratory Research Use Only. Not For Human Or Animal Use."
 
-# Curated cinematic scene prompts. Visuals ONLY - deliberately no people, no
-# on-screen text (Grok text rendering is unreliable), and no therapeutic or
-# human-use imagery, to stay Research-Use-Only compliant. Dark lab aesthetic,
-# teal accent light, macro/scientific subjects - matches the site brand.
+# Cinematic scene prompts - visuals ONLY (no people, no text, no human-use).
 SCENES = {
-    "peptide-101": (
-        "Extreme macro cinematic shot inside a dark research laboratory, a single "
-        "glowing amino-acid chain forming and coiling into a peptide helix, "
-        "translucent teal and cyan light refracting through glass, slow dolly push-in, "
-        "shallow depth of field, volumetric haze, hyper-detailed, 4k, no text"
-    ),
-    "reconstitution": (
-        "Cinematic macro of a sterile glass vial on a dark reflective lab bench, "
-        "a clear droplet falling into it and swirling in slow motion, soft teal rim "
-        "lighting, condensation on glass, scientific and clean, shallow depth of field, "
-        "no hands, no text, 4k"
-    ),
-    "coa": (
-        "Slow cinematic pan across a row of labeled research vials in a dark lab, "
-        "faint teal laboratory lighting, a laser scanner line sweeping across them, "
-        "sense of purity testing and analysis, hyper-detailed reflections, no text, 4k"
-    ),
-    "bpc-157": (
-        "Abstract cinematic visualization of a peptide molecule rotating in dark "
-        "space, glowing teal and white molecular bonds, particles of light drifting, "
-        "deep depth of field, premium scientific motion graphic, no text, 4k"
-    ),
-    "tb-500": (
-        "Cinematic macro of luminous protein strands weaving through a dark fluid, "
-        "teal bioluminescence, slow graceful motion, microscopic world aesthetic, "
-        "hyper-detailed, no text, 4k"
-    ),
-    "molecule": (
-        "A complex 3D peptide molecular structure slowly rotating, glowing teal nodes "
-        "and silver bonds, dark cinematic background with subtle particles, premium "
-        "science visualization, depth of field, no text, 4k"
-    ),
-    "lab": (
-        "Cinematic slow tracking shot through a futuristic dark research laboratory, "
-        "rows of glassware and instruments lit by teal accent lighting, volumetric "
-        "light beams, clean and high-tech, no people, no text, 4k"
-    ),
+    "peptide-101": "Extreme macro cinematic shot inside a dark research laboratory, a single glowing amino-acid chain forming and coiling into a peptide helix, translucent teal and cyan light refracting through glass, slow dolly push-in, shallow depth of field, volumetric haze, hyper-detailed, 4k, no text",
+    "reconstitution": "Cinematic macro of a sterile glass vial on a dark reflective lab bench, a clear droplet falling into it and swirling in slow motion, soft teal rim lighting, condensation on glass, scientific and clean, shallow depth of field, no hands, no text, 4k",
+    "coa": "Slow cinematic pan across a row of labeled research vials in a dark lab, faint teal laboratory lighting, a laser scanner line sweeping across them, sense of purity testing and analysis, hyper-detailed reflections, no text, 4k",
+    "bpc-157": "Abstract cinematic visualization of a peptide molecule rotating in dark space, glowing teal and white molecular bonds, particles of light drifting, deep depth of field, premium scientific motion graphic, no text, 4k",
+    "tb-500": "Cinematic macro of luminous protein strands weaving through a dark fluid, teal bioluminescence, slow graceful motion, microscopic world aesthetic, hyper-detailed, no text, 4k",
+    "ghk-cu": "Cinematic macro of a glowing copper-blue peptide complex forming in dark space, metallic teal and copper light, elegant molecular bonds rotating slowly, premium science visualization, no text, 4k",
+    "semaglutide": "Abstract cinematic visualization of a long glowing peptide chain slowly rotating in dark space, teal and cyan light, drifting particles, premium scientific motion graphic, no text, 4k",
+    "tirzepatide": "Cinematic visualization of a dual-strand glowing peptide molecule rotating in dark space, teal and white bonds, particles of light, premium science motion graphic, no text, 4k",
+    "molecule": "A complex 3D peptide molecular structure slowly rotating, glowing teal nodes and silver bonds, dark cinematic background with subtle particles, premium science visualization, depth of field, no text, 4k",
+    "lab": "Cinematic slow tracking shot through a futuristic dark research laboratory, rows of glassware and instruments lit by teal accent lighting, volumetric light beams, clean and high-tech, no people, no text, 4k",
 }
 
 HOOKS = {
@@ -101,230 +67,353 @@ HOOKS = {
     "coa": "Every Batch Is Tested",
     "bpc-157": "BPC-157 Explained",
     "tb-500": "TB-500 Explained",
+    "ghk-cu": "GHK-Cu Explained",
+    "semaglutide": "Semaglutide Explained",
+    "tirzepatide": "Tirzepatide Explained",
     "molecule": "The Science Of Peptides",
     "lab": "Research Grade. Verified.",
 }
 
+# Popular / common name shown on-screen and spoken. Empty for non-compound
+# topics. For expansion, prefer the compound DB `aliases` field via --alias.
+ALIASES = {
+    "bpc-157": "Body Protection Compound 157",
+    "tb-500": "Thymosin Beta-4",
+    "ghk-cu": "Copper Peptide (GHK-Cu)",
+    "semaglutide": "GLP-1 Research Analog",
+    "tirzepatide": "GIP / GLP-1 Research Analog",
+}
 
-def log(msg):
-    print(f"[grok_video] {msg}", flush=True)
+# RUO-safe narration. Always names the popular/common name for compounds.
+# No dosing, no human-use, no benefit/therapeutic claims.
+SCRIPTS = {
+    "peptide-101": "Peptides are short chains of amino acids, the building blocks that tell cells how to function. [pause] Researchers study them in the lab to understand biology at the molecular level. Pep Nation Lab supplies research-grade peptides for in vitro laboratory research use only.",
+    "reconstitution": "Reconstitution is how a lyophilized research peptide is prepared for study. [pause] A measured volume of solvent is added to the vial and gently swirled until clear. This is a laboratory handling step, for in vitro research use only.",
+    "coa": "Every compound Pep Nation Lab ships is backed by a batch certificate of analysis. [pause] That means independent testing for identity and purity, documented for the researcher. Research grade, verified, and for in vitro laboratory use only.",
+    "bpc-157": "BPC-157, popularly known as Body Protection Compound 157, is a synthetic peptide widely studied in cellular repair research. [pause] It is one of the most referenced compounds in the laboratory. Supplied for in vitro research use only.",
+    "tb-500": "TB-500, the popular name for the peptide Thymosin Beta-4, is studied for its role in cell migration and structure. [pause] A staple of peptide research libraries. Supplied strictly for in vitro laboratory research use only.",
+    "ghk-cu": "GHK-Cu, popularly called the Copper Peptide, is a naturally occurring complex studied in cellular and matrix research. [pause] Distinct for its copper-binding structure. Supplied for in vitro research use only.",
+    "semaglutide": "Semaglutide is a long-acting GLP-1 research analog studied at the molecular level. [pause] Pep Nation Lab supplies it as a research-grade compound for in vitro laboratory research use only, never for human or animal use.",
+    "tirzepatide": "Tirzepatide is a dual GIP and GLP-1 research analog studied for its molecular structure. [pause] Pep Nation Lab supplies it research grade, for in vitro laboratory research use only, never for human or animal use.",
+    "molecule": "Every peptide has a precise molecular structure that defines how it behaves. [pause] Understanding that structure is the first step in rigorous research. Pep Nation Lab supplies research-grade compounds for the laboratory only.",
+    "lab": "Research grade means verified. [pause] Every Pep Nation Lab compound is tested for identity and purity and documented with a certificate of analysis. For in vitro laboratory research use only.",
+}
 
 
-# --------------------------------------------------------------------------- #
-# Grok Imagine video API
-# --------------------------------------------------------------------------- #
-def grok_generate_video(prompt, duration, aspect_ratio, resolution, api_key,
-                        poll_timeout=900, poll_interval=6):
-    """Start a text-to-video job and poll until done. Returns the video URL."""
-    start_body = json.dumps({
-        "model": "grok-imagine-video",
-        "prompt": prompt,
-        "duration": duration,
-        "aspect_ratio": aspect_ratio,
-        "resolution": resolution,
-    }).encode()
+def log(m):
+    print(f"[grok_video] {m}", flush=True)
 
-    req = urllib.request.Request(
-        f"{API_BASE}/videos/generations",
-        data=start_body,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
-        method="POST",
+
+def ffprobe_duration(path):
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", path],
+        capture_output=True, text=True,
     )
     try:
+        return float(out.stdout.strip())
+    except ValueError:
+        return 0.0
+
+
+# --------------------------------------------------------------------------- #
+# Grok Imagine video
+# --------------------------------------------------------------------------- #
+def grok_video(prompt, duration, aspect, resolution, api_key,
+               poll_timeout=900, poll_interval=6):
+    body = json.dumps({
+        "model": "grok-imagine-video", "prompt": prompt,
+        "duration": duration, "aspect_ratio": aspect, "resolution": resolution,
+    }).encode()
+    req = urllib.request.Request(
+        f"{API_BASE}/videos/generations", data=body,
+        headers={"Content-Type": "application/json",
+                 "Authorization": f"Bearer {api_key}"}, method="POST")
+    try:
         with urllib.request.urlopen(req, timeout=60) as r:
-            start = json.loads(r.read())
+            rid = json.loads(r.read())["request_id"]
     except urllib.error.HTTPError as e:
-        raise SystemExit(f"Grok start failed ({e.code}): {e.read().decode()[:500]}")
-
-    request_id = start.get("request_id")
-    if not request_id:
-        raise SystemExit(f"No request_id in response: {start}")
-    log(f"generation started, request_id={request_id}")
-
+        raise SystemExit(f"Grok video start failed ({e.code}): {e.read().decode()[:400]}")
+    log(f"video request_id={rid}")
     deadline = time.time() + poll_timeout
     while time.time() < deadline:
-        poll = urllib.request.Request(
-            f"{API_BASE}/videos/{request_id}",
-            headers={"Authorization": f"Bearer {api_key}"},
-        )
-        with urllib.request.urlopen(poll, timeout=60) as r:
+        with urllib.request.urlopen(urllib.request.Request(
+                f"{API_BASE}/videos/{rid}",
+                headers={"Authorization": f"Bearer {api_key}"}), timeout=60) as r:
             data = json.loads(r.read())
-        status = data.get("status")
-        if status == "done":
-            url = data["video"]["url"]
-            log(f"render done: {url}")
-            return url
-        if status in ("failed", "expired"):
-            raise SystemExit(f"Grok generation {status}: {json.dumps(data)[:500]}")
-        log(f"status={status} ... waiting")
+        st = data.get("status")
+        if st == "done":
+            return data["video"]["url"]
+        if st in ("failed", "expired"):
+            raise SystemExit(f"Grok video {st}: {json.dumps(data)[:400]}")
+        log(f"video status={st}")
         time.sleep(poll_interval)
-    raise SystemExit("Grok generation timed out")
+    raise SystemExit("Grok video timed out")
 
 
-def download(url, dest):
-    log(f"downloading -> {dest}")
-    urllib.request.urlretrieve(url, dest)
+# --------------------------------------------------------------------------- #
+# Grok TTS voiceover
+# --------------------------------------------------------------------------- #
+def grok_tts(text, voice, api_key, dest):
+    """POST /v1/tts -> MP3 bytes (handles raw or base64-JSON responses)."""
+    body = json.dumps({
+        "text": text, "voice_id": voice,
+        "output_format": {"codec": "mp3", "sample_rate": 44100},
+    }).encode()
+    req = urllib.request.Request(
+        f"{API_BASE}/tts", data=body,
+        headers={"Content-Type": "application/json",
+                 "Authorization": f"Bearer {api_key}"}, method="POST")
+    with urllib.request.urlopen(req, timeout=120) as r:
+        raw = r.read()
+    if raw[:1] == b"{":  # JSON envelope with base64 audio
+        obj = json.loads(raw)
+        raw = base64.b64decode(obj["audio"])
+    with open(dest, "wb") as f:
+        f.write(raw)
     return dest
 
 
 # --------------------------------------------------------------------------- #
-# Branding overlay (Pillow -> transparent PNG)
+# Branded overlay (Pillow)
 # --------------------------------------------------------------------------- #
-def load_font(size, bold=True):
-    candidates = [
-        os.path.join(os.path.dirname(__file__), "fonts",
-                     "Poppins-Bold.ttf" if bold else "Poppins-Medium.ttf"),
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold
-        else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    ]
-    for c in candidates:
+def font(size, bold=True):
+    for c in [os.path.join(os.path.dirname(__file__), "fonts",
+                           "Poppins-Bold.ttf" if bold else "Poppins-Medium.ttf"),
+              "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold
+              else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"]:
         if os.path.exists(c):
             return ImageFont.truetype(c, size)
     return ImageFont.load_default()
 
 
-def build_overlay(hook, width=1080, height=1920):
-    """Transparent PNG: top scrim + hook, bottom brand bar + RUO footer."""
-    img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+def build_overlay(hook, alias, w=1080, h=1920):
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-
-    # Top gradient scrim so white hook text stays legible over any footage.
-    scrim_h = 520
-    for y in range(scrim_h):
-        a = int(190 * (1 - y / scrim_h))
-        d.line([(0, y), (width, y)], fill=(5, 10, 15, a))
-
-    # Hook headline (wrapped, centered, teal accent bar above).
-    hook_font = load_font(78, bold=True)
+    scrim = 560
+    for y in range(scrim):
+        d.line([(0, y), (w, y)], fill=(5, 10, 15, int(195 * (1 - y / scrim))))
     d.rectangle([80, 120, 200, 132], fill=BRAND_TEAL + (255,))
-    lines = textwrap.wrap(hook, width=16) or [hook]
     y = 170
-    for line in lines:
-        d.text((80, y), line, font=hook_font, fill=WHITE + (255,))
+    for line in (textwrap.wrap(hook, width=16) or [hook]):
+        d.text((80, y), line, font=font(78, True), fill=WHITE + (255,))
         y += 92
-
-    # Bottom brand + RUO footer bar.
-    bar_top = height - 220
-    d.rectangle([0, bar_top, width, height], fill=(5, 10, 15, 235))
-    d.rectangle([0, bar_top, width, bar_top + 5], fill=BRAND_TEAL + (255,))
-
-    wm_font = load_font(46, bold=True)
-    handle_font = load_font(34, bold=False)
-    d.text((80, bar_top + 34), "PEPNATIONLAB.COM", font=wm_font, fill=BRAND_TEAL + (255,))
-    d.text((80, bar_top + 92), "@pepnationlab", font=handle_font, fill=SILVER + (255,))
-
-    ruo_font = load_font(26, bold=False)
-    ruo_lines = textwrap.wrap(RUO_TEXT, width=52)
-    ry = bar_top + 138
-    for line in ruo_lines:
-        d.text((80, ry), line, font=ruo_font, fill=SILVER + (255,))
+    if alias:
+        d.text((80, y + 6), "Also Known As:", font=font(30, False), fill=SILVER + (255,))
+        y += 46
+        for line in textwrap.wrap(alias, width=30):
+            d.text((80, y + 6), line, font=font(40, True), fill=BRAND_TEAL + (255,))
+            y += 50
+    bar = h - 220
+    d.rectangle([0, bar, w, h], fill=(5, 10, 15, 235))
+    d.rectangle([0, bar, w, bar + 5], fill=BRAND_TEAL + (255,))
+    d.text((80, bar + 34), "PEPNATIONLAB.COM", font=font(46, True), fill=BRAND_TEAL + (255,))
+    d.text((80, bar + 92), "@pepnationlab", font=font(34, False), fill=SILVER + (255,))
+    ry = bar + 138
+    for line in textwrap.wrap(RUO_TEXT, width=52):
+        d.text((80, ry), line, font=font(26, False), fill=SILVER + (255,))
         ry += 32
-
     out = tempfile.NamedTemporaryFile(suffix=".png", delete=False).name
     img.save(out)
     return out
 
 
 # --------------------------------------------------------------------------- #
-# ffmpeg composite
+# Captions (.ass) timed proportionally across the voiceover
 # --------------------------------------------------------------------------- #
-def composite(clip, overlay_png, out, music=None, width=1080, height=1920):
-    vf = (f"scale={width}:{height}:force_original_aspect_ratio=increase,"
-          f"crop={width}:{height}[bg];[bg][1:v]overlay=0:0[v]")
-    cmd = ["ffmpeg", "-y", "-i", clip, "-i", overlay_png]
-    maps = ["-map", "[v]"]
-    if music and os.path.exists(music):
-        cmd += ["-stream_loop", "-1", "-i", music]
-        maps += ["-map", "2:a", "-shortest"]
-        acodec = ["-c:a", "aac", "-b:a", "160k"]
+def _ts(t):
+    cs = int(round(t * 100))
+    h, cs = divmod(cs, 360000)
+    m, cs = divmod(cs, 6000)
+    s, cs = divmod(cs, 100)
+    return f"{h}:{m:02d}:{s:02d}.{cs:02d}"
+
+
+def build_ass(script, total, path, w=1080, h=1920):
+    clean = re.sub(r"\[[^\]]*\]|<[^>]*>", "", script)  # drop TTS tags
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", clean) if s.strip()]
+    if not sentences:
+        sentences = [clean.strip()]
+    weights = [max(len(s), 1) for s in sentences]
+    tot_w = sum(weights)
+    header = (
+        "[Script Info]\nScriptType: v4.00+\nPlayResX: %d\nPlayResY: %d\n\n"
+        "[V4+ Styles]\n"
+        "Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, "
+        "Bold, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV\n"
+        "Style: Cap, DejaVu Sans, 46, &H00FFFFFF, &H00301505, &HC0000000, 1, 1, 3, 0, 2, 90, 90, 300\n\n"
+        "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+        % (w, h)
+    )
+    lines, t = [], 0.0
+    for s, wt in zip(sentences, weights):
+        dur = total * (wt / tot_w)
+        text = "\\N".join(textwrap.wrap(s, width=30))
+        lines.append(f"Dialogue: 0,{_ts(t)},{_ts(t + dur)},Cap,,0,0,0,,{text}")
+        t += dur
+    with open(path, "w") as f:
+        f.write(header + "\n".join(lines) + "\n")
+    return path
+
+
+# --------------------------------------------------------------------------- #
+# Ambient music bed (generated - licensing-safe). Override by placing a track
+# at scripts/social/assets/music/bed.mp3.
+# --------------------------------------------------------------------------- #
+def music_bed(length, dest):
+    override = os.path.join(os.path.dirname(__file__), "assets", "music", "bed.mp3")
+    if os.path.exists(override):
+        return override, True
+    freqs = [110.0, 130.81, 164.81, 220.0]  # A minor pad
+    inputs, mixes = [], ""
+    for i, fr in enumerate(freqs):
+        inputs += ["-f", "lavfi", "-i", f"sine=frequency={fr}:duration={length:.2f}"]
+        mixes += f"[{i}:a]"
+    filt = (mixes + f"amix=inputs={len(freqs)}:normalize=0,"
+            "tremolo=f=0.12:d=0.5,lowpass=f=700,volume=0.9,"
+            f"afade=t=in:st=0:d=1.5,afade=t=out:st={max(length-1.5,0):.2f}:d=1.5[a]")
+    subprocess.run(["ffmpeg", "-y", "-v", "error", *inputs,
+                    "-filter_complex", filt, "-map", "[a]", dest], check=True)
+    return dest, False
+
+
+# --------------------------------------------------------------------------- #
+def compose(clip, overlay_png, out, vo=None, ass=None, bed=None, length=None):
+    inputs = ["-stream_loop", "-1", "-i", clip, "-i", overlay_png]
+    idx = 2
+    vo_i = bed_i = None
+    if vo:
+        inputs += ["-i", vo]; vo_i = idx; idx += 1
+    if bed:
+        inputs += ["-i", bed]; bed_i = idx; idx += 1
+
+    vchain = "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[bg];[bg][1:v]overlay=0:0[ov]"
+    if ass:
+        safe = ass.replace("\\", "/").replace(":", "\\:")
+        vchain += f";[ov]subtitles='{safe}'[v]"
     else:
-        acodec = ["-an"]
-    cmd += ["-filter_complex", vf] + maps + [
-        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
-        "-profile:v", "high", "-preset", "medium", "-movflags", "+faststart",
-    ] + acodec + [out]
-    log("compositing branded overlay with ffmpeg")
+        vchain += ";[ov]null[v]"
+
+    fc = vchain
+    amap = None
+    if vo_i is not None and bed_i is not None:
+        fc += (f";[{vo_i}:a]volume=1.0,apad[voa];[{bed_i}:a]volume=0.14[bea];"
+               "[voa][bea]amix=inputs=2:duration=longest:dropout_transition=3[a]")
+        amap = "[a]"
+    elif vo_i is not None:
+        fc += f";[{vo_i}:a]volume=1.0[a]"; amap = "[a]"
+    elif bed_i is not None:
+        fc += f";[{bed_i}:a]volume=0.16[a]"; amap = "[a]"
+
+    cmd = ["ffmpeg", "-y", "-v", "error", *inputs, "-filter_complex", fc,
+           "-map", "[v]"]
+    if amap:
+        cmd += ["-map", amap, "-c:a", "aac", "-b:a", "192k"]
+    else:
+        cmd += ["-an"]
+    if length:
+        cmd += ["-t", f"{length:.2f}"]
+    cmd += ["-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
+            "-profile:v", "high", "-preset", "medium", "-movflags", "+faststart", out]
+    log("compositing (overlay + captions + voice + music)")
     subprocess.run(cmd, check=True)
     return out
 
 
-# --------------------------------------------------------------------------- #
-# Optional Supabase upload
-# --------------------------------------------------------------------------- #
-def supabase_upload(path, bucket, object_name):
-    url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+def supabase_upload(path, bucket, name):
+    url, key = os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if not (url and key):
-        log("Supabase creds absent - skipping upload")
-        return None
-    endpoint = f"{url}/storage/v1/object/{bucket}/{object_name}"
+        log("Supabase creds absent - skipping upload"); return None
     with open(path, "rb") as f:
-        body = f.read()
+        data = f.read()
     req = urllib.request.Request(
-        endpoint, data=body, method="POST",
-        headers={
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "video/mp4",
-            "x-upsert": "true",
-        },
-    )
+        f"{url}/storage/v1/object/{bucket}/{name}", data=data, method="POST",
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "video/mp4",
+                 "x-upsert": "true"})
     try:
-        with urllib.request.urlopen(req, timeout=120) as r:
+        with urllib.request.urlopen(req, timeout=180) as r:
             r.read()
     except urllib.error.HTTPError as e:
-        log(f"Supabase upload failed ({e.code}): {e.read().decode()[:300]}")
-        return None
-    public = f"{url}/storage/v1/object/public/{bucket}/{object_name}"
-    log(f"uploaded -> {public}")
-    return public
+        log(f"upload failed ({e.code}): {e.read().decode()[:300]}"); return None
+    pub = f"{url}/storage/v1/object/public/{bucket}/{name}"
+    log(f"uploaded -> {pub}"); return pub
 
 
-# --------------------------------------------------------------------------- #
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--topic", help=f"one of: {', '.join(SCENES)}")
-    p.add_argument("--prompt", help="custom Grok visual prompt (overrides --topic)")
-    p.add_argument("--hook", help="on-screen headline (overrides topic default)")
-    p.add_argument("--duration", type=int, default=12)
+    p.add_argument("--topic")
+    p.add_argument("--prompt")
+    p.add_argument("--hook")
+    p.add_argument("--alias", help="popular/common name (overrides built-in)")
+    p.add_argument("--script", help="narration text (overrides built-in)")
+    p.add_argument("--voice", default="orion")
+    p.add_argument("--duration", type=int, default=15)
     p.add_argument("--resolution", default="720p")
     p.add_argument("--aspect", default="9:16")
-    p.add_argument("--music", help="optional background music file to loop under the clip")
+    p.add_argument("--no-vo", action="store_true")
+    p.add_argument("--no-music", action="store_true")
     p.add_argument("--out", default="short.mp4")
-    p.add_argument("--upload", action="store_true", help="upload finished file to Supabase bucket")
-    args = p.parse_args()
+    p.add_argument("--upload", action="store_true")
+    a = p.parse_args()
 
     api_key = os.environ.get("XAI_API_KEY")
     if not api_key:
         raise SystemExit("XAI_API_KEY env var is required")
 
-    if args.prompt:
-        prompt = args.prompt
-        hook = args.hook or "Pep Nation Lab"
+    if a.prompt:
+        prompt = a.prompt
+        hook = a.hook or "Pep Nation Lab"
+        alias = a.alias or ""
+        script = a.script or ""
     else:
-        topic = args.topic or "molecule"
+        topic = a.topic or "molecule"
         if topic not in SCENES:
             raise SystemExit(f"unknown --topic '{topic}'. options: {', '.join(SCENES)}")
         prompt = SCENES[topic]
-        hook = args.hook or HOOKS.get(topic, "Pep Nation Lab")
+        hook = a.hook or HOOKS.get(topic, "Pep Nation Lab")
+        alias = a.alias if a.alias is not None else ALIASES.get(topic, "")
+        script = a.script if a.script is not None else SCRIPTS.get(topic, "")
 
-    log(f"hook={hook!r}")
-    log(f"prompt={prompt[:90]}...")
+    log(f"hook={hook!r} alias={alias!r}")
 
+    # 1. Grok video
     clip = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False).name
-    url = grok_generate_video(prompt, args.duration, args.aspect, args.resolution, api_key)
-    download(url, clip)
+    url = grok_video(prompt, a.duration, a.aspect, a.resolution, api_key)
+    urllib.request.urlretrieve(url, clip)
 
-    overlay = build_overlay(hook)
-    composite(clip, overlay, args.out, music=args.music)
-    log(f"finished Short -> {args.out}")
+    # 2. Voiceover (fail-soft)
+    vo = ass = None
+    length = None
+    if not a.no_vo and script:
+        try:
+            vo = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False).name
+            grok_tts(script, a.voice, api_key, vo)
+            vo_dur = ffprobe_duration(vo)
+            if vo_dur <= 0:
+                raise RuntimeError("empty voiceover")
+            length = min(15.0, vo_dur + 0.6)
+            ass = tempfile.NamedTemporaryFile(suffix=".ass", delete=False).name
+            build_ass(script, vo_dur, ass)
+            log(f"voiceover {vo_dur:.1f}s -> final {length:.1f}s")
+        except Exception as e:  # noqa
+            log(f"TTS unavailable ({e}); proceeding silent-with-music")
+            vo = ass = None
+    if length is None:
+        length = min(float(a.duration), ffprobe_duration(clip) or a.duration)
 
-    if args.upload:
-        bucket = os.environ.get("SUPABASE_BUCKET", "social-media")
-        name = os.path.basename(args.out)
-        supabase_upload(args.out, bucket, name)
+    # 3. Music bed
+    bed = None
+    if not a.no_music:
+        bed = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False).name
+        bed, _ = music_bed(length, bed)
+
+    # 4. Compose
+    compose(clip, build_overlay(hook, alias), a.out, vo=vo, ass=ass, bed=bed, length=length)
+    log(f"finished -> {a.out}")
+
+    if a.upload:
+        supabase_upload(a.out, os.environ.get("SUPABASE_BUCKET", "social-media"),
+                        os.path.basename(a.out))
 
 
 if __name__ == "__main__":

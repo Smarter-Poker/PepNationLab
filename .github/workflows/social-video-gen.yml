@@ -1,9 +1,10 @@
 name: Social Video Generation (Grok)
 
 # Generates branded, dynamic vertical Shorts by calling the xAI Grok Imagine
-# video API, then compositing Pep Nation Lab branding + the RUO footer over the
-# footage with ffmpeg. Runs here (not on Vercel) because video generation is a
-# multi-minute async job that needs open network + ffmpeg.
+# video API + Grok TTS voiceover, then compositing Pep Nation Lab branding,
+# synced captions, and a music bed over the footage with ffmpeg. Runs here (not
+# on Vercel) because video generation is a multi-minute async job that needs
+# open network + ffmpeg.
 #
 # Trigger manually from the Actions tab ("Run workflow"), or on the weekly
 # schedule. Requires repo secret XAI_API_KEY. Optional: SUPABASE_URL +
@@ -13,13 +14,13 @@ on:
   workflow_dispatch:
     inputs:
       topics:
-        description: "Comma-separated topics (peptide-101,bpc-157,reconstitution,coa,tb-500,molecule,lab)"
+        description: "Comma-separated topics (peptide-101,bpc-157,tb-500,ghk-cu,semaglutide,tirzepatide,reconstitution,coa,molecule,lab)"
         required: true
-        default: "peptide-101,bpc-157,molecule"
+        default: "peptide-101,bpc-157,tb-500"
       duration:
-        description: "Clip duration in seconds (1-15)"
+        description: "Footage length in seconds (1-15; narration is trimmed to fit)"
         required: true
-        default: "12"
+        default: "15"
       upload:
         description: "Upload finished clips to the Supabase public bucket (true/false)"
         required: true
@@ -31,7 +32,7 @@ on:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,12 +58,12 @@ jobs:
         run: |
           set -e
           mkdir -p out
-          DURATION="${{ github.event.inputs.duration || '12' }}"
+          DURATION="${{ github.event.inputs.duration || '15' }}"
           UPLOAD_FLAG=""
           if [ "${{ github.event.inputs.upload || 'true' }}" = "true" ]; then
             UPLOAD_FLAG="--upload"
           fi
-          TOPICS="${{ github.event.inputs.topics || 'peptide-101,bpc-157,molecule' }}"
+          TOPICS="${{ github.event.inputs.topics || 'peptide-101,bpc-157,tb-500' }}"
           IFS=',' read -ra ARR <<< "$TOPICS"
           for t in "${ARR[@]}"; do
             t="$(echo "$t" | xargs)"   # trim whitespace
