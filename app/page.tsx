@@ -26,6 +26,20 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'WebPage',
+          '@id': 'https://pepnationlab.com/#webpage',
+          url: 'https://pepnationlab.com',
+          name: 'Pep Nation Lab | Premium Research Peptide Distribution',
+          description: 'Wholesale research peptide distribution for qualified researchers. Access 300+ compounds including BPC-157, TB-500, Semaglutide, and Tirzepatide. Research use only.',
+          isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+          about: { '@id': 'https://pepnationlab.com/#organization' },
+          publisher: { '@id': 'https://pepnationlab.com/#organization' },
+        }) }}
+      />
       <HomeClient />
       {/* Server-rendered crawlable homepage content: gives the root domain a
           real H1, intro copy, and descriptive internal links beneath the

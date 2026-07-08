@@ -24,6 +24,7 @@ export const metadata: Metadata = {
 const courseJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Course',
+  '@id': 'https://pepnationlab.com/peptide-101#course',
   name: 'Peptide 101',
   description: 'A free 14-module course covering peptide biology, mechanisms of action, peptide families, reconstitution protocols, safety considerations, and research applications.',
   url: 'https://pepnationlab.com/peptide-101',

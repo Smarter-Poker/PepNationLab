@@ -32,8 +32,13 @@ export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  const ip = getClientIp(req);
-  const rl = await rateLimit({ key: 'ai_summary', limit: 10, windowSeconds: 60, identifier: ip });
+  // Auth gate — must be an authenticated researcher
+  const supabase = await createServiceClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Rate-limit keyed on user.id (not IP) to prevent shared-NAT bypass
+  const rl = await rateLimit({ key: 'ai_summary', limit: 10, windowSeconds: 60, identifier: user.id });
   if (!rl.allowed) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }

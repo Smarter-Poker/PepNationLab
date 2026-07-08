@@ -15,11 +15,41 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab Privacy Policy' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Privacy Policy | Pep Nation Lab',
+    description: 'How Pep Nation Lab handles, protects, and uses your information on the research peptide platform.',
+    images: ['/og-card.png'],
+  },
 };
 
 export default function PrivacyPage() {
   return (
-    <PageShell>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'WebPage',
+              '@id': 'https://pepnationlab.com/privacy#webpage',
+              url: 'https://pepnationlab.com/privacy',
+              name: 'Privacy Policy | Pep Nation Lab',
+              isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+              publisher: { '@id': 'https://pepnationlab.com/#organization' },
+            },
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+                { '@type': 'ListItem', position: 2, name: 'Privacy Policy', item: 'https://pepnationlab.com/privacy' },
+              ],
+            },
+          ],
+        }) }}
+      />
+      <PageShell>
       <LegalDocument
         title="Privacy Policy"
         lastUpdated="May 21, 2026"
@@ -110,5 +140,6 @@ export default function PrivacyPage() {
         ]}
       />
     </PageShell>
+    </>
   );
 }

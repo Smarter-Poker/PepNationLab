@@ -492,7 +492,7 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
   const stability = getStabilityAdvice();
 
   const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
     if (!printWindow) {
       toast.error('Pop-Up Blocker Prevented Opening The Print Layout. Please Enable Pop-Ups.');
       return;
@@ -1710,7 +1710,7 @@ function HplcRtSection() {
   };
 
   const handlePrintReport = () => {
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
     if (!printWindow) {
       toast.error('Pop-up blocker prevented printing HPLC report.');
       return;
@@ -2053,7 +2053,7 @@ function MassSpecSection() {
   }, [chartPeaks]);
 
   const handlePrintMSReport = () => {
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
     if (!printWindow) {
       toast.error('Pop-up blocker prevented printing Mass Spec report.');
       return;

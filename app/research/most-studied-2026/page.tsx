@@ -21,6 +21,12 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Most Studied Peptides 2026' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Most Studied Peptides 2026 | Pep Nation Lab',
+    description: 'Trending research peptides ranked by research activity and publication velocity in 2026.',
+    images: ['/og-card.png'],
+  },
 };
 
 export const dynamic = 'force-dynamic';

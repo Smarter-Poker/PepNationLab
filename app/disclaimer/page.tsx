@@ -15,11 +15,41 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Pep Nation Lab Research Disclaimer' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Research-Only Disclaimer | Pep Nation Lab',
+    description: 'Research-only disclaimer governing all products on PepNationLab.com. For in vitro research use only.',
+    images: ['/og-card.png'],
+  },
 };
 
 export default function DisclaimerPage() {
   return (
-    <PageShell>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'WebPage',
+              '@id': 'https://pepnationlab.com/disclaimer#webpage',
+              url: 'https://pepnationlab.com/disclaimer',
+              name: 'Research-Only Disclaimer | Pep Nation Lab',
+              isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+              publisher: { '@id': 'https://pepnationlab.com/#organization' },
+            },
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+                { '@type': 'ListItem', position: 2, name: 'Disclaimer', item: 'https://pepnationlab.com/disclaimer' },
+              ],
+            },
+          ],
+        }) }}
+      />
+      <PageShell>
       <LegalDocument
         title="Research-Only Disclaimer"
         lastUpdated="May 21, 2026"
@@ -88,5 +118,6 @@ export default function DisclaimerPage() {
         ]}
       />
     </PageShell>
+    </>
   );
 }

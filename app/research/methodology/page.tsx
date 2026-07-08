@@ -42,7 +42,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
     {
-      '@type': 'AboutPage',
+      '@type': 'TechArticle',
       '@id': 'https://pepnationlab.com/research/methodology#webpage',
       url: 'https://pepnationlab.com/research/methodology',
       name: 'Editorial Standards And Research Methodology',

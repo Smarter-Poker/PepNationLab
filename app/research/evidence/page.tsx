@@ -86,6 +86,31 @@ export default async function EvidenceSafetyPage() {
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'WebPage',
+              '@id': 'https://pepnationlab.com/research/evidence#webpage',
+              url: 'https://pepnationlab.com/research/evidence',
+              name: 'Evidence and Safety Reference | Research Peptide Risk Data | Pep Nation Lab',
+              description: 'Cross-compound evidence tier ratings and safety flag reference for all catalog research peptides.',
+              isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+              publisher: { '@id': 'https://pepnationlab.com/#organization' },
+            },
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+                { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+                { '@type': 'ListItem', position: 3, name: 'Evidence & Safety Reference', item: 'https://pepnationlab.com/research/evidence' },
+              ],
+            },
+          ],
+        }) }}
+      />
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
           Back To Research Library

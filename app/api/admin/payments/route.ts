@@ -49,7 +49,9 @@ export async function GET() {
     open_owed: Math.round((owedByAgent.get(a.id) ?? 0) * 100) / 100,
   }));
 
-  return NextResponse.json({ agents: rows });
+  return NextResponse.json({ agents: rows }, {
+    headers: { 'Cache-Control': 'private, no-store, max-age=0' },
+  });
 }
 
 const Body = z.object({

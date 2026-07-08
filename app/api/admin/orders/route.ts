@@ -78,7 +78,9 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ data: filteredData });
+    return NextResponse.json({ data: filteredData }, {
+      headers: { 'Cache-Control': 'private, no-store, max-age=0' },
+    });
   } catch (err) {
     console.error('[admin/orders] GET error:', err);
     return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });

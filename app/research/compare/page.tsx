@@ -22,6 +22,13 @@ export const metadata: Metadata = {
     description: 'Side-by-side peptide comparison: mechanisms, half-lives, evidence, and dosing guides.',
     url: 'https://pepnationlab.com/research/compare',
     type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Research Compound Comparison Tool' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Compare Research Compounds | Pep Nation Lab',
+    description: 'Side-by-side peptide comparison: mechanisms, half-lives, research evidence, and handling.',
+    images: ['/og-card.png'],
   },
 };
 
@@ -42,6 +49,32 @@ export default async function CompareCompoundsPage({
 
   return (
     <div style={{ minHeight: '100dvh', position: 'relative' }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'WebPage',
+              '@id': 'https://pepnationlab.com/research/compare#webpage',
+              url: 'https://pepnationlab.com/research/compare',
+              name: 'Compare Research Compounds | Pep Nation Lab',
+              description: 'Side-by-side comparison of research-grade peptides. Compare mechanisms, half-lives, research evidence, and handling.',
+              isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+              publisher: { '@id': 'https://pepnationlab.com/#organization' },
+            },
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+                { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+                { '@type': 'ListItem', position: 3, name: 'Compare Compounds', item: 'https://pepnationlab.com/research/compare' },
+              ],
+            },
+          ],
+        }) }}
+      />
+
       {/* Dynamic Animated Background Mesh/Glow */}
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
         <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '60%', height: '80%', background: 'radial-gradient(ellipse at center, rgba(0, 196, 188, 0.08) 0%, rgba(0,0,0,0) 70%)', filter: 'blur(80px)' }} />

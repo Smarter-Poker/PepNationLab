@@ -28,10 +28,12 @@ export const metadata: Metadata = {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
+  '@id': 'https://pepnationlab.com/become-agent#webpage',
   name: 'Become A Distribution Agent',
   url: 'https://pepnationlab.com/become-agent',
   description:
     'Apply to operate a branded research peptide distribution storefront on the Pep Nation Lab platform. Earn commissions, access wholesale pricing, and serve your local research community.',
+  isPartOf: { '@id': 'https://pepnationlab.com/#website' },
   publisher: { '@id': 'https://pepnationlab.com/#organization' },
   breadcrumb: {
     '@type': 'BreadcrumbList',

@@ -135,6 +135,30 @@ export default async function FindAPeptidePage() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'WebPage',
+              '@id': 'https://pepnationlab.com/find-a-peptide#webpage',
+              url: 'https://pepnationlab.com/find-a-peptide',
+              name: 'Find A Peptide | AI-Powered Research Peptide Finder | Pep Nation Lab',
+              description: 'Find the right research peptide for your study goals. Browse 300+ RUO compounds by therapeutic area, mechanism, and evidence tier.',
+              isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+              publisher: { '@id': 'https://pepnationlab.com/#organization' },
+            },
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+                { '@type': 'ListItem', position: 2, name: 'Find A Peptide', item: 'https://pepnationlab.com/find-a-peptide' },
+              ],
+            },
+          ],
+        }) }}
+      />
       <Navbar />
       <div style={{ paddingTop: '60px', minHeight: '100dvh', backgroundColor: '#05070a' }}>
         <FindAPeptideClient

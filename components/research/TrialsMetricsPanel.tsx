@@ -187,7 +187,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
           </div>
           <a
             href={pubmedUrl}
-            onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(pubmedUrl) ? window.open(pubmedUrl, '_blank') : setModalUrl(pubmedUrl)); }}
+            onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(pubmedUrl) ? window.open(pubmedUrl, '_blank', 'noopener,noreferrer') : setModalUrl(pubmedUrl)); }}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: teal, textDecoration: 'none', fontWeight: 700, marginTop: 4 }}
           >
             Search {citations.toLocaleString()} publications on PubMed →
@@ -257,7 +257,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
 
           <a
             href={trialsUrl}
-            onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(trialsUrl) ? window.open(trialsUrl, '_blank') : setModalUrl(trialsUrl)); }}
+            onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(trialsUrl) ? window.open(trialsUrl, '_blank', 'noopener,noreferrer') : setModalUrl(trialsUrl)); }}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: '#68D391', textDecoration: 'none', fontWeight: 700 }}
           >
             Browse trials on ClinicalTrials.gov →
@@ -368,7 +368,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
             {chemblId && (
               <a
                 href={`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblId}/`}
-                onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblId}/`) ? window.open(`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblId}/`, '_blank') : setModalUrl(`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblId}/`)); }}
+                onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblId}/`) ? window.open(`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblId}/`, '_blank', 'noopener,noreferrer') : setModalUrl(`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblId}/`)); }}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -389,7 +389,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
             {uniprotId && (
               <a
                 href={`https://www.uniprot.org/uniprotkb/${uniprotId}/entry`}
-                onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(`https://www.uniprot.org/uniprotkb/${uniprotId}/entry`) ? window.open(`https://www.uniprot.org/uniprotkb/${uniprotId}/entry`, '_blank') : setModalUrl(`https://www.uniprot.org/uniprotkb/${uniprotId}/entry`)); }}
+                onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(`https://www.uniprot.org/uniprotkb/${uniprotId}/entry`) ? window.open(`https://www.uniprot.org/uniprotkb/${uniprotId}/entry`, '_blank', 'noopener,noreferrer') : setModalUrl(`https://www.uniprot.org/uniprotkb/${uniprotId}/entry`)); }}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -410,7 +410,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
             {unii && (
               <a
                 href={`https://precision.fda.gov/uniisearch/srs/unii/${unii}`}
-                onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(`https://precision.fda.gov/uniisearch/srs/unii/${unii}`) ? window.open(`https://precision.fda.gov/uniisearch/srs/unii/${unii}`, '_blank') : setModalUrl(`https://precision.fda.gov/uniisearch/srs/unii/${unii}`)); }}
+                onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(`https://precision.fda.gov/uniisearch/srs/unii/${unii}`) ? window.open(`https://precision.fda.gov/uniisearch/srs/unii/${unii}`, '_blank', 'noopener,noreferrer') : setModalUrl(`https://precision.fda.gov/uniisearch/srs/unii/${unii}`)); }}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -432,7 +432,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
             <a
               href={pubmedUrl}
-              onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(pubmedUrl) ? window.open(pubmedUrl, '_blank') : setModalUrl(pubmedUrl)); }}
+              onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(pubmedUrl) ? window.open(pubmedUrl, '_blank', 'noopener,noreferrer') : setModalUrl(pubmedUrl)); }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -451,7 +451,7 @@ export default function TrialsMetricsPanel({ compound }: Props) {
             </a>
             <a
               href={trialsUrl}
-              onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(trialsUrl) ? window.open(trialsUrl, '_blank') : setModalUrl(trialsUrl)); }}
+              onClick={(e) => { e.preventDefault(); (isSocialPlatformUrl(trialsUrl) ? window.open(trialsUrl, '_blank', 'noopener,noreferrer') : setModalUrl(trialsUrl)); }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',

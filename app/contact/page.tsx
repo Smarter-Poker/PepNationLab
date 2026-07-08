@@ -27,9 +27,11 @@ export const metadata: Metadata = {
 const contactJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'ContactPage',
+  '@id': 'https://pepnationlab.com/contact#webpage',
   name: 'Contact Pep Nation Lab',
   url: 'https://pepnationlab.com/contact',
   description: 'Contact Pep Nation Lab for research support, partnership, or account inquiries.',
+  isPartOf: { '@id': 'https://pepnationlab.com/#website' },
   publisher: { '@id': 'https://pepnationlab.com/#organization' },
 };
 

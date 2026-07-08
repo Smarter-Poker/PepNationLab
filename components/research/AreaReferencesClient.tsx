@@ -63,7 +63,7 @@ export default function AreaReferencesClient({ references }: { references: Refer
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    (isSocialPlatformUrl(r.url!) ? window.open(r.url!, '_blank') : setModalUrl(r.url!));
+                    (isSocialPlatformUrl(r.url!) ? window.open(r.url!, '_blank', 'noopener,noreferrer') : setModalUrl(r.url!));
                   }}
                   style={{
                     marginTop: '8px',

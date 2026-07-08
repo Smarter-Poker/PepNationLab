@@ -541,6 +541,33 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     } catch {}
   };
 
+  // Compute whether a scheduled protocol is due today, based on its frequency and the
+  // last logged dose for that compound. Defensive/null-safe; informational only.
+  const scheduleDueStatus = (s: any): { status: 'due' | 'logged' | 'upcoming'; label: string } => {
+    try {
+      const compound = s.compound_slug || s.compound;
+      const times = doses
+        .filter(d => d.compound_slug === compound && d.dosed_at)
+        .map(d => new Date(d.dosed_at).getTime())
+        .filter(t => Number.isFinite(t))
+        .sort((a, b) => b - a);
+      const todayKey = dayKey(new Date());
+      const loggedToday = times.some(t => dayKey(t) === todayKey);
+      const lastDays = times.length ? Math.floor((Date.now() - times[0]) / 86400000) : null;
+      const f = (s.frequency || '').toLowerCase();
+      let interval = 1;
+      if (f.includes('every other')) interval = 2;
+      else if (f.includes('twice')) interval = 3;
+      else if (f.includes('once') || f.includes('weekly')) interval = 7;
+      else interval = 1; // every day / 5-on-2-off approximated as daily
+      if (loggedToday) return { status: 'logged', label: 'Logged Today' };
+      if (lastDays === null || lastDays >= interval) return { status: 'due', label: 'Due Today' };
+      return { status: 'upcoming', label: `Next In ${Math.max(1, interval - lastDays)}d` };
+    } catch {
+      return { status: 'upcoming', label: '' };
+    }
+  };
+
 
   // Fetch researcher lab-journal data
   useEffect(() => {
@@ -2467,6 +2494,17 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                   {/* Protocol Scheduler */}
                   <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
                     <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 8 }}><Clock size={18} style={{ color: 'var(--teal)' }} /> Protocol Scheduler</h3>
+                    {scheduledDoses.length > 0 && (() => {
+                      const due = scheduledDoses.filter(s => scheduleDueStatus(s).status === 'due');
+                      return (
+                        <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)', borderRadius: 8, background: due.length ? 'rgba(0,196,188,0.08)' : 'rgba(255,255,255,0.03)', border: `1px solid ${due.length ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.06)'}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {due.length > 0 ? <Zap size={16} style={{ color: 'var(--teal)' }} /> : <Check size={16} style={{ color: 'var(--silver)' }} />}
+                          <span style={{ color: 'var(--white)', fontSize: '0.9rem' }}>
+                            {due.length > 0 ? `${due.length} Protocol${due.length === 1 ? '' : 's'} Due Today: ${due.map(s => s.compound_slug || s.compound).join(', ')}` : 'Nothing Due Today. You Are On Track.'}
+                          </span>
+                        </div>
+                      );
+                    })()}
                     <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
                       <select 
                         onChange={e => {
@@ -2508,6 +2546,14 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                           <div style={{ color: 'var(--teal)', fontWeight: 700 }}>{s.compound_slug || s.compound}</div>
                           <div style={{ color: 'var(--white)' }}>{s.amount} {s.unit}</div>
                           <div style={{ color: 'var(--silver)', fontSize: '0.85rem', marginTop: 4 }}><Clock size={12} style={{ display: 'inline', marginRight: 4 }} />{s.frequency}</div>
+                          {(() => {
+                            const st = scheduleDueStatus(s);
+                            if (!st.label) return null;
+                            const isDue = st.status === 'due';
+                            const color = isDue ? 'var(--black)' : st.status === 'logged' ? '#68D391' : 'var(--silver)';
+                            const bg = isDue ? 'var(--teal)' : 'rgba(255,255,255,0.06)';
+                            return <div style={{ marginTop: 8, display: 'inline-block', fontSize: '0.68rem', fontWeight: 700, color, background: bg, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{st.label}</div>;
+                          })()}
                         </div>
                       ))}
                       {scheduledDoses.length === 0 && <div style={{ color: 'var(--silver)' }}>No Scheduled Protocols Yet. Add One To Track Adherence.</div>}

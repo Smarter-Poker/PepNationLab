@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { getCompoundsBySlugs } from '@/lib/compounds-server';
 import type { StorefrontCatalogPayload } from '@/lib/storefront-cache';
@@ -53,7 +53,7 @@ export async function GET(
     return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
   }
 
-  const supabase = await createServiceClient();
+  const supabase = await createClient();
 
   // ── 1. Resolve agent ────────────────────────────────────────────────────────
   // Use .eq() not .ilike() - slugs are lowercase; .ilike() on a user-supplied

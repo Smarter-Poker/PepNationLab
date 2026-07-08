@@ -18,6 +18,13 @@ export const metadata: Metadata = {
     description: 'Alphabetical directory of 300+ research-grade peptides with mechanism, evidence, and handling data.',
     url: 'https://pepnationlab.com/research/a-z',
     type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630, alt: 'Peptide A-Z Index' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Peptide A-Z Index | Pep Nation Lab',
+    description: 'Alphabetical directory of 300+ research-grade peptides with mechanism, evidence, and handling data.',
+    images: ['/og-card.png'],
   },
 };
 
