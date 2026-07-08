@@ -22,7 +22,8 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
-        console.log('Recovery session detected.');
+        // Supabase has established the recovery session from the URL fragment;
+        // the form below is ready to accept the new password.
       }
     });
   }, [supabase.auth]);
