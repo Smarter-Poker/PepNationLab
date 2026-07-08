@@ -71,7 +71,7 @@ export default function MatchPage() {
           Match Me To A Peptide
         </h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1.05rem', marginTop: 'var(--space-2, 8px)', maxWidth: '760px' }}>
-          Tell Us Your Research Goal, Evidence Comfort, And Risk Tolerance. We Will Rank The Top 5 Candidate Compounds From{' '}
+          Tell Us Your Research Goal, Evidence Comfort, And Risk Tolerance, And The Engine Will Rank The Best-Matched Candidate Compounds From{' '}
           <Link href="/research" style={{ color: 'var(--teal, #00C4BC)' }}>The Library</Link>.
         </p>
       </header>
