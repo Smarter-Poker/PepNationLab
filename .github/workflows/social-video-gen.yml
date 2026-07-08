@@ -6,7 +6,8 @@ name: Social Video Generation (Grok)
 # on Vercel) because video generation is a multi-minute async job that needs
 # open network + ffmpeg.
 #
-# Trigger manually from the Actions tab ("Run workflow"), or on the weekly
+# Triggers: (1) manual "Run workflow", (2) auto on push to scripts/social/.trigger
+# so an agent can launch a run with a commit and no human click, (3) weekly
 # schedule. Requires repo secret XAI_API_KEY. Optional: SUPABASE_URL +
 # SUPABASE_SERVICE_ROLE_KEY to auto-upload finished clips to a public bucket.
 
@@ -25,6 +26,9 @@ on:
         description: "Upload finished clips to the Supabase public bucket (true/false)"
         required: true
         default: "true"
+  push:
+    paths:
+      - 'scripts/social/.trigger'
   schedule:
     # Mondays 08:00 UTC - a fresh weekly batch.
     - cron: "0 8 * * 1"
