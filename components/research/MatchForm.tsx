@@ -1,12 +1,11 @@
 'use client';
 
 import { useMemo, useState, useEffect, Suspense } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Sparkles, ChevronRight, ShieldCheck, Printer, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye } from 'lucide-react';
+import { Sparkles, ChevronRight, ShieldCheck, Printer, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye, Clock, Atom, Snowflake } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RESEARCH_AREAS, evidenceTier, RISK_META } from '@/lib/compounds';
+import { RESEARCH_AREAS } from '@/lib/compounds';
 import type {
   EvidenceComfort,
   MatchResult,
@@ -60,25 +59,34 @@ function tierColor(tier: string): string {
 
 
 function CircularScore({ score }: { score: number }) {
-  const radius = 18;
+  const size = 60;
+  const stroke = 5;
+  const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (score / 100) * circumference;
-  const color = score >= 80 ? '#68D391' : score >= 50 ? '#F6AD55' : '#FC8181';
+  const pct = Math.max(0, Math.min(100, Math.round(score)));
+  const strokeDashoffset = circumference - (pct / 100) * circumference;
+  const color = pct >= 80 ? '#3DD9A4' : pct >= 50 ? '#F6AD55' : '#FC8181';
 
   return (
-    <div style={{ position: 'relative', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg width="44" height="44" style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx="22" cy="22" r={radius} fill="transparent" stroke="rgba(255,255,255,0.1)" strokeWidth="4" />
+    <div
+      title={`Match score: ${pct} out of 100`}
+      style={{ position: 'relative', width: size, height: size, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    >
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
         <motion.circle
-          cx="22" cy="22" r={radius} fill="transparent"
-          stroke={color} strokeWidth="4"
+          cx={size / 2} cy={size / 2} r={radius} fill="none"
+          stroke={color} strokeWidth={stroke} strokeLinecap="round"
           strokeDasharray={circumference}
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset }}
           transition={{ duration: 1, ease: 'easeOut' }}
         />
       </svg>
-      <span style={{ position: 'absolute', fontSize: '0.8rem', fontWeight: 800, color: 'var(--white)' }}>{score}</span>
+      <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
+        <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--white)' }}>{pct}</span>
+        <span style={{ fontSize: '0.48rem', fontWeight: 700, letterSpacing: '0.1em', color: color, marginTop: 3 }}>MATCH</span>
+      </div>
     </div>
   );
 }
@@ -294,6 +302,48 @@ function MatchFormInner() {
         }
         .image-card:hover .card-overlay {
           background: rgba(0,196,188,0.1) !important;
+        }
+        .match-result-card {
+          transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .match-result-card:hover {
+          border-color: rgba(0,196,188,0.45) !important;
+          transform: translateY(-2px);
+          box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+        }
+        .match-head { display: flex; align-items: flex-start; gap: 18px; }
+        .match-name {
+          color: var(--white, #FFFFFF);
+          font-weight: 800;
+          font-size: 1.3rem;
+          letter-spacing: -0.01em;
+          text-decoration: none;
+          transition: color 0.15s ease;
+        }
+        .match-name:hover { color: var(--teal, #00C4BC); }
+        .match-rank {
+          display: inline-flex; align-items: center; justify-content: center;
+          min-width: 26px; height: 26px; padding: 0 8px;
+          border-radius: 8px; font-size: 0.82rem; font-weight: 800;
+          background: rgba(255,255,255,0.06); color: var(--silver-light, #D0DAE4);
+          border: 1px solid rgba(255,255,255,0.08); flex-shrink: 0;
+        }
+        .match-rank.top1 { background: linear-gradient(135deg,#F6C453,#E0A32E); color:#241A00; border-color:transparent; }
+        .match-rank.top2 { background: linear-gradient(135deg,#D7DEE6,#AEB9C6); color:#1A1F26; border-color:transparent; }
+        .match-rank.top3 { background: linear-gradient(135deg,#E0A579,#C07A45); color:#241304; border-color:transparent; }
+        .match-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        .match-chip {
+          display: inline-flex; align-items: center; gap: 6px;
+          font-size: 0.78rem; font-weight: 600; color: var(--silver, #A8B4C0);
+          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 999px; padding: 4px 11px;
+        }
+        .match-actions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+        .match-actions button { white-space: nowrap; justify-content: center; min-width: 118px; }
+        @media (max-width: 640px) {
+          .match-head { flex-wrap: wrap; }
+          .match-actions { flex-direction: row; width: 100%; }
+          .match-actions button { flex: 1; }
         }
       `}</style>
 
@@ -551,32 +601,32 @@ function MatchFormInner() {
                 </div>
                 <div style={{ display: 'grid', gap: 'var(--space-4, 16px)' }}>
                   {results.map((r, idx) => (
-                    <div key={r.slug} className="glass-panel" style={{ position: 'relative', padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
-                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                          <CircularScore score={r.score} />
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                              <span style={{ color: 'var(--teal, #00C4BC)', fontWeight: 800, fontSize: '1.4rem' }}>
-                                {idx + 1}. {r.displayName}
-                              </span>
-                              {(() => {
-                                const meta = evidenceTier(r.evidenceTier);
-                                return meta.badgeUrl ? (
-                                  <Image src={meta.badgeUrl} alt={meta.label} width={200} height={200} unoptimized style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 6, objectFit: 'contain', flexShrink: 0 }} />
-                                ) : (
-                                  <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: '999px', color: tierColor(r.evidenceTier), border: `1px solid ${tierColor(r.evidenceTier)}` }}>
-                                    {tierLabel(r.evidenceTier)}
-                                  </span>
-                                );
-                              })()}
-                            </div>
-                            <p style={{ margin: '8px 0 0', color: 'var(--silver-light, #D0DAE4)', lineHeight: 1.55, fontSize: '1rem' }}>
-                              {r.rationale}
-                            </p>
+                    <div key={r.slug} className="glass-panel match-result-card" style={{ position: 'relative', padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+                      <div className="match-head">
+                        <CircularScore score={r.score} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                            <span className={`match-rank${idx === 0 ? ' top1' : idx === 1 ? ' top2' : idx === 2 ? ' top3' : ''}`}>#{idx + 1}</span>
+                            <Link href={`/research/${r.slug}`} className="match-name">{r.displayName}</Link>
                           </div>
+                          <p style={{ margin: '10px 0 0', color: 'var(--silver-light, #D0DAE4)', lineHeight: 1.6, fontSize: '0.98rem' }}>
+                            {r.rationale}
+                          </p>
+                          {(r.halfLife || r.molecularWeight || r.isTempSensitive) && (
+                            <div className="match-chips">
+                              {r.halfLife && (
+                                <span className="match-chip"><Clock size={13} aria-hidden="true" /> Half-Life: {r.halfLife}</span>
+                              )}
+                              {r.molecularWeight && (
+                                <span className="match-chip"><Atom size={13} aria-hidden="true" /> {r.molecularWeight} Da</span>
+                              )}
+                              {r.isTempSensitive && (
+                                <span className="match-chip"><Snowflake size={13} aria-hidden="true" /> Cold Storage</span>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }} className="no-print">
+                        <div className="match-actions no-print">
                           <button onClick={() => { setSelectedDrawerCompound(r); setIsDrawerOpen(true); }} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}>
                             <Eye size={16} /> Quick View
                           </button>
@@ -660,24 +710,10 @@ function MatchFormInner() {
                 <tr style={{ borderBottom: '1px solid #1D2D3E' }}>
                   <td style={{ padding: '12px', color: '#A8B4C0' }}>Evidence Tier</td>
                   <td style={{ padding: '12px' }}>
-                    {(() => {
-                      const meta = evidenceTier(results[0].evidenceTier);
-                      return meta.badgeUrl ? (
-                        <Image src={meta.badgeUrl} alt={meta.label} width={200} height={200} unoptimized style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 6, objectFit: 'contain', flexShrink: 0 }} />
-                      ) : (
-                        <span style={{ color: tierColor(results[0].evidenceTier) }}>{tierLabel(results[0].evidenceTier)}</span>
-                      );
-                    })()}
+                    <span style={{ color: tierColor(results[0].evidenceTier), fontWeight: 700 }}>{tierLabel(results[0].evidenceTier)}</span>
                   </td>
                   <td style={{ padding: '12px' }}>
-                    {(() => {
-                      const meta = evidenceTier(results[1].evidenceTier);
-                      return meta.badgeUrl ? (
-                        <Image src={meta.badgeUrl} alt={meta.label} width={200} height={200} unoptimized style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 6, objectFit: 'contain', flexShrink: 0 }} />
-                      ) : (
-                        <span style={{ color: tierColor(results[1].evidenceTier) }}>{tierLabel(results[1].evidenceTier)}</span>
-                      );
-                    })()}
+                    <span style={{ color: tierColor(results[1].evidenceTier), fontWeight: 700 }}>{tierLabel(results[1].evidenceTier)}</span>
                   </td>
                 </tr>
 
