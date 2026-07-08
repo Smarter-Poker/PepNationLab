@@ -57,18 +57,26 @@ function htmlEscape(s) {
 }
 
 /**
- * A short, punctuation-free fragment of the local blurb. Content passes
- * (em dash normalization, quote curling) must not cause false failures,
- * so compare only the first few plain words.
+ * Punctuation-insensitive text normalization applied to BOTH the page HTML
+ * and the expected content fragments. Curly quotes, apostrophes (raw or
+ * HTML-escaped), hyphens, and em dashes all collapse to single spaces, so
+ * copy-editing passes (quote curling, em dash stripping) and React's entity
+ * escaping can never cause false failures. First run false-positived on 32
+ * cities whose blurbs contain apostrophes or hyphens in the opening words
+ * ("Schaumburg's Woodfield", "The third-largest city") - hence this.
  */
+function normalizeText(s) {
+  return s
+    .replace(/&#x27;|&#39;|&apos;|&quot;|&amp;|&#\d+;/g, ' ')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .toLowerCase()
+    .trim();
+}
+
+/** First few normalized words of the local blurb, for containment checks. */
 function blurbFragment(blurb) {
-  const words = blurb
-    .replace(/[^A-Za-z0-9 ]/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 4)
-    .join(' ');
-  return words.length >= 8 ? words : null;
+  const words = normalizeText(blurb).split(' ').filter(Boolean).slice(0, 6).join(' ');
+  return words.length >= 10 ? words : null;
 }
 
 function checkPage(city, html, finalUrl) {
@@ -110,8 +118,10 @@ function checkPage(city, html, finalUrl) {
   if (productLinks < 10) {
     failures.push(`live Top 10 not rendered (${productLinks} store deep links, expected >= 10)`);
   }
-  // 7. Local content
-  if (city.county && !html.includes(htmlEscape(city.county)) && !html.includes(city.county)) {
+  // 7. Local content - compared on normalized text so punctuation and
+  // entity-escaping differences can never produce false failures.
+  const normHtml = normalizeText(html);
+  if (city.county && !normHtml.includes(normalizeText(city.county))) {
     failures.push(`county "${city.county}" missing from page`);
   }
   if (city.zips && city.zips.length > 0 && !html.includes(city.zips[0])) {
@@ -119,7 +129,7 @@ function checkPage(city, html, finalUrl) {
   }
   if (city.localBlurb) {
     const frag = blurbFragment(city.localBlurb);
-    if (frag && !html.includes(frag) && !html.includes(htmlEscape(frag))) {
+    if (frag && !normHtml.includes(frag)) {
       failures.push('local blurb missing from page');
     }
   }
