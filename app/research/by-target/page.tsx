@@ -12,6 +12,21 @@ export const metadata: Metadata = {
   description:
     'Browse research compounds by receptor target. An alphabetized index of every annotated receptor in the Pep Nation Lab research library — select a target to see every compound studied against it. Research Use Only.',
   alternates: { canonical: 'https://pepnationlab.com/research/by-target' },
+  openGraph: {
+    title: 'Browse By Receptor Target | Research Library | Pep Nation Lab',
+    description: 'Browse research compounds by receptor target. An alphabetized index of every annotated receptor in the Pep Nation Lab research library.',
+    url: 'https://pepnationlab.com/research/by-target',
+    type: 'website',
+    images: [{ url: '/og-card.png', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@PepNationLab',
+    creator: '@PepNationLab',
+    title: 'Browse By Receptor Target | Research Library | Pep Nation Lab',
+    description: 'Browse research compounds by receptor target. An alphabetized index of every annotated receptor in the Pep Nation Lab research library.',
+    images: ['https://pepnationlab.com/images/og-card.jpg'],
+  },
   robots: {
     index: true,
     follow: true,
@@ -40,8 +55,33 @@ export default async function ResearchByTargetPage() {
   }
   const targets = Array.from(targetCounts.keys()).sort((a, b) => a.localeCompare(b));
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': 'https://pepnationlab.com/research/by-target#webpage',
+        url: 'https://pepnationlab.com/research/by-target',
+        name: 'Browse By Receptor Target | Research Library | Pep Nation Lab',
+        description: 'Browse research compounds by receptor target. An alphabetized index of every annotated receptor in the Pep Nation Lab research library.',
+        isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        publisher: { '@id': 'https://pepnationlab.com/#organization' }
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+          { '@type': 'ListItem', position: 3, name: 'By Target', item: 'https://pepnationlab.com/research/by-target' }
+        ]
+      }
+    ]
+  };
+
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
           Back To Research Library
@@ -76,5 +116,6 @@ export default async function ResearchByTargetPage() {
         </div>
       )}
     </div>
+    </>
   );
 }
