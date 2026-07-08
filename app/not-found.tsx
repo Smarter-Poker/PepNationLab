@@ -68,22 +68,51 @@ export default function NotFound() {
         >
           The Page You Are Looking For Does Not Exist Or Has Been Moved.
         </p>
-        <Link
-          href="/login"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "0.75rem 1.5rem",
-            background: "var(--teal, #00C4BC)",
-            color: "var(--black, #050A0F)",
-            borderRadius: "0.5rem",
-            fontWeight: 600,
-            textDecoration: "none",
-          }}
-        >
-          Return To Login
-        </Link>
+        {/* Invite lost visitors to browse guest-accessible destinations rather
+            than shoving them at a login wall (a conversion leak). This page
+            fires for every unmatched URL site-wide, including from search. */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", justifyContent: "center" }}>
+          <Link
+            href="/researchstore"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "0.75rem 1.5rem",
+              background: "var(--teal, #00C4BC)",
+              color: "var(--black, #050A0F)",
+              borderRadius: "0.5rem",
+              fontWeight: 700,
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Browse The Research Store
+          </Link>
+          <Link
+            href="/research"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "0.75rem 1.5rem",
+              background: "transparent",
+              border: "1px solid rgba(192,184,168,0.35)",
+              color: "var(--silver, #A8B4C0)",
+              borderRadius: "0.5rem",
+              fontWeight: 600,
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Explore The Research Library
+          </Link>
+        </div>
+        <div style={{ marginTop: "1.25rem" }}>
+          <Link href="/" style={{ fontSize: "0.85rem", color: "var(--grey-500, #6b7684)", textDecoration: "underline", textUnderlineOffset: 3 }}>
+            Go To Home
+          </Link>
+        </div>
       </div>
     </div>
   );
