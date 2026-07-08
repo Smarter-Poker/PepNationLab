@@ -318,8 +318,8 @@ function SignupForm() {
           )}
 
           {info && (
-            <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)', background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.25)', borderRadius: 8 }}>
-              <p style={{ fontSize: '0.82rem', color: 'var(--teal)', margin: 0 }}>{info}</p>
+            <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)', background: 'rgba(255,255,255,0.02)', border: '2px solid var(--silver-dark)', borderRadius: 8 }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--silver-light)', margin: 0, textAlign: 'center', lineHeight: 1.5 }}>{info}</p>
             </div>
           )}
 
@@ -336,14 +336,16 @@ function SignupForm() {
                   style={{ letterSpacing: '0.4em', fontSize: '1.2rem', textAlign: 'center' }}
                 />
               </div>
-              <button
-                type="submit"
-                className="btn btn-primary hover-lift"
-                style={{ width: '100%', justifyContent: 'center' }}
-                disabled={loading || code.length !== 6}
-              >
-                {loading ? 'Verifying...' : 'Verify & Create Account'}
-              </button>
+              <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: 'var(--space-5)' }}>
+                <button
+                  type="submit"
+                  className="btn btn-primary hover-lift"
+                  style={{ width: '100%', maxWidth: 300, justifyContent: 'center' }}
+                  disabled={loading || code.length !== 6}
+                >
+                  {loading ? 'Verifying...' : 'Verify & Create Account'}
+                </button>
+              </div>
               <div style={{ marginTop: 'var(--space-4)', display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
                 <button type="button" onClick={() => { setStep('form'); setError(''); setInfo(''); setCode(''); }}
                   style={{ background: 'none', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', padding: 0 }}>
