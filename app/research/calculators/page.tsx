@@ -27,6 +27,21 @@ export const metadata: Metadata = {
   },
 };
 
+// Visually-hidden pattern: present in the DOM + accessibility tree (read by
+// crawlers/screen readers), painted 1px + clipped so it never disturbs the
+// interactive hero below.
+const srOnly: React.CSSProperties = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: 'hidden',
+  clip: 'rect(0, 0, 0, 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+};
+
 const softwareJsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -107,6 +122,15 @@ export default function CalculatorsPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }}
       />
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '32px 16px 64px' }}>
+        {/* Server-rendered semantic heading for the interactive calculator tool. */}
+        <header style={srOnly}>
+          <h1>Peptide Research Calculators</h1>
+          <p>
+            Free calculators for peptide research: bacteriostatic water reconstitution volume by target
+            concentration, dosing by body weight, half-life decay curves, and injection-site scheduling.
+            For in vitro laboratory research use only.
+          </p>
+        </header>
         <CalculatorsClient />
       </div>
     </>
