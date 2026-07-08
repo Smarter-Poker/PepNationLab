@@ -71,7 +71,10 @@ function MarketIntel({ p, priceOverride }: { p: AgentProduct; priceOverride?: nu
   const yourCost = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost / (isBacWater ? 1 : 10) : null;
 
   const vsPct = yourPrice != null && mktAvg > 0 ? Math.round((yourPrice / mktAvg - 1) * 100) : null;
-  const headroom = yourCost != null ? mktAvg - yourCost : null;
+  // Live profit at the CURRENT listed price (priceOverride carries the
+  // in-progress edit), so this number updates dynamically as the price is
+  // typed rather than showing a static profit-at-market-average figure.
+  const currentProfit = yourCost != null && yourPrice != null ? yourPrice - yourCost : null;
 
   const below = vsPct != null && vsPct < -2;
   const above = vsPct != null && vsPct > 2;
@@ -95,16 +98,16 @@ function MarketIntel({ p, priceOverride }: { p: AgentProduct; priceOverride?: nu
           Your Price {badgeText}
         </span>
       )}
-      {headroom != null && headroom > 0 && (
-        <span style={{ fontSize: '0.68rem', color: 'var(--teal)', fontWeight: 700 }}>
-          Profit At Market Avg: ${headroom.toFixed(2)} / {unitLabel}
+      {currentProfit != null && (
+        <span style={{ fontSize: '0.68rem', color: currentProfit >= 0 ? 'var(--teal)' : '#FC8181', fontWeight: 700 }}>
+          Current Profit: ${currentProfit.toFixed(2)} / {unitLabel}
         </span>
       )}
     </div>
   );
 }
 
-export default function AgentStoreProducts({ agentId }: { agentId: string }) {
+export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost' }: { agentId: string; costLabel?: string }) {
   const [products, setProducts] = useState<AgentProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -238,7 +241,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
       return;
     }
     if (listedPrice < agentCostPer10) {
-      toast.error(`Listed Price Cannot Be Below Your Cost ($${(agentCostPer10 / (/bac\.?\s*water/i.test(currentProduct?.products?.name || "") ? 1 : 10)).toFixed(2)} / Vial).`);
+      toast.error(`Listed Price Cannot Be Below ${costLabel} ($${(agentCostPer10 / (/bac\.?\s*water/i.test(currentProduct?.products?.name || "") ? 1 : 10)).toFixed(2)} / Vial).`);
       return;
     }
     
@@ -501,7 +504,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                         )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Your Cost:</span>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
                             {p.agent_cost != null && p.agent_cost > 0 ? (
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
                             ) : (
@@ -581,7 +584,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                         )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Your Cost:</span>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
                             {p.agent_cost != null && p.agent_cost > 0 ? (
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
                             ) : (
@@ -707,7 +710,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                         )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Your Cost:</span>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
                             {p.agent_cost != null && p.agent_cost > 0 ? (
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
                             ) : (
@@ -787,7 +790,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                         )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Your Cost:</span>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
                             {p.agent_cost != null && p.agent_cost > 0 ? (
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
                             ) : (
