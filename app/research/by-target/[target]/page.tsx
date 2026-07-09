@@ -9,7 +9,7 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier } from '@/lib/compounds';
-import ReceptorAffinityHeatmap from '@/components/research/ReceptorAffinityHeatmap';
+import { ReceptorAffinityHeatmap } from '@/components/research/LazyCharts';
 
 type PageProps = { params: Promise<{ target: string }> };
 

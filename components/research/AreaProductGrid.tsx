@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { toTitleCase } from '@/lib/categoryImage';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FlaskConical, Dna, ArrowRight, X } from 'lucide-react';
 import { prewarmProxy } from '@/lib/ArticleProxyUtils';
