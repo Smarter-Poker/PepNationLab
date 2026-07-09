@@ -13,9 +13,11 @@
  *   - "Save", "Add To Reading Queue", "Subscribe" personalization buttons
  */
 
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getCompound, getAllCompounds, getCompoundBindings } from '@/lib/compounds-server';
 import { relatedCompounds } from '@/lib/compounds';
+import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
 import MonographTabs from '@/components/research/MonographTabs';
 import CompoundKnowledgePanel from '@/components/research/CompoundKnowledgePanel';
 import CompoundCityLinks from '@/components/CompoundCityLinks';
@@ -170,6 +172,60 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     variableMeasured: ['Molecular Weight', 'Amino Acid Sequence', 'Half-Life', 'Mechanism Of Action', 'Evidence Tier'],
   };
 
+  // FAQ built ONLY from fields this compound actually has -- never fabricated.
+  // Every entry is also rendered visibly further down the page, so the FAQPage
+  // schema below describes on-page content (Google requires this). Drives
+  // People-Also-Ask placements and AI answer-engine citations across every
+  // compound page.
+  const faqEntries: Array<{ q: string; a: string }> = [];
+  if (compound.plain_summary) {
+    faqEntries.push({ q: `What Is ${compound.display_name}?`, a: compound.plain_summary });
+  }
+  if (compound.mechanism) {
+    faqEntries.push({ q: `How Does ${compound.display_name} Work?`, a: compound.mechanism });
+  }
+  if ((compound.studied_for ?? []).length > 0) {
+    faqEntries.push({
+      q: `What Has ${compound.display_name} Been Studied For?`,
+      a: `In the referenced literature, ${compound.display_name} has been studied for ${(compound.studied_for ?? []).join(', ')}. This summarizes research focus only and is not a claim of efficacy.`,
+    });
+  }
+  if (compound.half_life) {
+    faqEntries.push({
+      q: `What Is The Reported Half-Life Of ${compound.display_name}?`,
+      a: `${compound.display_name} has a reported half-life of ${compound.half_life} in the referenced literature.`,
+    });
+  }
+  faqEntries.push({
+    q: `Is ${compound.display_name} Approved For Human Use?`,
+    a: `No. ${compound.display_name} is supplied strictly for in vitro laboratory research use only. It is not intended for human or animal consumption, ingestion, or injection, and it has not been evaluated by the FDA.`,
+  });
+
+  const faqJsonLd = faqEntries.length >= 2
+    ? {
+        '@type': 'FAQPage',
+        '@id': `https://pepnationlab.com/research/${compound.slug}#faq`,
+        mainEntity: faqEntries.map((f) => ({
+          '@type': 'Question',
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      }
+    : null;
+
+  // Curated "X vs Y" comparison pages that feature this compound. Surfacing
+  // them here links high-intent comparison pages into the monograph cluster
+  // (they were previously reachable only from the compare hub + sitemap).
+  const compareLinks = COMPARISON_PAIRS
+    .filter((p) => p.a === compound.slug || p.b === compound.slug)
+    .map((p) => {
+      const otherSlug = p.a === compound.slug ? p.b : p.a;
+      const other = all.find((x) => x.slug === otherSlug);
+      if (!other) return null;
+      return { href: `/research/compare/${matchupSlug(p.a, p.b)}`, name: other.display_name };
+    })
+    .filter((x): x is { href: string; name: string } => x !== null);
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -209,6 +265,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       medicalSubstance,
       chemicalSubstance,
       dataset,
+      ...(faqJsonLd ? [faqJsonLd] : []),
     ],
   };
 
@@ -278,6 +335,55 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         )}
         {bindings.length > 0 && <ReceptorAffinityHeatmap bindings={bindings} />}
       </div>
+
+      {/* Curated comparison pages featuring this compound. Server-rendered so
+          crawlers see the links, and it pulls high-intent "X vs Y" pages into
+          the monograph's internal-link cluster. */}
+      {compareLinks.length > 0 && (
+        <section
+          aria-label={`Compare ${compound.display_name} With Other Compounds`}
+          style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 var(--space-4, 16px) var(--space-6, 32px)' }}
+        >
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', margin: '0 0 12px' }}>
+            Compare {compound.display_name}
+          </h2>
+          <ul style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 18px', listStyle: 'none', padding: 0, margin: 0 }}>
+            {compareLinks.map((l) => (
+              <li key={l.href}>
+                <Link href={l.href} style={{ color: 'var(--teal, #00C4BC)', fontWeight: 600, textDecoration: 'none' }}>
+                  {compound.display_name} vs {l.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Visible FAQ. Mirrors the FAQPage JSON-LD emitted above -- schema must
+          describe content that is actually on the page. Also gives non-JS AI
+          crawlers a clean, quotable Q&A block. */}
+      {faqJsonLd && (
+        <section
+          aria-label={`${compound.display_name} Frequently Asked Questions`}
+          style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 var(--space-4, 16px) var(--space-6, 32px)' }}
+        >
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', margin: '0 0 12px' }}>
+            {compound.display_name} Frequently Asked Questions
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {faqEntries.map((f) => (
+              <details key={f.q} style={{ border: '1px solid rgba(192,184,168,0.14)', borderRadius: 10, padding: '14px 16px' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: '0.98rem', color: 'var(--white, #FFFFFF)' }}>
+                  {f.q}
+                </summary>
+                <p style={{ margin: '10px 0 0', lineHeight: 1.65, fontSize: '0.92rem', color: 'var(--silver-light, #D0DAE4)' }}>
+                  {f.a}
+                </p>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Internal Linking Strategy - Cross-link to Local SEO landing pages */}
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 var(--space-4, 16px) var(--space-6, 32px)' }}>
