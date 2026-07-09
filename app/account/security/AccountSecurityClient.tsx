@@ -20,7 +20,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import QRCode from 'qrcode';
+import { reportClientError } from '@/lib/report-client-error';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
@@ -129,10 +129,13 @@ export default function AccountSecurityClient({
         setQrDataUrl(totp.qr_code);
       } else if (totp.uri && typeof totp.uri === 'string') {
         try {
+          // qrcode is only needed when the TOTP enrollment QR is shown.
+          const QRCode = await import('qrcode');
           const url = await QRCode.toDataURL(totp.uri, { margin: 1, width: 240 });
           setQrDataUrl(url);
-        } catch {
+        } catch (err) {
           setQrDataUrl(null);
+          reportClientError('account.security.totp-qr', err);
         }
       }
     } catch {

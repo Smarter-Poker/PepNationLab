@@ -14,6 +14,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { reportClientError } from '@/lib/report-client-error';
 import { getProductImage } from '@/lib/categoryImage';
 import DynamicAddToCartButton from '@/components/storefront/DynamicAddToCartButton';
 import DynamicCartButton from '@/components/storefront/DynamicCartButton';
@@ -317,11 +318,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const acceptAddToCart = () => {
     try { localStorage.setItem(ADD_TO_CART_ACK_KEY, 'true'); } catch { /* ignore */ }
     setAddToCartAcknowledged(true);
+    // Deliberately non-blocking -- we never hold up the researcher's add-to-cart on
+    // an audit write. But a silent failure here means the MANDATORY layer-3
+    // 'add_to_cart' disclaimer row was never recorded, and previously nobody would
+    // ever know. Report it so the compliance gap is visible.
     fetch('/api/disclaimer-log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ layer: 'add_to_cart' }),
-    }).catch(() => { /* non-blocking */ });
+    }).catch((err) => reportClientError('cart.disclaimer-log.add_to_cart', err, { meta: { compliance: true, layer: 'add_to_cart' } }));
     if (pendingAddition) {
       const isBundle = (pendingAddition as any)._isBundle;
       if (isBundle) {
@@ -908,8 +913,9 @@ function CartDrawer() {
         bulkThreshold: item.bulkThreshold ?? undefined,
         weightOz: 0.5,
       });
-    } catch {
+    } catch (err) {
       toast.error(`Failed To Add ${rec.name}`);
+      reportClientError('cart.add-recommendation', err);
     }
   }, [addToCart]);
 
@@ -941,8 +947,9 @@ function CartDrawer() {
         qty
       );
       toast.success(`${qty} Vial${qty !== 1 ? 's' : ''} Of BAC Water Added`);
-    } catch {
+    } catch (err) {
       toast.error('Failed To Add BAC Water');
+      reportClientError('cart.add-bac-water', err);
     }
   }, [addToCart]);
 

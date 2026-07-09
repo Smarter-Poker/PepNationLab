@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useCart } from '@/components/CartContext';
+import { reportClientError } from '@/lib/report-client-error';
 import CartWarnings from '@/components/research/CartWarnings';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -430,7 +431,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           setZip(def.zip);
           setSaveAddress(false);
         }
-      } catch {
+      } catch (err) {
+        reportClientError('checkout.saved-addresses', err);
       } finally {
         if (!cancelled) setSavedAddressesLoading(false);
       }
@@ -604,9 +606,15 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         if (!res.ok) return;
         const json = await res.json();
         setLiveShippingRate(Number(json.rate) || 0);
-      } catch {
+      } catch (err) {
         const fallback = getShippingCost(shippingOption, totalWeightOz);
         setLiveShippingRate(fallback);
+        // AbortError is expected whenever this effect re-runs or unmounts -- reporting
+        // it would flood the sink. Only a real failure means we silently charged an
+        // estimated rate instead of the live one.
+        if ((err as { name?: string })?.name !== 'AbortError') {
+          reportClientError('checkout.live-shipping-rate', err, { meta: { fallbackRate: fallback } });
+        }
       }
     })();
     return () => ctrl.abort();
@@ -811,6 +819,22 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           }
         } catch { }
       }
+
+      // Record Layer 3 (add_to_cart) research-use acknowledgment before placing
+      // the order. The storefront grid persists its cart straight to
+      // localStorage without going through CartContext, so a grid-built cart
+      // never records this layer -- and /api/orders hard-refuses any order
+      // missing it. This is the one authenticated chokepoint every order passes
+      // through, and the user has just checked all three research-use
+      // acknowledgments above, so recording it here is both correct and the
+      // point that keeps grid-built carts from being rejected at checkout.
+      try {
+        await fetch('/api/disclaimer-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ layer: 'add_to_cart' }),
+        });
+      } catch { /* best-effort; /api/orders surfaces a clear error if truly missing */ }
 
       const response = await fetch('/api/orders', {
         method: 'POST',

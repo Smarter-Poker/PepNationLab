@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import QRCode from 'qrcode';
+import { reportClientError } from '@/lib/report-client-error';
 import { exportCSV, downloadCSV } from '@/lib/export';
 
 // Types
@@ -121,10 +121,16 @@ function QrModal({ coupon, storefront }: { coupon: Coupon; storefront: string })
   useEffect(() => {
     if (!canvasRef.current) return;
     const qrUrl = coupon.code ? `${storefront}?coupon=${coupon.code}` : storefront;
-    QRCode.toCanvas(canvasRef.current, qrUrl, {
-      width: 200,
-      color: { dark: '#00C4BC', light: '#0a0f14' },
-    }).catch(console.error);
+    // qrcode loads only when the QR modal actually opens.
+    import('qrcode')
+      .then((QRCode) => {
+        if (!canvasRef.current) return;
+        return QRCode.toCanvas(canvasRef.current, qrUrl, {
+          width: 200,
+          color: { dark: '#00C4BC', light: '#0a0f14' },
+        });
+      })
+      .catch((err) => reportClientError('agent.coupons.qr', err));
   }, [storefront, coupon.code]);
 
   return (

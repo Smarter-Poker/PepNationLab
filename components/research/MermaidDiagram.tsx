@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import mermaid from 'mermaid';
+import { reportClientError } from '@/lib/report-client-error';
 
 export default function MermaidDiagram({ chart }: { chart: string }) {
   const [svgContent, setSvgContent] = useState('');
@@ -9,32 +9,38 @@ export default function MermaidDiagram({ chart }: { chart: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'dark',
-      // 'strict' keeps mermaid's built-in DOMPurify sanitization of rendered
-      // SVG and disables click/script directives. Charts are developer-authored
-      // today, but 'strict' means a future dynamic chart source can't become an
-      // XSS sink. (Was 'loose', which disables that sanitization.)
-      securityLevel: 'strict',
-    });
+    let cancelled = false;
 
     const renderChart = async () => {
       setLoading(true);
       setError(false);
       try {
-        const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+        // mermaid is ~1MB -- by far the heaviest dependency on the research area
+        // pages. Load it only when a diagram actually renders, not with the route.
+        const mermaid = (await import('mermaid')).default;
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: 'dark',
+          // 'strict' keeps mermaid's built-in DOMPurify sanitization of rendered
+          // SVG and disables click/script directives. Charts are developer-authored
+          // today, but 'strict' means a future dynamic chart source can't become an
+          // XSS sink. (Was 'loose', which disables that sanitization.)
+          securityLevel: 'strict',
+        });
+
+        const id = `mermaid-${Math.random().toString(36).substring(2, 11)}`;
         const { svg } = await mermaid.render(id, chart);
-        setSvgContent(svg);
+        if (!cancelled) setSvgContent(svg);
       } catch (err) {
-        console.error('Mermaid render error:', err);
-        setError(true);
+        if (!cancelled) setError(true);
+        reportClientError('research.mermaid-diagram', err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     renderChart();
+    return () => { cancelled = true; };
   }, [chart]);
 
   if (loading) {
