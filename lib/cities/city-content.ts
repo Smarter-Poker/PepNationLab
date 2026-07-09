@@ -58,6 +58,15 @@ export function getRegionLabel(city: City): string {
   return city.region ?? REGION_FALLBACKS[city.stateSlug] ?? city.state;
 }
 
+/**
+ * Region label safe to follow with the noun "area" - avoids doubling when the
+ * label already ends in "area"/"Area" (e.g. "Chicagoland area", "Bay Area").
+ * "Greater Orlando" -> "Greater Orlando area"; "Bay Area" -> "Bay Area".
+ */
+export function getRegionArea(region: string): string {
+  return /area$/i.test(region.trim()) ? region : `${region} area`;
+}
+
 // ─── Deterministic per-city hash ──────────────────────────────────────────
 function cityHash(city: City): number {
   let h = city.tier;
@@ -76,9 +85,9 @@ const INTRO_VARIANTS = [
   (city: City) =>
     `Pep Nation Lab is the trusted wholesale source for research-grade peptides serving researchers in ${city.name}, ${city.stateAbbr} and across the ${getRegionLabel(city)}. Our curated catalog of 100+ research-grade compounds is backed by rigorous QA and full documentation, available exclusively to qualified scientific institutions and verified researchers.`,
   (city: City) =>
-    `The research community in ${city.name}, ${city.stateAbbr} demands quality. Pep Nation Lab delivers one of the nation's largest selections of high-purity, research-grade peptides shipped directly to qualified labs and research professionals in the ${getRegionLabel(city)} region.`,
+    `The research community in ${city.name}, ${city.stateAbbr} demands quality. Pep Nation Lab delivers one of the nation's largest selections of high-purity, research-grade peptides shipped directly to qualified labs and research professionals across the ${getRegionArea(getRegionLabel(city))}.`,
   (city: City) =>
-    `Researchers in ${city.name}, ${city.state} and the surrounding ${getRegionLabel(city)} area rely on Pep Nation Lab for wholesale access to 100+ research peptides, growth factors, and bioactive compounds. Every product is batch-tested, fully documented, and available with priority fulfillment for verified accounts.`,
+    `Researchers in ${city.name}, ${city.state} and the surrounding ${getRegionArea(getRegionLabel(city))} rely on Pep Nation Lab for wholesale access to 100+ research peptides, growth factors, and bioactive compounds. Every product is batch-tested, fully documented, and available with priority fulfillment for verified accounts.`,
   (city: City) =>
     `Home to roughly ${formatPopulation(city.population)} residents, ${city.name}, ${city.stateAbbr} sits within the ${getRegionLabel(city)} - a region with an active independent research community. Pep Nation Lab supplies that community with batch-tested, research-grade peptides at wholesale pricing, shipped directly to verified labs with full documentation.`,
   (city: City) =>
@@ -119,12 +128,12 @@ function faqPool(city: City): { core: FAQ[]; rotating: FAQ[] } {
         answer: `Qualified researchers in ${city.name} can create a verified account at PepNationLab.com. After identity and credential verification, you gain immediate access to our full catalog of 100+ research-grade peptides at wholesale pricing, with fast nationwide shipping directly to your lab or research facility.`,
       },
       {
-        question: `What peptides are most researched in the ${region} area?`,
-        answer: `Research trends in the ${region} region mirror national patterns: BPC-157, Semaglutide, and Tirzepatide consistently rank among the highest-demand compounds. Recovery peptides like TB-500 and longevity-focused compounds like Ipamorelin and CJC-1295 also see strong research interest from ${city.state} institutions.`,
+        question: `What peptides are most researched in the ${getRegionArea(region)}?`,
+        answer: `Research trends in the ${getRegionArea(region)} mirror national patterns: BPC-157, Semaglutide, and Tirzepatide consistently rank among the highest-demand compounds. Recovery peptides like TB-500 and longevity-focused compounds like Ipamorelin and CJC-1295 also see strong research interest from ${city.state} institutions.`,
       },
       {
         question: `Is there an agent or representative near ${city.name}?`,
-        answer: `Pep Nation Lab operates through a nationwide agent network. You may find a verified PNL agent serving the ${region} area through our Become An Agent program. Agents offer localized support, education, and account management for research institutions in ${city.name} and nearby cities.`,
+        answer: `Pep Nation Lab operates through a nationwide agent network. You may find a verified PNL agent serving the ${getRegionArea(region)} through our Become An Agent program. Agents offer localized support, education, and account management for research institutions in ${city.name} and nearby cities.`,
       },
       {
         question: `How is purity verified on peptides shipped to ${city.name}?`,

@@ -15,7 +15,7 @@ import Image from 'next/image';
 import { CITIES } from '@/lib/cities/cities-data';
 import type { City } from '@/lib/cities/cities-data';
 import { FEATURED_PEPTIDES } from '@/lib/cities/keywords';
-import { getCityIntro, getCityFAQs, getCityFacts, VALUE_PROPS, getRegionLabel } from '@/lib/cities/city-content';
+import { getCityIntro, getCityFAQs, getCityFacts, VALUE_PROPS, getRegionLabel, getRegionArea } from '@/lib/cities/city-content';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import type { StoreTop10Item } from '@/lib/cities/top10-server';
 
@@ -559,7 +559,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
                   <span style={{ color: '#d4cdbb' }}>{city.name}</span>
                 </h2>
                 <p style={{ color: 'var(--grey-400)', lineHeight: 1.7, margin: 0, fontSize: '0.9rem' }}>
-                  Join the Pep Nation Lab agent network and build your business in the {region} area. Earn recurring commissions by connecting qualified researchers with premium compounds at wholesale pricing.
+                  Join the Pep Nation Lab agent network and build your business in the {getRegionArea(region)}. Earn recurring commissions by connecting qualified researchers with premium compounds at wholesale pricing.
                 </p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', alignItems: 'center' }}>
@@ -593,7 +593,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
                 <span style={{ color: 'var(--teal)' }}>{city.name}, {city.stateAbbr}</span>
               </h2>
               <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem' }}>
-                Common questions from researchers in {city.name} and the {region} area.
+                Common questions from researchers in {city.name} and the {getRegionArea(region)}.
               </p>
             </div>
 

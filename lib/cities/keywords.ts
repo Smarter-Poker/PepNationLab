@@ -3,75 +3,10 @@
  * Peptide keyword clusters for local SEO city landing pages.
  */
 
-export interface KeywordCluster {
-  primary: string;
-  secondary: string[];
-  intent: 'commercial' | 'informational' | 'local';
-  searchVolumeTier: 'high' | 'medium' | 'low';
-}
 
-export const KEYWORD_CLUSTERS: KeywordCluster[] = [
-  {
-    primary: 'peptide therapy {city}',
-    secondary: ['peptide therapy near {city}', 'peptide therapy {city} {state}', 'peptide clinics {city}'],
-    intent: 'local',
-    searchVolumeTier: 'high',
-  },
-  {
-    primary: 'research peptides {city}',
-    secondary: ['buy research peptides {city}', 'peptide research {city} {state}', 'research grade peptides {city}'],
-    intent: 'commercial',
-    searchVolumeTier: 'high',
-  },
-  {
-    primary: 'semaglutide {city}',
-    secondary: ['semaglutide near {city}', 'semaglutide {state}', 'semaglutide peptide {city}'],
-    intent: 'local',
-    searchVolumeTier: 'high',
-  },
-  {
-    primary: 'BPC-157 {city}',
-    secondary: ['BPC 157 {city}', 'BPC-157 research {city}', 'BPC-157 {state}'],
-    intent: 'commercial',
-    searchVolumeTier: 'medium',
-  },
-  {
-    primary: 'tirzepatide {city}',
-    secondary: ['tirzepatide near {city}', 'tirzepatide peptide {city}', 'tirzepatide research {city}'],
-    intent: 'local',
-    searchVolumeTier: 'high',
-  },
-  {
-    primary: 'TB-500 {city}',
-    secondary: ['TB500 {city}', 'TB-500 research {city}', 'TB-500 peptide {state}'],
-    intent: 'commercial',
-    searchVolumeTier: 'medium',
-  },
-  {
-    primary: 'weight loss peptides {city}',
-    secondary: ['peptides for weight loss {city}', 'metabolic peptides {city}', 'GLP-1 peptides {city}'],
-    intent: 'local',
-    searchVolumeTier: 'high',
-  },
-  {
-    primary: 'anti-aging peptides {city}',
-    secondary: ['longevity peptides {city}', 'peptide anti-aging research {city}'],
-    intent: 'informational',
-    searchVolumeTier: 'medium',
-  },
-  {
-    primary: 'peptide clinic {city}',
-    secondary: ['peptide wellness {city}', 'peptide center {city}', 'peptide lab {city}'],
-    intent: 'local',
-    searchVolumeTier: 'medium',
-  },
-  {
-    primary: 'ipamorelin CJC-1295 {city}',
-    secondary: ['growth hormone peptides {city}', 'GHRP peptides {city}'],
-    intent: 'commercial',
-    searchVolumeTier: 'low',
-  },
-];
+// (Removed unused KEYWORD_CLUSTERS export — no keyword <meta> is emitted on
+// city pages by design; kept FEATURED_PEPTIDES which is used as the Top-10
+// fallback list.)
 
 /**
  * Featured peptides shown on city landing pages.
