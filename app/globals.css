@@ -2996,7 +2996,6 @@ body > * {
 .messenger-shell header {
   padding-top: 12px !important;
 }
-
 /* ============================================================
    ROUND 7 — NAVBAR ICON RESIZE + MESSENGER TWO-PANE FIX
    ============================================================ */
@@ -3709,13 +3708,71 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
        - Client-rendered (React CSSOM) normalizes WITH a space -> "font-size: 0.55rem"
      Prefix matching ("0.5"/"0.6"/"0.7") floors every hundredth value in one
      selector across both paths. */
+  [style*="font-size:0.4"],
   [style*="font-size:0.5"],
   [style*="font-size:0.6"],
   [style*="font-size:0.7"],
+  [style*="font-size: 0.4"],
   [style*="font-size: 0.5"],
   [style*="font-size: 0.6"],
   [style*="font-size: 0.7"] {
     font-size: 0.82rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Pixel-unit inline font-size floor. Same dual-serialization rule applies.
+     Scoped to text-bearing HTML elements so SVG chart labels and form controls
+     (already floored to 16px to stop iOS zoom) are left alone. */
+  div[style*="font-size:9px"],
+  div[style*="font-size: 9px"],
+  div[style*="font-size:10px"],
+  div[style*="font-size: 10px"],
+  div[style*="font-size:11px"],
+  div[style*="font-size: 11px"],
+  span[style*="font-size:9px"],
+  span[style*="font-size: 9px"],
+  span[style*="font-size:10px"],
+  span[style*="font-size: 10px"],
+  span[style*="font-size:11px"],
+  span[style*="font-size: 11px"],
+  p[style*="font-size:9px"],
+  p[style*="font-size: 9px"],
+  p[style*="font-size:10px"],
+  p[style*="font-size: 10px"],
+  p[style*="font-size:11px"],
+  p[style*="font-size: 11px"],
+  li[style*="font-size:10px"],
+  li[style*="font-size: 10px"],
+  li[style*="font-size:11px"],
+  li[style*="font-size: 11px"],
+  td[style*="font-size:10px"],
+  td[style*="font-size: 10px"],
+  td[style*="font-size:11px"],
+  td[style*="font-size: 11px"],
+  th[style*="font-size:10px"],
+  th[style*="font-size: 10px"],
+  th[style*="font-size:11px"],
+  th[style*="font-size: 11px"],
+  a[style*="font-size:10px"],
+  a[style*="font-size: 10px"],
+  a[style*="font-size:11px"],
+  a[style*="font-size: 11px"],
+  small[style*="font-size:10px"],
+  small[style*="font-size: 10px"],
+  small[style*="font-size:11px"],
+  small[style*="font-size: 11px"],
+  label[style*="font-size:10px"],
+  label[style*="font-size: 10px"],
+  label[style*="font-size:11px"],
+  label[style*="font-size: 11px"] {
+    font-size: 0.82rem !important;
+  }
+
+  /* Class-based legibility gap: city SEO page stat labels render at 10.4px. */
+  .city-stat-label {
+    font-size: 0.82rem !important;
+    letter-spacing: 0.06em !important;
   }
 }
 
@@ -4370,5 +4427,4 @@ html {
     min-width: 36px;
   }
 }
-
 
