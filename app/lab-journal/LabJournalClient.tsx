@@ -3,12 +3,20 @@
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import SmartStackBuilder from '@/components/researcher/SmartStackBuilder';
 import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, TrendingDown, XCircle, Layers, FlaskConical, Zap, Target, Activity, Calendar, Syringe, Flame, Clock, Droplet, MapPin, Repeat, ChevronRight, Beaker, Gauge, Camera } from 'lucide-react';
-import { Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ComposedChart, Bar, ReferenceLine, Area, AreaChart, Scatter, RadialBar, RadialBarChart, Cell, ReferenceArea } from 'recharts';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { getProductImage } from '@/lib/categoryImage';
 import DynamicAddToCartButton from '@/components/storefront/DynamicAddToCartButton';
+
+// recharts (~400KB) is code-split: the default 'bundles' tab renders no charts,
+// so most Lab Journal visits never download it.
+const BiometricTrendChart = dynamic(() => import('@/components/lab-journal/LabJournalCharts').then((m) => m.BiometricTrendChart), { ssr: false, loading: () => <div style={{ width: '100%', height: '100%' }} aria-hidden="true" /> });
+const BiometricDoseOverlayChart = dynamic(() => import('@/components/lab-journal/LabJournalCharts').then((m) => m.BiometricDoseOverlayChart), { ssr: false, loading: () => <div style={{ width: '100%', height: '100%' }} aria-hidden="true" /> });
+const AdherenceRing = dynamic(() => import('@/components/lab-journal/LabJournalCharts').then((m) => m.AdherenceRing), { ssr: false, loading: () => <div style={{ width: '100%', height: '100%' }} aria-hidden="true" /> });
+const ActiveInSystemChart = dynamic(() => import('@/components/lab-journal/LabJournalCharts').then((m) => m.ActiveInSystemChart), { ssr: false, loading: () => <div style={{ width: '100%', height: '100%' }} aria-hidden="true" /> });
+const MetricSparkline = dynamic(() => import('@/components/lab-journal/LabJournalCharts').then((m) => m.MetricSparkline), { ssr: false, loading: () => <div style={{ width: '100%', height: '100%' }} aria-hidden="true" /> });
 
 interface Item {
   product_id: string;
@@ -1286,28 +1294,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           </div>
         </div>
         <div style={{ width: '100%', height: 300 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
-              <defs>
-                <linearGradient id={`grad-${metric.replace(/\W/g, '')}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#00E5FF" stopOpacity={0.25} />
-                  <stop offset="100%" stopColor="#00E5FF" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-              <XAxis dataKey="label" stroke="rgba(255,255,255,0.3)" tick={{ fill: 'var(--silver)', fontSize: 10 }} tickLine={false} axisLine={false} minTickGap={24} />
-              <YAxis domain={[Math.floor(yMin * 0.97), Math.ceil(yMax * 1.03)]} stroke="rgba(255,255,255,0.3)" tick={{ fill: 'var(--silver)', fontSize: 10 }} tickLine={false} axisLine={false} />
-              <RechartsTooltip contentStyle={{ backgroundColor: '#1A202C', borderColor: 'rgba(255,255,255,0.1)', borderRadius: 8 }} itemStyle={{ color: '#fff', fontSize: '0.85rem' }} labelStyle={{ color: 'var(--silver)' }} />
-              {goal != null && !isNaN(goal) && <ReferenceLine y={goal} stroke="var(--teal)" strokeDasharray="5 4" label={{ value: `Goal ${goal}`, fill: 'var(--teal)', fontSize: 10, position: 'insideTopRight' }} />}
-              {doseDays.map(dd => {
-                const pt = data.find(d => d.label === dd);
-                return pt ? <ReferenceLine key={dd} x={dd} stroke="rgba(246,173,85,0.25)" strokeWidth={1} /> : null;
-              })}
-              <Area type="monotone" dataKey="trend" stroke="none" fill={`url(#grad-${metric.replace(/\W/g, '')})`} />
-              <Scatter dataKey="raw" fill="rgba(208,218,228,0.55)" />
-              <Line type="monotone" dataKey="trend" name="Trend" stroke="#00E5FF" strokeWidth={3} dot={false} activeDot={{ r: 5 }} />
-            </ComposedChart>
-          </ResponsiveContainer>
+          <BiometricTrendChart data={data} metric={metric} goal={goal} doseDays={doseDays} yMin={yMin} yMax={yMax} />
         </div>
         <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: '0.75rem', color: 'var(--silver)' }}>
           <span><span style={{ display: 'inline-block', width: 10, height: 3, background: '#00E5FF', verticalAlign: 'middle', marginRight: 4 }} />Weighted Trend</span>
@@ -1462,30 +1449,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                 Active Target: {goal}
              </div>
           )}
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-              <XAxis dataKey="date" stroke="rgba(255,255,255,0.3)" tick={{fill: 'var(--silver)', fontSize: 11}} tickLine={false} axisLine={false} />
-              <YAxis yAxisId="left" stroke="rgba(255,255,255,0.3)" tick={{fill: 'var(--silver)', fontSize: 11}} tickLine={false} axisLine={false} />
-              <YAxis yAxisId="right" orientation="right" stroke="rgba(255,255,255,0.3)" tick={{fill: 'var(--silver)', fontSize: 11}} tickLine={false} axisLine={false} />
-              <RechartsTooltip 
-                contentStyle={{ backgroundColor: '#1A202C', borderColor: 'rgba(255,255,255,0.1)', borderRadius: 8 }} 
-                itemStyle={{ color: '#fff', fontSize: '0.9rem' }} 
-                labelStyle={{ color: 'var(--silver)', marginBottom: 4 }}
-              />
-              <Legend wrapperStyle={{ paddingTop: 10, fontSize: '0.85rem', color: 'var(--silver)' }} />
-              
-              {goal && <ReferenceLine yAxisId="left" y={goal} stroke="var(--teal)" strokeDasharray="4 4" />}
-              
-              {metric !== 'Doses Only' && (
-                <Line yAxisId="left" type="monotone" name={`${metric} Trend`} dataKey={metric} stroke="var(--white)" strokeWidth={3} dot={{r: 4, fill: '#1A202C', stroke: 'var(--white)', strokeWidth: 2}} activeDot={{r: 6}} connectNulls />
-              )}
-              
-              {compoundsPresent.map((cmp, idx) => (
-                <Bar key={cmp} yAxisId={metric !== 'Doses Only' ? "right" : "left"} name={`${cmp} Dose`} dataKey={cmp} fill={colors[idx % colors.length]} opacity={0.6} radius={[4,4,0,0]} barSize={20} />
-              ))}
-            </ComposedChart>
-          </ResponsiveContainer>
+          <BiometricDoseOverlayChart chartData={chartData} metric={metric} goal={goal} compoundsPresent={compoundsPresent} colors={colors} />
         </div>
       </div>
     );
@@ -2245,11 +2209,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
                     <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                       <div style={{ width: 72, height: 72, position: 'relative', flexShrink: 0 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RadialBarChart innerRadius="70%" outerRadius="100%" data={[{ v: doseStats.adherence ?? 0, fill: 'var(--teal)' }]} startAngle={90} endAngle={-270}>
-                            <RadialBar background={{ fill: 'rgba(255,255,255,0.08)' }} dataKey="v" cornerRadius={20} />
-                          </RadialBarChart>
-                        </ResponsiveContainer>
+                        <AdherenceRing adherence={doseStats.adherence} />
                         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--white)', fontWeight: 800, fontSize: '1rem' }}>
                           {doseStats.adherence != null ? `${doseStats.adherence}%` : '--'}
                         </div>
@@ -2446,27 +2406,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     <p style={{ color: 'var(--silver)', fontSize: '0.8rem', marginTop: 0, marginBottom: 'var(--space-4)' }}>Informational Half-Life Decay Estimate, Normalized Per Compound To Its Own Peak. Dashed Region Is Projected.</p>
                     {activeInSystem.data.length > 0 ? (
                       <div style={{ width: '100%', height: 320 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={activeInSystem.data} margin={{ top: 10, right: 8, left: -20, bottom: 0 }}>
-                            <defs>
-                              {activeInSystem.compounds.map((c, i) => (
-                                <linearGradient key={c} id={`ais-${i}`} x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.35} />
-                                  <stop offset="100%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.02} />
-                                </linearGradient>
-                              ))}
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                            <XAxis dataKey="label" stroke="rgba(255,255,255,0.3)" tick={{ fill: 'var(--silver)', fontSize: 10 }} tickLine={false} axisLine={false} minTickGap={28} />
-                            <YAxis stroke="rgba(255,255,255,0.3)" tick={{ fill: 'var(--silver)', fontSize: 10 }} tickLine={false} axisLine={false} domain={[0, 100]} unit="%" />
-                            <RechartsTooltip contentStyle={{ backgroundColor: '#1A202C', borderColor: 'rgba(255,255,255,0.1)', borderRadius: 8 }} itemStyle={{ fontSize: '0.8rem' }} labelStyle={{ color: 'var(--silver)' }} />
-                            <Legend wrapperStyle={{ fontSize: '0.8rem' }} />
-                            <ReferenceLine x={new Date().toLocaleDateString([], { month: 'short', day: 'numeric' })} stroke="rgba(255,255,255,0.35)" strokeDasharray="4 4" label={{ value: 'Now', fill: 'var(--silver)', fontSize: 10, position: 'top' }} />
-                            {activeInSystem.compounds.map((c, i) => (
-                              <Area key={c} type="monotone" dataKey={c} name={c} stroke={CHART_COLORS[i % CHART_COLORS.length]} strokeWidth={2} fill={`url(#ais-${i})`} dot={false} />
-                            ))}
-                          </AreaChart>
-                        </ResponsiveContainer>
+                        <ActiveInSystemChart data={activeInSystem.data} compounds={activeInSystem.compounds} colors={CHART_COLORS} />
                       </div>
                     ) : <div style={{ color: 'var(--silver)', padding: 'var(--space-4)' }}>Log Doses To See Your Estimated Concentration Curve.</div>}
                   </div>
@@ -2726,17 +2666,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                               <div style={{ color: 'var(--silver)', fontSize: '0.8rem' }}>{s.unit}</div>
                             </div>
                             <div style={{ height: 34, margin: '6px 0' }}>
-                              <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={s.spark} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
-                                  <defs>
-                                    <linearGradient id={`sp-${metric.replace(/\W/g, '')}`} x1="0" y1="0" x2="0" y2="1">
-                                      <stop offset="0%" stopColor="#00E5FF" stopOpacity={0.4} />
-                                      <stop offset="100%" stopColor="#00E5FF" stopOpacity={0} />
-                                    </linearGradient>
-                                  </defs>
-                                  <Area type="monotone" dataKey="v" stroke="#00E5FF" strokeWidth={1.5} fill={`url(#sp-${metric.replace(/\W/g, '')})`} dot={false} />
-                                </AreaChart>
-                              </ResponsiveContainer>
+                              <MetricSparkline spark={s.spark} metric={metric} />
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
                               <span style={{ color: deltaColor(s.d7), display: 'flex', alignItems: 'center', gap: 2 }}>
