@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import type { RangePreset } from '@/lib/sales-range';
 import SalesFilterBar from './SalesFilterBar';
 import SalesKPIStrip from './SalesKPIStrip';
-import SalesTimeseriesChart from './SalesTimeseriesChart';
+import SalesTimeseriesChart from './LazySalesTimeseriesChart';
 import GoalTracker from './GoalTracker';
 import AutoInsightsCallouts from './AutoInsightsCallouts';
 import SalesHeatmap from './SalesHeatmap';

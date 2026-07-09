@@ -1,10 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import Pagination from '@/components/Pagination';
 import { exportCSV, downloadCSV } from '@/lib/export';
+
+// recharts (~400KB) now loads only when the chart renders, not with the page.
+const AdminRevenueByAgentChart = dynamic(() => import('@/components/sales/AdminRevenueByAgentChart'), {
+  ssr: false,
+  loading: () => <div style={{ minHeight: 250 }} aria-hidden="true" />,
+});
 
 const PAGE_SIZE = 25;
 
@@ -189,21 +195,7 @@ export default function AdminSalesPage() {
             <div className="glass-panel hover-lift stagger-fade-in" style={{ height: 320, marginBottom: 'var(--space-8)', animationDelay: '0.3s' }}>
               <div className="" style={{ padding: 'var(--space-6)', height: '100%' }}>
                 <h3 style={{ fontSize: '1.1rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', marginBottom: 'var(--space-4)' }}>Revenue By Agent</h3>
-                <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={data.agents.map((a) => ({ ...a, total_revenue: Number(a.total_revenue) || 0 }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="full_name" stroke="#7B8794" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#7B8794" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
-                  <Tooltip
-                    cursor={{ fill: 'rgba(0,196,188,0.08)' }}
-                    contentStyle={{ backgroundColor: '#0F1923', border: '1px solid #1D2D3E', borderRadius: 8 }}
-                    itemStyle={{ color: 'var(--silver)' }}
-                    formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Revenue']}
-                    labelStyle={{ color: 'var(--grey-400)', marginBottom: 4 }}
-                  />
-                  <Bar dataKey="total_revenue" fill="#C0B8A8" radius={[4, 4, 0, 0]} maxBarSize={72} isAnimationActive={false} />
-                </BarChart>
-                </ResponsiveContainer>
+                <AdminRevenueByAgentChart agents={data.agents} />
               </div>
             </div>
           )}
