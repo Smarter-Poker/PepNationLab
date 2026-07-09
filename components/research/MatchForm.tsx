@@ -87,7 +87,12 @@ function CircularScore({ score }: { score: number }) {
   const circumference = 2 * Math.PI * radius;
   const pct = Math.max(0, Math.min(100, Math.round(score)));
   const strokeDashoffset = circumference - (pct / 100) * circumference;
-  const color = pct >= 80 ? '#3DD9A4' : pct >= 50 ? '#F6AD55' : '#FC8181';
+  // Calibrated to the engine's real score distribution. A strong match
+  // (research-area tag + keyword + solid evidence tier + research interest)
+  // lands in the high 70s-90s; a keyword-only match lands in the 40s. The old
+  // 80/50 cutoffs were tuned for the pre-gradient engine, where nearly every
+  // relevant compound scored ~90, and made strong results render amber.
+  const color = pct >= 75 ? '#3DD9A4' : pct >= 45 ? '#F6AD55' : '#FC8181';
 
   return (
     <div
