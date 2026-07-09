@@ -290,7 +290,12 @@ RESEND_API_KEY=<set in Vercel dashboard>
 RESEND_FROM_EMAIL=research@pepnationlab.com
 ```
 
-> **Note:** Email notifications are currently DISABLED. The `lib/email.ts` file stubs out all email functions with no-ops per user request ("zero email notifications").
+> **Note:** Transactional email is ENABLED via a zero-dependency HTTP sender in
+> `lib/email.ts` (calls the Resend API over `fetch`; no `resend` npm package
+> required). It is configured through Vercel env vars (`EMAIL_PROVIDER`,
+> `RESEND_API_KEY`, `EMAIL_FROM`, optional `EMAIL_REPLY_TO`). When no provider or
+> key is set, every send is a safe no-op that logs and returns `{ skipped: true }`,
+> so flows never break when email is unconfigured.
 
 ---
 
@@ -380,7 +385,7 @@ RESEND_FROM_EMAIL=research@pepnationlab.com
 | Charts | recharts 3.8 |
 | Toasts | sonner 2.0 |
 | Shipping | Shippo SDK 2.18 |
-| Email | Disabled platform-wide -- `resend` removed from dependencies; `lib/email.ts` is a no-op shim |
+| Email | Enabled -- zero-dependency HTTP sender in `lib/email.ts` (Resend API via `fetch`, no npm package); safe no-op when unconfigured |
 | QR Codes | qrcode 1.5 |
 | Validation | zod 4.4 |
 | Hosting | Vercel |
@@ -504,7 +509,7 @@ pepnationlab/
   lib/
     admin-auth.ts           # requireAdmin(), requireAgent(), requireOrdersAccess()
     coupons.ts              # Coupon validation logic
-    email.ts                # Email (DISABLED -- all no-ops)
+    email.ts                # Transactional email (Resend HTTP API via fetch; no-op when unconfigured)
     statements.ts           # Weekly statement computation and persistence
     supabase/
       client.ts             # Browser Supabase client (createBrowserClient)
@@ -885,7 +890,7 @@ GET  /api/affiliate/referral-link -- Get referral link
 ### Site State
 - **Site is locked:** Home page redirects to `/login`. Only authenticated users can access most pages.
 - **Registration disabled:** `/register` permanently redirects to `/login` via middleware; `POST /api/auth/register` returns 410 Gone.
-- **Email disabled:** All email functions are no-ops in `lib/email.ts`. `resend` is no longer a dependency.
+- **Email enabled:** Transactional email sends via a zero-dependency HTTP sender in `lib/email.ts` (Resend API over `fetch`; `resend` is intentionally not an npm dependency). Configured via `EMAIL_PROVIDER` / `RESEND_API_KEY` / `EMAIL_FROM`; every send is a safe no-op returning `{ skipped: true }` when unconfigured.
 - **Robots:** `index: false, follow: false` in metadata (not indexed by search engines).
 - **Storefront onboarding:** Public researcher signup happens only on agent storefronts at `/[slug]` via the rate-limited `POST /api/storefront/register`.
 
