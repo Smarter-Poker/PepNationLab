@@ -812,22 +812,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         } catch { }
       }
 
-      // Record Layer 3 (add_to_cart) research-use acknowledgment before placing
-      // the order. The storefront grid persists its cart straight to
-      // localStorage without going through CartContext, so a grid-built cart
-      // never records this layer -- and /api/orders hard-refuses any order
-      // missing it. This is the one authenticated chokepoint every order passes
-      // through, and the user has just checked all three research-use
-      // acknowledgments above, so recording it here is both correct and the
-      // point that keeps grid-built carts from being rejected at checkout.
-      try {
-        await fetch('/api/disclaimer-log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ layer: 'add_to_cart' }),
-        });
-      } catch { /* best-effort; /api/orders surfaces a clear error if truly missing */ }
-
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

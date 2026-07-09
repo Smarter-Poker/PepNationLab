@@ -25,34 +25,10 @@ export default function GuestCTA() {
   const [dismissed, setDismissed] = useState(false);
   const [memberCount, setMemberCount] = useState<number | null>(null);
   const [currentPath, setCurrentPath] = useState('/');
-  // The storefront grid persists its cart to localStorage (pnl_storefront_cart_<slug>)
-  // rather than through CartContext, so a guest browsing a storefront has an
-  // empty CartContext. Read that grid cart directly so the cart-aware
-  // conversion mode fires for exactly the guests it was built for.
-  const [gridCart, setGridCart] = useState<{ count: number; subtotal: number } | null>(null);
 
   useEffect(() => {
     // Capture current URL for redirect passthrough
     setCurrentPath(window.location.pathname + window.location.search);
-
-    // Scan for a storefront grid cart in localStorage (any agent slug).
-    try {
-      let count = 0;
-      let subtotal = 0;
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith('pnl_storefront_cart_')) {
-          const parsed = JSON.parse(localStorage.getItem(k) || '{}');
-          const items = Array.isArray(parsed?.items) ? parsed.items : [];
-          for (const it of items) {
-            const q = Number(it?.quantity) || 0;
-            count += q;
-            subtotal += (Number(it?.retailPrice) || 0) * q;
-          }
-        }
-      }
-      if (count > 0) setGridCart({ count, subtotal });
-    } catch { /* ignore */ }
 
     const supabase = createClient();
 
@@ -82,10 +58,7 @@ export default function GuestCTA() {
 
   // Cart-aware conversion mode: a guest with items is routed to checkout after
   // auth so they can complete the order they already started.
-  // Prefer CartContext, fall back to the storefront grid cart read above.
-  const effectiveCount = cartCount > 0 ? cartCount : (gridCart?.count ?? 0);
-  const effectiveSubtotal = cartCount > 0 ? cartSubtotal : (gridCart?.subtotal ?? 0);
-  const hasCart = effectiveCount > 0;
+  const hasCart = cartCount > 0;
   const authTarget = hasCart ? '/checkout' : currentPath;
   const redirectParam = `?redirect=${encodeURIComponent(authTarget)}`;
   const loginHref = `/login${redirectParam}`;
@@ -98,7 +71,7 @@ export default function GuestCTA() {
 
   // Cart summary shown in conversion mode.
   const cartLabel = hasCart
-    ? `${effectiveCount} Item${effectiveCount === 1 ? '' : 's'} In Your Cart • $${Number(effectiveSubtotal || 0).toFixed(2)}`
+    ? `${cartCount} Item${cartCount === 1 ? '' : 's'} In Your Cart • $${Number(cartSubtotal || 0).toFixed(2)}`
     : null;
 
   // Format member count with comma separator

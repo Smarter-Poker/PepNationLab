@@ -168,9 +168,7 @@ export default function FindAPeptideClient({
   const addToCart = useCallback((variantId: string) => {
     const item = products.find(p => p.id === variantId);
     if (!item) return;
-    // Use ?? (not ||) so a genuine 0 (out of stock) blocks the add instead of
-    // falling through to 999. Null/untracked inventory still means "unlimited".
-    const maxQty = item.products?.inventory_count ?? 999;
+    const maxQty = item.products?.inventory_count || 999;
     
     setCartItems(prev => {
       const currentQty = prev[variantId] || 0;
@@ -211,9 +209,7 @@ export default function FindAPeptideClient({
         evidence_tier: evTier,
         rationale: '',
         image_url: grp.imageUrl,
-        // Derive from actual inventory so zero-stock products don't render a live
-        // Add-To-Cart. Null/untracked inventory counts as available.
-        in_stock: grp.variants.some(v => (v.products?.inventory_count ?? 1) > 0),
+        in_stock: true,
       });
     }
     return out;

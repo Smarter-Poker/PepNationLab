@@ -347,13 +347,8 @@ export const GLOSSARY: Record<string, string> = {
 };
 
 export function findGlossaryTerms(text: string): string[] {
-  return Object.keys(GLOSSARY).filter((term) => {
-    // Word-boundary match so 'vial' doesn't fire inside 'trivial'. Allow an optional
-    // hyphen between a letter and a digit so the key 'glp1' matches 'GLP-1'.
-    const escaped = term.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const pattern = escaped.replace(/([a-z])(\d)/gi, '$1-?$2');
-    return new RegExp(`\\b${pattern}\\b`, 'i').test(text);
-  });
+  const lower = text.toLowerCase();
+  return Object.keys(GLOSSARY).filter((term) => lower.includes(term));
 }
 
 /** A lightweight reference to a related compound for See-Also linking. */

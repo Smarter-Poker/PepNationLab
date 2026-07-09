@@ -14,7 +14,6 @@
  */
 
 import { NextResponse } from 'next/server';
-import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { pingIndexNow } from '@/lib/indexnow';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
@@ -66,20 +65,6 @@ async function importantUrls(): Promise<string[]> {
 }
 
 export async function POST(request: Request) {
-  // Per-IP throttle: the submitted URLs are host-restricted in the helper (so no
-  // arbitrary-domain abuse), but an unthrottled public POST could still be used
-  // to hammer the IndexNow endpoints and risk key throttling. Match the limits
-  // the other public analytics endpoints use.
-  const limited = await rateLimit({
-    key: 'indexnow_submit',
-    limit: 10,
-    windowSeconds: 60,
-    identifier: getClientIp(request),
-  });
-  if (!limited.allowed) {
-    return NextResponse.json({ error: 'Too Many Requests. Please Wait And Try Again.' }, { status: 429 });
-  }
-
   let urls: string[] = [];
   try {
     const body = await request.json();

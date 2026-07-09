@@ -16,7 +16,7 @@ import type { Platform, MediaType } from '@/lib/social/types';
  * cron picks up 'pending' rows whose scheduled_for is due. This is also the
  * hook the monthly generator pipeline can call to load a batch.
  */
-const PLATFORMS = new Set<Platform>(['x', 'youtube', 'instagram', 'facebook', 'pinterest']);
+const PLATFORMS = new Set<Platform>(['x', 'youtube', 'instagram', 'facebook', 'pinterest', 'tiktok']);
 const MEDIA_TYPES = new Set<MediaType>(['video', 'image', 'none']);
 
 export async function POST(req: NextRequest) {

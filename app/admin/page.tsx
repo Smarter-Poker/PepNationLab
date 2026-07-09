@@ -4,7 +4,7 @@ export const revalidate = 0;
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import AdminAnalytics from '@/components/LazyAdminAnalytics';
+import AdminAnalytics from '@/components/AdminAnalytics';
 import AdminOverviewSparkline from '@/components/AdminOverviewSparkline';
 import AdminDashboardRealtime from '@/components/AdminDashboardRealtime';
 import { fetchAdminMetrics, computeGmvDelta, timeAgo } from '@/lib/admin-metrics';
