@@ -37,6 +37,9 @@ const STATIC_PATHS = [
   '/research/faq',
   '/research/methodology',
   '/research/guides',
+  // Indexable, content-rich tool page (How-It-Works + FAQPage schema). It is in
+  // robots' allow list and the sitemap, but was never submitted to IndexNow.
+  '/research/match',
   '/peptides',
   '/researchstore',
 ];
