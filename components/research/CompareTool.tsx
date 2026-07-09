@@ -40,6 +40,7 @@ import type { AreaProduct } from '@/lib/area-products-server';
 import ResearchCartButton from './ResearchCartButton';
 import { useCart } from '@/components/CartContext';
 import { escapeWithLineBreaks } from '@/lib/sanitize-html';
+import { toast } from 'sonner';
 
 const MAX_COLUMNS = 4;
 const NL = 'Not Listed';
@@ -1988,9 +1989,9 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
         setJournalModalOpen(false);
         setJournalFolder('');
         setJournalNotes('');
-        alert('Saved to Lab Journal!');
+        toast.success('Saved To Lab Journal.');
       } else {
-        alert('Failed to save. Make sure you are logged in.');
+        toast.error('Failed To Save. Make Sure You Are Logged In.');
       }
     } catch (e) {
       console.error(e);
