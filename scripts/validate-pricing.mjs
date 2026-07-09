@@ -2,25 +2,29 @@
 /**
  * Pricing / money-math validator.
  *
- * The pricing engine (tier multipliers -> agent cost -> retail price) had zero
- * automated coverage. This script asserts the money invariants documented in
- * CLAUDE.md against the LIVE database. It is read-only: it never writes.
+ * The pricing engine (cost basis -> agent cost -> retail price) had zero
+ * automated coverage. This script asserts the money invariants against the LIVE
+ * database. It is read-only and never writes.
  *
- * Invariants checked
- *   1. house_tiers.markup === pricing_tiers.multiplier - 1  (tier_N <-> level N)
- *   2. Every active agent / super_agent has a tier assigned.
- *      Without a tier there is no multiplier, so agent cost -- and therefore
- *      weekly COGS billing -- is undefined for that agent.
- *   3. Agent storefronts:  retail = base_cost * tier_multiplier * (1 + margin/100)
- *      (product_tier_overrides.custom_multiplier wins over the tier multiplier)
- *   4. No agent storefront row sells at or below the agent's own cost.
- *   5. Admin/house storefront: the admin is billed COGS (base_cost), so the tier
- *      multiplier does NOT apply.  retail = base_cost * (1 + margin/100)
+ * IMPORTANT: the invariants are evaluated INSIDE Postgres, by
+ * public.fn_validate_pricing() (see supabase/migrations/*_pricing_guardrails.sql).
+ * That function calls the database's own fn_resolve_house_tier_level(), which is
+ * dynamic (30-day volume, grace periods, locked/fixed tier overrides). Any
+ * re-implementation of that resolver in JavaScript would silently drift from
+ * production, so we deliberately do NOT re-implement it here.
+ *
+ * Invariants asserted:
+ *   RETAIL_MISMATCH             retail != base_cost * (1 + effective_markup) * (1 + margin/100)
+ *   AT_OR_BELOW_COST            retail <= the agent's own wholesale cost (selling at a loss)
+ *   TIER_MARKUP_LOCKSTEP_BROKEN house_tiers.markup != pricing_tiers.multiplier - 1
+ *
+ * Banned products are excluded: they cannot be sold, so a stale price on a
+ * banned row is not a live defect.
  *
  * Usage:
  *   NEXT_PUBLIC_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/validate-pricing.mjs
  *
- * Exits non-zero if any invariant is violated, so it can gate a deploy or run
+ * Exits non-zero when any invariant is violated, so it can gate a deploy or run
  * on a schedule.
  */
 
@@ -32,139 +36,64 @@ if (!URL || !KEY) {
   process.exit(2);
 }
 
-const EPSILON = 0.02; // cents of float tolerance
+const res = await fetch(`${URL}/rest/v1/rpc/fn_validate_pricing`, {
+  method: 'POST',
+  headers: {
+    apikey: KEY,
+    Authorization: `Bearer ${KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: '{}',
+});
 
-async function table(path) {
-  const res = await fetch(`${URL}/rest/v1/${path}`, {
-    headers: { apikey: KEY, Authorization: `Bearer ${KEY}` },
-  });
-  if (!res.ok) {
-    throw new Error(`${path} -> ${res.status} ${await res.text().catch(() => '')}`);
-  }
-  return res.json();
+if (!res.ok) {
+  console.error(`fn_validate_pricing failed: ${res.status} ${await res.text().catch(() => '')}`);
+  console.error('Is the pricing_guardrails migration applied to this project?');
+  process.exit(2);
 }
 
-const num = (v) => (v === null || v === undefined ? null : Number(v));
+const violations = await res.json();
 
-const [products, tiers, houseTiers, overrides, profiles, agentProducts] = await Promise.all([
-  table('products?select=id,name,base_cost,is_active&is_active=eq.true&limit=5000'),
-  table('pricing_tiers?select=tier_name,multiplier'),
-  table('house_tiers?select=level,markup'),
-  table('product_tier_overrides?select=product_id,tier_name,custom_multiplier&limit=5000'),
-  table('profiles?select=id,username,role,tier&limit=5000'),
-  table('agent_products?select=id,agent_id,product_id,retail_price,margin_percent&limit=10000'),
-]);
-
-const productById = new Map(products.map((p) => [p.id, p]));
-const profileById = new Map(profiles.map((p) => [p.id, p]));
-const multiplierByTier = new Map(tiers.map((t) => [t.tier_name, num(t.multiplier)]));
-const overrideByKey = new Map(overrides.map((o) => [`${o.product_id}|${o.tier_name}`, num(o.custom_multiplier)]));
-const markupByLevel = new Map(houseTiers.map((h) => [Number(h.level), num(h.markup)]));
-
-const failures = [];
-const pass = (msg) => console.log(`PASS  ${msg}`);
-const fail = (msg) => { failures.push(msg); console.log(`FAIL  ${msg}`); };
-
-// -- 1. tier multiplier <-> house markup lockstep --------------------------
-for (const t of tiers) {
-  const level = Number(String(t.tier_name).replace(/\D/g, ''));
-  const markup = markupByLevel.get(level);
-  const expected = num(t.multiplier) - 1;
-  if (markup === undefined || markup === null) {
-    fail(`house_tiers has no row for level ${level} (tier ${t.tier_name})`);
-  } else if (Math.abs(markup - expected) > 1e-4) {
-    fail(`lockstep: ${t.tier_name} multiplier ${t.multiplier} implies markup ${expected}, house_tiers has ${markup}`);
-  }
-}
-if (!failures.length) pass(`tier multipliers and house markups are in lockstep (${tiers.length} tiers)`);
-
-// -- 2. every active agent has a tier --------------------------------------
-const tierlessAgents = profiles.filter(
-  (p) => (p.role === 'agent' || p.role === 'super_agent') && !p.tier,
-);
-if (tierlessAgents.length) {
-  fail(
-    `${tierlessAgents.length} agent(s) have no tier -> agent cost + COGS billing undefined: ` +
-      tierlessAgents.map((a) => a.username ?? a.id).join(', '),
-  );
-} else {
-  pass('every active agent / super_agent has a tier assigned');
+if (!Array.isArray(violations)) {
+  console.error('Unexpected response shape from fn_validate_pricing.');
+  process.exit(2);
 }
 
-// -- 3/4/5. per-storefront retail price math --------------------------------
-let checked = 0;
-const mismatches = [];
-const belowCost = [];
-const unresolved = [];
+if (violations.length === 0) {
+  console.log('PASS  retail prices match the pricing formula');
+  console.log('PASS  no storefront sells at or below agent cost');
+  console.log('PASS  tier multipliers and house markups are in lockstep');
+  console.log('\nAll pricing invariants hold.');
+  process.exit(0);
+}
 
-for (const ap of agentProducts) {
-  const product = productById.get(ap.product_id);
-  const owner = profileById.get(ap.agent_id);
-  if (!product || !owner) continue; // inactive product or orphan; covered elsewhere
+// Group and report.
+const byKind = new Map();
+for (const v of violations) {
+  if (!byKind.has(v.violation)) byKind.set(v.violation, []);
+  byKind.get(v.violation).push(v);
+}
 
-  const base = num(product.base_cost);
-  const margin = num(ap.margin_percent);
-  const retail = num(ap.retail_price);
-  if (base === null || margin === null || retail === null) {
-    unresolved.push(`${owner.username}/${product.name}: null base_cost/margin/retail`);
-    continue;
-  }
+const money = (n) => (n === null || n === undefined ? '-' : Number(n).toFixed(2));
 
-  const isAdminStore = owner.role === 'admin';
-  // The admin is billed COGS, so no tier multiplier applies to the house store.
-  let multiplier = 1;
-  if (!isAdminStore) {
-    const override = overrideByKey.get(`${ap.product_id}|${owner.tier}`);
-    const tierMult = override ?? multiplierByTier.get(owner.tier);
-    if (tierMult === undefined || tierMult === null) {
-      unresolved.push(`${owner.username}/${product.name}: no multiplier for tier ${owner.tier}`);
-      continue;
+for (const [kind, rows] of byKind) {
+  console.log(`\nFAIL  ${kind}: ${rows.length} row(s)`);
+  for (const r of rows.slice(0, 20)) {
+    if (kind === 'TIER_MARKUP_LOCKSTEP_BROKEN') {
+      console.log(
+        `        ${r.product_name}: multiplier ${money(r.effective_markup)} implies markup ` +
+          `${money(r.expected_value)}, house_tiers has ${money(r.actual_retail)}`,
+      );
+    } else {
+      console.log(
+        `        ${r.agent_username}/${r.product_name}: retail ${money(r.actual_retail)} vs ` +
+          `expected ${money(r.expected_value)}  (base ${money(r.base_cost)} x ` +
+          `1+${money(r.effective_markup)} markup x ${money(r.margin_percent)}% margin)`,
+      );
     }
-    multiplier = tierMult;
   }
-
-  const agentCost = base * multiplier;
-  const expected = agentCost * (1 + margin / 100);
-  checked++;
-
-  if (Math.abs(retail - expected) > EPSILON) {
-    mismatches.push(
-      `${owner.username}/${product.name}: retail ${retail.toFixed(2)} != expected ${expected.toFixed(2)} ` +
-        `(base ${base} x mult ${multiplier} x margin ${margin}%)`,
-    );
-  }
-  if (!isAdminStore && retail <= agentCost) {
-    belowCost.push(
-      `${owner.username}/${product.name}: retail ${retail.toFixed(2)} <= agent cost ${agentCost.toFixed(2)} (SELLING AT A LOSS)`,
-    );
-  }
+  if (rows.length > 20) console.log(`        ... and ${rows.length - 20} more`);
 }
 
-if (unresolved.length) {
-  fail(`${unresolved.length} storefront row(s) could not be priced:`);
-  unresolved.slice(0, 10).forEach((m) => console.log(`        ${m}`));
-} else {
-  pass('every storefront row resolves a cost');
-}
-
-if (belowCost.length) {
-  fail(`${belowCost.length} storefront row(s) sell AT OR BELOW agent cost:`);
-  belowCost.slice(0, 10).forEach((m) => console.log(`        ${m}`));
-} else {
-  pass('no storefront row sells at or below agent cost');
-}
-
-if (mismatches.length) {
-  fail(`${mismatches.length} storefront row(s) do not match the pricing formula:`);
-  mismatches.slice(0, 10).forEach((m) => console.log(`        ${m}`));
-} else {
-  pass(`all ${checked} storefront prices match the pricing formula`);
-}
-
-console.log(`\nChecked ${checked} storefront prices across ${profiles.length} profiles and ${products.length} active products.`);
-
-if (failures.length) {
-  console.error(`\nPRICING VALIDATION FAILED: ${failures.length} invariant(s) violated.`);
-  process.exit(1);
-}
-console.log('\nAll pricing invariants hold.');
+console.error(`\nPRICING VALIDATION FAILED: ${violations.length} violation(s).`);
+process.exit(1);
