@@ -30,7 +30,7 @@ export const revalidate = 300;
 // city database grows into the thousands, while the top markets stay
 // pre-rendered for instant first paint. At the current city count every entry
 // is under the cap, so nothing regresses today.
-const STATIC_CITY_LIMIT = 500;
+const STATIC_CITY_LIMIT = 2000;
 
 export async function generateStaticParams() {
   return [...CITIES]
