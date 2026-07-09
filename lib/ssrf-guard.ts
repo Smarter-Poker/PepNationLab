@@ -167,7 +167,7 @@ function buildPinnedDispatcher(
     // ships inside Node 20's runtime that Next uses server-side.
     const mod = 'undici';
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { Agent } = require(mod);
+    const { Agent } = require(/* webpackIgnore: true */ mod);
     const allowed = new Set(validated.map((v) => v.address));
     const primary = validated[0];
     return new Agent({

@@ -50,8 +50,15 @@ const STATUS_COLORS: Record<string, string> = {
 export default function ReferralsClient({ referralCode, referrals, settings }: Props) {
   const [copied, setCopied] = useState(false);
 
+  const [originUrl, setOriginUrl] = useState('https://pepnationlab.com');
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setOriginUrl(window.location.origin);
+    }
+  }, []);
+  
   const referralLink = referralCode
-    ? `${typeof window !== 'undefined' ? window.location.origin : 'https://pepnationlab.com'}/invite?ref=${referralCode}`
+    ? `${originUrl}/invite?ref=${referralCode}`
     : null;
 
   async function copyCode() {

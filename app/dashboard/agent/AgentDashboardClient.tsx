@@ -305,7 +305,12 @@ export default function AgentDashboardClient({
     }
   }
 
-  const originUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL ?? '');
+  const [originUrl, setOriginUrl] = useState(process.env.NEXT_PUBLIC_APP_URL ?? '');
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setOriginUrl(window.location.origin);
+    }
+  }, []);
   const storefrontUrl = agentProfile ? `${originUrl}/${agentProfile.slug}` : '';
 
 
