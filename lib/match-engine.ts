@@ -152,6 +152,19 @@ const GOAL_KEYWORDS: Record<string, string[]> = {
   bone_joint: ['bone', 'joint', 'cartilage', 'osteo', 'density', 'fracture', 'synovial'],
 };
 
+// Very short tokens (<=3 chars, e.g. 'gh','gi','gut','fat','nad','tan') are matched
+// on word boundaries so they don't false-match inside longer words ('gh' in 'weight'
+// or 'through', 'gi' in 'region', 'fat' in 'fatigue'). Longer keywords and multi-word
+// phrases keep substring matching.
+function kwHit(haystack: string, kw: string): boolean {
+  const k = kw.toLowerCase();
+  if (k.length <= 3) {
+    const esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`\\b${esc}\\b`, 'i').test(haystack);
+  }
+  return haystack.includes(k);
+}
+
 /**
  * Count how many distinct goal keywords appear in the compound's prose fields.
  * Cumulative (not binary) so a compound studied across several facets of a goal
@@ -171,7 +184,7 @@ function goalKeywordHits(goal: string, c: Compound): number {
     .toLowerCase();
   let hits = 0;
   for (const kw of keywords) {
-    if (kw && haystack.includes(kw.toLowerCase())) hits++;
+    if (kw && kwHit(haystack, kw)) hits++;
   }
   return hits;
 }
@@ -217,9 +230,17 @@ function failsPrepGate(c: Compound, prep: 'reconstitution' | 'no_reconstitution'
 function failsHalfLifeGate(c: Compound, requireLongHalfLife: boolean | undefined): boolean {
   if (!requireLongHalfLife) return false;
   const hl = c.half_life?.toLowerCase() || '';
-  if (!hl) return false;
-  if (hl.includes('min') || hl.includes('short')) return true;
-  if (hl.match(/\b([1-9]|1[0-9]|2[0-3])\s*h(ou)?r/)) return true; // e.g. "2 hours"
+  if (!hl) return false; // unknown half-life: leniently kept (don't hide on missing data)
+  if (hl.includes('min') || hl.includes('sec') || hl.includes('short')) return true;
+  // Extract the first magnitude expressed in hours, tolerating decimals and
+  // hyphen/space separators (e.g. "1.5 hours", "8-hour", "12 hr"). Anything under
+  // 24h is not long-acting, so it fails the require-long gate. The previous regex
+  // missed decimals and hyphens, letting short compounds slip through.
+  const m = hl.match(/(\d+(?:\.\d+)?)\s*-?\s*h(?:ou)?r/);
+  if (m) {
+    const hours = parseFloat(m[1]);
+    if (Number.isFinite(hours) && hours < 24) return true;
+  }
   return false;
 }
 

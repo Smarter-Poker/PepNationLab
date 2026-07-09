@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { notifyCartReminder } from '@/lib/notify';
+import { emailConfigured, sendCartRecoveryEmail } from '@/lib/email';
 
 interface VariantStep {
   hours_after: number;
@@ -66,7 +67,7 @@ export async function GET(req: Request) {
 
     const { data: candidates, error: fetchError } = await supabase
       .from('profiles')
-      .select('id, full_name, cart_state, cart_updated_at')
+      .select('id, full_name, cart_state, cart_updated_at, contact_email, email_verified')
       .eq('role', 'researcher')
       .not('cart_state', 'is', null)
       .neq('cart_state', '[]')
@@ -166,6 +167,18 @@ export async function GET(req: Request) {
         console.error('[abandoned-cart-recovery] reminder insert failed for user', candidate.id, reminderErr);
         skipped++;
         continue;
+      }
+
+      // Mirror the reminder to the researcher's inbox (best-effort). Only after
+      // the reminder-log row is confirmed above, so it inherits the same
+      // once-per-step dedup and cannot double-send. Verified contact email only.
+      if (emailConfigured() && (candidate as any).contact_email && (candidate as any).email_verified) {
+        void sendCartRecoveryEmail({
+          to: (candidate as any).contact_email,
+          fullName: candidate.full_name,
+          subject,
+          body,
+        }).catch(() => { /* best-effort */ });
       }
 
       await supabase

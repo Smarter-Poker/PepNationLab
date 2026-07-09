@@ -15,6 +15,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { parsePromptToMatchInput } from '@/lib/goal-nlp';
 import {
   scoreCompounds,
   type MatchInput,
@@ -86,8 +87,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const candidate = (body as { input?: unknown } | null)?.input ?? body;
-  const input = parseInput(candidate);
+  // Accept either a structured { input } (or bare structured body) or a raw
+  // { prompt } which we parse server-side -- letting the typed-goal search hit
+  // this endpoint in a single round trip instead of pre-calling /ai-match.
+  const rawBody = body as { input?: unknown; prompt?: unknown } | null;
+  const input =
+    rawBody && typeof rawBody.prompt === 'string' && rawBody.prompt.trim()
+      ? parseInput(parsePromptToMatchInput(rawBody.prompt))
+      : parseInput(rawBody?.input ?? body);
   if (!input) {
     return NextResponse.json(
       {
@@ -136,8 +143,12 @@ export async function POST(req: NextRequest) {
       const cA = compounds.find(c => c.slug === matches[i].slug);
       const cB = compounds.find(c => c.slug === matches[j].slug);
       if (cA && cB) {
-        const aHasB = cA.stack_components?.includes(cB.slug);
-        const bHasA = cB.stack_components?.includes(cA.slug);
+        // Match the engine's own stack logic: case-insensitive, by slug OR display
+        // name. The previous case-sensitive slug-only check under-detected stacks.
+        const aComp = (cA.stack_components || []).map(s => s.toLowerCase());
+        const bComp = (cB.stack_components || []).map(s => s.toLowerCase());
+        const aHasB = aComp.includes(cB.slug.toLowerCase()) || (!!cB.display_name && aComp.includes(cB.display_name.toLowerCase()));
+        const bHasA = bComp.includes(cA.slug.toLowerCase()) || (!!cA.display_name && bComp.includes(cA.display_name.toLowerCase()));
         if (aHasB || bHasA) {
           matches[i].isStackPartner = true;
           matches[j].isStackPartner = true;
