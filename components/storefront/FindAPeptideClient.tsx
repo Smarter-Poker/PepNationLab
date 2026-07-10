@@ -7,6 +7,7 @@ import { ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
 import DiscoveryHero, { type MatchedProduct } from './StorefrontDiscovery';
 import { getProductImage } from '@/lib/categoryImage';
+import { trackStorefrontEvent } from '@/lib/track';
 import type { Compound } from '@/lib/compounds';
 import GuestAuthModal from '@/components/GuestAuthModal';
 
@@ -62,6 +63,11 @@ export default function FindAPeptideClient({
 }: Props) {
   const router = useRouter();
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
+
+  // Mirror of cartItems, read inside addToCart for the analytics decision only,
+  // so addToCart's useCallback identity stays stable across cart mutations.
+  const cartItemsRef = useRef<Record<string, number>>({});
+  useEffect(() => { cartItemsRef.current = cartItems; }, [cartItems]);
   const firstCartSave = useRef(true);
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [currentPath, setCurrentPath] = useState('');
@@ -171,7 +177,10 @@ export default function FindAPeptideClient({
     // Use ?? (not ||) so a genuine 0 (out of stock) blocks the add instead of
     // falling through to 999. Null/untracked inventory still means "unlimited".
     const maxQty = item.products?.inventory_count ?? 999;
-    
+
+    // Analytics decision only; the cap inside the updater stays authoritative.
+    const wasCapped = (cartItemsRef.current[variantId] || 0) >= maxQty;
+
     setCartItems(prev => {
       const currentQty = prev[variantId] || 0;
       if (currentQty >= maxQty) {
@@ -181,7 +190,12 @@ export default function FindAPeptideClient({
       toast.success(`${item.products?.name || 'Product'} Added To Cart`);
       return { ...prev, [variantId]: currentQty + 1 };
     });
-  }, [products]);
+
+    // Funnel step: the add_to_cart event the agent analytics view counts.
+    if (!wasCapped) {
+      trackStorefrontEvent(agentSlug, 'add_to_cart', { product_id: item.product_id });
+    }
+  }, [products, agentSlug]);
 
   const resolveProducts = useCallback((slugs: string[]) => {
     const out: MatchedProduct[] = [];
@@ -232,7 +246,9 @@ export default function FindAPeptideClient({
           router.push(`/${agentSlug}?area=${encodeURIComponent(area)}`);
         }}
         onSearchStarted={(query) => {
-          router.push(`/${agentSlug}?q=${encodeURIComponent(query || '')}`);
+          const q = (query || '').trim();
+          if (q.length >= 2) trackStorefrontEvent(agentSlug, 'search', { search_term: q });
+          router.push(`/${agentSlug}?q=${encodeURIComponent(q)}`);
         }}
         onAlreadyKnowClicked={() => {
           router.push(`/${agentSlug}`);
