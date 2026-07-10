@@ -95,7 +95,39 @@ const REFRESH_ENDPOINTS: Partial<Record<Provider, string>> = {
   x: 'https://api.twitter.com/2/oauth2/token',
   google: 'https://oauth2.googleapis.com/token',
   pinterest: 'https://api.pinterest.com/v5/oauth/token',
+  tiktok: 'https://open.tiktokapis.com/v2/oauth/token/',
 };
+
+/**
+ * TikTok does not use HTTP Basic client auth. It expects client_key /
+ * client_secret in the form body, so it needs its own refresh path.
+ */
+async function refreshTikTok(
+  clientKey: string,
+  clientSecret: string,
+  refreshToken: string,
+): Promise<{ accessToken: string; expiresIn: number | null }> {
+  const res = await fetch(REFRESH_ENDPOINTS.tiktok!, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_key: clientKey,
+      client_secret: clientSecret,
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    }),
+  });
+  const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!res.ok || !json.access_token) {
+    throw new Error(
+      `tiktok token refresh failed (${res.status}): ${JSON.stringify(json).slice(0, 300)}`,
+    );
+  }
+  return {
+    accessToken: String(json.access_token),
+    expiresIn: typeof json.expires_in === 'number' ? json.expires_in : null,
+  };
+}
 
 function clientCreds(provider: Provider): { id: string; secret: string } | null {
   const map: Record<Provider, [string, string]> = {
@@ -164,12 +196,15 @@ export async function resolveCreds(provider: Provider): Promise<ResolvedCreds> {
         `${provider}: refresh token present but client id/secret env vars missing`,
       );
     }
-    const { accessToken, expiresIn } = await refreshOAuth2(
-      REFRESH_ENDPOINTS[provider]!,
-      creds.id,
-      creds.secret,
-      account.refresh_token,
-    );
+    const { accessToken, expiresIn } =
+      provider === 'tiktok'
+        ? await refreshTikTok(creds.id, creds.secret, account.refresh_token)
+        : await refreshOAuth2(
+            REFRESH_ENDPOINTS[provider]!,
+            creds.id,
+            creds.secret,
+            account.refresh_token,
+          );
     await persistToken(provider, accessToken, expiresIn);
     return {
       accessToken,
