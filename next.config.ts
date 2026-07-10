@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig = {
+  // Barrel-file optimization: only pull the modules actually used from these
+  // large packages into each route's bundle instead of the whole index. Biggest
+  // win is lucide-react (imported by 127 files) plus the chart/animation libs.
+  // Zero behavior change - purely a bundler transform.
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts', 'sonner'],
+  },
   images: {
     // Allow next/image to optimize Supabase-storage assets. The homepage
     // landing artwork is a 2.0MB source PNG served from Supabase storage;
