@@ -92,6 +92,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // Whether we have attempted to read the server-side saved cart. The persist
+  // effect must not POST until this is true, or an empty local cart would wipe it.
+  const [serverCartChecked, setServerCartChecked] = useState(false);
   const [addToCartAcknowledged, setAddToCartAcknowledged] = useState(false);
   const [pendingAddition, setPendingAddition] = useState<PendingAddition | null>(null);
   const lastRefreshRef = useRef<number>(0);
@@ -197,17 +200,65 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(id);
   }, [loaded, refreshCartPricing]);
 
-  // Persist to localStorage + sync to DB
+  // Cross-device cart restore.
+  //
+  // cart_state was written on every change and read by the reminder crons, but
+  // never handed back to the client. So the abandoned-cart recovery email landed
+  // the researcher on an empty cart. Worse: the persist effect below would then
+  // POST that empty cart, overwriting the saved cart_state with [] -- destroying
+  // the cart AND silencing the reminder cron, which filters on cart_state <> '[]'.
+  //
+  // So we read the server cart BEFORE the first write, and only adopt it when the
+  // local cart is empty (never clobber a cart the researcher is building). This
+  // does not touch any disclaimer gate: restoring a previously-acknowledged cart
+  // is not a new add-to-cart action, and the checkout gate still applies.
+  useEffect(() => {
+    if (!loaded || serverCartChecked) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch('/api/cart/sync', { credentials: 'same-origin' });
+        if (!res.ok) return; // 401 for guests: nothing to restore
+        const json = await res.json();
+        const serverCart: CartItem[] = Array.isArray(json?.cart) ? json.cart : [];
+        if (cancelled || serverCart.length === 0) return;
+
+        let adopted = false;
+        setCart(prev => {
+          if (prev.length > 0) return prev; // local cart wins
+          adopted = true;
+          return serverCart;
+        });
+        if (!adopted) return;
+
+        // Mirror the localStorage hydrate path: revalidate price + availability.
+        const fresh = await refreshCartPricing(serverCart, true).catch(() => serverCart);
+        if (!cancelled) setCart(prev => (prev === serverCart ? fresh : prev));
+      } catch (err) {
+        reportClientError('cart.restore', err);
+      } finally {
+        if (!cancelled) setServerCartChecked(true);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [loaded, serverCartChecked, refreshCartPricing]);
+
+  // Persist to localStorage + sync to DB.
+  // Gated on serverCartChecked so the initial empty cart can never race ahead of
+  // the restore above and wipe the saved cart_state.
   useEffect(() => {
     if (loaded) {
       localStorage.setItem('pnl_cart', JSON.stringify(cart));
+      if (!serverCartChecked) return;
       fetch('/api/cart/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cart }),
       }).catch(err => console.error('Cart Sync Failed:', err));
     }
-  }, [cart, loaded]);
+  }, [cart, loaded, serverCartChecked]);
 
   const sameLine = (
     item: CartItem,
