@@ -291,6 +291,7 @@ describe('scoreCompounds - score invariants', () => {
               display_name: 'Sweep Compound',
               evidence_tier: tier,
               research_areas: ['metabolic'],
+              // Maximize keyword hits and research interest to reach the ceiling.
               category: 'Metabolic glucose insulin fat weight appetite',
               is_glp1: isGlp1,
               is_stack: isStack,
@@ -314,6 +315,7 @@ describe('scoreCompounds - score invariants', () => {
       }
     }
 
+    // If this exceeds 100 the clamp is engaging upward and the breakdown lies.
     expect(maxRaw).toBeLessThanOrEqual(100);
   });
 

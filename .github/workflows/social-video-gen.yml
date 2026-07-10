@@ -26,6 +26,14 @@ on:
         description: "Upload finished clips to the Supabase public bucket (true/false)"
         required: true
         default: "true"
+      enqueue:
+        description: "Add finished clips to the publish queue (true/false). Nothing posts until SOCIAL_AUTOPOST_ENABLED=true."
+        required: true
+        default: "true"
+      platform:
+        description: "Target platform for queued posts"
+        required: true
+        default: "youtube"
   push:
     paths:
       - 'scripts/social/.trigger'
@@ -62,6 +70,11 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_BUCKET: social-media
+          # Enqueue path: the script POSTs each finished asset to
+          # /api/social/ingest, which compliance-gates and de-duplicates it.
+          # Without CRON_SECRET the enqueue step is skipped and upload still runs.
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           set -e
           mkdir -p out
@@ -70,12 +83,20 @@ jobs:
           if [ "${{ github.event.inputs.upload || 'true' }}" = "true" ]; then
             UPLOAD_FLAG="--upload"
           fi
+          # Queue each finished Short for publishing. Safe to leave on: nothing
+          # posts until the hourly cron runs AND SOCIAL_AUTOPOST_ENABLED=true.
+          # Re-runs are idempotent (dedupe_key is per platform/topic/day).
+          ENQUEUE_FLAG=""
+          if [ "${{ github.event.inputs.enqueue || 'true' }}" = "true" ]; then
+            PLATFORM="${{ github.event.inputs.platform || 'youtube' }}"
+            ENQUEUE_FLAG="--enqueue --platform ${PLATFORM}"
+          fi
           TOPICS="${{ github.event.inputs.topics || 'peptide-101,bpc-157,tb-500' }}"
           IFS=',' read -ra ARR <<< "$TOPICS"
           for t in "${ARR[@]}"; do
             t="$(echo "$t" | xargs)"   # trim whitespace
             echo "::group::Generating $t"
-            python scripts/social/grok_video.py --topic "$t" --duration "$DURATION" --out "out/${t}.mp4" $UPLOAD_FLAG
+            python scripts/social/grok_video.py --topic "$t" --duration "$DURATION" --out "out/${t}.mp4" $UPLOAD_FLAG $ENQUEUE_FLAG
             echo "::endgroup::"
           done
           ls -la out
