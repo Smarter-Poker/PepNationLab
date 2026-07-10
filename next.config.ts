@@ -85,6 +85,16 @@ const nextConfig = {
         source: "/hub/MLB-ANALYTICS-ENGINE/:path*",
         destination: "https://mlb-analytics-engine.vercel.app/:path*",
       },
+      {
+        // Sixteen research pages set twitter.images to /images/og-card.jpg,
+        // which has never existed (the real asset is /og-card.png). Twitter
+        // only falls back to og:image when twitter:image is ABSENT -- a present
+        // but 404ing twitter:image means those pages share with no preview
+        // image at all. Serving the real card at the legacy path fixes every
+        // reference at once, and keeps working if a new page copies the old URL.
+        source: "/images/og-card.jpg",
+        destination: "/og-card.png",
+      },
     ];
   },
   async headers() {
