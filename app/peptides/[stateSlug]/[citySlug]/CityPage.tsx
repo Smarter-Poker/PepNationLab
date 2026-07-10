@@ -14,6 +14,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { CITIES } from '@/lib/cities/cities-data';
 import type { City } from '@/lib/cities/cities-data';
+import { CITY_COMPOUNDS } from '@/lib/cities/city-compounds';
 import { FEATURED_PEPTIDES } from '@/lib/cities/keywords';
 import { getCityIntro, getCityFAQs, getCityFacts, VALUE_PROPS, getRegionLabel, getRegionArea } from '@/lib/cities/city-content';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
@@ -654,6 +655,22 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
         {/* ═════════════════════════════════════════════
             NEARBY CITIES STRIP
         ═════════════════════════════════════════════ */}
+        {/* POPULAR RESEARCH COMPOUNDS IN THIS CITY - crawlable pill links to compound-city pages */}
+        <section style={{ padding: 'var(--space-10) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          <div className='container'>
+            <p style={{ fontSize: '0.7rem', color: 'var(--grey-600)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 'var(--space-4)' }}>
+              Popular Research Compounds In {city.name}
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+              {CITY_COMPOUNDS.map((cc) => (
+                <Link key={cc.slug} href={`/peptides/${stateSlug}/${citySlug}/${cc.slug}`} className='city-pill' style={{ padding: '5px 14px', fontSize: '0.78rem', color: 'var(--grey-500)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--radius-full)', textDecoration: 'none', transition: 'all 0.2s' }}>
+                  {cc.displayName} In {city.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <NearbyStrip stateSlug={stateSlug} currentCitySlug={citySlug} stateName={city.state} region={city.region} />
 
         {/* ═════════════════════════════════════════════
