@@ -1723,7 +1723,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
               <Image src="/images/badges/badge_price_drop.png" alt="Price Drop" width={22} height={22} unoptimized style={{ borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} />
             )}
             {activeTab === 'inventory' && item.purchase_count && item.purchase_count > 1 && sortBy === 'frequent' && (
-              <div style={{ background: 'rgba(234,179,8,0.2)', border: '1px solid rgba(234,179,8,0.5)', color: '#EAB308', padding: '2px 8px', borderRadius: 12, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', backdropFilter: 'blur(4px)' }}>
+              <div style={{ background: 'rgba(0,196,188,0.20)', border: '1px solid rgba(0,196,188,0.50)', color: '#00C4BC', padding: '2px 8px', borderRadius: 12, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', backdropFilter: 'blur(4px)' }}>
                 Ordered {item.purchase_count}x
               </div>
             )}
