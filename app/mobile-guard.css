@@ -1,0 +1,29 @@
+/* ============================================================
+   MOBILE GUARD OVERRIDES
+   ------------------------------------------------------------
+   Loaded immediately after globals.css in app/layout.tsx, so the
+   rules here win over identically-specific rules in the design
+   system. This file is maintained by the automated mobile guard
+   and only ever contains narrow, additive mobile corrections.
+
+   CRITICAL SERIALIZATION RULE
+   React emits inline styles two different ways depending on the
+   render path:
+     - Server-rendered markup emits NO space -> "position:sticky;top:0"
+     - Client-rendered CSSOM normalizes WITH a space -> "position: sticky; top: 0px"
+   Every [style*=...] selector MUST cover BOTH forms or it silently
+   fails on half the pages.
+   ============================================================ */
+
+@media (max-width: 768px) {
+  /* The nav-offset rule in globals.css only matched the spaced
+     serialization, so server-rendered sticky headers (for example the
+     A-Z index filter bar on /research/a-z) stayed pinned at top:0 and
+     slid underneath the fixed navbar on mobile. Cover both forms. */
+  [style*="position: sticky"][style*="top: 0"],
+  [style*="position: sticky"][style*="top:0"],
+  [style*="position:sticky"][style*="top: 0"],
+  [style*="position:sticky"][style*="top:0"] {
+    top: var(--nav-offset, 60px) !important;
+  }
+}
