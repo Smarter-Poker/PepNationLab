@@ -394,6 +394,15 @@ export default function AgentStorefrontGrid({
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   // searchQuery is declared earlier (before closeGrid) to avoid TDZ error.
   const deferredSearch = useDeferredValue(searchQuery);
+
+  // Funnel step: storefront search. Debounced so we record the query the researcher
+  // settled on, not every keystroke.
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) return;
+    const t = setTimeout(() => trackStorefrontEvent(agentSlug, 'search', { search_term: q }), 800);
+    return () => clearTimeout(t);
+  }, [searchQuery, agentSlug]);
   const [activeCardIndex, setActiveCardIndex] = useState<number | null>(1);
   const [aiSearchFallbackQuery, setAiSearchFallbackQuery] = useState<string>('');
 
@@ -670,8 +679,14 @@ export default function AgentStorefrontGrid({
   useEffect(() => {
     if (!detailProduct) {
       setShowEli5(false);
+      return;
     }
-  }, [detailProduct]);
+    // Funnel step: a researcher opened a product detail view. Emitted from the
+    // derived `detailProduct` so every path that opens the modal is covered.
+    trackStorefrontEvent(agentSlug, 'product_view', {
+      product_id: detailProduct.variants[0]?.product_id,
+    });
+  }, [detailProduct, agentSlug]);
 
   // Scroll to top when entering product detail view, back to previous position on close
   const scrollPosRef = useRef(0);
@@ -690,6 +705,13 @@ export default function AgentStorefrontGrid({
   const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
+
+  // Mirror of cartItems, read inside addToCart for the analytics decision only.
+  // Using a ref keeps addToCart's useCallback identity stable (adding cartItems
+  // to its deps would re-render the whole grid on every cart mutation), and the
+  // authoritative stock cap still lives inside the setState updater below.
+  const cartItemsRef = useRef<Record<string, number>>({});
+  useEffect(() => { cartItemsRef.current = cartItems; }, [cartItems]);
   const [savedForLater, setSavedForLater] = useState<Record<string, number>>({});
   useEffect(() => {
     try {
@@ -1737,6 +1759,11 @@ export default function AgentStorefrontGrid({
     // Prefer agent stock; fall back to global stock; if neither is set, no cap.
     const maxQty = agentStock !== null ? agentStock : (globalStock !== null ? globalStock : Infinity);
 
+    // Analytics decision uses the ref (updaters run during render, so a flag set
+    // inside the updater would not be readable here). The cap below remains the
+    // single source of truth for whether the item is actually added.
+    const wasCapped = maxQty !== Infinity && (cartItemsRef.current[variantId] || 0) >= maxQty;
+
     setCartItems(prev => {
       const currentQty = prev[variantId] || 0;
       if (maxQty !== Infinity && currentQty >= maxQty) {
@@ -1745,7 +1772,13 @@ export default function AgentStorefrontGrid({
       }
       return { ...prev, [variantId]: currentQty + 1 };
     });
-  }, [products, inventoryMap]);
+
+    // Funnel step: the add_to_cart event the agent analytics view counts. Before
+    // this, `add_to_cart_30d` was permanently 0 because nothing ever emitted it.
+    if (!wasCapped) {
+      trackStorefrontEvent(agentSlug, 'add_to_cart', { product_id: item.product_id });
+    }
+  }, [products, inventoryMap, agentSlug]);
 
   const totalCartItems = Object.values(cartItems).reduce((sum, qty) => sum + qty, 0);
   const totalSavedItems = Object.values(savedForLater).reduce((sum, qty) => sum + Number(qty || 0), 0);
