@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier } from '@/lib/compounds';
+import { compoundItemListJsonLd } from '@/lib/research/schema';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
@@ -110,7 +111,7 @@ export default async function ResearchApprovedDrugsPage() {
           { '@type': 'ListItem', position: 3, name: 'approved drugs', item: 'https://pepnationlab.com/research/approved-drugs' }
         ]
       }
-    ]
+    ] as Record<string, unknown>[]
   };
 
   const compounds = ((await getAllCompounds()).filter(
@@ -123,6 +124,17 @@ export default async function ResearchApprovedDrugsPage() {
     if (by !== ay) return by - ay;
     return a.display_name.localeCompare(b.display_name);
   });
+
+  // Item-level structure for the approved-drug list this page already renders,
+  // in the same newest-approval-first order the cards are shown in.
+  jsonLd['@graph'].push(
+    compoundItemListJsonLd({
+      name: 'Approved Peptide Drugs',
+      pageUrl: 'https://pepnationlab.com/research/approved-drugs',
+      items: sorted,
+      order: 'descending',
+    }),
+  );
 
   const categoryMap = new Map<string, ApprovedDrug[]>();
   for (const c of sorted) {
