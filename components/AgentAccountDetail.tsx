@@ -406,8 +406,8 @@ export default function AgentAccountDetail({
                   style={{
                     background: 'none', border: 'none', padding: '0 0 8px 0', cursor: 'pointer',
                     fontSize: '1rem', fontWeight: 700,
-                    color: activeTab === 'Overview' ? '#00E5FF' : 'var(--grey-400)',
-                    borderBottom: activeTab === 'Overview' ? '2px solid #00E5FF' : '2px solid transparent',
+                    color: activeTab === 'Overview' ? '#00C4BC' : 'var(--grey-400)',
+                    borderBottom: activeTab === 'Overview' ? '2px solid #00C4BC' : '2px solid transparent',
                     textTransform: 'uppercase', letterSpacing: '0.05em'
                   }}
                 >
@@ -420,8 +420,8 @@ export default function AgentAccountDetail({
                     style={{
                       background: 'none', border: 'none', padding: '0 0 8px 0', cursor: 'pointer',
                       fontSize: '1rem', fontWeight: 700,
-                      color: activeTab === 'Sub Agents' ? '#00E5FF' : 'var(--grey-400)',
-                      borderBottom: activeTab === 'Sub Agents' ? '2px solid #00E5FF' : '2px solid transparent',
+                      color: activeTab === 'Sub Agents' ? '#00C4BC' : 'var(--grey-400)',
+                      borderBottom: activeTab === 'Sub Agents' ? '2px solid #00C4BC' : '2px solid transparent',
                       textTransform: 'uppercase', letterSpacing: '0.05em'
                     }}
                   >
@@ -434,8 +434,8 @@ export default function AgentAccountDetail({
                   style={{
                     background: 'none', border: 'none', padding: '0 0 8px 0', cursor: 'pointer',
                     fontSize: '1rem', fontWeight: 700,
-                    color: activeTab === 'Researchers' ? '#00E5FF' : 'var(--grey-400)',
-                    borderBottom: activeTab === 'Researchers' ? '2px solid #00E5FF' : '2px solid transparent',
+                    color: activeTab === 'Researchers' ? '#00C4BC' : 'var(--grey-400)',
+                    borderBottom: activeTab === 'Researchers' ? '2px solid #00C4BC' : '2px solid transparent',
                     textTransform: 'uppercase', letterSpacing: '0.05em'
                   }}
                 >
@@ -446,7 +446,7 @@ export default function AgentAccountDetail({
               {activeTab === 'Overview' && (
                 <>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
-                    <Stat label="Status" value={isActive ? 'Active' : 'Inactive'} color={isActive ? '#00FF9D' : '#FFAAAA'} />
+                    <Stat label="Status" value={isActive ? 'Active' : 'Inactive'} color={isActive ? '#2DD4BF' : '#F87171'} />
                     <Stat label="Last Logged In" value={fmtLastSignIn(detail.agent.last_sign_in_at)} color={detail.agent.last_sign_in_at ? 'var(--silver)' : 'var(--grey-500)'} />
                     <Stat label="Wallet Balance" value={detail.agent.account_type === 'credit' ? fmtMoney(detail.agent.credit_limit) : fmtMoney(detail.agent.prepaid_balance)} color="var(--teal)" />
                     <Stat label="Lifetime Sales" value={fmtMoney(detail.sales.grossTotal)} />
@@ -560,7 +560,7 @@ export default function AgentAccountDetail({
                           <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', gap: 8 }}>
                             <span style={{ color: 'var(--silver)', flex: 1 }}>{t.description || titleCaseStatus(t.type)}</span>
                             <span style={{ color: 'var(--grey-400)' }}>{fmtDate(t.created_at)}</span>
-                            <span style={{ color: t.amount < 0 ? '#FFAAAA' : '#00FF9D', fontWeight: 700, minWidth: 80, textAlign: 'right' }}>
+                            <span style={{ color: t.amount < 0 ? '#F87171' : '#2DD4BF', fontWeight: 700, minWidth: 80, textAlign: 'right' }}>
                               {t.amount < 0 ? '-' : '+'}{fmtMoney(Math.abs(t.amount))}
                             </span>
                           </div>
@@ -579,7 +579,7 @@ export default function AgentAccountDetail({
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <span style={{ color: isActive ? '#00FF9D' : 'var(--grey-400)', fontWeight: 600, fontSize: '0.9rem' }}>
+                        <span style={{ color: isActive ? '#2DD4BF' : 'var(--grey-400)', fontWeight: 600, fontSize: '0.9rem' }}>
                           {isActive ? 'Active' : 'Inactive'}
                         </span>
                         <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24 }}>
@@ -601,7 +601,7 @@ export default function AgentAccountDetail({
                           />
                           <span style={{
                             position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
-                            backgroundColor: isActive ? '#00FF9D' : 'var(--grey-500)',
+                            backgroundColor: isActive ? '#2DD4BF' : 'var(--grey-500)',
                             transition: '.4s', borderRadius: 24,
                           }}>
                             <span style={{
@@ -648,7 +648,7 @@ export default function AgentAccountDetail({
                           {/* Name & Status */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: '1 1 140px' }}>
                             <span style={{ color: 'var(--white)', fontWeight: 700 }}>{sa.full_name || sa.username || 'Anonymous'}</span>
-                            <span style={{ color: sa.is_active ? '#00FF9D' : '#FFAAAA', fontSize: '0.75rem' }}>{sa.is_active ? 'Active' : 'Inactive'}</span>
+                            <span style={{ color: sa.is_active ? '#2DD4BF' : '#F87171', fontSize: '0.75rem' }}>{sa.is_active ? 'Active' : 'Inactive'}</span>
                           </div>
                           {/* Credentials */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 180px' }}>
@@ -660,7 +660,7 @@ export default function AgentAccountDetail({
                               <span style={{ fontSize: '0.68rem', color: 'var(--grey-500)', minWidth: 52 }}>Password</span>
                               {sa.provisioned_password ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                  <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: revealedDownlinePasswords.has(sa.id) ? '#FFD700' : 'var(--silver)', letterSpacing: revealedDownlinePasswords.has(sa.id) ? 'normal' : '0.1em' }}>
+                                  <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: revealedDownlinePasswords.has(sa.id) ? '#00C4BC' : 'var(--silver)', letterSpacing: revealedDownlinePasswords.has(sa.id) ? 'normal' : '0.1em' }}>
                                     {revealedDownlinePasswords.has(sa.id) ? sa.provisioned_password : '••••••••'}
                                   </span>
                                   <button onClick={() => toggleRevealDownlinePassword(sa.id)} title={revealedDownlinePasswords.has(sa.id) ? 'Hide' : 'Reveal'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '1px 3px', color: revealedDownlinePasswords.has(sa.id) ? 'var(--teal)' : 'var(--grey-500)', lineHeight: 1 }}>
@@ -678,10 +678,10 @@ export default function AgentAccountDetail({
                           </div>
                           {/* Commission & Edit */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ color: '#00E5FF', fontWeight: 700, fontSize: '0.82rem' }}>{sa.commission_pct ?? 0}%</span>
+                            <span style={{ color: '#00C4BC', fontWeight: 700, fontSize: '0.82rem' }}>{sa.commission_pct ?? 0}%</span>
                             <button
                               onClick={() => { setDownlinePasswordAgent({ id: sa.id, full_name: sa.full_name, username: sa.username }); setDownlineNewPassword(''); }}
-                              style={{ fontSize: '0.7rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0,229,255,0.25)', borderRadius: 4, cursor: 'pointer', padding: '3px 8px' }}
+                              style={{ fontSize: '0.7rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0,196,188,0.25)', borderRadius: 4, cursor: 'pointer', padding: '3px 8px' }}
                             >
                               Edit Password
                             </button>
@@ -705,7 +705,7 @@ export default function AgentAccountDetail({
                           {/* Name & Status */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: '1 1 140px' }}>
                             <span style={{ color: 'var(--white)', fontWeight: 700 }}>{r.full_name || r.username || 'Anonymous'}</span>
-                            <span style={{ color: r.is_active ? '#00FF9D' : '#FFAAAA', fontSize: '0.75rem' }}>{r.is_active ? 'Active' : 'Inactive'}</span>
+                            <span style={{ color: r.is_active ? '#2DD4BF' : '#F87171', fontSize: '0.75rem' }}>{r.is_active ? 'Active' : 'Inactive'}</span>
                           </div>
                           {/* Credentials */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 180px' }}>
@@ -717,7 +717,7 @@ export default function AgentAccountDetail({
                               <span style={{ fontSize: '0.68rem', color: 'var(--grey-500)', minWidth: 52 }}>Password</span>
                               {r.provisioned_password ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                  <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: revealedDownlinePasswords.has(r.id) ? '#FFD700' : 'var(--silver)', letterSpacing: revealedDownlinePasswords.has(r.id) ? 'normal' : '0.1em' }}>
+                                  <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: revealedDownlinePasswords.has(r.id) ? '#00C4BC' : 'var(--silver)', letterSpacing: revealedDownlinePasswords.has(r.id) ? 'normal' : '0.1em' }}>
                                     {revealedDownlinePasswords.has(r.id) ? r.provisioned_password : '••••••••'}
                                   </span>
                                   <button onClick={() => toggleRevealDownlinePassword(r.id)} title={revealedDownlinePasswords.has(r.id) ? 'Hide' : 'Reveal'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '1px 3px', color: revealedDownlinePasswords.has(r.id) ? 'var(--teal)' : 'var(--grey-500)', lineHeight: 1 }}>
@@ -737,7 +737,7 @@ export default function AgentAccountDetail({
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <button
                               onClick={() => { setDownlinePasswordAgent({ id: r.id, full_name: r.full_name, username: r.username }); setDownlineNewPassword(''); }}
-                              style={{ fontSize: '0.7rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0,229,255,0.25)', borderRadius: 4, cursor: 'pointer', padding: '3px 8px' }}
+                              style={{ fontSize: '0.7rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0,196,188,0.25)', borderRadius: 4, cursor: 'pointer', padding: '3px 8px' }}
                             >
                               Edit Password
                             </button>
@@ -765,7 +765,7 @@ export default function AgentAccountDetail({
                 Account: <strong style={{ color: '#fff' }}>{downlinePasswordAgent.full_name || downlinePasswordAgent.username}</strong>
               </p>
               <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-4)' }}>
-                Username: <strong style={{ color: '#00E5FF', fontFamily: 'monospace' }}>{downlinePasswordAgent.username}</strong>
+                Username: <strong style={{ color: '#00C4BC', fontFamily: 'monospace' }}>{downlinePasswordAgent.username}</strong>
               </p>
               <form onSubmit={handleDownlinePasswordUpdate}>
                 <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>

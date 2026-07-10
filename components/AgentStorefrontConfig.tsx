@@ -164,7 +164,7 @@ export default function AgentStorefrontConfig({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
         
         <section className="glass-panel" style={{ padding: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #00C4BC 0%, #00E5FF 100%)' }} />
+          <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #00C4BC 0%, #00C4BC 100%)' }} />
           <h4 style={{ fontSize: '1.1rem', color: 'var(--white)', fontWeight: 600, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 8 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Brand Identity
@@ -183,7 +183,7 @@ export default function AgentStorefrontConfig({
                 disabled={!canChangeDisplayName}
               />
               {!canChangeDisplayName && (
-                <div style={{ marginTop: 8, fontSize: '0.8rem', color: '#F59E0B', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ marginTop: 8, fontSize: '0.8rem', color: '#A8B4C0', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                   User Name Can Only Be Changed Once Every 6 Months.
                 </div>
@@ -302,9 +302,9 @@ export default function AgentStorefrontConfig({
 
         {paymentMethodsNode && (
           <section className="glass-panel" style={{ padding: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #F59E0B 0%, #FCD34D 100%)' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #00C4BC 0%, #5EEAD4 100%)' }} />
             <h4 style={{ fontSize: '1.1rem', color: 'var(--white)', fontWeight: 600, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00C4BC" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
               Payment Methods
             </h4>
             <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-4)', marginTop: '-8px' }}>
