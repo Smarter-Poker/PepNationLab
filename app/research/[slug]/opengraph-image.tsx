@@ -12,13 +12,16 @@ import { createServiceClient } from '@/lib/supabase/server';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
+// Descending-confidence ladder rendered in the brand palette: brand teal at the
+// top of the evidence hierarchy, fading through the teal family into silver and
+// muted slate for the least-established tiers. No off-scheme hues.
 const TIER_COLORS: Record<string, string> = {
   'FDA Approved':        '#00C4BC',
-  'Phase III Clinical':  '#3B82F6',
-  'Phase II Clinical':   '#8B5CF6',
-  'Phase I Clinical':    '#A78BFA',
-  'Preclinical':         '#F59E0B',
-  'Emerging':            '#6B7280',
+  'Phase III Clinical':  '#2DD4BF',
+  'Phase II Clinical':   '#5EEAD4',
+  'Phase I Clinical':    '#D0DAE4',
+  'Preclinical':         '#A8B4C0',
+  'Emerging':            '#5A6A7A',
 };
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
@@ -60,8 +63,8 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: 'linear-gradient(135deg, #0A1018 0%, #0D1B2A 50%, #0A1018 100%)', fontFamily: 'Inter, sans-serif', position: 'relative', overflow: 'hidden' }}>
         {/* Teal glow top-left */}
         <div style={{ position: 'absolute', top: -100, left: -100, width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,196,188,0.15) 0%, transparent 70%)' }} />
-        {/* Purple glow bottom-right */}
-        <div style={{ position: 'absolute', bottom: -80, right: -80, width: 350, height: 350, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)' }} />
+        {/* Secondary teal glow bottom-right */}
+        <div style={{ position: 'absolute', bottom: -80, right: -80, width: 350, height: 350, borderRadius: '50%', background: 'radial-gradient(circle, rgba(45,212,191,0.12) 0%, transparent 70%)' }} />
 
         {/* Top bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '40px 60px 0' }}>
@@ -92,7 +95,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         </div>
 
         {/* Bottom edge */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${tierColor}, rgba(139,92,246,0.8), transparent)` }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${tierColor}, rgba(94,234,212,0.8), transparent)` }} />
       </div>
     ),
     {

@@ -93,11 +93,11 @@ const STATUS_LABEL: Record<Status, string> = {
 
 const STATUS_COLOR: Record<Status, string> = {
   lead: '#A8B4C0',
-  new: '#60A5FA',
+  new: '#5EEAD4',
   first_order: '#2DD4BF',
   active: '#00C4BC',
-  vip: '#FACC15',
-  at_risk: '#F59E0B',
+  vip: '#D0DAE4',
+  at_risk: '#F87171',
   churned: '#EF4444',
 };
 
@@ -283,7 +283,7 @@ export function KanbanView({
                         r.churn_risk >= 70
                           ? '#EF4444'
                           : r.churn_risk >= 40
-                            ? '#F59E0B'
+                            ? '#A8B4C0'
                             : '#2DD4BF',
                     }}
                   />
@@ -429,7 +429,7 @@ function TopCustomersBar({
               <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>
                 {r.name}
               </span>
-              <span style={{ color: '#FACC15', fontWeight: 700 }}>{fmtUSD(r.lifetime_value)}</span>
+              <span style={{ color: '#00C4BC', fontWeight: 700 }}>{fmtUSD(r.lifetime_value)}</span>
             </div>
             <div
               style={{
@@ -443,7 +443,7 @@ function TopCustomersBar({
                 style={{
                   width: `${pct}%`,
                   height: '100%',
-                  background: 'linear-gradient(90deg, #FACC15 0%, #F59E0B 100%)',
+                  background: 'linear-gradient(90deg, #00C4BC 0%, #2DD4BF 100%)',
                 }}
               />
             </div>
@@ -528,7 +528,7 @@ export function ChartsView({
       </ChartCard>
       <ChartCard
         title="Top Customers"
-        icon={<Sparkles size={14} color="#FACC15" aria-hidden />}
+        icon={<Sparkles size={14} color="#00C4BC" aria-hidden />}
       >
         {insights ? (
           <TopCustomersBar rows={insights.top_customers} />
@@ -538,7 +538,7 @@ export function ChartsView({
       </ChartCard>
       <ChartCard
         title="Cohort Retention"
-        icon={<Users size={14} color="#60A5FA" aria-hidden />}
+        icon={<Users size={14} color="#2DD4BF" aria-hidden />}
       >
         {!insights || insights.cohort_retention.length === 0 ? (
           <div style={{ color: '#A8B4C0', fontSize: '0.78rem' }}>
@@ -609,10 +609,10 @@ export function AcquisitionView({
   const sorted = [...sourceCounts].sort((a, b) => b.count - a.count);
 
   const stages = [
-    { label: 'Storefront Visits', value: funnel?.visits ?? 0, color: '#60A5FA' },
+    { label: 'Storefront Visits', value: funnel?.visits ?? 0, color: '#5EEAD4' },
     { label: 'Signups', value: funnel?.signups ?? 0, color: '#2DD4BF' },
     { label: 'First Orders', value: funnel?.first_orders ?? 0, color: '#00C4BC' },
-    { label: 'Repeat Orders', value: funnel?.repeat_orders ?? 0, color: '#FACC15' },
+    { label: 'Repeat Orders', value: funnel?.repeat_orders ?? 0, color: '#D0DAE4' },
   ];
   const max = Math.max(...stages.map((s) => s.value), 1);
 
@@ -664,7 +664,7 @@ export function AcquisitionView({
                         width: `${pct}%`,
                         height: '100%',
                         background:
-                          'linear-gradient(90deg, #00C4BC 0%, #60A5FA 100%)',
+                          'linear-gradient(90deg, #00C4BC 0%, #5EEAD4 100%)',
                       }}
                     />
                   </div>
@@ -677,7 +677,7 @@ export function AcquisitionView({
 
       <ChartCard
         title="Conversion Funnel"
-        icon={<AlertTriangle size={14} color="#F59E0B" aria-hidden />}
+        icon={<AlertTriangle size={14} color="#2DD4BF" aria-hidden />}
       >
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {stages.map((s, i) => {
@@ -701,7 +701,7 @@ export function AcquisitionView({
                   <span style={{ color: '#A8B4C0' }}>
                     {s.value.toLocaleString()}{' '}
                     {i > 0 && (
-                      <span style={{ color: dropoff >= 50 ? '#2DD4BF' : '#F59E0B' }}>
+                      <span style={{ color: dropoff >= 50 ? '#2DD4BF' : '#F87171' }}>
                         ({dropoff}%)
                       </span>
                     )}
