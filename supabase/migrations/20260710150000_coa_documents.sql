@@ -133,7 +133,7 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY INVOKER
 SET search_path = public, pg_temp
-AS $$
+AS $fn$
 BEGIN
   IF OLD.coa_verified_at IS NOT NULL THEN
     IF (NEW.product_id, NEW.lot_number, NEW.test_date, NEW.purity_pct, NEW.purity_method,
@@ -157,7 +157,7 @@ BEGIN
   NEW.updated_at := now();
   RETURN NEW;
 END;
-$$;
+$fn$;
 
 DROP TRIGGER IF EXISTS trg_coa_freeze_verified ON public.product_lots;
 CREATE TRIGGER trg_coa_freeze_verified
@@ -171,14 +171,14 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY INVOKER
 SET search_path = public, pg_temp
-AS $$
+AS $fn$
 BEGIN
   IF OLD.coa_verified_at IS NOT NULL THEN
     RAISE EXCEPTION 'A Lot With A Verified Certificate Of Analysis Cannot Be Deleted. Deactivate Or Supersede It Instead.';
   END IF;
   RETURN OLD;
 END;
-$$;
+$fn$;
 
 DROP TRIGGER IF EXISTS trg_coa_block_verified_delete ON public.product_lots;
 CREATE TRIGGER trg_coa_block_verified_delete
@@ -224,7 +224,7 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public, pg_temp
-AS $$
+AS $fn$
   SELECT l.lot_number, p.name, p.slug, l.supplier, l.manufactured_at, l.expires_at,
          l.test_date, l.purity_pct, l.purity_method, l.hplc_column, l.hplc_wavelength_nm,
          l.ms_method, l.ms_observed_mass_da, l.ms_theoretical_mass_da, l.water_content_pct,
@@ -237,7 +237,7 @@ AS $$
     AND l.coa_verified_at IS NOT NULL
     AND l.superseded_by IS NULL
   LIMIT 1;
-$$;
+$fn$;
 
 REVOKE ALL ON FUNCTION public.lookup_coa_by_lot(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.lookup_coa_by_lot(text) TO anon, authenticated;
@@ -262,7 +262,7 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public, pg_temp
-AS $$
+AS $fn$
   WITH coverage AS (
     SELECT p.id, p.name, p.slug, p.inventory_count,
            count(l.id) FILTER (
@@ -285,7 +285,7 @@ AS $$
   WHERE verified_count = 0
      OR latest_test < CURRENT_DATE - p_stale_days
   ORDER BY inventory_count DESC NULLS LAST, name;
-$$;
+$fn$;
 
 REVOKE ALL ON FUNCTION public.coa_coverage_gaps(integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.coa_coverage_gaps(integer) TO service_role;
