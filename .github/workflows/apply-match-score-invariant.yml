@@ -1,6 +1,10 @@
 # One-shot, self-deleting workflow: fixes the match-engine score ceiling bug and
 # locks the invariant with a permanent regression test.
 #
+# Re-run note: attempt #1 aborted without committing because `npm test` was red on
+# main - __tests__/idempotency-helpers.test.ts could not resolve `server-only`.
+# That is fixed in fdcb8e8 (vitest alias). The abort was the guard working.
+#
 # The bug: under a conservative budget a non-premium compound received a +10
 # bonus, so a perfect match summed to 110 and clamped to 100 - meaning the score
 # breakdown rendered in the UI (additive rows plus a "Total Match Score") no
