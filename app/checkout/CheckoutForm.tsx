@@ -1008,11 +1008,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       <CartWarnings productIds={cart.map((item) => item.id)} />
 
       {cartIsStale && (
-        <div style={{ background: 'rgba(245, 158, 11, 0.07)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-5)', display: 'flex', gap: 10, alignItems: 'center' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+        <div style={{ background: 'rgba(248, 113, 113, 0.07)', border: '1px solid rgba(248, 113, 113, 0.35)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-5)', display: 'flex', gap: 10, alignItems: 'center' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F87171" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
-          <p style={{ fontSize: '0.82rem', color: '#F59E0B', margin: 0 }}>
+          <p style={{ fontSize: '0.82rem', color: '#F87171', margin: 0 }}>
             <strong>Your Cart Prices May Be Outdated.</strong> This Cart Was Loaded More Than 24 Hours Ago. Return To The Storefront To Refresh Prices Before Completing Your Order.
           </p>
         </div>
@@ -1080,7 +1080,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                             <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: '2px' }}>7-10 Days</span>
                           </div>
                         </div>
-                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#68D391' }}>Free</span>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#2DD4BF' }}>Free</span>
                       </div>
                       <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>Zero Cost Shipping To Your Referring Representative. Coordinate Pickup Directly.</span>
                     </label>
@@ -1296,16 +1296,16 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   if (group.isBundle) {
                     const bundleSubtotal = group.items.reduce((acc, item) => { const bulkEligible = !isAgentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold; const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice; return acc + (activePrice * 0.9) * item.quantity; }, 0);
                     return (
-                      <div key={`bundle-${group.name}-${groupIndex}`} style={{ background: 'rgba(0, 229, 255, 0.03)', border: '1px solid rgba(0, 229, 255, 0.2)', borderRadius: 8, padding: '10px', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 6 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,229,255,0.1)', paddingBottom: 6, marginBottom: 4 }}>
+                      <div key={`bundle-${group.name}-${groupIndex}`} style={{ background: 'rgba(0,196,188, 0.03)', border: '1px solid rgba(0,196,188, 0.2)', borderRadius: 8, padding: '10px', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 6 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,196,188,0.1)', paddingBottom: 6, marginBottom: 4 }}>
                           <div>
-                            <h4 style={{ fontSize: '0.85rem', margin: 0, fontFamily: 'var(--font-brand)', color: '#00E5FF' }}>{group.name}</h4>
-                            <div style={{ fontSize: '0.65rem', color: '#68D391', marginTop: 2, fontWeight: 700 }}>Stack Discount (10% Off) Applied</div>
+                            <h4 style={{ fontSize: '0.85rem', margin: 0, fontFamily: 'var(--font-brand)', color: '#00C4BC' }}>{group.name}</h4>
+                            <div style={{ fontSize: '0.65rem', color: '#2DD4BF', marginTop: 2, fontWeight: 700 }}>Stack Discount (10% Off) Applied</div>
                             <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', marginTop: 4, fontStyle: 'italic', maxWidth: '90%' }}>Note: This peptide stack is not all inside one vial, it is individually packaged as the vials listed below.</div>
                           </div>
-                          <div style={{ fontSize: '0.85rem', color: '#00E5FF', fontWeight: 800 }}>${bundleSubtotal.toFixed(2)}</div>
+                          <div style={{ fontSize: '0.85rem', color: '#00C4BC', fontWeight: 800 }}>${bundleSubtotal.toFixed(2)}</div>
                         </div>
-                        {group.items.map(item => { const bulkEligible = !isAgentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold; const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice; return (<div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', alignItems: 'flex-start', paddingLeft: 6 }}><div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}><span style={{ color: 'var(--silver-light)', fontWeight: 500 }}>&#x21B3; {toTitleCase(item.name)}</span><div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div></div><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}><div style={{ color: 'var(--grey-500)', fontSize: '0.70rem', textDecoration: 'line-through' }}>${(activePrice * item.quantity).toFixed(2)}</div><strong style={{ color: '#00E5FF' }}>${((activePrice * 0.9) * item.quantity).toFixed(2)}</strong></div></div>); })}
+                        {group.items.map(item => { const bulkEligible = !isAgentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold; const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice; return (<div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', alignItems: 'flex-start', paddingLeft: 6 }}><div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}><span style={{ color: 'var(--silver-light)', fontWeight: 500 }}>&#x21B3; {toTitleCase(item.name)}</span><div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div></div><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}><div style={{ color: 'var(--grey-500)', fontSize: '0.70rem', textDecoration: 'line-through' }}>${(activePrice * item.quantity).toFixed(2)}</div><strong style={{ color: '#00C4BC' }}>${((activePrice * 0.9) * item.quantity).toFixed(2)}</strong></div></div>); })}
                       </div>
                     );
                   }
@@ -1343,8 +1343,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             {!couponDisabled && (
               <div style={{ paddingTop: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
                 {appliedCoupon ? (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(104,211,145,0.08)', border: '1px solid rgba(104,211,145,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)' }}>
-                    <span style={{ fontSize: '0.78rem', color: '#68D391', fontWeight: 600 }}>Coupon {appliedCoupon.code} Applied</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#2DD4BF', fontWeight: 600 }}>Coupon {appliedCoupon.code} Applied</span>
                     <button type="button" onClick={removeCoupon} style={{ background: 'none', border: 'none', color: 'var(--grey-400)', fontSize: '0.74rem', cursor: 'pointer', textDecoration: 'underline' }}>Remove</button>
                   </div>
                 ) : (
@@ -1369,21 +1369,21 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 </div>
               )}
               {volumeDiscount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(104,211,145,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(104,211,145,0.2)' }}>
-                  <span style={{ color: '#68D391', fontWeight: 600 }}>Volume Discount (3+ Vials Per Peptide)</span>
-                  <strong style={{ color: '#68D391' }}>-${volumeDiscount.toFixed(2)}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(45,212,191,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(45,212,191,0.2)' }}>
+                  <span style={{ color: '#2DD4BF', fontWeight: 600 }}>Volume Discount (3+ Vials Per Peptide)</span>
+                  <strong style={{ color: '#2DD4BF' }}>-${volumeDiscount.toFixed(2)}</strong>
                 </div>
               )}
               {appliedCoupon && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                  <span style={{ color: '#68D391' }}>Coupon Discount</span>
-                  <strong style={{ color: '#68D391' }}>-${discount.toFixed(2)}</strong>
+                  <span style={{ color: '#2DD4BF' }}>Coupon Discount</span>
+                  <strong style={{ color: '#2DD4BF' }}>-${discount.toFixed(2)}</strong>
                 </div>
               )}
               {flashDiscount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(104,211,145,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(104,211,145,0.2)' }}>
-                  <span style={{ color: '#68D391', fontWeight: 600 }}>Flash Sale ({flashSale!.discount_pct}% Off)</span>
-                  <strong style={{ color: '#68D391' }}>-${flashDiscount.toFixed(2)}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(45,212,191,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(45,212,191,0.2)' }}>
+                  <span style={{ color: '#2DD4BF', fontWeight: 600 }}>Flash Sale ({flashSale!.discount_pct}% Off)</span>
+                  <strong style={{ color: '#2DD4BF' }}>-${flashDiscount.toFixed(2)}</strong>
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>

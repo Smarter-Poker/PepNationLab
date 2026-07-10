@@ -291,10 +291,12 @@ export default function AdminAgents() {
   };
 
   const tierStyle = (tier: string) => ({
-    tier_1: { bg: 'rgba(104,211,145,0.15)', color: '#68D391', border: '1px solid rgba(104,211,145,0.35)' },
-    tier_2: { bg: 'rgba(99,179,237,0.15)',  color: '#63B3ED', border: '1px solid rgba(99,179,237,0.35)' },
-    tier_3: { bg: 'rgba(246,173,85,0.15)',  color: '#00E5FF', border: '1px solid rgba(246,173,85,0.35)' },
-  }[tier] ?? { bg: 'rgba(192,184,168,0.1)', color: 'var(--teal)', border: '1px solid rgba(192,184,168,0.3)' });
+    // Tier 1 = best pricing (brand teal) down to Tier 3 = entry (silver).
+    // Background + border tints match their own text color.
+    tier_1: { bg: 'rgba(0,196,188,0.15)',   color: '#00C4BC', border: '1px solid rgba(0,196,188,0.35)' },
+    tier_2: { bg: 'rgba(45,212,191,0.15)',  color: '#2DD4BF', border: '1px solid rgba(45,212,191,0.35)' },
+    tier_3: { bg: 'rgba(168,180,192,0.15)', color: '#A8B4C0', border: '1px solid rgba(168,180,192,0.35)' },
+  }[tier] ?? { bg: 'rgba(90,106,122,0.10)', color: 'var(--teal)', border: '1px solid rgba(90,106,122,0.30)' });
 
   const openEditModal = (agent: any) => {
     setEditingAgent(agent);
@@ -485,7 +487,7 @@ export default function AdminAgents() {
                       <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', minWidth: 54 }}>Password</span>
                       {agent.provisioned_password ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: revealedPasswords.has(agent.id) ? '#FFD700' : 'var(--silver)', letterSpacing: revealedPasswords.has(agent.id) ? 'normal' : '0.1em' }}>
+                          <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: revealedPasswords.has(agent.id) ? '#00C4BC' : 'var(--silver)', letterSpacing: revealedPasswords.has(agent.id) ? 'normal' : '0.1em' }}>
                             {revealedPasswords.has(agent.id) ? agent.provisioned_password : '••••••••'}
                           </span>
                           <button
@@ -506,7 +508,7 @@ export default function AdminAgents() {
                     </div>
                     <button
                       onClick={() => { setPasswordAgent(agent); setNewPassword(''); }}
-                      style={{ fontSize: '0.72rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0,229,255,0.25)', borderRadius: 4, cursor: 'pointer', padding: '3px 8px', textAlign: 'left', marginTop: 2, alignSelf: 'flex-start' }}
+                      style={{ fontSize: '0.72rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0, 196, 188,0.25)', borderRadius: 4, cursor: 'pointer', padding: '3px 8px', textAlign: 'left', marginTop: 2, alignSelf: 'flex-start' }}
                     >
                       Edit Password
                     </button>
@@ -693,7 +695,7 @@ export default function AdminAgents() {
                       background: 'var(--bg-metal-dark)',
                       borderTop: '1px solid rgba(0,0,0,0.8)',
                       borderBottom: '1px solid rgba(255,255,255,0.08)',
-                      borderLeft: '3px solid rgba(139,92,246,0.5)',
+                      borderLeft: '3px solid rgba(94,234,212,0.5)',
                       borderRight: '1px solid rgba(255,255,255,0.03)',
                       boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)',
                       borderRadius: '16px',
@@ -707,7 +709,7 @@ export default function AdminAgents() {
                   >
                     {/* Name + status */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 180px' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'rgba(139,92,246,0.8)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Researcher</span>
+                      <span style={{ fontSize: '0.75rem', color: 'rgba(94,234,212,0.8)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Researcher</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--white)' }}>{r.full_name}</span>
                         <span style={{ fontSize: '0.7rem', color: 'var(--silver)', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4 }}>
@@ -735,7 +737,7 @@ export default function AdminAgents() {
                         <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', minWidth: 54 }}>Password</span>
                         {r.provisioned_password ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: revealedResearcherPasswords.has(r.id) ? '#FFD700' : 'var(--silver)', letterSpacing: revealedResearcherPasswords.has(r.id) ? 'normal' : '0.1em' }}>
+                            <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: revealedResearcherPasswords.has(r.id) ? '#00C4BC' : 'var(--silver)', letterSpacing: revealedResearcherPasswords.has(r.id) ? 'normal' : '0.1em' }}>
                               {revealedResearcherPasswords.has(r.id) ? r.provisioned_password : '••••••••'}
                             </span>
                             <button
@@ -851,7 +853,7 @@ export default function AdminAgents() {
                 Agent: <strong style={{ color: '#fff' }}>{passwordAgent.full_name}</strong>
               </p>
               <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-4)' }}>
-                Username: <strong style={{ color: '#00E5FF', fontFamily: 'monospace' }}>{passwordAgent.username}</strong>
+                Username: <strong style={{ color: '#00C4BC', fontFamily: 'monospace' }}>{passwordAgent.username}</strong>
               </p>
               <form onSubmit={async (e) => {
                 e.preventDefault();
@@ -888,7 +890,7 @@ export default function AdminAgents() {
                     autoFocus
                     style={{ width: '100%' }}
                   />
-                  <div style={{ marginTop: 6, fontSize: '0.75rem', color: newPassword.length === 0 ? 'var(--grey-500)' : newPassword.length < 8 ? '#FF6B6B' : '#00FF9D', fontWeight: 600 }}>
+                  <div style={{ marginTop: 6, fontSize: '0.75rem', color: newPassword.length === 0 ? 'var(--grey-500)' : newPassword.length < 8 ? '#F87171' : '#2DD4BF', fontWeight: 600 }}>
                     {newPassword.length === 0
                       ? 'Minimum 8 Characters Required'
                       : newPassword.length < 8
@@ -1320,7 +1322,7 @@ export default function AdminAgents() {
                         )}
                       </span>
                       
-                      <span style={{ textAlign: 'center', color: idx === 0 ? 'var(--grey-500)' : '#00FF9D', fontWeight: 700 }}>
+                      <span style={{ textAlign: 'center', color: idx === 0 ? 'var(--grey-500)' : '#2DD4BF', fontWeight: 700 }}>
                         {bonusText}
                       </span>
                       

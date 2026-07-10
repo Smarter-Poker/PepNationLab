@@ -129,7 +129,7 @@ function ThemeToggleCard() {
         padding: 'var(--space-4)',
         background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
         borderRadius: 'var(--radius-lg)',
-        border: '1px solid rgba(192,184,168,0.2)',
+        border: '1px solid rgba(168,180,192,0.2)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
           <div style={{
@@ -137,16 +137,16 @@ function ThemeToggleCard() {
             height: 40,
             borderRadius: '50%',
             background: isLight
-              ? 'linear-gradient(135deg, #FFF4D6 0%, #FFE082 100%)'
+              ? 'linear-gradient(135deg, #E8EEF4 0%, #D0DAE4 100%)'
               : 'linear-gradient(135deg, #1A2A3A 0%, #2A3A4A 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: isLight ? '0 0 12px rgba(255,193,7,0.4)' : '0 0 12px rgba(192,184,168,0.2)',
+            boxShadow: isLight ? '0 0 12px rgba(208,218,228,0.4)' : '0 0 12px rgba(168,180,192,0.2)',
             transition: 'all 0.3s ease',
           }}>
             {isLight ? (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00C4BC" strokeWidth="2" strokeLinecap="round">
                 <circle cx="12" cy="12" r="5"/>
                 <line x1="12" y1="1" x2="12" y2="3"/>
                 <line x1="12" y1="21" x2="12" y2="23"/>
@@ -183,7 +183,7 @@ function ThemeToggleCard() {
             border: 'none',
             cursor: 'pointer',
             background: isLight
-              ? 'linear-gradient(135deg, #F59E0B, #FCD34D)'
+              ? 'linear-gradient(135deg, #A8B4C0, #D0DAE4)'
               : 'linear-gradient(135deg, var(--teal-dark), var(--teal))',
             position: 'relative',
             transition: 'background 0.3s ease',

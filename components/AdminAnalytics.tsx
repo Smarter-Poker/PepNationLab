@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
 import { createClient } from '@/lib/supabase/client';
+import { CHART_SERIES, RANK_COLORS } from '@/lib/brand-colors';
 
 interface AnalyticsData {
   revenueData: { date: string; revenue: number }[];
@@ -18,7 +19,9 @@ interface AnalyticsData {
   avgOrderValue: number;
 }
 
-const COLORS = ['#C0B8A8', '#0099FF', '#00E5FF', '#68D391', '#FC8181', '#C084FC', '#63B3ED'];
+// Brand chart ramp (single source of truth). Alternates teal / neutral so
+// adjacent series stay distinguishable without leaving the palette.
+const COLORS = CHART_SERIES;
 
 export default function AdminAnalytics() {
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -86,14 +89,16 @@ export default function AdminAnalytics() {
       // Orders by status (pie chart)
       const statusCounts: Record<string, number> = {};
       orders.forEach(o => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
+      // Seven DISTINCT on-brand colors - these are pie slices, so any two
+      // statuses sharing a color would be indistinguishable in the chart.
       const statusLabels: Record<string, { label: string; color: string }> = {
-        pending_customer_payment: { label: 'Pending Payment', color: '#FC8181' },
-        agent_approval_pending: { label: 'Pending Approval', color: '#00E5FF' },
-        approved_ship: { label: 'Approved Ship', color: '#63B3ED' },
-        approved_pickup: { label: 'Approved Pickup', color: '#68D391' },
-        in_fulfillment: { label: 'Fulfilling', color: '#C0B8A8' },
-        shipped: { label: 'Shipped', color: '#0099FF' },
-        delivered: { label: 'Delivered', color: '#68D391' },
+        pending_customer_payment: { label: 'Pending Payment', color: '#F87171' },
+        agent_approval_pending: { label: 'Pending Approval', color: '#D0DAE4' },
+        approved_ship: { label: 'Approved Ship', color: '#5EEAD4' },
+        approved_pickup: { label: 'Approved Pickup', color: '#A8B4C0' },
+        in_fulfillment: { label: 'Fulfilling', color: '#2DD4BF' },
+        shipped: { label: 'Shipped', color: '#00C4BC' },
+        delivered: { label: 'Delivered', color: '#5A6A7A' },
       };
       const ordersByStatus = Object.entries(statusCounts)
         .filter(([k]) => statusLabels[k])
@@ -176,9 +181,9 @@ export default function AdminAnalytics() {
               style={{
                 padding: '4px 12px', borderRadius: 6, cursor: 'pointer',
                 fontSize: '0.72rem', fontWeight: range === r.value ? 700 : 500,
-                background: range === r.value ? 'rgba(192,184,168,0.08)' : 'transparent',
+                background: range === r.value ? 'rgba(168,180,192,0.08)' : 'transparent',
                 color: range === r.value ? 'var(--teal)' : 'rgba(255,255,255,0.35)',
-                border: range === r.value ? '1px solid rgba(192,184,168,0.15)' : '1px solid rgba(255,255,255,0.04)',
+                border: range === r.value ? '1px solid rgba(168,180,192,0.15)' : '1px solid rgba(255,255,255,0.04)',
               }}>
               {r.label}
             </button>
@@ -216,7 +221,7 @@ export default function AdminAnalytics() {
                   <span style={{
                     fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 4,
                     background: kpi.positive ? 'rgba(72,187,120,0.1)' : 'rgba(229,62,62,0.1)',
-                    color: kpi.positive ? '#48BB78' : '#FC8181',
+                    color: kpi.positive ? '#48BB78' : '#F87171',
                   }}>{kpi.change}</span>
                 )}
               </div>
@@ -240,19 +245,19 @@ export default function AdminAnalytics() {
               <AreaChart data={data.revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                 <defs>
                   <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#C0B8A8" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#C0B8A8" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#A8B4C0" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#A8B4C0" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                 <XAxis dataKey="date" stroke="rgba(255,255,255,0.2)" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="rgba(255,255,255,0.2)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `$${v}`} />
                 <Tooltip
-                  contentStyle={{ background: '#111827', border: '1px solid rgba(192,184,168,0.2)', borderRadius: 10, fontSize: '0.8rem' }}
-                  itemStyle={{ color: '#C0B8A8' }}
+                  contentStyle={{ background: '#111827', border: '1px solid rgba(168,180,192,0.2)', borderRadius: 10, fontSize: '0.8rem' }}
+                  itemStyle={{ color: '#A8B4C0' }}
                   formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'Revenue']}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="#C0B8A8" strokeWidth={2.5} fill="url(#revGrad)" dot={false} activeDot={{ r: 5, fill: '#C0B8A8' }} />
+                <Area type="monotone" dataKey="revenue" stroke="#A8B4C0" strokeWidth={2.5} fill="url(#revGrad)" dot={false} activeDot={{ r: 5, fill: '#A8B4C0' }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -310,11 +315,11 @@ export default function AdminAnalytics() {
                   <XAxis type="number" stroke="rgba(255,255,255,0.2)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `$${v}`} />
                   <YAxis type="category" dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} width={100} />
                   <Tooltip
-                    contentStyle={{ background: '#111827', border: '1px solid rgba(246,173,85,0.2)', borderRadius: 8, fontSize: '0.78rem' }}
+                    contentStyle={{ background: '#111827', border: '1px solid rgba(208, 218, 228,0.2)', borderRadius: 8, fontSize: '0.78rem' }}
                     formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'Revenue']}
                     cursor={{ fill: 'rgba(255,255,255,0.02)' }}
                   />
-                  <Bar dataKey="revenue" fill="#00E5FF" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="revenue" fill="#00C4BC" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -384,7 +389,7 @@ export default function AdminAnalytics() {
                 <tbody>
                   {data.topProducts.map((prod, i) => (
                     <tr key={i} style={{ borderBottom: i < data.topProducts.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                      <td style={{ padding: 'var(--space-2) var(--space-4)', textAlign: 'center', fontWeight: 800, fontSize: '0.78rem', color: i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : 'rgba(255,255,255,0.25)' }}>
+                      <td style={{ padding: 'var(--space-2) var(--space-4)', textAlign: 'center', fontWeight: 800, fontSize: '0.78rem', color: i < RANK_COLORS.length ? RANK_COLORS[i] : 'rgba(255,255,255,0.25)' }}>
                         {i + 1}
                       </td>
                       <td style={{ padding: 'var(--space-2) var(--space-4)', color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '0.85rem' }}>

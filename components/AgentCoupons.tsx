@@ -605,16 +605,18 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
       : `$${val.toFixed(2)} Off${minStr}${usesStr}${expStr}`;
   }, [discountType, discountValue, minSubtotal, maxUses, expiresAt]);
 
+  // Brand palette only: teal family for live / upcoming states, silver for spent
+  // or dormant states, red reserved for expiry.
   const couponState = (c: Coupon) => {
-    if (c.archived_at) return { label: 'Archived', color: '#666', bg: 'rgba(100,100,100,0.1)' };
+    if (c.archived_at) return { label: 'Archived', color: '#5A6A7A', bg: 'rgba(90,106,122,0.10)' };
     if (c.expires_at && new Date(c.expires_at) < new Date())
-      return { label: 'Expired', color: '#FFAAAA', bg: 'rgba(255,100,100,0.08)' };
+      return { label: 'Expired', color: '#F87171', bg: 'rgba(248,113,113,0.10)' };
     if (c.max_uses != null && c.uses_count >= c.max_uses)
-      return { label: 'Exhausted', color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' };
+      return { label: 'Exhausted', color: '#A8B4C0', bg: 'rgba(168,180,192,0.10)' };
     if (!c.is_active) return { label: 'Inactive', color: 'var(--grey-400)', bg: 'rgba(128,128,128,0.08)' };
     if (c.starts_at && new Date(c.starts_at) > new Date())
-      return { label: 'Scheduled', color: '#00E5FF', bg: 'rgba(0,229,255,0.08)' };
-    return { label: 'Active', color: '#00FF9D', bg: 'rgba(0,255,157,0.08)' };
+      return { label: 'Scheduled', color: '#5EEAD4', bg: 'rgba(94,234,212,0.10)' };
+    return { label: 'Active', color: '#00C4BC', bg: 'rgba(0,196,188,0.10)' };
   };
 
   if (loading) return <div style={{ color: 'var(--silver)' }}>Loading Coupons...</div>;
@@ -653,7 +655,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontFamily: 'monospace', fontSize: '1.1rem', fontWeight: 800, color: '#00E5FF', letterSpacing: '0.05em' }}>{c.code}</span>
+                        <span style={{ fontFamily: 'monospace', fontSize: '1.1rem', fontWeight: 800, color: '#00C4BC', letterSpacing: '0.05em' }}>{c.code}</span>
                         <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: state.bg, color: state.color, border: `1px solid ${state.color}` }}>{state.label}</span>
                       </div>
                       <span style={{ fontSize: '0.82rem', color: 'var(--silver)' }}>
@@ -860,7 +862,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
               </div>
 
               {previewSummary && (
-                <div style={{ background: 'rgba(0,229,255,0.06)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 8, padding: '10px 14px', fontSize: '0.8rem', color: 'var(--teal)' }}>
+                <div style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 8, padding: '10px 14px', fontSize: '0.8rem', color: 'var(--teal)' }}>
                   Preview: {previewSummary}
                 </div>
               )}
