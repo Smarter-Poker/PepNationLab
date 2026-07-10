@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useDeferredValue, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -10,8 +11,7 @@ import RecommendationStrip, { type RecommendationItem } from './RecommendationSt
 import ProductMonograph from './research/ProductMonograph';
 import IframeLink from '@/components/ui/IframeLink';
 import DiscoveryHero, { type MatchedProduct } from './storefront/StorefrontDiscovery';
-import ProductModalEnhancements, { type ModalGroupedProductRef } from './storefront/ProductModalEnhancements';
-import StorefrontCompareDrawer from './storefront/StorefrontCompareDrawer';
+import type { ModalGroupedProductRef } from './storefront/ProductModalEnhancements';
 import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
 import DynamicCartButton from './storefront/DynamicCartButton';
 import DynamicDetailButton from './storefront/DynamicDetailButton';
@@ -48,6 +48,14 @@ interface ProductItem {
 }
 
 import { StockBadge, computeStockState, type StockState } from './storefront/StockBadge';
+
+// Heavy, interaction-only storefront UI (~3.2k lines combined) split into
+// on-demand chunks so they no longer ship in the storefront's initial JS bundle.
+// ProductModalEnhancements only mounts when a product-detail modal opens;
+// StorefrontCompareDrawer stays hidden until the compare tray is engaged.
+// ssr:false is safe - both are client-only interactive UI, not SEO/product content.
+const ProductModalEnhancements = dynamic(() => import('./storefront/ProductModalEnhancements'), { ssr: false });
+const StorefrontCompareDrawer = dynamic(() => import('./storefront/StorefrontCompareDrawer'), { ssr: false });
 export interface BundleConfig {
   id: string;
   name: string;

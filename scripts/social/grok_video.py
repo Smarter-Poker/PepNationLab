@@ -29,6 +29,7 @@ Env:  XAI_API_KEY (required); SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (upload).
 
 import argparse
 import base64
+import datetime
 import json
 import os
 import re
@@ -82,6 +83,21 @@ ALIASES = {
     "ghk-cu": "Copper Peptide (GHK-Cu)",
     "semaglutide": "GLP-1 Research Analog",
     "tirzepatide": "GIP / GLP-1 Research Analog",
+}
+
+# Captions attached to the queued post. These are checked by the SAME compliance
+# gate the autoposter runs before publishing (lib/social/compliance.ts), so they
+# must stay research-framed: no dosing, no human-use, no benefit/therapeutic
+# claims, no commerce language. A caption that trips the gate is queued as
+# 'blocked' and surfaces in the admin console rather than being published.
+CAPTIONS = {
+    "peptide-101": "What actually IS a peptide? A short chain of amino acids, studied in vitro. Plain-language glossary on our site. For in vitro laboratory research use only. #peptidescience #biochemistry",
+    "reconstitution": "Reconstitution science for the lab: lyophilized powder, gentle diluent addition, swirl - do not shake. A laboratory handling step. For in vitro laboratory research use only. #labscience",
+    "coa": "How to read a COA: identity, purity, and batch traceability. A Certificate of Analysis is a research compound's report card. For in vitro laboratory research use only. #researchpeptides",
+    "bpc-157": "BPC-157 at a glance (research reference). Molecular facts, not claims. Studied in tissue-repair models. Full evidence-tiered monograph on our site. For in vitro laboratory research use only.",
+    "tb-500": "TB-500 / Thymosin Beta-4 at a glance (research reference). Molecular facts, not claims. Studied in cell-migration models. For in vitro laboratory research use only.",
+    "molecule": "The science of peptides: short chains of amino acids, studied in vitro. Referenced monographs on our site. For in vitro laboratory research use only. #peptidescience",
+    "lab": "Research grade, verified. Every compound is referenced and evidence-tiered. For in vitro laboratory research use only. #labscience #researchpeptides",
 }
 
 # RUO-safe narration. Always names the popular/common name for compounds.
@@ -339,6 +355,51 @@ def supabase_upload(path, bucket, name):
     log(f"uploaded -> {pub}"); return pub
 
 
+def enqueue(media_url, caption, platform, link, scheduled_for, dedupe_key):
+    """
+    Hand the finished asset to the publish queue via /api/social/ingest.
+
+    Deliberately goes through the API rather than writing to Postgres directly:
+    the endpoint runs the SAME compliance gate the autoposter uses, validates the
+    payload, and is idempotent on dedupe_key -- so re-running this workflow does
+    not double-queue. It also means CI never needs the service-role key for this
+    step, just the shared CRON_SECRET.
+    """
+    app_url = (os.environ.get("APP_URL") or "https://pepnationlab.com").rstrip("/")
+    secret = os.environ.get("CRON_SECRET")
+    if not secret:
+        log("CRON_SECRET absent - skipping enqueue"); return None
+
+    payload = json.dumps({"posts": [{
+        "platform": platform,
+        "caption": caption,
+        "mediaUrl": media_url,
+        "mediaType": "video",
+        "link": link,
+        "scheduledFor": scheduled_for,
+        "source": "grok",
+        "dedupeKey": dedupe_key,
+    }]}).encode()
+
+    req = urllib.request.Request(
+        f"{app_url}/api/social/ingest", data=payload, method="POST",
+        headers={"Authorization": f"Bearer {secret}", "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            body = json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        log(f"enqueue failed ({e.code}): {e.read().decode()[:300]}"); return None
+    except Exception as e:  # noqa: BLE001
+        log(f"enqueue failed: {e}"); return None
+
+    if body.get("blocked"):
+        log(f"WARNING: caption blocked by compliance gate - queued as 'blocked', will NOT post: {caption[:80]!r}")
+    if body.get("duplicates"):
+        log(f"already queued (dedupe_key={dedupe_key}) - nothing added")
+    log(f"enqueue -> {body}")
+    return body
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--topic")
@@ -354,6 +415,14 @@ def main():
     p.add_argument("--no-music", action="store_true")
     p.add_argument("--out", default="short.mp4")
     p.add_argument("--upload", action="store_true")
+    p.add_argument("--enqueue", action="store_true",
+                   help="after upload, add the asset to the publish queue (implies --upload)")
+    p.add_argument("--platform", default="youtube",
+                   choices=["youtube", "x", "instagram", "facebook", "tiktok"],
+                   help="target platform for the queued post (video platforms only)")
+    p.add_argument("--caption", help="override the built-in RUO-safe caption")
+    p.add_argument("--link", default="https://pepnationlab.com/research")
+    p.add_argument("--schedule", help="ISO timestamp for when the post is due (default: now)")
     a = p.parse_args()
 
     api_key = os.environ.get("XAI_API_KEY")
@@ -411,9 +480,22 @@ def main():
     compose(clip, build_overlay(hook, alias), a.out, vo=vo, ass=ass, bed=bed, length=length)
     log(f"finished -> {a.out}")
 
-    if a.upload:
-        supabase_upload(a.out, os.environ.get("SUPABASE_BUCKET", "social-media"),
-                        os.path.basename(a.out))
+    # 5. Publish path: upload the asset, then hand its public URL to the queue.
+    media_url = None
+    if a.upload or a.enqueue:
+        media_url = supabase_upload(a.out, os.environ.get("SUPABASE_BUCKET", "social-media"),
+                                    os.path.basename(a.out))
+
+    if a.enqueue:
+        if not media_url:
+            raise SystemExit("--enqueue requires a successful upload (no public media URL)")
+        topic_key = a.topic or "molecule"
+        caption = a.caption or CAPTIONS.get(topic_key)
+        if not caption:
+            raise SystemExit(f"no caption for topic {topic_key!r}; pass --caption")
+        # Idempotent per topic per day: re-running the workflow will not duplicate.
+        dedupe_key = f"grok-{a.platform}-{topic_key}-{datetime.date.today().isoformat()}"
+        enqueue(media_url, caption, a.platform, a.link, a.schedule, dedupe_key)
 
 
 if __name__ == "__main__":

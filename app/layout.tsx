@@ -119,6 +119,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
+        {/* RSS feed auto-discovery — enables feed readers and AI crawlers to
+            locate the research-updates feed without visiting /feed.xml directly. */}
+        <link rel="alternate" type="application/rss+xml" title="Pep Nation Lab Research Updates" href="/feed.xml" />
         {/* Global WebSite + Organization JSON-LD - present on every page.
             SearchAction enables Google Sitelinks Search Box in SERPs. */}
         <script

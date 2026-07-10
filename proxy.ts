@@ -157,6 +157,10 @@ const PUBLIC_ROUTES = [
   '/api/cron/auth-canary',
   // Social autoposter cron — CRON_SECRET enforced in-route; gated by SOCIAL_AUTOPOST_ENABLED.
   '/api/cron/social-autopost',
+  // Generator -> queue batch enqueue, called by GitHub Actions with no user
+  // session. CRON_SECRET is enforced inside the route (see app/api/social/ingest).
+  // NOTE: this exact path only — /api/social/oauth/* stays admin-gated.
+  '/api/social/ingest',
   '/api/cron/sms-dispatch',
   '/api/cron/abandoned-cart-recovery',
   '/api/cron/apply-price-changes',
