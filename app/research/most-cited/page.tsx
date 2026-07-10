@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier } from '@/lib/compounds';
+import { compoundItemListJsonLd } from '@/lib/research/schema';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
@@ -94,7 +95,7 @@ export default async function ResearchMostCitedPage() {
           { '@type': 'ListItem', position: 3, name: 'most cited', item: 'https://pepnationlab.com/research/most-cited' }
         ]
       }
-    ]
+    ] as Record<string, unknown>[]
   };
 
   const compounds = await getAllCompounds();
@@ -107,6 +108,16 @@ export default async function ResearchMostCitedPage() {
 
   const withCitations = ranked.filter((c) => c.citation_count > 0);
   const withoutCitations = ranked.filter((c) => c.citation_count === 0);
+
+  // Item-level structure for the ranked list this page already renders.
+  jsonLd['@graph'].push(
+    compoundItemListJsonLd({
+      name: 'Most Cited Research Peptides',
+      pageUrl: 'https://pepnationlab.com/research/most-cited',
+      items: withCitations,
+      order: 'descending',
+    }),
+  );
 
   // Group by category for tabs
   const categoryMap = new Map<string, typeof withCitations>();

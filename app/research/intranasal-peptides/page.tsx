@@ -10,6 +10,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { getAllCompounds } from '@/lib/compounds-server';
+import { compoundItemListJsonLd } from '@/lib/research/schema';
 import { evidenceTier, intranasalDisplay, type Compound } from '@/lib/compounds';
 import IframeLink from '@/components/ui/IframeLink';
 
@@ -108,7 +109,7 @@ export default async function IntranasalPeptidesPage() {
           { '@type': 'ListItem', position: 3, name: 'intranasal peptides', item: 'https://pepnationlab.com/research/intranasal-peptides' }
         ]
       }
-    ]
+    ] as Record<string, unknown>[]
   };
 
   const all = await getAllCompounds();
@@ -118,6 +119,18 @@ export default async function IntranasalPeptidesPage() {
   const emerging = all
     .filter((c) => c.intranasal_status === 'emerging')
     .sort((a, b) => a.display_name.localeCompare(b.display_name));
+
+  // Item-level structure for the compounds this page already lists. The page
+  // sorts alphabetically within each evidence band, so this is an index, not a
+  // ranking -- emit it unordered rather than implying a rank that isn't there.
+  jsonLd['@graph'].push(
+    compoundItemListJsonLd({
+      name: 'Peptides Studied Via The Intranasal Route',
+      pageUrl: 'https://pepnationlab.com/research/intranasal-peptides',
+      items: [...established, ...emerging],
+      order: 'unordered',
+    }),
+  );
   const injectionOnly = all.filter((c) => !c.intranasal_status || c.intranasal_status === 'not_suitable');
 
   return (

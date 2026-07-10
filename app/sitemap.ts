@@ -5,6 +5,7 @@
 import type { MetadataRoute } from 'next';
 import { createServiceClient } from '@/lib/supabase/server';
 import { CITIES, getStatesSlugs, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
+import { CITY_COMPOUND_SLUGS } from '@/lib/cities/city-compounds';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { GUIDES, GUIDES_UPDATED } from '@/lib/research/guides';
 import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
@@ -160,5 +161,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: cityPriority[city.tier] ?? 0.6,
   }));
 
-  return [...staticPaths, ...compounds, ...cityPages];
+  // Compound-city landing pages - buying-intent long-tail (e.g.
+  // "BPC-157 Oak Lawn"). One URL per city x curated compound. These are
+  // rendered on demand via ISR (no generateStaticParams) so they do not affect
+  // build time. Flat 0.5 priority so they never outrank the city hubs above.
+  // NOTE: intentionally NOT added to the bulk IndexNow submission - the full
+  // set would approach the IndexNow cap and drown priority URLs.
+  const compoundCityPages: MetadataRoute.Sitemap = [];
+  for (const city of CITIES) {
+    for (const compoundSlug of CITY_COMPOUND_SLUGS) {
+      compoundCityPages.push({
+        url: `${BASE}/peptides/${city.stateSlug}/${city.slug}/${compoundSlug}`,
+        lastModified: CITY_CONTENT_UPDATED,
+        changeFrequency: 'monthly' as const,
+        priority: 0.5,
+      });
+    }
+  }
+
+  return [...staticPaths, ...compounds, ...cityPages, ...compoundCityPages];
 }

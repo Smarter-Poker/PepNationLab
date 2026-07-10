@@ -270,3 +270,65 @@ describe('scoreCompounds - ranking and cap', () => {
     expect(results.map((r) => r.slug)).toEqual(['with-signal']);
   });
 });
+
+describe('scoreCompounds - score invariants', () => {
+  // The UI renders the score breakdown as additive rows plus a "Total Match
+  // Score". That is only honest if the rows sum to the score. A positive
+  // conservative-budget bonus once pushed the raw total to 110, which then
+  // clamped to 100 and silently broke the invariant.
+  const TIERS = ['approved_drug', 'investigational', 'preclinical', 'research_chemical', 'cosmetic'];
+  const BUDGETS = ['conservative', 'standard', 'unlimited'] as const;
+
+  it('breakdown factors always sum to the reported score, and the raw total never exceeds 100', () => {
+    let maxRaw = -1;
+
+    for (const tier of TIERS) {
+      for (const budget of BUDGETS) {
+        for (const isStack of [true, false]) {
+          for (const isGlp1 of [true, false]) {
+            const compound = makeCompound({
+              slug: `sweep-${tier}-${budget}-${isStack}-${isGlp1}`,
+              display_name: 'Sweep Compound',
+              evidence_tier: tier,
+              research_areas: ['metabolic'],
+              // Maximize keyword hits and research interest to reach the ceiling.
+              category: 'Metabolic glucose insulin fat weight appetite',
+              is_glp1: isGlp1,
+              is_stack: isStack,
+              pubmed_citation_count: 100000,
+              active_trial_count: 50,
+            });
+
+            const { matches } = scoreCompounds(
+              { ...baseInput, budget, preference: 'either' },
+              [compound],
+            );
+            if (matches.length === 0) continue;
+
+            const b = matches[0].scoreBreakdown;
+            const sum = b.base + b.keyword + b.evidenceBonus + b.classBonus + b.interest + b.budget;
+
+            expect(sum).toBe(matches[0].score);
+            maxRaw = Math.max(maxRaw, sum);
+          }
+        }
+      }
+    }
+
+    // If this exceeds 100 the clamp is engaging upward and the breakdown lies.
+    expect(maxRaw).toBeLessThanOrEqual(100);
+  });
+
+  it('conservative budget still ranks a cheap compound above a premium one', () => {
+    const compounds: Compound[] = [
+      makeCompound({ slug: 'cheap', display_name: 'Cheap', evidence_tier: 'approved_drug', research_areas: ['metabolic'] }),
+      makeCompound({ slug: 'semaglutide', display_name: 'Semaglutide', evidence_tier: 'approved_drug', research_areas: ['metabolic'] }),
+    ];
+
+    const { matches } = scoreCompounds({ ...baseInput, budget: 'conservative' }, compounds);
+    const cheap = matches.find((m) => m.slug === 'cheap')!;
+    const premium = matches.find((m) => m.slug === 'semaglutide')!;
+
+    expect(cheap.score).toBeGreaterThan(premium.score);
+  });
+});

@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Match Me To A Peptide | AI Research Match Engine | Pep Nation Lab',
     description: 'Describe your research goal and let the Pep Nation Lab AI match engine identify the most relevant research-grade peptides. Powered by evidence-tier data. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 

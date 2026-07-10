@@ -24,13 +24,33 @@
  *   14. Meta description contains the city name
  *   15. Per-city OG image endpoint referenced (warning only)
  *
+ * COMPOUND-CITY SAMPLE: the compound-city layer
+ * (/peptides/{state}/{city}/{compound}, 745 cities x 11 curated compounds =
+ * 8,195 pages) is too heavy to verify exhaustively every day, so each run
+ * ALSO checks a rotating random sample of 40 city+compound combinations,
+ * seeded by the UTC date (consecutive runs cover different pages, one day's
+ * runs are reproducible). Per sampled page:
+ *
+ *   C1. HTTP 200
+ *   C2. <meta name="robots"> allows indexing
+ *   C3. Canonical URL is exact and self-referencing
+ *   C4. <h1> contains the compound displayName AND the city name (normalized)
+ *   C5. Live store deep link present (researchstore?product=)
+ *   C6. JSON-LD contains Product, FAQPage, and BreadcrumbList nodes
+ *   C7. No unexpected redirect (final URL path equals the canonical path)
+ *
+ * Compound-sample results are reported in the summary JSON under
+ * compoundPages and count toward the process exit code.
+ *
  * Zero dependencies (global fetch, Node 22+). City data is imported straight
- * from lib/cities/cities-data.ts via --experimental-strip-types so the check
- * list can NEVER drift from the deployed city set.
+ * from lib/cities/cities-data.ts (and the curated compound list from
+ * lib/cities/city-compounds.ts) via --experimental-strip-types so the check
+ * list can NEVER drift from the deployed city or compound set.
  *
  * Run:  node --experimental-strip-types scripts/verify-city-pages.mjs
  * Env:  VERIFY_BASE_URL  - override target host
  *       VERIFY_STATES    - comma-separated stateSlugs to limit the run
+ *                          (also scopes the compound-city sample pool)
  *       VERIFY_SAMPLE    - max N random cities per state (with VERIFY_STATES)
  * Exit: 0 all pages healthy, 1 any failure (fails the CI job loudly).
  *
@@ -40,11 +60,13 @@
  */
 
 import { CITIES } from '../lib/cities/cities-data.ts';
+import { CITY_COMPOUNDS } from '../lib/cities/city-compounds.ts';
 
 const BASE = process.env.VERIFY_BASE_URL || 'https://pepnationlab.com';
 const CONCURRENCY = 8;
 const RETRIES = 2; // ISR cold pages can be slow on first hit; retry before failing
 const FETCH_TIMEOUT_MS = 30000;
+const COMPOUND_SAMPLE_SIZE = 40; // rotating daily sample of the 8,195 compound-city pages
 
 function selectCities() {
   const statesEnv = (process.env.VERIFY_STATES || '').trim();
@@ -67,6 +89,50 @@ function selectCities() {
     }
   }
   return list;
+}
+
+/**
+ * Deterministic PRNG (mulberry32). Seeded by the UTC day number so every run
+ * within one day samples the SAME compound-city pages (reproducible reruns),
+ * while consecutive days rotate through different pages.
+ */
+function mulberry32(seed) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Rotating random sample of city+compound combinations for the compound-city
+ * layer. Honors VERIFY_STATES (scopes the city pool) but ignores
+ * VERIFY_SAMPLE, which remains a city-page-only knob.
+ */
+function selectCompoundPages() {
+  const statesEnv = (process.env.VERIFY_STATES || '').trim();
+  let cityPool = [...CITIES];
+  if (statesEnv) {
+    const wanted = new Set(statesEnv.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean));
+    cityPool = cityPool.filter((c) => wanted.has(c.stateSlug));
+  }
+  const combos = [];
+  for (const city of cityPool) {
+    for (const compound of CITY_COMPOUNDS) {
+      combos.push({ city, compound });
+    }
+  }
+  const rand = mulberry32(Math.floor(Date.now() / 86400000));
+  const n = Math.min(COMPOUND_SAMPLE_SIZE, combos.length);
+  // Partial Fisher-Yates: deterministically draw the first n combos without
+  // shuffling the entire 8k+ combination list.
+  for (let i = 0; i < n; i++) {
+    const j = i + Math.floor(rand() * (combos.length - i));
+    [combos[i], combos[j]] = [combos[j], combos[i]];
+  }
+  return combos.slice(0, n);
 }
 
 function timeoutFetch(url, ms = FETCH_TIMEOUT_MS) {
@@ -244,6 +310,79 @@ async function verifyCity(city) {
   return { city, ok: false, error: lastError };
 }
 
+/**
+ * Compound-city page checklist (C2-C7; C1 HTTP 200 is asserted by the
+ * fetcher). Normalized comparisons reuse normalizeText so entity escaping
+ * and punctuation (BPC-157, NAD+, CJC-1295 Without DAC) never false-fail.
+ */
+function checkCompoundPage(city, compound, html, finalUrl) {
+  const url = `${BASE}/peptides/${city.stateSlug}/${city.slug}/${compound.slug}`;
+  const failures = [];
+
+  // C2. Indexability
+  if (!/<meta[^>]+name="robots"[^>]+content="index/i.test(html)) {
+    failures.push('robots meta does not allow indexing');
+  }
+  // C3. Canonical is exact and self-referencing
+  if (!html.includes(`rel="canonical" href="${url}"`) && !html.includes(`href="${url}" rel="canonical"`)) {
+    failures.push('canonical missing or not self-referencing');
+  }
+  // C4. H1 contains the compound displayName AND the city name (normalized)
+  const h1Block = html.match(/<h1[\s\S]*?<\/h1>/i);
+  const normH1 = h1Block ? normalizeText(h1Block[0]) : '';
+  if (!normH1.includes(normalizeText(compound.displayName))) {
+    failures.push(`h1 does not contain compound name "${compound.displayName}"`);
+  }
+  if (!normH1.includes(normalizeText(city.name))) {
+    failures.push('h1 does not contain city name');
+  }
+  // C5. Live store deep link (proves the live price card is wired to the store)
+  if (countOccurrences(html, 'researchstore?product=') < 1) {
+    failures.push('live store deep link (researchstore?product=) missing');
+  }
+  // C6. Structured data: Product + FAQPage + BreadcrumbList nodes
+  if (!html.includes('application/ld+json')) {
+    failures.push('no JSON-LD on page');
+  } else {
+    if (!html.includes('"@type":"Product"')) failures.push('Product schema missing');
+    if (!html.includes('"@type":"FAQPage"')) failures.push('FAQPage schema missing');
+    if (!html.includes('"@type":"BreadcrumbList"')) failures.push('BreadcrumbList schema missing');
+  }
+  // C7. No unexpected redirect: final URL path must equal the canonical path
+  if (finalUrl && new URL(finalUrl).pathname !== new URL(url).pathname) {
+    failures.push(`unexpected redirect to ${finalUrl}`);
+  }
+
+  return failures;
+}
+
+async function verifyCompoundPage({ city, compound }) {
+  const url = `${BASE}/peptides/${city.stateSlug}/${city.slug}/${compound.slug}`;
+  let lastError = null;
+  for (let attempt = 0; attempt <= RETRIES; attempt++) {
+    try {
+      const res = await timeoutFetch(url);
+      if (res.status !== 200) {
+        lastError = `HTTP ${res.status}`;
+        continue;
+      }
+      const html = await res.text();
+      const failures = checkCompoundPage(city, compound, html, res.url);
+      if (failures.length === 0) {
+        return { city, compound, ok: true };
+      }
+      // Same ISR stale-while-revalidate handling as the city pages: wait for
+      // the background regeneration before retrying content assertions.
+      lastError = failures.join('; ');
+      if (attempt < RETRIES) await new Promise((r) => setTimeout(r, 12000));
+    } catch (err) {
+      lastError = String(err?.message || err);
+      if (attempt < RETRIES) await new Promise((r) => setTimeout(r, 2500));
+    }
+  }
+  return { city, compound, ok: false, error: lastError };
+}
+
 async function verifySitemap(cities) {
   const missing = [];
   try {
@@ -276,6 +415,21 @@ async function run() {
     }
   }
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+
+  // Rotating compound-city sample (see header comment).
+  const compoundPages = selectCompoundPages();
+  console.log(`Verifying a rotating sample of ${compoundPages.length} compound-city pages ...`);
+  const compoundQueue = [...compoundPages];
+  const compoundResults = [];
+  async function compoundWorker() {
+    while (compoundQueue.length > 0) {
+      const combo = compoundQueue.shift();
+      if (!combo) break;
+      compoundResults.push(await verifyCompoundPage(combo));
+    }
+  }
+  await Promise.all(Array.from({ length: CONCURRENCY }, compoundWorker));
+  const compoundFailed = compoundResults.filter((r) => !r.ok);
 
   const sitemap = await verifySitemap(cities);
 
@@ -310,6 +464,16 @@ async function run() {
       error: r.error,
     })),
     sitemapMissing: sitemap.missing.slice(0, 25),
+    compoundPages: {
+      sampled: compoundResults.length,
+      passed: compoundResults.length - compoundFailed.length,
+      failed: compoundFailed.length,
+      failures: compoundFailed.map((r) => ({
+        page: `${r.compound.displayName} - ${r.city.name}, ${r.city.stateAbbr}`,
+        url: `${BASE}/peptides/${r.city.stateSlug}/${r.city.slug}/${r.compound.slug}`,
+        error: r.error,
+      })),
+    },
   };
 
   // Machine-readable block for the workflow to lift into the GitHub issue.
@@ -317,11 +481,15 @@ async function run() {
   console.log(JSON.stringify(summary, null, 2));
   console.log('===CITY_HEALTH_JSON_END===');
 
-  if (failed.length > 0 || !sitemap.ok) {
-    console.error(`FAILED: ${failed.length} page(s) unhealthy, sitemapOk=${sitemap.ok}`);
+  if (failed.length > 0 || compoundFailed.length > 0 || !sitemap.ok) {
+    console.error(
+      `FAILED: ${failed.length} city page(s) unhealthy, ${compoundFailed.length} compound-city sample page(s) unhealthy, sitemapOk=${sitemap.ok}`
+    );
     process.exit(1);
   }
-  console.log(`ALL HEALTHY: ${results.length}/${cities.length} city pages pass the deep Oak Lawn checklist (15 checks per page).`);
+  console.log(
+    `ALL HEALTHY: ${results.length}/${cities.length} city pages pass the deep Oak Lawn checklist (15 checks per page); ${compoundResults.length}/${compoundPages.length} sampled compound-city pages pass the compound checklist (7 checks per page).`
+  );
 }
 
 run().catch((err) => {
