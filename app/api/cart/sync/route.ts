@@ -3,6 +3,61 @@ import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 
+export const dynamic = 'force-dynamic';
+
+/**
+ * Read the signed-in researcher's saved cart.
+ *
+ * cart_state was write-only: the client POSTed it on every change and the
+ * reminder crons read it, but nothing ever handed it back. That made the
+ * abandoned-cart recovery email a dead end -- open it on another device and you
+ * land on an empty cart. This is the missing read side.
+ */
+export async function GET() {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      // Guests have nothing to restore; not an error condition.
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const limited = await rateLimit({
+      key: 'cart_restore',
+      limit: 60,
+      windowSeconds: 60,
+      identifier: user.id,
+    });
+    if (!limited.allowed) {
+      return NextResponse.json({ error: 'Rate Limit Exceeded' }, { status: 429 });
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('cart_state, cart_updated_at')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Cart Restore Error:', error);
+      return NextResponse.json({ error: 'Failed To Load Cart' }, { status: 500 });
+    }
+
+    const raw = data?.cart_state;
+    let cart: unknown = [];
+    if (Array.isArray(raw)) {
+      cart = raw;
+    } else if (typeof raw === 'string') {
+      try { cart = JSON.parse(raw); } catch { cart = []; }
+    }
+    if (!Array.isArray(cart)) cart = [];
+
+    return NextResponse.json({ cart, cart_updated_at: data?.cart_updated_at ?? null });
+  } catch {
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
