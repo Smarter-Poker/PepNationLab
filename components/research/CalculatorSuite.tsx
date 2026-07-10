@@ -541,14 +541,16 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
               color: #111827;
               font-weight: bold;
             }
+            /* Informational notice on the printed/exported (white) sheet.
+               Brand teal, not amber - this is guidance, not a danger warning. */
             .alert-box {
-              background: #FEF3C7;
-              border-left: 4px solid #F59E0B;
+              background: #E6F7F6;
+              border-left: 4px solid #00C4BC;
               padding: 12px;
               margin-top: 20px;
               border-radius: 4px;
               font-size: 13px;
-              color: #78350F;
+              color: #0B4F4C;
             }
             .footer {
               margin-top: 30px;
@@ -1783,8 +1785,8 @@ function HplcRtSection() {
               <path d="${pathD}" fill="none" stroke="#00C4BC" stroke-width="2.5" />
               <!-- peak indicator -->
               ${rt !== null ? `
-                <line x1="${paddingLeft + (rt / maxTime) * plotWidth}" y1="${paddingTop}" x2="${paddingLeft + (rt / maxTime) * plotWidth}" y2="160" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="3,3" />
-                <text x="${paddingLeft + (rt / maxTime) * plotWidth}" y="15" fill="#B45309" font-size="10" font-family="monospace" text-anchor="middle">RT = ${rt.toFixed(2)} min</text>
+                <line x1="${paddingLeft + (rt / maxTime) * plotWidth}" y1="${paddingTop}" x2="${paddingLeft + (rt / maxTime) * plotWidth}" y2="160" stroke="#5A6A7A" stroke-width="1.5" stroke-dasharray="3,3" />
+                <text x="${paddingLeft + (rt / maxTime) * plotWidth}" y="15" fill="#5A6A7A" font-size="10" font-family="monospace" text-anchor="middle">RT = ${rt.toFixed(2)} min</text>
               ` : ''}
               <text x="315" y="190" fill="#6B7280" font-size="10" font-family="sans-serif" text-anchor="middle">Retention Time (Minutes)</text>
               <text x="15" y="90" fill="#6B7280" font-size="10" font-family="sans-serif" text-anchor="middle" transform="rotate(-90 15 90)">UV Absorbance (mAU)</text>

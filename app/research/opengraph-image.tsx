@@ -29,7 +29,7 @@ export default async function Image() {
 
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '56px 60px 0', justifyContent: 'center' }}>
           <div style={{ fontSize: 96, fontWeight: 900, color: '#FFFFFF', lineHeight: 1, letterSpacing: '-3px', marginBottom: 20 }}>Research</div>
-          <div style={{ fontSize: 96, fontWeight: 900, lineHeight: 1, letterSpacing: '-3px', marginBottom: 32, background: 'linear-gradient(90deg, #00C4BC, #8B5CF6)', backgroundClip: 'text', color: 'transparent' }}>Library</div>
+          <div style={{ fontSize: 96, fontWeight: 900, lineHeight: 1, letterSpacing: '-3px', marginBottom: 32, background: 'linear-gradient(90deg, #00C4BC, #5EEAD4)', backgroundClip: 'text', color: 'transparent' }}>Library</div>
           <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.5)', lineHeight: 1.4, maxWidth: 640 }}>300+ research-grade peptides. Full monographs, evidence tiers, mechanisms, and AI-powered compound matching.</div>
         </div>
 
