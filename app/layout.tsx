@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
+// Must load after globals.css: narrow mobile corrections maintained by the
+// automated mobile guard. See app/mobile-guard.css.
+import "./mobile-guard.css";
 import { CartProvider } from "@/components/CartContext";
 import { InAppBrowserProvider } from "@/components/InAppBrowser";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
