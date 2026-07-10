@@ -92,6 +92,16 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const milestoneSeeded = useRef(false);
   const goalSeeded = useRef(false);
 
+  // -- Retention data --
+  interface RetentionData {
+    retention_rate: number;
+    at_risk: { user_id: string; name: string; last_order_date: string; days_since_order: number; total_spent: number }[];
+    champions: { user_id: string; name: string; total_orders: number; total_spent: number; avg_order_value: number; member_since: string }[];
+  }
+  const [retention, setRetention] = useState<RetentionData | null>(null);
+  const [retentionLoading, setRetentionLoading] = useState(false);
+  const [retentionTab, setRetentionTab] = useState(false);
+
   // -- Monthly revenue goal: durable + cross-device via /api/agent/sales/goal,
   //    with a localStorage cache for instant first paint. --
   useEffect(() => {
@@ -162,6 +172,24 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     return () => { supabase.removeChannel(channel); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId]);
+
+  useEffect(() => {
+    if (!retentionTab || retention) return;
+    let cancelled = false;
+    setRetentionLoading(true);
+    (async () => {
+      try {
+        const res = await fetch('/api/agent/sales/retention', { cache: 'no-store' });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed To Load Retention Data');
+        if (!cancelled) setRetention(json);
+      } catch { /* best-effort */ } finally {
+        if (!cancelled) setRetentionLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retentionTab]);
 
   useEffect(() => {
     let cancelled = false;
@@ -793,6 +821,135 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         {(userProfile?.is_super_agent || isSub) && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}><AgentDownlineInvoices isSuperAgent={!!userProfile?.is_super_agent} /></div>
         )}
+      </div>
+
+      {/* RETENTION TAB */}
+      <div className="glass-panel">
+        <div style={{ padding: 'var(--space-6)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: retentionTab ? 'var(--space-5)' : 0 }}>
+            <div>
+              <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: '0 0 2px' }}>Retention</h2>
+              <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0 }}>Researcher reorder rate, at-risk accounts, and top performers</p>
+            </div>
+            <button
+              onClick={() => setRetentionTab((v) => !v)}
+              style={{ background: retentionTab ? 'var(--teal)' : 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', color: retentionTab ? '#04201f' : 'var(--white)', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}
+            >
+              {retentionTab ? 'Hide Retention' : 'Show Retention'}
+            </button>
+          </div>
+
+          {retentionTab && (
+            <>
+              {retentionLoading && <div style={{ color: 'var(--silver)', padding: 'var(--space-4)' }}>Loading Retention Data...</div>}
+              {!retentionLoading && retention && (
+                <>
+                  {/* Rate stat */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+                    <div className="glass-panel">
+                      <div className="sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+                        <div className="sa-label">90-Day Retention Rate</div>
+                        <div className="sa-stat" style={{ color: '#00FF9D', marginTop: 6 }}>{retention.retention_rate}%</div>
+                        <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>Researchers Who Reordered Within 90 Days Of First Order</div>
+                      </div>
+                    </div>
+                    <div className="glass-panel">
+                      <div className="sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+                        <div className="sa-label">At-Risk Accounts</div>
+                        <div className="sa-stat" style={{ color: retention.at_risk.length > 0 ? '#FFB020' : 'var(--white)', marginTop: 6 }}>{retention.at_risk.length}</div>
+                        <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>No Order In Over 45 Days</div>
+                      </div>
+                    </div>
+                    <div className="glass-panel">
+                      <div className="sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+                        <div className="sa-label">Champion Researchers</div>
+                        <div className="sa-stat" style={{ color: '#7C5CFF', marginTop: 6 }}>{retention.champions.length}</div>
+                        <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>Top 5 By Lifetime Spend</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* At-Risk table */}
+                  {retention.at_risk.length > 0 && (
+                    <div style={{ marginBottom: 'var(--space-5)' }}>
+                      <h3 style={{ fontSize: '1rem', fontFamily: 'var(--font-brand)', color: '#FFB020', margin: '0 0 10px' }}>At-Risk Researchers</h3>
+                      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                        <table className="sa-table">
+                          <thead>
+                            <tr>
+                              <th>Name</th>
+                              <th>Last Order Date</th>
+                              <th>Days Since Order</th>
+                              <th>Total Spent</th>
+                              <th>Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {retention.at_risk.map((r) => (
+                              <tr key={r.user_id}>
+                                <td style={{ color: 'var(--white)', fontWeight: 700 }}>{r.name}</td>
+                                <td>{new Date(r.last_order_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                                <td style={{ color: r.days_since_order > 90 ? '#FF6B81' : '#FFB020', fontWeight: 700 }}>{r.days_since_order}d</td>
+                                <td style={{ color: '#00FF9D', fontWeight: 700 }}>{fmt(r.total_spent)}</td>
+                                <td>
+                                  <a
+                                    href={`/messenger?to=${r.user_id}`}
+                                    style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 12px', borderRadius: 8, background: 'rgba(0,229,255,0.1)', color: '#00E5FF', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', border: '1px solid rgba(0,229,255,0.25)' }}
+                                  >
+                                    Send Message
+                                  </a>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                  {retention.at_risk.length === 0 && (
+                    <p style={{ color: '#00FF9D', fontSize: '0.85rem', margin: '0 0 var(--space-4)' }}>All researchers ordered recently. No at-risk accounts.</p>
+                  )}
+
+                  {/* Champions table */}
+                  {retention.champions.length > 0 && (
+                    <div>
+                      <h3 style={{ fontSize: '1rem', fontFamily: 'var(--font-brand)', color: '#7C5CFF', margin: '0 0 10px' }}>Champion Researchers</h3>
+                      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                        <table className="sa-table">
+                          <thead>
+                            <tr>
+                              <th>Name</th>
+                              <th>Total Orders</th>
+                              <th>Total Spent</th>
+                              <th>Avg Order Value</th>
+                              <th>Member Since</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {retention.champions.map((c, i) => (
+                              <tr key={c.user_id}>
+                                <td style={{ color: 'var(--white)', fontWeight: 700 }}>
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                                    <span style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(124,92,255,0.2)', color: '#7C5CFF', fontSize: '0.7rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
+                                    {c.name}
+                                  </span>
+                                </td>
+                                <td>{c.total_orders}</td>
+                                <td style={{ color: '#00FF9D', fontWeight: 700 }}>{fmt(c.total_spent)}</td>
+                                <td>{fmt(c.avg_order_value)}</td>
+                                <td style={{ color: 'var(--grey-400)' }}>{new Date(c.member_since).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

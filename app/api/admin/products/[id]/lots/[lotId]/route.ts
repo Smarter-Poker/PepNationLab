@@ -99,13 +99,27 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
   const { data: existing } = await supabase
     .from('product_lots')
-    .select('id, product_id, coa_storage_key, lot_number')
+    .select('id, product_id, coa_storage_key, lot_number, coa_verified_at')
     .eq('id', lotId)
     .eq('product_id', id)
     .maybeSingle();
 
   if (!existing) {
     return NextResponse.json({ error: 'Lot Not Found.' }, { status: 404 });
+  }
+
+  // A verified certificate is undeletable (enforced by trg_coa_block_verified_delete).
+  // This guard must come BEFORE the storage removal below: otherwise the signed
+  // certificate file would be destroyed while the row it belongs to survives,
+  // leaving a published COA pointing at nothing.
+  if (existing.coa_verified_at) {
+    return NextResponse.json(
+      {
+        error:
+          'This Lot Has A Verified Certificate Of Analysis And Cannot Be Deleted. Deactivate It, Or Retract The Certificate.',
+      },
+      { status: 409 },
+    );
   }
 
   if (existing.coa_storage_key) {

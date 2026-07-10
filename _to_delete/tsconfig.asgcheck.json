@@ -1,3 +1,0 @@
-{ "extends": "./tsconfig.json",
-  "compilerOptions": { "noEmit": true, "skipLibCheck": true },
-  "include": ["components/AgentStorefrontGrid.tsx", "app/[agentSlug]/page.tsx"] }

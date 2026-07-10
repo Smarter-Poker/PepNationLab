@@ -377,7 +377,9 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
     breakdown.budget;
 
   // Clamp to 0..100 for the public score field.
-  const clamped = Math.max(0, Math.min(100, raw));
+  // Math.round ensures an integer result; Math.min(100, ...) guarantees the
+  // displayed breakdown rows never exceed the displayed score.
+  const clamped = Math.min(100, Math.round(Math.max(0, raw)));
 
   return {
     score: clamped,

@@ -75,6 +75,7 @@ export default function AdminSocialConsole({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
 
   /** Re-fetch status + queue. Called only from event handlers, never an effect. */
   const load = useCallback(async (status: PostStatus | 'all') => {
@@ -100,6 +101,24 @@ export default function AdminSocialConsole({
       setLoading(false);
     }
   }, []);
+
+  const generateContent = useCallback(async () => {
+    setGenerating(true);
+    try {
+      const r = await fetch('/api/admin/social/generate-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { toast.error(j.error ?? 'Generation Failed'); return; }
+      toast.success(`Generated ${j.inserted ?? 0} posts (${j.skipped ?? 0} already queued)`);
+      await load(filter);
+    } catch {
+      toast.error('Could Not Reach Generator');
+    } finally {
+      setGenerating(false);
+    }
+  }, [filter, load]);
 
   const changeFilter = useCallback((f: PostStatus | 'all') => {
     setFilter(f);
@@ -134,10 +153,16 @@ export default function AdminSocialConsole({
             Connect Your Accounts, Watch The Publish Queue, And Retry Anything That Failed.
           </p>
         </div>
-        <button type="button" onClick={() => void load(filter)} disabled={loading}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)', color: '#B0B8C4', fontSize: '0.75rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer' }}>
-          <RefreshCw size={13} /> {loading ? 'Refreshing' : 'Refresh'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button type="button" onClick={() => void generateContent()} disabled={generating || loading}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 10, background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.30)', color: '#00C4BC', fontSize: '0.75rem', fontWeight: 700, cursor: (generating || loading) ? 'not-allowed' : 'pointer', opacity: (generating || loading) ? 0.6 : 1 }}>
+            <Send size={13} /> {generating ? 'Generating...' : "Generate This Week's Content"}
+          </button>
+          <button type="button" onClick={() => void load(filter)} disabled={loading}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)', color: '#B0B8C4', fontSize: '0.75rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer' }}>
+            <RefreshCw size={13} /> {loading ? 'Refreshing' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {/* Kill-switch state */}

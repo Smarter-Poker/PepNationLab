@@ -606,6 +606,34 @@ export default function AgentDashboardClient({
             onOpenConfig={() => { setActiveTab('Storefront Config'); }}
           />
 
+          {/* My Referrals Quick Link */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-3)' }}>
+            <Link
+              href="/dashboard/agent/referrals"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                color: 'var(--teal)',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+                padding: '6px 14px',
+                borderRadius: 8,
+                border: '1px solid rgba(0,196,188,0.3)',
+                background: 'rgba(0,196,188,0.06)',
+                transition: 'background 0.15s',
+              }}
+            >
+              <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              My Referrals
+            </Link>
+          </div>
 
         {/* My Sub-Agents Tab - only rendered for regular agents; super-agents are remapped by resolveTab */}
         {activeTab === 'My Sub-Agents' && (
