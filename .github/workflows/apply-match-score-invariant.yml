@@ -1,0 +1,204 @@
+# One-shot, self-deleting workflow: fixes the match-engine score ceiling bug and
+# locks the invariant with a permanent regression test.
+#
+# The bug: under a conservative budget a non-premium compound received a +10
+# bonus, so a perfect match summed to 110 and clamped to 100 - meaning the score
+# breakdown rendered in the UI (additive rows plus a "Total Match Score") no
+# longer added up. Budget shaping is now penalties-only, which preserves the
+# intent (disfavor stacks and premium slugs) and restores the ceiling at exactly
+# 100 (base 45 + keyword 10 + evidence 20 + class 5 + interest 20).
+#
+# Applied on the runner with STRICT assertions rather than pushed as a whole
+# file, because other agents are concurrently editing lib/match-engine.ts (it now
+# carries their word-boundary kwHit and half-life-parser work) and a whole-file
+# overwrite would clobber them. Aborts WITHOUT committing on any mismatch, and
+# runs the typecheck gate plus the full unit suite before pushing.
+#
+# The workflow removes itself in the same commit.
+
+name: Apply Match Score Invariant Fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-match-score-invariant.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Stage the invariant test block
+        run: |
+          cat > /tmp/append-test.ts <<'TEST_EOF'
+
+          describe('scoreCompounds - score invariants', () => {
+            // The UI renders the score breakdown as additive rows plus a "Total Match
+            // Score". That is only honest if the rows sum to the score. A positive
+            // conservative-budget bonus once pushed the raw total to 110, which then
+            // clamped to 100 and silently broke the invariant.
+            const TIERS = ['approved_drug', 'investigational', 'preclinical', 'research_chemical', 'cosmetic'];
+            const BUDGETS = ['conservative', 'standard', 'unlimited'] as const;
+
+            it('breakdown factors always sum to the reported score, and the raw total never exceeds 100', () => {
+              let maxRaw = -1;
+
+              for (const tier of TIERS) {
+                for (const budget of BUDGETS) {
+                  for (const isStack of [true, false]) {
+                    for (const isGlp1 of [true, false]) {
+                      const compound = makeCompound({
+                        slug: `sweep-${tier}-${budget}-${isStack}-${isGlp1}`,
+                        display_name: 'Sweep Compound',
+                        evidence_tier: tier,
+                        research_areas: ['metabolic'],
+                        category: 'Metabolic glucose insulin fat weight appetite',
+                        is_glp1: isGlp1,
+                        is_stack: isStack,
+                        pubmed_citation_count: 100000,
+                        active_trial_count: 50,
+                      });
+
+                      const { matches } = scoreCompounds(
+                        { ...baseInput, budget, preference: 'either' },
+                        [compound],
+                      );
+                      if (matches.length === 0) continue;
+
+                      const b = matches[0].scoreBreakdown;
+                      const sum = b.base + b.keyword + b.evidenceBonus + b.classBonus + b.interest + b.budget;
+
+                      expect(sum).toBe(matches[0].score);
+                      maxRaw = Math.max(maxRaw, sum);
+                    }
+                  }
+                }
+              }
+
+              expect(maxRaw).toBeLessThanOrEqual(100);
+            });
+
+            it('conservative budget still ranks a cheap compound above a premium one', () => {
+              const compounds: Compound[] = [
+                makeCompound({ slug: 'cheap', display_name: 'Cheap', evidence_tier: 'approved_drug', research_areas: ['metabolic'] }),
+                makeCompound({ slug: 'semaglutide', display_name: 'Semaglutide', evidence_tier: 'approved_drug', research_areas: ['metabolic'] }),
+              ];
+
+              const { matches } = scoreCompounds({ ...baseInput, budget: 'conservative' }, compounds);
+              const cheap = matches.find((m) => m.slug === 'cheap')!;
+              const premium = matches.find((m) => m.slug === 'semaglutide')!;
+
+              expect(cheap.score).toBeGreaterThan(premium.score);
+            });
+          });
+
+          TEST_EOF
+          echo "staged $(wc -l < /tmp/append-test.ts) lines"
+
+      - name: Apply engine fix + append test, with assertions
+        run: |
+          cat > /tmp/apply.js <<'APPLY_EOF'
+          const fs = require('fs');
+
+          const ENGINE = 'lib/match-engine.ts';
+          const TEST = 'lib/__tests__/match-engine.test.ts';
+
+          let engine = fs.readFileSync(ENGINE, 'utf8');
+          let test = fs.readFileSync(TEST, 'utf8');
+
+          const from = [
+            '  // Budget shaping.',
+            "  if (input.budget === 'conservative') {",
+            "    const premiumSlugs = ['semaglutide', 'tirzepatide', 'retatrutide', 'igf-1-lr3', 'igf-1-des', 'dihexa', 'mots-c'];",
+            '    if (c.is_stack) breakdown.budget -= 20;',
+            '    if (premiumSlugs.includes(c.slug)) breakdown.budget -= 15;',
+            '    else breakdown.budget += 10;',
+            "  } else if (input.budget === 'standard') {",
+          ].join('\n');
+
+          const to = [
+            '  // Budget shaping. PENALTIES ONLY. The factor maxima are tuned so a perfect',
+            '  // match sums to exactly 100 (base 45 + keyword 10 + evidence 20 + class 5 +',
+            '  // interest 20). A positive budget bonus pushed the raw total to 110, which',
+            '  // then clamped to 100 - silently breaking the invariant that the displayed',
+            '  // breakdown rows sum to the displayed score. Disfavoring expensive options is',
+            '  // already fully expressed by penalizing stacks and premium slugs.',
+            "  if (input.budget === 'conservative') {",
+            "    const premiumSlugs = ['semaglutide', 'tirzepatide', 'retatrutide', 'igf-1-lr3', 'igf-1-des', 'dihexa', 'mots-c'];",
+            '    if (c.is_stack) breakdown.budget -= 20;',
+            '    if (premiumSlugs.includes(c.slug)) breakdown.budget -= 15;',
+            "  } else if (input.budget === 'standard') {",
+          ].join('\n');
+
+          const occurrences = engine.split(from).length - 1;
+          if (occurrences !== 1) {
+            console.error('ASSERTION FAILED: expected exactly 1 budget block, found ' + occurrences);
+            process.exit(1);
+          }
+          engine = engine.split(from).join(to);
+
+          if (engine.includes('breakdown.budget += 10')) {
+            console.error('ASSERTION FAILED: positive budget bonus still present');
+            process.exit(1);
+          }
+          console.log('OK: engine budget block is now penalties-only');
+
+          if (test.includes('score invariants')) {
+            console.error('ASSERTION FAILED: invariant suite already present');
+            process.exit(1);
+          }
+          for (const needle of ['function makeCompound', 'const baseInput', 'import type { Compound }']) {
+            if (!test.includes(needle)) {
+              console.error('ASSERTION FAILED: test file missing expected helper: ' + needle);
+              process.exit(1);
+            }
+          }
+          test = test.replace(/\s*$/, '\n') + fs.readFileSync('/tmp/append-test.ts', 'utf8');
+
+          fs.writeFileSync(ENGINE, engine);
+          fs.writeFileSync(TEST, test);
+          console.log('OK: invariant suite appended');
+
+          APPLY_EOF
+          node /tmp/apply.js
+
+      - name: Install, typecheck gate, unit tests
+        run: |
+          npm ci
+          node scripts/ci/typecheck-gate.mjs
+          npm test
+
+      - name: Commit, remove this workflow, push
+        run: |
+          git config user.name "match-invariant-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -q .github/workflows/apply-match-score-invariant.yml
+          git add lib/match-engine.ts lib/__tests__/match-engine.test.ts
+          git commit -m "fix(match): score breakdown must sum to the score (budget penalties only)
+
+          Applied by the one-shot workflow (now removed).
+
+          Under a conservative budget a non-premium compound got a +10 bonus, so a
+          perfect match summed to 110 and clamped to 100. The UI renders the
+          breakdown as additive rows plus a Total Match Score, so the rows stopped
+          adding up. Budget shaping is now penalties-only: intent (disfavor stacks
+          and premium slugs) is preserved, and the ceiling is exactly 100
+          (45 + 10 + 20 + 5 + 20).
+
+          Locked with a regression test sweeping every tier x budget x stack x
+          class combination, asserting the factors sum to the score and that the
+          raw total never exceeds 100."
+          git pull --rebase origin main
+          git push origin main
