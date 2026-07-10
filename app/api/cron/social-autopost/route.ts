@@ -12,17 +12,37 @@ import {
  * Social autoposter cron - drains the public.social_posts queue.
  *
  * Runs hourly (vercel.json). For each pending post that is due:
- *   1. Atomically claim it (status pending -> posting) so overlapping runs
- *      never double-post.
+ *   1. Atomically claim it (status pending -> posting, stamping
+ *      posting_started_at) so overlapping runs never double-post.
  *   2. Run the compliance gate + platform post via dispatchPost().
  *   3. Record the outcome: posted / blocked / failed.
+ *
+ * Before draining, it sweeps rows stranded in 'posting' by a crashed or
+ * timed-out previous run. Those are marked 'failed', never re-queued: the post
+ * may already be live on the platform, so an automatic retry risks publishing
+ * twice to a real account. An admin verifies, then retries from the console.
  *
  * Auth: CRON_SECRET Bearer (assertCronAuth). Gated behind SOCIAL_AUTOPOST_ENABLED
  * so a half-configured platform never posts anything.
  */
 export const dynamic = 'force-dynamic';
 
+/** Total posts drained per run. */
 const BATCH_LIMIT = 10;
+
+/**
+ * Max posts sent to any ONE platform per run. Bursting a pile of posts at a
+ * single platform is exactly what spam heuristics flag, and these are
+ * brand accounts we cannot afford to lose.
+ */
+const PER_PLATFORM_LIMIT = 2;
+
+/** A row claimed longer than this is considered stranded by a dead run. */
+const STUCK_POSTING_MINUTES = 15;
+
+const STUCK_ERROR =
+  'Stranded in posting (cron crashed or timed out). This post may ALREADY be live on the platform - ' +
+  'verify on the account before retrying, or it could publish twice.';
 
 export async function GET(req: Request) {
   const unauth = assertCronAuth(req);
@@ -34,6 +54,18 @@ export async function GET(req: Request) {
 
   const supabase = await createServiceClient();
 
+  // ── 0) Sweep rows stranded in 'posting' by a dead previous run. ───────────
+  // Marked failed, NOT pending: they may already have published.
+  const stuckCutoff = new Date(Date.now() - STUCK_POSTING_MINUTES * 60_000).toISOString();
+  const { data: stuck } = await supabase
+    .from('social_posts')
+    .update({ status: 'failed', error: STUCK_ERROR })
+    .eq('status', 'posting')
+    .lt('posting_started_at', stuckCutoff)
+    .select('id');
+  const reaped = stuck?.length ?? 0;
+
+  // ── 1) Pull the due queue. ───────────────────────────────────────────────
   const { data: due, error } = await supabase
     .from('social_posts')
     .select('*')
@@ -47,12 +79,25 @@ export async function GET(req: Request) {
   }
 
   const results: Array<{ id: string; platform: string; outcome: string }> = [];
+  const sentPerPlatform = new Map<string, number>();
 
   for (const row of (due ?? []) as SocialPost[]) {
-    // 1) atomic claim: only the run that flips pending->posting proceeds.
+    // ── 2) Per-platform burst cap. Deferred rows stay 'pending' and are
+    //       simply picked up by the next hourly run.
+    const alreadySent = sentPerPlatform.get(row.platform) ?? 0;
+    if (alreadySent >= PER_PLATFORM_LIMIT) {
+      results.push({ id: row.id, platform: row.platform, outcome: 'deferred_rate_limit' });
+      continue;
+    }
+
+    // ── 3) Atomic claim: only the run that flips pending->posting proceeds.
     const { data: claimed } = await supabase
       .from('social_posts')
-      .update({ status: 'posting', attempts: row.attempts + 1 })
+      .update({
+        status: 'posting',
+        attempts: row.attempts + 1,
+        posting_started_at: new Date().toISOString(),
+      })
       .eq('id', row.id)
       .eq('status', 'pending')
       .select('id')
@@ -62,6 +107,10 @@ export async function GET(req: Request) {
       results.push({ id: row.id, platform: row.platform, outcome: 'skipped_already_claimed' });
       continue;
     }
+
+    // Count the ATTEMPT, not the success: a platform that is erroring should not
+    // be hammered for the rest of the run just because nothing published.
+    sentPerPlatform.set(row.platform, alreadySent + 1);
 
     try {
       const res = await dispatchPost(row.platform, {
@@ -110,5 +159,5 @@ export async function GET(req: Request) {
     return acc;
   }, {});
 
-  return NextResponse.json({ processed: results.length, summary, results });
+  return NextResponse.json({ processed: results.length, reaped, summary, results });
 }
