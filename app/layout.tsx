@@ -6,19 +6,17 @@ import "./globals.css";
 import "./mobile-guard.css";
 import { CartProvider } from "@/components/CartContext";
 import { InAppBrowserProvider } from "@/components/InAppBrowser";
-import ImpersonationBanner from "@/components/ImpersonationBanner";
-import PwaInstallPrompt from "@/components/PwaInstallPrompt";
-import PWAEnforcer from "@/components/PWAEnforcer";
 import SiteDisclaimerGate from "@/components/SiteDisclaimerGate";
-import StaleBrowserBanner from "@/components/StaleBrowserBanner";
-import OAuthErrorRedirect from "@/components/OAuthErrorRedirect";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
-import GlobalCallListener from "@/components/messenger/GlobalCallListener";
-import SessionKeepalive from "@/components/messenger/SessionKeepalive";
-import FirstRunNotificationPrompt from "@/components/FirstRunNotificationPrompt";
 import FlashSaleBanner from "@/components/FlashSaleBanner";
 import GlobalErrorReporter from "@/components/GlobalErrorReporter";
+// Non-critical global widgets (PWA/notification prompts, stale-browser + OAuth
+// handlers, admin impersonation banner, messenger realtime listeners) are
+// lazy-loaded client-side after hydration so they no longer ship in every
+// page's initial JS bundle. Each renders null until an event/condition fires,
+// so deferring them causes no layout shift. See components/DeferredGlobals.tsx.
+import DeferredGlobals from "@/components/DeferredGlobals";
 
 import { Inter } from "next/font/google";
 
@@ -202,12 +200,13 @@ export default function RootLayout({
       </head>
       <body>
         <ThemeProvider>
-          {/* App-wide capture of uncaught errors + unhandled promise rejections. */}
+          {/* App-wide capture of uncaught errors + unhandled promise rejections.
+              Kept eager so it captures from first paint. */}
           <GlobalErrorReporter />
-          {/* fix-56 #2: storefront-wide flash sale banner. Self-hides on /admin and /api. */}
+          {/* fix-56 #2: storefront-wide flash sale banner. Self-hides on /admin and /api.
+              Kept eager (server-rendered) so an active sale banner does not pop in
+              after hydration and shift layout. */}
           <FlashSaleBanner />
-          <StaleBrowserBanner />
-          <OAuthErrorRedirect />
           <SiteDisclaimerGate>
             <CartProvider>
               <InAppBrowserProvider>
@@ -218,12 +217,9 @@ export default function RootLayout({
             </CartProvider>
           </SiteDisclaimerGate>
           <Toaster theme="dark" position="bottom-right" richColors />
-          <ImpersonationBanner />
-          <PwaInstallPrompt />
-          <PWAEnforcer />
-          <GlobalCallListener />
-          <FirstRunNotificationPrompt />
-          <SessionKeepalive />
+          {/* All non-critical global widgets, loaded in their own async chunks
+              after hydration instead of in every page's initial bundle. */}
+          <DeferredGlobals />
           <Script src="/sw-register.js" strategy="afterInteractive" />
         </ThemeProvider>
       </body>
