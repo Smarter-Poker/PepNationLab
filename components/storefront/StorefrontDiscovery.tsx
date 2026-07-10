@@ -28,16 +28,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
-import { ProtocolScheduler } from '../research/ProtocolScheduler';
-import { motion, AnimatePresence } from 'framer-motion';
-import { RESEARCH_AREAS } from '../../lib/compounds';
-import { ShoppingCart, X, Sparkles, ArrowRight, Compass, Check, AlertTriangle } from 'lucide-react';
+import { X } from 'lucide-react';
 import { reportClientError } from '@/lib/report-client-error';
 import AutocompleteDropdown, { type Suggestion } from '../research/AutocompleteDropdown';
 import TrendingSearchesDropdown from '../research/TrendingSearchesDropdown';
 import { useSearchHistory } from '../research/useSearchHistory';
-import DynamicAddToCartButton from './DynamicAddToCartButton';
+
 import type { Compound } from '@/lib/compounds';
+import { RESEARCH_AREAS } from '../../lib/compounds';
 import dynamic from 'next/dynamic';
 import {
   labelForArea,

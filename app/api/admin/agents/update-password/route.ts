@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -9,6 +10,10 @@ export async function POST(req: NextRequest) {
 
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
+
+  // Rate-limit: 20 password resets / min per admin — prevents mass rotation from a compromised session.
+  const rl = await rateLimit({ key: 'admin_update_password', limit: 20, windowSeconds: 60, identifier: gate.userId });
+  if (!rl.allowed) return NextResponse.json({ error: 'Too Many Requests. Slow Down.' }, { status: 429 });
 
   const supabase = createAdminClient();
   const body = await req.json().catch(() => ({}));

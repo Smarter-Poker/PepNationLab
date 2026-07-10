@@ -3925,17 +3925,9 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
 }
 
 @media (max-width: 768px) {
-  /* Both React serialization paths must be matched. Server-rendered markup
-     emits no space ("position:sticky;top:0"); client-rendered CSSOM
-     normalizes with a space ("position: sticky; top: 0px"). Matching only
-     the spaced form left server-rendered sticky headers (e.g. /research/a-z)
-     pinned at top:0 underneath the fixed navbar on mobile. */
   [style*="position: 'sticky'"][style*="top: 0"],
   [style*="position: \"sticky\""][style*="top: 0"],
-  [style*="position: sticky"][style*="top: 0"],
-  [style*="position: sticky"][style*="top:0"],
-  [style*="position:sticky"][style*="top: 0"],
-  [style*="position:sticky"][style*="top:0"] {
+  [style*="position: sticky"][style*="top: 0"] {
     top: var(--nav-offset, 60px) !important;
   }
 }

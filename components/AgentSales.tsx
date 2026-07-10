@@ -189,7 +189,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       } catch { /* best-effort */ }
     })();
     return () => { cancelled = true; };
-  }, [orders.length]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- orders ref changes on every render; use stable key so status updates also trigger refresh
+  }, [orders.map((o: any) => o.id + o.status).join(',')]);
 
   // -- All analytics derived from the orders array --
   const a = useMemo(() => {

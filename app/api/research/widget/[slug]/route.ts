@@ -67,7 +67,8 @@ export async function GET(
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, max-age=300',
         'Access-Control-Allow-Origin': '*',
-        'X-Frame-Options': 'ALLOWALL',
+        // X-Frame-Options is intentionally omitted — frame-ancestors * (CSP below) is the modern mechanism
+        // and X-Frame-Options: ALLOWALL is not a valid spec value.
         'Content-Security-Policy': "frame-ancestors *",
       },
     });

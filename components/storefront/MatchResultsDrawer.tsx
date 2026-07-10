@@ -43,8 +43,11 @@ export function MatchResultsDrawer({
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [followUpInput, setFollowUpInput] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   const handleShare = async () => {
+    if (isSharing) return;
+    setIsSharing(true);
     try {
       const res = await fetch('/api/research/share', {
         method: 'POST',
@@ -55,14 +58,24 @@ export function MatchResultsDrawer({
           goalSummary
         })
       });
+      if (!res.ok) throw new Error('Share request failed');
       const data = await res.json();
       if (data.url) {
         await navigator.clipboard.writeText(window.location.origin + data.url);
         setShareCopied(true);
         setTimeout(() => setShareCopied(false), 2000);
+      } else {
+        throw new Error('No share URL returned');
       }
     } catch (e) {
       console.error('Failed to share', e);
+      // Show user-visible feedback via the button label
+      setShareCopied(false);
+      // Brief flash of error label reusing the button state
+      const el = document.getElementById('pnl-share-btn');
+      if (el) { el.textContent = 'Error — Try Again'; setTimeout(() => { if (el) el.textContent = 'Share Results'; }, 2000); }
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -508,10 +521,13 @@ export function MatchResultsDrawer({
             {!loading && !followUp && filteredResults.length > 0 && (
               <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.08)', background: '#0A1018', display: 'flex', gap: 12, paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))' }}>
                 <button
+                  id="pnl-share-btn"
                   onClick={handleShare}
-                  style={{ flex: 1, padding: '14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#FFF', borderRadius: 8, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+                  disabled={isSharing}
+                  aria-busy={isSharing}
+                  style={{ flex: 1, padding: '14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#FFF', borderRadius: 8, fontWeight: 800, cursor: isSharing ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}
                 >
-                  {shareCopied ? 'Copied Link!' : 'Share Protocol'}
+                  {isSharing ? 'Sharing...' : shareCopied ? 'Copied Link!' : 'Share Protocol'}
                 </button>
                 {stackItems.length > 0 && (
                   <button

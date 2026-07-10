@@ -41,11 +41,18 @@ export async function GET(req: Request) {
     .eq('id', gate.user.id)
     .maybeSingle();
 
+  const payerName = process.env.PAYER_LEGAL_NAME;
+  const payerEin = process.env.PAYER_EIN;
+  if (!payerName || !payerEin) {
+    console.error('[1099] PAYER_LEGAL_NAME or PAYER_EIN env vars are not set. Cannot generate 1099 data.');
+    return NextResponse.json({ error: '1099 Payer Information Not Configured. Please Contact Support.' }, { status: 503 });
+  }
+
   return NextResponse.json({
     year,
     payer: {
-      name: process.env.PAYER_LEGAL_NAME ?? 'Pep Nation Lab',
-      tin: process.env.PAYER_EIN ?? 'XX-XXXXXXX',
+      name: payerName,
+      tin: payerEin,
     },
     recipient: {
       name: profile?.full_name ?? profile?.username ?? '',

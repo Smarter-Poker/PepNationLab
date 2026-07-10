@@ -384,11 +384,10 @@ export default function AgentStorefrontGrid({
     const keys = ['q', 'category', 'sort', 'min', 'max', 'inStock', 'bulk', 'wMin', 'wMax'];
     return keys.some(k => searchParams.get(k));
   })();
-  const initFromStore: Record<string, string> | null = null;
+  // getInit reads from URL params only — search query is intentionally not restored on return.
   const getInit = (key: string): string => {
     const fromUrl = searchParams?.get(key);
     if (fromUrl !== null && fromUrl !== undefined) return fromUrl;
-    if (initFromStore && typeof initFromStore[key] === 'string') return initFromStore[key];
     return '';
   };
 

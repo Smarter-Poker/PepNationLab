@@ -13,5 +13,11 @@ export async function GET() {
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
     process.env.VAPID_PUBLIC_KEY ||
     '';
+  if (!key) {
+    return NextResponse.json(
+      { key: null, error: 'Push Notifications Not Yet Configured' },
+      { status: 503 }
+    );
+  }
   return NextResponse.json({ key });
 }

@@ -83,7 +83,10 @@ export async function POST(request: Request) {
   let urls: string[] = [];
   try {
     const body = await request.json();
-    if (Array.isArray(body?.urls)) urls = body.urls as string[];
+    if (Array.isArray(body?.urls)) {
+      // Validate: only accept string entries, max 500 URLs per call
+      urls = body.urls.filter((u: unknown) => typeof u === 'string').slice(0, 500) as string[];
+    }
   } catch {
     urls = [];
   }
@@ -91,7 +94,16 @@ export async function POST(request: Request) {
   return NextResponse.json(result);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  // Guard: only Vercel cron scheduler (via CRON_SECRET) or a manual admin call should
+  // trigger a full-site IndexNow submission. Unauthenticated hits would exhaust the
+  // IndexNow API key rate budget.
+  const authHeader = (request as any).headers?.get?.('authorization') ?? '';
+  const cronSecret = process.env.CRON_SECRET ?? '';
+  const isVercelCron = (request as any).headers?.get?.('x-vercel-cron') === '1';
+  if (!isVercelCron && (!cronSecret || authHeader !== `Bearer ${cronSecret}`)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const urls = await importantUrls();
   const result = await pingIndexNow(urls);
   return NextResponse.json({ ...result, urlCount: urls.length });

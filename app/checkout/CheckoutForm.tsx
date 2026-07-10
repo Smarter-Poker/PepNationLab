@@ -70,6 +70,7 @@ interface ActiveFlashSale {
   name: string;
   banner_text: string | null;
   discount_pct: number;
+  starts_at: string;
   ends_at: string;
 }
 
@@ -646,7 +647,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         } catch { /* applyCoupon may throw if cart empty */ }
       }, 50);
     } catch { /* Storage unavailable or malformed */ }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- applyCoupon uses stashed override via setTimeout; intentional forward-ref
   }, [couponDisabled, cartSubtotal]);
 
   if (!storefrontLoaded) return null;
