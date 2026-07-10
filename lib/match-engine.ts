@@ -352,12 +352,16 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
   // Research interest (citations + active trials) for spread among relevant hits.
   breakdown.interest = interestBonus(c);
 
-  // Budget shaping.
+  // Budget shaping. PENALTIES ONLY. The factor maxima are tuned so a perfect
+  // match sums to exactly 100 (base 45 + keyword 10 + evidence 20 + class 5 +
+  // interest 20). A positive budget bonus pushed the raw total to 110, which
+  // then clamped to 100 - silently breaking the invariant that the displayed
+  // breakdown rows sum to the displayed score. Disfavoring expensive options is
+  // already fully expressed by penalizing stacks and premium slugs.
   if (input.budget === 'conservative') {
     const premiumSlugs = ['semaglutide', 'tirzepatide', 'retatrutide', 'igf-1-lr3', 'igf-1-des', 'dihexa', 'mots-c'];
     if (c.is_stack) breakdown.budget -= 20;
     if (premiumSlugs.includes(c.slug)) breakdown.budget -= 15;
-    else breakdown.budget += 10;
   } else if (input.budget === 'standard') {
     if (c.is_stack) breakdown.budget -= 5;
     const premiumSlugs = ['tirzepatide', 'retatrutide', 'igf-1-lr3'];
