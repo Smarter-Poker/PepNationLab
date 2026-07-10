@@ -38,8 +38,8 @@ export default async function Image({ params }: { params: Promise<{ stateSlug: s
       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: 'linear-gradient(135deg, #0A1018 0%, #0D1B2A 60%, #0A1018 100%)', fontFamily: 'Inter, sans-serif', position: 'relative', overflow: 'hidden' }}>
         {/* Teal glow */}
         <div style={{ position: 'absolute', top: -120, left: -80, width: 450, height: 450, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,196,188,0.12) 0%, transparent 70%)' }} />
-        {/* Purple glow */}
-        <div style={{ position: 'absolute', bottom: -60, right: -60, width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)' }} />
+        {/* Secondary teal glow */}
+        <div style={{ position: 'absolute', bottom: -60, right: -60, width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(45,212,191,0.10) 0%, transparent 70%)' }} />
 
         {/* Top branding bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '40px 60px 0' }}>
@@ -77,12 +77,12 @@ export default async function Image({ params }: { params: Promise<{ stateSlug: s
             </div>
             <div style={{ width: 1, background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 36, fontWeight: 800, color: '#8B5CF6', lineHeight: 1 }}>300+</span>
+              <span style={{ fontSize: 36, fontWeight: 800, color: '#5EEAD4', lineHeight: 1 }}>300+</span>
               <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>Research Library</span>
             </div>
             <div style={{ width: 1, background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 36, fontWeight: 800, color: '#F59E0B', lineHeight: 1 }}>RUO</span>
+              <span style={{ fontSize: 36, fontWeight: 800, color: '#D0DAE4', lineHeight: 1 }}>RUO</span>
               <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>Grade Quality</span>
             </div>
           </div>
@@ -95,7 +95,7 @@ export default async function Image({ params }: { params: Promise<{ stateSlug: s
         </div>
 
         {/* Bottom edge accent */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg, #00C4BC, rgba(139,92,246,0.8), transparent)' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg, #00C4BC, rgba(94,234,212,0.8), transparent)' }} />
       </div>
     ),
     {
