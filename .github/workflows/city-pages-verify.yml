@@ -68,7 +68,7 @@ jobs:
             try { summary = JSON.parse(fs.readFileSync('summary.json', 'utf8')); }
             catch { summary = { error: 'could not parse summary.json' }; }
 
-            const failed = (summary.failed ?? 1) > 0 || summary.sitemapOk === false || summary.error;
+            const failed = (summary.failed ?? 1) > 0 || (summary.compoundPages?.failed ?? 0) > 0 || summary.sitemapOk === false || summary.error;
             const status = failed ? 'UNHEALTHY' : 'HEALTHY';
             const title = 'City Pages Health Report';
 
@@ -95,7 +95,11 @@ jobs:
                   'index/follow robots meta, self-canonical, city name in title and H1,',
                   'Service + BreadcrumbList + ItemList JSON-LD, live storefront Top 10',
                   '(10+ store deep links), county/ZIP/blurb local content, and sitemap',
-                  'membership. Source: scripts/verify-city-pages.mjs.',
+                  'membership. Each run also checks a rotating date-seeded sample of 40',
+                  'compound-city pages (/peptides/{state}/{city}/{compound}): HTTP 200,',
+                  'robots, exact canonical, compound + city in H1, live store deep link,',
+                  'Product + FAQPage + BreadcrumbList JSON-LD, and no unexpected',
+                  'redirect. Source: scripts/verify-city-pages.mjs.',
                 ].join('\n'),
               });
               issueNumber = created.number;
@@ -104,6 +108,14 @@ jobs:
             const failureLines = (summary.failures || [])
               .slice(0, 30)
               .map(f => `- ${f.city}: ${f.error} (${f.url})`)
+              .join('\n');
+            const cp = summary.compoundPages || {};
+            const compoundLine = cp.sampled !== undefined
+              ? `Compound-city sample: ${cp.passed}/${cp.sampled} passed`
+              : '';
+            const compoundFailureLines = (cp.failures || [])
+              .slice(0, 30)
+              .map(f => `- ${f.page}: ${f.error} (${f.url})`)
               .join('\n');
             const stateLines = Object.entries(summary.byState || {})
               .map(([s, v]) => `${s}: ${v}`)
@@ -116,11 +128,13 @@ jobs:
                 ? `Verifier error: ${summary.error}`
                 : [
                     `Pages passed: ${summary.passed}/${summary.totalCities} (warnings: ${summary.warnings ?? 0})`,
+                    compoundLine,
                     `Sitemap: ${summary.sitemapOk ? 'all city URLs present' : `MISSING ${summary.sitemapMissingCount} URLs`}`,
                     `Duration: ${summary.durationSeconds}s | Base: ${summary.base}`,
                     '',
                     `By state: ${stateLines}`,
                     failureLines ? `\n### Failures\n${failureLines}` : '',
+                    compoundFailureLines ? `\n### Compound-City Sample Failures\n${compoundFailureLines}` : '',
                   ].join('\n'),
             ].join('\n');
 
