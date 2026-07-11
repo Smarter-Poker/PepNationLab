@@ -5,6 +5,7 @@ import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { calculateShippingCost, getCarrierName } from '@/lib/shipping-cost';
+import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { quoteCheapestForCheckout, normalizeShippingAddress } from '@/lib/shipping';
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 import { computeLineSplit, type ItemFulfillmentSplit } from '@/lib/order-line-splits';
@@ -834,6 +835,13 @@ export async function POST(request: NextRequest) {
 
     // Round the final money total to exact cents so accumulated FP dust never
     // reaches the stored order total or credit/velocity comparisons.
+    // House-store free shipping: $100+ orders on the admin/house storefront
+    // (researchstore) ship free. Placed before grossTotal so total, stored
+    // shipping_cost, and downstream COGS agree. Pickup is already $0.
+    if (agentSlug === DEFAULT_STORE_SLUG && actualShippingOption !== 'agent_pickup' && subtotal >= 100) {
+      shippingCost = 0;
+    }
+
     const grossTotal = Math.round((Math.max(0, subtotal - discountAmount) + shippingCost) * 100) / 100;
     const total = Math.max(0, grossTotal);
 

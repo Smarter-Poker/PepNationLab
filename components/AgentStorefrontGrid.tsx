@@ -2861,6 +2861,9 @@ export default function AgentStorefrontGrid({
                     
                     const isBW = isBacWaterItem(group.name, defaultV.products?.compound_slug);
                     const displayPrice = isBW ? perVialDisplay * 10 : perVialDisplay;
+                      const _marketAvgVial = Number((defaultV as any).products?.market_avg_price) || 0;
+                      const _marketAvgDisplay = isBW ? _marketAvgVial * 10 : _marketAvgVial;
+                      const _showMarketAvg = agentSlug === 'researchstore' && _marketAvgDisplay > displayPrice;
                     const displayOriginalPrice = isBW ? perVialOriginal * 10 : perVialOriginal;
                     const displaySizeText = isBW ? `10x ${size}${measure} Vials` : `${size}${measure} Vials`;
 
@@ -2870,6 +2873,11 @@ export default function AgentStorefrontGrid({
                           {isOnSale && (
                             <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
                               ${displayOriginalPrice.toFixed(2)}
+                            </span>
+                          )}
+                          {_showMarketAvg && (
+                            <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
+                              ${_marketAvgDisplay.toFixed(2)}
                             </span>
                           )}
                           <span className="sf-product-price-nickel" style={{
