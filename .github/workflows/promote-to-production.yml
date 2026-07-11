@@ -1,0 +1,77 @@
+# Promote to Production — free-tier gate (no branch protection needed).
+#
+# Why: branch protection + auto-merge require a paid GitHub plan on a private
+# repo. This achieves the same guarantee using GitHub Actions (free on private
+# repos) by gating what reaches PRODUCTION instead of what reaches `main`.
+#
+# How it works:
+#   - Agents keep pushing to `main` freely and concurrently (no change for them).
+#   - Vercel's Production Branch is set to `production` (one-time setting), so a
+#     push to `main` does NOT deploy to production by itself.
+#   - This workflow runs on every push to `main`. It (1) verifies the HEAD commit
+#     is authored by the approved team identity and (2) runs the real Turbopack
+#     production build. Only if BOTH pass does it fast-forward `production` to the
+#     commit — which is what Vercel actually deploys.
+#
+# Result: every production deploy is green AND team-authored. A broken or
+# bot-authored commit simply is not promoted; production holds the last good
+# commit until a green, correctly-authored one lands. No Error, no Blocked in
+# production, and unlimited concurrent agents.
+
+name: Promote to Production
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+# Serialize only the promotion (fast), never the agents. Latest green wins.
+concurrency:
+  group: promote-production
+
+jobs:
+  gate-and-promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Author gate — HEAD must be the approved team identity
+        env:
+          APPROVED_EMAIL: "254329056+Smarter-Poker@users.noreply.github.com"
+        run: |
+          set -euo pipefail
+          author="$(git log -1 --format='%ae')"
+          if [ "$author" != "$APPROVED_EMAIL" ]; then
+            echo "::error::HEAD author '$author' is not the approved Vercel-team identity."
+            echo "Not promoting to production (Vercel would Block it)."
+            echo "Re-commit under: git config user.email \"$APPROVED_EMAIL\" && git commit --amend --reset-author --no-edit && git push"
+            exit 1
+          fi
+          echo "Author OK: $author"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build gate — real Turbopack production build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_APP_URL: "https://pepnationlab.com"
+        run: npm run build
+
+      - name: Promote — fast-forward the production branch to this green commit
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse --short HEAD)"
+          # Fast-forward only; production advances forward through main commits.
+          git push origin "HEAD:production"
+          echo "Promoted $sha to production. Vercel will deploy it."
