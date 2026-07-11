@@ -36,6 +36,11 @@ export interface CertificateData {
   waterContentPct: number | null;
   netPeptideContentPct: number | null;
 
+  /** Real, per-peptide chemical constants pulled from the compound record.
+   *  These are deterministic facts, not measurements. */
+  referenceMassDa?: number | null;
+  sequenceOneLetter?: string | null;
+
   testingLab: string | null;
   labIsThirdParty: boolean | null;
   labAccreditation: string | null;
@@ -106,6 +111,17 @@ export default function CertificateDocument({ data }: { data: CertificateData })
         ? 'Yes'
         : 'No, Tested In-House';
 
+  // Theoretical mass is a real per-peptide constant. Prefer a value recorded on
+  // the lot; otherwise fall back to the compound's molecular weight. Both are
+  // chemical facts, so this fills in correctly without inventing anything.
+  const theoreticalMass =
+    data.msTheoreticalMassDa ?? data.referenceMassDa ?? null;
+
+  const sequence =
+    data.sequenceOneLetter && data.sequenceOneLetter.trim().length > 0
+      ? data.sequenceOneLetter.trim()
+      : null;
+
   return (
     <div
       style={{
@@ -161,6 +177,13 @@ export default function CertificateDocument({ data }: { data: CertificateData })
         <InfoCell label="Storage" value={data.storage || 'Store At Minus 20 C'} />
       </div>
 
+      {sequence && (
+        <div style={{ marginTop: 10, fontSize: 11.5, color: MUTED }}>
+          <span style={{ fontWeight: 500, color: INK }}>Sequence: </span>
+          <span style={{ fontFamily: 'ui-monospace, Menlo, monospace', wordBreak: 'break-all' }}>{sequence}</span>
+        </div>
+      )}
+
       <div style={{ marginTop: 20, fontSize: 12, fontWeight: 500, color: TEAL_DARK, letterSpacing: 0.5 }}>Analytical Results</div>
       <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 6, fontSize: 13 }}>
         <thead>
@@ -182,7 +205,9 @@ export default function CertificateDocument({ data }: { data: CertificateData })
             test="Identity (Mass)"
             method={data.msMethod || 'ESI-MS'}
             result={data.msObservedMassDa === null ? NOT_REPORTED : `${data.msObservedMassDa} Da`}
-            spec={data.msTheoreticalMassDa === null ? 'Report' : `${data.msTheoreticalMassDa} Da Theoretical`}
+            spec={
+              theoreticalMass === null ? 'Report' : `${theoreticalMass} Da Theoretical`
+            }
           />
           <ResultRow
             test="Net Peptide Content"
@@ -229,17 +254,34 @@ export default function CertificateDocument({ data }: { data: CertificateData })
           <div style={{ fontSize: 11, color: MUTED }}>Reviewed And Approved By</div>
           {data.verified && data.approvedByName ? (
             <>
-              <div style={{ fontFamily: "'Brush Script MT', 'Segoe Script', cursive", fontSize: 26, color: '#123', marginTop: 6, lineHeight: 1 }}>
-                {data.approvedByName}
+              <div style={{ position: 'relative', width: 200, height: 44, marginTop: 4 }}>
+                <span
+                  style={{
+                    fontFamily: "'Segoe Script', 'Brush Script MT', 'Snell Roundhand', cursive",
+                    fontSize: 30,
+                    fontStyle: 'italic',
+                    color: '#12324A',
+                    position: 'absolute',
+                    left: 4,
+                    top: 0,
+                    transform: 'rotate(-3deg)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {data.approvedByName}
+                </span>
+                <svg viewBox="0 0 200 44" width="200" height="44" style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none' }} aria-hidden="true">
+                  <path d="M2 40 C 40 34, 70 46, 110 38 S 180 30, 198 39" fill="none" stroke="#12324A" strokeWidth="1.1" opacity="0.7" />
+                </svg>
               </div>
-              <div style={{ height: 1, background: '#CBD5DF', width: 180, marginTop: 2 }} />
+              <div style={{ height: 1, background: '#CBD5DF', width: 200, marginTop: 2 }} />
               <div style={{ fontSize: 12, fontWeight: 500, marginTop: 3 }}>{data.approvedByName}</div>
-              <div style={{ fontSize: 11, color: MUTED }}>{data.approvedByTitle || 'Quality Approver'}</div>
+              <div style={{ fontSize: 11, color: MUTED }}>{data.approvedByTitle || 'Laboratory Technician'}</div>
               <div style={{ fontSize: 11, color: MUTED }}>Approved {fmtDate(data.verifiedAt)}</div>
             </>
           ) : (
             <>
-              <div style={{ height: 1, background: '#CBD5DF', width: 180, marginTop: 30 }} />
+              <div style={{ height: 1, background: '#CBD5DF', width: 200, marginTop: 30 }} />
               <div style={{ fontSize: 11, color: MUTED, marginTop: 3, fontStyle: 'italic' }}>
                 Signature Applied On Verification
               </div>
