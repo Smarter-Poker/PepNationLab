@@ -55,6 +55,7 @@ async function AgentStorefrontDataLoader({
           inventory_count,
           low_stock_threshold,
           base_cost,
+          market_avg_price,
           compound_slug
         )
       `)
