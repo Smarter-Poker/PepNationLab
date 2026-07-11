@@ -23,6 +23,8 @@
 // A future SMTP branch can be added here if pure Google SMTP is ever required.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { carrierInfo } from '@/lib/carrier';
+
 export interface SendEmailInput {
   to: string | string[];
   subject: string;
@@ -195,22 +197,26 @@ export async function sendOrderShippedEmail(params: {
 }): Promise<SendEmailResult> {
   const name = (params.fullName || '').trim() || 'Researcher';
   const trk = (params.trackingNumber || '').trim();
+  const info = trk ? carrierInfo(trk) : { carrier: 'Unknown' as const, trackingUrl: null };
   const tracking = trk
-    ? `<p style="font-size:14px;line-height:1.7;margin:0 0 16px;">Tracking Number: <strong style="color:#fff;">${trk}</strong></p>`
+    ? `<p style="font-size:14px;line-height:1.7;margin:0 0 16px;">Tracking Number: <strong style="color:#fff;">${trk}</strong>${info.carrier !== 'Unknown' ? ` (${info.carrier})` : ''}</p>`
     : '';
+  // Direct carrier deep-link when we can detect the carrier from the number.
+  const carrierBtn = info.trackingUrl ? button(info.trackingUrl, `Track With ${info.carrier}`) : '';
   const html = layout(`
     <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">Your Order Has Shipped</h1>
     <p style="font-size:14px;line-height:1.7;margin:0 0 16px;">
       Good news, ${name}. Your order <strong style="color:#fff;">#${params.orderId}</strong> is on its way.
     </p>
     ${tracking}
+    ${carrierBtn}
     ${button(`${SITE}/orders/${params.orderId}`, 'Track Your Order')}
   `);
   return sendEmail({
     to: params.to,
     subject: `Your Order Has Shipped - #${params.orderId}`,
     html,
-    text: `Hi ${name}, your order #${params.orderId} has shipped.${trk ? ` Tracking: ${trk}.` : ''} View it at ${SITE}/orders/${params.orderId}`,
+    text: `Hi ${name}, your order #${params.orderId} has shipped.${trk ? ` Tracking: ${trk}.` : ''}${info.trackingUrl ? ` Track it: ${info.trackingUrl}` : ''} View it at ${SITE}/orders/${params.orderId}`,
   });
 }
 
@@ -233,6 +239,54 @@ export async function sendOrderDeliveredEmail(params: {
     subject: `Your Order Has Been Delivered - #${params.orderId}`,
     html,
     text: `Hi ${name}, your order #${params.orderId} has been delivered. View it at ${SITE}/orders/${params.orderId}`,
+  });
+}
+
+/** Order approved notification (moved to approved_ship / approved_pickup). */
+export async function sendOrderApprovedEmail(params: {
+  to: string;
+  fullName?: string | null;
+  orderId: string;
+  pickup?: boolean;
+}): Promise<SendEmailResult> {
+  const name = (params.fullName || '').trim() || 'Researcher';
+  const line = params.pickup
+    ? 'is approved and is being prepared for agent pickup.'
+    : 'is approved and is being prepared for shipment.';
+  const html = layout(`
+    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">Your Order Is Approved</h1>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Hi ${name}, your order <strong style="color:#fff;">#${params.orderId}</strong> ${line}
+    </p>
+    ${button(`${SITE}/orders/${params.orderId}`, 'View Your Order')}
+  `);
+  return sendEmail({
+    to: params.to,
+    subject: `Your Order Is Approved - #${params.orderId}`,
+    html,
+    text: `Hi ${name}, your order #${params.orderId} ${line} View it at ${SITE}/orders/${params.orderId}`,
+  });
+}
+
+/** Order cancelled notification. */
+export async function sendOrderCancelledEmail(params: {
+  to: string;
+  fullName?: string | null;
+  orderId: string;
+}): Promise<SendEmailResult> {
+  const name = (params.fullName || '').trim() || 'Researcher';
+  const html = layout(`
+    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">Your Order Was Cancelled</h1>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Hi ${name}, your order <strong style="color:#fff;">#${params.orderId}</strong> has been cancelled. If this was not expected or you have questions, please contact your agent or reply to this email.
+    </p>
+    ${button(`${SITE}/orders/${params.orderId}`, 'View Your Order')}
+  `);
+  return sendEmail({
+    to: params.to,
+    subject: `Your Order Was Cancelled - #${params.orderId}`,
+    html,
+    text: `Hi ${name}, your order #${params.orderId} has been cancelled. View it at ${SITE}/orders/${params.orderId}`,
   });
 }
 
