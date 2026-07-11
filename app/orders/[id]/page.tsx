@@ -8,6 +8,7 @@ import PaymentProofUpload from '@/components/PaymentProofUpload';
 import RecommendationStrip, { type RecommendationItem } from '@/components/RecommendationStrip';
 import ReceiptButton from './ReceiptButton';
 import OrderTrackingTimeline, { type TrackingEvent } from '@/components/OrderTrackingTimeline';
+import OrderStageTimeline from '@/components/OrderStageTimeline';
 import ReorderOrderButton from './ReorderOrderButton';
 import ReorderStackButton from './ReorderStackButton';
 import ChangePaymentMethod from '@/components/ChangePaymentMethod';
@@ -85,6 +86,9 @@ interface Order {
   total: number | string;
   tracking_number: string | null;
   label_url: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  updated_at: string | null;
   shipping_address: any;
   agent_id: string | null;
   buyer_id: string;
@@ -109,7 +113,7 @@ export default async function OrderDetailPage(
     .select(`
       id, status, created_at, payment_method, fulfillment_method,
       subtotal, discount_amount, coupon_code, shipping_cost, total,
-      tracking_number, label_url, shipping_address, agent_id, buyer_id,
+      tracking_number, label_url, shipped_at, delivered_at, updated_at, shipping_address, agent_id, buyer_id,
       order_items (id, agent_product_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price, lot_number, coa_url, products(compound_slug)),
       profiles:buyer_id (full_name, email)
     `)
@@ -446,6 +450,22 @@ export default async function OrderDetailPage(
                 ) : null}
               </div>
             </div>
+          </div>
+
+          {/* Order Progress Timeline (B3): status enum mapped to human stages */}
+          <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.05s' }}>
+            <h2 style={{ fontSize: '0.95rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>
+              Order Progress
+            </h2>
+            <OrderStageTimeline
+              status={order.status}
+              fulfillmentMethod={order.fulfillment_method}
+              trackingNumber={order.tracking_number}
+              createdAt={order.created_at}
+              shippedAt={order.shipped_at}
+              deliveredAt={order.delivered_at}
+              updatedAt={order.updated_at}
+            />
           </div>
 
           {/* Buyer + Shipping */}

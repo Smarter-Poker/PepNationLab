@@ -8,6 +8,7 @@ import AgentPaymentProofs from './AgentPaymentProofs';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import IframeLink from '@/components/ui/IframeLink';
 import IframeModal from '@/components/ui/IframeModal';
+import OrderStageTimeline from '@/components/OrderStageTimeline';
 
 export interface ShippingAddress {
   line1?: string;
@@ -821,6 +822,24 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
               >
                 {STATUS_LABEL[detailOrder.status] || detailOrder.status.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
               </span>
+            </div>
+
+            {/* Order Progress Timeline (B3) */}
+            <div
+              style={{
+                marginBottom: 'var(--space-6)',
+                padding: 'var(--space-5)',
+                background: 'rgba(0,0,0,0.2)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                borderRadius: '16px',
+              }}
+            >
+              <OrderStageTimeline
+                status={detailOrder.status}
+                fulfillmentMethod={detailOrder.fulfillment_method}
+                trackingNumber={detailOrder.tracking_number}
+                createdAt={detailOrder.created_at}
+              />
             </div>
 
             <div
