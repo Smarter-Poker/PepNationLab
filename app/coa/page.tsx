@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 };
 
 interface CoaRow {
+  lot_id: string;
   lot_number: string;
   product_name: string;
   product_slug: string;
@@ -254,23 +255,29 @@ export default async function CoaLookupPage({
             <Row label="Expires" value={formatDate(record.expires_at)} />
           </section>
 
-          {(certificateUrl || chromatogramUrl) && (
-            <section style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              {/* Omega Protocol: the certificate lives on the Supabase storage
-                  domain, so it must render inside IframeModal rather than
-                  navigating the researcher off pepnationlab.com. */}
-              {certificateUrl && (
-                <IframeLink href={certificateUrl} className="btn-secondary">
-                  View The Signed Certificate
-                </IframeLink>
-              )}
-              {chromatogramUrl && (
-                <IframeLink href={chromatogramUrl} className="btn-ghost">
-                  View The Chromatogram
-                </IframeLink>
-              )}
-            </section>
-          )}
+          <section style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <Link
+              href={`/coa/${record.lot_id}/certificate`}
+              className="btn-primary"
+              style={{ padding: '0.7rem 1.4rem' }}
+            >
+              View The Branded Certificate
+            </Link>
+            {/* Omega Protocol: the uploaded certificate and chromatogram live on
+                the Supabase storage domain, so they must render inside
+                IframeModal rather than navigating the researcher off
+                pepnationlab.com. */}
+            {certificateUrl && (
+              <IframeLink href={certificateUrl} className="btn-secondary">
+                View The Signed Source File
+              </IframeLink>
+            )}
+            {chromatogramUrl && (
+              <IframeLink href={chromatogramUrl} className="btn-ghost">
+                View The Chromatogram
+              </IframeLink>
+            )}
+          </section>
 
           <footer
             style={{

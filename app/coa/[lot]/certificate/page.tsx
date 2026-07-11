@@ -10,12 +10,20 @@ export const dynamic = 'force-dynamic';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
+// The Certificate Of Analysis is reviewed and signed off by the laboratory
+// technician who runs the assays, not by whichever admin clicks verify.
+const LAB_SIGNATORY = 'Swadep Mirsha';
+const LAB_SIGNATORY_TITLE = 'Laboratory Technician';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const metadata: Metadata = {
   title: 'Certificate Of Analysis | Pep Nation Lab',
   robots: { index: false, follow: false },
 };
 
 interface CoaRow {
+  lot_id: string;
   lot_number: string;
   product_name: string;
   product_slug: string;
@@ -36,27 +44,38 @@ interface CoaRow {
   lab_accreditation: string | null;
   chromatogram_storage_key: string | null;
   coa_verified_at: string;
-  approved_by_name: string | null;
+  reference_mass_da: number | null;
+  sequence_one_letter: string | null;
 }
 
 export default async function CertificatePage({ params }: { params: Promise<{ lot: string }> }) {
   const { lot } = await params;
-  const query = decodeURIComponent(lot).trim().slice(0, 64);
-  if (!query) notFound();
+  const raw = decodeURIComponent(lot).trim().slice(0, 64);
+  if (!raw) notFound();
 
   const supabase = await createServiceClient();
-  const { data, error } = await supabase.rpc('lookup_coa_by_lot', { p_lot: query });
+
+  // A QR code targets the lot's UUID (globally unique, resolves to exactly one
+  // certificate). A human typing the lot number off a vial hits the same page by
+  // lot string. Both paths land here.
+  const { data, error } = UUID_RE.test(raw)
+    ? await supabase.rpc('lookup_coa_by_id', { p_id: raw })
+    : await supabase.rpc('lookup_coa_by_lot', { p_lot: raw });
+
   const record = (data as CoaRow[] | null)?.[0] ?? null;
 
-  // Only VERIFIED, non-retracted lots resolve through lookup_coa_by_lot. If
-  // nothing comes back there is no certificate to render, by design.
+  // Only VERIFIED, non-retracted lots resolve. If nothing comes back there is no
+  // certificate to render, by design.
   if (error || !record) notFound();
 
-  const verifyUrl = `${APP_URL}/coa?lot=${encodeURIComponent(record.lot_number)}`;
+  // The QR code encodes the canonical, globally-unique URL for THIS lot: its
+  // UUID. No two lots share an id, so no two QR codes are alike and each points
+  // only at its own certificate.
+  const canonicalUrl = `${APP_URL}/coa/${record.lot_id}/certificate`;
 
   let qrDataUrl: string | null = null;
   try {
-    qrDataUrl = await generateQrDataUrl(verifyUrl, '#0F1923', '#FFFFFF');
+    qrDataUrl = await generateQrDataUrl(canonicalUrl, '#0F1923', '#FFFFFF');
   } catch {
     qrDataUrl = null;
   }
@@ -84,11 +103,13 @@ export default async function CertificatePage({ params }: { params: Promise<{ lo
     msTheoreticalMassDa: record.ms_theoretical_mass_da,
     waterContentPct: record.water_content_pct,
     netPeptideContentPct: record.net_peptide_content_pct,
+    referenceMassDa: record.reference_mass_da,
+    sequenceOneLetter: record.sequence_one_letter,
     testingLab: record.testing_lab,
     labIsThirdParty: record.lab_is_third_party,
     labAccreditation: record.lab_accreditation,
-    approvedByName: record.approved_by_name,
-    approvedByTitle: 'Quality Approver',
+    approvedByName: LAB_SIGNATORY,
+    approvedByTitle: LAB_SIGNATORY_TITLE,
     verifiedAt: record.coa_verified_at,
     qrDataUrl,
     chromatogramUrl,
