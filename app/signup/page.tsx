@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { UserPlus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
@@ -22,6 +22,7 @@ import { Suspense } from 'react';
 
 function SignupForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
@@ -230,7 +231,10 @@ function SignupForm() {
         await new Promise(r => setTimeout(r, 200));
       }
 
-      window.location.replace(redirectTo);
+      // Allow Supabase read replicas 1.5s to sync before server-side redirect
+      await new Promise(r => setTimeout(r, 1500));
+      router.refresh();
+      router.push(redirectTo);
     } catch {
       setError('Something Went Wrong. Please Try Again.');
       setLoading(false);
@@ -308,7 +312,7 @@ function SignupForm() {
       }} />
 
       <div style={{ width: '100%', maxWidth: 460, position: 'relative' }}>
-        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', boxShadow: '0 0 40px rgba(104,211,145,0.05)' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', border: '4px solid var(--silver-dark)', borderRadius: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
             <div style={{
               width: 40, height: 40, borderRadius: '50%',
@@ -350,11 +354,11 @@ function SignupForm() {
                   style={{ letterSpacing: '0.4em', fontSize: '1.2rem', textAlign: 'center' }}
                 />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: 'var(--space-5)' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: '40px' }}>
                 <button
                   type="submit"
                   className="btn btn-primary hover-lift"
-                  style={{ width: '100%', maxWidth: 300, justifyContent: 'center' }}
+                  style={{ width: '100%', maxWidth: 300, display: 'flex', justifyContent: 'center', textAlign: 'center' }}
                   disabled={loading || code.length !== 6}
                 >
                   {loading ? 'Verifying...' : 'Verify & Create Account'}
@@ -483,11 +487,11 @@ function SignupForm() {
               ))}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: '20px' }}>
               <button
                 type="submit"
                 className="btn btn-primary hover-lift"
-                style={{ width: '100%', maxWidth: 300, justifyContent: 'center' }}
+                style={{ width: '100%', maxWidth: 300, display: 'flex', justifyContent: 'center', textAlign: 'center' }}
                 disabled={loading || !allAcked || !firstName || !lastName || !username || !email || password.length < 8 || usernameBlocked || usernameCheck.status === 'checking'}
               >
                 {loading
