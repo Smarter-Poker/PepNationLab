@@ -31,16 +31,22 @@ const PAYMENT_METHOD_ENUM = [
   'varo',
 ] as const;
 
-// Up to 9 handle keys, each value capped so users cannot stuff the JSONB column.
+// Up to 10 handle keys, each value capped so users cannot stuff the JSONB column.
 // P0 fix: in Zod 4, z.record with an enum key schema is EXHAUSTIVE - it
-// demanded all 9 keys on every request, so every partial save from the
+// demanded all keys on every request, so every partial save from the
 // onboarding wizard and the account settings page returned 400 and new
 // agents could never complete onboarding. z.partialRecord makes every
 // enum key optional, which is the intended contract (PUT accepts a partial).
+// P0 fix 2: values must ALLOW the empty string. The dashboard payment panel
+// stores disabled methods as '' in agent_profiles.payment_handles, the account
+// page merges those into its client state, and the client echoes them back on
+// save - a min(1) value schema rejected every such payload with a 400
+// invalid_body, breaking the payment save for any agent who had ever used the
+// dashboard panel. Empty values are treated as deletions below.
 const HandlesSchema = z
   .partialRecord(
     z.enum(PAYMENT_METHOD_ENUM),
-    z.string().min(1).max(200),
+    z.string().max(200),
   )
   .refine((h) => Object.keys(h).length <= PAYMENT_METHOD_ENUM.length, {
     message: 'too_many_handles',
