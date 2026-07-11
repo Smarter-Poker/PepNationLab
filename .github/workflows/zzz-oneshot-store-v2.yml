@@ -1,0 +1,50 @@
+name: oneshot-store-v2
+on:
+  push:
+    paths:
+      - '.github/workflows/zzz-oneshot-store-v2.yml'
+permissions:
+  contents: write
+  pull-requests: write
+concurrency: oneshot-store-v2
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Apply verified edits
+        run: node scripts/oneshot-store-features.mjs
+      - name: Open PR with changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "cowork-oneshot"
+          git config user.email "oneshot@users.noreply.github.com"
+          BR="feat/store-freeship-marketintel-${{ github.run_id }}"
+          git checkout -b "$BR"
+          git add "app/api/orders/route.ts" "app/checkout/CheckoutForm.tsx" "app/[agentSlug]/page.tsx" "components/AgentStorefrontGrid.tsx" "app/layout.tsx" "components/FreeShippingBanner.tsx"
+          git commit -m 'feat(store): house free shipping $100+ and market-intel strikethrough (admin store)'
+          git push origin "$BR"
+          gh pr create --base main --head "$BR" \
+            --title 'feat(store): free shipping $100+ (house) + market-intel strikethrough' \
+            --body 'Automated one-shot. Free shipping enforced server-side in /api/orders for the house store (researchstore) on $100+ orders; checkout summary reflects it; FreeShippingBanner shown on the house store. market_avg_price rendered struck-through on house-store product cards (admin store only). Edits verified against real source before commit. The Vercel preview build on this PR is the deployability gate; do not merge until it is green.'
+  cleanup:
+    needs: apply
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Remove one-shot scaffold from main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "cowork-oneshot"
+          git config user.email "oneshot@users.noreply.github.com"
+          git rm -f scripts/oneshot-store-features.mjs .github/workflows/zzz-oneshot-store-v2.yml || true
+          git commit -m 'chore: remove one-shot store-features scaffold (v2)' || echo "nothing to remove"
+          git push origin HEAD:main || echo "push skipped"
