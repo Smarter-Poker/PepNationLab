@@ -1,3 +1,5 @@
+# One-shot self-deleting applier for the national city expansion (v2 re-arm:
+# first trigger fired before the data blocks were staged).
 name: Apply National City Expansion
 on:
   push:
