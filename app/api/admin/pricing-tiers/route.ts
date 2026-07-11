@@ -95,6 +95,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Best-effort audit log — failure must never abort the primary operation.
+    supabase.from('admin_audit_log').insert({
+      actor_id: gate.userId,
+      action: 'pricing_tier.update',
+      entity_type: 'pricing_tier',
+      entity_id: tier_name,
+      changes: { multiplier: numMultiplier, display_name: display_name ?? null, description: description ?? null },
+    }).catch(() => { /* non-critical */ });
+
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[admin/pricing-tiers] POST error:', err);

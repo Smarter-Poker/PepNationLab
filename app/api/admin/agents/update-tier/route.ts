@@ -79,6 +79,15 @@ export async function PATCH(req: NextRequest) {
   // recalculate_agent_product_prices here -- that would recompute retail from
   // the rounded margin and could drift prices by cents.
 
+  // Best-effort audit log — failure must never abort the primary operation.
+  supabase.from('admin_audit_log').insert({
+    actor_id: gate.userId,
+    action: 'agent.tier_update',
+    entity_type: 'agent',
+    entity_id: agentId,
+    changes: { tier, locked_tier_level },
+  }).catch(() => { /* non-critical */ });
+
   return NextResponse.json({ success: true, tier });
     },
   });
