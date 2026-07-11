@@ -40,7 +40,7 @@ export interface RateLimitResult {
   resetAt: number; // unix ms when the window resets
 }
 
-// ─── In-memory fallback ───────────────────────────────────────────────────────
+// ─── In-memory fallback ────────────────────────────────────────────────────
 // Keyed by `${key}:${identifier}`. Value is a sliding window of hit timestamps.
 // We stash it on `globalThis` so Next.js hot reload doesn't reset between
 // requests in dev.
@@ -81,7 +81,7 @@ function inMemoryRateLimit(
   };
 }
 
-// ─── Upstash path ─────────────────────────────────────────────────────────────
+// ─── Upstash path ──────────────────────────────────────────────────────────
 async function upstashRateLimit(
   bucketKey: string,
   limit: number,
@@ -143,7 +143,28 @@ async function upstashRateLimit(
   }
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+// ─── Public API ───────────────────────────────────────────────────────
+
+// Surface a misconfiguration loudly (once per process) when running in
+// production without a distributed limiter. The in-memory fallback is a
+// per-instance sliding window, which on serverless barely constrains an
+// attacker because each request can land on a fresh/cold instance. This warning
+// makes an accidentally-unprotected production deploy visible in the logs.
+let __warnedNoUpstash = false;
+function warnIfUnprotectedInProd(): void {
+  if (__warnedNoUpstash) return;
+  __warnedNoUpstash = true;
+  if (process.env.NODE_ENV === 'production') {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[rate-limit] UPSTASH_REDIS_REST_URL/TOKEN are not set in production. ' +
+      'Rate limiting is running on the per-instance in-memory fallback, which ' +
+      'is largely ineffective on serverless. Configure Upstash to enforce ' +
+      'cluster-wide limits on auth, register, orders, and the proxy.'
+    );
+  }
+}
+
 export async function rateLimit(input: RateLimitInput): Promise<RateLimitResult> {
   const { key, limit, windowSeconds, identifier } = input;
   if (!key || limit <= 0 || windowSeconds <= 0) {
@@ -158,6 +179,9 @@ export async function rateLimit(input: RateLimitInput): Promise<RateLimitResult>
     const remote = await upstashRateLimit(bucketKey, limit, windowSeconds, url, token);
     if (remote) return remote;
     // Upstash unavailable - degrade to in-memory rather than hard-fail.
+  } else {
+    // No distributed limiter configured at all - flag it in production.
+    warnIfUnprotectedInProd();
   }
 
   return inMemoryRateLimit(bucketKey, limit, windowSeconds);
