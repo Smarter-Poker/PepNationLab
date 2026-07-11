@@ -9,7 +9,7 @@ import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyAdminOrderStatusChange } from '@/lib/notify';
-import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail } from '@/lib/email';
+import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail, sendOrderApprovedEmail, sendOrderCancelledEmail } from '@/lib/email';
 
 type OrderPushEvent = 'order_approved' | 'order_shipped' | 'order_delivered';
 
@@ -227,17 +227,23 @@ export async function POST(req: NextRequest) {
         // Transactional email for shipped/delivered. Best-effort, non-blocking,
         // only to a verified contact email, and only on an actual transition so
         // re-saving the same status cannot re-send. Never breaks the response.
-        if ((status === 'shipped' || status === 'delivered') && currentStatus !== status && emailConfigured()) {
+        const EMAIL_STATUSES = ['shipped', 'delivered', 'approved_ship', 'approved_pickup', 'cancelled'];
+        if (EMAIL_STATUSES.includes(status) && currentStatus !== status && emailConfigured()) {
           const { data: buyer } = await supabase
             .from('profiles')
             .select('contact_email, email_verified, full_name')
             .eq('id', orderRow.buyer_id)
             .maybeSingle();
           if (buyer?.contact_email && buyer.email_verified) {
+            const common = { to: buyer.contact_email, fullName: buyer.full_name, orderId: id };
             if (status === 'shipped') {
-              void sendOrderShippedEmail({ to: buyer.contact_email, fullName: buyer.full_name, orderId: id, trackingNumber: trk }).catch(() => {});
-            } else {
-              void sendOrderDeliveredEmail({ to: buyer.contact_email, fullName: buyer.full_name, orderId: id }).catch(() => {});
+              void sendOrderShippedEmail({ ...common, trackingNumber: trk }).catch(() => {});
+            } else if (status === 'delivered') {
+              void sendOrderDeliveredEmail(common).catch(() => {});
+            } else if (status === 'approved_ship' || status === 'approved_pickup') {
+              void sendOrderApprovedEmail({ ...common, pickup: status === 'approved_pickup' }).catch(() => {});
+            } else if (status === 'cancelled') {
+              void sendOrderCancelledEmail(common).catch(() => {});
             }
           }
         }
