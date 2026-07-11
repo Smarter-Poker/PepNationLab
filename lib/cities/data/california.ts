@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// California — 103 cities
+// California - 103 cities
 const CITIES_CALIFORNIA: City[] = [
   { name: 'Beverly Hills', slug: 'beverly-hills', state: 'California', stateSlug: 'california', stateAbbr: 'CA', population: 34000, medianIncome: 120000, tier: 1, region: 'Greater Los Angeles', county: 'Los Angeles', zips: ['90210', '90211'], localBlurb: 'From the Golden Triangle to Trousdale Estates, top research laboratories in Beverly Hills rely on our research-grade peptides for advanced cellular studies.' },
   { name: 'Newport Beach', slug: 'newport-beach', state: 'California', stateSlug: 'california', stateAbbr: 'CA', population: 85000, medianIncome: 130000, tier: 1, region: 'Orange County', county: 'Orange', zips: ['92660', '92661', '92662', '92663'], localBlurb: 'Researchers in Newport Beach and Corona del Mar demand the highest purity. Our cold-chained fulfillment ensures maximum stability upon arrival.' },

@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Massachusetts — 30 cities (Greater Boston + statewide)
+// Massachusetts - 30 cities (Greater Boston + statewide)
 const CITIES_MASSACHUSETTS: City[] = [
   { name: 'Weston', slug: 'weston', state: 'Massachusetts', stateSlug: 'massachusetts', stateAbbr: 'MA', population: 12000, medianIncome: 230000, tier: 1, region: 'Greater Boston', county: 'Middlesex', zips: ['02493'], localBlurb: 'Weston research groups source our high-purity peptides for longevity and recovery studies backed by full third-party COAs.' },
   { name: 'Wellesley', slug: 'wellesley', state: 'Massachusetts', stateSlug: 'massachusetts', stateAbbr: 'MA', population: 29000, medianIncome: 185000, tier: 1, region: 'Greater Boston', county: 'Norfolk', zips: ['02481', '02482'], localBlurb: 'Wellesley laboratories rely on our lot-traceable compounds and comprehensive certificates of analysis for study protocols.' },

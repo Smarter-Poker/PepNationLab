@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Nevada — 13 cities (Las Vegas Valley + Reno/statewide)
+// Nevada - 13 cities (Las Vegas Valley + Reno/statewide)
 const CITIES_NEVADA: City[] = [
   { name: 'Henderson', slug: 'henderson', state: 'Nevada', stateSlug: 'nevada', stateAbbr: 'NV', population: 320000, medianIncome: 84000, tier: 1, region: 'Las Vegas Valley', county: 'Clark', zips: ['89011', '89012', '89052', '89074'], localBlurb: 'From Green Valley to Anthem, Henderson research groups source our high-purity peptides for recovery, metabolic, and longevity studies with full third-party COAs.' },
   { name: 'Summerlin', slug: 'summerlin', state: 'Nevada', stateSlug: 'nevada', stateAbbr: 'NV', population: 100000, medianIncome: 100000, tier: 1, region: 'Las Vegas Valley', county: 'Clark', zips: ['89135', '89138'], localBlurb: 'Summerlin laboratories on the west side of the valley rely on our lot-traceable compounds and comprehensive certificates of analysis.' },

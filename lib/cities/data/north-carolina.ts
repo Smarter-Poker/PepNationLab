@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// North Carolina — 30 cities (Charlotte + Research Triangle + Triad + coast)
+// North Carolina - 30 cities (Charlotte + Research Triangle + Triad + coast)
 const CITIES_NORTH_CAROLINA: City[] = [
   { name: 'Davidson', slug: 'davidson', state: 'North Carolina', stateSlug: 'north-carolina', stateAbbr: 'NC', population: 15000, medianIncome: 120000, tier: 1, region: 'Greater Charlotte', county: 'Mecklenburg', zips: ['28036'], localBlurb: 'On Lake Norman, Davidson research groups source our high-purity peptides for longevity and recovery studies backed by full third-party COAs.' },
   { name: 'Cornelius', slug: 'cornelius', state: 'North Carolina', stateSlug: 'north-carolina', stateAbbr: 'NC', population: 32000, medianIncome: 98000, tier: 1, region: 'Greater Charlotte', county: 'Mecklenburg', zips: ['28031'], localBlurb: 'Cornelius laboratories rely on our lot-traceable compounds and comprehensive certificates of analysis for study protocols.' },

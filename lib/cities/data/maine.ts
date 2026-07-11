@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Maine — 8 cities
+// Maine - 8 cities
 const CITIES_MAINE: City[] = [
   { name: 'Portland', slug: 'portland', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 68000, medianIncome: 66000, tier: 2, region: 'Greater Portland', county: 'Cumberland', zips: ['04101', '04102', '04103'], localBlurb: 'Portland is home to Maine Medical Center, the state\'s largest hospital and a major teaching campus.' },
   { name: 'Falmouth', slug: 'falmouth', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 12500, medianIncome: 120000, tier: 1, region: 'Greater Portland', county: 'Cumberland', zips: ['04105'], localBlurb: 'Falmouth\'s Foreside neighborhoods make it one of Maine\'s wealthiest coastal towns, just north of Portland\'s medical district.' },

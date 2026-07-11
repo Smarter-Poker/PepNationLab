@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Alabama — 4 cities
+// Alabama - 4 cities
 const CITIES_ALABAMA: City[] = [
   { name: 'Mountain Brook', slug: 'mountain-brook', state: 'Alabama', stateSlug: 'alabama', stateAbbr: 'AL', population: 21000, medianIncome: 155000, tier: 1, region: 'Greater Birmingham' },
   { name: 'Vestavia Hills', slug: 'vestavia-hills', state: 'Alabama', stateSlug: 'alabama', stateAbbr: 'AL', population: 35000, medianIncome: 95000, tier: 2, region: 'Greater Birmingham' },

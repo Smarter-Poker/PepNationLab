@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// West Virginia — 6 cities
+// West Virginia - 6 cities
 const CITIES_WEST_VIRGINIA: City[] = [
   { name: 'Morgantown', slug: 'morgantown', state: 'West Virginia', stateSlug: 'west-virginia', stateAbbr: 'WV', population: 30000, medianIncome: 45000, tier: 2, region: 'North Central West Virginia', county: 'Monongalia', zips: ['26505', '26508'], localBlurb: 'Morgantown is home to WVU Medicine\'s J.W. Ruby Memorial Hospital and the Rockefeller Neuroscience Institute.' },
   { name: 'Charleston', slug: 'charleston', state: 'West Virginia', stateSlug: 'west-virginia', stateAbbr: 'WV', population: 48000, medianIncome: 50000, tier: 3, region: 'Kanawha Valley', county: 'Kanawha', zips: ['25301', '25314'], localBlurb: 'Charleston, the state capital, is anchored by the Charleston Area Medical Center network.' },

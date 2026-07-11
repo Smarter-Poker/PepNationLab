@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Ohio — 31 cities (Columbus + Cleveland + Cincinnati metros + statewide)
+// Ohio - 31 cities (Columbus + Cleveland + Cincinnati metros + statewide)
 const CITIES_OHIO: City[] = [
   { name: 'New Albany', slug: 'new-albany', state: 'Ohio', stateSlug: 'ohio', stateAbbr: 'OH', population: 11000, medianIncome: 140000, tier: 1, region: 'Greater Columbus', county: 'Franklin', zips: ['43054'], localBlurb: 'New Albany research groups source our high-purity peptides for longevity and recovery studies backed by full third-party COAs.' },
   { name: 'Upper Arlington', slug: 'upper-arlington', state: 'Ohio', stateSlug: 'ohio', stateAbbr: 'OH', population: 36000, medianIncome: 130000, tier: 1, region: 'Greater Columbus', county: 'Franklin', zips: ['43221'], localBlurb: 'Upper Arlington laboratories rely on our lot-traceable compounds and comprehensive certificates of analysis.' },

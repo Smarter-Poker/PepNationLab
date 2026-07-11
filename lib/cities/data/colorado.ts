@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Colorado — 30 cities (Front Range core + statewide markets)
+// Colorado - 30 cities (Front Range core + statewide markets)
 const CITIES_COLORADO: City[] = [
   { name: 'Boulder', slug: 'boulder', state: 'Colorado', stateSlug: 'colorado', stateAbbr: 'CO', population: 108000, medianIncome: 82000, tier: 1, region: 'Front Range', county: 'Boulder', zips: ['80301', '80302', '80304'], localBlurb: 'Boulder is a national research hub, and its laboratories source our high-purity peptides for longevity, mitochondrial, and recovery studies with complete third-party COAs.' },
   { name: 'Cherry Hills Village', slug: 'cherry-hills-village', state: 'Colorado', stateSlug: 'colorado', stateAbbr: 'CO', population: 6500, medianIncome: 250000, tier: 1, region: 'Metro Denver', county: 'Arapahoe', zips: ['80113'], localBlurb: 'Private researchers in Cherry Hills Village select our compounds for guaranteed purity, cold-chain handling, and full lot documentation.' },

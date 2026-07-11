@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Mississippi — 7 cities
+// Mississippi - 7 cities
 const CITIES_MISSISSIPPI: City[] = [
   { name: 'Jackson', slug: 'jackson', state: 'Mississippi', stateSlug: 'mississippi', stateAbbr: 'MS', population: 150000, medianIncome: 40000, tier: 3, region: 'Jackson Metro', county: 'Hinds', zips: ['39202', '39211', '39216'], localBlurb: 'Jackson is home to the University of Mississippi Medical Center, the state\'s only academic health science center.' },
   { name: 'Madison', slug: 'madison', state: 'Mississippi', stateSlug: 'mississippi', stateAbbr: 'MS', population: 27000, medianIncome: 110000, tier: 1, region: 'Jackson Metro', county: 'Madison', zips: ['39110'], localBlurb: 'Madison is the Jackson metro\'s wealthiest suburb, minutes from the capital\'s Baptist and St. Dominic hospital campuses.' },

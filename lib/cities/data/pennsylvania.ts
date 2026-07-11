@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Pennsylvania — 32 cities (Main Line/Philadelphia + Pittsburgh + statewide)
+// Pennsylvania - 32 cities (Main Line/Philadelphia + Pittsburgh + statewide)
 const CITIES_PENNSYLVANIA: City[] = [
   { name: 'Villanova', slug: 'villanova', state: 'Pennsylvania', stateSlug: 'pennsylvania', stateAbbr: 'PA', population: 9500, medianIncome: 175000, tier: 1, region: 'Main Line', county: 'Delaware', zips: ['19085'], localBlurb: 'On Philadelphia’s Main Line, Villanova research groups source our high-purity peptides for longevity and recovery studies backed by full third-party COAs.' },
   { name: 'Wayne', slug: 'wayne', state: 'Pennsylvania', stateSlug: 'pennsylvania', stateAbbr: 'PA', population: 19000, medianIncome: 110000, tier: 1, region: 'Main Line', county: 'Delaware', zips: ['19087'], localBlurb: 'Wayne laboratories along the Main Line rely on our lot-traceable compounds and comprehensive certificates of analysis.' },

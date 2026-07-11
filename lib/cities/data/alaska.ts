@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Alaska — 5 cities
+// Alaska - 5 cities
 const CITIES_ALASKA: City[] = [
   { name: 'Anchorage', slug: 'anchorage', state: 'Alaska', stateSlug: 'alaska', stateAbbr: 'AK', population: 291000, medianIncome: 90000, tier: 2, region: 'Southcentral Alaska', county: 'Anchorage', zips: ['99501', '99503', '99508'], localBlurb: 'Anchorage is home to Providence Alaska Medical Center, the state\'s largest hospital, and the Alaska Native Medical Center campus.' },
   { name: 'Juneau', slug: 'juneau', state: 'Alaska', stateSlug: 'alaska', stateAbbr: 'AK', population: 32000, medianIncome: 90000, tier: 3, region: 'Southeast Alaska', county: 'Juneau', zips: ['99801'], localBlurb: 'Juneau, the state capital, is anchored by Bartlett Regional Hospital on the Gastineau Channel.' },

@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Utah — 5 cities
+// Utah - 5 cities
 const CITIES_UTAH: City[] = [
   { name: 'Park City', slug: 'park-city', state: 'Utah', stateSlug: 'utah', stateAbbr: 'UT', population: 8500, medianIncome: 105000, tier: 1 },
   { name: 'Draper', slug: 'draper', state: 'Utah', stateSlug: 'utah', stateAbbr: 'UT', population: 50000, medianIncome: 100000, tier: 2, region: 'Greater Salt Lake City' },

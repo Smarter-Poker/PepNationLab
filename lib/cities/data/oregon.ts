@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Oregon — 6 cities
+// Oregon - 6 cities
 const CITIES_OREGON: City[] = [
   { name: 'Lake Oswego', slug: 'lake-oswego', state: 'Oregon', stateSlug: 'oregon', stateAbbr: 'OR', population: 40000, medianIncome: 100000, tier: 2, region: 'Greater Portland' },
   { name: 'West Linn', slug: 'west-linn', state: 'Oregon', stateSlug: 'oregon', stateAbbr: 'OR', population: 27000, medianIncome: 102000, tier: 2, region: 'Greater Portland' },

@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Virginia — 31 cities (Northern Virginia + Hampton Roads + statewide)
+// Virginia - 31 cities (Northern Virginia + Hampton Roads + statewide)
 const CITIES_VIRGINIA: City[] = [
   { name: 'Great Falls', slug: 'great-falls', state: 'Virginia', stateSlug: 'virginia', stateAbbr: 'VA', population: 15000, medianIncome: 218000, tier: 1, region: 'Northern Virginia', county: 'Fairfax', zips: ['22066'], localBlurb: 'Great Falls research groups source our high-purity peptides for longevity and recovery studies backed by full third-party COAs.' },
   { name: 'McLean', slug: 'mclean', state: 'Virginia', stateSlug: 'virginia', stateAbbr: 'VA', population: 48000, medianIncome: 200000, tier: 1, region: 'Northern Virginia', county: 'Fairfax', zips: ['22101', '22102'], localBlurb: 'McLean laboratories rely on our lot-traceable compounds and comprehensive certificates of analysis for study protocols.' },

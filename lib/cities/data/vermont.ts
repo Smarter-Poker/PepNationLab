@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Vermont — 6 cities
+// Vermont - 6 cities
 const CITIES_VERMONT: City[] = [
   { name: 'Burlington', slug: 'burlington', state: 'Vermont', stateSlug: 'vermont', stateAbbr: 'VT', population: 44000, medianIncome: 60000, tier: 2, region: 'Greater Burlington', county: 'Chittenden', zips: ['05401', '05408'], localBlurb: 'Burlington is home to the University of Vermont Medical Center, the state\'s academic health campus.' },
   { name: 'South Burlington', slug: 'south-burlington', state: 'Vermont', stateSlug: 'vermont', stateAbbr: 'VT', population: 20000, medianIncome: 78000, tier: 2, region: 'Greater Burlington', county: 'Chittenden', zips: ['05403'], localBlurb: 'South Burlington hosts the University of Vermont Medical Center\'s Tilley Drive outpatient campus.' },

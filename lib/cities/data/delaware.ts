@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Delaware — 7 cities
+// Delaware - 7 cities
 const CITIES_DELAWARE: City[] = [
   { name: 'Wilmington', slug: 'wilmington', state: 'Delaware', stateSlug: 'delaware', stateAbbr: 'DE', population: 71000, medianIncome: 55000, tier: 2, region: 'Wilmington Metro', county: 'New Castle', zips: ['19801', '19806'], localBlurb: 'Wilmington is home to Nemours Children\'s Hospital and ChristianaCare\'s Wilmington campus.' },
   { name: 'Greenville', slug: 'greenville', state: 'Delaware', stateSlug: 'delaware', stateAbbr: 'DE', population: 2500, medianIncome: 150000, tier: 1, region: 'Wilmington Metro', county: 'New Castle', zips: ['19807'], localBlurb: 'Greenville anchors Delaware\'s chateau country near the Winterthur research library and Wilmington\'s medical corridor.' },

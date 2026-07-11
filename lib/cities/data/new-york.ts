@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// New York — 77 cities
+// New York - 77 cities
 const CITIES_NEW_YORK: City[] = [
   {
     name: 'New York City', slug: 'new-york-city', state: 'New York', stateSlug: 'new-york', stateAbbr: 'NY',
@@ -294,7 +294,7 @@ const CITIES_NEW_YORK: City[] = [
     name: 'Albany', slug: 'albany', state: 'New York', stateSlug: 'new-york', stateAbbr: 'NY',
     population: 99000, medianIncome: 50000, tier: 2, region: 'Capital Region', county: 'Albany',
     zips: ['12203', '12208', '12210'],
-    localBlurb: 'The state capital, home to Albany Medical Center and Albany Med College — the Capital Region’s largest academic-medical and research hub.',
+    localBlurb: 'The state capital, home to Albany Medical Center and Albany Med College, the Capital Region’s largest academic-medical and research hub.',
   },
   {
     name: 'Saratoga Springs', slug: 'saratoga-springs', state: 'New York', stateSlug: 'new-york', stateAbbr: 'NY',

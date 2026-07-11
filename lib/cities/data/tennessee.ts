@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Tennessee — 27 cities (Nashville + Memphis + Knoxville metros + statewide)
+// Tennessee - 27 cities (Nashville + Memphis + Knoxville metros + statewide)
 const CITIES_TENNESSEE: City[] = [
   { name: 'Brentwood', slug: 'brentwood', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 45000, medianIncome: 165000, tier: 1, region: 'Greater Nashville', county: 'Williamson', zips: ['37027'], localBlurb: 'Brentwood research groups source our high-purity peptides for longevity and recovery studies backed by full third-party COAs.' },
   { name: 'Nolensville', slug: 'nolensville', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 14000, medianIncome: 145000, tier: 1, region: 'Greater Nashville', county: 'Williamson', zips: ['37135'], localBlurb: 'Nolensville laboratories rely on our lot-traceable compounds and comprehensive certificates of analysis for study protocols.' },

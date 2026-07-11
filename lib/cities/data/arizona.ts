@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Arizona — 12 cities
+// Arizona - 12 cities
 const CITIES_ARIZONA: City[] = [
   { name: 'Scottsdale', slug: 'scottsdale', state: 'Arizona', stateSlug: 'arizona', stateAbbr: 'AZ', population: 258000, medianIncome: 85000, tier: 1, region: 'Greater Phoenix', county: 'Maricopa', zips: ['85250', '85251', '85253', '85255'], localBlurb: 'From North Scottsdale to the Airpark, advanced research laboratories use our high-purity peptides to study tissue recovery and longevity pathways.' },
   { name: 'Paradise Valley', slug: 'paradise-valley', state: 'Arizona', stateSlug: 'arizona', stateAbbr: 'AZ', population: 14000, medianIncome: 225000, tier: 1, region: 'Greater Phoenix', county: 'Maricopa', zips: ['85253'], localBlurb: 'Private and independent researchers in Paradise Valley select our compounds for their guaranteed stability and comprehensive COA documentation.' },

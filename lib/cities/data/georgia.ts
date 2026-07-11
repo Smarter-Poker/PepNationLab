@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Georgia — 44 cities (Atlanta metro core + statewide markets)
+// Georgia - 44 cities (Atlanta metro core + statewide markets)
 const CITIES_GEORGIA: City[] = [
   { name: 'Alpharetta', slug: 'alpharetta', state: 'Georgia', stateSlug: 'georgia', stateAbbr: 'GA', population: 65000, medianIncome: 108000, tier: 1, region: 'Metro Atlanta', county: 'Fulton', zips: ['30004', '30005', '30009', '30022'], localBlurb: 'Across the Alpharetta tech corridor and Avalon, high-throughput research groups source our high-purity peptides for tissue-repair and metabolic pathway studies backed by third-party COAs.' },
   { name: 'Johns Creek', slug: 'johns-creek', state: 'Georgia', stateSlug: 'georgia', stateAbbr: 'GA', population: 82000, medianIncome: 122000, tier: 1, region: 'Metro Atlanta', county: 'Fulton', zips: ['30022', '30097'], localBlurb: 'Johns Creek research laboratories rely on our lot-traceable compounds and comprehensive certificates of analysis for longevity and recovery investigations.' },

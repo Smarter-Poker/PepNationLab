@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Kentucky — 8 cities
+// Kentucky - 8 cities
 const CITIES_KENTUCKY: City[] = [
   { name: 'Louisville', slug: 'louisville', state: 'Kentucky', stateSlug: 'kentucky', stateAbbr: 'KY', population: 625000, medianIncome: 58000, tier: 2, region: 'Louisville Metro', county: 'Jefferson', zips: ['40202', '40207'], localBlurb: 'Louisville\'s downtown medical district pairs UofL Health with the Norton Healthcare hospital campuses.' },
   { name: 'Prospect', slug: 'prospect', state: 'Kentucky', stateSlug: 'kentucky', stateAbbr: 'KY', population: 4900, medianIncome: 150000, tier: 1, region: 'Louisville Metro', county: 'Jefferson', zips: ['40059'], localBlurb: 'Prospect is Louisville\'s wealthiest suburb, minutes from Norton Brownsboro Hospital on the east end.' },
