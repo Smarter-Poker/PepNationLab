@@ -80,10 +80,12 @@ function asTrimmedString(v: unknown, maxLen = 200): string | null {
 function escapeIlike(text: string): string {
   // Escape PostgreSQL ILIKE special characters so user input cannot run wildcard
   // injections. Escapes: \ % _ and [ (POSIX character-class delimiter).
-  // Also strip commas -- they act as condition separators in PostgREST .or() filters
-  // and cannot be backslash-escaped, so a comma in the search term would split the
-  // filter string and corrupt the query.
-  return text.replace(/[\\%_[]/g, m => `\\${m}`).replace(/,/g, '');
+  // Also strip commas AND parentheses -- both are PostgREST .or() grammar: a comma
+  // separates conditions and a ')' prematurely closes the or=(...) group. Neither
+  // can be backslash-escaped inside the filter string, so a search term containing
+  // them would corrupt the query (400/500). The query is still hard-scoped by
+  // .eq('agent_id', ...) so this is query-integrity hardening, not a data leak.
+  return text.replace(/[\\%_[]/g, m => `\\${m}`).replace(/[,()]/g, '');
 }
 
 const SORT_OPTIONS: ReadonlySet<SortKey> = new Set<SortKey>([
