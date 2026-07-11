@@ -90,7 +90,9 @@ export async function POST(req: NextRequest) {
     const agentSlug = typeof body?.agentSlug === 'string' ? body.agentSlug.trim().toLowerCase() : null;
 
     if (productIds.length === 0) {
-      return NextResponse.json({ recommendations: [] });
+      return NextResponse.json({ recommendations: [] }, {
+        headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+      });
     }
 
     const supabase = await createServiceClient();
@@ -264,7 +266,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (allCandidateIds.size === 0) {
-      return NextResponse.json({ recommendations: [] });
+      return NextResponse.json({ recommendations: [] }, {
+        headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+      });
     }
 
     // -- 7. Fetch full product details for candidates ----------------------------
@@ -359,7 +363,9 @@ export async function POST(req: NextRequest) {
     // Return top 8
     const recommendations = scored.slice(0, 8);
 
-    return NextResponse.json({ recommendations });
+    return NextResponse.json({ recommendations }, {
+      headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+    });
   } catch (err) {
     console.error('[cart/recommendations] POST error:', err);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

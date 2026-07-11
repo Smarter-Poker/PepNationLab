@@ -99,7 +99,8 @@ export async function GET(
       `)
       .eq('agent_id', agent.id)
       .eq('is_visible', true)
-      .order('sort_order', { nullsFirst: false }),
+      .order('sort_order', { nullsFirst: false })
+      .limit(250),
 
     supabase
       .rpc('agent_inventory_for_storefront', { p_slug: agentSlug }),
