@@ -65,6 +65,10 @@ const PUBLIC_ROUTES = [
   '/privacy',
   '/compliance',
   '/disclaimer',
+  // Public Certificate Of Analysis verification. A researcher holding a vial
+  // must be able to check its lot number and view the certificate without an
+  // account. Covers /coa, /coa?lot=..., and /coa/<lot>/certificate.
+  '/coa',
   '/account/change-password',
   '/api/auth/resolve',
   '/api/auth/signout',
