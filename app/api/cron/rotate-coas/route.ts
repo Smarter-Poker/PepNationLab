@@ -183,7 +183,7 @@ export async function GET(req: NextRequest) {
 
   if (!raw || raw.length === 0) {
     console.log('[rotate-coas] no lots due for rotation');
-    await finishCronRun(claim.id, 'succeeded', { message: 'No lots due', rotated: 0 });
+    await finishCronRun(claim.id, 'succeeded', JSON.stringify({ message: 'No lots due', rotated: 0 }));
     return NextResponse.json({ message: 'No lots due for rotation', rotated: 0 });
   }
 
@@ -312,7 +312,7 @@ export async function GET(req: NextRequest) {
         });
 
         if (insertErr) {
-          supabase.storage.from('product-coas').remove([storageKey]).then(() => {}).catch(() => {});
+          void supabase.storage.from('product-coas').remove([storageKey]);
           errors.push(`${lot.product_name}: INSERT failed — ${insertErr.message}`);
           continue;
         }
@@ -328,9 +328,8 @@ export async function GET(req: NextRequest) {
         }
 
         // Async cleanup
-        supabase.storage.from('product-coas')
-          .remove([`chromatograms/${lot.id}.png`, `chromatograms/${lot.id}.svg`])
-          .then(() => {}).catch(() => {});
+        void supabase.storage.from('product-coas')
+          .remove([`chromatograms/${lot.id}.png`, `chromatograms/${lot.id}.svg`]);
 
         rotated.push(`${lot.product_name}: ${lot.lot_number} → ${newLot} (${newPurity}%)`);
         console.log(`[rotate-coas] ✓ ${lot.product_name} ${lot.lot_number} → ${newLot} (${newPurity}%)`);
@@ -347,10 +346,12 @@ export async function GET(req: NextRequest) {
       if (enableErr) throw enableErr;
     } catch (e) {
       console.error('[rotate-coas] CRITICAL: could not re-enable triggers:', e);
-      await supabase.from('admin_audit_log').insert({
-        action: 'coa_rotation_trigger_re_enable_failed',
-        details: { error: String(e), timestamp: new Date().toISOString() },
-      }).then(() => {}).catch(() => {});
+      try {
+        await supabase.from('admin_audit_log').insert({
+          action: 'coa_rotation_trigger_re_enable_failed',
+          details: { error: String(e), timestamp: new Date().toISOString() },
+        });
+      } catch {}
     }
   }
 
@@ -362,7 +363,7 @@ export async function GET(req: NextRequest) {
   };
 
   // 7. Finish claim
-  await finishCronRun(claim.id, errors.length > 0 ? 'partial_failure' : 'succeeded', report);
+  await finishCronRun(claim.id, errors.length > 0 ? 'partial_failure' : 'succeeded', JSON.stringify(report));
 
   return NextResponse.json(report);
 }
