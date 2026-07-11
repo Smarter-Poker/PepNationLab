@@ -7,7 +7,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
-import { validateAddress, type AddressInput } from '@/lib/shippo';
+import { validateAddress, type AddressInput } from '@/lib/shipping';
 import { createServiceClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +19,7 @@ export async function GET() {
   const supabase = await createServiceClient();
   const { data, error } = await supabase
     .from('shipping_origins')
-    .select('id, label, name, company, street1, street2, city, state, zip, country, phone, email, is_default, is_active, shippo_address_id, created_at, updated_at')
+    .select('id, label, name, company, street1, street2, city, state, zip, country, phone, email, is_default, is_active, provider_address_id, created_at, updated_at')
     .order('is_default', { ascending: false })
     .order('created_at', { ascending: false });
 
@@ -66,24 +66,24 @@ export async function POST(req: NextRequest) {
 
   const addrInput: AddressInput = { name, company: company ?? undefined, street1, street2: street2 ?? undefined, city, state, zip, country, phone, email };
 
-  let shippoAddressId: string | null = null;
+  let providerAddressId: string | null = null;
   let validationWarning: string | null = null;
 
   try {
     const validation = await validateAddress(addrInput);
     if (!validation.isValid) return NextResponse.json({ error: 'Address Validation Failed.', messages: validation.messages, suggestion: validation.suggestion ?? null }, { status: 422 });
-    shippoAddressId = validation.shippoAddressId ?? null;
+    providerAddressId = validation.providerAddressId ?? null;
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Shippo Unavailable';
+    const msg = err instanceof Error ? err.message : 'EasyPost Unavailable';
     validationWarning = `Address Not Validated: ${msg}`;
   }
 
   const supabase = await createServiceClient();
   if (isDefault) await supabase.from('shipping_origins').update({ is_default: false }).eq('is_default', true);
 
-  const { data: inserted, error: insertErr } = await supabase.from('shipping_origins').insert({ label, name, company: company || null, street1, street2: street2 || null, city, state, zip, country, phone, email, is_default: isDefault, is_active: true, shippo_address_id: shippoAddressId }).select().maybeSingle();
+  const { data: inserted, error: insertErr } = await supabase.from('shipping_origins').insert({ label, name, company: company || null, street1, street2: street2 || null, city, state, zip, country, phone, email, is_default: isDefault, is_active: true, provider_address_id: providerAddressId }).select().maybeSingle();
   if (insertErr || !inserted) return NextResponse.json({ error: 'A database error occurred.' }, { status: 500 });
 
-  await supabase.from('admin_audit_log').insert({ actor_id: gate.userId, action: 'shipping_origin_create', entity_type: 'shipping_origins', entity_id: inserted.id, changes: { label, is_default: isDefault, shippo_validated: !!shippoAddressId } });
+  await supabase.from('admin_audit_log').insert({ actor_id: gate.userId, action: 'shipping_origin_create', entity_type: 'shipping_origins', entity_id: inserted.id, changes: { label, is_default: isDefault, provider_validated: !!providerAddressId } });
   return NextResponse.json({ ok: true, origin: inserted, warning: validationWarning }, { status: 201 });
 }

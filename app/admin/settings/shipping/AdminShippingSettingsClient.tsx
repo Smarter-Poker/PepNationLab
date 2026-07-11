@@ -23,7 +23,7 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-interface ShippoStatus {
+interface ProviderStatus {
   connected: boolean;
   mode: 'test' | 'live' | null;
   last4: string | null;
@@ -68,7 +68,7 @@ interface ShippingOrigin {
   email: string;
   is_default: boolean;
   is_active: boolean;
-  shippo_address_id: string | null;
+  provider_address_id: string | null;
   created_at: string;
   assigned_agents?: Array<{ id: string; display_name: string; slug: string }>;
 }
@@ -118,7 +118,7 @@ const EMPTY_ORIGIN: OriginFormData = {
 // ---------------------------------------------------------------------------
 
 export default function AdminShippingSettingsClient() {
-  const [status, setStatus] = useState<ShippoStatus | null>(null);
+  const [status, setStatus] = useState<ProviderStatus | null>(null);
   const [origins, setOrigins] = useState<ShippingOrigin[]>([]);
   const [agentWarehouses, setAgentWarehouses] = useState<AgentWarehouse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -163,7 +163,7 @@ export default function AdminShippingSettingsClient() {
 
   const fetchStatus = useCallback(async () => {
     try {
-      const r = await fetch('/api/admin/shippo/status');
+      const r = await fetch('/api/admin/shipping-provider/status');
       if (r.ok) setStatus(await r.json());
     } catch {
       /* no-op */
@@ -184,7 +184,7 @@ export default function AdminShippingSettingsClient() {
 
   const fetchWebhookActivity = useCallback(async () => {
     try {
-      const r = await fetch('/api/admin/shippo/webhook-events');
+      const r = await fetch('/api/admin/shipping-provider/webhook-events');
       if (r.ok) setWebhookActivity(await r.json());
     } catch {
       /* no-op */
@@ -226,14 +226,14 @@ export default function AdminShippingSettingsClient() {
     if (!connectKey.trim()) return;
     setConnectLoading(true);
     try {
-      const r = await fetch('/api/admin/shippo/connect', {
+      const r = await fetch('/api/admin/shipping-provider/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ api_key: connectKey, mode: connectMode, webhook_secret: connectWebhook || undefined }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error ?? 'Connect Failed');
-      showToast('Shippo Connected Successfully.', 'ok');
+      showToast('EasyPost Connected Successfully.', 'ok');
       setConnectKey('');
       setConnectWebhook('');
       await fetchStatus();
@@ -245,12 +245,12 @@ export default function AdminShippingSettingsClient() {
   }
 
   async function handleDisconnect() {
-    if (!confirm('Disconnect Shippo? All New Label Purchases Will Fail Until Reconnected.')) return;
+    if (!confirm('Disconnect EasyPost? All New Label Purchases Will Fail Until Reconnected.')) return;
     try {
-      const r = await fetch('/api/admin/shippo/disconnect', { method: 'DELETE' });
+      const r = await fetch('/api/admin/shipping-provider/disconnect', { method: 'DELETE' });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error ?? 'Disconnect Failed');
-      showToast('Shippo Disconnected.', 'ok');
+      showToast('EasyPost Disconnected.', 'ok');
       await fetchStatus();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Disconnect Failed.', 'err');
@@ -262,7 +262,7 @@ export default function AdminShippingSettingsClient() {
     if (!rotateKey.trim()) return;
     setRotateLoading(true);
     try {
-      const r = await fetch('/api/admin/shippo/rotate', {
+      const r = await fetch('/api/admin/shipping-provider/rotate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ api_key: rotateKey, webhook_secret: rotateWebhook || undefined }),
@@ -299,7 +299,7 @@ export default function AdminShippingSettingsClient() {
       const zip = csTokens.pop() ?? '';
       const state = csTokens.pop() ?? '';
       const city = csTokens.join(' ');
-      const r = await fetch('/api/admin/shippo/test', {
+      const r = await fetch('/api/admin/shipping-provider/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address: { street1, city, state, zip, country: 'US' } }),
@@ -498,7 +498,7 @@ export default function AdminShippingSettingsClient() {
               <div>
                 <div style={{ color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 2 }}>API Key (Last 4)</div>
                 <div style={{ color: 'var(--white)', fontFamily: 'monospace', fontSize: '0.95rem' }}>
-                  shippo_****{status.last4}
+                  EZ****{status.last4}
                 </div>
               </div>
               <div>
@@ -530,7 +530,7 @@ export default function AdminShippingSettingsClient() {
             )}
             <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
               <button
-                id="btn-shippo-rotate-toggle"
+                id="btn-provider-rotate-toggle"
                 className="btn-secondary"
                 style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
                 onClick={() => setShowRotate(!showRotate)}
@@ -539,7 +539,7 @@ export default function AdminShippingSettingsClient() {
                 Rotate Key
               </button>
               <button
-                id="btn-shippo-disconnect"
+                id="btn-provider-disconnect"
                 className="btn-danger"
                 style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
                 onClick={handleDisconnect}
@@ -558,7 +558,7 @@ export default function AdminShippingSettingsClient() {
                   id="rotate-api-key"
                   className="input"
                   type="password"
-                  placeholder="shippo_test_... or shippo_live_..."
+                  placeholder="EZTK... Or EZAK..."
                   value={rotateKey}
                   onChange={(e) => setRotateKey(e.target.value)}
                   required
@@ -585,7 +585,7 @@ export default function AdminShippingSettingsClient() {
         ) : (
           <form onSubmit={handleConnect} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             <div style={{ color: 'var(--silver)', fontSize: '0.88rem', marginBottom: 'var(--space-1)' }}>
-              Connect Your Shippo Platform Account To Enable Live Carrier Rates And Label Purchasing.
+              Connect Your EasyPost Platform Account To Enable Live Carrier Rates And Label Purchasing.
             </div>
             <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
               <div style={{ flex: 1 }}>
@@ -596,7 +596,7 @@ export default function AdminShippingSettingsClient() {
                   id="connect-api-key"
                   className="input"
                   type="password"
-                  placeholder="shippo_test_... or shippo_live_..."
+                  placeholder="EZTK... Or EZAK..."
                   value={connectKey}
                   onChange={(e) => setConnectKey(e.target.value)}
                   required
@@ -625,13 +625,13 @@ export default function AdminShippingSettingsClient() {
                 id="connect-webhook-secret"
                 className="input"
                 type="password"
-                placeholder="HMAC Signing Secret From Shippo Dashboard"
+                placeholder="HMAC Signing Secret From EasyPost Dashboard"
                 value={connectWebhook}
                 onChange={(e) => setConnectWebhook(e.target.value)}
               />
             </div>
             <button id="btn-connect-submit" className="btn-primary" type="submit" disabled={connectLoading} style={{ alignSelf: 'flex-start' }}>
-              {connectLoading ? 'Connecting...' : 'Connect Shippo'}
+              {connectLoading ? 'Connecting...' : 'Connect EasyPost'}
             </button>
           </form>
         )}
@@ -764,7 +764,7 @@ export default function AdminShippingSettingsClient() {
                     {o.is_default && (
                       <span style={{ background: 'var(--teal)', color: 'var(--black)', fontSize: '0.65rem', fontWeight: 700, padding: '1px 7px', borderRadius: 100 }}>Default</span>
                     )}
-                    {o.shippo_address_id && (
+                    {o.provider_address_id && (
                       <span style={{ background: 'rgba(0,196,188,0.1)', color: 'var(--teal)', fontSize: '0.65rem', padding: '1px 7px', borderRadius: 100 }}>
                         <Check size={10} style={{ display: 'inline', marginRight: 2 }} />Validated
                       </span>
@@ -824,7 +824,7 @@ export default function AdminShippingSettingsClient() {
         </form>
         {!status?.connected && (
           <div style={{ color: 'var(--silver)', fontSize: '0.8rem', marginTop: 'var(--space-2)' }}>
-            Connect Shippo First To Validate Addresses.
+            Connect EasyPost First To Validate Addresses.
           </div>
         )}
         {testResult && (
@@ -854,11 +854,11 @@ export default function AdminShippingSettingsClient() {
         </div>
         <div style={{ color: 'var(--silver)', fontSize: '0.88rem', lineHeight: 1.6 }}>
           <p style={{ margin: '0 0 var(--space-3)' }}>
-            Live Carrier Rates Are Fetched At Checkout From Shippo Using The Active Platform Account.
+            Live Carrier Rates Are Fetched At Checkout From EasyPost Using The Active Platform Account.
             Allowed Carriers: <strong style={{ color: 'var(--white)' }}>USPS, UPS, FedEx, DHL Express</strong>.
           </p>
           <p style={{ margin: 0 }}>
-            Fallback Weight Brackets Apply When Shippo Is Unavailable. Rates Appear As
+            Fallback Weight Brackets Apply When EasyPost Is Unavailable. Rates Appear As
             <strong style={{ color: '#f59e0b' }}> &ldquo;Estimated Shipping&rdquo;</strong> In The Checkout UI.
           </p>
         </div>
@@ -1023,14 +1023,18 @@ export default function AdminShippingSettingsClient() {
         <div style={{ color: 'var(--silver)', fontSize: '0.88rem', lineHeight: 1.6 }}>
           <p style={{ margin: '0 0 var(--space-3)' }}>
             Webhook Endpoint: <code style={{ color: 'var(--teal)', background: 'rgba(0,196,188,0.08)', padding: '2px 6px', borderRadius: 4, fontSize: '0.82rem' }}>
-              POST /api/webhooks/shippo
+              POST /api/webhooks/easypost
             </code>
+          </p>
+          <p style={{ margin: '0 0 var(--space-3)' }}>
+            Create A Webhook In The EasyPost Dashboard Pointing To https://pepnationlab.com/api/webhooks/easypost And Set A Webhook Secret.
+            Events Are Verified Via The X-Hmac-Signature Header.
           </p>
           {!status?.webhook_configured && (
             <p style={{ margin: 0, color: '#f59e0b' }}>
               <AlertTriangle size={14} style={{ display: 'inline', marginRight: 6 }} />
-              Set SHIPPO_WEBHOOK_SECRET In Vercel Environment Variables Once Shippo Provisions Your HMAC Key.
-              Without It, The Receiver Falls Back To URL-Token Mode.
+              Set EASYPOST_WEBHOOK_SECRET In Vercel Environment Variables Once You Configure The Webhook Secret In EasyPost.
+              Without It, Inbound Webhook Signatures Cannot Be Verified.
             </p>
           )}
           {status?.webhook_configured && (
@@ -1065,7 +1069,7 @@ export default function AdminShippingSettingsClient() {
             </div>
             {webhookActivity.recent.length === 0 ? (
               <p style={{ color: 'var(--silver)', fontSize: '0.82rem', margin: 0 }}>
-                No Webhook Events Recorded Yet. They Will Appear Here Once Shippo Starts Sending Tracking Updates.
+                No Webhook Events Recorded Yet. They Will Appear Here Once EasyPost Starts Sending Tracking Updates.
               </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>

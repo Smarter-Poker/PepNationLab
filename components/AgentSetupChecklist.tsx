@@ -20,7 +20,6 @@ interface AgentSetupChecklistProps {
     slug?: string | null;
     warehouse_address?: Record<string, unknown> | null;
     payment_handles?: Record<string, unknown> | null;
-    shippo_api_key_present?: boolean;
     is_active?: boolean | null;
 }
   | null;
@@ -47,7 +46,6 @@ export default function AgentSetupChecklist({ agentProfile, onOpenConfig }: Agen
   const warehouseEmpty = !warehouse || !warehouse.street1 || !warehouse.city || !warehouse.state || !warehouse.zip;
   const handles = agentProfile.payment_handles;
   const handlesEmpty = !handles || Object.keys(handles).every((k) => !handles[k]);
-  const shippoMissing = !agentProfile.shippo_api_key_present;
   const inactive = agentProfile.is_active === false;
   if (!inactive) return null;
   if (!slugMissing && !warehouseEmpty && !handlesEmpty) return null;
@@ -68,7 +66,6 @@ export default function AgentSetupChecklist({ agentProfile, onOpenConfig }: Agen
             <StepRow done={!slugMissing} label="Pick A Storefront Slug" />
             <StepRow done={!warehouseEmpty} label="Add Warehouse Address" />
             <StepRow done={!handlesEmpty} label="Add Payment Handles" />
-            <StepRow done={!shippoMissing} label="Add Shippo Key (Optional)" />
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>

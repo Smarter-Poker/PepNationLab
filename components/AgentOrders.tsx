@@ -630,7 +630,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
 
                     {/* Buy-label removed: agents no longer purchase labels before
                         the admin-approval gate. After an admin releases the order to
-                        approved_ship, the label is auto-enqueued (shippo_enqueue_label_job)
+                        approved_ship, the label is auto-enqueued (shipping_enqueue_label_job)
                         and drained by the label-jobs cron, or bought by admin/shipping. */}
                   </div>
                 )}

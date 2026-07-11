@@ -5,7 +5,7 @@
  *
  * Body: { address: AddressInput }
  *
- * Validates an address via Shippo and returns isValid, messages, suggestion.
+ * Validates an address via EasyPost and returns isValid, messages, suggestion.
  * Used by the checkout form on address field blur (debounced on the client).
  *
  * Auth: authenticated user (any role).
@@ -14,7 +14,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
-import { validateAddress, type AddressInput } from '@/lib/shippo';
+import { validateAddress, type AddressInput } from '@/lib/shipping';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 
@@ -86,9 +86,9 @@ export async function POST(req: NextRequest) {
       const result = await validateAddress(addr);
       return NextResponse.json(result);
     } catch (err) {
-      // Shippo not configured or unavailable - return a soft ok so checkout
+      // EasyPost not configured or unavailable - return a soft ok so checkout
       // doesn't block. The server-side label purchase will validate again.
-      const msg = err instanceof Error ? err.message : 'Shippo unavailable';
+      const msg = err instanceof Error ? err.message : 'EasyPost unavailable';
       return NextResponse.json({
         isValid: true,
         messages: [{ text: `Address Validation Skipped: ${msg}` }],

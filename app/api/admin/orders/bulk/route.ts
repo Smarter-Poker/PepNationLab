@@ -12,10 +12,10 @@ import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
 import { notifyAdminOrderStatusChange, notifyOrderShipped } from '@/lib/notify';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
-import { purchaseLabelForOrder } from '@/lib/shippo';
+import { purchaseLabelForOrder } from '@/lib/shipping';
 import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail } from '@/lib/email';
 
-// Labels are purchased synchronously from Shippo in this request (manual, on
+// Labels are purchased synchronously from EasyPost in this request (manual, on
 // admin click) - never via a background cron - so allow extra wall-clock time.
 export const maxDuration = 60;
 
@@ -213,8 +213,8 @@ export async function POST(req: NextRequest) {
   // ---- generate_labels (SYNCHRONOUS / MANUAL) ----------------------------
   // Labels are purchased on-demand right here, the moment the admin clicks
   // "Generate Labels" - never queued for a background cron. Each label is
-  // bought from Shippo synchronously and its URL returned in this response.
-  // Capped per request so the synchronous Shippo calls stay within the
+  // bought from EasyPost synchronously and its URL returned in this response.
+  // Capped per request so the synchronous EasyPost calls stay within the
   // function timeout; the admin runs another batch for more.
   if (ids.length > 30) {
     return NextResponse.json(
@@ -242,7 +242,7 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    // Purchase the label NOW (manual, synchronous) via the platform Shippo
+    // Purchase the label NOW (manual, synchronous) via the platform EasyPost
     // account. purchaseLabelForOrder is idempotent per order_id, so a repeat
     // click returns the existing label instead of double-buying.
     const result = await purchaseLabelForOrder(supabase, {

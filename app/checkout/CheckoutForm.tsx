@@ -11,7 +11,7 @@ import { US_STATES } from '@/lib/us-states';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
 import { toTitleCase } from '@/lib/categoryImage';
 import { createClient } from '@/lib/supabase/client';
-import { calculateShippingCost as getShippingCost, ShippingOption } from '@/lib/shipping';
+import { calculateShippingCost as getShippingCost, ShippingOption } from '@/lib/shipping-cost';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
 import { trackStorefrontEvent } from '@/lib/track';
@@ -171,6 +171,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const submittedRef = useRef<boolean>(false);
 
   const [liveShippingRate, setLiveShippingRate] = useState<number | null>(null);
+  // True when the shown rate is the flat weight-based estimate rather than a
+  // live carrier quote, so the summary can label it honestly.
+  const [shippingEstimated, setShippingEstimated] = useState(false);
+  // Live carrier name (e.g. "USPS") when the rate came back from a real quote.
+  const [shippingCarrier, setShippingCarrier] = useState<string | null>(null);
   const shippingFetchAbortRef = useRef<AbortController | null>(null);
 
   const getIdempotencyKey = () => {
@@ -631,21 +636,34 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     if (shippingFetchAbortRef.current) shippingFetchAbortRef.current.abort();
     const ctrl = new AbortController();
     shippingFetchAbortRef.current = ctrl;
-    if (shippingOption === 'agent_pickup') { setLiveShippingRate(0); return; }
+    if (shippingOption === 'agent_pickup') { setLiveShippingRate(0); setShippingEstimated(false); setShippingCarrier(null); return; }
+    const addrComplete = !!(street.trim() && city.trim() && state.trim() && zip.trim());
     (async () => {
       try {
         const res = await fetch('/api/shipping-preview', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ weightOz: totalWeightOz, shippingOption }),
+          body: JSON.stringify({
+            weightOz: totalWeightOz,
+            shippingOption,
+            totalQty: (cart || []).reduce((a, it) => a + it.quantity, 0),
+            agentSlug,
+            // Only send a destination once it is complete, so the server can
+            // return a live carrier quote that equals the final charge.
+            to: addrComplete ? { street1: street.trim(), city: city.trim(), state: state.trim(), zip: zip.trim(), country: 'US' } : undefined,
+          }),
           signal: ctrl.signal,
         });
         if (!res.ok) return;
         const json = await res.json();
         setLiveShippingRate(Number(json.rate) || 0);
+        setShippingEstimated(!!json.estimated);
+        setShippingCarrier(typeof json.carrier === 'string' && json.carrier ? json.carrier : null);
       } catch (err) {
         const fallback = getShippingCost(shippingOption, totalWeightOz);
         setLiveShippingRate(fallback);
+        setShippingEstimated(true);
+        setShippingCarrier(null);
         // AbortError is expected whenever this effect re-runs or unmounts -- reporting
         // it would flood the sink. Only a real failure means we silently charged an
         // estimated rate instead of the live one.
@@ -656,7 +674,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     })();
     return () => ctrl.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalWeightOz, shippingOption]);
+  }, [totalWeightOz, shippingOption, street, city, state, zip, agentSlug]);
 
   const couponAutoAppliedRef = useRef(false);
   useEffect(() => {
@@ -1426,7 +1444,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                <span style={{ color: 'var(--grey-400)' }}>{shippingOption === 'fedex' ? 'FedEx / UPS Fast' : shippingOption === 'usps' ? 'USPS / China Post Cheap' : 'Fulfillment'}</span>
+                <span style={{ color: 'var(--grey-400)' }}>{shippingCarrier ? shippingCarrier : (shippingOption === 'fedex' ? 'FedEx / UPS Fast' : shippingOption === 'usps' ? 'USPS / China Post Cheap' : 'Fulfillment')}{shippingOption !== 'agent_pickup' && shippingEstimated ? ' (Estimated)' : ''}</span>
                 {shippingOption !== 'agent_pickup' ? <strong style={{ color: 'var(--white)' }}>${shippingCost.toFixed(2)}</strong> : <strong style={{ color: 'var(--teal)' }}>Free Shipping To Agent</strong>}
               </div>
               {shippingOption !== 'agent_pickup' && (

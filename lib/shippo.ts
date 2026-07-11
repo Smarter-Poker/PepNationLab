@@ -509,6 +509,78 @@ export async function quoteRates(input: {
   };
 }
 
+/**
+ * Checkout-time live rate helper. Resolves the agent's ship-from origin (or the
+ * platform default origin when no agent is given) and asks Shippo for the
+ * cheapest allowed carrier rate to `to`.
+ *
+ * Non-throwing by contract: returns null on missing origin, no rates, a Shippo
+ * error, or timeout, so the caller can fall back to the flat estimate. Hard-
+ * bounded by `timeoutMs` (default 4.5s) via Promise.race so a slow or hung
+ * carrier API can never stall the checkout request.
+ */
+export async function quoteCheapestForCheckout(input: {
+  agentId?: string | null;
+  to: AddressInput;
+  weightOz: number;
+  totalQty: number;
+  timeoutMs?: number;
+}): Promise<{ amountCents: number; carrier: string; serviceLevel: string; serviceLevelName: string } | null> {
+  const timeoutMs = input.timeoutMs ?? 4500;
+  const run = (async () => {
+    try {
+      const admin = getAdminClient();
+
+      // Resolve the ship-from origin. With an agentId, use that agent's
+      // warehouse (falling through to the platform default inside
+      // resolveOrigin). Without one (house/no-agent checkout), read the
+      // platform default origin directly so we never issue an `id = ''`
+      // query against the uuid column.
+      let origin: ResolvedOrigin | null = null;
+      if (input.agentId) {
+        origin = await resolveOrigin(admin, input.agentId, null);
+      } else {
+        const { data: def } = await admin
+          .from('shipping_origins')
+          .select('id, name, company, street1, street2, city, state, zip, country, phone, email')
+          .eq('is_default', true)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (def) origin = { id: def.id, address: def as AddressInput };
+      }
+      if (!origin) return null;
+
+      const weightOz = Math.max(1, Math.round(Number(input.weightOz) || 0));
+      let lengthIn = 6, widthIn = 4, heightIn = 4, template: string | undefined = 'small';
+      const qty = Number(input.totalQty) || 0;
+      if (qty > 3 && qty <= 10) {
+        lengthIn = 9; widthIn = 6; heightIn = 3; template = 'medium';
+      } else if (qty > 10) {
+        lengthIn = 12; widthIn = 9; heightIn = 4; template = 'large';
+      }
+
+      const quote = await quoteRates({
+        from: origin.address,
+        to: input.to,
+        parcel: { lengthIn, widthIn, heightIn, weightOz, template },
+      });
+      if (!quote.ok || quote.result.rates.length === 0) return null;
+      const cheapest = quote.result.rates[0];
+      if (!cheapest || cheapest.amountCents <= 0) return null;
+      return {
+        amountCents: cheapest.amountCents,
+        carrier: cheapest.carrier,
+        serviceLevel: cheapest.serviceLevelToken,
+        serviceLevelName: cheapest.serviceLevelName,
+      };
+    } catch {
+      return null;
+    }
+  })();
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs));
+  return Promise.race([run, timeout]);
+}
+
 function toShippoAddress(a: AddressInput): Record<string, unknown> {
   return {
     name: a.name,

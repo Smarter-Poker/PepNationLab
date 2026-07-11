@@ -3,10 +3,9 @@
  *
  * Purchases a shipping label for an order.
  *
- * M1 MIGRATION (2026-06-01): This endpoint now routes through
- * `purchaseLabelForOrder` from lib/shippo.ts, which uses the platform
- * Shippo account key instead of per-agent keys. Per-agent Shippo API keys
- * in `agent_profiles.shippo_api_key` are deprecated and ignored.
+ * This endpoint routes through `purchaseLabelForOrder` from lib/shipping.ts,
+ * which uses the platform EasyPost account key. Per-agent shipping API keys
+ * no longer exist - shipping is platform-managed.
  *
  * Guards: requireAgent - caller must own the order (or be the parent super-agent).
  */
@@ -16,7 +15,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { pickOne } from '@/lib/relations';
-import { purchaseLabelForOrder } from '@/lib/shippo';
+import { purchaseLabelForOrder } from '@/lib/shipping';
 import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 import { notifyOrderShipped } from '@/lib/notify';
@@ -61,7 +60,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Use the platform Shippo account key via the new purchaseLabelForOrder shim.
+    // Use the platform EasyPost account key via purchaseLabelForOrder.
     // Per-agent keys are no longer required or consulted.
     const result = await purchaseLabelForOrder(supabase, {
       orderId,

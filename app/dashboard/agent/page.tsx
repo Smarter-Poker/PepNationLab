@@ -42,25 +42,15 @@ export default async function AgentDashboardPage() {
     redirect('/dashboard/sub-agent');
   }
 
-  // 4. Fetch agent storefront profile
+  // 4. Fetch agent storefront profile. Shipping is platform-managed - there
+  // are no per-agent shipping API keys.
   const { data: agentProfileRaw } = await supabase
     .from('agent_profiles')
-    .select('id, slug, display_name, logo_url, primary_color, secondary_color, qr_code_url, qr_code_data, payment_handles, warehouse_address, is_active, shippo_api_key')
+    .select('id, slug, display_name, logo_url, primary_color, secondary_color, qr_code_url, qr_code_data, payment_handles, warehouse_address, is_active')
     .eq('id', user.id)
     .maybeSingle();
 
-  // SECURITY: never send the raw Shippo API token to the client. Strip it
-  // here and expose only a presence boolean + last-4 mask for the UI.
-  const shippoKey = (agentProfileRaw as any)?.shippo_api_key as string | null;
-  const shippoLast4 = shippoKey && shippoKey.length >= 4 ? shippoKey.slice(-4) : null;
-  const agentProfile = agentProfileRaw
-    ? {
-        ...agentProfileRaw,
-        shippo_api_key: null,
-        shippo_api_key_present: !!shippoKey,
-        shippo_api_key_last4: shippoLast4,
-      }
-    : null;
+  const agentProfile = agentProfileRaw ?? null;
 
   // 5. Fetch referred researchers
   const { data: researchersData } = await supabase

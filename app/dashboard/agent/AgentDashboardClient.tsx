@@ -52,9 +52,6 @@ interface AgentProfile {
   payment_handles: Record<string, any> | null;
   warehouse_address?: Record<string, any> | null;
   is_active?: boolean | null;
-  shippo_api_key: string | null;
-  shippo_api_key_present?: boolean;
-  shippo_api_key_last4?: string | null;
   volume_pricing_enabled?: boolean | null;
 }
 
@@ -159,7 +156,7 @@ export default function AgentDashboardClient({
   const [setupVenmo, setSetupVenmo] = useState('');
   const [setupApplePay, setSetupApplePay] = useState('');
 
-  // Warehouse address (required for Shippo "from" address)
+  // Warehouse address (Required As The Ship-From Address For Carrier Labels)
   const [setupWhName, setSetupWhName] = useState('');
   const [setupWhStreet1, setSetupWhStreet1] = useState('');
   const [setupWhStreet2, setSetupWhStreet2] = useState('');
@@ -348,7 +345,7 @@ export default function AgentDashboardClient({
       return;
     }
 
-    // Block submit until warehouse address is filled in (Shippo From Address).
+    // Block submit until warehouse address is filled in (ship-from address).
     const whName = setupWhName.trim();
     const whStreet1 = setupWhStreet1.trim();
     const whCity = setupWhCity.trim();
@@ -522,7 +519,7 @@ export default function AgentDashboardClient({
             <div style={{ paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
               <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Warehouse Address</h4>
               <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-3)' }}>
-                Used As The Ship-From Address When Buying Labels. Required Before Generating Shippo Labels.
+                Used As The Ship-From Address When Buying Labels. Required Before Generating Shipping Labels.
               </p>
               <div className="form-group">
                 <label className="form-label">Warehouse Contact Name</label>

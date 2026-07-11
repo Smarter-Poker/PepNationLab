@@ -140,7 +140,7 @@ const nextConfig = {
               "script-src 'self' 'unsafe-inline'; " +
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
               "font-src 'self' data: https://fonts.gstatic.com; " +
-              "connect-src 'self' https://*.supabase.co https://api.goshippo.com wss://*.supabase.co " +
+              "connect-src 'self' https://*.supabase.co https://easypost-files.s3.us-west-2.amazonaws.com https://easypost-files.s3-us-west-2.amazonaws.com wss://*.supabase.co " +
                 "wss://*.livekit.cloud https://*.livekit.cloud " +
                 "https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io; " +
               "worker-src 'self' blob:; " +

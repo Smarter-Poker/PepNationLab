@@ -23,10 +23,10 @@ const SECTIONS: Section[] = [
     title: '1. Setting Up Your Storefront',
     body: [
       'Your storefront is your public sales surface at pepnationlab.com/<your-slug>. Researchers find you there, browse your catalog, sign up, and place orders. Until you finish setup, your storefront is offline and nobody can reach it.',
-      'Open the Storefront Config tab. Required fields: Slug (the URL segment, e.g. "midway"), User Name (what researchers see at the top of the page), Warehouse Address (where you physically ship from - used for Shippo label generation), and at least one Payment Handle (Zelle / Venmo / Cash App / Apple Pay - researchers see these at checkout).',
+      'Open the Storefront Config tab. Required fields: Slug (the URL segment, e.g. "midway"), User Name (what researchers see at the top of the page), Warehouse Address (where you physically ship from - used as the ship-from address on carrier labels), and at least one Payment Handle (Zelle / Venmo / Cash App / Apple Pay - researchers see these at checkout).',
       'Optional but recommended: upload a Logo.',
       'Your storefront is automatically activated once created. The URL is ready to share immediately.',
-      'Shippo: if you have your own Shippo API key, paste it in. If you leave it blank, the platform shares its own Shippo account with you under a platform-pays model - the difference shows up on your weekly statement.',
+      'Shipping: shipping labels are handled by the platform automatically - there is nothing to configure. Label costs are charged under a platform-pays model and show up on your weekly statement.',
     ],
   },
   {
@@ -90,7 +90,7 @@ const SECTIONS: Section[] = [
     body: [
       'When a researcher checks out, their order lands in your Orders tab with status pending_customer_payment. They send you payment via the handle you configured (Zelle / Venmo / Cash App / Apple Pay).',
       'Once you confirm receipt of funds, you change status to approved_ship (or approved_pickup for local). At this point the order is committed - inventory has already been deducted and the commission trigger fires for any sub-agent attribution.',
-      'Shipping: open the order detail and click Generate Label. The label-jobs cron picks up the job, hits Shippo, and writes a label PDF + tracking number back to the order. Order status moves to in_fulfillment → shipped (when the carrier scans it) → delivered (when Shippo confirms delivery).',
+      'Shipping: open the order detail and click Generate Label. The label-jobs cron picks up the job, hits EasyPost, and writes a label PDF + tracking number back to the order. Order status moves to in_fulfillment → shipped (when the carrier scans it) → delivered (when EasyPost confirms delivery).',
       'Bookkeeping: each label_purchases row captures the carrier, service level, parcel weight, label cost, and amount you were charged. Your weekly statement includes shipping spend so you can see margin by week.',
       'Cancellations and missed payments: pending orders that go unpaid for more than 72h are auto-cancelled by the cancel_stale_pending_orders RPC. Cancelled orders refund inventory and void any sub-agent commission row.',
     ],

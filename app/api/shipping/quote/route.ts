@@ -10,21 +10,21 @@
  *     agent_slug?: string
  *   }
  *
- * Returns live Shippo carrier rates. Falls back to weight-bracket rates from
- * the `shipping_rates` table when Shippo is unavailable (surfaced as
+ * Returns live EasyPost carrier rates. Falls back to weight-bracket rates from
+ * the `shipping_rates` table when EasyPost is unavailable (surfaced as
  * `estimated: true` in the response so the UI shows "Estimated Shipping").
  *
  * Auth: authenticated user (any role). Public callers via agent storefronts
  * are allowed - the rate does not expose sensitive data.
  *
- * Shippo API key: resolved per-agent from agent_profiles.shippo_api_key
- * (via lib/shippo quoteRates). Falls back to platform default key.
+ * EasyPost API key: the platform key is resolved inside lib/shipping
+ * (getActiveKey); the quote route does NOT pass an API key directly.
  */
 
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
-import { quoteRates, type AddressInput } from '@/lib/shippo';
+import { quoteRates, type AddressInput } from '@/lib/shipping';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 
@@ -128,8 +128,8 @@ export async function POST(req: NextRequest) {
     // Resolve ship-from origin.
     // Priority: agent warehouse_origin_id (via agent_slug) -> agent warehouse_address
     // (legacy JSONB) -> platform default shipping_origin -> LA hardcoded fallback.
-    // Shippo API key is resolved per-agent inside lib/shippo quoteRates via
-    // agent_profiles.shippo_api_key; the quote route does NOT pass an API key directly.
+    // The platform EasyPost API key is resolved inside lib/shipping; the quote
+    // route does NOT pass an API key directly.
     let fromAddr = ORIGIN_FALLBACK;
     try {
       const service = createAdminClient();
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
       if (agentSlug) {
         const { data: agentProfile } = await service
           .from('agent_profiles')
-          .select('warehouse_origin_id, warehouse_address, shippo_api_key, display_name')
+          .select('warehouse_origin_id, warehouse_address, display_name')
           .eq('slug', agentSlug)
           .eq('is_active', true)
           .maybeSingle();
@@ -216,7 +216,7 @@ export async function POST(req: NextRequest) {
       /* use hardcoded LA fallback */
     }
 
-    // Try live Shippo quote.
+    // Try live EasyPost quote.
     try {
       const result = await quoteRates({
         from: fromAddr,

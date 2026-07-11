@@ -158,7 +158,7 @@ export default async function OrderDetailPage(
 
   const order = orderData as unknown as Order;
 
-  // Carrier tracking history (Shippo webhook -> shipping_tracking_events).
+  // Carrier tracking history (EasyPost webhook -> shipping_tracking_events).
   // RLS-scoped to this buyer/agent/admin and fully best-effort: any failure
   // leaves the timeline empty and never breaks the order page.
   let trackingEvents: TrackingEvent[] = [];
@@ -761,7 +761,7 @@ export default async function OrderDetailPage(
             </div>
           )}
 
-          {/* Carrier tracking history from the Shippo webhook. Renders nothing
+          {/* Carrier tracking history from the EasyPost webhook. Renders nothing
               until tracking events arrive, so it is safe to mount always. */}
           <OrderTrackingTimeline events={trackingEvents} />
 
