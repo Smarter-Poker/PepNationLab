@@ -210,7 +210,7 @@ export default function CertificateDocument({ data }: { data: CertificateData })
         <InfoCell label="CAS" value={data.cas || NOT_REPORTED} />
         <InfoCell label="Test Date" value={fmtDate(data.testDate)} />
         <InfoCell label="Appearance" value={data.appearance || NOT_REPORTED} />
-        <InfoCell label="Storage" value={data.storage || 'Store At Minus 4 F'} />
+        <InfoCell label="Storage" value={data.storage || 'Store At 36 To 46 F'} />
       </div>
 
       {sequence && (
