@@ -669,15 +669,10 @@ export default function AgentDashboardClient({
         )}
 
 
-        {/* TAB: Overview - full-bleed image fills 100dvh minus navbar */}
+        {/* TAB: Overview - Live Agent Action Center */}
         {activeTab === 'Overview' && (
-          <div style={{
-            animation: 'fadeIn 0.3s ease-out',
-            marginLeft: 'calc(-1 * var(--container-px, var(--space-6)))',
-            marginRight: 'calc(-1 * var(--container-px, var(--space-6)))',
-            marginTop: 'calc(-1 * var(--space-8))',
-          }}>
-            <AgentOverview 
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentOverview
               activeResearchersCount={activeResearchersCount}
               activeOrdersCount={activeOrdersCount}
               totalRevenue={totalRevenue}
