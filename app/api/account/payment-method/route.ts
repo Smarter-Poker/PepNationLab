@@ -31,8 +31,13 @@ const PAYMENT_METHOD_ENUM = [
 ] as const;
 
 // Up to 9 handle keys, each value capped so users cannot stuff the JSONB column.
+// P0 fix: in Zod 4, z.record with an enum key schema is EXHAUSTIVE - it
+// demanded all 9 keys on every request, so every partial save from the
+// onboarding wizard and the account settings page returned 400 and new
+// agents could never complete onboarding. z.partialRecord makes every
+// enum key optional, which is the intended contract (PUT accepts a partial).
 const HandlesSchema = z
-  .record(
+  .partialRecord(
     z.enum(PAYMENT_METHOD_ENUM),
     z.string().min(1).max(200),
   )
