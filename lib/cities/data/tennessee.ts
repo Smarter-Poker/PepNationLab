@@ -1,13 +1,34 @@
 import type { City } from '../cities-data';
 
-// Tennessee — 6 cities
+// Tennessee — 27 cities (Nashville + Memphis + Knoxville metros + statewide)
 const CITIES_TENNESSEE: City[] = [
-  { name: 'Brentwood', slug: 'brentwood', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 45000, medianIncome: 145000, tier: 1, region: 'Greater Nashville' },
-  { name: 'Franklin', slug: 'franklin', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 88000, medianIncome: 90000, tier: 2, region: 'Greater Nashville' },
-  { name: 'Nashville', slug: 'nashville', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 689000, medianIncome: 58000, tier: 2 },
-  { name: 'Memphis', slug: 'memphis', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 628000, medianIncome: 42000, tier: 3 },
-  { name: 'Knoxville', slug: 'knoxville', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 190000, medianIncome: 45000, tier: 3 },
-  { name: 'Chattanooga', slug: 'chattanooga', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 181000, medianIncome: 48000, tier: 3 },
+  { name: 'Brentwood', slug: 'brentwood', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 45000, medianIncome: 165000, tier: 1, region: 'Greater Nashville', county: 'Williamson', zips: ['37027'], localBlurb: 'Brentwood research groups source our high-purity peptides for longevity and recovery studies backed by full third-party COAs.' },
+  { name: 'Nolensville', slug: 'nolensville', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 14000, medianIncome: 145000, tier: 1, region: 'Greater Nashville', county: 'Williamson', zips: ['37135'], localBlurb: 'Nolensville laboratories rely on our lot-traceable compounds and comprehensive certificates of analysis for study protocols.' },
+  { name: 'Thompson’s Station', slug: 'thompsons-station', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 8000, medianIncome: 130000, tier: 1, region: 'Greater Nashville', county: 'Williamson', zips: ['37179'], localBlurb: 'Thompson’s Station research professionals choose our peptides for guaranteed purity, cold-chain handling, and full lot documentation.' },
+  { name: 'Franklin', slug: 'franklin', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 88000, medianIncome: 108000, tier: 2, region: 'Greater Nashville', county: 'Williamson', zips: ['37064', '37067', '37069'] },
+  { name: 'Spring Hill', slug: 'spring-hill', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 54000, medianIncome: 92000, tier: 2, region: 'Greater Nashville', county: 'Williamson', zips: ['37174'] },
+  { name: 'Mount Juliet', slug: 'mount-juliet', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 40000, medianIncome: 98000, tier: 2, region: 'Greater Nashville', county: 'Wilson', zips: ['37122'] },
+  { name: 'Hendersonville', slug: 'hendersonville', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 62000, medianIncome: 78000, tier: 2, region: 'Greater Nashville', county: 'Sumner', zips: ['37075', '37077'] },
+  { name: 'Gallatin', slug: 'gallatin', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 45000, medianIncome: 62000, tier: 3, region: 'Greater Nashville', county: 'Sumner', zips: ['37066'] },
+  { name: 'Murfreesboro', slug: 'murfreesboro', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 158000, medianIncome: 62000, tier: 3, region: 'Greater Nashville', county: 'Rutherford', zips: ['37127', '37128', '37130'] },
+  { name: 'Smyrna', slug: 'smyrna', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 54000, medianIncome: 66000, tier: 3, region: 'Greater Nashville', county: 'Rutherford', zips: ['37167'] },
+  { name: 'Nashville', slug: 'nashville', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 689000, medianIncome: 62000, tier: 2, region: 'Greater Nashville', county: 'Davidson', zips: ['37203', '37206', '37215'] },
+  { name: 'Germantown', slug: 'germantown', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 41000, medianIncome: 135000, tier: 1, region: 'Greater Memphis', county: 'Shelby', zips: ['38138', '38139'], localBlurb: 'Germantown laboratories east of Memphis select our high-purity compounds for metabolic and tissue-repair investigations.' },
+  { name: 'Collierville', slug: 'collierville', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 51000, medianIncome: 128000, tier: 1, region: 'Greater Memphis', county: 'Shelby', zips: ['38017'], localBlurb: 'Collierville research groups trust our verified purity and transparent documentation on every peptide lot.' },
+  { name: 'Bartlett', slug: 'bartlett', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 59000, medianIncome: 82000, tier: 2, region: 'Greater Memphis', county: 'Shelby', zips: ['38133', '38134'] },
+  { name: 'Cordova', slug: 'cordova', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 70000, medianIncome: 74000, tier: 2, region: 'Greater Memphis', county: 'Shelby', zips: ['38016', '38018'] },
+  { name: 'Memphis', slug: 'memphis', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 628000, medianIncome: 42000, tier: 3, region: 'Greater Memphis', county: 'Shelby', zips: ['38103', '38104', '38111'] },
+  { name: 'Farragut', slug: 'farragut', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 24000, medianIncome: 130000, tier: 1, region: 'Greater Knoxville', county: 'Knox', zips: ['37934'], localBlurb: 'Farragut research professionals rely on our documented, lot-traceable peptides for reproducible research protocols.' },
+  { name: 'Maryville', slug: 'maryville', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 31000, medianIncome: 62000, tier: 2, region: 'Greater Knoxville', county: 'Blount', zips: ['37801', '37803'] },
+  { name: 'Oak Ridge', slug: 'oak-ridge', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 32000, medianIncome: 62000, tier: 2, region: 'Greater Knoxville', county: 'Anderson', zips: ['37830'] },
+  { name: 'Knoxville', slug: 'knoxville', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 190000, medianIncome: 45000, tier: 3, region: 'Greater Knoxville', county: 'Knox', zips: ['37902', '37916', '37919'] },
+  { name: 'Chattanooga', slug: 'chattanooga', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 181000, medianIncome: 48000, tier: 3, region: 'Southeast Tennessee', county: 'Hamilton', zips: ['37402', '37405', '37411'] },
+  { name: 'Clarksville', slug: 'clarksville', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 166000, medianIncome: 56000, tier: 3, region: 'Middle Tennessee', county: 'Montgomery', zips: ['37040', '37042', '37043'] },
+  { name: 'Johnson City', slug: 'johnson-city', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 71000, medianIncome: 46000, tier: 3, region: 'Tri-Cities', county: 'Washington', zips: ['37601', '37604'] },
+  { name: 'Kingsport', slug: 'kingsport', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 55000, medianIncome: 45000, tier: 3, region: 'Tri-Cities', county: 'Sullivan', zips: ['37660', '37664'] },
+  { name: 'Jackson', slug: 'jackson', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 68000, medianIncome: 44000, tier: 3, region: 'West Tennessee', county: 'Madison', zips: ['38301', '38305'] },
+  { name: 'Lebanon', slug: 'lebanon', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 40000, medianIncome: 60000, tier: 3, region: 'Greater Nashville', county: 'Wilson', zips: ['37087', '37090'] },
+  { name: 'Cleveland', slug: 'cleveland', state: 'Tennessee', stateSlug: 'tennessee', stateAbbr: 'TN', population: 47000, medianIncome: 48000, tier: 3, region: 'Southeast Tennessee', county: 'Bradley', zips: ['37311', '37312'] },
 ];
 
 export default CITIES_TENNESSEE;

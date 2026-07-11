@@ -1,15 +1,37 @@
 import type { City } from '../cities-data';
 
-// Michigan — 8 cities
+// Michigan — 30 cities (Metro Detroit + West Michigan + statewide)
 const CITIES_MICHIGAN: City[] = [
-  { name: 'Bloomfield Hills', slug: 'bloomfield-hills', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 4000, medianIncome: 200000, tier: 1, region: 'Greater Detroit' },
-  { name: 'Birmingham', slug: 'birmingham', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 21000, medianIncome: 120000, tier: 1, region: 'Greater Detroit' },
-  { name: 'Grosse Pointe', slug: 'grosse-pointe', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 5000, medianIncome: 125000, tier: 1, region: 'Greater Detroit' },
-  { name: 'Troy', slug: 'troy', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 87000, medianIncome: 90000, tier: 2, region: 'Greater Detroit' },
-  { name: 'Ann Arbor', slug: 'ann-arbor', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 124000, medianIncome: 65000, tier: 2 },
-  { name: 'Detroit', slug: 'detroit', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 633000, medianIncome: 33000, tier: 3 },
-  { name: 'Grand Rapids', slug: 'grand-rapids', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 198000, medianIncome: 52000, tier: 3 },
-  { name: 'Lansing', slug: 'lansing', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 112000, medianIncome: 44000, tier: 3 },
+  { name: 'Bloomfield Hills', slug: 'bloomfield-hills', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 4000, medianIncome: 200000, tier: 1, region: 'Metro Detroit', county: 'Oakland', zips: ['48301', '48304'], localBlurb: 'Bloomfield Hills research groups source our high-purity peptides for longevity and recovery studies backed by full third-party COAs.' },
+  { name: 'Birmingham', slug: 'birmingham', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 21000, medianIncome: 120000, tier: 1, region: 'Metro Detroit', county: 'Oakland', zips: ['48009'], localBlurb: 'Birmingham laboratories rely on our lot-traceable compounds and comprehensive certificates of analysis for study protocols.' },
+  { name: 'Grosse Pointe', slug: 'grosse-pointe', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 5000, medianIncome: 125000, tier: 1, region: 'Metro Detroit', county: 'Wayne', zips: ['48230'], localBlurb: 'Grosse Pointe research professionals choose our peptides for guaranteed purity, cold-chain handling, and full lot documentation.' },
+  { name: 'West Bloomfield', slug: 'west-bloomfield', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 65000, medianIncome: 105000, tier: 1, region: 'Metro Detroit', county: 'Oakland', zips: ['48322', '48323'], localBlurb: 'West Bloomfield laboratories trust our verified purity and transparent documentation on every peptide lot.' },
+  { name: 'Northville', slug: 'northville', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 6000, medianIncome: 130000, tier: 1, region: 'Metro Detroit', county: 'Wayne', zips: ['48167', '48168'], localBlurb: 'Northville research groups select our high-purity compounds for metabolic and tissue-repair investigations.' },
+  { name: 'Troy', slug: 'troy', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 87000, medianIncome: 98000, tier: 2, region: 'Metro Detroit', county: 'Oakland', zips: ['48083', '48084', '48098'] },
+  { name: 'Novi', slug: 'novi', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 66000, medianIncome: 95000, tier: 2, region: 'Metro Detroit', county: 'Oakland', zips: ['48375', '48377'] },
+  { name: 'Rochester Hills', slug: 'rochester-hills', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 76000, medianIncome: 98000, tier: 2, region: 'Metro Detroit', county: 'Oakland', zips: ['48306', '48307', '48309'] },
+  { name: 'Rochester', slug: 'rochester', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 13000, medianIncome: 92000, tier: 2, region: 'Metro Detroit', county: 'Oakland', zips: ['48307'] },
+  { name: 'Royal Oak', slug: 'royal-oak', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 59000, medianIncome: 82000, tier: 2, region: 'Metro Detroit', county: 'Oakland', zips: ['48067', '48073'] },
+  { name: 'Farmington Hills', slug: 'farmington-hills', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 83000, medianIncome: 84000, tier: 2, region: 'Metro Detroit', county: 'Oakland', zips: ['48331', '48334', '48335'] },
+  { name: 'Plymouth', slug: 'plymouth', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 9000, medianIncome: 90000, tier: 2, region: 'Metro Detroit', county: 'Wayne', zips: ['48170'] },
+  { name: 'Livonia', slug: 'livonia', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 95000, medianIncome: 78000, tier: 3, region: 'Metro Detroit', county: 'Wayne', zips: ['48150', '48152', '48154'] },
+  { name: 'Dearborn', slug: 'dearborn', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 109000, medianIncome: 56000, tier: 3, region: 'Metro Detroit', county: 'Wayne', zips: ['48124', '48126'] },
+  { name: 'Sterling Heights', slug: 'sterling-heights', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 134000, medianIncome: 72000, tier: 3, region: 'Metro Detroit', county: 'Macomb', zips: ['48310', '48312', '48314'] },
+  { name: 'Clarkston', slug: 'clarkston', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 12000, medianIncome: 96000, tier: 2, region: 'Metro Detroit', county: 'Oakland', zips: ['48346', '48348'] },
+  { name: 'Detroit', slug: 'detroit', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 633000, medianIncome: 37000, tier: 3, region: 'Metro Detroit', county: 'Wayne', zips: ['48201', '48226', '48207'] },
+  { name: 'Ann Arbor', slug: 'ann-arbor', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 124000, medianIncome: 72000, tier: 2, region: 'Washtenaw County', county: 'Washtenaw', zips: ['48103', '48104', '48105'] },
+  { name: 'Okemos', slug: 'okemos', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 25000, medianIncome: 92000, tier: 2, region: 'Greater Lansing', county: 'Ingham', zips: ['48864'] },
+  { name: 'East Lansing', slug: 'east-lansing', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 47000, medianIncome: 48000, tier: 2, region: 'Greater Lansing', county: 'Ingham', zips: ['48823'] },
+  { name: 'Lansing', slug: 'lansing', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 112000, medianIncome: 46000, tier: 3, region: 'Greater Lansing', county: 'Ingham', zips: ['48912', '48910', '48906'] },
+  { name: 'East Grand Rapids', slug: 'east-grand-rapids', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 12000, medianIncome: 145000, tier: 1, region: 'West Michigan', county: 'Kent', zips: ['49506'], localBlurb: 'East Grand Rapids laboratories rely on our documented, lot-traceable peptides for reproducible research protocols.' },
+  { name: 'Grand Rapids', slug: 'grand-rapids', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 198000, medianIncome: 54000, tier: 3, region: 'West Michigan', county: 'Kent', zips: ['49503', '49505', '49546'] },
+  { name: 'Holland', slug: 'holland', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 34000, medianIncome: 60000, tier: 2, region: 'West Michigan', county: 'Ottawa', zips: ['49423', '49424'] },
+  { name: 'Grand Haven', slug: 'grand-haven', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 11000, medianIncome: 62000, tier: 2, region: 'West Michigan', county: 'Ottawa', zips: ['49417'] },
+  { name: 'Kalamazoo', slug: 'kalamazoo', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 73000, medianIncome: 42000, tier: 3, region: 'Southwest Michigan', county: 'Kalamazoo', zips: ['49006', '49008'] },
+  { name: 'Midland', slug: 'midland', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 42000, medianIncome: 68000, tier: 2, region: 'Great Lakes Bay', county: 'Midland', zips: ['48640', '48642'] },
+  { name: 'Traverse City', slug: 'traverse-city', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 15000, medianIncome: 58000, tier: 2, region: 'Northern Michigan', county: 'Grand Traverse', zips: ['49684', '49686'] },
+  { name: 'Saginaw', slug: 'saginaw', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 44000, medianIncome: 34000, tier: 3, region: 'Great Lakes Bay', county: 'Saginaw', zips: ['48602', '48604'] },
+  { name: 'Flint', slug: 'flint', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 81000, medianIncome: 32000, tier: 3, region: 'Mid-Michigan', county: 'Genesee', zips: ['48502', '48503'] },
 ];
 
 export default CITIES_MICHIGAN;
