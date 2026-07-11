@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 const BATCH_LIMIT = 100;
 const MAX_ATTEMPTS = 5;
+const STUCK_AFTER_MINUTES = 15;
 
 interface OutboxRow {
   id: string;
@@ -59,29 +60,42 @@ export async function GET(req: NextRequest) {
   let skipped = 0;
   let permanentlyFailed = 0;
   let deactivated = 0;
+  let requeued = 0;
   let errorNote: string | null = null;
 
   try {
     const supabase = createAdminClient();
     const pushOn = isWebPushConfigured();
 
-    // Atomically claim a batch by flipping status pending->processing.
-    // Two concurrent invocations cannot claim the same row because the
-    // UPDATE only touches rows with status='pending', and Postgres row-level
-    // locks prevent double-claiming under concurrent writes.
-    const { data: rows, error } = await supabase
-      .from('push_outbox')
-      .update({ status: 'processing' })
-      .eq('status', 'pending')
-      .lt('attempts', MAX_ATTEMPTS)
-      .order('created_at', { ascending: true })
-      .limit(BATCH_LIMIT)
-      .select('id, recipient_user_id, title, body, url, tag, icon_url, badge_url, attempts');
+    // A run that crashes mid-batch leaves rows stranded in status='processing'
+    // with nothing to retry them. Reclaim them before claiming new work.
+    const { data: requeuedCount, error: requeueError } = await supabase.rpc(
+      'requeue_stuck_push_outbox',
+      { p_stale_minutes: STUCK_AFTER_MINUTES }
+    );
+    if (requeueError) {
+      errorNote = `requeue_failed: ${requeueError.message}`.slice(0, 300);
+    } else {
+      requeued = Number(requeuedCount) || 0;
+    }
+
+    // Atomically claim a batch, flipping status pending->processing.
+    //
+    // This must be an RPC, not a PostgREST bulk update. Two reasons:
+    //   1. PostgREST cannot apply .order()/.limit() to an UPDATE -- it fails
+    //      with "column push_outbox.created_at does not exist".
+    //   2. Matching on status='pending' from two concurrent invocations does
+    //      NOT prevent double-claiming. The RPC uses FOR UPDATE SKIP LOCKED,
+    //      which does.
+    const { data: rows, error } = await supabase.rpc('claim_push_outbox_batch', {
+      p_limit: BATCH_LIMIT,
+      p_max_attempts: MAX_ATTEMPTS,
+    });
 
     if (error) {
       errorNote = `claim_failed: ${error.message}`.slice(0, 300);
     } else {
-      for (const row of (rows ?? []) as OutboxRow[]) {
+      for (const row of ((rows ?? []) as OutboxRow[])) {
         processed++;
 
         if (!pushOn) {
@@ -212,7 +226,7 @@ export async function GET(req: NextRequest) {
     errorNote = err instanceof Error ? err.message.slice(0, 300) : 'unknown_error';
   }
 
-  const summary = `processed=${processed} sent=${sent} failed=${failed} skipped=${skipped} permanentlyFailed=${permanentlyFailed} deactivated=${deactivated}${errorNote ? ` err=${errorNote}` : ''}`;
+  const summary = `processed=${processed} sent=${sent} failed=${failed} skipped=${skipped} permanentlyFailed=${permanentlyFailed} deactivated=${deactivated} requeued=${requeued}${errorNote ? ` err=${errorNote}` : ''}`;
   await finishCronRun(claim.id, errorNote ? 'failed' : 'succeeded', summary);
 
   return Response.json({
@@ -223,6 +237,7 @@ export async function GET(req: NextRequest) {
     skipped,
     permanentlyFailed,
     deactivated,
+    requeued,
     partitionKey,
     error: errorNote,
   });
