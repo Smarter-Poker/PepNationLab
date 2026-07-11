@@ -472,7 +472,7 @@ export default async function OrderDetailPage(
           {/* Buyer + Shipping */}
           <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.1s' }}>
             <h2 style={{ fontSize: '0.95rem', color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
-              Buyer &amp; Shipping
+              Buyer & Shipping
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
               <div>
@@ -784,7 +784,7 @@ export default async function OrderDetailPage(
               shows "Pending" so buyers know the surface exists.) */}
           <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', animationDelay: '0.55s' }}>
             <h2 style={{ fontSize: '0.95rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>
-              Lot Numbers &amp; COA
+              Lot Numbers & COA
             </h2>
             <p style={{ fontSize: '0.78rem', color: 'var(--grey-500)', marginBottom: 'var(--space-4)' }}>
               Lot/Batch Number And Certificate Of Analysis For Each Compound In This Order. Stamped At Fulfillment.
