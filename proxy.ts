@@ -157,6 +157,8 @@ const PUBLIC_ROUTES = [
   '/api/agent-invitations/redeem',
   '/api/cron/invoices',
   '/api/cron/reminders',
+  // Back-in-stock / price-drop alert dispatch (CRON_SECRET enforced in-route).
+  '/api/cron/product-alerts',
   // Daily auth flow canary — CRON_SECRET enforced in-route (lib/cron.ts).
   '/api/cron/auth-canary',
   // Social autoposter cron — CRON_SECRET enforced in-route; gated by SOCIAL_AUTOPOST_ENABLED.

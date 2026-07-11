@@ -51,6 +51,7 @@
     { "path": "/api/cron/companion-papers-compute", "schedule": "0 10 * * 0" },
     { "path": "/api/cron/broken-link-crawler", "schedule": "0 12 * * 6" },
     { "path": "/api/cron/generate-embeddings", "schedule": "0 5 * * *" },
-    { "path": "/api/seo/indexnow", "schedule": "0 7 * * *" }
+    { "path": "/api/seo/indexnow", "schedule": "0 7 * * *" },
+    { "path": "/api/cron/product-alerts", "schedule": "0 */6 * * *" }
   ]
 }
