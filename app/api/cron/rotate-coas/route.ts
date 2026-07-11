@@ -183,8 +183,8 @@ export async function GET(req: NextRequest) {
 
   if (!raw || raw.length === 0) {
     console.log('[rotate-coas] no lots due for rotation');
-    await finishCronRun(claim.id, 'succeeded', { message: 'No lots due', rotated: 0 });
-    return NextResponse.json({ message: 'No lots due for rotation', rotated: 0 });
+    await finishCronRun(claim.id, 'succeeded', JSON.stringify({ message: 'No lots due', rotated: 0 }));
+    return NextResponse.json({ message: 'No lots due for rotation', rotated: 0 }));
   }
 
   const lots = (raw as any[]).map(l => ({
@@ -362,7 +362,7 @@ export async function GET(req: NextRequest) {
   };
 
   // 7. Finish claim
-  await finishCronRun(claim.id, errors.length > 0 ? 'partial_failure' : 'succeeded', report);
+  await finishCronRun(claim.id, errors.length > 0 ? 'partial_failure' : 'succeeded', JSON.stringify(report));
 
   return NextResponse.json(report);
 }
