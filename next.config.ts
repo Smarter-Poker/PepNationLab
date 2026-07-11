@@ -156,6 +156,41 @@ const nextConfig = {
               // Auto-upgrade any stray http:// subresource to https.
               "upgrade-insecure-requests;",
           },
+          {
+            // ── CSP Report-Only rollout (2026-07-11) ─────────────────────────
+            // Non-enforcing companion to the policy above. It CANNOT block or
+            // change anything the browser renders; it only reports (to the
+            // DevTools console, and to report-uri if a collector is added
+            // later) what a STRICT script-src would refuse. This is the
+            // measured first step toward dropping script-src 'unsafe-inline'
+            // without forcing the whole site into dynamic rendering (a
+            // middleware nonce would, hurting the static SEO pages).
+            //
+            // Difference from the enforcing policy: script-src drops
+            // 'unsafe-inline' and instead allows 'self' plus the sha256 hash of
+            // the one first-party inline script (the theme anti-flash snippet
+            // in app/layout.tsx). Everything else mirrors the enforcing policy.
+            // Expect the console to report Next.js framework inline bootstrap
+            // scripts — that report is the signal that a full enforce would
+            // require nonces (and therefore dynamic rendering). Remove this
+            // header once the observation window is complete.
+            key: "Content-Security-Policy-Report-Only",
+            value:
+              "default-src 'self'; " +
+              "img-src 'self' data: blob: https://*.supabase.co https://api.dicebear.com https://media.tenor.com; " +
+              "media-src 'self' blob: https://*.supabase.co; " +
+              "script-src 'self' 'sha256-WcZ6Z2n95wrI85+NSeiX4xua6PksOVy0PUIsesQ0BaM='; " +
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+              "font-src 'self' data: https://fonts.gstatic.com; " +
+              "connect-src 'self' https://*.supabase.co https://api.goshippo.com wss://*.supabase.co " +
+                "wss://*.livekit.cloud https://*.livekit.cloud " +
+                "https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io; " +
+              "worker-src 'self' blob:; " +
+              "object-src 'none'; " +
+              "base-uri 'self'; " +
+              "form-action 'self'; " +
+              "frame-ancestors 'none';",
+          },
         ],
       },
     ];
