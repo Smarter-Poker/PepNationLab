@@ -1,0 +1,143 @@
+# One-shot, self-deleting workflow: inserts the "Peptides Near Me" section
+# into the city landing page template
+# (app/peptides/[stateSlug]/[citySlug]/CityPage.tsx). Applied on the runner
+# because the file is ~45KB and must not round-trip through the API-only
+# agent channel (see the CompareTool truncation incident).
+#
+# Anchored insertions only (import line, NearbyStrip invocation, EOF append),
+# each asserted exact-match. Aborts WITHOUT committing if any anchor has
+# drifted. The workflow removes itself in the same commit.
+
+name: Apply City Near Me Section
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-city-near-me-section.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-city-near-me-section
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply anchored Near Me insertions with strict assertions
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF'
+          import sys
+
+          PATH = 'app/peptides/[stateSlug]/[citySlug]/CityPage.tsx'
+
+          IMPORT_ANCHOR = "import type { StoreTop10Item } from '@/lib/cities/top10-server';\n"
+          IMPORT_ADD = "import { getNearMeCities } from '@/lib/cities/near-me';\n"
+
+          STRIP_ANCHOR = "        <NearbyStrip stateSlug={stateSlug} currentCitySlug={citySlug} stateName={city.state} region={city.region} />\n"
+
+          INVOCATION = """        {/* PEPTIDES NEAR ME - visible, crawlable geographic coverage block
+                      targeting "peptides near me {city}" queries. Adds content only. */}
+                  <NearMeSection city={city} stateSlug={stateSlug} region={region} />
+
+          """
+
+          COMPONENT = """
+          // --- Peptides Near Me section ------------------------------------------------
+          // Visible, crawlable geographic coverage block rendered before the
+          // NearbyStrip. Targets "peptides near me {city}" queries with genuine
+          // nearby-city data (same region first, then same state - see
+          // lib/cities/near-me.ts). Adds content only; never remove existing sections
+          // (the daily city-pages verifier asserts them).
+          function NearMeSection({ city, stateSlug, region }: { city: City; stateSlug: string; region: string }) {
+            const nearby = getNearMeCities(city);
+            if (nearby.length === 0) return null;
+            const area = getRegionArea(region);
+            const topThree = nearby.slice(0, 3).map((c) => c.name);
+            const topThreeLabel =
+              topThree.length >= 3
+                ? `${topThree[0]}, ${topThree[1]}, And ${topThree[2]}`
+                : topThree.join(' And ');
+            return (
+              <section aria-label={`Peptides Near Me - ${city.name} Area`} style={{ padding: 'clamp(48px, 6vw, 80px) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                <div className="container">
+                  <h3 style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
+                    Local Research Coverage
+                  </h3>
+                  <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)' }}>
+                    Peptides Near Me - <span style={{ color: 'var(--teal)' }}>{city.name} Area</span>
+                  </h2>
+                  <p style={{ color: 'var(--grey-400)', fontSize: '0.92rem', maxWidth: 720, lineHeight: 1.7, marginBottom: 'var(--space-6)' }}>
+                    Researchers Searching For Peptides Near Me In The {area} Find Local Coverage Across {nearby.length} Nearby {nearby.length === 1 ? 'City' : 'Cities'} Including {topThreeLabel}. Every Covered City Below Links To Its Own Dedicated Research Supply Page, And All Orders Ship With Full Batch COA Documentation, Strictly For In Vitro Research Use Only.
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 'var(--space-3)' }}>
+                    {nearby.map((c) => (
+                      <Link key={`${c.stateSlug}-${c.slug}`} href={`/peptides/${c.stateSlug}/${c.slug}`} className="city-vcard glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: 'var(--space-4) var(--space-5)', border: 'var(--border-subtle)', textDecoration: 'none' }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--silver-light)' }}>
+                          {c.stateSlug === stateSlug ? c.name : `${c.name}, ${c.stateAbbr}`}
+                        </span>
+                        {c.county && (
+                          <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)' }}>
+                            {c.county} County
+                          </span>
+                        )}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            );
+          }
+          """
+
+          s = open(PATH, encoding='utf-8').read()
+
+          if 'function NearMeSection' in s:
+              print('SKIP: NearMeSection already present in ' + PATH)
+              sys.exit(0)
+
+          for name, anchor in (('import', IMPORT_ANCHOR), ('strip', STRIP_ANCHOR)):
+              n = s.count(anchor)
+              if n != 1:
+                  print('ABORT: %s anchor occurs %d times (expected 1)' % (name, n))
+                  sys.exit(1)
+
+          s = s.replace(IMPORT_ANCHOR, IMPORT_ANCHOR + IMPORT_ADD)
+          s = s.replace(STRIP_ANCHOR, INVOCATION + STRIP_ANCHOR)
+          if not s.endswith('\n'):
+              s += '\n'
+          s += COMPONENT
+
+          open(PATH, 'w', encoding='utf-8').write(s)
+
+          out = open(PATH, encoding='utf-8').read()
+          for needle in ("getNearMeCities } from '@/lib/cities/near-me'", '<NearMeSection city={city}', 'function NearMeSection'):
+              if out.count(needle) != 1:
+                  print('ABORT: post-write verification failed for %r' % needle)
+                  sys.exit(1)
+          for block in (INVOCATION, COMPONENT):
+              if '—' in block:
+                  print('ABORT: em dash found in inserted content')
+                  sys.exit(1)
+          print('Applied Near Me section to ' + PATH)
+
+          PYEOF
+
+      - name: Commit as team identity and self-delete
+        run: |
+          set -euo pipefail
+          git config user.name "Smarter-Poker"
+          git config user.email "254329056+Smarter-Poker@users.noreply.github.com"
+          git rm .github/workflows/apply-city-near-me-section.yml
+          git add 'app/peptides/[stateSlug]/[citySlug]/CityPage.tsx'
+          git commit -m "feat(cities): Peptides Near Me section on every city page (one-shot, self-removed)"
+          git pull --rebase origin main
+          git push origin HEAD:main
