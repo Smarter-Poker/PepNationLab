@@ -28,6 +28,7 @@ const PAYMENT_METHOD_ENUM = [
   'google_wallet',
   'wise',
   'chime',
+  'varo',
 ] as const;
 
 // Up to 9 handle keys, each value capped so users cannot stuff the JSONB column.

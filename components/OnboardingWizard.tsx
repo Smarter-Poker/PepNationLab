@@ -1146,7 +1146,7 @@ const WIZARD_PAYMENT_METHODS: Array<{ key: string; label: string; placeholder: s
 
 // Keys the payment-method API accepts. Prefilled handles outside the four
 // shown above (e.g. PayPal set from Account Settings) are preserved on save.
-const PAYMENT_HANDLE_KEYS = ['zelle', 'venmo', 'cashapp', 'apple_pay', 'apple_cash', 'paypal', 'google_wallet', 'wise', 'chime'];
+const PAYMENT_HANDLE_KEYS = ['zelle', 'venmo', 'cashapp', 'apple_pay', 'apple_cash', 'paypal', 'google_wallet', 'wise', 'chime', 'varo'];
 
 function PaymentStep({ onDone }: { onDone: () => void }) {
   const [handles, setHandles] = useState<Record<string, string>>({});

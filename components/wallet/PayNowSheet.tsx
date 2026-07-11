@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { money, fmtDate } from './format';
 
-const HANDLES = ['zelle', 'venmo', 'cashapp', 'apple_pay'] as const;
+const HANDLES = ['zelle', 'venmo', 'cashapp', 'apple_pay', 'varo'] as const;
 type Handle = (typeof HANDLES)[number];
 
 type StatementLike = {

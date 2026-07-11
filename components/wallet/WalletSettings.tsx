@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { money, fmtDate, statusLabel } from './format';
 
-const HANDLES = ['zelle', 'venmo', 'cashapp', 'apple_pay'] as const;
+const HANDLES = ['zelle', 'venmo', 'cashapp', 'apple_pay', 'varo'] as const;
 type Handle = (typeof HANDLES)[number];
 
 export default function WalletSettings() {

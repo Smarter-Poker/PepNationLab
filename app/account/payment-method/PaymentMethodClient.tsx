@@ -32,7 +32,8 @@ type MethodId =
   | 'paypal'
   | 'google_wallet'
   | 'wise'
-  | 'chime';
+  | 'chime'
+  | 'varo';
 
 interface MethodSpec {
   id: MethodId;
@@ -51,6 +52,7 @@ const METHODS: MethodSpec[] = [
   { id: 'google_wallet', label: 'Google Wallet', description: 'Google Pay Transfer Via Email Or Phone.', handleLabel: 'Google Wallet Email Or Phone', placeholder: 'you@gmail.com' },
   { id: 'wise', label: 'Wise', description: 'International Settlement. Bank Or Email Linked.', handleLabel: 'Wise Account Email', placeholder: 'you@email.com' },
   { id: 'chime', label: 'Chime', description: 'Chime Pay Anyone Transfer.', handleLabel: 'Chime Sign In (Email Or Phone)', placeholder: 'you@email.com' },
+  { id: 'varo', label: 'Varo', description: 'Varo Bank — Send And Receive Money Instantly.', handleLabel: 'Varo Phone Number Or Email', placeholder: 'you@email.com or +1 555 555 0123' },
 ];
 
 const baseStyle = { height: 28, width: 'auto', objectFit: 'contain' as const };
@@ -65,6 +67,7 @@ const PAYMENT_ICONS: Record<MethodId, React.ReactNode> = {
   google_wallet: <Image src="/payment-logos/google_wallet.svg" width={40} height={28} alt="Google Wallet" unoptimized style={scaleStyle(1.4)} />,
   wise: <Image src="/payment-logos/wise.svg" width={40} height={28} alt="Wise" unoptimized style={baseStyle} />,
   chime: <Image src="/payment-logos/chime.png" width={40} height={28} alt="Chime" unoptimized style={baseStyle} />,
+  varo: <Image src="/payment-logos/varo.svg" width={40} height={28} alt="Varo" unoptimized style={baseStyle} />,
 };
 
 interface Props {

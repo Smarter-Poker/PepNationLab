@@ -14,6 +14,7 @@ const PAYMENT_LABELS: Record<string, string> = {
   google_wallet: 'Google Wallet',
   wise: 'Wise',
   chime: 'Chime',
+  varo: 'Varo',
 };
 
 interface Props {

@@ -68,6 +68,13 @@ export const PAYMENT_METHODS = [
     icon: <Image src="/payment-logos/chime.png" alt="Chime" width={60} height={20} unoptimized style={baseStyle} />,
     color: '#3ABA78',
   },
+  {
+    key: 'varo',
+    label: 'Varo',
+    placeholder: 'Phone Number Or Email',
+    icon: <Image src="/payment-logos/varo.svg" alt="Varo" width={60} height={20} unoptimized style={baseStyle} />,
+    color: '#7C3AED',
+  },
 ] as const;
 
 export type PaymentKey = (typeof PAYMENT_METHODS)[number]['key'];

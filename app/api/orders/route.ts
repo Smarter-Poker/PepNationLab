@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
-import { calculateShippingCost, getCarrierName } from '@/lib/shipping';
+import { calculateShippingCost, getCarrierName } from '@/lib/shipping-cost';
+import { quoteCheapestForCheckout, normalizeShippingAddress } from '@/lib/shippo';
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 import { computeLineSplit, type ItemFulfillmentSplit } from '@/lib/order-line-splits';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
@@ -21,7 +22,7 @@ const CheckoutSchema = z.object({
   })).min(1, 'Cart Cannot Be Empty.'),
   fulfillmentMethod: z.enum(['ship', 'agent_pickup']),
   shippingOption: z.enum(['fedex', 'usps', 'agent_pickup']).optional(),
-  paymentMethod: z.enum(['zelle', 'cashapp', 'venmo', 'apple_pay', 'apple_cash', 'paypal', 'google_wallet', 'wise', 'chime']),
+  paymentMethod: z.enum(['zelle', 'cashapp', 'venmo', 'apple_pay', 'apple_cash', 'paypal', 'google_wallet', 'wise', 'chime', 'varo']),
   shippingAddress: z.object({
     fullName: z.string().min(1),
     street: z.string().min(1),
@@ -798,10 +799,38 @@ export async function POST(request: NextRequest) {
     //     order previously collapsed shipping to $0 -- free shipping exploit.
     //     Coerce any non-carrier value to the default paid carrier.
     const CARRIERS = ['fedex', 'usps'] as const;
-    const actualShippingOption: import('@/lib/shipping').ShippingOption = fulfillmentMethod === 'agent_pickup'
+    const actualShippingOption: import('@/lib/shipping-cost').ShippingOption = fulfillmentMethod === 'agent_pickup'
       ? 'agent_pickup'
       : (CARRIERS.includes(shippingOption as (typeof CARRIERS)[number]) ? (shippingOption as (typeof CARRIERS)[number]) : 'usps');
-    const shippingCost = calculateShippingCost(actualShippingOption, totalWeightOz);
+    // Shipping charge: prefer the LIVE cheapest carrier rate (Shippo) from the
+    // agent's warehouse to the buyer's address, so the buyer pays what the
+    // platform actually pays for the label instead of a decoupled flat estimate.
+    // The flat weight table remains the fallback (Shippo slow/unavailable, no
+    // rate for the destination, or address incomplete). quoteCheapestForCheckout
+    // is non-throwing and hard-bounded by an internal timeout, so it can never
+    // hang or fail the order; on any miss we keep the flat estimate.
+    let shippingCost = calculateShippingCost(actualShippingOption, totalWeightOz);
+    if (actualShippingOption !== 'agent_pickup' && shippingAddress) {
+      try {
+        const to = normalizeShippingAddress(shippingAddress, {
+          full_name: (profile as { full_name?: string | null })?.full_name ?? null,
+        });
+        if (to) {
+          const totalQty = computedItems.reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0);
+          const live = await quoteCheapestForCheckout({
+            agentId: agentProfile?.id ?? null,
+            to,
+            weightOz: totalWeightOz,
+            totalQty,
+          });
+          if (live && live.amountCents > 0) {
+            shippingCost = Math.round(live.amountCents) / 100;
+          }
+        }
+      } catch {
+        /* keep the flat estimate computed above */
+      }
+    }
 
     // Round the final money total to exact cents so accumulated FP dust never
     // reaches the stored order total or credit/velocity comparisons.
