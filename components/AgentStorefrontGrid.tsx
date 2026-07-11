@@ -209,6 +209,10 @@ function useCatalogRefresh(agentSlug: string) {
   }, [agentSlug]);
 
   React.useEffect(() => {
+    setVisibleCount(24);
+  }, [deferredSearch, filterCategory, filterArea, sortBy, activeCardIndex]);
+
+  React.useEffect(() => {
     // Immediate refresh on mount (checks TTL internally)
     doRefresh(false);
 
@@ -274,6 +278,7 @@ export default function AgentStorefrontGrid({
 }: Props) {
   const [mounted, setMounted] = useState(false);
   const [showStoreGrid, setShowStoreGrid] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(24);
   // When a logged-out visitor tries a member-only action (e.g. saving to their
   // wishlist), the API returns 401. Instead of silently failing, we surface the
   // sign-in / create-account modal so that guest interest converts to a signup.
@@ -2135,6 +2140,7 @@ export default function AgentStorefrontGrid({
         {/* Search input mapped precisely over the search input bar in the image */}
         <input
           type="text"
+          aria-label="Search compounds by name, goal, or mechanism"
           value={searchQuery}
           onChange={(e) => {
             const val = e.target.value;
@@ -2567,7 +2573,7 @@ export default function AgentStorefrontGrid({
           variants={containerVariants} initial="hidden" animate="show"
           key={`${filterCategory}-${sortBy}-${searchQuery}`}
         >
-        {filteredProducts.map((group) => {
+        {filteredProducts.slice(0, visibleCount).map((group) => {
           const selectedVariantId = selectedVariants[group.name] || group.defaultVariantId;
           const activeVariant = group.variants.find(v => v.id === selectedVariantId) || group.variants[0];
 
@@ -2900,6 +2906,19 @@ export default function AgentStorefrontGrid({
           );
         })}
         </motion.div>
+      )}
+
+      {filteredProducts.length > visibleCount && (
+        <div style={{ textAlign: 'center', marginTop: 'var(--space-6)', marginBottom: 'var(--space-4)' }}>
+          <button
+            type="button"
+            className="btn btn-outline hover-lift"
+            onClick={() => setVisibleCount(v => v + 24)}
+            style={{ minWidth: 200, color: 'var(--white)', borderColor: 'rgba(255,255,255,0.2)' }}
+          >
+            Load More Products
+          </button>
+        </div>
       )}
       </div>{/* END grid section */}
       </>

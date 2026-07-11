@@ -13,6 +13,7 @@ import { toTitleCase } from '@/lib/categoryImage';
 import { createClient } from '@/lib/supabase/client';
 import { calculateShippingCost as getShippingCost, ShippingOption } from '@/lib/shipping-cost';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
+import { Copy, Check } from 'lucide-react';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
 import { trackStorefrontEvent } from '@/lib/track';
 
@@ -176,6 +177,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+  const [copiedOrderId, setCopiedOrderId] = useState(false);
   const [serverTotal, setServerTotal] = useState<number | null>(null);
   const [totalAdjusted, setTotalAdjusted] = useState(false);
 
@@ -1027,7 +1029,21 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           <div className="glass-panel" style={{ background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-6)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order Identifier</span>
-              <strong style={{ color: 'var(--white)', fontFamily: 'var(--font-brand)', fontSize: '0.95rem', wordBreak: 'break-all' }}>{orderSuccess}</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <strong style={{ color: 'var(--white)', fontFamily: 'var(--font-brand)', fontSize: '0.95rem', wordBreak: 'break-all' }}>{orderSuccess}</strong>
+                <button
+                  type="button"
+                  aria-label="Copy Order ID"
+                  onClick={() => {
+                    navigator.clipboard.writeText(orderSuccess);
+                    setCopiedOrderId(true);
+                    setTimeout(() => setCopiedOrderId(false), 2000);
+                  }}
+                  style={{ background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
+                >
+                  {copiedOrderId ? <Check size={16} /> : <Copy size={16} />}
+                </button>
+              </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payment Method</span>
@@ -1059,8 +1075,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             <p style={{ color: 'var(--silver-light)', fontSize: '0.78rem', margin: 0, lineHeight: 1.5 }}>All Products Purchased Are Restrictively Designated For Laboratory Experimentation And Chemical Analysis Only. Any Therapeutic Use Or Human Consumption Is Stringently Prohibited.</p>
           </div>
 
-          <div style={{ textAlign: 'center' }}>
-            <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} className="btn btn-primary" style={{ minWidth: 200, display: 'inline-block', lineHeight: '42px', textDecoration: 'none' }}>Return To Catalog</a>
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', alignItems: 'center' }}>
+            <Link href={`/orders/${orderSuccess}`} className="btn-neon-cyan" style={{ minWidth: 200, display: 'inline-block', lineHeight: '42px', textDecoration: 'none' }}>
+              View Order Status
+            </Link>
+            <Link href={agentSlug ? `/${agentSlug}` : '/dashboard'} className="btn" style={{ minWidth: 200, display: 'inline-block', lineHeight: '42px', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.1)' }}>
+              Return To Catalog
+            </Link>
           </div>
         </div>
       </div>
