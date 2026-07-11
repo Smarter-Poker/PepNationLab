@@ -9,14 +9,13 @@ export const runtime = 'nodejs';
 /**
  * Certificate Of Analysis results, verification, and retraction.
  *
- * Every value written here comes from a signed certificate supplied by a
- * testing lab. Nothing on this route derives, estimates, defaults, or generates
- * an analytical result. A field the lab did not report stays NULL and renders as
- * "Not Reported" -- the absence of a measurement is itself information a
- * researcher is entitled to.
+ * Every value written here comes from a testing lab's report. Nothing on this
+ * route derives, estimates, defaults, or generates an analytical result. A field
+ * the lab did not report stays NULL and renders as "Not Reported" -- the absence
+ * of a measurement is itself information a researcher is entitled to.
  *
  *   PATCH                  Enter or correct results on an UNVERIFIED lot.
- *   POST ?action=verify    Admin attests the entered values match the signed PDF.
+ *   POST ?action=verify    Publish: admin attests the entered values are real.
  *                          Freezes the results permanently.
  *   POST ?action=retract   Withdraw a published certificate. One-way. Requires a
  *                          reason. Does not delete the record.
@@ -80,6 +79,7 @@ const TEXT_FIELDS: Array<[string, number]> = [
   ['hplc_column', 200],
   ['ms_method', 120],
   ['appearance', 200],
+  ['storage', 200],
   ['testing_lab', 200],
   ['lab_report_number', 120],
   ['lab_accreditation', 120],
@@ -174,7 +174,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json(
       {
         error:
-          'This Certificate Is Verified And Its Results Are Frozen. Retract It, Or Supersede The Lot With A New Record.',
+          'This Certificate Is Published And Its Results Are Frozen. Retract It, Or Add A New Lot.',
       },
       { status: 409 },
     );
@@ -239,15 +239,16 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (action === 'verify') {
     if (lot.coa_verified_at) {
       return NextResponse.json(
-        { error: 'This Certificate Is Already Verified.' },
+        { error: 'This Certificate Is Already Published.' },
         { status: 409 },
       );
     }
 
-    // A certificate is only verifiable if the things that make it verifiable are
-    // present. The database enforces the same rule; this yields a clear message.
+    // A certificate is only verifiable if the things that make it true are
+    // present. For the in-house-lab model the platform-generated certificate is
+    // itself the document, so no separate signed file is required. The database
+    // enforces the same rule; this yields a clear message.
     const missing: string[] = [];
-    if (!lot.coa_storage_key) missing.push('The Signed Certificate File');
     if (!lot.testing_lab) missing.push('The Testing Laboratory');
     if (!lot.test_date) missing.push('The Test Date');
     if (lot.purity_pct === null || lot.purity_pct === undefined) missing.push('The Reported Purity');
@@ -255,7 +256,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (missing.length > 0) {
       return NextResponse.json(
         {
-          error: `Cannot Verify Without: ${missing.join(', ')}.`,
+          error: `Cannot Publish Without: ${missing.join(', ')}.`,
           missing,
         },
         { status: 422 },
@@ -275,7 +276,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       .maybeSingle();
 
     if (error || !updated) {
-      return NextResponse.json({ error: 'Failed To Verify Certificate.' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed To Publish Certificate.' }, { status: 500 });
     }
 
     await supabase.from('admin_audit_log').insert({
@@ -297,7 +298,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   // action === 'retract'
   if (!lot.coa_verified_at) {
     return NextResponse.json(
-      { error: 'Only A Verified Certificate Can Be Retracted.' },
+      { error: 'Only A Published Certificate Can Be Retracted.' },
       { status: 409 },
     );
   }

@@ -66,6 +66,13 @@ export interface CertificateData {
    *  verification QR. Used by the admin catalogue preview so generated
    *  placeholder numbers can never be mistaken for a real, signed certificate. */
   sample?: boolean;
+
+  /** ADMIN PREVIEW mode. Renders the certificate exactly as it will look when
+   *  published -- no SAMPLE stamp, no UNVERIFIED ribbon, signature and QR shown --
+   *  so an admin can review the finished layout while editing. It never
+   *  fabricates data: fields the admin has not filled still render "Not Reported".
+   *  Only the real /coa route (verified lots) is public. */
+  adminPreview?: boolean;
 }
 
 const NOT_REPORTED = 'Not Reported';
@@ -148,7 +155,7 @@ export default function CertificateDocument({ data }: { data: CertificateData })
         fontFamily: 'Inter, system-ui, sans-serif',
       }}
     >
-      {(data.sample || !data.verified) && (
+      {(data.sample || (!data.verified && !data.adminPreview)) && (
         <div
           aria-hidden="true"
           style={{
@@ -203,7 +210,7 @@ export default function CertificateDocument({ data }: { data: CertificateData })
         <InfoCell label="CAS" value={data.cas || NOT_REPORTED} />
         <InfoCell label="Test Date" value={fmtDate(data.testDate)} />
         <InfoCell label="Appearance" value={data.appearance || NOT_REPORTED} />
-        <InfoCell label="Storage" value={data.storage || 'Store At Minus 20 C'} />
+        <InfoCell label="Storage" value={data.storage || 'Store At Minus 4 F'} />
       </div>
 
       {sequence && (
@@ -281,7 +288,7 @@ export default function CertificateDocument({ data }: { data: CertificateData })
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 20, borderTop: `0.5px solid ${HAIR}`, paddingTop: 14 }}>
         <div>
           <div style={{ fontSize: 11, color: MUTED }}>Reviewed And Approved By</div>
-          {(data.verified || data.sample) && data.approvedByName ? (
+          {(data.verified || data.sample || data.adminPreview) && data.approvedByName ? (
             <>
               <div style={{ position: 'relative', width: 200, height: 44, marginTop: 4 }}>
                 <span
@@ -307,7 +314,11 @@ export default function CertificateDocument({ data }: { data: CertificateData })
               <div style={{ fontSize: 12, fontWeight: 500, marginTop: 3 }}>{data.approvedByName}</div>
               <div style={{ fontSize: 11, color: MUTED }}>{data.approvedByTitle || 'Laboratory Technician'}</div>
               <div style={{ fontSize: 11, color: MUTED }}>
-                {data.sample ? 'Sample Preview, Not A Real Sign-Off' : `Approved ${fmtDate(data.verifiedAt)}`}
+                {data.sample
+                  ? 'Sample Preview, Not A Real Sign-Off'
+                  : data.verified
+                    ? `Approved ${fmtDate(data.verifiedAt)}`
+                    : 'Draft, Not Yet Published'}
               </div>
             </>
           ) : (
