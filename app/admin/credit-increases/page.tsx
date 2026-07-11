@@ -26,6 +26,9 @@ type Req = {
   decision_note: string | null;
   created_at: string;
   live_limit: number | null;
+  prepaid_balance: number | null;
+  orders_count: number;
+  orders_volume: number;
 };
 
 const STATUS_COLOR: Record<string, string> = { pending: '#ffb800', approved: '#2ed573', denied: '#ff4757', withdrawn: 'var(--grey-500)' };
@@ -106,6 +109,15 @@ export default function AdminCreditIncreasesPage() {
                 <div style={{ display: 'flex', gap: 16, margin: '12px 0', fontSize: '0.9rem', flexWrap: 'wrap' }}>
                   <span style={{ color: 'var(--silver)' }}>Current: <strong style={{ color: 'var(--white)' }}>{money(r.current_limit)}</strong></span>
                   <span style={{ color: 'var(--silver)' }}>Requested: <strong style={{ color: 'var(--teal)' }}>{money(r.requested_limit)}</strong></span>
+                </div>
+
+                <div style={{ display: 'flex', gap: 14, marginBottom: 12, fontSize: '0.78rem', color: 'var(--grey-400)', flexWrap: 'wrap' }}>
+                  {r.account_type && <span>Account: <strong style={{ color: 'var(--silver)', textTransform: 'capitalize' }}>{r.account_type}</strong></span>}
+                  {r.prepaid_balance != null && <span>Balance: <strong style={{ color: 'var(--silver)' }}>{money(r.prepaid_balance)}</strong></span>}
+                  <span>Orders: <strong style={{ color: 'var(--silver)' }}>{r.orders_count}</strong> ({money(r.orders_volume)} Lifetime)</span>
+                  {r.live_limit != null && r.live_limit !== r.current_limit && (
+                    <span>Live Limit: <strong style={{ color: 'var(--silver)' }}>{money(r.live_limit)}</strong></span>
+                  )}
                 </div>
 
                 {r.reason && (

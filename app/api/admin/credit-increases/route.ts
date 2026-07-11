@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { notify } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -22,19 +23,37 @@ export async function GET() {
     .limit(200);
 
   const ids = Array.from(new Set((reqs ?? []).map((r) => r.agent_id)));
-  const nameById = new Map<string, { full_name: string | null; email: string; account_type: string | null; credit_limit: number }>();
+  const nameById = new Map<string, { full_name: string | null; email: string; account_type: string | null; credit_limit: number; prepaid_balance: number }>();
   if (ids.length > 0) {
     const { data: profs } = await svc
       .from('profiles')
-      .select('id, full_name, email, account_type, credit_limit')
+      .select('id, full_name, email, account_type, credit_limit, prepaid_balance')
       .in('id', ids);
     for (const p of profs ?? []) {
-      nameById.set(p.id, { full_name: p.full_name, email: p.email, account_type: p.account_type, credit_limit: Number(p.credit_limit || 0) });
+      nameById.set(p.id, { full_name: p.full_name, email: p.email, account_type: p.account_type, credit_limit: Number(p.credit_limit || 0), prepaid_balance: Number(p.prepaid_balance || 0) });
+    }
+  }
+
+  // Order-history context so the reviewer can judge volume at a glance:
+  // lifetime non-cancelled order count + dollar volume per requesting agent.
+  const orderStats = new Map<string, { count: number; volume: number }>();
+  if (ids.length > 0) {
+    const { data: ords } = await svc
+      .from('orders')
+      .select('agent_id, total, status')
+      .in('agent_id', ids)
+      .neq('status', 'cancelled');
+    for (const o of ords ?? []) {
+      const cur = orderStats.get(o.agent_id) ?? { count: 0, volume: 0 };
+      cur.count += 1;
+      cur.volume += Number(o.total || 0);
+      orderStats.set(o.agent_id, cur);
     }
   }
 
   const rows = (reqs ?? []).map((r) => {
     const p = nameById.get(r.agent_id);
+    const stats = orderStats.get(r.agent_id);
     return {
       ...r,
       current_limit: Number(r.current_limit || 0),
@@ -43,6 +62,9 @@ export async function GET() {
       agent_email: p?.email || '',
       account_type: p?.account_type || null,
       live_limit: p?.credit_limit ?? null,
+      prepaid_balance: p?.prepaid_balance ?? null,
+      orders_count: stats?.count ?? 0,
+      orders_volume: Math.round((stats?.volume ?? 0) * 100) / 100,
     };
   });
 
@@ -89,17 +111,20 @@ export async function POST(req: Request) {
 
   const result = (data ?? {}) as { agent_id?: string; new_limit?: number | null };
 
-  // Notify the agent (best-effort).
+  // Notify the agent (best-effort). notify() writes the in-app bell entry AND
+  // queues a gated web push, matching how the request-side notifies admins.
   try {
-    await svc.from('notifications').insert({
-      user_id: result.agent_id,
-      title: body.decision === 'approved' ? 'Credit Increase Approved' : 'Credit Increase Decision',
-      body: body.decision === 'approved'
-        ? `Your New Credit Limit Is $${Number(result.new_limit || 0).toFixed(2)}.`
-        : 'Your Credit Increase Request Was Not Approved At This Time.',
-      type: 'system',
-      url: '/wallet',
-    });
+    if (result.agent_id) {
+      await notify(svc, {
+        userId: result.agent_id,
+        type: 'system',
+        title: body.decision === 'approved' ? 'Credit Increase Approved' : 'Credit Increase Decision',
+        body: body.decision === 'approved'
+          ? `Your New Credit Limit Is $${Number(result.new_limit || 0).toFixed(2)}.`
+          : 'Your Credit Increase Request Was Not Approved At This Time.',
+        url: '/wallet',
+      });
+    }
   } catch { /* notify must not block */ }
 
   // Audit (best-effort).
