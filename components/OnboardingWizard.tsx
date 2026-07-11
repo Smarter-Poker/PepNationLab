@@ -572,10 +572,10 @@ function ProfileStep({ state, onDone }: { state: OnboardingState; onDone: () => 
 }
 
 /**
- * Warehouse step with Shippo address validation. On save we validate the
- * address; if Shippo returns a standardized suggestion that differs, we show a
+ * Warehouse step with EasyPost address validation. On save we validate the
+ * address; if EasyPost returns a standardized suggestion that differs, we show a
  * compare panel so the user can accept the corrected version before it is
- * saved. If Shippo is unconfigured/unavailable the endpoint soft-oks and we
+ * saved. If EasyPost is unconfigured/unavailable the endpoint soft-oks and we
  * save what was entered.
  */
 type Addr = { street1: string; street2: string; city: string; state: string; zip: string };
@@ -594,7 +594,7 @@ function WarehouseStep({ state, onDone }: { state: OnboardingState; onDone: () =
   const [suggestion, setSuggestion] = useState<Addr | null>(null);
 
   // Live type-ahead: as the street field is typed, fetch clickable address
-  // suggestions that auto-fill street/city/state/zip. The Shippo standardize
+  // suggestions that auto-fill street/city/state/zip. The EasyPost standardize
   // confirm below remains the secondary "use this / keep mine" layer on save.
   const [acItems, setAcItems] = useState<AcItem[]>([]);
   const [acOpen, setAcOpen] = useState(false);
@@ -655,7 +655,7 @@ function WarehouseStep({ state, onDone }: { state: OnboardingState; onDone: () =
     const a = current();
     if (!a.street1 || !a.city || !a.state || !a.zip) { setErr('Street, City, State, And Zip Are Required.'); return; }
     setBusy(true);
-    // Validate via Shippo (best-effort). A standardized suggestion prompts a confirm.
+    // Validate via EasyPost (best-effort). A standardized suggestion prompts a confirm.
     try {
       const res = await fetch('/api/shipping/validate-address', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },

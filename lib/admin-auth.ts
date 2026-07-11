@@ -196,7 +196,7 @@ export async function requireSession(): Promise<
 }
 
 /**
- * Guards high-sensitivity admin endpoints (Shippo connect / rotate /
+ * Guards high-sensitivity admin endpoints (EasyPost connect / rotate /
  * disconnect) by verifying that the authenticated admin completed an MFA
  * challenge within the last `windowMs` milliseconds.
  */

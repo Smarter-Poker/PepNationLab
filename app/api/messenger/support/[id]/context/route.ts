@@ -135,7 +135,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .maybeSingle();
     if (lo) {
       const tn = (lo as { tracking_number?: string | null }).tracking_number ?? null;
-      // Tracking URL: prefer the explicit Shippo label_url when present (it
+      // Tracking URL: prefer the explicit carrier label_url when present (it
       // doubles as a tracking link in this codebase), else null.
       const labelUrl = (lo as { label_url?: string | null }).label_url ?? null;
       linkedOrder = {

@@ -5,7 +5,7 @@ import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { calculateShippingCost, getCarrierName } from '@/lib/shipping-cost';
-import { quoteCheapestForCheckout, normalizeShippingAddress } from '@/lib/shippo';
+import { quoteCheapestForCheckout, normalizeShippingAddress } from '@/lib/shipping';
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 import { computeLineSplit, type ItemFulfillmentSplit } from '@/lib/order-line-splits';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
@@ -802,10 +802,10 @@ export async function POST(request: NextRequest) {
     const actualShippingOption: import('@/lib/shipping-cost').ShippingOption = fulfillmentMethod === 'agent_pickup'
       ? 'agent_pickup'
       : (CARRIERS.includes(shippingOption as (typeof CARRIERS)[number]) ? (shippingOption as (typeof CARRIERS)[number]) : 'usps');
-    // Shipping charge: prefer the LIVE cheapest carrier rate (Shippo) from the
+    // Shipping charge: prefer the LIVE cheapest carrier rate (EasyPost) from the
     // agent's warehouse to the buyer's address, so the buyer pays what the
     // platform actually pays for the label instead of a decoupled flat estimate.
-    // The flat weight table remains the fallback (Shippo slow/unavailable, no
+    // The flat weight table remains the fallback (EasyPost slow/unavailable, no
     // rate for the destination, or address incomplete). quoteCheapestForCheckout
     // is non-throwing and hard-bounded by an internal timeout, so it can never
     // hang or fail the order; on any miss we keep the flat estimate.
@@ -1198,9 +1198,9 @@ export async function POST(request: NextRequest) {
           .update({ status: 'agent_approval_pending' })
           .eq('id', order.id);
       } else if (initialStatus === 'approved_ship') {
-        const { error: labelErr } = await serviceSupabase.rpc('shippo_enqueue_label_job', { p_order_id: order.id });
+        const { error: labelErr } = await serviceSupabase.rpc('shipping_enqueue_label_job', { p_order_id: order.id });
         if (labelErr) {
-          console.error('[WARNING] shippo_enqueue_label_job Failed For Order', order.id, labelErr);
+          console.error('[WARNING] shipping_enqueue_label_job Failed For Order', order.id, labelErr);
         }
       }
     }

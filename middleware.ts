@@ -13,7 +13,7 @@ import { getSupabaseUrl } from '@/lib/supabase/url';
 const RL_EXEMPT_PREFIXES = [
   '/api/cron/', // Vercel cron — authenticated via CRON_SECRET inside each route
   '/api/messenger/cron/', // same
-  '/api/webhooks/', // signed webhooks (Shippo) — verified in-route, may burst on retry
+  '/api/webhooks/', // signed webhooks (EasyPost) — verified in-route, may burst on retry
   '/api/health', // uptime probe
 ];
 
@@ -190,10 +190,10 @@ const PUBLIC_ROUTES = [
   '/api/cron/companion-papers-compute',
   '/api/cron/broken-link-crawler',
   '/api/cron/label-jobs',
-  '/api/cron/shippo-reconcile',
-  '/api/cron/shippo-webhook-retry',
+  '/api/cron/shipping-reconcile',
+  '/api/cron/shipping-webhook-retry',
   '/api/messenger/cron',
-  '/api/webhooks/shippo',
+  '/api/webhooks/easypost',
   '/manifest.webmanifest',
   '/sw.js',
   '/api/push/vapid-public-key',

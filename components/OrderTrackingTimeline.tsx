@@ -2,7 +2,7 @@
  * OrderTrackingTimeline
  *
  * Presentational server component that renders the carrier tracking history
- * captured by the Shippo webhook (shipping_tracking_events). Pure - it takes a
+ * captured by the EasyPost webhook (shipping_tracking_events). Pure - it takes a
  * pre-fetched, RLS-scoped list of events and renders a vertical timeline. It
  * returns null when there are no events, so callers can drop it in
  * unconditionally without changing existing layout when nothing has arrived.
@@ -20,7 +20,7 @@ export interface TrackingEvent {
   carrier: string | null;
 }
 
-// Friendly Title Case labels + a dot colour per Shippo tracking status code.
+// Friendly Title Case labels + a dot colour per carrier tracking status code.
 const STATUS_META: Record<string, { label: string; color: string }> = {
   PRE_TRANSIT: { label: 'Label Created', color: 'var(--silver)' },
   TRANSIT: { label: 'In Transit', color: 'var(--teal)' },

@@ -36,7 +36,10 @@ export async function POST(req: NextRequest) {
 
     if (!Array.isArray(items) || items.length === 0) return NextResponse.json({ error: 'Order Must Contain Items.' }, { status: 400 });
 
-    const safeShipping = Math.max(0, Number(shippingCost) || 0);
+    // Agent-entered shipping for a manual order. This is agent-authenticated
+    // (not a researcher-facing exploit), but a typo or bad value should never
+    // create an absurd charge, so clamp to a sane range and round to cents.
+    const safeShipping = Math.min(1000, Math.max(0, Math.round((Number(shippingCost) || 0) * 100) / 100));
     const fulfillment = fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'ship';
 
     const { data: agentProfile, error: agentProfileError } = await supabase.from('profiles').select('tier, parent_agent_id, role, is_sub_agent, account_type, max_auto_approve_limit').eq('id', agentId).maybeSingle();

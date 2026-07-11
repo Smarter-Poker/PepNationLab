@@ -580,6 +580,7 @@ export async function quoteCheapestForCheckout(input: {
   const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs));
   return Promise.race([run, timeout]);
 }
+
 function toShippoAddress(a: AddressInput): Record<string, unknown> {
   return {
     name: a.name,

@@ -605,7 +605,6 @@ export default function AgentStorefrontGrid({
     const stored = readStoredFilters();
     if (!stored) return;
     // Do not restore search query so it is cleared on return
-    // if (typeof stored.q === 'string') setSearchQuery(stored.q);
     if (typeof stored.sort === 'string') setSortBy(stored.sort as typeof initialSort);
     if (typeof stored.category === 'string') setFilterCategory(stored.category);
     if (stored.inStock !== undefined) setInStockOnly(stored.inStock === '1');
@@ -623,8 +622,6 @@ export default function AgentStorefrontGrid({
     urlSyncTimer.current = setTimeout(() => {
       const params = new URLSearchParams();
       // Do not sync search query to URL so it clears on back navigation
-      // const trimmedQ = searchQuery.trim();
-      // if (trimmedQ) params.set('q', trimmedQ);
       if (filterCategory && filterCategory !== 'all') params.set('category', filterCategory);
       if (filterArea) params.set('area', filterArea);
       if (sortBy && sortBy !== 'popular') params.set('sort', sortBy);
