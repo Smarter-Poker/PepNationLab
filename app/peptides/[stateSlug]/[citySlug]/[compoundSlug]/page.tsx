@@ -167,25 +167,30 @@ export default async function CompoundCityPage({
     })
     .slice(0, 8);
 
-  // JSON-LD graph (server-rendered)
-  const productNode: Record<string, unknown> = {
-    '@type': 'Product',
-    name: `${compound.displayName} - Research Grade`,
-    description: `Research-grade ${compound.displayName} (${compound.popularName}) for qualified researchers in ${city.name}, ${city.state}. In vitro laboratory use only.`,
-    brand: { '@id': `${BASE}/#organization` },
-    category: monograph?.category ?? 'Research Peptide',
-  };
-  if (card?.image) productNode.image = `${BASE}${card.image}`;
-  if (card && Number.isFinite(card.price) && card.price > 0) {
-    productNode.offers = {
-      '@type': 'Offer',
-      price: card.price.toFixed(2),
-      priceCurrency: 'USD',
-      availability: 'https://schema.org/InStock',
-      url: `${BASE}${storeHref}`,
-      seller: { '@id': `${BASE}/#organization` },
-    };
-  }
+  // JSON-LD graph (server-rendered). A Product node is only emitted when a
+  // real price exists: Google's Product spec requires offers/review/rating,
+  // and a Product with none of them draws "missing field (offers)" warnings
+  // in Search Console. With no price we fall back to a plain Thing via the
+  // WebPage `about` node below, which carries no such requirement.
+  const hasOffer = Boolean(card && Number.isFinite(card.price) && card.price > 0);
+  const productNode: Record<string, unknown> | null = hasOffer
+    ? {
+        '@type': 'Product',
+        name: `${compound.displayName} - Research Grade`,
+        description: `Research-grade ${compound.displayName} (${compound.popularName}) for qualified researchers in ${city.name}, ${city.state}. In vitro laboratory use only.`,
+        brand: { '@id': `${BASE}/#organization` },
+        category: monograph?.category ?? 'Research Peptide',
+        offers: {
+          '@type': 'Offer',
+          price: (card!.price as number).toFixed(2),
+          priceCurrency: 'USD',
+          availability: 'https://schema.org/InStock',
+          url: `${BASE}${storeHref}`,
+          seller: { '@id': `${BASE}/#organization` },
+        },
+      }
+    : null;
+  if (productNode && card?.image) productNode.image = `${BASE}${card.image}`;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -200,7 +205,7 @@ export default async function CompoundCityPage({
           { '@type': 'ListItem', position: 5, name: compound.displayName, item: pageUrl },
         ],
       },
-      productNode,
+      ...(productNode ? [productNode] : []),
       {
         '@type': 'FAQPage',
         mainEntity: faqs.map((f) => ({

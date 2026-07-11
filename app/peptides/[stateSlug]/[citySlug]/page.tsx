@@ -168,29 +168,32 @@ export default async function CityLandingPage({
                 url: `https://pepnationlab.com/${DEFAULT_STORE_SLUG}?product=${p.productId}`,
               })),
             },
+            // Product nodes are only emitted for items with a real price:
+            // Google's Product spec requires offers/review/rating, and a
+            // Product with none of them draws "missing field (offers)"
+            // warnings in Search Console. Unpriced items still appear in the
+            // ItemList above.
             ...top10
-              .filter((p) => String(p.name || '').trim() !== '')
+              .filter((p) => String(p.name || '').trim() !== '' && Number.isFinite(Number(p.price)) && Number(p.price) > 0)
               .map((p) => {
                 const name = p.subtitle ? `${p.name} (${p.subtitle})` : p.name;
+                const price = Number(p.price);
                 const node: Record<string, unknown> = {
                   '@type': 'Product',
                   // name is REQUIRED by Google's Product spec — never omit it.
                   name,
                   description: `Research-grade ${p.name} for qualified researchers.`,
                   brand: { '@id': 'https://pepnationlab.com/#organization' },
-                };
-                if (p.image) node.image = `https://pepnationlab.com${p.image}`;
-                const price = Number(p.price);
-                if (Number.isFinite(price) && price > 0) {
-                  node.offers = {
+                  offers: {
                     '@type': 'Offer',
                     price: price.toFixed(2),
                     priceCurrency: 'USD',
                     availability: 'https://schema.org/InStock',
                     url: `https://pepnationlab.com/${DEFAULT_STORE_SLUG}?product=${p.productId}`,
                     seller: { '@id': 'https://pepnationlab.com/#organization' },
-                  };
-                }
+                  },
+                };
+                if (p.image) node.image = `https://pepnationlab.com${p.image}`;
                 return node;
               }),
           ]

@@ -38,6 +38,10 @@ const nextConfig = {
     // optimizer). Current call sites: 40 (landing artwork), 45 (city hero),
     // 60/75 (general use). If you change a quality prop, update this list.
     qualities: [40, 45, 60, 75],
+    // Cache optimized images at the CDN/optimizer for 31 days instead of the
+    // short default. Source images here are immutable content-addressed
+    // assets, so long TTL = fewer re-optimizations and faster repeat LCP.
+    minimumCacheTTL: 2678400,
   },
   async redirects() {
     // Bare/vanity city-slug redirects (e.g. /oaklawn or /oak-lawn ->

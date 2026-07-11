@@ -12,18 +12,25 @@ import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 const BASE = 'https://pepnationlab.com';
 
+// Real content-edit date for hand-authored static/hub/list pages. Bump this
+// when their content meaningfully changes. Using a fixed date (instead of
+// `new Date()` at build time) keeps <lastmod> honest - emitting "now" on every
+// deploy tells crawlers everything changed constantly, which dilutes the
+// signal and slows recrawl of pages that DID change.
+const STATIC_CONTENT_UPDATED = new Date('2026-07-11');
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const staticPaths: MetadataRoute.Sitemap = [
     // Core
-    { url: `${BASE}/`, lastModified: now, changeFrequency: 'weekly', priority: 1.0 },
-    { url: `${BASE}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE}/become-agent`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/contact`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/find-a-peptide`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${BASE}/peptide-101`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE}/${DEFAULT_STORE_SLUG}`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE}/`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 1.0 },
+    { url: `${BASE}/about`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${BASE}/become-agent`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/contact`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/find-a-peptide`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/peptide-101`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${BASE}/${DEFAULT_STORE_SLUG}`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.9 },
 
     // Local SEO - Peptides by City (hub + states; city URLs are emitted once
     // below with tier-scored priority - do NOT list them twice)
@@ -36,52 +43,52 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
 
     // Legal / Compliance
-    { url: `${BASE}/compliance`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${BASE}/disclaimer`, lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
-    { url: `${BASE}/privacy`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${BASE}/terms`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/compliance`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/disclaimer`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${BASE}/privacy`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/terms`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
 
     // Research Library - Hub Pages
-    { url: `${BASE}/research`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: `${BASE}/research/areas`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE}/research/about-areas`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/research/catalog`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${BASE}/research/a-z`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
-    { url: `${BASE}/research/glossary`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/research/faq`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/research/learn`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/research/evidence`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'daily', priority: 0.9 },
+    { url: `${BASE}/research/areas`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${BASE}/research/about-areas`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/catalog`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/research/a-z`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${BASE}/research/glossary`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/faq`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/learn`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/evidence`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
 
     // Research Library - Tools
-    { url: `${BASE}/research/calculators`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/research/compare`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${BASE}/research/stacks`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${BASE}/research/match`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/calculators`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/compare`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE}/research/stacks`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE}/research/match`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
 
     // Research Library - Browse Filters
-    { url: `${BASE}/research/by-class`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE}/research/by-target`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE}/research/by-mechanism`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE}/research/by-route`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
-    { url: `${BASE}/research/by-half-life`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
-    { url: `${BASE}/research/by-mw`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
+    { url: `${BASE}/research/by-class`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/by-target`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/by-mechanism`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/by-route`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.5 },
+    { url: `${BASE}/research/by-half-life`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.5 },
+    { url: `${BASE}/research/by-mw`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.5 },
 
     // Research Library - Curated Lists
-    { url: `${BASE}/research/most-cited`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
-    { url: `${BASE}/research/most-studied-2026`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE}/research/new-additions`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
-    { url: `${BASE}/research/approved-drugs`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE}/research/intranasal-peptides`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${BASE}/research/timeline`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/most-cited`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${BASE}/research/most-studied-2026`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/new-additions`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'daily', priority: 0.7 },
+    { url: `${BASE}/research/approved-drugs`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/intranasal-peptides`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/research/timeline`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
 
     // Research Library - Pipeline / Status
-    { url: `${BASE}/research/in-pipeline`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE}/research/discontinued`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${BASE}/research/orphan-drugs`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${BASE}/research/correlated`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
+    { url: `${BASE}/research/in-pipeline`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/discontinued`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/research/orphan-drugs`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/research/correlated`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.5 },
 
     // Research Library - API Docs
-    { url: `${BASE}/research/api-docs`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/research/api-docs`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
 
     // Research Library - Editorial Guides
     { url: `${BASE}/research/guides`, lastModified: new Date(GUIDES_UPDATED), changeFrequency: 'monthly', priority: 0.7 },
@@ -93,10 +100,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
 
     // Research Library - Editorial Standards + Compound Comparisons
-    { url: `${BASE}/research/methodology`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE}/research/methodology`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.6 },
     ...COMPARISON_PAIRS.map((p) => ({
       url: `${BASE}/research/compare/${matchupSlug(p.a, p.b)}`,
-      lastModified: now,
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
@@ -105,7 +112,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // category landing pages (weight management, tissue repair, cognitive, etc).
     ...Object.keys(RESEARCH_AREAS).map((area) => ({
       url: `${BASE}/research/area/${area}`,
-      lastModified: now,
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: 'weekly' as const,
       priority: 0.8,
     })),

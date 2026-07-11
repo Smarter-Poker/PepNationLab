@@ -66,7 +66,8 @@ export const metadata: Metadata = {
   icons: {
     icon: "/logo-mark.svg",
     shortcut: "/logo-mark.svg",
-    apple: "/logo-mark.svg",
+    // iOS ignores SVG apple-touch-icons; serve a 180x180 PNG.
+    apple: "/apple-touch-icon.png",
   },
   openGraph: {
     title: "Pep Nation Lab | Premium Research Peptide Distribution",
@@ -127,6 +128,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
+        {/* Early connection to the Supabase origin. Product/storefront imagery,
+            auth, and client data reads all hit this host on first navigation;
+            preconnecting saves a DNS+TLS round trip on the critical path. */}
+        <link rel="preconnect" href="https://ydsaqnnuwyvtyxgvrnys.supabase.co" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://ydsaqnnuwyvtyxgvrnys.supabase.co" />
         {/* RSS feed auto-discovery — enables feed readers and AI crawlers to
             locate the research-updates feed without visiting /feed.xml directly. */}
         <link rel="alternate" type="application/rss+xml" title="Pep Nation Lab Research Updates" href="/feed.xml" />

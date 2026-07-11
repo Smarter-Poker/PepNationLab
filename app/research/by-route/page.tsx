@@ -31,7 +31,8 @@ export const metadata: Metadata = {
   },
 };
 
-export const dynamic = 'force-dynamic';
+// ISR: data comes from unstable_cache'd helpers (60s); render once, revalidate hourly.
+export const revalidate = 3600;
 
 interface RouteRow {
   slug: string;

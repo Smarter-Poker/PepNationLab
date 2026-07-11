@@ -135,11 +135,13 @@ export default function ResearchHero() {
           {/* Subtle grid pattern inside */}
           <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px', opacity: 0.5 }} />
           
-          <Image 
-            src="/images/redesign/hero_molecule.png" 
-            alt="3D Molecular Research" 
-            fill 
-            style={{ objectFit: 'cover', mixBlendMode: 'screen', opacity: 0.9 }} 
+          <Image
+            src="/images/redesign/hero_molecule.png"
+            alt="3D Molecular Research"
+            fill
+            priority
+            sizes="(max-width: 968px) 100vw, 50vw"
+            style={{ objectFit: 'cover', mixBlendMode: 'screen', opacity: 0.9 }}
           />
           
           <div style={{ position: 'absolute', top: '24px', right: '24px', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '8px 16px' }}>

@@ -83,6 +83,10 @@ export default function Peptide101LandingPage() {
         <img
           src={`/images/landing-states/state-${landingState}.png`}
           alt={`Peptide 101 State ${landingState}`}
+          width={853}
+          height={1844}
+          fetchPriority="high"
+          decoding="async"
           style={{ width: '100%', height: 'auto', display: 'block' }}
         />
 

@@ -68,7 +68,9 @@ export default function FooterSection() {
                 { label: 'Peptide 101 Academy', href: '/peptide-101' },
                 { label: 'Reconstitution Calculators', href: '/research/calculators' },
                 { label: 'Compare Compounds', href: '/research/compare' },
-                { label: 'Products', href: '/products' },
+                { label: 'Research Areas', href: '/research/areas' },
+                { label: 'Peptides By City', href: '/peptides' },
+                { label: 'Products', href: '/research/catalog' },
                 { label: 'Agent Dashboard', href: '/dashboard' },
                 { label: 'Sign In', href: '/login' },
               ].map(({ label, href }) => (
