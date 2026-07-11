@@ -23,14 +23,16 @@ import CityPage from './CityPage';
 export const revalidate = 300;
 
 // ─── Static params (build-time pre-rendering) ─────────────────────
-// Scale-ready ISR: at build we pre-render only the highest-priority markets
-// (sorted by tier, then population) up to a cap. Every other city - and any
-// city added later - is rendered on first request via ISR and cached at the
-// edge (dynamicParams defaults to true). This keeps build time bounded as the
-// city database grows into the thousands, while the top markets stay
-// pre-rendered for instant first paint. At the current city count every entry
-// is under the cap, so nothing regresses today.
-const STATIC_CITY_LIMIT = 2000;
+// Scale-ready ISR: at build we pre-render ONLY the highest-priority markets
+// (sorted by tier, then population) up to this small cap. Every other city -
+// and any city added later - is rendered on first request via ISR and cached
+// at the edge (dynamicParams defaults to true). This keeps build time flat as
+// the city catalog grows into the thousands.
+//
+// WARNING: Do NOT raise this cap to pre-render the whole catalog. Pre-rendering
+// ~1000 city pages (each doing a storefront Top-10 DB fetch) at build time is
+// what caused exponential Vercel build times. The long tail belongs on ISR.
+const STATIC_CITY_LIMIT = 24;
 
 export async function generateStaticParams() {
   return [...CITIES]
