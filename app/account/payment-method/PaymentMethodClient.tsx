@@ -93,10 +93,22 @@ export default function PaymentMethodClient({ initialDefault, initialHandles }: 
   async function persist(next: { default_payment_method?: MethodId | null; payment_handles?: Record<string, string> }) {
     setBusy(true);
     try {
+      // Never send empty-string handles. The merged server prefill can contain
+      // '' placeholders (the dashboard payment panel stores disabled methods as
+      // empty strings on agent_profiles); echoing them back tripped the API's
+      // validation and made every save on this page fail with invalid_body.
+      const payload = { ...next };
+      if (payload.payment_handles) {
+        payload.payment_handles = Object.fromEntries(
+          Object.entries(payload.payment_handles).filter(
+            ([, v]) => typeof v === 'string' && v.trim().length > 0,
+          ),
+        );
+      }
       const res = await fetch('/api/account/payment-method', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(next),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
