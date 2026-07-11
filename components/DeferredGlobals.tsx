@@ -31,6 +31,7 @@ const PWAEnforcer = dynamic(() => import('@/components/PWAEnforcer'), { ssr: fal
 const GlobalCallListener = dynamic(() => import('@/components/messenger/GlobalCallListener'), { ssr: false });
 const FirstRunNotificationPrompt = dynamic(() => import('@/components/FirstRunNotificationPrompt'), { ssr: false });
 const SessionKeepalive = dynamic(() => import('@/components/messenger/SessionKeepalive'), { ssr: false });
+const WebVitalsReporter = dynamic(() => import('@/components/WebVitalsReporter'), { ssr: false });
 
 export default function DeferredGlobals() {
   return (
@@ -43,6 +44,7 @@ export default function DeferredGlobals() {
       <GlobalCallListener />
       <FirstRunNotificationPrompt />
       <SessionKeepalive />
+      <WebVitalsReporter />
     </>
   );
 }

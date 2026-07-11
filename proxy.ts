@@ -153,6 +153,8 @@ const PUBLIC_ROUTES = [
   '/llms-full.txt',
   '/api/llm',
   '/api/analytics/faq-click',
+  // Web Vitals RUM sink -- guests on the landing page report Core Web Vitals.
+  '/api/vitals',
   '/invite',
   '/api/agent-invitations/redeem',
   '/api/cron/invoices',
