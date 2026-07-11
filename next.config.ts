@@ -167,7 +167,7 @@ const nextConfig = {
   // and the Vercel build doesn't run lint anyway, so this block was dead
   // weight that only produced noise.
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 };
 
