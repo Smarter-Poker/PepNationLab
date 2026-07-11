@@ -1,0 +1,69 @@
+# One-shot, self-deleting workflow: removes the five stale apply-*.yml
+# one-shot workflows whose changes are already on main. Each of them was
+# supposed to self-delete after running but was left behind (one was even
+# restored by a later stale-snapshot fix). Leaving them is dangerous: they
+# re-trigger on any push touching their own path and could re-apply edits
+# against drifted files.
+#
+# Assertions verify each one-shot's content is actually live on main before
+# anything is deleted. Aborts WITHOUT committing on any mismatch.
+#
+# The workflow removes itself in the same commit.
+
+name: Cleanup Stale One-Shot Workflows
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/cleanup-stale-oneshots.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cleanup-stale-oneshots
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assert every one-shot's content already landed on main
+        run: |
+          set -euo pipefail
+          # apply-comparetool-toast: sonner toasts in, native alert() gone
+          grep -q "toast" components/research/CompareTool.tsx
+          if grep -q "alert(" components/research/CompareTool.tsx; then
+            echo "ABORT: CompareTool still has native alert()"; exit 78; fi
+          # apply-downline-button: DownlineTree wired into AdminAgents
+          grep -q "DownlineTree" components/AdminAgents.tsx
+          # apply-product-manager-component: costLabel prop present
+          grep -q "costLabel" components/AgentStoreProducts.tsx
+          # apply-match-score-invariant: budget shaping is penalties-only
+          grep -q -- "breakdown.budget -= 20" lib/match-engine.ts
+          test -f lib/__tests__/match-engine.test.ts
+          # apply-cowork-guest-cart: slug-carrying guest cart fix present
+          grep -q "ackSep" app/signup/page.tsx
+          grep -q "pnl_storefront_cart_" components/GuestCTA.tsx
+          echo "All one-shot content verified on main"
+
+      - name: Remove stale one-shot workflows and self
+        run: |
+          set -euo pipefail
+          git config user.name "Smarter-Poker"
+          git config user.email "254329056+Smarter-Poker@users.noreply.github.com"
+          git rm \
+            .github/workflows/apply-comparetool-toast.yml \
+            .github/workflows/apply-cowork-guest-cart.yml \
+            .github/workflows/apply-downline-button.yml \
+            .github/workflows/apply-match-score-invariant.yml \
+            .github/workflows/apply-product-manager-component.yml \
+            .github/workflows/cleanup-stale-oneshots.yml
+          git commit -m "chore(ci): remove stale one-shot apply workflows that already ran (self-removed)"
+          git pull --rebase origin main
+          git push origin HEAD:main
