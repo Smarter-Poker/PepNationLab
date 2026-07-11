@@ -17,6 +17,9 @@ import {
  *   2. Run the compliance gate + platform post via dispatchPost().
  *   3. Record the outcome: posted / blocked / failed.
  *
+ * Every posted/blocked decision is also appended to
+ * public.marketing_compliance_log as a durable audit trail (best-effort).
+ *
  * Before draining, it sweeps rows stranded in 'posting' by a crashed or
  * timed-out previous run. Those are marked 'failed', never re-queued: the post
  * may already be live on the platform, so an automatic retry risks publishing
@@ -43,6 +46,30 @@ const STUCK_POSTING_MINUTES = 15;
 const STUCK_ERROR =
   'Stranded in posting (cron crashed or timed out). This post may ALREADY be live on the platform - ' +
   'verify on the account before retrying, or it could publish twice.';
+
+/**
+ * Append a compliance decision to the durable audit trail. Best-effort:
+ * a failure here must never change whether a post publishes.
+ */
+async function logCompliance(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  postId: string,
+  caption: string | null,
+  verdict: 'pass' | 'block',
+  rules: string[],
+): Promise<void> {
+  try {
+    await supabase.from('marketing_compliance_log').insert({
+      asset_type: 'social_post',
+      asset_ref: postId,
+      content_excerpt: (caption ?? '').slice(0, 280),
+      verdict,
+      rules_triggered: rules,
+    });
+  } catch {
+    /* audit logging is best-effort; never block posting on it */
+  }
+}
 
 export async function GET(req: Request) {
   const unauth = assertCronAuth(req);
@@ -130,6 +157,7 @@ export async function GET(req: Request) {
           error: null,
         })
         .eq('id', row.id);
+      await logCompliance(supabase, row.id, row.caption, 'pass', []);
       results.push({ id: row.id, platform: row.platform, outcome: 'posted' });
     } catch (err) {
       if (err instanceof ComplianceBlockError) {
@@ -142,6 +170,7 @@ export async function GET(req: Request) {
             error: null,
           })
           .eq('id', row.id);
+        await logCompliance(supabase, row.id, row.caption, 'block', err.blocked);
         results.push({ id: row.id, platform: row.platform, outcome: 'blocked' });
       } else {
         const message = err instanceof Error ? err.message : String(err);
