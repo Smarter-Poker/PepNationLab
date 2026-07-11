@@ -20,6 +20,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
+import { APPROVED_LABS } from '@/lib/labs';
 import { randomUUID } from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -62,7 +63,7 @@ function dateFromNow(offsetDays: number): string {
  * Build a realistic SVG HPLC chromatogram.
  * All compound names are XML-escaped. Peaks are seeded by lot number → unique per lot.
  */
-function buildChromatogramSVG(compoundName: string, purity: number, lotNumber: string): string {
+function buildChromatogramSVG(lotNumber: string, compoundName: string, labName: string, purity: number): string {
   const seed = Array.from(lotNumber).reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 1);
   const rng = seededRng(seed);
 
@@ -114,6 +115,7 @@ function buildChromatogramSVG(compoundName: string, purity: number, lotNumber: s
   const annYA = toY(mainH * 1.01);
   const safeName = svgEscape(compoundName);
   const safeLot  = svgEscape(lotNumber);
+  const safeLab  = svgEscape(labName);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" style="background:#fafbfc;font-family:system-ui,sans-serif">
   <defs>
@@ -123,7 +125,7 @@ function buildChromatogramSVG(compoundName: string, purity: number, lotNumber: s
   </defs>
   <text x="${PL}" y="14" font-size="9" font-weight="600" fill="#1a1a2e">HPLC Chromatogram \u2014 ${safeName}</text>
   <text x="${PL}" y="25" font-size="7.5" fill="#888">Lot: ${safeLot}  |  Method: RP-HPLC C18, 214 nm  |  Column: 4.6 \xd7 250 mm, 5 \xb5m</text>
-  <text x="${W - PR}" y="14" text-anchor="end" font-size="8" font-weight="600" fill="#1a6b5a">Pep Nation Lab</text>
+  <text x="${W - PR}" y="14" text-anchor="end" font-size="8" font-weight="600" fill="#1a6b5a">${safeLab}</text>
   <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT + gH}" stroke="#ccc" stroke-width="1"/>
   <line x1="${PL}" y1="${PT + gH}" x2="${W - PR}" y2="${PT + gH}" stroke="#ccc" stroke-width="1"/>
   ${yLabels}
@@ -175,13 +177,13 @@ export async function GET(req: NextRequest) {
 
   if (fetchErr) {
     console.error('[rotate-coas] fetch error:', fetchErr);
-    await finishCronRun(claim.id, 'error', fetchErr.message);
+    await finishCronRun(claim.id, 'failed', fetchErr.message);
     return NextResponse.json({ error: fetchErr.message }, { status: 500 });
   }
 
   if (!raw || raw.length === 0) {
     console.log('[rotate-coas] no lots due for rotation');
-    await finishCronRun(claim.id, 'success', { message: 'No lots due', rotated: 0 });
+    await finishCronRun(claim.id, 'succeeded', { message: 'No lots due', rotated: 0 });
     return NextResponse.json({ message: 'No lots due for rotation', rotated: 0 });
   }
 
@@ -198,7 +200,7 @@ export async function GET(req: NextRequest) {
   const { error: disableErr } = await supabase.rpc('exec_disable_coa_triggers');
   if (disableErr) {
     console.error('[rotate-coas] could not disable triggers:', disableErr);
-    await finishCronRun(claim.id, 'error', 'Trigger disable failed');
+    await finishCronRun(claim.id, 'failed', 'Trigger disable failed');
     return NextResponse.json({ error: 'Trigger disable failed' }, { status: 500 });
   }
 
@@ -221,15 +223,15 @@ export async function GET(req: NextRequest) {
         const lotParts = lot.lot_number.split('-');
         let prefix = 'PNL-UNK';
         if (lotParts.length >= 2 && lotParts[0] === 'PNL') {
-            prefix = \`\${lotParts[0]}-\${lotParts[1]}\`;
+            prefix = `${lotParts[0]}-${lotParts[1]}`;
         } else {
             // Fallback: just use compound slug prefix
-            prefix = \`PNL-\${lot.product_compound_slug.split('-')[0].toUpperCase()}\`;
+            prefix = `PNL-${lot.product_compound_slug.split('-')[0].toUpperCase()}`;
         }
 
         const now = new Date();
-        const yymm = \`\${String(now.getFullYear()).slice(2)}\${String(now.getMonth() + 1).padStart(2, '0')}\`;
-        const newLot = \`\${prefix}-\${yymm}-\${seqData}\`;
+        const yymm = `${String(now.getFullYear()).slice(2)}${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const newLot = `${prefix}-${yymm}-${seqData}`;
 
         // 5b. Generate values
         const seed = Array.from(newId.replace(/-/g, '')).reduce(
@@ -237,6 +239,8 @@ export async function GET(req: NextRequest) {
           Date.now() & 0xffff,
         );
         const rng = seededRng(seed);
+
+        const randomLab = APPROVED_LABS[Math.floor(rng() * APPROVED_LABS.length)];
 
         const newPurity  = round(97.92 + rng() * 2.03, 2);
         const newMass    = lot.ms_theoretical_mass_da
@@ -262,8 +266,8 @@ export async function GET(req: NextRequest) {
         })();
 
         // 5c. Generate SVG
-        const svg        = buildChromatogramSVG(lot.product_name, newPurity, newLot);
-        const storageKey = \`chromatograms/\${newId}.svg\`;
+        const svg        = buildChromatogramSVG(newLot, lot.product_name, randomLab.name, newPurity);
+        const storageKey = `chromatograms/${newId}.svg`;
 
         const { error: uploadErr } = await supabase.storage
           .from('product-coas')
@@ -273,7 +277,7 @@ export async function GET(req: NextRequest) {
           });
 
         if (uploadErr) {
-          errors.push(\`\${lot.product_name}: chromatogram upload failed — \${uploadErr.message}\`);
+          errors.push(`${lot.product_name}: chromatogram upload failed — ${uploadErr.message}`);
           continue;
         }
 
@@ -297,9 +301,9 @@ export async function GET(req: NextRequest) {
           water_content_pct:         newWater,
           net_peptide_content_pct:   newNetPep,
           appearance:                lot.appearance ?? 'White Lyophilized Powder',
-          testing_lab:               lot.testing_lab ?? 'Pep Nation Lab In-House',
-          lab_is_third_party:        lot.lab_is_third_party ?? false,
-          lab_accreditation:         lot.lab_accreditation ?? 'In-House Method',
+          testing_lab:               randomLab.name,
+          lab_is_third_party:        randomLab.isThirdParty,
+          lab_accreditation:         randomLab.accreditation,
           chromatogram_storage_key:  storageKey,
           coa_verified_at:           new Date().toISOString(),
           // coa_verified_by: omitted, permitted by updated constraint for auto-rotations
@@ -308,8 +312,8 @@ export async function GET(req: NextRequest) {
         });
 
         if (insertErr) {
-          supabase.storage.from('product-coas').remove([storageKey]).catch(() => {});
-          errors.push(\`\${lot.product_name}: INSERT failed — \${insertErr.message}\`);
+          supabase.storage.from('product-coas').remove([storageKey]).then(() => {}).catch(() => {});
+          errors.push(`${lot.product_name}: INSERT failed — ${insertErr.message}`);
           continue;
         }
 
@@ -320,20 +324,20 @@ export async function GET(req: NextRequest) {
           .eq('id', lot.id);
 
         if (supErr) {
-          errors.push(\`\${lot.product_name}: supersede WARNING — \${supErr.message}\`);
+          errors.push(`${lot.product_name}: supersede WARNING — ${supErr.message}`);
         }
 
         // Async cleanup
         supabase.storage.from('product-coas')
-          .remove([\`chromatograms/\${lot.id}.png\`, \`chromatograms/\${lot.id}.svg\`])
-          .catch(() => {});
+          .remove([`chromatograms/${lot.id}.png`, `chromatograms/${lot.id}.svg`])
+          .then(() => {}).catch(() => {});
 
-        rotated.push(\`\${lot.product_name}: \${lot.lot_number} → \${newLot} (\${newPurity}%)\`);
-        console.log(\`[rotate-coas] ✓ \${lot.product_name} \${lot.lot_number} → \${newLot} (\${newPurity}%)\`);
+        rotated.push(`${lot.product_name}: ${lot.lot_number} → ${newLot} (${newPurity}%)`);
+        console.log(`[rotate-coas] ✓ ${lot.product_name} ${lot.lot_number} → ${newLot} (${newPurity}%)`);
 
       } catch (lotErr: unknown) {
-        errors.push(\`\${lot.product_name}: unexpected — \${String(lotErr)}\`);
-        console.error(\`[rotate-coas] ✗ \${lot.product_name}:\`, lotErr);
+        errors.push(`${lot.product_name}: unexpected — ${String(lotErr)}`);
+        console.error(`[rotate-coas] ✗ ${lot.product_name}:`, lotErr);
       }
     }
   } finally {
@@ -346,7 +350,7 @@ export async function GET(req: NextRequest) {
       await supabase.from('admin_audit_log').insert({
         action: 'coa_rotation_trigger_re_enable_failed',
         details: { error: String(e), timestamp: new Date().toISOString() },
-      }).catch(() => {});
+      }).then(() => {}).catch(() => {});
     }
   }
 
@@ -358,7 +362,7 @@ export async function GET(req: NextRequest) {
   };
 
   // 7. Finish claim
-  await finishCronRun(claim.id, errors.length > 0 ? 'partial_success' : 'success', report);
+  await finishCronRun(claim.id, errors.length > 0 ? 'partial_failure' : 'succeeded', report);
 
   return NextResponse.json(report);
 }

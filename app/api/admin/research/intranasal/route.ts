@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
   try {
     // Load the current row so route_of_admin stays consistent with the tier.
-    const current = await unwrapMaybe(
+    const current = await unwrapMaybe<any>(
       'intranasal.load',
       supabase
         .from('compounds')

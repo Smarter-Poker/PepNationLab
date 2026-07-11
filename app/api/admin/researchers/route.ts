@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
       if (isNaN(delta) || !isFinite(delta)) return NextResponse.json({ error: 'Invalid Balance Amount' }, { status: 400 });
       if (Math.abs(delta) > 10000) return NextResponse.json({ error: 'Balance Adjustment Exceeds $10,000 Limit' }, { status: 400 });
 
-      const currentProfile = await unwrapMaybe('researcher.balance_check', supabase.from('profiles').select('prepaid_balance, full_name').eq('id', id).maybeSingle());
+      const currentProfile = await unwrapMaybe<any>('researcher.balance_check', supabase.from('profiles').select('prepaid_balance, full_name').eq('id', id).maybeSingle());
       if (!currentProfile) return NextResponse.json({ error: 'User Not Found' }, { status: 404 });
 
       const balanceBefore = Number(currentProfile?.prepaid_balance ?? 0);
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
       }
 
       // The target must be an existing researcher account (not an agent/admin).
-      const target = await unwrapMaybe(
+      const target = await unwrapMaybe<any>(
         'researcher.target_check',
         supabase
           .from('profiles')
@@ -208,7 +208,7 @@ export async function POST(req: NextRequest) {
         newParentAgentId = null;
       } else {
         // Validate the target owner is an active agent or super agent.
-        const owner = await unwrapMaybe(
+        const owner = await unwrapMaybe<any>(
           'researcher.owner_check',
           supabase
             .from('profiles')
@@ -272,7 +272,7 @@ export async function POST(req: NextRequest) {
       if (!slugRegex.test(slug)) return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
       if (slug.length < 2 || slug.length > 50) return NextResponse.json({ error: 'Slug Length Must Be Between 2 And 50 Characters' }, { status: 400 });
 
-      const existingSlug = await unwrapMaybe('researcher.slug_check', supabase.from('agent_profiles').select('id').eq('slug', slug).neq('id', id).maybeSingle());
+      const existingSlug = await unwrapMaybe<any>('researcher.slug_check', supabase.from('agent_profiles').select('id').eq('slug', slug).neq('id', id).maybeSingle());
       if (existingSlug) return NextResponse.json({ error: 'This Agent Storefront Slug Is Already Taken' }, { status: 400 });
     }
 
