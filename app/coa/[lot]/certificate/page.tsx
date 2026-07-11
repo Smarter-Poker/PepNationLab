@@ -46,6 +46,7 @@ interface CoaRow {
   coa_verified_at: string;
   reference_mass_da: number | null;
   sequence_one_letter: string | null;
+  cas_number: string | null;
 }
 
 export default async function CertificatePage({ params }: { params: Promise<{ lot: string }> }) {
@@ -105,6 +106,7 @@ export default async function CertificatePage({ params }: { params: Promise<{ lo
     netPeptideContentPct: record.net_peptide_content_pct,
     referenceMassDa: record.reference_mass_da,
     sequenceOneLetter: record.sequence_one_letter,
+    cas: record.cas_number,
     testingLab: record.testing_lab,
     labIsThirdParty: record.lab_is_third_party,
     labAccreditation: record.lab_accreditation,

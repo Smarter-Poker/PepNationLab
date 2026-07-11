@@ -28,6 +28,7 @@ type MethodId =
   | 'zelle'
   | 'venmo'
   | 'cashapp'
+  | 'apple_pay'
   | 'apple_cash'
   | 'paypal'
   | 'google_wallet'
@@ -47,12 +48,13 @@ const METHODS: MethodSpec[] = [
   { id: 'zelle', label: 'Zelle', description: 'Bank-To-Bank Transfer. Common For Larger Orders.', handleLabel: 'Email Or Phone Linked To Your Zelle', placeholder: 'you@email.com or +1 555 555 0123' },
   { id: 'venmo', label: 'Venmo', description: 'Fast Mobile Settlement. Most Popular.', handleLabel: 'Venmo Username', placeholder: '@yourhandle' },
   { id: 'cashapp', label: 'Cash App', description: 'Mobile Wallet Settlement.', handleLabel: 'Cash App Cashtag', placeholder: '$yourtag' },
+  { id: 'apple_pay', label: 'Apple Pay', description: 'Tap To Pay With Your Apple Devices.', handleLabel: 'Apple Pay Contact (Phone Or Apple ID Email)', placeholder: '+1 555 555 0123' },
   { id: 'apple_cash', label: 'Apple Cash', description: 'Person-To-Person Payments Through iMessage.', handleLabel: 'Apple Cash Contact (Phone Or Email)', placeholder: '+1 555 555 0123' },
   { id: 'paypal', label: 'PayPal', description: 'Goods-Or-Services Send To Your Agent.', handleLabel: 'PayPal Email', placeholder: 'you@email.com' },
   { id: 'google_wallet', label: 'Google Wallet', description: 'Google Pay Transfer Via Email Or Phone.', handleLabel: 'Google Wallet Email Or Phone', placeholder: 'you@gmail.com' },
   { id: 'wise', label: 'Wise', description: 'International Settlement. Bank Or Email Linked.', handleLabel: 'Wise Account Email', placeholder: 'you@email.com' },
   { id: 'chime', label: 'Chime', description: 'Chime Pay Anyone Transfer.', handleLabel: 'Chime Sign In (Email Or Phone)', placeholder: 'you@email.com' },
-  { id: 'varo', label: 'Varo', description: 'Varo Bank — Send And Receive Money Instantly.', handleLabel: 'Varo Phone Number Or Email', placeholder: 'you@email.com or +1 555 555 0123' },
+  { id: 'varo', label: 'Varo', description: 'Varo Bank. Send And Receive Money Instantly.', handleLabel: 'Varo Phone Number Or Email', placeholder: 'you@email.com or +1 555 555 0123' },
 ];
 
 const baseStyle = { height: 28, width: 'auto', objectFit: 'contain' as const };
@@ -62,6 +64,7 @@ const PAYMENT_ICONS: Record<MethodId, React.ReactNode> = {
   zelle: <Image src="/payment-logos/zelle.svg" width={40} height={28} alt="Zelle" unoptimized style={baseStyle} />,
   venmo: <Image src="/payment-logos/venmo.svg" width={40} height={28} alt="Venmo" unoptimized style={scaleStyle(1.4)} />,
   cashapp: <Image src="/payment-logos/cashapp.svg" width={40} height={28} alt="Cash App" unoptimized style={baseStyle} />,
+  apple_pay: <Image src="/payment-logos/apple_cash.svg" width={40} height={28} alt="Apple Pay" unoptimized style={scaleStyle(1.4)} />,
   apple_cash: <Image src="/payment-logos/apple_cash.svg" width={40} height={28} alt="Apple Cash" unoptimized style={scaleStyle(1.4)} />,
   paypal: <Image src="/payment-logos/paypal.svg" width={40} height={28} alt="PayPal" unoptimized style={baseStyle} />,
   google_wallet: <Image src="/payment-logos/google_wallet.svg" width={40} height={28} alt="Google Wallet" unoptimized style={scaleStyle(1.4)} />,
@@ -90,10 +93,22 @@ export default function PaymentMethodClient({ initialDefault, initialHandles }: 
   async function persist(next: { default_payment_method?: MethodId | null; payment_handles?: Record<string, string> }) {
     setBusy(true);
     try {
+      // Never send empty-string handles. The merged server prefill can contain
+      // '' placeholders (the dashboard payment panel stores disabled methods as
+      // empty strings on agent_profiles); echoing them back tripped the API's
+      // validation and made every save on this page fail with invalid_body.
+      const payload = { ...next };
+      if (payload.payment_handles) {
+        payload.payment_handles = Object.fromEntries(
+          Object.entries(payload.payment_handles).filter(
+            ([, v]) => typeof v === 'string' && v.trim().length > 0,
+          ),
+        );
+      }
       const res = await fetch('/api/account/payment-method', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(next),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));

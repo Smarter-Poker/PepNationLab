@@ -5,9 +5,9 @@ import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import Image from 'next/image';
 
-/* ─────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────────────
    All supported payment methods with labels and placeholders
-   ───────────────────────────────────────────────────────── */
+   ───────────────────────────────────────────────────── */
 const baseStyle = { height: 20, width: 60, objectFit: 'contain' as const };
 const scaleStyle = (scale: number) => ({ ...baseStyle, transform: `scale(${scale})` });
 
@@ -39,6 +39,13 @@ export const PAYMENT_METHODS = [
     placeholder: 'Email Or @Username',
     icon: <Image src="/payment-logos/paypal.svg" alt="PayPal" width={60} height={20} unoptimized style={baseStyle} />,
     color: '#003087',
+  },
+  {
+    key: 'apple_pay',
+    label: 'Apple Pay',
+    placeholder: 'Phone Number Or Apple ID Email',
+    icon: <Image src="/payment-logos/apple_cash.svg" alt="Apple Pay" width={60} height={20} unoptimized style={scaleStyle(1.4)} />,
+    color: '#FFFFFF',
   },
   {
     key: 'apple_cash',
@@ -79,9 +86,9 @@ export const PAYMENT_METHODS = [
 
 export type PaymentKey = (typeof PAYMENT_METHODS)[number]['key'];
 
-/* ─────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────────────
    PaymentMethodsPanel - Settings tab UI
-   ───────────────────────────────────────────────────────── */
+   ───────────────────────────────────────────────────── */
 interface PaymentMethodsPanelProps {
   agentId: string;
   /** Current payment_handles JSON from agent_profiles row */
@@ -154,10 +161,20 @@ export default function PaymentMethodsPanel({
 
     setSaving(true);
     try {
-      // Build payment_handles object - only include enabled methods with non-empty handles
+      // Build payment_handles object. Start from any existing keys this panel
+      // does not render (e.g. a handle saved through the onboarding wizard or
+      // account settings under a key not listed above) so a full-object save
+      // never silently deletes them, then write every rendered key.
       const handles: Record<string, string> = {};
+      if (initialHandles) {
+        for (const [k, v] of Object.entries(initialHandles)) {
+          if (!PAYMENT_METHODS.some(m => m.key === k) && typeof v === 'string' && v.trim()) {
+            handles[k] = v.trim();
+          }
+        }
+      }
       for (const m of PAYMENT_METHODS) {
-        // Always write all keys. Disabled = empty string.
+        // Always write all rendered keys. Disabled = empty string.
         handles[m.key] = methods[m.key].enabled ? methods[m.key].handle.trim() : '';
       }
 
