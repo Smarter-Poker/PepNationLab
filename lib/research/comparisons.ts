@@ -60,6 +60,20 @@ export const COMPARISON_PAIRS: ComparisonPair[] = [
   { a: 'selank', b: 'dsip', angle: 'an anxiolytic nootropic versus a sleep-associated research peptide' },
   { a: 'igf-1-lr3', b: 'follistatin', angle: 'direct IGF-1 signaling versus myostatin inhibition in muscle research' },
   { a: 'ss-31', b: 'nad-plus', angle: 'a mitochondrial-targeted peptide versus NAD+ in cellular-energy research' },
+  // ── Added 2026-07-10: further high-intent, data-driven comparison pages ──
+  { a: 'bpc-157', b: 'bpc-tb', angle: 'single BPC-157 versus the combined BPC-157 and TB-500 blend in recovery research' },
+  { a: 'ipamorelin', b: 'cjc-ipamorelin', angle: 'ipamorelin alone versus the CJC-1295 and ipamorelin blend on the growth-hormone axis' },
+  { a: 'semax', b: 'cerebrolysin', angle: 'a synthetic ACTH-fragment nootropic versus a neurotrophic peptide preparation in cognitive research' },
+  { a: 'melatonin', b: 'dsip', angle: 'two sleep-research compounds with distinct mechanisms' },
+  { a: 'ghk-cu', b: 'snap-8', angle: 'a copper tripeptide versus an acetyl hexapeptide in cosmetic and skin research' },
+  { a: 'foxo4-dri', b: 'epithalon', angle: 'a senolytic peptide versus a telomerase-pathway peptide in longevity research' },
+  { a: 'aicar', b: '5-amino-1mq', angle: 'two metabolic research compounds targeting the AMPK and NNMT pathways' },
+  { a: 'tesamorelin', b: 'hgh-fragment-176-191', angle: 'a GHRH analog versus an HGH fragment in fat-metabolism research' },
+  { a: 'mots-c', b: 'aicar', angle: 'two AMPK-associated mitochondrial and metabolic research compounds' },
+  { a: 'ara-290', b: 'bpc-157', angle: 'two peptides studied for tissue protection and repair' },
+  { a: 'vip', b: 'kpv', angle: 'two peptides studied for immune and inflammatory modulation' },
+  { a: 'pinealon', b: 'epithalon', angle: 'two peptide bioregulators studied in longevity and neuro research' },
+  { a: 'survodutide', b: 'tirzepatide', angle: 'a glucagon/GLP-1 dual agonist versus a GIP/GLP-1 dual agonist in metabolic research' },
 ];
 
 export function matchupSlug(a: string, b: string): string {

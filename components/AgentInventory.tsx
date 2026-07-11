@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { AlertTriangle, Search, X } from 'lucide-react';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
+import CreditWallAction from '@/components/wallet/CreditWallAction';
 
 interface AgentInventoryItem {
   id: string;
@@ -440,6 +441,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
                   {restockStatus}
                 </p>
               )}
+              {restockStatus.includes('Credit Limit') && <CreditWallAction />}
             </div>
           </div>
         </div>

@@ -59,6 +59,11 @@ async function hasActivePushSubscription(service: AdminClient, userId: string): 
   return !!data;
 }
 
+/** True when at least one payment handle is a non-empty string. */
+function paymentHandlesReady(handles: Record<string, unknown> | null | undefined): boolean {
+  return !!handles && Object.values(handles).some((v) => v != null && String(v).trim() !== '');
+}
+
 /** Build the ordered, role-tailored step list with derived completion. */
 function buildSteps(args: {
   role: WizardRole;
@@ -66,9 +71,10 @@ function buildSteps(args: {
   notificationsDone: boolean;
   profileComplete: boolean;
   warehouseDone: boolean;
+  paymentReady: boolean;
   progress: Record<string, unknown>;
 }) {
-  const { role, mustChangePassword, notificationsDone, profileComplete, warehouseDone, progress } = args;
+  const { role, mustChangePassword, notificationsDone, profileComplete, warehouseDone, paymentReady, progress } = args;
   const ack = (k: string) => progress?.[k] === true;
 
   const steps: Array<{ key: string; label: string; done: boolean }> = [];
@@ -91,14 +97,25 @@ function buildSteps(args: {
     // just a non-default slug) so every agent actively verifies or changes the
     // public URL, even when a slug was auto-generated at provisioning.
     steps.push({ key: 'storefront', label: 'Set Up Your Storefront', done: ack('storefront_ack') });
-    // 6. Product management + markup tutorial.
+    // 6. Payment handles. VERIFIED, not acknowledged: done only when at least
+    // one handle exists on agent_profiles (the dashboard hard-blocks every tab
+    // except Storefront Config until this is true, so surfacing it here keeps
+    // the wizard honest instead of dumping the agent onto a blocked dashboard).
+    steps.push({ key: 'payment', label: 'Add Your Payment Methods', done: paymentReady });
+    // 7. Product management + markup tutorial.
     steps.push({ key: 'products', label: 'Learn Product Pricing And Markup', done: ack('product_tutorial_ack') });
-    // 7. Downstream pricing (super -> agents markup, agent -> sub-agent commission).
+    // 8. Downstream pricing (super -> agents markup, agent -> sub-agent commission).
     steps.push({
       key: 'downstream',
       label: role === 'super_agent' ? 'Set Your Agent Markup' : 'Set Your Sub-Agent Commissions',
       done: ack('downstream_tutorial_ack'),
     });
+    // 9. How ordering and credit work for this account type.
+    steps.push({ key: 'billing', label: 'How Ordering And Credit Work', done: ack('billing_ack') });
+    // 10. Share link + QR code.
+    steps.push({ key: 'share', label: 'Share Your Storefront Link', done: ack('share_ack') });
+    // 11. Research-use-only compliance acknowledgment.
+    steps.push({ key: 'compliance', label: 'Compliance Acknowledgment', done: ack('compliance_ack') });
   } else {
     // Sub-agent: read-only commission explainer.
     steps.push({ key: 'commission_info', label: 'Understand How You Earn', done: ack('downstream_tutorial_ack') });
@@ -115,7 +132,7 @@ export async function GET() {
 
   const { data: profile } = await service
     .from('profiles')
-    .select('id, role, is_super_agent, is_sub_agent, parent_agent_id, first_name, last_name, email, phone, username, must_change_password, custom_markup_override, commission_pct, default_sub_commission_pct, default_agent_markup_pct, default_agent_pricing_mode, onboarding_progress, onboarding_completed_at')
+    .select('id, role, is_super_agent, is_sub_agent, parent_agent_id, first_name, last_name, email, phone, username, must_change_password, custom_markup_override, commission_pct, default_sub_commission_pct, default_agent_markup_pct, default_agent_pricing_mode, account_type, credit_limit, prepaid_balance, onboarding_progress, onboarding_completed_at')
     .eq('id', gate.user.id)
     .maybeSingle();
 
@@ -197,6 +214,7 @@ export async function GET() {
     notificationsDone,
     profileComplete,
     warehouseDone,
+    paymentReady: storefront?.payment_ready === true,
     progress,
   });
 
@@ -234,6 +252,11 @@ export async function GET() {
       default_agent_pricing_mode: ((profile as { default_agent_pricing_mode?: string | null }).default_agent_pricing_mode as 'flat' | 'gamified' | null) ?? 'flat',
     },
     parent,
+    billing: {
+      account_type: ((profile as { account_type?: string | null }).account_type as 'credit' | 'prepaid' | null) ?? null,
+      credit_limit: (profile as { credit_limit?: number | null }).credit_limit != null ? Number((profile as { credit_limit?: number | null }).credit_limit) : 0,
+      prepaid_balance: (profile as { prepaid_balance?: number | null }).prepaid_balance != null ? Number((profile as { prepaid_balance?: number | null }).prepaid_balance) : 0,
+    },
     progress,
   });
 }
@@ -255,7 +278,7 @@ const WarehouseSchema = z.object({
 });
 
 const PostSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('ack'), key: z.enum(['storefront', 'product_tutorial', 'downstream_tutorial']) }),
+  z.object({ action: z.literal('ack'), key: z.enum(['storefront', 'product_tutorial', 'downstream_tutorial', 'billing', 'share', 'compliance']) }),
   z.object({ action: z.literal('profile'), data: ProfileSchema }),
   z.object({ action: z.literal('warehouse'), data: WarehouseSchema }),
   z.object({ action: z.literal('markup'), markup_pct: z.number().min(0).max(500) }),
@@ -268,6 +291,9 @@ const ACK_COLUMN: Record<string, string> = {
   storefront: 'storefront_ack',
   product_tutorial: 'product_tutorial_ack',
   downstream_tutorial: 'downstream_tutorial_ack',
+  billing: 'billing_ack',
+  share: 'share_ack',
+  compliance: 'compliance_ack',
 };
 
 export async function POST(req: NextRequest) {
@@ -434,13 +460,18 @@ export async function POST(req: NextRequest) {
     if (role === 'super_agent' || role === 'agent') {
       const { data: ap } = await service
         .from('agent_profiles')
-        .select('warehouse_address')
+        .select('warehouse_address, payment_handles')
         .eq('id', gate.user.id)
         .maybeSingle();
       if (!warehouseComplete((ap?.warehouse_address as Record<string, unknown>) ?? null)) missing.push('warehouse');
       if (!ack('storefront_ack')) missing.push('storefront');
+      // Payment is VERIFIED like notifications: a real handle must exist.
+      if (!paymentHandlesReady((ap?.payment_handles as Record<string, unknown>) ?? null)) missing.push('payment');
       if (!ack('product_tutorial_ack')) missing.push('products');
       if (!ack('downstream_tutorial_ack')) missing.push('downstream');
+      if (!ack('billing_ack')) missing.push('billing');
+      if (!ack('share_ack')) missing.push('share');
+      if (!ack('compliance_ack')) missing.push('compliance');
     } else {
       if (!ack('downstream_tutorial_ack')) missing.push('commission_info');
     }
