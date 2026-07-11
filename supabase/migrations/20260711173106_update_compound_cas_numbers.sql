@@ -1,0 +1,10 @@
+UPDATE compounds SET cas_number = '158563-45-2' WHERE slug = 'ghrp-2';
+UPDATE compounds SET cas_number = '86015-34-1' WHERE slug = 'sermorelin';
+UPDATE compounds SET cas_number = '885340-08-9' WHERE slug = 'tb-500';
+UPDATE compounds SET cas_number = '87616-84-0' WHERE slug = 'ghrp-6';
+UPDATE compounds SET cas_number = '189691-06-3' WHERE slug = 'pt-141';
+UPDATE compounds SET cas_number = '12656-61-0' WHERE slug = 'cerebrolysin';
+UPDATE compounds SET cas_number = '1208243-50-8' WHERE slug = 'ara-290';
+UPDATE compounds SET cas_number = 'Not Assigned' WHERE slug = 'foxo4-dri';
+UPDATE compounds SET cas_number = 'Blend' WHERE slug IN ('limitless-stack', 'glow', 'lemon-bottle', 'shred-stack', 'bpc-tb', 'cjc-ipamorelin', 'cagrisema', 'lipo-c', 'klow');
+UPDATE compounds SET cas_number = '140703-51-1' WHERE slug = 'hexarelin';
