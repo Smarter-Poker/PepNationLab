@@ -135,6 +135,9 @@ export default function WalletSettings() {
                     {money(Number(r.current_limit || 0))} → {money(Number(r.requested_limit || 0))}
                   </span>
                   <span style={{ color: 'var(--grey-500)', fontSize: '0.72rem' }}>{fmtDate(r.created_at)}</span>
+                  {r.decision_note && (
+                    <span style={{ color: 'var(--grey-400)', fontSize: '0.74rem' }}>Note: {r.decision_note}</span>
+                  )}
                 </span>
                 <span style={{ color: statusColor(r.status), fontWeight: 700, fontSize: '0.76rem', textTransform: 'uppercase' }}>
                   {statusLabel(r.status)}
