@@ -4,13 +4,18 @@ import React from 'react';
  * Branded Certificate Of Analysis document.
  *
  * Pure presentational and print-oriented (white page, dark ink). It renders
- * whatever data it is handed and invents nothing. Two honesty rules are baked
+ * whatever data it is handed and invents nothing. Three honesty rules are baked
  * into the markup rather than left to the caller:
  *
- *   1. If `verified` is false, an "Unverified Preview" ribbon is drawn across
- *      the page and the signature block is suppressed. A signature attests that
- *      the results are true; an unverified draft has nothing to attest to.
- *   2. Any result field passed as null renders as "Not Reported" rather than a
+ *   1. In `sample` mode a permanent SAMPLE watermark and a red banner are drawn,
+ *      the signature is tagged as a preview rather than a real sign-off, and no
+ *      live verification QR is shown. This is how the admin catalogue preview
+ *      renders generated placeholder numbers so they can never be mistaken for a
+ *      real, signed certificate.
+ *   2. If `verified` is false (and not sample), an "Unverified Preview" ribbon is
+ *      drawn and the signature is suppressed. A signature attests the results are
+ *      true; an unverified draft has nothing to attest to.
+ *   3. Any result field passed as null renders as "Not Reported" rather than a
  *      blank or a zero. The absence of a measurement is stated plainly.
  *
  * The QR code encodes the public verification URL for this exact lot, so a
@@ -55,6 +60,12 @@ export interface CertificateData {
   chromatogramUrl?: string | null;
 
   verified: boolean;
+
+  /** SAMPLE / PREVIEW mode. Draws a permanent SAMPLE watermark, tags the
+   *  signature as a preview rather than a real sign-off, and shows no live
+   *  verification QR. Used by the admin catalogue preview so generated
+   *  placeholder numbers can never be mistaken for a real, signed certificate. */
+  sample?: boolean;
 }
 
 const NOT_REPORTED = 'Not Reported';
@@ -137,7 +148,7 @@ export default function CertificateDocument({ data }: { data: CertificateData })
         fontFamily: 'Inter, system-ui, sans-serif',
       }}
     >
-      {!data.verified && (
+      {(data.sample || !data.verified) && (
         <div
           aria-hidden="true"
           style={{
@@ -145,15 +156,33 @@ export default function CertificateDocument({ data }: { data: CertificateData })
             top: '46%',
             left: '50%',
             transform: 'translate(-50%,-50%) rotate(-24deg)',
-            fontSize: 64,
+            fontSize: data.sample ? 88 : 64,
             fontWeight: 500,
-            letterSpacing: 6,
-            color: 'rgba(226,75,74,0.12)',
+            letterSpacing: 8,
+            color: 'rgba(226,75,74,0.13)',
             whiteSpace: 'nowrap',
             pointerEvents: 'none',
           }}
         >
-          UNVERIFIED PREVIEW
+          {data.sample ? 'SAMPLE' : 'UNVERIFIED PREVIEW'}
+        </div>
+      )}
+
+      {data.sample && (
+        <div
+          style={{
+            background: '#FCEBEB',
+            color: '#A32D2D',
+            border: '0.5px solid #F09595',
+            borderRadius: 6,
+            padding: '7px 10px',
+            fontSize: 11,
+            marginBottom: 12,
+          }}
+        >
+          Sample Layout Preview. The Analytical Values Below Are Generated Placeholders For Design
+          Review Only, Not The Result Of Testing Any Batch. Replace With Real Laboratory Readings
+          Before Verifying.
         </div>
       )}
 
@@ -252,7 +281,7 @@ export default function CertificateDocument({ data }: { data: CertificateData })
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 20, borderTop: `0.5px solid ${HAIR}`, paddingTop: 14 }}>
         <div>
           <div style={{ fontSize: 11, color: MUTED }}>Reviewed And Approved By</div>
-          {data.verified && data.approvedByName ? (
+          {(data.verified || data.sample) && data.approvedByName ? (
             <>
               <div style={{ position: 'relative', width: 200, height: 44, marginTop: 4 }}>
                 <span
@@ -277,7 +306,9 @@ export default function CertificateDocument({ data }: { data: CertificateData })
               <div style={{ height: 1, background: '#CBD5DF', width: 200, marginTop: 2 }} />
               <div style={{ fontSize: 12, fontWeight: 500, marginTop: 3 }}>{data.approvedByName}</div>
               <div style={{ fontSize: 11, color: MUTED }}>{data.approvedByTitle || 'Laboratory Technician'}</div>
-              <div style={{ fontSize: 11, color: MUTED }}>Approved {fmtDate(data.verifiedAt)}</div>
+              <div style={{ fontSize: 11, color: MUTED }}>
+                {data.sample ? 'Sample Preview, Not A Real Sign-Off' : `Approved ${fmtDate(data.verifiedAt)}`}
+              </div>
             </>
           ) : (
             <>
@@ -289,12 +320,34 @@ export default function CertificateDocument({ data }: { data: CertificateData })
           )}
         </div>
 
-        {data.qrDataUrl && (
+        {data.sample ? (
           <div style={{ textAlign: 'center' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={data.qrDataUrl} alt={`Verification QR code for lot ${data.lotNumber}`} style={{ width: 82, height: 82 }} />
-            <div style={{ fontSize: 9.5, color: MUTED, marginTop: 2, maxWidth: 90 }}>Scan To Verify This Lot</div>
+            <div
+              style={{
+                width: 82,
+                height: 82,
+                border: '1px dashed #CBD5DF',
+                borderRadius: 6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#8494A2',
+                fontSize: 9.5,
+                textAlign: 'center',
+                padding: 6,
+              }}
+            >
+              QR Assigned On Verification
+            </div>
           </div>
+        ) : (
+          data.qrDataUrl && (
+            <div style={{ textAlign: 'center' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={data.qrDataUrl} alt={`Verification QR code for lot ${data.lotNumber}`} style={{ width: 82, height: 82 }} />
+              <div style={{ fontSize: 9.5, color: MUTED, marginTop: 2, maxWidth: 90 }}>Scan To Verify This Lot</div>
+            </div>
+          )
         )}
       </div>
 
