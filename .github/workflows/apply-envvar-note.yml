@@ -1,0 +1,52 @@
+# One-shot, self-deleting workflow: record in CLAUDE.md that the Vercel
+# production env vars CRON_SECRET, PAYER_EIN, PAYER_LEGAL_NAME are SET
+# (2026-07-11). STATUS ONLY - never the values; this repo is public.
+
+name: Apply Env Var Status Note
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-envvar-note.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply replacement with assertion
+        run: |
+          cat > /tmp/note.js <<'NOTE_EOF'
+          const fs = require('fs');
+          const FILE = 'CLAUDE.md';
+          let s = fs.readFileSync(FILE, 'utf8');
+          const from = 'RESEND_FROM_EMAIL=research@pepnationlab.com';
+          const parts = s.split(from);
+          if (parts.length - 1 !== 1) { console.error('ASSERTION FAILED: anchor count ' + (parts.length - 1)); process.exit(1); }
+          const to = [
+            'RESEND_FROM_EMAIL=research@pepnationlab.com',
+            'CRON_SECRET=<SET in Vercel production 2026-07-11 - secret; value lives ONLY in the Vercel dashboard. Do NOT ask Dan for it again and NEVER commit it - this repo is public>',
+            'PAYER_EIN=<SET in Vercel production 2026-07-11 - PIQ Training Inc federal EIN; value in Vercel dashboard only>',
+            'PAYER_LEGAL_NAME=<SET in Vercel production 2026-07-11 - PIQ TRAINING INC>',
+          ].join('\n');
+          fs.writeFileSync(FILE, parts.join(to));
+          console.log('Note applied.');
+          NOTE_EOF
+          node /tmp/note.js
+
+      - name: Commit, remove this workflow, push
+        run: |
+          git config user.name 'seo-layers-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -q .github/workflows/apply-envvar-note.yml
+          git add CLAUDE.md
+          git commit -m 'CLAUDE.md: record CRON_SECRET / PAYER_EIN / PAYER_LEGAL_NAME as SET in Vercel (status only, no values - public repo)'
+          git pull --rebase origin main
+          git push origin main
