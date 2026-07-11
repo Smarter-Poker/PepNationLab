@@ -1,0 +1,35 @@
+# One-shot, self-deleting workflow: renames the admin sidebar (hamburger) nav
+# item for the Certificate Of Analysis manager from "Certificates Of Analysis"
+# to "COA's". Asserts the anchor is present exactly once; aborts without
+# committing otherwise. Removes itself.
+name: Apply COA Nav Rename
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-coa-nav-rename.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rename nav label with assertion
+        run: |
+          echo 'Y29uc3QgZnMgPSByZXF1aXJlKCdmcycpOwpjb25zdCBGID0gJ2FwcC9hZG1pbi9BZG1pbkxheW91dENsaWVudC50c3gnOwpsZXQgcyA9IGZzLnJlYWRGaWxlU3luYyhGLCAndXRmOCcpOwpjb25zdCBmcm9tID0gImxhYmVsOiAnQ2VydGlmaWNhdGVzIE9mIEFuYWx5c2lzJyI7CmNvbnN0IHRvID0gJ2xhYmVsOiAiQ09BXCdzIic7CmNvbnN0IGMgPSBzLnNwbGl0KGZyb20pLmxlbmd0aCAtIDE7CmlmIChjICE9PSAxKSB7IGNvbnNvbGUuZXJyb3IoJ0FTU0VSVCBGQUlMOiBleHBlY3RlZCAxIG9jY3VycmVuY2UsIGZvdW5kICcgKyBjKTsgcHJvY2Vzcy5leGl0KDEpOyB9CmlmIChzLmluY2x1ZGVzKHRvKSkgeyBjb25zb2xlLmVycm9yKCdBU1NFUlQgRkFJTDogYWxyZWFkeSByZW5hbWVkJyk7IHByb2Nlc3MuZXhpdCgxKTsgfQpzID0gcy5zcGxpdChmcm9tKS5qb2luKHRvKTsKZnMud3JpdGVGaWxlU3luYyhGLCBzKTsKY29uc29sZS5sb2coJ09LOiBuYXYgbGFiZWwgcmVuYW1lZCB0byBDT0FcJ3MnKTsK' | base64 -d > /tmp/rename_coa.js
+          node /tmp/rename_coa.js
+      - name: Commit, remove workflow, push
+        run: |
+          git config user.name "coa-nav-rename-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -q .github/workflows/apply-coa-nav-rename.yml
+          git add app/admin/AdminLayoutClient.tsx
+          git commit -m "feat(admin): rename COA nav item to COA's (one-shot, self-removed)"
+          git pull --rebase origin main
+          git push origin main
