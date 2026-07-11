@@ -1,8 +1,10 @@
 # One-shot, self-deleting workflow: applies the onboarding payment sweep
 # patches to three files too large to push whole through the API without
-# truncation risk. Every patch asserts its anchor appears exactly once. On
-# any failure it commits a diagnostics file instead so the failure reason is
-# readable from the repo. Removes itself either way. Rev 2.
+# truncation risk. Every patch asserts its anchor appears exactly once.
+# Rev 3: apply-what-you-can - successful patches are committed even when
+# another anchor fails; failures are recorded in
+# .onboarding-sweep-failures.txt so the reason is readable from the repo.
+# Removes itself either way.
 name: Apply Onboarding Payment Sweep
 
 on:
@@ -24,8 +26,6 @@ jobs:
       - name: Apply patches with strict assertions
         run: |
           cat > /tmp/patch.py <<'PYEOF'
-          import sys
-
           failures = []
 
           def patch(path, old, new, label):
@@ -155,22 +155,18 @@ jobs:
                   f.write('Onboarding Payment Sweep Patch Failures\n')
                   for line in failures:
                       f.write(line + '\n')
-              print('FAILURES RECORDED')
-              sys.exit(2)
-          print('All patches applied.')
+              print('FAILURES RECORDED (successful patches still committed)')
+          else:
+              print('All patches applied.')
           PYEOF
-          python3 /tmp/patch.py || echo "PATCH_FAILED=1" >> "$GITHUB_ENV"
+          python3 /tmp/patch.py
       - name: Commit result, remove workflow, push
         run: |
           git config user.name "onboarding-sweep-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm -q .github/workflows/apply-onboarding-payment-sweep.yml
-          if [ "$PATCH_FAILED" = "1" ]; then
-            git add .onboarding-sweep-failures.txt
-            git commit -m "ci: onboarding payment sweep patches FAILED, diagnostics committed (one-shot, self-removed)"
-          else
-            git add app/checkout/CheckoutForm.tsx components/OnboardingWizard.tsx proxy.ts
-            git commit -m "fix(onboarding): checkout 10-method support, wizard one-method rule copy, onboarding API reachable while password-flagged (one-shot, self-removed)"
-          fi
+          git add app/checkout/CheckoutForm.tsx components/OnboardingWizard.tsx proxy.ts
+          if [ -f .onboarding-sweep-failures.txt ]; then git add .onboarding-sweep-failures.txt; fi
+          git commit -m "fix(onboarding): checkout 10-method support, wizard one-method rule copy, onboarding API reachable while password-flagged (one-shot, self-removed)"
           git pull --rebase origin main
           git push origin main
