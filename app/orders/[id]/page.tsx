@@ -15,6 +15,7 @@ import ChangePaymentMethod from '@/components/ChangePaymentMethod';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import HelpHint from '@/components/help/HelpHint';
 import { getPopularName } from '@/lib/peptide-popular-names';
+import { carrierInfo } from '@/lib/carrier';
 
 // R28: map order status → matching FAQ id so the contextual help pill lands
 // the buyer on the exact answer for their state (not the FAQ root). Every id
@@ -471,7 +472,7 @@ export default async function OrderDetailPage(
           {/* Buyer + Shipping */}
           <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.1s' }}>
             <h2 style={{ fontSize: '0.95rem', color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
-              Buyer & Shipping
+              Buyer &amp; Shipping
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
               <div>
@@ -747,6 +748,19 @@ export default async function OrderDetailPage(
                   <div style={{ fontSize: '0.92rem', color: 'var(--silver)', fontWeight: 600, fontFamily: 'var(--font-brand)', wordBreak: 'break-all' }}>
                     {order.tracking_number}
                   </div>
+                  {(() => {
+                    const ti = carrierInfo(order.tracking_number);
+                    return ti.trackingUrl ? (
+                      <IframeLink
+                        href={ti.trackingUrl}
+                        title={`Track With ${ti.carrier}`}
+                        className="btn btn-secondary"
+                        style={{ display: 'inline-flex', fontSize: '0.85rem', marginTop: 'var(--space-2)' }}
+                      >
+                        Track Package
+                      </IframeLink>
+                    ) : null;
+                  })()}
                 </div>
               )}
               {order.label_url && (
@@ -770,7 +784,7 @@ export default async function OrderDetailPage(
               shows "Pending" so buyers know the surface exists.) */}
           <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', animationDelay: '0.55s' }}>
             <h2 style={{ fontSize: '0.95rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>
-              Lot Numbers & COA
+              Lot Numbers &amp; COA
             </h2>
             <p style={{ fontSize: '0.78rem', color: 'var(--grey-500)', marginBottom: 'var(--space-4)' }}>
               Lot/Batch Number And Certificate Of Analysis For Each Compound In This Order. Stamped At Fulfillment.
