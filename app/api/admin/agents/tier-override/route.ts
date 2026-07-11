@@ -137,5 +137,14 @@ export async function POST(req: NextRequest) {
   // keeps retail_price fixed and re-derives margin_percent from the new
   // wholesale cost. No retail recalculation here.
 
+  // Best-effort audit log — failure must never abort the primary operation.
+  svc.from('admin_audit_log').insert({
+    actor_id: gate.userId,
+    action: 'agent.tier_override',
+    entity_type: 'agent',
+    entity_id: agentId,
+    changes: { enabled, level: enabled ? level : null, customMarkup: customMarkupPct },
+  }).catch(() => { /* non-critical */ });
+
   return NextResponse.json({ success: true, agentId, enabled, level: enabled ? level : null, customMarkup: customMarkupPct });
 }
