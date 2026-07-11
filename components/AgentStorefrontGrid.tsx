@@ -209,10 +209,6 @@ function useCatalogRefresh(agentSlug: string) {
   }, [agentSlug]);
 
   React.useEffect(() => {
-    setVisibleCount(24);
-  }, [deferredSearch, filterCategory, filterArea, sortBy, activeCardIndex]);
-
-  React.useEffect(() => {
     // Immediate refresh on mount (checks TTL internally)
     doRefresh(false);
 
@@ -561,6 +557,11 @@ export default function AgentStorefrontGrid({
   const initialSort = (getInit('sort') || 'popular') as
     | 'popular' | 'name_asc' | 'name_desc' | 'price_low' | 'price_high' | 'newest';
   const [sortBy, setSortBy] = useState<typeof initialSort>(initialSort);
+
+  React.useEffect(() => {
+    setVisibleCount(24);
+  }, [deferredSearch, filterCategory, filterArea, sortBy, activeCardIndex]);
+
   // filterCategory, filterArea, and searchQuery are declared earlier (before closeGrid)
   // to avoid the TDZ error from referencing their setters in the useCallback.
   const [showFilterPanel, setShowFilterPanel] = useState(false);
