@@ -16,8 +16,14 @@ Smarter-Poker Vercel-team identity.
   authorized. Because it sits on top of both prior commits, the build ships
   their content to production.
 
-## Follow-up (repo owner)
+## The rule (do this, not the other thing)
 
-To stop future Blocked deployments, either add the
-`daniel@bekavactrading.com` / `SmarterPoker` identity to the Vercel team,
-or keep committing under the `Smarter-Poker` team identity.
+The ONLY fix for a Blocked-by-author deployment is to re-commit the same changes
+under the approved `Smarter-Poker` identity
+(`254329056+Smarter-Poker@users.noreply.github.com`).
+
+Do NOT add `daniel@bekavactrading.com` (or any other identity) to the Vercel
+team or the GitHub org to clear a block, and do NOT change the Vercel Git
+author-authorization setting. Adding or changing accounts is a security decision
+reserved for the repo owner. The canonical rule lives in
+`docs/AGENT-GIT-IDENTITY.md` and as the first hard rule in `CLAUDE.md`.
