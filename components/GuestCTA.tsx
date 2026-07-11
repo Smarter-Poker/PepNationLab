@@ -29,21 +29,30 @@ export default function GuestCTA() {
   // rather than through CartContext, so a guest browsing a storefront has an
   // empty CartContext. Read that grid cart directly so the cart-aware
   // conversion mode fires for exactly the guests it was built for.
-  const [gridCart, setGridCart] = useState<{ count: number; subtotal: number } | null>(null);
+  const [gridCart, setGridCart] = useState<{ count: number; subtotal: number; slug: string } | null>(null);
 
   useEffect(() => {
     // Capture current URL for redirect passthrough
     setCurrentPath(window.location.pathname + window.location.search);
 
     // Scan for a storefront grid cart in localStorage (any agent slug).
+    // We also capture the agent SLUG the cart belongs to. Checkout reads the cart
+    // from `pnl_storefront_cart_<slug>`, resolving the slug from ?agent= (or the
+    // researcher's referring_agent_id). A guest who converts on an AGENT storefront
+    // is linked to the house store, so without carrying the slug through, checkout
+    // reads the wrong key and the guest's cart vanishes -- the exact loss this
+    // banner promises will not happen.
     try {
       let count = 0;
       let subtotal = 0;
+      let slug = '';
+      const PREFIX = 'pnl_storefront_cart_';
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (k && k.startsWith('pnl_storefront_cart_')) {
+        if (k && k.startsWith(PREFIX) && k !== PREFIX) {
           const parsed = JSON.parse(localStorage.getItem(k) || '{}');
           const items = Array.isArray(parsed?.items) ? parsed.items : [];
+          if (items.length > 0) slug = k.slice(PREFIX.length);
           for (const it of items) {
             const q = Number(it?.quantity) || 0;
             count += q;
@@ -51,7 +60,7 @@ export default function GuestCTA() {
           }
         }
       }
-      if (count > 0) setGridCart({ count, subtotal });
+      if (count > 0) setGridCart({ count, subtotal, slug });
     } catch { /* ignore */ }
 
     const supabase = createClient();
@@ -86,7 +95,14 @@ export default function GuestCTA() {
   const effectiveCount = cartCount > 0 ? cartCount : (gridCart?.count ?? 0);
   const effectiveSubtotal = cartCount > 0 ? cartSubtotal : (gridCart?.subtotal ?? 0);
   const hasCart = effectiveCount > 0;
-  const authTarget = hasCart ? '/checkout' : currentPath;
+  // When the cart came from the storefront grid (per-agent-slug key), carry the
+  // slug to checkout as ?agent= so it loads the correct cart. A CartContext cart
+  // (cartCount>0) needs no slug -- checkout reads it directly.
+  const usingGridCart = cartCount === 0 && (gridCart?.count ?? 0) > 0;
+  const checkoutTarget = usingGridCart && gridCart?.slug
+    ? `/checkout?agent=${encodeURIComponent(gridCart.slug)}`
+    : '/checkout';
+  const authTarget = hasCart ? checkoutTarget : currentPath;
   const redirectParam = `?redirect=${encodeURIComponent(authTarget)}`;
   const loginHref = `/login${redirectParam}`;
   const signupHref = `/signup${redirectParam}`;
