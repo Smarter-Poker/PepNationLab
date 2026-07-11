@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Michigan — 30 cities (Metro Detroit + West Michigan + statewide)
+// Michigan - 30 cities (Metro Detroit + West Michigan + statewide)
 const CITIES_MICHIGAN: City[] = [
   { name: 'Bloomfield Hills', slug: 'bloomfield-hills', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 4000, medianIncome: 200000, tier: 1, region: 'Metro Detroit', county: 'Oakland', zips: ['48301', '48304'], localBlurb: 'Bloomfield Hills research groups source our high-purity peptides for longevity and recovery studies backed by full third-party COAs.' },
   { name: 'Birmingham', slug: 'birmingham', state: 'Michigan', stateSlug: 'michigan', stateAbbr: 'MI', population: 21000, medianIncome: 120000, tier: 1, region: 'Metro Detroit', county: 'Oakland', zips: ['48009'], localBlurb: 'Birmingham laboratories rely on our lot-traceable compounds and comprehensive certificates of analysis for study protocols.' },

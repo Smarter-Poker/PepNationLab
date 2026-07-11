@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Connecticut — 25 cities (Fairfield County wealth belt + statewide markets)
+// Connecticut - 25 cities (Fairfield County wealth belt + statewide markets)
 const CITIES_CONNECTICUT: City[] = [
   { name: 'Greenwich', slug: 'greenwich', state: 'Connecticut', stateSlug: 'connecticut', stateAbbr: 'CT', population: 63000, medianIncome: 168000, tier: 1, region: 'Fairfield County', county: 'Fairfield', zips: ['06830', '06831', '06878'], localBlurb: 'Greenwich is one of the wealthiest research communities in the Northeast, and its laboratories source our high-purity peptides for longevity and recovery studies backed by full third-party COAs.' },
   { name: 'Darien', slug: 'darien', state: 'Connecticut', stateSlug: 'connecticut', stateAbbr: 'CT', population: 22000, medianIncome: 235000, tier: 1, region: 'Fairfield County', county: 'Fairfield', zips: ['06820'], localBlurb: 'Private researchers in Darien select our compounds for guaranteed purity, cold-chain handling, and complete lot documentation.' },

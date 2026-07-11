@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// South Dakota — 5 cities
+// South Dakota - 5 cities
 const CITIES_SOUTH_DAKOTA: City[] = [
   { name: 'Sioux Falls', slug: 'sioux-falls', state: 'South Dakota', stateSlug: 'south-dakota', stateAbbr: 'SD', population: 192000, medianIncome: 66000, tier: 2, region: 'Sioux Empire', county: 'Minnehaha', zips: ['57104', '57105', '57108'], localBlurb: 'Sioux Falls is the twin headquarters of Sanford Health and Avera Health, anchored by the Sanford USD Medical Center.' },
   { name: 'Rapid City', slug: 'rapid-city', state: 'South Dakota', stateSlug: 'south-dakota', stateAbbr: 'SD', population: 75000, medianIncome: 58000, tier: 3, region: 'Black Hills', county: 'Pennington', zips: ['57701', '57702'], localBlurb: 'Rapid City is served by Monument Health Rapid City Hospital, the Black Hills regional referral center.' },

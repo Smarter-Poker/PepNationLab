@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Rhode Island — 6 cities
+// Rhode Island - 6 cities
 const CITIES_RHODE_ISLAND: City[] = [
   { name: 'Providence', slug: 'providence', state: 'Rhode Island', stateSlug: 'rhode-island', stateAbbr: 'RI', population: 190000, medianIncome: 55000, tier: 2, region: 'Providence Metro', county: 'Providence', zips: ['02903', '02906'], localBlurb: 'Providence is home to Brown University\'s Warren Alpert Medical School and Rhode Island Hospital.' },
   { name: 'East Greenwich', slug: 'east-greenwich', state: 'Rhode Island', stateSlug: 'rhode-island', stateAbbr: 'RI', population: 14000, medianIncome: 130000, tier: 1, region: 'Providence Metro', county: 'Kent', zips: ['02818'], localBlurb: 'East Greenwich is Rhode Island\'s wealthiest town, minutes from the Kent Hospital campus in Warwick.' },

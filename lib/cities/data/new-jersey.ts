@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// New Jersey — 66 cities
+// New Jersey - 66 cities
 const CITIES_NEW_JERSEY: City[] = [
   {
     name: 'Alpine', slug: 'alpine', state: 'New Jersey', stateSlug: 'new-jersey', stateAbbr: 'NJ',
@@ -60,7 +60,7 @@ const CITIES_NEW_JERSEY: City[] = [
     name: 'Hackensack', slug: 'hackensack', state: 'New Jersey', stateSlug: 'new-jersey', stateAbbr: 'NJ',
     population: 46000, medianIncome: 65000, tier: 2, region: 'Bergen County', county: 'Bergen',
     zips: ['07601'],
-    localBlurb: 'The Bergen County seat, home to Hackensack University Medical Center — one of New Jersey’s largest research hospitals.',
+    localBlurb: 'The Bergen County seat, home to Hackensack University Medical Center, one of New Jersey’s largest research hospitals.',
   },
   {
     name: 'Teaneck', slug: 'teaneck', state: 'New Jersey', stateSlug: 'new-jersey', stateAbbr: 'NJ',
@@ -144,7 +144,7 @@ const CITIES_NEW_JERSEY: City[] = [
     name: 'Newark', slug: 'newark', state: 'New Jersey', stateSlug: 'new-jersey', stateAbbr: 'NJ',
     population: 311000, medianIncome: 40000, tier: 2, region: 'Essex & Morris', county: 'Essex',
     zips: ['07102', '07103', '07104'],
-    localBlurb: 'New Jersey’s largest city, home to Rutgers New Jersey Medical School, University Hospital, and NJIT — a major research corridor.',
+    localBlurb: 'New Jersey’s largest city, home to Rutgers New Jersey Medical School, University Hospital, and NJIT, a major research corridor.',
   },
   {
     name: 'Morristown', slug: 'morristown', state: 'New Jersey', stateSlug: 'new-jersey', stateAbbr: 'NJ',
@@ -252,7 +252,7 @@ const CITIES_NEW_JERSEY: City[] = [
     name: 'New Brunswick', slug: 'new-brunswick', state: 'New Jersey', stateSlug: 'new-jersey', stateAbbr: 'NJ',
     population: 56000, medianIncome: 50000, tier: 2, region: 'Central New Jersey', county: 'Middlesex',
     zips: ['08901', '08903'],
-    localBlurb: 'Home to Rutgers University, Robert Wood Johnson Medical School, and the Rutgers Cancer Institute of New Jersey — the state’s flagship research city.',
+    localBlurb: 'Home to Rutgers University, Robert Wood Johnson Medical School, and the Rutgers Cancer Institute of New Jersey, the state’s flagship research city.',
   },
   {
     name: 'Metuchen', slug: 'metuchen', state: 'New Jersey', stateSlug: 'new-jersey', stateAbbr: 'NJ',

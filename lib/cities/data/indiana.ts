@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Indiana — 4 cities
+// Indiana - 4 cities
 const CITIES_INDIANA: City[] = [
   { name: 'Carmel', slug: 'carmel', state: 'Indiana', stateSlug: 'indiana', stateAbbr: 'IN', population: 100000, medianIncome: 105000, tier: 2, region: 'Greater Indianapolis' },
   { name: 'Zionsville', slug: 'zionsville', state: 'Indiana', stateSlug: 'indiana', stateAbbr: 'IN', population: 29000, medianIncome: 120000, tier: 2, region: 'Greater Indianapolis' },

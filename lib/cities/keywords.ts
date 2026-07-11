@@ -4,7 +4,7 @@
  */
 
 
-// (Removed unused KEYWORD_CLUSTERS export — no keyword <meta> is emitted on
+// (Removed unused KEYWORD_CLUSTERS export - no keyword <meta> is emitted on
 // city pages by design; kept FEATURED_PEPTIDES which is used as the Top-10
 // fallback list.)
 

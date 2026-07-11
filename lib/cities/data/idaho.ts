@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Idaho — 9 cities
+// Idaho - 9 cities
 const CITIES_IDAHO: City[] = [
   { name: 'Boise', slug: 'boise', state: 'Idaho', stateSlug: 'idaho', stateAbbr: 'ID', population: 236000, medianIncome: 70000, tier: 2, region: 'Treasure Valley', county: 'Ada', zips: ['83702', '83706', '83712'], localBlurb: 'Boise is anchored by St. Luke\'s Boise Medical Center, Idaho\'s largest hospital, and Boise State University.' },
   { name: 'Meridian', slug: 'meridian', state: 'Idaho', stateSlug: 'idaho', stateAbbr: 'ID', population: 118000, medianIncome: 80000, tier: 2, region: 'Treasure Valley', county: 'Ada', zips: ['83642', '83646'], localBlurb: 'Meridian hosts St. Luke\'s Meridian Medical Center in the fastest-growing city in Idaho.' },

@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Minnesota — 6 cities
+// Minnesota - 6 cities
 const CITIES_MINNESOTA: City[] = [
   { name: 'Edina', slug: 'edina', state: 'Minnesota', stateSlug: 'minnesota', stateAbbr: 'MN', population: 53000, medianIncome: 100000, tier: 1, region: 'Greater Minneapolis' },
   { name: 'Minnetonka', slug: 'minnetonka', state: 'Minnesota', stateSlug: 'minnesota', stateAbbr: 'MN', population: 54000, medianIncome: 87000, tier: 2, region: 'Greater Minneapolis' },

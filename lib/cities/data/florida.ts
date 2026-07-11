@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Florida — 132 cities
+// Florida - 132 cities
 const CITIES_FLORIDA: City[] = [
   {
     name: 'Miami', slug: 'miami', state: 'Florida', stateSlug: 'florida', stateAbbr: 'FL',

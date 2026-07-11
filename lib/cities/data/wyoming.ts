@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Wyoming — 7 cities
+// Wyoming - 7 cities
 const CITIES_WYOMING: City[] = [
   { name: 'Jackson', slug: 'jackson', state: 'Wyoming', stateSlug: 'wyoming', stateAbbr: 'WY', population: 11000, medianIncome: 105000, tier: 1, region: 'Jackson Hole', county: 'Teton', zips: ['83001'], localBlurb: 'Jackson anchors Teton County, the wealthiest county in America, and is served by St. John\'s Health.' },
   { name: 'Cheyenne', slug: 'cheyenne', state: 'Wyoming', stateSlug: 'wyoming', stateAbbr: 'WY', population: 65000, medianIncome: 65000, tier: 3, region: 'Southeast Wyoming', county: 'Laramie', zips: ['82001', '82009'], localBlurb: 'Cheyenne, the state capital, is anchored by Cheyenne Regional Medical Center.' },

@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// New Hampshire — 9 cities
+// New Hampshire - 9 cities
 const CITIES_NEW_HAMPSHIRE: City[] = [
   { name: 'Manchester', slug: 'manchester', state: 'New Hampshire', stateSlug: 'new-hampshire', stateAbbr: 'NH', population: 115000, medianIncome: 74000, tier: 2, region: 'Southern New Hampshire', county: 'Hillsborough', zips: ['03101', '03104'], localBlurb: 'Manchester\'s Millyard district hosts the Advanced Regenerative Manufacturing Institute\'s BioFabUSA program and Elliot Hospital.' },
   { name: 'Bedford', slug: 'bedford', state: 'New Hampshire', stateSlug: 'new-hampshire', stateAbbr: 'NH', population: 24000, medianIncome: 145000, tier: 1, region: 'Southern New Hampshire', county: 'Hillsborough', zips: ['03110'], localBlurb: 'Bedford is one of New Hampshire\'s wealthiest towns, bordering Manchester\'s hospital corridor.' },

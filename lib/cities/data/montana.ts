@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Montana — 8 cities
+// Montana - 8 cities
 const CITIES_MONTANA: City[] = [
   { name: 'Billings', slug: 'billings', state: 'Montana', stateSlug: 'montana', stateAbbr: 'MT', population: 118000, medianIncome: 62000, tier: 3, region: 'Yellowstone Valley', county: 'Yellowstone', zips: ['59101', '59102'], localBlurb: 'Billings is anchored by Billings Clinic, Montana\'s largest health system and research center.' },
   { name: 'Bozeman', slug: 'bozeman', state: 'Montana', stateSlug: 'montana', stateAbbr: 'MT', population: 56000, medianIncome: 75000, tier: 2, region: 'Gallatin Valley', county: 'Gallatin', zips: ['59715', '59718'], localBlurb: 'Bozeman hosts Montana State University and Bozeman Health\'s Deaconess Regional Medical Center.' },

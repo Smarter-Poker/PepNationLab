@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Maryland — 8 cities
+// Maryland - 8 cities
 const CITIES_MARYLAND: City[] = [
   { name: 'Potomac', slug: 'potomac', state: 'Maryland', stateSlug: 'maryland', stateAbbr: 'MD', population: 46000, medianIncome: 180000, tier: 1, region: 'Greater Washington DC' },
   { name: 'Chevy Chase', slug: 'chevy-chase', state: 'Maryland', stateSlug: 'maryland', stateAbbr: 'MD', population: 10000, medianIncome: 210000, tier: 1, region: 'Greater Washington DC' },

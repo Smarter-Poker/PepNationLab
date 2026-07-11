@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Illinois — 119 cities
+// Illinois - 119 cities
 const CITIES_ILLINOIS: City[] = [
   {
     name: 'Chicago', slug: 'chicago', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',

@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// North Dakota — 5 cities
+// North Dakota - 5 cities
 const CITIES_NORTH_DAKOTA: City[] = [
   { name: 'Fargo', slug: 'fargo', state: 'North Dakota', stateSlug: 'north-dakota', stateAbbr: 'ND', population: 126000, medianIncome: 60000, tier: 2, region: 'Red River Valley', county: 'Cass', zips: ['58102', '58103', '58104'], localBlurb: 'Fargo is anchored by Sanford Medical Center Fargo and North Dakota State University\'s research park.' },
   { name: 'West Fargo', slug: 'west-fargo', state: 'North Dakota', stateSlug: 'north-dakota', stateAbbr: 'ND', population: 39000, medianIncome: 78000, tier: 2, region: 'Red River Valley', county: 'Cass', zips: ['58078'], localBlurb: 'West Fargo is North Dakota\'s fastest-growing city, served by the Sanford and Essentia networks.' },

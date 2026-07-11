@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Washington — 30 cities (Puget Sound core + statewide markets)
+// Washington - 30 cities (Puget Sound core + statewide markets)
 const CITIES_WASHINGTON: City[] = [
   { name: 'Bellevue', slug: 'bellevue', state: 'Washington', stateSlug: 'washington', stateAbbr: 'WA', population: 150000, medianIncome: 128000, tier: 1, region: 'Puget Sound', county: 'King', zips: ['98004', '98005', '98006', '98007'], localBlurb: 'Across the Bellevue tech core and the Eastside, well-funded research groups source our high-purity peptides for recovery, metabolic, and longevity studies with full third-party COAs.' },
   { name: 'Redmond', slug: 'redmond', state: 'Washington', stateSlug: 'washington', stateAbbr: 'WA', population: 73000, medianIncome: 130000, tier: 1, region: 'Puget Sound', county: 'King', zips: ['98052', '98053'], localBlurb: 'Redmond laboratories rely on our lot-traceable compounds and cold-chain handling for reproducible peptide research programs.' },
