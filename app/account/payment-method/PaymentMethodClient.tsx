@@ -54,7 +54,7 @@ const METHODS: MethodSpec[] = [
   { id: 'google_wallet', label: 'Google Wallet', description: 'Google Pay Transfer Via Email Or Phone.', handleLabel: 'Google Wallet Email Or Phone', placeholder: 'you@gmail.com' },
   { id: 'wise', label: 'Wise', description: 'International Settlement. Bank Or Email Linked.', handleLabel: 'Wise Account Email', placeholder: 'you@email.com' },
   { id: 'chime', label: 'Chime', description: 'Chime Pay Anyone Transfer.', handleLabel: 'Chime Sign In (Email Or Phone)', placeholder: 'you@email.com' },
-  { id: 'varo', label: 'Varo', description: 'Varo Bank — Send And Receive Money Instantly.', handleLabel: 'Varo Phone Number Or Email', placeholder: 'you@email.com or +1 555 555 0123' },
+  { id: 'varo', label: 'Varo', description: 'Varo Bank. Send And Receive Money Instantly.', handleLabel: 'Varo Phone Number Or Email', placeholder: 'you@email.com or +1 555 555 0123' },
 ];
 
 const baseStyle = { height: 28, width: 'auto', objectFit: 'contain' as const };
@@ -64,6 +64,7 @@ const PAYMENT_ICONS: Record<MethodId, React.ReactNode> = {
   zelle: <Image src="/payment-logos/zelle.svg" width={40} height={28} alt="Zelle" unoptimized style={baseStyle} />,
   venmo: <Image src="/payment-logos/venmo.svg" width={40} height={28} alt="Venmo" unoptimized style={scaleStyle(1.4)} />,
   cashapp: <Image src="/payment-logos/cashapp.svg" width={40} height={28} alt="Cash App" unoptimized style={baseStyle} />,
+  apple_pay: <Image src="/payment-logos/apple_cash.svg" width={40} height={28} alt="Apple Pay" unoptimized style={scaleStyle(1.4)} />,
   apple_cash: <Image src="/payment-logos/apple_cash.svg" width={40} height={28} alt="Apple Cash" unoptimized style={scaleStyle(1.4)} />,
   paypal: <Image src="/payment-logos/paypal.svg" width={40} height={28} alt="PayPal" unoptimized style={baseStyle} />,
   google_wallet: <Image src="/payment-logos/google_wallet.svg" width={40} height={28} alt="Google Wallet" unoptimized style={scaleStyle(1.4)} />,
