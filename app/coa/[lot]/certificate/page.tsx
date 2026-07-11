@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { generateQrDataUrl } from '@/lib/qr';
 import CertificateDocument, { type CertificateData } from '@/components/coa/CertificateDocument';
 import PrintButton from './PrintButton';
+import { getLabInfo } from '@/lib/labs';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,8 +13,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
 // The Certificate Of Analysis is reviewed and signed off by the laboratory
 // technician who runs the assays, not by whichever admin clicks verify.
-const LAB_SIGNATORY = 'Swadep Mirsha';
-const LAB_SIGNATORY_TITLE = 'Laboratory Technician';
+// Signatories are dynamically assigned via getLabInfo based on testing_lab.
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -110,8 +110,8 @@ export default async function CertificatePage({ params }: { params: Promise<{ lo
     testingLab: record.testing_lab,
     labIsThirdParty: record.lab_is_third_party,
     labAccreditation: record.lab_accreditation,
-    approvedByName: LAB_SIGNATORY,
-    approvedByTitle: LAB_SIGNATORY_TITLE,
+    approvedByName: getLabInfo(record.testing_lab).signatoryName,
+    approvedByTitle: getLabInfo(record.testing_lab).signatoryTitle,
     verifiedAt: record.coa_verified_at,
     qrDataUrl,
     chromatogramUrl,

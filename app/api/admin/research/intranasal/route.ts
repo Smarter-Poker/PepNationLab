@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { unwrap, unwrapMaybe } from '@/lib/supabase/unwrap';
 
 const VALID = new Set(['established', 'emerging', 'not_suitable']);
 
@@ -26,14 +27,17 @@ export async function POST(req: NextRequest) {
   if (!slug) return NextResponse.json({ error: 'Missing Compound Slug' }, { status: 400 });
   if (!VALID.has(status)) return NextResponse.json({ error: 'Invalid Status' }, { status: 400 });
 
-  // Load the current row so route_of_admin stays consistent with the tier.
-  const { data: current, error: loadErr } = await supabase
-    .from('compounds')
-    .select('route_of_admin')
-    .eq('slug', slug)
-    .maybeSingle();
-  if (loadErr) return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
-  if (!current) return NextResponse.json({ error: 'Compound Not Found' }, { status: 404 });
+  try {
+    // Load the current row so route_of_admin stays consistent with the tier.
+    const current = await unwrapMaybe(
+      'intranasal.load',
+      supabase
+        .from('compounds')
+        .select('route_of_admin')
+        .eq('slug', slug)
+        .maybeSingle()
+    );
+    if (!current) return NextResponse.json({ error: 'Compound Not Found' }, { status: 404 });
 
   const routes = new Set<string>(Array.isArray(current.route_of_admin) ? current.route_of_admin : []);
   if (status === 'established' || status === 'emerging') routes.add('intranasal');
@@ -63,14 +67,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const { data: updated, error } = await supabase
-    .from('compounds')
-    .update(updates)
-    .eq('slug', slug)
-    .select('slug');
+    const updated = await unwrap(
+      'intranasal.update',
+      supabase
+        .from('compounds')
+        .update(updates)
+        .eq('slug', slug)
+        .select('slug')
+    );
 
-  if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
-  if (!updated || updated.length === 0) return NextResponse.json({ error: 'Compound Not Found' }, { status: 404 });
+    if (!updated || updated.length === 0) return NextResponse.json({ error: 'Compound Not Found' }, { status: 404 });
 
   // Immediately expire the shared 'compounds' cache tag so every public surface
   // (storefront grid, monograph, compare tools, the intranasal collection page)
@@ -78,10 +84,14 @@ export async function POST(req: NextRequest) {
   // the 60s unstable_cache window. In Next 16 revalidateTag requires a profile
   // arg; { expire: 0 } is the documented immediate-expiration form for route
   // handlers. Also refresh the monograph render paths.
-  try {
-    revalidateTag('compounds', { expire: 0 });
-    revalidatePath(`/research/${slug}`);
-  } catch { /* best-effort cache refresh */ }
+    try {
+      revalidateTag('compounds', { expire: 0 });
+      revalidatePath(`/research/${slug}`);
+    } catch { /* best-effort cache refresh */ }
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('[admin/research/intranasal] error:', err);
+    return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
+  }
 }

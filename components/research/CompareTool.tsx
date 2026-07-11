@@ -41,6 +41,7 @@ import ResearchCartButton from './ResearchCartButton';
 import { useCart } from '@/components/CartContext';
 import { escapeWithLineBreaks } from '@/lib/sanitize-html';
 import { toast } from 'sonner';
+import { fetchJson } from '@/lib/fetch-json';
 
 const MAX_COLUMNS = 4;
 const NL = 'Not Listed';
@@ -1914,7 +1915,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
 
   const { data: liveProductsData } = useSWR(
     selectedSlugs.length > 0 ? `/api/research/products?slugs=${selectedSlugs.join(',')}` : null,
-    (url: string) => fetch(url).then(res => res.json()),
+    (url: string) => fetchJson<any>(url).then(res => res.ok ? res.data : null),
     { refreshInterval: 30000, revalidateOnFocus: true }
   );
 
@@ -1947,14 +1948,13 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
     setIsAnalyzing(true);
     setAiAnalysis(null);
     try {
-      const res = await fetch('/api/researcher/ai-stack-analysis', {
+      const res = await fetchJson<any>('/api/researcher/ai-stack-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slugs: selectedSlugs })
       });
-      const data = await res.json();
-      if (res.ok) {
-        setAiAnalysis(data);
+      if (res.ok && res.data) {
+        setAiAnalysis(res.data);
       }
     } catch (e) {
       console.error(e);
@@ -1975,7 +1975,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
       // Find the product IDs for the selected slugs
       const productIds = selectedSlugs.map(slug => products.find(p => p?.compoundSlug === slug)?.productId).filter(Boolean);
       
-      const res = await fetch('/api/researcher/comparisons', {
+      const res = await fetchJson<any>('/api/researcher/comparisons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

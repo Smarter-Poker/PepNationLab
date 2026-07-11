@@ -16,7 +16,7 @@ import {
   type CartWarning 
 } from '@/lib/compounds';
 import { toast } from 'sonner';
-
+import { fetchJson } from '@/lib/fetch-json';
 import type { AreaProduct } from '@/lib/area-products-server';
 
 interface StackBuilderProps {
@@ -269,7 +269,7 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
     setGeneratingProtocol(true);
     
     try {
-      const res = await fetch('/api/researcher/ai-protocol', {
+      const res = await fetchJson<any>('/api/researcher/ai-protocol', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -286,8 +286,7 @@ export default function StackBuilder({ compounds, products = [] }: StackBuilderP
         return;
       }
 
-      const data = await res.json();
-      setAiProtocolText(data.protocol);
+      setAiProtocolText(res.data?.protocol);
       if (protocol.length === 0) {
         handleGenerateDefaultProtocol();
       }
