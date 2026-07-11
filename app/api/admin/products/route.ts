@@ -174,6 +174,16 @@ export async function PATCH(req: NextRequest) {
       try {
         await supabase.rpc('recalculate_agent_product_prices', { p_product_id: id });
       } catch { /* non-critical: triggers handle recomputation */ }
+
+      // Best-effort audit log — only when base_cost changes (highest-value field).
+      // Failure must never abort the primary operation.
+      supabase.from('admin_audit_log').insert({
+        actor_id: gate.userId,
+        action: 'product.base_cost_update',
+        entity_type: 'product',
+        entity_id: id,
+        changes: { base_cost: Number(raw['base_cost']) },
+      }).catch(() => { /* non-critical */ });
     }
 
     return NextResponse.json({ success: true });
