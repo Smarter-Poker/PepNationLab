@@ -21,13 +21,48 @@ const USER_AGENTS = [
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4_1) Version/17.4.1 Safari/605.1.15'
 ];
 
-function rewriteHtml(html: string, originalUrl: string): string {
+// HTML-entity encode a value before interpolating it into markup. Prevents the
+// reflected/stored XSS that raw ${...} interpolation of the url query param and
+// upstream JSON (title/abstract/etc.) would otherwise allow.
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Strip every executable vector out of foreign HTML: <script> blocks, inline
+// on*= event handlers, and javascript: URIs. This is defense-in-depth on top of
+// the nonce CSP (the CSP is the real enforcement — the browser blocks any script
+// without our nonce — but stripping keeps the console clean and covers any CSP
+// gaps in odd user agents).
+function stripActiveContent(html: string): string {
+  return html
+    // Remove <script>...</script> and self-closing/void script tags entirely.
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, '')
+    .replace(/<script\b[^>]*\/?>/gi, '')
+    // Remove inline event handlers: on...="...", on...='...', on...=value
+    .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, '')
+    .replace(/\son[a-z]+\s*=\s*'[^']*'/gi, '')
+    .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, '')
+    // Neutralize javascript: in href/src attributes.
+    .replace(/(href|src)\s*=\s*"javascript:[^"]*"/gi, '$1="#"')
+    .replace(/(href|src)\s*=\s*'javascript:[^']*'/gi, "$1='#'");
+}
+
+function rewriteHtml(html: string, originalUrl: string, nonce: string): string {
   const parsedUrl = new URL(originalUrl);
   const baseUrl = `${parsedUrl.protocol}//${parsedUrl.host}`;
-  
+
+  // Remove all active/executable content from the fetched document before we
+  // inject our own nonce-tagged interceptor.
+  let rewritten = stripActiveContent(html);
+
   // Strip existing base tags
-  let rewritten = html.replace(/<base[^>]*>/gi, '');
-  
+  rewritten = rewritten.replace(/<base[^>]*>/gi, '');
+
   // Inject base tag into head
   const baseTag = `<base href="${baseUrl}/" />`;
   if (rewritten.includes('<head>')) {
@@ -62,9 +97,10 @@ function rewriteHtml(html: string, originalUrl: string): string {
     }
   });
 
-  // Inject Javascript interceptor
+  // Inject Javascript interceptor. Carries our per-response nonce so it is the
+  // ONLY script the CSP permits to run — every foreign script is blocked.
   const interceptorScript = `
-    <script>
+    <script nonce="${nonce}">
       document.addEventListener('click', function(e) {
         var link = e.target.closest('a');
         if (link && link.href && link.href.startsWith('http') && !link.href.includes('/api/proxy')) {
@@ -132,6 +168,36 @@ export async function GET(request: NextRequest) {
       headers: { 'Retry-After': String(Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000))) },
     });
   }
+
+  // ── Proxy document hardening ────────────────────────────────────────────────
+  // The proxy returns foreign HTML from the pepnationlab.com origin. Without a
+  // strict Content-Security-Policy, any script in that foreign page would run in
+  // OUR origin and could call /api/* with the signed-in user's cookies. We block
+  // that by serving every proxy response under a nonce-based CSP: only our own
+  // injected interceptor (tagged with this per-response nonce) may execute; all
+  // foreign/inline scripts are refused by the browser. `base-uri` is left
+  // unrestricted here on purpose because rewriteHtml injects a <base> tag that
+  // relative image/style URLs depend on; script injection via <base> is moot
+  // since scripts are nonce-gated regardless.
+  const nonce = crypto.randomUUID().replace(/-/g, '');
+  const proxyCsp =
+    "default-src 'self' https: data: blob:; " +
+    "img-src 'self' https: data: blob:; " +
+    "style-src 'self' https: 'unsafe-inline'; " +
+    "font-src 'self' https: data:; " +
+    `script-src 'nonce-${nonce}'; ` +
+    "object-src 'none'; " +
+    "frame-ancestors 'self'; " +
+    "form-action https:";
+  const secureHtmlHeaders = (): Headers => {
+    const h = new Headers();
+    h.set('content-type', 'text/html; charset=utf-8');
+    h.set('Cache-Control', `s-maxage=${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=${CONFIG.CACHE_SWR}`);
+    h.set('X-Frame-Options', 'SAMEORIGIN');
+    h.set('X-Content-Type-Options', 'nosniff');
+    h.set('Content-Security-Policy', proxyCsp);
+    return h;
+  };
 
   // if (!isAllowedHost(origin || '') && !isAllowedHost(referer || '') && !isAllowedHost(host || '')) {
   //   return new NextResponse('Unauthorized referer', { status: 403 });
@@ -204,8 +270,11 @@ export async function GET(request: NextRequest) {
               const authors = titlePassage?.infons?.authors || '';
               const journal = titlePassage?.infons?.journal || '';
 
+              // All interpolated values are HTML-escaped: `url` is attacker-
+              // controlled (query param) and title/authors/journal/abstract come
+              // from an external JSON API, so none may be trusted as raw markup.
               const fallbackHtml = `
-                <!DOCTYPE html><html><head><title>${title}</title>
+                <!DOCTYPE html><html><head><title>${escapeHtml(title)}</title>
                 <style>
                   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #333; line-height: 1.6; padding: 20px; margin: 0; }
                   .container { max-width: 800px; margin: 0 auto; }
@@ -218,21 +287,16 @@ export async function GET(request: NextRequest) {
                 <body>
                   <div class="container">
                     <div class="badge">PubMed Reader Proxy</div>
-                    <h1>${title}</h1>
-                    <div class="meta">${authors}<br>${journal}</div>
-                    <div class="abstract">${abstract}</div>
+                    <h1>${escapeHtml(title)}</h1>
+                    <div class="meta">${escapeHtml(authors)}<br>${escapeHtml(journal)}</div>
+                    <div class="abstract">${escapeHtml(abstract)}</div>
                     <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
-                      <a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #00C4BC; text-decoration: none; font-weight: bold;">View Original on PubMed</a>
+                      <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="color: #00C4BC; text-decoration: none; font-weight: bold;">View Original on PubMed</a>
                     </div>
                   </div>
                 </body></html>
               `;
-              const resHeaders = new Headers();
-              resHeaders.set('content-type', 'text/html; charset=utf-8');
-              resHeaders.set('Cache-Control', `s-maxage=${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=${CONFIG.CACHE_SWR}`);
-              resHeaders.set('X-Frame-Options', 'SAMEORIGIN');
-              resHeaders.set('Content-Security-Policy', "frame-ancestors 'self'");
-              return new NextResponse(fallbackHtml, { status: 200, headers: resHeaders });
+              return new NextResponse(fallbackHtml, { status: 200, headers: secureHtmlHeaders() });
             }
           }
         } catch (e) {
@@ -247,42 +311,37 @@ export async function GET(request: NextRequest) {
         <body style="font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #0F161E; color: #FFF; margin: 0;">
           <div style="text-align: center; max-width: 400px; padding: 20px;">
             <h2>Article Unavailable</h2>
-            <p style="color: #A8B4C0; font-size: 14px;">The publisher returned a ${finalResponse.status} error.</p>
+            <p style="color: #A8B4C0; font-size: 14px;">The publisher returned a ${escapeHtml(String(finalResponse.status))} error.</p>
             <p style="color: #A8B4C0; font-size: 14px;">This usually happens when the publisher actively blocks proxy requests.</p>
-            <a href="${url}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 15px; background: #00C4BC; color: #000; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: bold;">Open in New Tab</a>
+            <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 15px; background: #00C4BC; color: #000; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: bold;">Open in New Tab</a>
           </div>
         </body></html>
       `;
-      const resHeaders = new Headers();
-      resHeaders.set('content-type', 'text/html; charset=utf-8');
-      resHeaders.set('Cache-Control', `s-maxage=${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=${CONFIG.CACHE_SWR}`);
-      resHeaders.set('X-Frame-Options', 'SAMEORIGIN');
-      resHeaders.set('Content-Security-Policy', "frame-ancestors 'self'");
-      
       // We return 200 OK so Next.js doesn't strip our headers!
-      return new NextResponse(fallbackHtml, { status: 200, headers: resHeaders });
+      return new NextResponse(fallbackHtml, { status: 200, headers: secureHtmlHeaders() });
     } else {
       return new NextResponse(`Publisher error ${finalResponse.status}`, { status: 500 });
     }
   }
 
-  const headers = new Headers(finalResponse.headers);
-  headers.delete('x-frame-options');
-  headers.delete('content-security-policy');
-  headers.delete('content-security-policy-report-only');
-  headers.delete('content-encoding');
-  headers.delete('content-length');
-  
-  // Set Omega Security Headers
-  headers.set('X-Frame-Options', 'SAMEORIGIN');
-  headers.set('Content-Security-Policy', "frame-ancestors 'self'");
-  headers.set('Cache-Control', `s-maxage=${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=${CONFIG.CACHE_SWR}`);
-
   if (contentType.includes('text/html')) {
     let html = await finalResponse.text();
-    html = rewriteHtml(html, url);
-    return new NextResponse(html, { status: 200, headers });
+    html = rewriteHtml(html, url, nonce);
+    // secureHtmlHeaders() applies the nonce CSP so no foreign script can run in
+    // our origin, plus nosniff / X-Frame-Options / caching.
+    return new NextResponse(html, { status: 200, headers: secureHtmlHeaders() });
   } else {
+    // Binary/other content (images, PDFs, etc.). Preserve the upstream
+    // content-type but strip any upstream framing/CSP headers and re-apply our
+    // own. The nonce CSP also neutralizes script-carrying SVGs, and nosniff
+    // stops the browser from re-interpreting the bytes as active HTML.
+    const headers = new Headers();
+    const upstreamType = finalResponse.headers.get('content-type');
+    if (upstreamType) headers.set('content-type', upstreamType);
+    headers.set('Cache-Control', `s-maxage=${CONFIG.CACHE_MAX_AGE}, stale-while-revalidate=${CONFIG.CACHE_SWR}`);
+    headers.set('X-Frame-Options', 'SAMEORIGIN');
+    headers.set('X-Content-Type-Options', 'nosniff');
+    headers.set('Content-Security-Policy', proxyCsp);
     const arrayBuffer = await finalResponse.arrayBuffer();
     return new NextResponse(arrayBuffer, { status: 200, headers });
   }
