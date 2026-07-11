@@ -243,9 +243,12 @@ function SignupForm() {
     setShowGoogleModal(false);
     try {
       const supabase = createClient();
-      // Pass redirect through the OAuth callback, plus registration ack flag
+      // Pass redirect through the OAuth callback, plus registration ack flag.
+      // Use & when redirectTo already carries a query (e.g. /checkout?agent=slug),
+      // otherwise the double ? would corrupt the query and drop the ack flag.
+      const ackSep = redirectTo.includes('?') ? '&' : '?';
       const callbackRedirect = redirectTo !== '/dashboard'
-        ? `${redirectTo}?ack=registration`
+        ? `${redirectTo}${ackSep}ack=registration`
         : '/dashboard?ack=registration';
 
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
