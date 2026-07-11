@@ -359,7 +359,16 @@ export default async function proxy(request: NextRequest) {
     return redirectWithCookies(url);
   }
 
-  if ((profile as { must_change_password?: boolean } | null)?.must_change_password === true && pathname !== '/account/change-password') {
+  // Paths that must stay reachable while must_change_password is set:
+  // /account/change-password is the standalone reset page, and
+  // /api/agent/onboarding backs the /onboarding wizard, whose FIRST step is
+  // the in-wizard password change. Without the API exemption a flagged agent
+  // landing directly on /onboarding got a permanent "Could Not Load Your
+  // Setup" dead end (the wizard's initial GET was 403'd before it could even
+  // render the password step).
+  const mustChangePasswordExempt =
+    pathname === '/account/change-password' || pathname === '/api/agent/onboarding';
+  if ((profile as { must_change_password?: boolean } | null)?.must_change_password === true && !mustChangePasswordExempt) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Must change password' }, { status: 403 });
     }
