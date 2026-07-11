@@ -1,9 +1,18 @@
 import type { City } from '../cities-data';
 
-// Hawaii - 2 cities
+// Hawaii — 11 cities
 const CITIES_HAWAII: City[] = [
-  { name: 'Honolulu', slug: 'honolulu', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 345000, medianIncome: 82000, tier: 2 },
-  { name: 'Kailua', slug: 'kailua', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 50000, medianIncome: 90000, tier: 2 },
+  { name: 'Honolulu', slug: 'honolulu', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 345000, medianIncome: 82000, tier: 2, region: 'Oahu', county: 'Honolulu', zips: ['96813', '96815', '96816', '96826'], localBlurb: 'As Hawaii\'s capital, Honolulu anchors an island research community that trusts our high-purity peptides and full COA verification.' },
+  { name: 'Kailua', slug: 'kailua', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 50000, medianIncome: 90000, tier: 2, region: 'Oahu', county: 'Honolulu', zips: ['96734'], localBlurb: 'Windward Kailua researchers rely on our lab-grade peptides for meticulous longevity and recovery studies.' },
+  { name: 'Kapolei', slug: 'kapolei', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 22000, medianIncome: 95000, tier: 2, region: 'Oahu', county: 'Honolulu', zips: ['96707'], localBlurb: 'Kapolei, Oahu\'s second city, hosts labs that choose our peptides for consistent purity and dependable documentation.' },
+  { name: 'Pearl City', slug: 'pearl-city', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 47000, medianIncome: 98000, tier: 2, region: 'Oahu', county: 'Honolulu', zips: ['96782'], localBlurb: 'Pearl City research groups source our peptides for reproducible results in metabolic and tissue-repair investigations.' },
+  { name: 'Mililani', slug: 'mililani', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 28000, medianIncome: 105000, tier: 2, region: 'Oahu', county: 'Honolulu', zips: ['96789'], localBlurb: 'In central Oahu\'s Mililani, independent researchers value our peptides\' guaranteed stability and analytical purity.' },
+  { name: 'Ewa Beach', slug: 'ewa-beach', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 15000, medianIncome: 100000, tier: 2, region: 'Oahu', county: 'Honolulu', zips: ['96706'], localBlurb: 'Ewa Beach laboratories partner with us for research-grade peptides backed by rigorous third-party testing.' },
+  { name: 'Kaneohe', slug: 'kaneohe', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 34000, medianIncome: 96000, tier: 2, region: 'Oahu', county: 'Honolulu', zips: ['96744'], localBlurb: 'On Oahu\'s windward side, Kaneohe researchers turn to our peptides for precise, reproducible experimental data.' },
+  { name: 'Hilo', slug: 'hilo', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 44000, medianIncome: 60000, tier: 3, region: 'Hawaii Island', county: 'Hawaii', zips: ['96720'], localBlurb: 'Hilo, the largest town on Hawaii Island, supplies its labs with our verified high-purity peptides for careful study.' },
+  { name: 'Kahului', slug: 'kahului', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 27000, medianIncome: 72000, tier: 3, region: 'Maui', county: 'Maui', zips: ['96732'], localBlurb: 'Kahului, Maui\'s commercial center, hosts researchers who depend on our peptides for consistent quality and COA transparency.' },
+  { name: 'Kihei', slug: 'kihei', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 24000, medianIncome: 78000, tier: 2, region: 'Maui', county: 'Maui', zips: ['96753'], localBlurb: 'Sunny Kihei on South Maui draws study teams who select our peptides for their documented purity and stability.' },
+  { name: 'Lihue', slug: 'lihue', state: 'Hawaii', stateSlug: 'hawaii', stateAbbr: 'HI', population: 8000, medianIncome: 68000, tier: 3, region: 'Kauai', county: 'Kauai', zips: ['96766'], localBlurb: 'Lihue, the seat of Kauai, provides island researchers with our lab-grade peptides for dependable, reproducible work.' },
 ];
 
 export default CITIES_HAWAII;
