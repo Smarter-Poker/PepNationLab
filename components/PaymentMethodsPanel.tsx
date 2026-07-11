@@ -5,9 +5,9 @@ import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import Image from 'next/image';
 
-/* ─────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────────────
    All supported payment methods with labels and placeholders
-   ───────────────────────────────────────────────────────── */
+   ───────────────────────────────────────────────────── */
 const baseStyle = { height: 20, width: 60, objectFit: 'contain' as const };
 const scaleStyle = (scale: number) => ({ ...baseStyle, transform: `scale(${scale})` });
 
@@ -86,9 +86,9 @@ export const PAYMENT_METHODS = [
 
 export type PaymentKey = (typeof PAYMENT_METHODS)[number]['key'];
 
-/* ─────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────────────
    PaymentMethodsPanel - Settings tab UI
-   ───────────────────────────────────────────────────────── */
+   ───────────────────────────────────────────────────── */
 interface PaymentMethodsPanelProps {
   agentId: string;
   /** Current payment_handles JSON from agent_profiles row */
