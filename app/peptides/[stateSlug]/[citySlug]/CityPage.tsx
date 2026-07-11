@@ -19,6 +19,7 @@ import { FEATURED_PEPTIDES } from '@/lib/cities/keywords';
 import { getCityIntro, getCityFAQs, getCityFacts, VALUE_PROPS, getRegionLabel, getRegionArea } from '@/lib/cities/city-content';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import type { StoreTop10Item } from '@/lib/cities/top10-server';
+import { getNearMeCities } from '@/lib/cities/near-me';
 
 interface Props {
   city: City;
@@ -671,6 +672,10 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
+        {/* PEPTIDES NEAR ME - visible, crawlable geographic coverage block
+            targeting "peptides near me {city}" queries. Adds content only. */}
+        <NearMeSection city={city} stateSlug={stateSlug} region={region} />
+
         <NearbyStrip stateSlug={stateSlug} currentCitySlug={citySlug} stateName={city.state} region={city.region} />
 
         {/* ═════════════════════════════════════════════
@@ -756,6 +761,52 @@ function NearbyStrip({ stateSlug, currentCitySlug, stateName, region }: {
           <Link href={`/peptides/${stateSlug}`} style={{ padding: '5px 14px', fontSize: '0.78rem', color: 'var(--teal)', background: 'var(--teal-subtle)', border: 'var(--border-teal)', borderRadius: 'var(--radius-full)', textDecoration: 'none', fontWeight: 600 }}>
             All {stateName} Cities
           </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// --- Peptides Near Me section ------------------------------------------------
+// Visible, crawlable geographic coverage block rendered before the
+// NearbyStrip. Targets "peptides near me {city}" queries with genuine
+// nearby-city data (same region first, then same state - see
+// lib/cities/near-me.ts). Adds content only; never remove existing sections
+// (the daily city-pages verifier asserts them).
+function NearMeSection({ city, stateSlug, region }: { city: City; stateSlug: string; region: string }) {
+  const nearby = getNearMeCities(city);
+  if (nearby.length === 0) return null;
+  const area = getRegionArea(region);
+  const topThree = nearby.slice(0, 3).map((c) => c.name);
+  const topThreeLabel =
+    topThree.length >= 3
+      ? `${topThree[0]}, ${topThree[1]}, And ${topThree[2]}`
+      : topThree.join(' And ');
+  return (
+    <section aria-label={`Peptides Near Me - ${city.name} Area`} style={{ padding: 'clamp(48px, 6vw, 80px) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <div className="container">
+        <h3 style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
+          Local Research Coverage
+        </h3>
+        <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)' }}>
+          Peptides Near Me - <span style={{ color: 'var(--teal)' }}>{city.name} Area</span>
+        </h2>
+        <p style={{ color: 'var(--grey-400)', fontSize: '0.92rem', maxWidth: 720, lineHeight: 1.7, marginBottom: 'var(--space-6)' }}>
+          Researchers Searching For Peptides Near Me In The {area} Find Local Coverage Across {nearby.length} Nearby {nearby.length === 1 ? 'City' : 'Cities'} Including {topThreeLabel}. Every Covered City Below Links To Its Own Dedicated Research Supply Page, And All Orders Ship With Full Batch COA Documentation, Strictly For In Vitro Research Use Only.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 'var(--space-3)' }}>
+          {nearby.map((c) => (
+            <Link key={`${c.stateSlug}-${c.slug}`} href={`/peptides/${c.stateSlug}/${c.slug}`} className="city-vcard glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: 'var(--space-4) var(--space-5)', border: 'var(--border-subtle)', textDecoration: 'none' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--silver-light)' }}>
+                {c.stateSlug === stateSlug ? c.name : `${c.name}, ${c.stateAbbr}`}
+              </span>
+              {c.county && (
+                <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)' }}>
+                  {c.county} County
+                </span>
+              )}
+            </Link>
+          ))}
         </div>
       </div>
     </section>
