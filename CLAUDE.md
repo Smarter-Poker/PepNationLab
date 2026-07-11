@@ -288,6 +288,9 @@ NEXT_PUBLIC_APP_NAME=Pep Nation Lab
 NEXT_PUBLIC_DISCLAIMER_VERSION=v1.0
 RESEND_API_KEY=<set in Vercel dashboard>
 RESEND_FROM_EMAIL=research@pepnationlab.com
+CRON_SECRET=<SET in Vercel production 2026-07-11 - secret; value lives ONLY in the Vercel dashboard. Do NOT ask Dan for it again and NEVER commit it - this repo is public>
+PAYER_EIN=<SET in Vercel production 2026-07-11 - PIQ Training Inc federal EIN; value in Vercel dashboard only>
+PAYER_LEGAL_NAME=<SET in Vercel production 2026-07-11 - PIQ TRAINING INC>
 ```
 
 > **Note:** Transactional email is ENABLED via a zero-dependency HTTP sender in
