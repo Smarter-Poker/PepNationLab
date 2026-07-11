@@ -21,6 +21,7 @@ const CITIES_ALABAMA: City[] = [
   { name: 'Florence', slug: 'florence', state: 'Alabama', stateSlug: 'alabama', stateAbbr: 'AL', population: 40000, medianIncome: 48000, tier: 3, region: 'The Shoals', county: 'Lauderdale', zips: ['35630', '35633'], localBlurb: 'In the Shoals, Florence researchers turn to third-party-tested research peptides for precise experimental study.' },
   { name: 'Daphne', slug: 'daphne', state: 'Alabama', stateSlug: 'alabama', stateAbbr: 'AL', population: 28000, medianIncome: 78000, tier: 2, region: 'Eastern Shore', county: 'Baldwin', zips: ['36526'], localBlurb: 'Eastern Shore town Daphne provides local labs quick access to high-purity research-grade peptides.' },
   { name: 'Fairhope', slug: 'fairhope', state: 'Alabama', stateSlug: 'alabama', stateAbbr: 'AL', population: 23000, medianIncome: 92000, tier: 1, region: 'Eastern Shore', county: 'Baldwin', zips: ['36532'], localBlurb: 'Upscale Fairhope draws researchers who demand meticulous purity in every research-grade peptide vial.' },
+  { name: 'Gadsden', slug: 'gadsden', state: 'Alabama', stateSlug: 'alabama', stateAbbr: 'AL', population: 33000, medianIncome: 38000, tier: 3, region: 'Northeast Alabama', county: 'Etowah', zips: ['35901', '35903', '35904'], localBlurb: 'Gadsden serves northeast Alabama laboratories with dependable, certificate-backed research-grade peptides.' },
 ];
 
 export default CITIES_ALABAMA;
