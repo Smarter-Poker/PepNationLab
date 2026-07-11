@@ -240,6 +240,16 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Scheduled jobs (Vercel Cron + GitHub Actions) hit /api/cron/* and
+  // /api/messenger/cron/* with only an `Authorization: Bearer CRON_SECRET`
+  // header and never a Supabase session cookie. Every such route enforces
+  // CRON_SECRET in-handler via lib/cron.ts assertCronAuth (fail-closed), so
+  // exempt the whole prefix from middleware auth here. Listing paths one by
+  // one previously left new crons to 401 the moment they were scheduled.
+  if (pathname.startsWith('/api/cron/') || pathname.startsWith('/api/messenger/cron/')) {
+    return NextResponse.next({ request });
+  }
+
   const isLoginRoute = pathname === '/login';
   if (!isLoginRoute && PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'))) {
     return NextResponse.next({ request });

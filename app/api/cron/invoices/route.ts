@@ -6,6 +6,13 @@ import { computeSubAgentBaselineCost } from '@/lib/pricing';
 import { notifyInvoiceGenerated } from '@/lib/notify';
 import { chicagoMidnightIso, previousCompletedWeekStartCst } from '@/lib/time-cst';
 
+// This job loops over every top-level agent and every credit sub-agent, each with
+// several sequential queries + RPCs. The default function budget can kill it
+// mid-loop (leaving a stale 'running' claim + partial billing). Give it room; the
+// per-agent work is idempotent (persistStatement skips paid, existing invoices are
+// skipped) so a retry is safe, and claimCronRun can now re-take a stale/failed run.
+export const maxDuration = 300;
+
 function addDays(dateStr: string, days: number): string {
   const d = new Date(`${dateStr}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
@@ -116,12 +123,19 @@ export async function GET(req: Request) {
 
         if (existingInvoice?.status === 'paid') continue;
 
-        // Fetch Sub-Agent orders for the week.
+        // Fetch Sub-Agent orders for the week. Exclude the not-yet-billable
+        // statuses that lib/statements.ts excludes (pending_customer_payment,
+        // agent_approval_pending) so the cron never bills an order before it is
+        // approved, and exclude wholesale restock self-buys (billed at checkout,
+        // not via weekly invoice) - matching the manual super-agent route.
         const { data: orders } = await supabase
           .from('orders')
           .select('id, shipping_cost, order_items(product_id, quantity, unit_super_agent_cost, unit_cost_price)')
           .eq('agent_id', subAgent.id)
           .neq('status', 'cancelled')
+          .neq('status', 'pending_customer_payment')
+          .neq('status', 'agent_approval_pending')
+          .neq('is_wholesale_restock', true)
           .gte('created_at', rangeStart)
           .lt('created_at', rangeEndExclusive);
 
@@ -147,12 +161,16 @@ export async function GET(req: Request) {
             if (Number.isFinite(stored) && stored >= 0) {
               totalCogs += stored * qty;
             } else if (item.product_id && subAgent.parent_agent_id) {
+              // computeSubAgentBaselineCost returns a per-10-vial-pack cost, but the
+              // stored unit_cost_price path above is per-vial and qty is in individual
+              // vials. Divide by 10 so the fallback matches (was a 10x over-bill),
+              // mirroring the manual super-agent invoice route.
               const recomputed = await computeSubAgentBaselineCost(
                 supabase,
                 item.product_id,
                 subAgent.parent_agent_id
               );
-              totalCogs += recomputed * qty;
+              totalCogs += (recomputed / 10) * qty;
             }
           }
         }

@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Key } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { safeRelativePath } from '@/lib/safe-redirect';
 
 function LoginPageInner() {
   const router = useRouter();
@@ -26,9 +27,8 @@ function LoginPageInner() {
     setError('');
     try {
       const supabase = createClient();
-      const rawRedirect = searchParams.get('redirect') ?? '/dashboard';
-      const redirectTo = /^\/(?!\/|\\)/.test(rawRedirect) ? rawRedirect : '/dashboard';
-      
+      const redirectTo = safeRelativePath(searchParams.get('redirect'));
+
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -105,10 +105,10 @@ function LoginPageInner() {
       // Record session
       fetch('/api/agent/sessions', { method: 'POST' }).catch(() => {});
 
-      const rawRedirect = searchParams.get('redirect') ?? '/dashboard';
-      // Prevent open redirect: only allow relative paths starting with /
-      // Reject anything with a protocol, double-slash, or backslash.
-      const redirectTo = /^\/(?!\/|\\)/.test(rawRedirect) ? rawRedirect : '/dashboard';
+      // Prevent open redirect: only allow same-origin relative paths. Also strips
+      // embedded control characters that browsers would collapse into a
+      // scheme-relative "//host" navigation (see lib/safe-redirect).
+      const redirectTo = safeRelativePath(searchParams.get('redirect'));
 
       // Wait until Supabase confirms the session is readable locally (max 3s).
       // On mobile incognito the cookie write is async - navigating too soon

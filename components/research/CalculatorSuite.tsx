@@ -1286,14 +1286,14 @@ function StabilitySection() {
           why="Model Temperature-Dependent Shelf Life. Activation Energy (Ea) Governs Degradation Rates; Select Preset Peptide Categories Or Customize Ea."
         />
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-          <button 
-            onClick={() => { setTFrom('-4'); setTTo('39'); }} 
+          <button
+            onClick={() => { setTFrom('-4'); setTTo('39'); }}
             style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #00E5FF', background: 'transparent', color: '#00E5FF', cursor: 'pointer', fontSize: 13 }}
           >
             Preset: Freezer To Fridge
           </button>
-          <button 
-            onClick={() => { setTFrom('39'); setTTo('77'); }} 
+          <button
+            onClick={() => { setTFrom('39'); setTTo('77'); }}
             style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #F6AD55', background: 'transparent', color: '#F6AD55', cursor: 'pointer', fontSize: 13 }}
           >
             Preset: Fridge To Room Temp

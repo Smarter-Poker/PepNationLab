@@ -36,6 +36,29 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     handler: async () => {
       const service = createAdminClient();
 
+      // Terminal-state guard: cancel_order does not itself block cancelling a
+      // shipped/delivered order, and cancelling one cascades into reversing the
+      // credit-line charge and voiding commissions for goods that already shipped
+      // (with no offsetting refund) -- accounting corruption. The bulk cancel path
+      // already blocks these; enforce the same here.
+      const { data: existing, error: readErr } = await service
+        .from('orders')
+        .select('status')
+        .eq('id', id)
+        .maybeSingle();
+      if (readErr) {
+        return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+      }
+      if (!existing) {
+        return NextResponse.json({ error: 'Order Not Found.' }, { status: 404 });
+      }
+      if (existing.status === 'shipped' || existing.status === 'delivered' || existing.status === 'cancelled') {
+        return NextResponse.json(
+          { error: `Cannot Cancel An Order That Is Already ${existing.status}.` },
+          { status: 422 }
+        );
+      }
+
       // cancel_order RPC: pass 'none' as refund_type - all sales are final.
       const { error: rpcError } = await service.rpc('cancel_order', {
         p_order_id: id,

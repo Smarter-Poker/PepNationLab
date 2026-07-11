@@ -47,7 +47,21 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
     if (fetchError) {
       setError(fetchError.message);
     } else {
-      setMessages((data ?? []) as InternalMessage[]);
+      const rows = (data ?? []) as InternalMessage[];
+      setMessages(rows);
+      // Mark unread messages as read once the inbox is viewed. Without this the
+      // navbar unread badge (GET /api/messages?unread=true) never cleared for
+      // agents who read mail through this inbox. Optimistically flip local state
+      // so the filter counts/highlight update immediately; the write is best-effort.
+      const unreadIds = rows.filter(m => !m.is_read).map(m => m.id);
+      if (unreadIds.length > 0) {
+        setMessages(prev => prev.map(m => (m.is_read ? m : { ...m, is_read: true })));
+        fetch('/api/messages', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messageIds: unreadIds }),
+        }).catch(() => { /* best-effort: badge will clear on next successful sync */ });
+      }
     }
     setLoading(false);
   }, [agentId]);

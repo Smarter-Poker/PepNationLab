@@ -58,6 +58,17 @@ export async function computeStatement(
     }
   }
 
+  // Bill an order in the week it BECAME billable (agent approval), not the week
+  // it was created. Previously the window was keyed on created_at while the
+  // status filter dropped not-yet-approved orders: an order created in week N
+  // but approved in week N+1 was excluded from week N (still pending at that
+  // run) and never re-selected in week N+1 (its created_at is in week N), so it
+  // escaped billing entirely - and the cron never revisits a week that already
+  // has a statement row. Selecting by agent_approved_at (set once, atomically,
+  // at approval time and never moved thereafter) routes each order to exactly
+  // one week: the week it was approved, closing the leak with no double-bill.
+  // Legacy / no-approval-path orders have a NULL agent_approved_at, so we fall
+  // back to created_at for those to preserve their prior behavior.
   const { data: orders, error: ordersError } = await supabase
     .from('orders')
     .select('id, agent_id, shipping_cost, order_items(quantity, unit_cost_price, unit_super_agent_cost)')
@@ -65,8 +76,10 @@ export async function computeStatement(
     .neq('status', 'cancelled')
     .neq('status', 'pending_customer_payment')
     .neq('status', 'agent_approval_pending')
-    .gte('created_at', rangeStart)
-    .lt('created_at', rangeEndExclusive);
+    .or(
+      `and(agent_approved_at.gte.${rangeStart},agent_approved_at.lt.${rangeEndExclusive}),` +
+      `and(agent_approved_at.is.null,created_at.gte.${rangeStart},created_at.lt.${rangeEndExclusive})`
+    );
 
   if (ordersError) {
     return { ok: false, error: ordersError.message };

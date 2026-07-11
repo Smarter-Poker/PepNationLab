@@ -104,6 +104,16 @@ export async function POST(request: NextRequest) {
         .eq('buyer_id', user.id)
         .maybeSingle();
       if (existing) {
+        // If the prior order under this key was cancelled (e.g. swept by
+        // cancel_stale_pending_orders) before the client retried, do NOT report
+        // success -- that would leave the buyer believing a cancelled order is
+        // live. Treat the key as spent and ask them to start a new order.
+        if (existing.status === 'cancelled') {
+          return NextResponse.json(
+            { error: 'Your Previous Order Was Cancelled. Please Start A New Order.' },
+            { status: 409 }
+          );
+        }
         return NextResponse.json({
           success: true,
           orderId: existing.id,
@@ -358,6 +368,34 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // 4a. Legitimate stack/bundle membership. The 10% bundle discount is applied
+    // per line only when the client-supplied bundleName matches an ACTIVE bundle
+    // owned by the agent of record AND the line's product is a member of that
+    // bundle. Without this check, any client could attach an arbitrary bundleName
+    // string to every cart line and skim 10% off the whole order.
+    // Map: normalized bundle name -> Set of member product_ids.
+    const validBundleMembers = new Map<string, Set<string>>();
+    if (agentProfile) {
+      const { data: bundleRow } = await serviceSupabase
+        .from('agent_profiles')
+        .select('bundles_config')
+        .eq('id', agentProfile.id)
+        .maybeSingle();
+      const bundles = Array.isArray(bundleRow?.bundles_config) ? bundleRow!.bundles_config : [];
+      for (const b of bundles as Array<{ name?: string; product_ids?: string[]; is_active?: boolean }>) {
+        if (!b || b.is_active === false || typeof b.name !== 'string' || !Array.isArray(b.product_ids)) continue;
+        const key = b.name.trim().toLowerCase();
+        const set = validBundleMembers.get(key) ?? new Set<string>();
+        b.product_ids.forEach(pid => { if (typeof pid === 'string') set.add(pid); });
+        validBundleMembers.set(key, set);
+      }
+    }
+    const isValidBundleLine = (bundleName: string | undefined, productId: string): boolean => {
+      if (!bundleName) return false;
+      const members = validBundleMembers.get(bundleName.trim().toLowerCase());
+      return !!members && members.has(productId);
+    };
+
     // 4b. Quantity Discount Eligibility -- Honors The Storefront's
     // volume_pricing_enabled Toggle (Default On). Researcher Retail Only.
     let volumeDiscountsEnabled = true;
@@ -411,11 +449,18 @@ export async function POST(request: NextRequest) {
 
       const baseCost = Number(dbProduct.base_cost);
 
+      // Only honor a client-supplied bundleName when it maps to a real active
+      // bundle owned by the agent of record that actually contains this product.
+      const isBundleLine = isValidBundleLine(cartItem.bundleName, dbProduct.id);
+
       let retailPrice = 0;
 
       if (isAgentSelfBuy || isSubAgent) {
         // costPrice path; retail collapses to cost for wholesale buyers below.
-      } else if (agentCustomRetail[dbProduct.id]) {
+      } else if (Object.prototype.hasOwnProperty.call(agentCustomRetail, dbProduct.id)) {
+        // Presence check, not truthiness: an agent may legitimately set retail_price
+        // to 0 (giveaway/sample). A `0 is falsy` check previously skipped this and
+        // charged full tier-3 retail instead of the intended free price.
         retailPrice = agentCustomRetail[dbProduct.id];
       } else {
         // Fix 7: return 500 if tier multipliers cannot be loaded instead of using hardcoded fallback
@@ -446,10 +491,15 @@ export async function POST(request: NextRequest) {
         if (superAgentProfile) {
           // Fix 7: removed ?? 1.7 hardcoded fallback
           const saMultiplier = superAgentOverrides[dbProduct.id] ?? tierMultipliers[superAgentProfile.tier || 'tier_3'];
+          // A missing pricing_tiers row must NOT silently collapse cost to $0
+          // (free goods). Hard-fail exactly like the retail path above.
+          if (saMultiplier === undefined || saMultiplier === null) {
+            return NextResponse.json({ error: 'Pricing Configuration Unavailable. Please Try Again.' }, { status: 500 });
+          }
           superAgentCost = isWholesalePurchase
-            ? (baseCost * (saMultiplier ?? 0) / 10)
+            ? (baseCost * saMultiplier / 10)
             : applyBulkPrice(
-                baseCost * (saMultiplier ?? 0) / 10,
+                baseCost * saMultiplier / 10,
                 itemQty,
                 dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
                 dbProduct.admin_bulk_threshold
@@ -459,10 +509,14 @@ export async function POST(request: NextRequest) {
           if (saConfig) {
              // Sub-agents do not get the bulk_baseline_cost break; they always
              // pay the baseline tier their parent has set.
+             // baseline_cost / bulk_baseline_cost are stored PER-10-VIAL PACK, so
+             // divide by 10 to get the per-vial cost (matches every other price in
+             // this file and the manual invoice path). Without this the buyer is
+             // billed 10x the intended baseline.
              if (!isWholesalePurchase && saConfig.bulk_baseline_cost !== null && itemQty >= saConfig.bulk_threshold) {
-                 costPrice = saConfig.bulk_baseline_cost;
+                 costPrice = saConfig.bulk_baseline_cost / 10;
              } else {
-                 costPrice = saConfig.baseline_cost;
+                 costPrice = saConfig.baseline_cost / 10;
              }
           } else {
              costPrice = superAgentCost;
@@ -478,12 +532,17 @@ export async function POST(request: NextRequest) {
         } else {
           // Fix 7: removed ?? 1.7 hardcoded fallback
           const agentMultiplier = agentOverrides[dbProduct.id] ?? tierMultipliers[agentTier];
+          // A missing pricing_tiers row must NOT silently collapse cost to $0
+          // (free goods). Hard-fail exactly like the retail path above.
+          if (agentMultiplier === undefined || agentMultiplier === null) {
+            return NextResponse.json({ error: 'Pricing Configuration Unavailable. Please Try Again.' }, { status: 500 });
+          }
           // Agent self-buy at a regular agent's storefront: skip bulk pricing.
           // Researcher buying through the agent: keep bulk pricing.
           costPrice = isWholesalePurchase
-            ? (baseCost * (agentMultiplier ?? 0) / 10)
+            ? (baseCost * agentMultiplier / 10)
             : applyBulkPrice(
-                baseCost * (agentMultiplier ?? 0) / 10,
+                baseCost * agentMultiplier / 10,
                 itemQty,
                 dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
                 dbProduct.admin_bulk_threshold
@@ -506,7 +565,7 @@ export async function POST(request: NextRequest) {
 
       // Stack discount: 10% off for items purchased as part of an individually packaged stack.
       // Floors ensure a pricing bug upstream can't drive prices negative.
-      if (cartItem.bundleName) {
+      if (isBundleLine) {
         retailPrice = Math.max(0, retailPrice * 0.9);
         costPrice = Math.max(0, costPrice * 0.9);
       }
@@ -519,7 +578,7 @@ export async function POST(request: NextRequest) {
       if (
         volumeDiscountsEnabled &&
         !isWholesalePurchase &&
-        !cartItem.bundleName &&
+        !isBundleLine &&
         !isVolumeDiscountExcluded(dbProduct.name)
       ) {
         const qtyPct = quantityDiscountPct(itemQty);
@@ -535,12 +594,14 @@ export async function POST(request: NextRequest) {
         superAgentCost = isFinite(superAgentCost) ? Math.round(superAgentCost * 100) / 100 : null;
       }
 
-      const finalProductName = cartItem.bundleName ? `${dbProduct.name} [Part of: ${cartItem.bundleName}]` : dbProduct.name;
+      const finalProductName = isBundleLine ? `${dbProduct.name} [Part of: ${cartItem.bundleName}]` : dbProduct.name;
 
       const split = itemSplits[idx];
 
       if (split && split.localQty > 0) {
-        subtotal += retailPrice * split.localQty;
+        // Keep subtotal at exact cents so FP dust cannot flow into coupon math
+        // or the stored order total.
+        subtotal = Math.round((subtotal + retailPrice * split.localQty) * 100) / 100;
         totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * split.localQty;
         computedItems.push({
           product_id: dbProduct.id,
@@ -554,7 +615,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (split && split.chinaQty > 0) {
-        subtotal += retailPrice * split.chinaQty;
+        subtotal = Math.round((subtotal + retailPrice * split.chinaQty) * 100) / 100;
         totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * split.chinaQty;
         computedItems.push({
           product_id: dbProduct.id,
@@ -568,7 +629,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (!split || (split.localQty === 0 && split.chinaQty === 0)) {
-        subtotal += retailPrice * itemQty;
+        subtotal = Math.round((subtotal + retailPrice * itemQty) * 100) / 100;
         totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * itemQty;
         computedItems.push({
           product_id: dbProduct.id,
@@ -728,17 +789,23 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    // Calculate shipping costs.
-    // IMPORTANT: if fulfillmentMethod is 'agent_pickup', always use 'agent_pickup' as
-    // the shipping option regardless of what the client sent. A client could send
-    // fulfillmentMethod='agent_pickup' with shippingOption='fedex', causing a shipping
-    // charge on a pickup order. Server-side enforcement prevents this.
-    const actualShippingOption = fulfillmentMethod === 'agent_pickup'
+    // Calculate shipping costs. Shipping option is derived STRICTLY from
+    // fulfillmentMethod, never trusted from the client's shippingOption field:
+    //   - agent_pickup fulfillment  -> always 'agent_pickup' (free), even if the
+    //     client sent a carrier (prevents a bogus shipping charge on pickup).
+    //   - ship fulfillment          -> a real carrier only. A client sending
+    //     shippingOption='agent_pickup' (or anything non-carrier) with a shipped
+    //     order previously collapsed shipping to $0 -- free shipping exploit.
+    //     Coerce any non-carrier value to the default paid carrier.
+    const CARRIERS = ['fedex', 'usps'] as const;
+    const actualShippingOption: import('@/lib/shipping').ShippingOption = fulfillmentMethod === 'agent_pickup'
       ? 'agent_pickup'
-      : (shippingOption || 'usps');
+      : (CARRIERS.includes(shippingOption as (typeof CARRIERS)[number]) ? (shippingOption as (typeof CARRIERS)[number]) : 'usps');
     const shippingCost = calculateShippingCost(actualShippingOption, totalWeightOz);
 
-    const grossTotal = Math.max(0, subtotal - discountAmount) + shippingCost;
+    // Round the final money total to exact cents so accumulated FP dust never
+    // reaches the stored order total or credit/velocity comparisons.
+    const grossTotal = Math.round((Math.max(0, subtotal - discountAmount) + shippingCost) * 100) / 100;
     const total = Math.max(0, grossTotal);
 
     // Velocity caps (flag-gated, additive). A researcher order placed through a
@@ -885,7 +952,11 @@ export async function POST(request: NextRequest) {
 
 
 
-    const limit = profile.max_auto_approve_limit !== undefined && profile.max_auto_approve_limit !== null ? Number(profile.max_auto_approve_limit) : Infinity;
+    // A NULL max_auto_approve_limit must NOT mean "auto-approve any amount".
+    // Fall back to a conservative cap so unbounded totals are never silently
+    // auto-approved; anything above it drops to manual approval.
+    const DEFAULT_AUTO_APPROVE_LIMIT = 1000;
+    const limit = profile.max_auto_approve_limit !== undefined && profile.max_auto_approve_limit !== null ? Number(profile.max_auto_approve_limit) : DEFAULT_AUTO_APPROVE_LIMIT;
     const isUserCredit = (profile.account_type === 'credit' || profile.auto_approve_orders === true) && (total <= limit);
     const autoApproveStatus = fulfillmentMethod === 'agent_pickup' ? 'approved_pickup' : 'approved_ship';
 
@@ -1042,13 +1113,18 @@ export async function POST(request: NextRequest) {
 
     // Back-fill order_id on the disclaimer acceptance row for compliance audit joins.
     // Must not block the response -- wrap in non-throwing promise chain.
-    serviceSupabase
-      .from('disclaimer_acceptances')
-      .update({ order_id: order.id })
-      .eq('id', disclaimerRow.id)
-      .then(({ error: dErr }) => {
-        if (dErr) console.error('[orders] disclaimer order_id backfill failed:', dErr.message);
-      });
+    Promise.resolve(
+      serviceSupabase
+        .from('disclaimer_acceptances')
+        .update({ order_id: order.id })
+        .eq('id', disclaimerRow.id)
+    ).then(({ error: dErr }) => {
+      if (dErr) console.error('[orders] disclaimer order_id backfill failed:', dErr.message);
+    }).catch((e: unknown) => {
+      // Transport-level rejection has no resolved error object; must not surface
+      // as an unhandled rejection in the serverless runtime.
+      console.error('[orders] disclaimer order_id backfill threw:', e instanceof Error ? e.message : String(e));
+    });
 
     const itemsToInsert = computedItems.map(item => ({
       order_id: order.id,
@@ -1082,9 +1158,17 @@ export async function POST(request: NextRequest) {
     if (initialStatus === 'approved_ship' || initialStatus === 'approved_pickup') {
       const { error: creditErr } = await serviceSupabase.rpc('charge_order_credit_line', { p_order_id: order.id, p_created_by: user.id });
       if (creditErr) {
+        // The credit charge failed. Do NOT leave the order in an approved /
+        // shippable state -- that would ship goods that were never billed.
+        // Demote it to the manual-approval status used elsewhere in this file
+        // and skip the shipping-label enqueue so nothing goes out the door until
+        // a human reconciles the billing.
         console.error('[CRITICAL] charge_order_credit_line Failed For Order', order.id, creditErr);
-      }
-      if (initialStatus === 'approved_ship') {
+        await serviceSupabase
+          .from('orders')
+          .update({ status: 'agent_approval_pending' })
+          .eq('id', order.id);
+      } else if (initialStatus === 'approved_ship') {
         const { error: labelErr } = await serviceSupabase.rpc('shippo_enqueue_label_job', { p_order_id: order.id });
         if (labelErr) {
           console.error('[WARNING] shippo_enqueue_label_job Failed For Order', order.id, labelErr);

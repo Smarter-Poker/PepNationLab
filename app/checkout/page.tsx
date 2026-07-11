@@ -35,17 +35,28 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
     redirect('/login');
   }
 
-  // Fetch PNL pricing configuration to pass down
-  // Use service client so researcher-level RLS does not block the read
-  const supabaseService = await createServiceClient();
-  const { data: tiers } = await supabaseService
-    .from('pricing_tiers')
-    .select('tier_name, multiplier');
+  // Fetch PNL pricing configuration to pass down.
+  // SECURITY: raw tier multipliers are platform-internal pricing and must never
+  // leak to researchers. Only agents/super_agents/admins may receive them; every
+  // other viewer gets an empty map. (Researchers already see finished retail
+  // prices computed elsewhere -- they never need the raw multipliers.)
+  const canSeeTierMultipliers =
+    profile.role === 'agent' ||
+    profile.role === 'super_agent' ||
+    profile.role === 'admin';
 
   const tierMultipliers: Record<string, number> = {};
-  (tiers ?? []).forEach((t: any) => {
-    tierMultipliers[t.tier_name] = Number(t.multiplier);
-  });
+  if (canSeeTierMultipliers) {
+    // Use service client so agent-level RLS does not block the read
+    const supabaseService = await createServiceClient();
+    const { data: tiers } = await supabaseService
+      .from('pricing_tiers')
+      .select('tier_name, multiplier');
+
+    (tiers ?? []).forEach((t: any) => {
+      tierMultipliers[t.tier_name] = Number(t.multiplier);
+    });
+  }
 
   // Resolve the agent's payment handles so CheckoutForm shows only the
   // handles this specific agent has configured (not hardcoded platform handles).

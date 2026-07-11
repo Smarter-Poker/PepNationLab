@@ -103,6 +103,13 @@ export async function POST(req: NextRequest) {
       .filter((item: any) => typeof item.id === 'string' && uuidRegex.test(item.id))
       .map((item: any) => ({
         id: item.id,
+        // productId is the stable cross-path dedup key (may be a product id even
+        // when `id` is an agent_product id). Dropping it broke line merging and
+        // reorder dedup after a cross-device restore.
+        productId:
+          typeof item.productId === 'string' && uuidRegex.test(item.productId)
+            ? item.productId
+            : null,
         name: String(item.name || '').slice(0, 100),
         sku: item.sku ? String(item.sku).slice(0, 50) : null,
         quantity: Math.max(1, Math.min(9999, Math.floor(Number(item.quantity) || 1))),
@@ -111,6 +118,14 @@ export async function POST(req: NextRequest) {
         bulkCostPrice: item.bulkCostPrice != null ? Math.max(0, Number(item.bulkCostPrice)) : null,
         bulkThreshold: item.bulkThreshold != null ? Math.max(1, Math.floor(Number(item.bulkThreshold))) : null,
         weightOz: item.weightOz != null ? Math.max(0, Number(item.weightOz)) : null,
+        // bundleName drives stack grouping + the 10% stack discount; agentSelfBuy
+        // gates bulk pricing and min-qty rules at checkout. Both must survive the
+        // round-trip or a restored cart loses its bundle/agent semantics.
+        bundleName:
+          typeof item.bundleName === 'string' && item.bundleName.trim()
+            ? String(item.bundleName).slice(0, 100)
+            : null,
+        agentSelfBuy: item.agentSelfBuy === true,
       }));
 
     const { error } = await supabase

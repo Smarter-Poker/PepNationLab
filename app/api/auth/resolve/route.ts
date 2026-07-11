@@ -59,11 +59,14 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (!data) {
-      // Do NOT reveal whether the username exists. Return a synthetic email so
-      // the downstream password check fails uniformly with the same shape as a
-      // wrong-password attempt on a real account.
+      // Do NOT reveal whether the username exists. Return a synthetic email in the
+      // SAME domain shape used for real username accounts (@internal.auth) so a
+      // miss is indistinguishable from a hit -- the downstream password check then
+      // fails uniformly like a wrong-password attempt. (Previously this returned
+      // @nodom.invalid, whose distinct domain let callers enumerate valid usernames
+      // by inspecting the response.)
       const safeUsername = username.toLowerCase().replace(/[^a-z0-9_.-]/g, '');
-      return NextResponse.json({ email: `${safeUsername}@nodom.invalid` });
+      return NextResponse.json({ email: `${safeUsername}@internal.auth` });
     }
 
     // The synthetic internal identity every username account is created with.

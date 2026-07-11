@@ -1,0 +1,14 @@
+import type { City } from '../cities-data';
+
+// Delaware — 7 cities
+const CITIES_DELAWARE: City[] = [
+  { name: 'Wilmington', slug: 'wilmington', state: 'Delaware', stateSlug: 'delaware', stateAbbr: 'DE', population: 71000, medianIncome: 55000, tier: 2, region: 'Wilmington Metro', county: 'New Castle', zips: ['19801', '19806'], localBlurb: 'Wilmington is home to Nemours Children\'s Hospital and ChristianaCare\'s Wilmington campus.' },
+  { name: 'Greenville', slug: 'greenville', state: 'Delaware', stateSlug: 'delaware', stateAbbr: 'DE', population: 2500, medianIncome: 150000, tier: 1, region: 'Wilmington Metro', county: 'New Castle', zips: ['19807'], localBlurb: 'Greenville anchors Delaware\'s chateau country near the Winterthur research library and Wilmington\'s medical corridor.' },
+  { name: 'Hockessin', slug: 'hockessin', state: 'Delaware', stateSlug: 'delaware', stateAbbr: 'DE', population: 13500, medianIncome: 135000, tier: 1, region: 'Wilmington Metro', county: 'New Castle', zips: ['19707'], localBlurb: 'Hockessin is one of Delaware\'s wealthiest communities, in the Red Clay Valley northwest of Wilmington.' },
+  { name: 'Newark', slug: 'newark', state: 'Delaware', stateSlug: 'delaware', stateAbbr: 'DE', population: 31000, medianIncome: 65000, tier: 2, region: 'Wilmington Metro', county: 'New Castle', zips: ['19711', '19713'], localBlurb: 'Newark hosts the University of Delaware\'s STAR health-science campus and ChristianaCare\'s flagship Christiana Hospital.' },
+  { name: 'Middletown', slug: 'middletown', state: 'Delaware', stateSlug: 'delaware', stateAbbr: 'DE', population: 24000, medianIncome: 95000, tier: 2, region: 'Wilmington Metro', county: 'New Castle', zips: ['19709'], localBlurb: 'Middletown is Delaware\'s fastest-growing town, served by ChristianaCare\'s Middletown emergency and outpatient campus.' },
+  { name: 'Dover', slug: 'dover', state: 'Delaware', stateSlug: 'delaware', stateAbbr: 'DE', population: 39000, medianIncome: 55000, tier: 3, region: 'Central Delaware', county: 'Kent', zips: ['19901', '19904'], localBlurb: 'Dover, the state capital, is anchored by Bayhealth Hospital\'s Kent Campus.' },
+  { name: 'Rehoboth Beach', slug: 'rehoboth-beach', state: 'Delaware', stateSlug: 'delaware', stateAbbr: 'DE', population: 3500, medianIncome: 90000, tier: 2, region: 'Delaware Beaches', county: 'Sussex', zips: ['19971'], localBlurb: 'Rehoboth Beach is served by Beebe Healthcare\'s medical campus in neighboring Lewes.' },
+];
+
+export default CITIES_DELAWARE;

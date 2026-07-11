@@ -126,8 +126,14 @@ export function dilutionSeries(opts: {
   
   const hasVols = isFinite(finalVolumeMl ?? NaN) && (finalVolumeMl ?? 0) > 0;
   const V_total = finalVolumeMl ?? 0;
-  const transferVol = hasVols ? V_total / (dilutionFactor - 1) : undefined;
-  const diluentVol = hasVols ? V_total : undefined;
+  // Serial dilution to a fixed per-tube total volume V_total at factor D:
+  //   transfer = V_total / D            (volume carried from the previous tube)
+  //   diluent  = V_total * (D - 1) / D  (fresh diluent added)
+  // so transfer + diluent == V_total exactly. The previous formula
+  // (transfer = V/(D-1), diluent = V) produced a per-tube volume of V*D/(D-1)
+  // instead of the V the researcher entered (e.g. 111 uL for a 100 uL target at D=10).
+  const transferVol = hasVols ? V_total / dilutionFactor : undefined;
+  const diluentVol = hasVols ? (V_total * (dilutionFactor - 1)) / dilutionFactor : undefined;
 
   for (let i = 1; i <= max; i++) {
     current = current / dilutionFactor;

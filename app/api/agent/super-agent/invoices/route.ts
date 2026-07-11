@@ -4,6 +4,7 @@ import { requireAgent } from '@/lib/admin-auth';
 import { computeSubAgentBaselineCost } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyInvoiceGenerated } from '@/lib/notify';
+import { chicagoMidnightIso } from '@/lib/time-cst';
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(`${dateStr}T00:00:00Z`);
@@ -115,9 +116,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const rangeStart = `${week_start}T00:00:00Z`;
+    // Billing weeks live in America/Chicago, not UTC. Use the same Chicago
+    // midnight boundary helper the invoice cron uses so a given week_start means
+    // the identical instant on both the manual and cron paths (Mon 00:00 CT ->
+    // next Mon 00:00 CT), honoring DST.
+    const rangeStart = chicagoMidnightIso(week_start);
     const weekEnd = addDays(week_start, 6);
-    const rangeEndExclusive = `${addDays(week_start, 7)}T00:00:00Z`;
+    const rangeEndExclusive = chicagoMidnightIso(addDays(week_start, 7));
 
     // Fetch Sub-Agent orders for the week. Restock orders are sub-agent
     // self-buys that are billed at checkout, not via weekly invoice.

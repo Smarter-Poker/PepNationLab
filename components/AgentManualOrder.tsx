@@ -50,7 +50,10 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
         }
       })
       .catch(() => {
-        // Products failed to load but still allow manual entry if needed
+        // Surface the failure instead of silently leaving an empty product list
+        // with no explanation (the agent otherwise sees an empty dropdown and
+        // cannot tell whether it's a load error or an empty catalog).
+        toast.error('Could Not Load Products. Please Refresh And Try Again.');
       })
       .finally(() => {
         setLoading(false);
@@ -71,7 +74,12 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
       return [...prev, {
         product_id: product.product_id,
         quantity: 1,
-        price: product.retail_price,
+        // retail_price is stored at 10x the dollar value platform-wide; every other
+        // surface and both order routes divide by 10. This screen previously showed
+        // the raw value, so every line/subtotal/total read 10x the amount actually
+        // charged. Divide here so the displayed figures match the server's charge.
+        // (price is display-only; the server recomputes from the catalog on submit.)
+        price: (Number(product.retail_price) || 0) / 10,
         name: displayName + sizeStr
       }];
     });

@@ -1,6 +1,10 @@
 async function main() {
-  const url = 'https://ydsaqnnuwyvtyxgvrnys.supabase.co';
-  const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkc2Fxbm51d3l2dHl4Z3ZybnlzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTM3OTM5MiwiZXhwIjoyMDk0OTU1MzkyfQ.M47pyCSGggSXlepDyiQaqEcU2Q3BjLHjR6p6Zqo6gqI';
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variable');
+    process.exit(1);
+  }
   const r = await fetch(url + '/rest/v1/compounds?select=slug,display_name,aliases,studied_for,research_areas,mechanism,benefits,compound_class,molecular_target,plain_summary,eli5_summary,best_stacked_with,efficacy_scores,category,wada_status,risk_level,half_life&order=display_name', {
     headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
   });

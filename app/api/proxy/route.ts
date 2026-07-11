@@ -21,6 +21,34 @@ const USER_AGENTS = [
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4_1) Version/17.4.1 Safari/605.1.15'
 ];
 
+// Origin allow-list for the defense-in-depth referer check below. The platform
+// serves pepnationlab.com plus two legacy aliases pointed at the same Vercel
+// project, and localhost for local dev. The request's own host is additionally
+// accepted at call time so Vercel preview deployments keep working without a
+// code change.
+const ALLOWED_PROXY_HOSTS = new Set<string>([
+  'pepnationlab.com',
+  'www.pepnationlab.com',
+  'pepnationlabs.com',
+  'www.pepnationlabs.com',
+  'localhost',
+  '127.0.0.1',
+]);
+
+function proxyHostOf(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    return new URL(value).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function isAllowedProxyHost(value: string | null): boolean {
+  const host = proxyHostOf(value);
+  return host ? ALLOWED_PROXY_HOSTS.has(host) : false;
+}
+
 // HTML-entity encode a value before interpolating it into markup. Prevents the
 // reflected/stored XSS that raw ${...} interpolation of the url query param and
 // upstream JSON (title/abstract/etc.) would otherwise allow.
@@ -199,9 +227,27 @@ export async function GET(request: NextRequest) {
     return h;
   };
 
-  // if (!isAllowedHost(origin || '') && !isAllowedHost(referer || '') && !isAllowedHost(host || '')) {
-  //   return new NextResponse('Unauthorized referer', { status: 403 });
-  // }
+  // Defense-in-depth origin check. The proxy already requires an authenticated
+  // session and enforces the SSRF guard above; this additionally refuses a
+  // request whose Origin or Referer belongs to a foreign site -- the case where
+  // the proxy is embedded in an <iframe> on an attacker-controlled page to abuse
+  // the signed-in user's session. Same-origin IframeModal loads (Origin/Referer
+  // on pepnationlab.com, an alias, or a Vercel preview matching the request's own
+  // host) pass; a navigation carrying neither header is allowed since the session
+  // gate still applies. Skipped in development so curl-based smoke tests work.
+  if (process.env.NODE_ENV !== 'development') {
+    const origin = request.headers.get('origin');
+    const referer = request.headers.get('referer');
+    const selfHost = (request.headers.get('host') || request.nextUrl.host || '')
+      .split(':')[0]
+      .toLowerCase();
+    const matchesSelf = (value: string | null): boolean => proxyHostOf(value) === selfHost;
+    const originOk = !origin || isAllowedProxyHost(origin) || matchesSelf(origin);
+    const refererOk = !referer || isAllowedProxyHost(referer) || matchesSelf(referer);
+    if (!originOk || !refererOk) {
+      return new NextResponse('Unauthorized Referer', { status: 403 });
+    }
+  }
 
   let attempt = 0;
   let finalResponse: Response | null = null;

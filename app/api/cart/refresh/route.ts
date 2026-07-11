@@ -53,6 +53,8 @@ export async function POST(req: NextRequest) {
     const SELECT = `
         id,
         retail_price,
+        is_on_sale,
+        sale_price,
         is_visible,
         product_id,
         products:product_id ( id, name, is_banned, is_active, admin_bulk_price, admin_bulk_threshold )
@@ -104,11 +106,21 @@ export async function POST(req: NextRequest) {
         product.is_active !== false &&
         row.is_visible !== false;
 
+      // Honor sale pricing: when the agent_product is on sale, the effective
+      // retail price is sale_price. Omitting this made the refresh contract snap
+      // sale items back to full retail whenever the client applied the result.
+      const regularRetail = (Number(row.retail_price) || 0) / 10;
+      const isOnSale = row.is_on_sale === true && row.sale_price != null;
+      const salePrice = isOnSale ? (Number(row.sale_price) || 0) / 10 : null;
+      const effectiveRetail = isOnSale && salePrice != null ? salePrice : regularRetail;
+
       return {
         id: row.id as string,
         productId: (product?.id ?? row.product_id) as string | null,
         name: product?.name ?? null,
-        retailPrice: (Number(row.retail_price) || 0) / 10,
+        retailPrice: effectiveRetail,
+        isOnSale,
+        salePrice,
         bulkCostPrice:
           product?.admin_bulk_price != null ? Number(product.admin_bulk_price) / 10 : null,
         bulkThreshold:

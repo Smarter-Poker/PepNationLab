@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { ensureOAuthResearcherProfile, logOAuthRegistrationAck } from '@/lib/oauth-profile';
 import { getClientIp } from '@/lib/rate-limit';
+import { safeRelativePath } from '@/lib/safe-redirect';
 
 /**
  * GET /auth/callback
@@ -20,10 +21,10 @@ import { getClientIp } from '@/lib/rate-limit';
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
-  const rawRedirect = url.searchParams.get('redirect') ?? '/dashboard';
   const ack = url.searchParams.get('ack');
-  // Prevent Open Redirect: Relative Paths Only.
-  const redirectTo = /^\/(?!\/|\\)/.test(rawRedirect) ? rawRedirect : '/dashboard';
+  // Prevent Open Redirect: same-origin relative paths only; also strips embedded
+  // control characters that browsers collapse into scheme-relative navigation.
+  const redirectTo = safeRelativePath(url.searchParams.get('redirect'));
 
   const loginUrl = new URL('/login', url.origin);
 

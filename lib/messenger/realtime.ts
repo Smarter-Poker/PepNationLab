@@ -51,7 +51,6 @@ export function subscribeMessages(
   handlers: MessageHandlers,
   selfId: string,
 ): { channel: RealtimeChannel; broadcastNewMessage: (m: Message) => void } {
-  console.log('[REALTIME] subscribeMessages called for conv:', conversationId);
   const ch = sb().channel(`conversation:${conversationId}`);
 
   ch.on(
@@ -232,35 +231,30 @@ interface CallSignalHandlers {
 }
 
 export function subscribeCallSignals(userId: string, handlers: CallSignalHandlers): RealtimeChannel {
-  console.log('[REALTIME] subscribeCallSignals called for user:', userId);
   // HOTFIX fix-38: public channel (reverted from `private: true`).
   // The B8 realtime.messages policies have been dropped; a private
   // channel would now fail subscribe because no policy matches.
   const ch = sb().channel(`call-signal:${userId}`);
 
   ch.on('broadcast', { event: 'incoming_call' }, (payload) => {
-    console.log('[REALTIME] received incoming_call broadcast:', payload);
     if (payload.payload) {
       handlers.onInsert?.(payload.payload as CallSignalRow);
     }
   });
 
   ch.on('broadcast', { event: 'call_accepted' }, (payload) => {
-    console.log('[REALTIME] received call_accepted broadcast:', payload);
     if (payload.payload && handlers.onUpdate) {
       handlers.onUpdate({ ...payload.payload, status: 'active' } as CallSignalRow);
     }
   });
 
   ch.on('broadcast', { event: 'call_declined' }, (payload) => {
-    console.log('[REALTIME] received call_declined broadcast:', payload);
     if (payload.payload && handlers.onUpdate) {
       handlers.onUpdate({ ...payload.payload, status: 'declined' } as CallSignalRow);
     }
   });
 
   ch.on('broadcast', { event: 'call_ended' }, (payload) => {
-    console.log('[REALTIME] received call_ended broadcast:', payload);
     if (payload.payload && handlers.onUpdate) {
       handlers.onUpdate({ ...payload.payload, status: 'ended' } as CallSignalRow);
     }
@@ -276,7 +270,6 @@ export function subscribeCallSignals(userId: string, handlers: CallSignalHandler
       filter: `initiator_id=neq.${userId}`,
     },
     (payload) => {
-      console.log('[REALTIME] received messenger_calls postgres INSERT:', payload);
       const row = payload.new as CallSignalRow;
       if (row.status === 'ringing' && row.initiator_id !== userId) {
         handlers.onInsert?.(row);
@@ -292,7 +285,6 @@ export function subscribeCallSignals(userId: string, handlers: CallSignalHandler
       table: 'messenger_calls',
     },
     (payload) => {
-      console.log('[REALTIME] received messenger_calls postgres UPDATE:', payload);
       const row = payload.new as CallSignalRow;
       handlers.onUpdate?.(row);
     }
@@ -382,7 +374,6 @@ export async function broadcastCallSignal(
   event: 'incoming_call' | 'call_accepted' | 'call_declined' | 'call_ended',
   payload: any,
 ): Promise<void> {
-  console.log(`[REALTIME] broadcasting event ${event} to target ${targetUserId}`);
   try {
     const entry = getOrCreateChannel(targetUserId);
     try {

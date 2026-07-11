@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { canTransition, type OrderStatus } from '@/lib/order-states';
 
 export async function GET() {
   try {
@@ -115,6 +116,32 @@ export async function POST(request: NextRequest) {
 
     // Use admin client to bypass RLS since we have manually verified the user's role
     const serviceClient = createAdminClient();
+
+    // Gate the status change through the shared state machine. Without this, a
+    // shipping-role account could set ANY order_id straight to 'shipped'/'in_fulfillment'
+    // -- including orders still awaiting customer payment or admin approval -- because
+    // the GET filter does not constrain POST inputs. canTransition('...','shipping')
+    // permits only the post-admin-gate transitions.
+    const nextStatus = updateData.status as OrderStatus | undefined;
+    if (nextStatus) {
+      const { data: current, error: currentErr } = await serviceClient
+        .from('orders')
+        .select('status')
+        .eq('id', order_id)
+        .maybeSingle();
+      if (currentErr) {
+        return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+      }
+      if (!current) {
+        return NextResponse.json({ error: 'Order Not Found' }, { status: 404 });
+      }
+      if (!canTransition(current.status as OrderStatus, nextStatus, 'shipping')) {
+        return NextResponse.json(
+          { error: `Cannot Move Order From ${current.status} To ${nextStatus}.` },
+          { status: 422 }
+        );
+      }
+    }
 
     const { data, error } = await serviceClient
       .from('orders')

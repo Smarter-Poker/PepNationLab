@@ -102,10 +102,14 @@ export async function POST(req: NextRequest) {
   }
 
   // Clear the must_change_password flag in the profiles table via the admin client.
-  // Also store the new password in provisioned_password so the admin can see the current value.
+  // SECURITY: do NOT persist the user's self-chosen password. It previously wrote
+  // provisioned_password=newPassword in cleartext, which was then viewable by admins
+  // and the referring agent -- a credential-confidentiality break. The temporary
+  // admin-provisioned value is cleared here so no stale plaintext lingers after the
+  // user sets their own private password.
   const { error: profileErr } = await admin
     .from('profiles')
-    .update({ must_change_password: false, provisioned_password: newPassword, updated_at: new Date().toISOString() })
+    .update({ must_change_password: false, provisioned_password: null, updated_at: new Date().toISOString() })
     .eq('id', user.id);
 
   if (profileErr) {

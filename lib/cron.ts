@@ -49,7 +49,8 @@ export function assertCronAuth(req: Request): Response | null {
  */
 export async function claimCronRun(
   jobName: string,
-  partitionKey: string
+  partitionKey: string,
+  opts?: { staleMinutes?: number }
 ): Promise<{ id: string } | null> {
   const supabase = await createServiceClient();
   const { data, error } = await supabase
@@ -62,12 +63,48 @@ export async function claimCronRun(
     .select('id')
     .maybeSingle();
 
-  if (error || !data) {
-    // Unique-violation (already ran) or transient - treat as not-claimed.
-    return null;
+  if (!error && data) {
+    return { id: data.id as string };
   }
 
-  return { id: data.id as string };
+  // Insert failed -- almost certainly the UNIQUE(job_name, partition_key)
+  // violation because a prior run for this slice exists. The idempotency contract
+  // is "at most one SUCCESSFUL run": a previous run that FAILED (or a 'running'
+  // claim that is stale because the function was killed mid-work, e.g. a Vercel
+  // timeout, and its finally/catch never executed) must be re-claimable so the
+  // work can be retried. A 'running' claim younger than staleMinutes, or a
+  // 'succeeded' row, is left alone (returns null -> caller short-circuits).
+  const staleMs = (opts?.staleMinutes ?? 30) * 60_000;
+  const { data: existing } = await supabase
+    .from('cron_runs')
+    .select('id, status, started_at')
+    .eq('job_name', jobName)
+    .eq('partition_key', partitionKey)
+    .maybeSingle();
+
+  if (!existing) return null;
+
+  const startedMs = existing.started_at ? new Date(existing.started_at as string).getTime() : 0;
+  const isStaleRunning = existing.status === 'running' && Date.now() - startedMs > staleMs;
+  const isRetryable = existing.status === 'failed' || existing.status === 'partial_failure' || isStaleRunning;
+  if (!isRetryable) return null;
+
+  // Optimistic take-over: only succeeds if the row is still in the state we saw,
+  // so two concurrent retries can't both claim it.
+  const { data: reclaimed } = await supabase
+    .from('cron_runs')
+    .update({
+      status: 'running',
+      started_at: new Date().toISOString(),
+      finished_at: null,
+      notes: `retry of prior ${existing.status} run`,
+    })
+    .eq('id', existing.id)
+    .eq('status', existing.status)
+    .select('id')
+    .maybeSingle();
+
+  return reclaimed ? { id: reclaimed.id as string } : null;
 }
 
 /**

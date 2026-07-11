@@ -1764,8 +1764,17 @@ export default function AgentStorefrontGrid({
     // the correct agent-specific figure.
     const agentStock = item.product_id ? (inventoryMap[item.product_id] ?? null) : null;
     const globalStock = item.products?.inventory_count ?? null;
-    // Prefer agent stock; fall back to global stock; if neither is set, no cap.
-    const maxQty = agentStock !== null ? agentStock : (globalStock !== null ? globalStock : Infinity);
+    // Cap must mirror how the order route actually fulfills: it draws the agent's
+    // local stock first, then dropships the remainder from China (global), which is
+    // treated as effectively unlimited. So the only real hard limit is when China
+    // stock is exhausted -- then the agent's local stock is the ceiling.
+    //   - global unknown (null) or positive -> dropship available -> no cap.
+    //   - global == 0 -> no China stock -> cap at the agent's local stock (0 => OOS).
+    // Previously this capped at agentStock whenever it was set, so an item an agent
+    // had sold down to 0 locally showed "In Stock" yet could not be added to cart.
+    const maxQty = (globalStock === null || globalStock > 0)
+      ? Infinity
+      : (agentStock !== null ? agentStock : 0);
 
     // Analytics decision uses the ref (updaters run during render, so a flag set
     // inside the updater would not be readable here). The cap below remains the

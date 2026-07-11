@@ -36,7 +36,11 @@ export const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 // to pull a pre-gate order (pending_customer_payment / agent_approval_pending /
 // admin_approval_pending) into fulfillment - that would skip admin release.
 export const SHIPPING_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
-  approved_ship: ['in_fulfillment'],
+  // approved_ship -> shipped is allowed directly (the shipping UI's "Mark Shipped"
+  // button acts on approved_ship orders that were never explicitly moved to
+  // in_fulfillment). Both source states are post-admin-gate, so this does not let
+  // the shipping role skip admin release.
+  approved_ship: ['in_fulfillment', 'shipped'],
   in_fulfillment: ['shipped'],
   shipped: ['delivered'],
 };

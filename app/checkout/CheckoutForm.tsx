@@ -89,7 +89,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         return typeof h === 'string' && h.trim().length > 0;
       })
     : ALL_PAYMENT_METHODS;
-  const { cart: contextCart, cartSubtotal: contextSubtotal, clearCart } = useCart();
+  const { cart: contextCart, cartSubtotal: contextSubtotal, clearCart, addToCart } = useCart();
   const router = useRouter();
 
   const storefrontCartKey = agentSlug
@@ -547,9 +547,28 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   const handleAddBacWater = () => {
     if (!bacProduct || neededBacWaterVials <= 0) return;
+    const suggestedQty = neededBacWaterVials;
+
+    // When storefrontCart is empty, checkout is serving the CONTEXT cart (see the
+    // `cart` derivation above). Writing the diluent into storefrontCart here would
+    // make it non-empty with ONLY the diluent, and `cart` would then flip to
+    // storefrontCart, silently dropping every real context-cart item. Route the
+    // add through CartContext so the diluent is appended to the real cart instead.
+    if (storefrontCart.length === 0) {
+      addToCart({
+        id: bacProduct.id,
+        productId: bacProduct.id,
+        name: bacProduct.name,
+        sku: bacProduct.id,
+        retailPrice: bacProduct.retailPrice,
+        costPrice: bacProduct.costPrice,
+        weightOz: bacProduct.weightOz,
+      }, suggestedQty);
+      return;
+    }
+
     const updatedCart = [...storefrontCart];
     const existingIndex = updatedCart.findIndex(item => item.id === bacProduct.id);
-    const suggestedQty = neededBacWaterVials;
     if (existingIndex > -1) {
       updatedCart[existingIndex] = { ...updatedCart[existingIndex], quantity: updatedCart[existingIndex].quantity + suggestedQty };
     } else {
@@ -569,9 +588,26 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   const handleAddAceticAcid = () => {
     if (!aceticProduct || neededAceticAcidVials <= 0) return;
+    const suggestedQty = neededAceticAcidVials;
+
+    // Same context-cart guard as handleAddBacWater: if storefrontCart is empty the
+    // order is the context cart, so append the diluent through CartContext rather
+    // than replacing the displayed/submitted cart with just the diluent.
+    if (storefrontCart.length === 0) {
+      addToCart({
+        id: aceticProduct.id,
+        productId: aceticProduct.id,
+        name: aceticProduct.name,
+        sku: aceticProduct.id,
+        retailPrice: aceticProduct.retailPrice,
+        costPrice: aceticProduct.costPrice,
+        weightOz: aceticProduct.weightOz,
+      }, suggestedQty);
+      return;
+    }
+
     const updatedCart = [...storefrontCart];
     const existingIndex = updatedCart.findIndex(item => item.id === aceticProduct.id);
-    const suggestedQty = neededAceticAcidVials;
     if (existingIndex > -1) {
       updatedCart[existingIndex] = { ...updatedCart[existingIndex], quantity: updatedCart[existingIndex].quantity + suggestedQty };
     } else {
@@ -649,6 +685,15 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     } catch { /* Storage unavailable or malformed */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- applyCoupon uses stashed override via setTimeout; intentional forward-ref
   }, [couponDisabled, cartSubtotal]);
+
+  // Funnel analytics (best-effort): checkout viewed. Fires once per mount.
+  // Must run unconditionally BEFORE the storefrontLoaded early return, or the
+  // hook count changes between renders and React throws "Rendered more hooks
+  // than during the previous render", dumping every checkout into the error boundary.
+  useEffect(() => {
+    trackStorefrontEvent(agentSlug, 'checkout_start');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentSlug]);
 
   if (!storefrontLoaded) return null;
 
@@ -744,12 +789,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   };
 
   const removeCoupon = () => { setAppliedCoupon(null); setCouponInput(''); setCouponError(''); };
-
-  // Funnel analytics (best-effort): checkout viewed. Fires once per mount.
-  useEffect(() => {
-    trackStorefrontEvent(agentSlug, 'checkout_start');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentSlug]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1227,7 +1266,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 </div>
                 <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)' }}>
                   <h4 style={{ color: 'var(--silver-light)', fontSize: '0.88rem', marginBottom: 'var(--space-2)' }}>Payment Process Notice</h4>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0, lineHeight: 1.5 }}>Your Checkout Complete Order ID Will Be Displayed Following Submission. Simply Complete Payment Settlement via The Listed Handle And Input Your Order ID In The Payment Reference.</p>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0, lineHeight: 1.5 }}>Your Checkout Complete Order ID Will Be Displayed Following Submission. Simply Complete Payment Settlement Via The Listed Handle And Input Your Order ID In The Payment Reference.</p>
                 </div>
                 <div className="step-buttons">
                   <button type="button" onClick={handlePrevStep} className="btn" style={{ minWidth: 150, background: 'rgba(255,255,255,0.05)', color: 'var(--white)' }}>Back</button>
@@ -1388,7 +1427,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                 <span style={{ color: 'var(--grey-400)' }}>{shippingOption === 'fedex' ? 'FedEx / UPS Fast' : shippingOption === 'usps' ? 'USPS / China Post Cheap' : 'Fulfillment'}</span>
-                {shippingOption !== 'agent_pickup' ? <strong style={{ color: 'var(--white)' }}>${shippingCost.toFixed(2)}</strong> : <strong style={{ color: 'var(--teal)' }}>Free Shipping to Agent</strong>}
+                {shippingOption !== 'agent_pickup' ? <strong style={{ color: 'var(--white)' }}>${shippingCost.toFixed(2)}</strong> : <strong style={{ color: 'var(--teal)' }}>Free Shipping To Agent</strong>}
               </div>
               {shippingOption !== 'agent_pickup' && (
                 <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textAlign: 'right', marginTop: -4 }}>Total Weight: {totalWeightOz.toFixed(1)} Oz ({(totalWeightOz * 28.3495).toFixed(0)}g)</div>

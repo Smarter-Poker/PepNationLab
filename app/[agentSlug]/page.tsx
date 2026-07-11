@@ -64,6 +64,13 @@ async function AgentStorefrontDataLoader({
 
     supabase.auth.getUser(),
   ]);
+  // Distinguish "load failed" from "genuinely empty catalog". A transient DB error
+  // returns { data: null, error } -- if we silently treated null as [], a fully
+  // stocked store would render the "Coming Soon" empty state (and could be indexed
+  // that way). Throw so the storefront error boundary catches it and shows a retry.
+  if (productsResult.error) {
+    throw new Error(`Storefront catalog load failed: ${productsResult.error.message}`);
+  }
   const products = productsResult.data;
 
   // Storefronts are public (allowed in middleware). Resolve the REAL viewer

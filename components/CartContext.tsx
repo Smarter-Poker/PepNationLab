@@ -86,6 +86,32 @@ interface PendingAddition {
   quantity: number;
 }
 
+// Returns true when two cart snapshots differ in membership OR in any pricing
+// field that refreshCartPricing may update (retail, cost, bulk pricing). Callers
+// previously compared only membership (length + id), so an in-place reprice --
+// sale start/end, admin reprice -- was computed by refreshCartPricing and then
+// thrown away. Comparing the pricing fields applies those updates, while the
+// field-level (not reference) comparison still no-ops when nothing changed, so
+// this never triggers an update loop.
+function cartPricingDiffers(a: CartItem[], b: CartItem[]): boolean {
+  if (a.length !== b.length) return true;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (
+      x.id !== y.id ||
+      x.quantity !== y.quantity ||
+      x.retailPrice !== y.retailPrice ||
+      x.costPrice !== y.costPrice ||
+      (x.bulkCostPrice ?? null) !== (y.bulkCostPrice ?? null) ||
+      (x.bulkThreshold ?? null) !== (y.bulkThreshold ?? null)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // CartProvider
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
@@ -176,7 +202,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           if (prev.length !== initial.length || prev.some((p, i) => p.id !== initial[i]?.id)) {
             return prev; // Trust the live cart over the stale hydrated data
           }
-          if (next.length !== initial.length || next.some((n, i) => n.id !== initial[i]?.id)) {
+          if (cartPricingDiffers(initial, next)) {
             return next;
           }
           return prev;
@@ -192,7 +218,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setCart(prev => {
         if (prev.length === 0) return prev;
         refreshCartPricing(prev).then(next => {
-          if (next.length !== prev.length || next.some((n, i) => n.id !== prev[i]?.id)) setCart(next);
+          if (cartPricingDiffers(prev, next)) setCart(next);
         }).catch(() => { /* ignore */ });
         return prev;
       });
@@ -276,7 +302,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         ? prev.map(item => sameLine(item, product.id, product.productId, product.bundleName) ? { ...item, quantity: item.quantity + quantity } : item)
         : [...prev, { ...product, quantity }];
       refreshCartPricing(next, true).then(updated => {
-        if (updated.length !== next.length || updated.some((u, i) => u.id !== next[i]?.id)) setCart(updated);
+        if (cartPricingDiffers(next, updated)) setCart(updated);
       }).catch(() => { /* ignore */ });
       return next;
     });
@@ -295,7 +321,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
       }
       refreshCartPricing(next, true).then(updated => {
-        if (updated.length !== next.length || updated.some((u, i) => u.id !== next[i]?.id)) setCart(updated);
+        if (cartPricingDiffers(next, updated)) setCart(updated);
       }).catch(() => { /* ignore */ });
       return next;
     });
@@ -1053,7 +1079,7 @@ function CartDrawer() {
               </h3>
               {cart.length > 0 && (
                 <div style={{ fontSize: '0.66rem', color: 'var(--grey-400)', marginTop: 1 }}>
-                  {cart.reduce((a, i) => a + i.quantity, 0)} item{cart.reduce((a, i) => a + i.quantity, 0) !== 1 ? 's' : ''} - ${cartSubtotal.toFixed(2)}
+                  {cart.reduce((a, i) => a + i.quantity, 0)} Item{cart.reduce((a, i) => a + i.quantity, 0) !== 1 ? 's' : ''} - ${cartSubtotal.toFixed(2)}
                 </div>
               )}
             </div>
