@@ -1,0 +1,48 @@
+# One-shot, self-deleting workflow: integrates the OrderStageTimeline (B3)
+# component into the two LARGE order-display files that cannot ship safely
+# through the contents API (app/orders/[id]/page.tsx, components/AgentOrders.tsx).
+# The apply script gates on baseline git blob shas (aborts on any concurrent
+# drift), asserts every anchor exactly once, then gates on the git blob shas
+# of the locally tsc --noEmit verified results before committing. It removes
+# itself and the scripts directory in the same commit. The component itself
+# and the researcher /orders list integration landed directly in 4c8bb781.
+
+name: Apply Order Timeline Integrations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-order-timeline.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply assertion-guarded replacements
+        run: node scripts/order-timeline-apply/apply.cjs
+
+      - name: Commit, remove one-shot files, push
+        run: |
+          git config user.name 'order-timeline-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -q .github/workflows/apply-order-timeline.yml
+          git rm -rq scripts/order-timeline-apply
+          git add 'app/orders/[id]/page.tsx' components/AgentOrders.tsx
+          git commit -m 'Order tracking timeline (B3): researcher detail page + agent order modal
+
+          Mounts OrderStageTimeline on the researcher order detail page (new
+          Order Progress panel above Buyer & Shipping, fed by created_at,
+          shipped_at, delivered_at, updated_at and the tracking number) and
+          inside the agent Order Detail modal in AgentOrders. The Shipped step
+          exposes Track Package, which opens the detected carrier tracking
+          page inside IframeModal per the Omega Protocol.'
+          git pull --rebase origin main
+          git push origin main
