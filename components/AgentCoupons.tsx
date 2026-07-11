@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { reportClientError } from '@/lib/report-client-error';
 import { exportCSV, downloadCSV } from '@/lib/export';
+import { fetchJson } from '@/lib/fetch-json';
 
 // Types
 interface Coupon {
@@ -155,13 +156,11 @@ function RedemptionsModal({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/agent/coupons/${coupon.id}/redemptions`)
-      .then((r) => r.json())
-      .then((j) => {
-        setData(j.data || []);
+    fetchJson<{ data: any[] }>(`/api/agent/coupons/${coupon.id}/redemptions`)
+      .then((res) => {
+        if (res.ok) setData(res.data?.data || []);
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      });
   }, [coupon.id]);
 
   return loading ? (
@@ -374,10 +373,9 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
   const fetchCoupons = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/agent/coupons');
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Fetch Coupons');
-      setCoupons(json.data || []);
+      const res = await fetchJson<{ data: Coupon[] }>('/api/agent/coupons');
+      if (!res.ok) throw new Error(res.error || 'Failed To Fetch Coupons');
+      setCoupons(res.data?.data || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -387,10 +385,9 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
 
   const fetchPerformance = useCallback(async () => {
     try {
-      const res = await fetch('/api/agent/coupons/performance');
+      const res = await fetchJson<{ data: Record<string, CouponPerformance> }>('/api/agent/coupons/performance');
       if (!res.ok) return;
-      const json = await res.json();
-      setPerf(json.data || {});
+      setPerf(res.data?.data || {});
     } catch {
       // ignore
     }
@@ -398,10 +395,8 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
 
   useEffect(() => {
     if (!propSlug) {
-      fetch('/api/agent/me')
-        .then((r) => r.json())
-        .then((j) => { if (j.slug) setResolvedSlug(j.slug); })
-        .catch(() => {});
+      fetchJson<{ slug?: string }>('/api/agent/me')
+        .then((res) => { if (res.ok && res.data?.slug) setResolvedSlug(res.data.slug); });
     }
     fetchCoupons();
     fetchPerformance();
@@ -457,13 +452,12 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
       };
       const url = editingId ? `/api/agent/coupons/${editingId}` : '/api/agent/coupons';
       const method = editingId ? 'PUT' : 'POST';
-      const res = await fetch(url, {
+      const res = await fetchJson<any>(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Save Coupon');
+      if (!res.ok) throw new Error(res.error || 'Failed To Save Coupon');
       toast.success(editingId ? 'Coupon Updated Successfully' : 'Coupon Created Successfully');
       setShowForm(false);
       resetForm();
@@ -477,13 +471,12 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
 
   const toggleActive = async (coupon: Coupon) => {
     try {
-      const res = await fetch(`/api/agent/coupons/${coupon.id}`, {
+      const res = await fetchJson<any>(`/api/agent/coupons/${coupon.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...coupon, is_active: !coupon.is_active }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Toggle Coupon');
+      if (!res.ok) throw new Error(res.error || 'Failed To Toggle Coupon');
       toast.success(coupon.is_active ? 'Coupon Deactivated' : 'Coupon Activated');
       fetchCoupons();
     } catch (err: any) {
@@ -493,9 +486,8 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
 
   const deleteCoupon = async (couponId: string) => {
     try {
-      const res = await fetch(`/api/agent/coupons/${couponId}`, { method: 'DELETE' });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Archive Coupon');
+      const res = await fetchJson<any>(`/api/agent/coupons/${couponId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(res.error || 'Failed To Archive Coupon');
       toast.success('Coupon Archived Successfully');
       setConfirmArchiveId(null);
       fetchCoupons();
@@ -507,7 +499,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
 
   const handleBulkGenerate = async (opts: BulkGenerateOptions) => {
     try {
-      const res = await fetch('/api/agent/coupons/bulk', {
+      const res = await fetchJson<{ count?: number }>('/api/agent/coupons/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -521,9 +513,8 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
           starts_at: opts.starts_at || null,
         }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Bulk Generate Coupons');
-      toast.success(`${json.count ?? opts.count} Coupon Codes Generated Successfully`);
+      if (!res.ok) throw new Error(res.error || 'Failed To Bulk Generate Coupons');
+      toast.success(`${res.data?.count ?? opts.count} Coupon Codes Generated Successfully`);
       setShowBulkModal(false);
       fetchCoupons();
     } catch (err: any) {
@@ -561,10 +552,9 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
 
   const notifyDownline = async (coupon: Coupon) => {
     try {
-      const res = await fetch(`/api/agent/coupons/${coupon.id}/notify-downline`, { method: 'POST' });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Notify Downline');
-      toast.success(`Downline Notified - ${json.count ?? 0} Message${json.count === 1 ? '' : 's'} Sent`);
+      const res = await fetchJson<{ count?: number }>(`/api/agent/coupons/${coupon.id}/notify-downline`, { method: 'POST' });
+      if (!res.ok) throw new Error(res.error || 'Failed To Notify Downline');
+      toast.success(`Downline Notified - ${res.data?.count ?? 0} Message${res.data?.count === 1 ? '' : 's'} Sent`);
     } catch (err: any) {
       toast.error(err.message || 'Failed To Notify Downline');
     }
