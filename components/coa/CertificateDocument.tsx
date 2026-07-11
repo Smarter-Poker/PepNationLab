@@ -356,7 +356,7 @@ export default function CertificateDocument({ data }: { data: CertificateData })
             <div style={{ textAlign: 'center' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={data.qrDataUrl} alt={`Verification QR code for lot ${data.lotNumber}`} style={{ width: 82, height: 82 }} />
-              <div style={{ fontSize: 9.5, color: MUTED, marginTop: 2, maxWidth: 90 }}>Scan To Verify This Lot</div>
+              <div style={{ fontSize: 9, color: MUTED, marginTop: 2, whiteSpace: 'nowrap' }}>Scan To Verify This Lot</div>
             </div>
           )
         )}

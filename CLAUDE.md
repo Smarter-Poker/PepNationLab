@@ -51,7 +51,7 @@ Never add a member to the Vercel team or the GitHub org to make a blocked commit
 deploy, and never change the Vercel Git author-authorization setting. The fix is
 ALWAYS to re-commit the same changes under the approved `Smarter-Poker` identity
 above. Adding or changing accounts is a security decision reserved for the repo
-owner and must never be done by an agent. Full detail: `docs/AGENT-GIT-IDENTITY.md`.
+owner and must never be done by an agent.
 
 ---
 

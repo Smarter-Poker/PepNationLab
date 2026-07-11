@@ -28,6 +28,7 @@
     { "path": "/api/cron/shipping-webhook-retry", "schedule": "*/15 * * * *" },
     { "path": "/api/cron/sub-agent-settle", "schedule": "49 5 * * 1" },
     { "path": "/api/cron/coa-audit", "schedule": "0 7 * * 1" },
+    { "path": "/api/cron/rotate-coas", "schedule": "17 2 * * *" },
     { "path": "/api/cron/inventory-alerts", "schedule": "0 9 * * *" },
     { "path": "/api/cron/integrity-audit", "schedule": "30 8 * * *" },
     { "path": "/api/cron/auth-canary", "schedule": "30 9 * * *" },

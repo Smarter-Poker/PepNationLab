@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { writeCatalogCache, isCatalogCacheFresh, readCatalogCache, CATALOG_TTL_MS, evictCatalogCache } from '@/lib/storefront-cache';
 import { createClient } from '@/lib/supabase/client';
 import { getPopularName } from '@/lib/peptide-popular-names';
+import TrustStrip from './storefront/TrustStrip';
 
 interface ProductItem {
   id: string;
@@ -2557,6 +2558,8 @@ export default function AgentStorefrontGrid({
         </div>
       )}
 
+
+      {filteredProducts.length > 0 && <TrustStrip />}
 
       {true && (
         <motion.div
