@@ -1,8 +1,0 @@
-Onboarding Payment Sweep Patch Failures
-proxy-mcp-exemption: expected 1 occurrence of anchor in proxy.ts, found 0
-wizard-payment-check: expected 1 occurrence of anchor in components/OnboardingWizard.tsx, found 0
-wizard-payment-copy: expected 1 occurrence of anchor in components/OnboardingWizard.tsx, found 0
-checkout-type: expected 1 occurrence of anchor in app/checkout/CheckoutForm.tsx, found 0
-checkout-methods: expected 1 occurrence of anchor in app/checkout/CheckoutForm.tsx, found 0
-checkout-payment-details: expected 1 occurrence of anchor in app/checkout/CheckoutForm.tsx, found 0
-checkout-success-label: expected 1 occurrence of anchor in app/checkout/CheckoutForm.tsx, found 0
