@@ -125,7 +125,7 @@ export default function ForgotPasswordPage() {
               <form onSubmit={handleRequest}>
                 <div style={{ marginBottom: 'var(--space-6)' }}>
                   <label htmlFor="email" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--grey-300)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Address</label>
-                  <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="form-input" placeholder="Enter Your Email" style={{ width: '100%' }} autoFocus autoComplete="email" />
+                  <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="form-input" placeholder="Enter Your Email" style={{ width: '100%' }} autoFocus autoComplete="email" autoCapitalize="none" spellCheck={false} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                   <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>

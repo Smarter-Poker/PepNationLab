@@ -31,6 +31,8 @@ interface SearchResultRow {
   snippet: string;
   score: number;
   knowledge_panel_url: string;
+  category?: string;
+  compound_class?: string;
 }
 
 
@@ -67,6 +69,8 @@ async function runRankedSearch(
     snippet: typeof r.snippet === 'string' ? r.snippet : '',
     score: typeof r.score === 'number' ? r.score : Number(r.score ?? 0),
     knowledge_panel_url: `/research/${String(r.slug ?? '')}`,
+    category: r.category ? String(r.category) : undefined,
+    compound_class: r.compound_class ? String(r.compound_class) : undefined,
   }));
 
   // total_count column is returned by the RPC on every row.
@@ -108,6 +112,8 @@ async function runFallbackTrigram(
     snippet: typeof r.snippet === 'string' ? r.snippet : '',
     score: typeof r.score === 'number' ? r.score : Number(r.score ?? 0),
     knowledge_panel_url: `/research/${String(r.slug ?? '')}`,
+    category: r.category ? String(r.category) : undefined,
+    compound_class: r.compound_class ? String(r.compound_class) : undefined,
   }));
 }
 
@@ -199,7 +205,12 @@ async function performSearch(
   offset: number,
 ) {
   const parsed = parseQuery(queryStr);
-  let { rows, total } = await runRankedSearch(supabase, parsed, limit, offset);
+  
+  // If we have filters, we fetch a large batch to filter in JS since the RPC doesn't support facets natively
+  const fetchLimit = parsed.filters.length > 0 ? 500 : limit;
+  const fetchOffset = parsed.filters.length > 0 ? 0 : offset;
+
+  let { rows, total } = await runRankedSearch(supabase, parsed, fetchLimit, fetchOffset);
 
   if (rows.length === 0) {
     const trgm = await runFallbackTrigram(supabase, parsed, limit);
@@ -231,10 +242,28 @@ async function performSearch(
       }
     }
     finalRows = Array.from(mergedMap.values()).sort((a, b) => b.score - a.score);
-    total = finalRows.length;
   }
 
-  return { finalRows, total, parsed };
+  // Apply parsed filters
+  if (parsed.filters.length > 0) {
+    finalRows = finalRows.filter(row => {
+      return parsed.filters.every(f => {
+        const val = f.value.toString().toLowerCase();
+        if (f.field === 'class' || f.field === 'category') {
+          return row.compound_class?.toLowerCase().includes(val) || 
+                 row.category?.toLowerCase().includes(val);
+        }
+        if (f.field === 'tier') {
+          return row.evidence_tier?.toLowerCase() === val;
+        }
+        return true;
+      });
+    });
+  }
+
+  total = finalRows.length;
+
+  return { finalRows: finalRows.slice(offset, offset + limit), total, parsed };
 }
 
 async function handle(req: NextRequest, q: string, limit: number, offset: number) {

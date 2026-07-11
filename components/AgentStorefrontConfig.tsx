@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import UniqueField from '@/components/UniqueField';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
+import FeaturedProductsSelector from '@/components/FeaturedProductsSelector';
 
 interface AgentStorefrontConfigProps {
   displayName: string;
@@ -17,6 +18,7 @@ interface AgentStorefrontConfigProps {
   warehouseAddress?: Record<string, any> | null;
   agentId: string;
   displayNameChangedAt?: string | null;
+  featuredProducts?: string[];
   onSaveSuccess?: (updatedData: any) => void;
   paymentMethodsNode?: React.ReactNode;
 }
@@ -39,6 +41,7 @@ export default function AgentStorefrontConfig({
   warehouseAddress,
   agentId,
   displayNameChangedAt,
+  featuredProducts = [],
   onSaveSuccess,
   paymentMethodsNode,
 }: AgentStorefrontConfigProps) {
@@ -63,6 +66,7 @@ export default function AgentStorefrontConfig({
   const [whCity, setWhCity] = React.useState(warehouseAddress?.city ?? '');
   const [whState, setWhState] = React.useState(warehouseAddress?.state ?? '');
   const [whZip, setWhZip] = React.useState(warehouseAddress?.zip ?? '');
+  const [selectedFeatured, setSelectedFeatured] = React.useState<string[]>(featuredProducts);
 
   const canChangeDisplayName = React.useMemo(() => {
     if (!displayNameChangedAt) return true;
@@ -123,6 +127,7 @@ export default function AgentStorefrontConfig({
           state: whState.trim(),
           zip: whZip.trim(),
         },
+        featured_products: selectedFeatured,
       };
 
       // TODO [P2]: Refactor to use a server-side API route instead of direct
@@ -298,6 +303,19 @@ export default function AgentStorefrontConfig({
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="glass-panel" style={{ padding: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #F472B6 0%, #FB7185 100%)' }} />
+          <h4 style={{ fontSize: '1.1rem', color: 'var(--white)', fontWeight: 600, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F472B6" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Featured Products
+          </h4>
+          <FeaturedProductsSelector 
+            agentId={agentId} 
+            initialFeaturedIds={selectedFeatured} 
+            onUpdate={setSelectedFeatured} 
+          />
         </section>
 
         {paymentMethodsNode && (

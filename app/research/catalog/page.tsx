@@ -9,7 +9,6 @@ import { Suspense } from 'react';
 import { getAllCompounds } from '@/lib/compounds-server';
 import ResearchBrowser from '@/components/research/ResearchBrowser';
 import ResearchDock from '@/components/research/ResearchDock';
-import BottomToolBar from '@/components/research/BottomToolBar';
 import ResearchHero from '@/components/research/ResearchHero';
 import CommandSearchBar from '@/components/research/CommandSearchBar';
 import MatchEngineCards from '@/components/research/MatchEngineCards';

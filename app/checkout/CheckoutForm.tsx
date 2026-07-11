@@ -178,6 +178,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [error, setError] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   const [copiedOrderId, setCopiedOrderId] = useState(false);
+  const [copiedHandle, setCopiedHandle] = useState(false);
   const [serverTotal, setServerTotal] = useState<number | null>(null);
   const [totalAdjusted, setTotalAdjusted] = useState(false);
 
@@ -185,6 +186,17 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   const idempotencyKeyRef = useRef<string | null>(null);
   const submittedRef = useRef<boolean>(false);
+
+  // Mobile UX: validation errors render at the top of the step panel, which
+  // can sit above the visual viewport when the software keyboard is open or
+  // the user has scrolled to the submit button. Scroll the banner into view
+  // whenever a new error is set so it is never raised off-screen.
+  const errorBannerRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (error && errorBannerRef.current) {
+      errorBannerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [error]);
 
   const [liveShippingRate, setLiveShippingRate] = useState<number | null>(null);
   // True when the shown rate is the flat weight-based estimate rather than a
@@ -1062,8 +1074,24 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               </svg>{' '}
               {payment.label}
             </h3>
-            <div style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)', letterSpacing: '0.05em', background: 'rgba(0, 240, 255, 0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(0, 240, 255, 0.1)', textAlign: 'center', marginBottom: 'var(--space-3)' }}>
-              {payment.handle}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: '1.25rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)', letterSpacing: '0.05em', background: 'rgba(0, 240, 255, 0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(0, 240, 255, 0.1)', textAlign: 'center', marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
+              <span style={{ wordBreak: 'break-all' }}>{payment.handle}</span>
+              {/* CRO: one-tap copy at the single most failure-prone step of the
+                  funnel - transcribing the payment handle into another app. */}
+              {payment.handle !== 'Contact Your Agent For Handle' && (
+                <button
+                  type="button"
+                  aria-label="Copy Payment Handle"
+                  onClick={() => {
+                    navigator.clipboard.writeText(payment.handle);
+                    setCopiedHandle(true);
+                    setTimeout(() => setCopiedHandle(false), 2000);
+                  }}
+                  style={{ background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px', flexShrink: 0 }}
+                >
+                  {copiedHandle ? <Check size={18} /> : <Copy size={18} />}
+                </button>
+              )}
             </div>
             <p style={{ color: 'var(--silver-light)', fontSize: '0.88rem', margin: 0, lineHeight: 1.6 }}>{payment.instructions}</p>
           </div>
@@ -1148,7 +1176,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         <div className="glass-panel hover-lift stagger-fade-in" style={{ width: '100%' }}>
           <div style={{ padding: 'var(--space-6)' }}>
           {error && (
-            <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+            <div ref={errorBannerRef} style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                 <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                 <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
@@ -1236,7 +1264,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                       <div className="form-group">
                         <label className="form-label">Full Name</label>
-                        <input type="text" className="form-input premium-input" placeholder="First And Last Name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                        <input type="text" className="form-input premium-input" placeholder="First And Last Name" autoComplete="name" autoCapitalize="words" value={fullName} onChange={(e) => setFullName(e.target.value)} />
                       </div>
                       <div className="grid-2">
                         <div className="form-group" style={{ marginTop: 0 }}>
@@ -1245,29 +1273,29 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                         </div>
                         <div className="form-group" style={{ marginTop: 0 }}>
                           <label className="form-label" style={{ whiteSpace: 'nowrap' }}>Suite Or Apartment</label>
-                          <input type="text" className="form-input premium-input" placeholder="Suite 404 (Optional)" value={suite} onChange={(e) => setSuite(e.target.value)} />
+                          <input type="text" className="form-input premium-input" placeholder="Suite 404 (Optional)" autoComplete="address-line2" value={suite} onChange={(e) => setSuite(e.target.value)} />
                         </div>
                       </div>
                       <div className="address-city-grid">
                         <div className="form-group" style={{ marginTop: 0 }}>
                           <label className="form-label">City</label>
-                          <input type="text" className="form-input premium-input" placeholder="Science City" value={city} onChange={(e) => setCity(e.target.value)} />
+                          <input type="text" className="form-input premium-input" placeholder="Science City" autoComplete="address-level2" autoCapitalize="words" value={city} onChange={(e) => setCity(e.target.value)} />
                         </div>
                         <div className="form-group" style={{ marginTop: 0 }}>
                           <label className="form-label">State</label>
-                          <select className="form-input premium-input" value={state} onChange={(e) => setState(e.target.value)}>
+                          <select className="form-input premium-input" autoComplete="address-level1" value={state} onChange={(e) => setState(e.target.value)}>
                             <option value="">Select State</option>
                             {US_STATES.map((s) => <option key={s.code} value={s.code}>{s.code} - {s.name}</option>)}
                           </select>
                         </div>
                         <div className="form-group" style={{ marginTop: 0 }}>
                           <label className="form-label">Zip Code</label>
-                          <input type="text" className="form-input premium-input" placeholder="90210" value={zip} onChange={(e) => setZip(e.target.value)} />
+                          <input type="text" className="form-input premium-input" placeholder="90210" inputMode="numeric" pattern="[0-9]*" maxLength={10} autoComplete="postal-code" value={zip} onChange={(e) => setZip(e.target.value)} />
                         </div>
                       </div>
                       <div className="form-group">
                         <label className="form-label">Phone Number</label>
-                        <input type="tel" className="form-input premium-input" placeholder="123-456-7890 (For Shipping Updates)" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                        <input type="tel" className="form-input premium-input" placeholder="123-456-7890 (For Shipping Updates)" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
                       </div>
                       {selectedAddressId === 'new' && (
                         <label className="form-checkbox" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-3)', background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-md)' }}>

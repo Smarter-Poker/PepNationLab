@@ -1,0 +1,53 @@
+
+> pepnationlab@0.1.0 build
+> next build
+
+Warning: total number of custom routes exceeds 1000, this can reduce performance. Route counts:
+headers: 1
+rewrites: 2
+redirects: 1595
+See more info: https://nextjs.org/docs/messages/max-custom-routes-reached
+▲ Next.js 16.2.6 (Turbopack)
+- Environments: .env.production.local, .env.local, .env.production, .env
+- Experiments (use with caution):
+  · clientTraceMetadata
+  · optimizePackageImports
+
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 2 errors:
+./app/layout.tsx:29:1
+Module not found: Can't resolve '@vercel/analytics/next'
+  [90m27 |[0m [90m// the matching tabs are enabled on the Vercel project dashboard.[0m
+  [90m28 |[0m [36mimport[0m { [33mSpeedInsights[0m } [36mfrom[0m [32m"@vercel/speed-insights/next"[0m;
+[31m[1m>[0m [90m29 |[0m [36mimport[0m { [33mAnalytics[0m } [36mfrom[0m [32m"@vercel/analytics/next"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m30 |[0m
+  [90m31 |[0m [36mimport[0m { [33mInter[0m } [36mfrom[0m [32m"next/font/google"[0m;
+  [90m32 |[0m
+
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./app/layout.tsx:28:1
+Module not found: Can't resolve '@vercel/speed-insights/next'
+  [90m26 |[0m [90m// inject a lightweight script after hydration; they no-op harmlessly until[0m
+  [90m27 |[0m [90m// the matching tabs are enabled on the Vercel project dashboard.[0m
+[31m[1m>[0m [90m28 |[0m [36mimport[0m { [33mSpeedInsights[0m } [36mfrom[0m [32m"@vercel/speed-insights/next"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m29 |[0m [36mimport[0m { [33mAnalytics[0m } [36mfrom[0m [32m"@vercel/analytics/next"[0m;
+  [90m30 |[0m
+  [90m31 |[0m [36mimport[0m { [33mInter[0m } [36mfrom[0m [32m"next/font/google"[0m;
+
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (./app/layout.tsx:29:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./app/layout.tsx:28:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)

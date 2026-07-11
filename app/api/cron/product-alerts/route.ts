@@ -25,7 +25,7 @@ function alertEmail(productName: string, kind: 'back_in_stock' | 'price_drop', h
       <h1 style="font-size:20px;margin:0 0 12px">${heading}</h1>
       <p style="font-size:15px;line-height:1.5;margin:0 0 20px">${line}</p>
       <a href="${href}" style="display:inline-block;background:#00C4BC;color:#050A0F;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:10px">View Product</a>
-      <p style="font-size:12px;color:#6b7785;margin-top:24px">Research Use Only. You Are Receiving This Because You Asked To Be Notified.</p>
+      <p style="font-size:12px;color:#9FB2C0;margin-top:24px">Research Use Only. You Are Receiving This Because You Asked To Be Notified.</p>
     </div>`,
   };
 }

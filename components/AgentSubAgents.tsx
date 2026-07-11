@@ -345,11 +345,11 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom:24px;font-size:11px;">
           <div>
-            <div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:0.05em;">From</div>
+            <div style="font-size:9px;color:#A8B4C0;text-transform:uppercase;letter-spacing:0.05em;">From</div>
             <strong>${escapeHtml(superName)}</strong>
           </div>
           <div>
-            <div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:0.05em;">Billed To</div>
+            <div style="font-size:9px;color:#A8B4C0;text-transform:uppercase;letter-spacing:0.05em;">Billed To</div>
             <strong>${escapeHtml(subName)}</strong>
           </div>
         </div>`;
@@ -357,7 +357,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       const footerHtml = `
         <div class="footer" style="display:flex;justify-content:flex-end;">
           <div style="text-align:right;">
-            <div style="font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:0.05em;">Total Owed</div>
+            <div style="font-size:10px;color:#A8B4C0;text-transform:uppercase;letter-spacing:0.05em;">Total Owed</div>
             <div class="total">$${total}</div>
           </div>
         </div>

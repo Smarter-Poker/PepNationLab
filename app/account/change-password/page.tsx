@@ -116,6 +116,7 @@ export default function ChangePasswordPage() {
                 onChange={e => setNewPassword(e.target.value)}
                 placeholder="At Least 12 Characters"
                 required
+                autoComplete="new-password"
                 style={{
                   width: '100%', boxSizing: 'border-box',
                   background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
@@ -141,6 +142,7 @@ export default function ChangePasswordPage() {
                 onChange={e => setConfirm(e.target.value)}
                 placeholder="Re-enter Password"
                 required
+                autoComplete="new-password"
                 style={{
                   width: '100%', boxSizing: 'border-box',
                   background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',

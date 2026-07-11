@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface DisclaimerGateProps {
   onAccept: () => void;
@@ -13,10 +14,15 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
   const toggle = (key: keyof typeof checks) =>
     setChecks(prev => ({ ...prev, [key]: !prev[key] }));
 
+  // A11y: move focus into the mandatory gate and trap Tab inside it
+  // (WCAG 2.1.2, 2.4.3). No onClose: this legal gate cannot be dismissed
+  // with Escape by design.
+  const gateRef = useModalA11y<HTMLDivElement>(true);
+
   return (
     <div data-nosnippet className="modal-overlay" style={{ alignItems: 'flex-start', paddingTop: '5vh', paddingBottom: '5vh' }}>
       {/* Pep Nation wordmark */}
-      <div className="modal-content" role="dialog" aria-modal="true" aria-label="Mandatory Research-Only Acknowledgment" style={{ maxWidth: 680 }}>
+      <div ref={gateRef} className="modal-content" role="dialog" aria-modal="true" aria-label="Mandatory Research-Only Acknowledgment" style={{ maxWidth: 680 }}>
         
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
@@ -32,7 +38,7 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
             Pep Nation Lab
           </div>
           <div className="disclaimer-title" style={{ justifyContent: 'center' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
               <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
@@ -78,9 +84,9 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
         </div>
 
         {/* Three mandatory checkboxes */}
-        <div style={{ 
-          background: 'var(--surface-2)', 
-          borderRadius: 'var(--radius-lg)', 
+        <div role="group" aria-label="Required Acknowledgments" style={{
+          background: 'var(--surface-2)',
+          borderRadius: 'var(--radius-lg)',
           padding: 'var(--space-5)',
           border: 'var(--border-silver)',
           marginBottom: 'var(--space-6)',
@@ -125,7 +131,7 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
                 transition: 'all 0.2s ease', cursor: 'pointer', marginTop: 2
               }}>
                 {checks[key] && (
-                  <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
+                  <svg aria-hidden="true" width="13" height="13" viewBox="0 0 12 12" fill="none">
                     <path d="M2 6l3 3 5-5" stroke="#050A0F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 )}

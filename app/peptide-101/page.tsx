@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import GuestCTA from '@/components/GuestCTA';
 
 export default function Peptide101LandingPage() {
@@ -44,7 +45,7 @@ export default function Peptide101LandingPage() {
     };
   }, []);
 
-  if (!mounted) return <div style={{ backgroundColor: '#020617', width: '100vw', height: '100vh' }}></div>;
+  if (!mounted) return <div style={{ backgroundColor: '#020617', width: '100%', height: '100dvh' }}></div>;
 
   const landingState = Math.min(completedModules + 1, 14);
   const CONTENT = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s11','s12','s13','s14'];
@@ -78,15 +79,20 @@ export default function Peptide101LandingPage() {
 
   return (
     <>
-    <div style={{ backgroundColor: '#020617', minHeight: '100vh', display: 'flex', justifyContent: 'center' }}>
+    <div style={{ backgroundColor: '#020617', minHeight: '100dvh', display: 'flex', justifyContent: 'center' }}>
       <div style={{ position: 'relative', width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
-        <img
+        {/* Mobile LCP: each state artwork is a ~1.6MB source PNG. Routing it
+            through next/image serves a right-sized AVIF/WebP instead, and the
+            intrinsic dimensions reserve the layout box (no CLS). */}
+        <Image
           src={`/images/landing-states/state-${landingState}.png`}
           alt={`Peptide 101 State ${landingState}`}
           width={853}
           height={1844}
+          priority
           fetchPriority="high"
-          decoding="async"
+          quality={40}
+          sizes="(max-width: 480px) 250px, (max-width: 1000px) 100vw, 1000px"
           style={{ width: '100%', height: 'auto', display: 'block' }}
         />
 

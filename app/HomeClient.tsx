@@ -123,7 +123,12 @@ export default function HomeClient() {
           priority
           fetchPriority="high"
           quality={40}
-          sizes="(max-width: 941px) 100vw, 941px"
+          // Mobile LCP: the artwork is a 941px-wide source, so at 100vw a
+          // DPR-3 phone pulls the full-width candidate (~941px x 1672px).
+          // Capping the slot at 250 CSS px on small screens selects the 750w
+          // candidate instead (~36% fewer pixels to download and decode) at a
+          // 1.5x upscale that is visually acceptable for this flat artwork.
+          sizes="(max-width: 480px) 250px, (max-width: 941px) 100vw, 941px"
           style={{ width: '100%', height: 'auto', display: 'block' }}
         />
         {ZONES.map(zone => (
@@ -177,7 +182,7 @@ export default function HomeClient() {
             </a>
           ))}
         </nav>
-        <p style={{ fontSize: '0.68rem', color: 'rgba(168,180,192,0.35)', textAlign: 'center', margin: '12px 0 0' }}>
+        <p style={{ fontSize: '0.85rem', color: 'rgba(168,180,192,0.35)', textAlign: 'center', margin: '12px 0 0' }}>
           {new Date().getFullYear()} Pep Nation Lab LLC. All Products For In Vitro Research Use Only.
         </p>
       </footer>

@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface IframeModalProps {
   url: string;
@@ -32,6 +33,10 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  // A11y: initial focus on the Back button, Tab trap inside the viewer, and
+  // focus restored to the triggering element on close (WCAG 2.1.2, 2.4.3).
+  const dialogRef = useModalA11y<HTMLDivElement>(true, { onClose });
+
   const domain = useMemo(() => {
     try {
       return new URL(url).hostname;
@@ -53,6 +58,7 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
         onDragEnd={(e, info) => {
           if (info.offset.y > 100) onClose();
         }}
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={title || 'External Link Viewer'}

@@ -63,6 +63,7 @@ export async function DELETE(req: NextRequest) {
   const { error } = await supabase
     .from('user_saved_compounds')
     .delete()
+    .eq('user_id', user.id)
     .eq('compound_slug', compound_slug)
     .eq('collection_name', collection_name);
   if (error) return safeError('research.saved', error);

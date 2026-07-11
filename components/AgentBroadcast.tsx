@@ -100,7 +100,7 @@ export default function AgentBroadcast() {
           </div>
         </div>
 
-        {error && <p style={{ color: '#E53E3E', fontSize: '0.85rem', marginTop: '0.85rem', marginBottom: 0 }}>{error}</p>}
+        {error && <p role="alert" style={{ color: '#FC8181', fontSize: '0.85rem', marginTop: '0.85rem', marginBottom: 0 }}>{error}</p>}
         {result && <p style={{ color: '#48BB78', fontSize: '0.85rem', marginTop: '0.85rem', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Check size={15} /> {result}</p>}
 
         <div style={{ marginTop: '1.15rem' }}>
@@ -129,7 +129,7 @@ export default function AgentBroadcast() {
                   </span>
                 </div>
                 <p style={{ color: '#A8B4C0', fontSize: '0.88rem', margin: '0.4rem 0 0' }}>{b.body}</p>
-                <span style={{ color: '#6b7785', fontSize: '0.75rem' }}>{new Date(b.created_at).toLocaleString()}</span>
+                <span style={{ color: '#9FB2C0', fontSize: '0.75rem' }}>{new Date(b.created_at).toLocaleString()}</span>
               </div>
             ))}
           </div>

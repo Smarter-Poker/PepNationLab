@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { reportClientError } from '@/lib/report-client-error';
 import { getProductImage } from '@/lib/categoryImage';
+import { useModalA11y } from '@/lib/useModalA11y';
 import DynamicAddToCartButton from '@/components/storefront/DynamicAddToCartButton';
 import DynamicCartButton from '@/components/storefront/DynamicCartButton';
 
@@ -470,6 +471,9 @@ function AddToCartAcknowledgment({
   onAccept: () => void;
   onCancel: () => void;
 }) {
+  // A11y: focus trap + Escape-to-cancel + focus restore (WCAG 2.1.2, 2.4.3).
+  const ackDialogRef = useModalA11y<HTMLDivElement>(true, { onClose: onCancel });
+
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -477,6 +481,7 @@ function AddToCartAcknowledgment({
       role="dialog" aria-modal="true" aria-labelledby="add-to-cart-ack-title"
     >
       <motion.div
+        ref={ackDialogRef}
         initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }}
         className="glass-panel"
         style={{ maxWidth: 520, width: '100%', padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(192, 184, 168, 0.4)', boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(192, 184, 168, 0.2)' }}
@@ -1030,6 +1035,10 @@ function CartDrawer() {
     }
   }, [addToCart]);
 
+  // A11y: focus trap + Escape close + focus restore for the cart dialog
+  // (WCAG 2.1.2, 2.4.3). The drawer only renders while open, so active=true.
+  const cartDialogRef = useModalA11y<HTMLDivElement>(true, { onClose: () => setIsCartOpen(false) });
+
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -1042,6 +1051,7 @@ function CartDrawer() {
       <div onClick={() => setIsCartOpen(false)} style={{ flexGrow: 1, cursor: 'pointer' }} aria-hidden="true" />
 
       <motion.div
+        ref={cartDialogRef}
         initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         role="dialog"

@@ -80,9 +80,9 @@ function tierInfo(tier: string): { label: string; color: string; rank: number } 
     case 'approved_drug':     return { label: 'Approved Drug',      color: '#38A169', rank: 1 };
     case 'investigational':   return { label: 'Investigational',    color: '#D69E2E', rank: 2 };
     case 'preclinical':       return { label: 'Preclinical',        color: '#3182CE', rank: 3 };
-    case 'research_chemical': return { label: 'Research Compound',  color: '#718096', rank: 4 };
+    case 'research_chemical': return { label: 'Research Compound',  color: '#A8B4C0', rank: 4 };
     case 'cosmetic':          return { label: 'Cosmetic',           color: '#9F7AEA', rank: 5 };
-    default:                  return { label: tier.replace(/_/g, ' '), color: '#718096', rank: 6 };
+    default:                  return { label: tier.replace(/_/g, ' '), color: '#A8B4C0', rank: 6 };
   }
 }
 
@@ -450,7 +450,7 @@ export default function AreaProductGrid({
                     <strong style={{ color: '#C0C8D0' }}>Popular Name:</strong> {p.compound.aliases.slice(0, 3).join(', ')}
                   </p>
                 ) : null}
-                <p style={{ color: '#718096', fontSize: '0.85rem', marginTop: 12 }}>$XX.XX</p>
+                <p style={{ color: '#A8B4C0', fontSize: '0.85rem', marginTop: 12 }}>$XX.XX</p>
               </div>
             );
           })}
@@ -851,7 +851,7 @@ export default function AreaProductGrid({
                       {p.agentProductId ? formatPrice(displayPrice) : '-'}
                     </div>
                     {p.agentProductId && p.isOnSale && p.salePrice != null && (
-                      <div style={{ fontSize: '0.8rem', color: '#718096', textDecoration: 'line-through', marginTop: 2 }}>
+                      <div style={{ fontSize: '0.8rem', color: '#A8B4C0', textDecoration: 'line-through', marginTop: 2 }}>
                         {formatPrice(p.retailPrice)}
                       </div>
                     )}
@@ -927,7 +927,7 @@ export default function AreaProductGrid({
                         height: 60,
                         width: '100%',
                         background: 'rgba(255,255,255,0.06)',
-                        color: '#718096',
+                        color: '#A8B4C0',
                         border: 'none',
                         borderRadius: 10,
                         fontWeight: 800,
@@ -947,7 +947,7 @@ export default function AreaProductGrid({
                         height: 60,
                         width: '100%',
                         background: 'rgba(255,255,255,0.06)',
-                        color: '#718096',
+                        color: '#A8B4C0',
                         border: 'none',
                         borderRadius: 10,
                         fontWeight: 800,
@@ -987,7 +987,7 @@ export default function AreaProductGrid({
           <p style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: 8 }}>
             No Products Found
           </p>
-          <p style={{ fontSize: '0.88rem', color: '#718096' }}>
+          <p style={{ fontSize: '0.88rem', color: '#A8B4C0' }}>
             Products For This Research Area Are Coming Soon
           </p>
         </div>

@@ -19,6 +19,8 @@ import UtmCapture from "@/components/UtmCapture";
 // page's initial JS bundle. Each renders null until an event/condition fires,
 // so deferring them causes no layout shift. See components/DeferredGlobals.tsx.
 import DeferredGlobals from "@/components/DeferredGlobals";
+// A11y: app-wide reduced-motion support for framer-motion (WCAG 2.2.2/2.3.3).
+import MotionProvider from "@/components/MotionProvider";
 // Real-user measurement: Vercel Speed Insights (Core Web Vitals field data)
 // and Web Analytics (privacy-friendly page views). Both render null and
 // inject a lightweight script after hydration; they no-op harmlessly until
@@ -208,6 +210,9 @@ export default function RootLayout({
         />
       </head>
       <body>
+        {/* A11y: skip link — first focusable element on every page (WCAG 2.4.1).
+            Revealed on keyboard focus via .skip-link styles in globals.css. */}
+        <a href="#main-content" className="skip-link">Skip To Main Content</a>
         <ThemeProvider>
           {/* App-wide capture of uncaught errors + unhandled promise rejections.
               Kept eager so it captures from first paint. */}
@@ -224,9 +229,13 @@ export default function RootLayout({
           <SiteDisclaimerGate>
             <CartProvider>
               <InAppBrowserProvider>
-                <div className="page-container">
-                  {children}
-                </div>
+                <MotionProvider>
+                  {/* A11y: skip-link target (WCAG 2.4.1). tabIndex={-1} allows
+                      programmatic focus without joining the tab order. */}
+                  <div className="page-container" id="main-content" tabIndex={-1}>
+                    {children}
+                  </div>
+                </MotionProvider>
               </InAppBrowserProvider>
             </CartProvider>
           </SiteDisclaimerGate>

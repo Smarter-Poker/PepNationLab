@@ -12,6 +12,7 @@ import Link from 'next/link';
 import GlobalSearchBar from '@/components/research/GlobalSearchBar';
 import SearchResults, { type SearchHit, type SearchIntent } from '@/components/research/SearchResults';
 import BrowseSurfaceNav from '@/components/research/BrowseSurfaceNav';
+import SearchFacets from '@/components/research/SearchFacets';
 import type { InstantAnswerPayload } from '@/components/research/InstantAnswerCard';
 
 export const metadata: Metadata = {
@@ -120,7 +121,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
         </div>
       </div>
 
-      <div style={{ padding: '28px 0 0' }}>
+      <div style={{ maxWidth: 760, margin: '20px auto 0' }}>
+        <SearchFacets query={query} />
+      </div>
+
+      <div style={{ padding: '8px 0 0' }}>
         <Suspense fallback={<div style={{ textAlign: 'center', padding: '60px', color: 'var(--silver, #A8B4C0)' }}>Loading Results…</div>}>
           <SearchResults
             query={query}

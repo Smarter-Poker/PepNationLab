@@ -64,7 +64,7 @@ function Row({ label, value }: { label: string; value: string }) {
       <span style={{ color: '#A8B4C0' }}>{label}</span>
       <span
         style={{
-          color: absent ? '#6B7A8A' : '#FFFFFF',
+          color: absent ? '#8B98A6' : '#FFFFFF',
           fontStyle: absent ? 'italic' : 'normal',
           textAlign: 'right',
         }}
@@ -284,7 +284,7 @@ export default async function CoaLookupPage({
               marginTop: '2rem',
               paddingTop: '1.25rem',
               borderTop: '1px solid #1D2D3E',
-              color: '#6B7A8A',
+              color: '#A8B4C0',
               fontSize: '0.85rem',
               lineHeight: 1.6,
             }}
@@ -298,7 +298,7 @@ export default async function CoaLookupPage({
         </article>
       )}
 
-      <p style={{ marginTop: '2.5rem', color: '#6B7A8A', fontSize: '0.9rem' }}>
+      <p style={{ marginTop: '2.5rem', color: '#A8B4C0', fontSize: '0.9rem' }}>
         <Link href="/compliance" style={{ color: '#A8B4C0' }}>
           Read Our Compliance Policy
         </Link>

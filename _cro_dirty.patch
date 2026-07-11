@@ -1,0 +1,2843 @@
+diff --git a/app/HomeClient.tsx b/app/HomeClient.tsx
+index 98a5904b..5739c5b0 100644
+--- a/app/HomeClient.tsx
++++ b/app/HomeClient.tsx
+@@ -123,7 +123,12 @@ export default function HomeClient() {
+           priority
+           fetchPriority="high"
+           quality={40}
+-          sizes="(max-width: 941px) 100vw, 941px"
++          // Mobile LCP: the artwork is a 941px-wide source, so at 100vw a
++          // DPR-3 phone pulls the full-width candidate (~941px x 1672px).
++          // Capping the slot at 250 CSS px on small screens selects the 750w
++          // candidate instead (~36% fewer pixels to download and decode) at a
++          // 1.5x upscale that is visually acceptable for this flat artwork.
++          sizes="(max-width: 480px) 250px, (max-width: 941px) 100vw, 941px"
+           style={{ width: '100%', height: 'auto', display: 'block' }}
+         />
+         {ZONES.map(zone => (
+@@ -177,7 +182,7 @@ export default function HomeClient() {
+             </a>
+           ))}
+         </nav>
+-        <p style={{ fontSize: '0.68rem', color: 'rgba(168,180,192,0.35)', textAlign: 'center', margin: '12px 0 0' }}>
++        <p style={{ fontSize: '0.85rem', color: 'rgba(168,180,192,0.35)', textAlign: 'center', margin: '12px 0 0' }}>
+           {new Date().getFullYear()} Pep Nation Lab LLC. All Products For In Vitro Research Use Only.
+         </p>
+       </footer>
+diff --git a/app/[agentSlug]/page.tsx b/app/[agentSlug]/page.tsx
+index 9802101f..86386638 100644
+--- a/app/[agentSlug]/page.tsx
++++ b/app/[agentSlug]/page.tsx
+@@ -237,6 +237,7 @@ async function AgentStorefrontDataLoader({
+         minOrderQty={agent.min_order_qty ?? 1}
+         minOverallQty={agent.min_overall_qty ?? 1}
+         compoundsBySlug={compoundsBySlug}
++        featuredProductIds={agent.featured_products || []}
+       />
+     </>
+   );
+@@ -261,7 +262,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
+       volume_pricing_enabled,
+       min_order_qty,
+       min_overall_qty,
+-      storefront_renamed_at
++      storefront_renamed_at,
++      featured_products
+     `)
+     .eq('slug', agentSlug)
+     .maybeSingle();
+diff --git a/app/account/change-password/page.tsx b/app/account/change-password/page.tsx
+index 6b30ad73..6f181f22 100644
+--- a/app/account/change-password/page.tsx
++++ b/app/account/change-password/page.tsx
+@@ -116,6 +116,7 @@ export default function ChangePasswordPage() {
+                 onChange={e => setNewPassword(e.target.value)}
+                 placeholder="At Least 12 Characters"
+                 required
++                autoComplete="new-password"
+                 style={{
+                   width: '100%', boxSizing: 'border-box',
+                   background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
+@@ -141,6 +142,7 @@ export default function ChangePasswordPage() {
+                 onChange={e => setConfirm(e.target.value)}
+                 placeholder="Re-enter Password"
+                 required
++                autoComplete="new-password"
+                 style={{
+                   width: '100%', boxSizing: 'border-box',
+                   background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
+diff --git a/app/admin/coa/page.tsx b/app/admin/coa/page.tsx
+index b5999eec..ef3d225e 100644
+--- a/app/admin/coa/page.tsx
++++ b/app/admin/coa/page.tsx
+@@ -79,7 +79,7 @@ export default async function AdminCoaListPage() {
+           >
+             <div style={{ minWidth: 0 }}>
+               <div style={{ fontWeight: 500 }}>{r.name}</div>
+-              <div style={{ fontSize: '0.78rem', color: '#6B7A8A' }}>
++              <div style={{ fontSize: '0.78rem', color: '#A8B4C0' }}>
+                 {r.molecular_weight_da ? `${r.molecular_weight_da} Da` : 'Mass Not On File'}
+                 {r.sku_count > 1 ? ` · Covers ${r.sku_count} Sizes` : ''}
+               </div>
+diff --git a/app/api/auth/register/route.ts b/app/api/auth/register/route.ts
+index fe4785a3..f6ba2365 100644
+--- a/app/api/auth/register/route.ts
++++ b/app/api/auth/register/route.ts
+@@ -1,5 +1,4 @@
+ import { NextResponse } from 'next/server';
+-import { assertSameOrigin } from '@/lib/csrf';
+ 
+ export const dynamic = 'force-dynamic';
+ export const runtime = 'nodejs';
+diff --git a/app/api/cron/product-alerts/route.ts b/app/api/cron/product-alerts/route.ts
+index 2ac804a5..40ae77b6 100644
+--- a/app/api/cron/product-alerts/route.ts
++++ b/app/api/cron/product-alerts/route.ts
+@@ -25,7 +25,7 @@ function alertEmail(productName: string, kind: 'back_in_stock' | 'price_drop', h
+       <h1 style="font-size:20px;margin:0 0 12px">${heading}</h1>
+       <p style="font-size:15px;line-height:1.5;margin:0 0 20px">${line}</p>
+       <a href="${href}" style="display:inline-block;background:#00C4BC;color:#050A0F;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:10px">View Product</a>
+-      <p style="font-size:12px;color:#6b7785;margin-top:24px">Research Use Only. You Are Receiving This Because You Asked To Be Notified.</p>
++      <p style="font-size:12px;color:#9FB2C0;margin-top:24px">Research Use Only. You Are Receiving This Because You Asked To Be Notified.</p>
+     </div>`,
+   };
+ }
+diff --git a/app/api/research/saved/route.ts b/app/api/research/saved/route.ts
+index e0ab74bb..6f57b004 100644
+--- a/app/api/research/saved/route.ts
++++ b/app/api/research/saved/route.ts
+@@ -63,6 +63,7 @@ export async function DELETE(req: NextRequest) {
+   const { error } = await supabase
+     .from('user_saved_compounds')
+     .delete()
++    .eq('user_id', user.id)
+     .eq('compound_slug', compound_slug)
+     .eq('collection_name', collection_name);
+   if (error) return safeError('research.saved', error);
+diff --git a/app/api/research/search/route.ts b/app/api/research/search/route.ts
+index 9f8be0e6..6cf68edc 100644
+--- a/app/api/research/search/route.ts
++++ b/app/api/research/search/route.ts
+@@ -31,6 +31,8 @@ interface SearchResultRow {
+   snippet: string;
+   score: number;
+   knowledge_panel_url: string;
++  category?: string;
++  compound_class?: string;
+ }
+ 
+ 
+@@ -67,6 +69,8 @@ async function runRankedSearch(
+     snippet: typeof r.snippet === 'string' ? r.snippet : '',
+     score: typeof r.score === 'number' ? r.score : Number(r.score ?? 0),
+     knowledge_panel_url: `/research/${String(r.slug ?? '')}`,
++    category: r.category ? String(r.category) : undefined,
++    compound_class: r.compound_class ? String(r.compound_class) : undefined,
+   }));
+ 
+   // total_count column is returned by the RPC on every row.
+@@ -108,6 +112,8 @@ async function runFallbackTrigram(
+     snippet: typeof r.snippet === 'string' ? r.snippet : '',
+     score: typeof r.score === 'number' ? r.score : Number(r.score ?? 0),
+     knowledge_panel_url: `/research/${String(r.slug ?? '')}`,
++    category: r.category ? String(r.category) : undefined,
++    compound_class: r.compound_class ? String(r.compound_class) : undefined,
+   }));
+ }
+ 
+@@ -199,7 +205,12 @@ async function performSearch(
+   offset: number,
+ ) {
+   const parsed = parseQuery(queryStr);
+-  let { rows, total } = await runRankedSearch(supabase, parsed, limit, offset);
++  
++  // If we have filters, we fetch a large batch to filter in JS since the RPC doesn't support facets natively
++  const fetchLimit = parsed.filters.length > 0 ? 500 : limit;
++  const fetchOffset = parsed.filters.length > 0 ? 0 : offset;
++
++  let { rows, total } = await runRankedSearch(supabase, parsed, fetchLimit, fetchOffset);
+ 
+   if (rows.length === 0) {
+     const trgm = await runFallbackTrigram(supabase, parsed, limit);
+@@ -231,10 +242,28 @@ async function performSearch(
+       }
+     }
+     finalRows = Array.from(mergedMap.values()).sort((a, b) => b.score - a.score);
+-    total = finalRows.length;
+   }
+ 
+-  return { finalRows, total, parsed };
++  // Apply parsed filters
++  if (parsed.filters.length > 0) {
++    finalRows = finalRows.filter(row => {
++      return parsed.filters.every(f => {
++        const val = f.value.toString().toLowerCase();
++        if (f.field === 'class' || f.field === 'category') {
++          return row.compound_class?.toLowerCase().includes(val) || 
++                 row.category?.toLowerCase().includes(val);
++        }
++        if (f.field === 'tier') {
++          return row.evidence_tier?.toLowerCase() === val;
++        }
++        return true;
++      });
++    });
++  }
++
++  total = finalRows.length;
++
++  return { finalRows: finalRows.slice(offset, offset + limit), total, parsed };
+ }
+ 
+ async function handle(req: NextRequest, q: string, limit: number, offset: number) {
+diff --git a/app/checkout/CheckoutForm.tsx b/app/checkout/CheckoutForm.tsx
+index 0e61dd01..af13af79 100644
+--- a/app/checkout/CheckoutForm.tsx
++++ b/app/checkout/CheckoutForm.tsx
+@@ -178,6 +178,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers,
+   const [error, setError] = useState<string | null>(null);
+   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+   const [copiedOrderId, setCopiedOrderId] = useState(false);
++  const [copiedHandle, setCopiedHandle] = useState(false);
+   const [serverTotal, setServerTotal] = useState<number | null>(null);
+   const [totalAdjusted, setTotalAdjusted] = useState(false);
+ 
+@@ -186,6 +187,17 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers,
+   const idempotencyKeyRef = useRef<string | null>(null);
+   const submittedRef = useRef<boolean>(false);
+ 
++  // Mobile UX: validation errors render at the top of the step panel, which
++  // can sit above the visual viewport when the software keyboard is open or
++  // the user has scrolled to the submit button. Scroll the banner into view
++  // whenever a new error is set so it is never raised off-screen.
++  const errorBannerRef = useRef<HTMLDivElement | null>(null);
++  useEffect(() => {
++    if (error && errorBannerRef.current) {
++      errorBannerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
++    }
++  }, [error]);
++
+   const [liveShippingRate, setLiveShippingRate] = useState<number | null>(null);
+   // True when the shown rate is the flat weight-based estimate rather than a
+   // live carrier quote, so the summary can label it honestly.
+@@ -1062,8 +1074,24 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers,
+               </svg>{' '}
+               {payment.label}
+             </h3>
+-            <div style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)', letterSpacing: '0.05em', background: 'rgba(0, 240, 255, 0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(0, 240, 255, 0.1)', textAlign: 'center', marginBottom: 'var(--space-3)' }}>
+-              {payment.handle}
++            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: '1.25rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)', letterSpacing: '0.05em', background: 'rgba(0, 240, 255, 0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(0, 240, 255, 0.1)', textAlign: 'center', marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
++              <span style={{ wordBreak: 'break-all' }}>{payment.handle}</span>
++              {/* CRO: one-tap copy at the single most failure-prone step of the
++                  funnel - transcribing the payment handle into another app. */}
++              {payment.handle !== 'Contact Your Agent For Handle' && (
++                <button
++                  type="button"
++                  aria-label="Copy Payment Handle"
++                  onClick={() => {
++                    navigator.clipboard.writeText(payment.handle);
++                    setCopiedHandle(true);
++                    setTimeout(() => setCopiedHandle(false), 2000);
++                  }}
++                  style={{ background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px', flexShrink: 0 }}
++                >
++                  {copiedHandle ? <Check size={18} /> : <Copy size={18} />}
++                </button>
++              )}
+             </div>
+             <p style={{ color: 'var(--silver-light)', fontSize: '0.88rem', margin: 0, lineHeight: 1.6 }}>{payment.instructions}</p>
+           </div>
+@@ -1148,7 +1176,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers,
+         <div className="glass-panel hover-lift stagger-fade-in" style={{ width: '100%' }}>
+           <div style={{ padding: 'var(--space-6)' }}>
+           {error && (
+-            <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
++            <div ref={errorBannerRef} style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                 <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                 <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+@@ -1236,7 +1264,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers,
+                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                       <div className="form-group">
+                         <label className="form-label">Full Name</label>
+-                        <input type="text" className="form-input premium-input" placeholder="First And Last Name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
++                        <input type="text" className="form-input premium-input" placeholder="First And Last Name" autoComplete="name" autoCapitalize="words" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                       </div>
+                       <div className="grid-2">
+                         <div className="form-group" style={{ marginTop: 0 }}>
+@@ -1245,29 +1273,29 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers,
+                         </div>
+                         <div className="form-group" style={{ marginTop: 0 }}>
+                           <label className="form-label" style={{ whiteSpace: 'nowrap' }}>Suite Or Apartment</label>
+-                          <input type="text" className="form-input premium-input" placeholder="Suite 404 (Optional)" value={suite} onChange={(e) => setSuite(e.target.value)} />
++                          <input type="text" className="form-input premium-input" placeholder="Suite 404 (Optional)" autoComplete="address-line2" value={suite} onChange={(e) => setSuite(e.target.value)} />
+                         </div>
+                       </div>
+                       <div className="address-city-grid">
+                         <div className="form-group" style={{ marginTop: 0 }}>
+                           <label className="form-label">City</label>
+-                          <input type="text" className="form-input premium-input" placeholder="Science City" value={city} onChange={(e) => setCity(e.target.value)} />
++                          <input type="text" className="form-input premium-input" placeholder="Science City" autoComplete="address-level2" autoCapitalize="words" value={city} onChange={(e) => setCity(e.target.value)} />
+                         </div>
+                         <div className="form-group" style={{ marginTop: 0 }}>
+                           <label className="form-label">State</label>
+-                          <select className="form-input premium-input" value={state} onChange={(e) => setState(e.target.value)}>
++                          <select className="form-input premium-input" autoComplete="address-level1" value={state} onChange={(e) => setState(e.target.value)}>
+                             <option value="">Select State</option>
+                             {US_STATES.map((s) => <option key={s.code} value={s.code}>{s.code} - {s.name}</option>)}
+                           </select>
+                         </div>
+                         <div className="form-group" style={{ marginTop: 0 }}>
+                           <label className="form-label">Zip Code</label>
+-                          <input type="text" className="form-input premium-input" placeholder="90210" value={zip} onChange={(e) => setZip(e.target.value)} />
++                          <input type="text" className="form-input premium-input" placeholder="90210" inputMode="numeric" pattern="[0-9]*" maxLength={10} autoComplete="postal-code" value={zip} onChange={(e) => setZip(e.target.value)} />
+                         </div>
+                       </div>
+                       <div className="form-group">
+                         <label className="form-label">Phone Number</label>
+-                        <input type="tel" className="form-input premium-input" placeholder="123-456-7890 (For Shipping Updates)" value={phone} onChange={(e) => setPhone(e.target.value)} />
++                        <input type="tel" className="form-input premium-input" placeholder="123-456-7890 (For Shipping Updates)" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                       </div>
+                       {selectedAddressId === 'new' && (
+                         <label className="form-checkbox" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-3)', background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-md)' }}>
+diff --git a/app/coa/page.tsx b/app/coa/page.tsx
+index e769caa5..8c140775 100644
+--- a/app/coa/page.tsx
++++ b/app/coa/page.tsx
+@@ -64,7 +64,7 @@ function Row({ label, value }: { label: string; value: string }) {
+       <span style={{ color: '#A8B4C0' }}>{label}</span>
+       <span
+         style={{
+-          color: absent ? '#6B7A8A' : '#FFFFFF',
++          color: absent ? '#8B98A6' : '#FFFFFF',
+           fontStyle: absent ? 'italic' : 'normal',
+           textAlign: 'right',
+         }}
+@@ -284,7 +284,7 @@ export default async function CoaLookupPage({
+               marginTop: '2rem',
+               paddingTop: '1.25rem',
+               borderTop: '1px solid #1D2D3E',
+-              color: '#6B7A8A',
++              color: '#A8B4C0',
+               fontSize: '0.85rem',
+               lineHeight: 1.6,
+             }}
+@@ -298,7 +298,7 @@ export default async function CoaLookupPage({
+         </article>
+       )}
+ 
+-      <p style={{ marginTop: '2.5rem', color: '#6B7A8A', fontSize: '0.9rem' }}>
++      <p style={{ marginTop: '2.5rem', color: '#A8B4C0', fontSize: '0.9rem' }}>
+         <Link href="/compliance" style={{ color: '#A8B4C0' }}>
+           Read Our Compliance Policy
+         </Link>
+diff --git a/app/dashboard/agent/page.tsx b/app/dashboard/agent/page.tsx
+index 48fce1dd..de5a6fb1 100644
+--- a/app/dashboard/agent/page.tsx
++++ b/app/dashboard/agent/page.tsx
+@@ -46,7 +46,7 @@ export default async function AgentDashboardPage() {
+   // are no per-agent shipping API keys.
+   const { data: agentProfileRaw } = await supabase
+     .from('agent_profiles')
+-    .select('id, slug, display_name, logo_url, primary_color, secondary_color, qr_code_url, qr_code_data, payment_handles, warehouse_address, is_active')
++    .select('id, slug, display_name, logo_url, primary_color, secondary_color, qr_code_url, qr_code_data, payment_handles, warehouse_address, is_active, featured_products')
+     .eq('id', user.id)
+     .maybeSingle();
+ 
+diff --git a/app/forgot-password/page.tsx b/app/forgot-password/page.tsx
+index 88fcd517..35cd6996 100644
+--- a/app/forgot-password/page.tsx
++++ b/app/forgot-password/page.tsx
+@@ -125,7 +125,7 @@ export default function ForgotPasswordPage() {
+               <form onSubmit={handleRequest}>
+                 <div style={{ marginBottom: 'var(--space-6)' }}>
+                   <label htmlFor="email" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--grey-300)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Address</label>
+-                  <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="form-input" placeholder="Enter Your Email" style={{ width: '100%' }} autoFocus autoComplete="email" />
++                  <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="form-input" placeholder="Enter Your Email" style={{ width: '100%' }} autoFocus autoComplete="email" autoCapitalize="none" spellCheck={false} />
+                 </div>
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                   <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+diff --git a/app/globals.css b/app/globals.css
+index df9e19c3..e5a1e713 100644
+--- a/app/globals.css
++++ b/app/globals.css
+@@ -18,14 +18,14 @@
+   --surface-3:      #1D2D3E;
+ 
+   --silver:         #A8B4C0;
+-  --silver-dark:    #6B7A8A;
++  --silver-dark:    #8B98A6; /* A11y: raised from #6B7A8A to meet WCAG 1.4.3 on dark surfaces */
+   --silver-light:   #D0DAE4;
+   --chrome:         linear-gradient(135deg, #C8D6E0 0%, #8FA0B0 40%, #B8C8D4 70%, #7A8E9E 100%);
+ 
+   --white:          #FFFFFF;
+   --grey-100:       #F0F4F8;
+   --grey-200:       #D0D8E0;
+-  --grey-400:       #8090A0;
++  --grey-400:       #94A3B2; /* A11y: raised from #8090A0 for placeholder/label contrast (WCAG 1.4.3) */
+   --grey-600:       #4A5A68;
+   --grey-800:       #2A3A48;
+ 
+@@ -78,7 +78,7 @@
+ 
+   /* Extended Grey Scale (used across agent dashboard) */
+   --grey-300:       #B0BCC8;
+-  --grey-500:       #657584;
++  --grey-500:       #9FB2C0; /* A11y: raised from #657584 which failed 4.5:1 as text (WCAG 1.4.3) */
+   --grey-900:       #1A2A38;
+ 
+   /* Status Colors */
+@@ -688,7 +688,8 @@ a:hover { color: var(--teal-dark); }
+ 
+ /* Danger — RED only for destructive actions */
+ .btn-danger {
+-  background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
++  /* A11y: base darkened so white label meets 4.5:1 (WCAG 1.4.3) */
++  background: linear-gradient(135deg, var(--red-dark) 0%, #9B2C2C 100%);
+   color: var(--white);
+   font-weight: 700;
+ }
+@@ -719,7 +720,7 @@ a:hover { color: var(--teal-dark); }
+   background: rgba(22, 34, 48, 0.6);
+   backdrop-filter: blur(8px);
+   -webkit-backdrop-filter: blur(8px);
+-  border: 1px solid rgba(168, 180, 192, 0.2);
++  border: 1px solid rgba(168, 180, 192, 0.45);
+   border-radius: var(--radius-md);
+   padding: var(--space-3) var(--space-4);
+   color: var(--white);
+@@ -851,7 +852,7 @@ a:hover { color: var(--teal-dark); }
+ }
+ 
+ .disclaimer-title {
+-  color: var(--red);
++  color: #FC8181; /* A11y: red text tone meeting 7:1 on dark surfaces; #E53E3E reserved for fills (WCAG 1.4.3) */
+   font-family: var(--font-brand);
+   font-size: 1rem;
+   font-weight: 700;
+@@ -2831,8 +2832,11 @@ img {
+ 
+ :focus:not(:focus-visible) { outline: none; }
+ :focus-visible {
+-  outline: 2px solid var(--teal, #00C4BC);
++  /* A11y: two-tone ring so the indicator stays visible over both dark surfaces
++     and light buttons (WCAG 2.4.7, 2.4.11, 1.4.11) */
++  outline: 2px solid #00C4BC;
+   outline-offset: 2px;
++  box-shadow: 0 0 0 2px var(--black, #050A0F);
+ }
+ 
+ p, span, div, h1, h2, h3, h4, h5, h6 {
+@@ -4283,7 +4287,7 @@ a[href^="tel:"] *,
+ .input {
+   width: 100%;
+   background: rgba(22, 34, 48, 0.6);
+-  border: 1px solid rgba(168, 180, 192, 0.2);
++  border: 1px solid rgba(168, 180, 192, 0.45);
+   border-radius: var(--radius-md);
+   padding: var(--space-3) var(--space-4);
+   color: var(--white);
+@@ -4428,3 +4432,78 @@ html {
+   }
+ }
+ 
++
++/*
++   ACCESSIBILITY UTILITIES (WCAG 2.2 AA Hardening Pass, 2026-07-11)
++*/
++
++/* Visually hidden but available to screen readers (WCAG 1.3.1, 4.1.2) */
++.sr-only {
++  position: absolute !important;
++  width: 1px !important;
++  height: 1px !important;
++  padding: 0 !important;
++  margin: -1px !important;
++  overflow: hidden !important;
++  clip: rect(0, 0, 0, 0) !important;
++  white-space: nowrap !important;
++  border: 0 !important;
++  text-transform: none !important;
++}
++
++/* Skip Link — first focusable element on every page (WCAG 2.4.1) */
++.skip-link {
++  position: absolute;
++  top: -100px;
++  left: var(--space-4);
++  z-index: 1000000;
++  padding: var(--space-3) var(--space-5);
++  background: var(--black-2, #0A1018);
++  color: var(--white, #FFFFFF);
++  border: 2px solid #00C4BC;
++  border-radius: var(--radius-md);
++  font-weight: 700;
++  text-decoration: none;
++  transition: top var(--transition-fast);
++}
++
++.skip-link:focus {
++  top: var(--space-4);
++}
++
++/* Skip-link target should not show a redundant ring when focused programmatically */
++#main-content:focus {
++  outline: none;
++}
++
++/* In-prose links must not rely on color alone (WCAG 1.4.1) */
++p a:not(.btn):not([class*="btn"]),
++li a:not(.btn):not([class*="btn"]) {
++  text-decoration: underline;
++  text-underline-offset: 2px;
++}
++
++/* Honor elevated contrast preferences (WCAG 1.4.6 support) */
++@media (prefers-contrast: more) {
++  :root {
++    --silver: #D0DAE4;
++    --silver-dark: #B0BCC8;
++    --grey-400: #C0CAD4;
++    --grey-500: #C0CAD4;
++  }
++
++  .form-input,
++  .input {
++    border-color: rgba(208, 218, 228, 0.8);
++  }
++}
++
++/* Restore system rendering for custom controls in forced-colors mode */
++@media (forced-colors: active) {
++  .btn,
++  .form-input,
++  .input,
++  .badge {
++    forced-color-adjust: auto;
++  }
++}
+diff --git a/app/layout.tsx b/app/layout.tsx
+index 44676095..5ac7f483 100644
+--- a/app/layout.tsx
++++ b/app/layout.tsx
+@@ -19,6 +19,14 @@ import UtmCapture from "@/components/UtmCapture";
+ // page's initial JS bundle. Each renders null until an event/condition fires,
+ // so deferring them causes no layout shift. See components/DeferredGlobals.tsx.
+ import DeferredGlobals from "@/components/DeferredGlobals";
++// A11y: app-wide reduced-motion support for framer-motion (WCAG 2.2.2/2.3.3).
++import MotionProvider from "@/components/MotionProvider";
++// Real-user measurement: Vercel Speed Insights (Core Web Vitals field data)
++// and Web Analytics (privacy-friendly page views). Both render null and
++// inject a lightweight script after hydration; they no-op harmlessly until
++// the matching tabs are enabled on the Vercel project dashboard.
++import { SpeedInsights } from "@vercel/speed-insights/next";
++import { Analytics } from "@vercel/analytics/next";
+ 
+ import { Inter } from "next/font/google";
+ 
+@@ -202,6 +210,9 @@ export default function RootLayout({
+         />
+       </head>
+       <body>
++        {/* A11y: skip link — first focusable element on every page (WCAG 2.4.1).
++            Revealed on keyboard focus via .skip-link styles in globals.css. */}
++        <a href="#main-content" className="skip-link">Skip To Main Content</a>
+         <ThemeProvider>
+           {/* App-wide capture of uncaught errors + unhandled promise rejections.
+               Kept eager so it captures from first paint. */}
+@@ -218,9 +229,13 @@ export default function RootLayout({
+           <SiteDisclaimerGate>
+             <CartProvider>
+               <InAppBrowserProvider>
+-                <div className="page-container">
+-                  {children}
+-                </div>
++                <MotionProvider>
++                  {/* A11y: skip-link target (WCAG 2.4.1). tabIndex={-1} allows
++                      programmatic focus without joining the tab order. */}
++                  <div className="page-container" id="main-content" tabIndex={-1}>
++                    {children}
++                  </div>
++                </MotionProvider>
+               </InAppBrowserProvider>
+             </CartProvider>
+           </SiteDisclaimerGate>
+@@ -229,6 +244,10 @@ export default function RootLayout({
+               after hydration instead of in every page's initial bundle. */}
+           <DeferredGlobals />
+           <Script src="/sw-register.js" strategy="afterInteractive" />
++          {/* Real-user field measurement. Render null; scripts load after
++              hydration, so no layout or LCP impact. */}
++          <SpeedInsights />
++          <Analytics />
+         </ThemeProvider>
+       </body>
+     </html>
+diff --git a/app/orders/[id]/ReceiptButton.tsx b/app/orders/[id]/ReceiptButton.tsx
+index 689d8c0d..040ed2ba 100644
+--- a/app/orders/[id]/ReceiptButton.tsx
++++ b/app/orders/[id]/ReceiptButton.tsx
+@@ -85,17 +85,17 @@ export default function ReceiptButton(props: ReceiptProps) {
+       </div>
+       <div style="display:flex; gap:32px; margin-bottom:16px;">
+         <div style="flex:1;">
+-          <div style="font-size:10px; color:#718096; text-transform:uppercase; letter-spacing:0.05em;">Buyer</div>
++          <div style="font-size:10px; color:#A8B4C0; text-transform:uppercase; letter-spacing:0.05em;">Buyer</div>
+           <div style="margin-top:4px; font-weight:600;">${esc(props.buyerName)}</div>
+           <div style="color:#4a5568;">${esc(props.buyerEmail)}</div>
+         </div>
+         ${shippingLines.length ? `
+         <div style="flex:1;">
+-          <div style="font-size:10px; color:#718096; text-transform:uppercase; letter-spacing:0.05em;">Shipping Address</div>
++          <div style="font-size:10px; color:#A8B4C0; text-transform:uppercase; letter-spacing:0.05em;">Shipping Address</div>
+           <div style="margin-top:4px;">${shippingLines.join('<br/>')}</div>
+         </div>` : ''}
+         <div style="flex:1;">
+-          <div style="font-size:10px; color:#718096; text-transform:uppercase; letter-spacing:0.05em;">Seller</div>
++          <div style="font-size:10px; color:#A8B4C0; text-transform:uppercase; letter-spacing:0.05em;">Seller</div>
+           <div style="margin-top:4px; font-weight:600;">${esc(props.sellerName)}</div>
+         </div>
+       </div>
+diff --git a/app/peptide-101/page.tsx b/app/peptide-101/page.tsx
+index 930eb0ff..63d4950c 100644
+--- a/app/peptide-101/page.tsx
++++ b/app/peptide-101/page.tsx
+@@ -1,5 +1,6 @@
+ "use client";
+ import { useEffect, useState } from "react";
++import Image from "next/image";
+ import GuestCTA from '@/components/GuestCTA';
+ 
+ export default function Peptide101LandingPage() {
+@@ -44,7 +45,7 @@ export default function Peptide101LandingPage() {
+     };
+   }, []);
+ 
+-  if (!mounted) return <div style={{ backgroundColor: '#020617', width: '100vw', height: '100vh' }}></div>;
++  if (!mounted) return <div style={{ backgroundColor: '#020617', width: '100%', height: '100dvh' }}></div>;
+ 
+   const landingState = Math.min(completedModules + 1, 14);
+   const CONTENT = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s11','s12','s13','s14'];
+@@ -78,15 +79,20 @@ export default function Peptide101LandingPage() {
+ 
+   return (
+     <>
+-    <div style={{ backgroundColor: '#020617', minHeight: '100vh', display: 'flex', justifyContent: 'center' }}>
++    <div style={{ backgroundColor: '#020617', minHeight: '100dvh', display: 'flex', justifyContent: 'center' }}>
+       <div style={{ position: 'relative', width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
+-        <img
++        {/* Mobile LCP: each state artwork is a ~1.6MB source PNG. Routing it
++            through next/image serves a right-sized AVIF/WebP instead, and the
++            intrinsic dimensions reserve the layout box (no CLS). */}
++        <Image
+           src={`/images/landing-states/state-${landingState}.png`}
+           alt={`Peptide 101 State ${landingState}`}
+           width={853}
+           height={1844}
++          priority
+           fetchPriority="high"
+-          decoding="async"
++          quality={40}
++          sizes="(max-width: 480px) 250px, (max-width: 1000px) 100vw, 1000px"
+           style={{ width: '100%', height: 'auto', display: 'block' }}
+         />
+ 
+diff --git a/app/peptides/[stateSlug]/[citySlug]/CityPage.tsx b/app/peptides/[stateSlug]/[citySlug]/CityPage.tsx
+index 7fa757c8..b038f6f1 100644
+--- a/app/peptides/[stateSlug]/[citySlug]/CityPage.tsx
++++ b/app/peptides/[stateSlug]/[citySlug]/CityPage.tsx
+@@ -19,6 +19,7 @@ import { FEATURED_PEPTIDES } from '@/lib/cities/keywords';
+ import { getCityIntro, getCityFAQs, getCityFacts, VALUE_PROPS, getRegionLabel, getRegionArea } from '@/lib/cities/city-content';
+ import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+ import type { StoreTop10Item } from '@/lib/cities/top10-server';
++import { getNearMeCities } from '@/lib/cities/near-me';
+ 
+ interface Props {
+   city: City;
+@@ -671,6 +672,10 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
+           </div>
+         </section>
+ 
++        {/* PEPTIDES NEAR ME - visible, crawlable geographic coverage block
++            targeting "peptides near me {city}" queries. Adds content only. */}
++        <NearMeSection city={city} stateSlug={stateSlug} region={region} />
++
+         <NearbyStrip stateSlug={stateSlug} currentCitySlug={citySlug} stateName={city.state} region={city.region} />
+ 
+         {/* ═════════════════════════════════════════════
+@@ -761,3 +766,49 @@ function NearbyStrip({ stateSlug, currentCitySlug, stateName, region }: {
+     </section>
+   );
+ }
++
++// --- Peptides Near Me section ------------------------------------------------
++// Visible, crawlable geographic coverage block rendered before the
++// NearbyStrip. Targets "peptides near me {city}" queries with genuine
++// nearby-city data (same region first, then same state - see
++// lib/cities/near-me.ts). Adds content only; never remove existing sections
++// (the daily city-pages verifier asserts them).
++function NearMeSection({ city, stateSlug, region }: { city: City; stateSlug: string; region: string }) {
++  const nearby = getNearMeCities(city);
++  if (nearby.length === 0) return null;
++  const area = getRegionArea(region);
++  const topThree = nearby.slice(0, 3).map((c) => c.name);
++  const topThreeLabel =
++    topThree.length >= 3
++      ? `${topThree[0]}, ${topThree[1]}, And ${topThree[2]}`
++      : topThree.join(' And ');
++  return (
++    <section aria-label={`Peptides Near Me - ${city.name} Area`} style={{ padding: 'clamp(48px, 6vw, 80px) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
++      <div className="container">
++        <h3 style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
++          Local Research Coverage
++        </h3>
++        <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)' }}>
++          Peptides Near Me - <span style={{ color: 'var(--teal)' }}>{city.name} Area</span>
++        </h2>
++        <p style={{ color: 'var(--grey-400)', fontSize: '0.92rem', maxWidth: 720, lineHeight: 1.7, marginBottom: 'var(--space-6)' }}>
++          Researchers Searching For Peptides Near Me In The {area} Find Local Coverage Across {nearby.length} Nearby {nearby.length === 1 ? 'City' : 'Cities'} Including {topThreeLabel}. Every Covered City Below Links To Its Own Dedicated Research Supply Page, And All Orders Ship With Full Batch COA Documentation, Strictly For In Vitro Research Use Only.
++        </p>
++        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 'var(--space-3)' }}>
++          {nearby.map((c) => (
++            <Link key={`${c.stateSlug}-${c.slug}`} href={`/peptides/${c.stateSlug}/${c.slug}`} className="city-vcard glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: 'var(--space-4) var(--space-5)', border: 'var(--border-subtle)', textDecoration: 'none' }}>
++              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--silver-light)' }}>
++                {c.stateSlug === stateSlug ? c.name : `${c.name}, ${c.stateAbbr}`}
++              </span>
++              {c.county && (
++                <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)' }}>
++                  {c.county} County
++                </span>
++              )}
++            </Link>
++          ))}
++        </div>
++      </div>
++    </section>
++  );
++}
+diff --git a/app/research/catalog/page.tsx b/app/research/catalog/page.tsx
+index da7d36a0..a46e57a8 100644
+--- a/app/research/catalog/page.tsx
++++ b/app/research/catalog/page.tsx
+@@ -9,7 +9,6 @@ import { Suspense } from 'react';
+ import { getAllCompounds } from '@/lib/compounds-server';
+ import ResearchBrowser from '@/components/research/ResearchBrowser';
+ import ResearchDock from '@/components/research/ResearchDock';
+-import BottomToolBar from '@/components/research/BottomToolBar';
+ import ResearchHero from '@/components/research/ResearchHero';
+ import CommandSearchBar from '@/components/research/CommandSearchBar';
+ import MatchEngineCards from '@/components/research/MatchEngineCards';
+diff --git a/app/research/search/page.tsx b/app/research/search/page.tsx
+index dedaa2ae..caddd9d1 100644
+--- a/app/research/search/page.tsx
++++ b/app/research/search/page.tsx
+@@ -12,6 +12,7 @@ import Link from 'next/link';
+ import GlobalSearchBar from '@/components/research/GlobalSearchBar';
+ import SearchResults, { type SearchHit, type SearchIntent } from '@/components/research/SearchResults';
+ import BrowseSurfaceNav from '@/components/research/BrowseSurfaceNav';
++import SearchFacets from '@/components/research/SearchFacets';
+ import type { InstantAnswerPayload } from '@/components/research/InstantAnswerCard';
+ 
+ export const metadata: Metadata = {
+@@ -120,7 +121,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
+         </div>
+       </div>
+ 
+-      <div style={{ padding: '28px 0 0' }}>
++      <div style={{ maxWidth: 760, margin: '20px auto 0' }}>
++        <SearchFacets query={query} />
++      </div>
++
++      <div style={{ padding: '8px 0 0' }}>
+         <Suspense fallback={<div style={{ textAlign: 'center', padding: '60px', color: 'var(--silver, #A8B4C0)' }}>Loading Results…</div>}>
+           <SearchResults
+             query={query}
+diff --git a/app/reset-password/page.tsx b/app/reset-password/page.tsx
+index 7d229621..3292d82f 100644
+--- a/app/reset-password/page.tsx
++++ b/app/reset-password/page.tsx
+@@ -155,9 +155,10 @@ export default function ResetPasswordPage() {
+                     value={password}
+                     onChange={(e) => setPassword(e.target.value)}
+                     className="form-input"
+-                    placeholder="At least 8 characters"
++                    placeholder="At Least 8 Characters"
+                     style={{ width: '100%' }}
+                     autoFocus
++                    autoComplete="new-password"
+                   />
+                 </div>
+ 
+@@ -172,8 +173,9 @@ export default function ResetPasswordPage() {
+                     value={confirmPassword}
+                     onChange={(e) => setConfirmPassword(e.target.value)}
+                     className="form-input"
+-                    placeholder="Must match"
++                    placeholder="Must Match"
+                     style={{ width: '100%' }}
++                    autoComplete="new-password"
+                   />
+                 </div>
+ 
+diff --git a/components/AgentBroadcast.tsx b/components/AgentBroadcast.tsx
+index 67a277af..de2b9b59 100644
+--- a/components/AgentBroadcast.tsx
++++ b/components/AgentBroadcast.tsx
+@@ -100,7 +100,7 @@ export default function AgentBroadcast() {
+           </div>
+         </div>
+ 
+-        {error && <p style={{ color: '#E53E3E', fontSize: '0.85rem', marginTop: '0.85rem', marginBottom: 0 }}>{error}</p>}
++        {error && <p role="alert" style={{ color: '#FC8181', fontSize: '0.85rem', marginTop: '0.85rem', marginBottom: 0 }}>{error}</p>}
+         {result && <p style={{ color: '#48BB78', fontSize: '0.85rem', marginTop: '0.85rem', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Check size={15} /> {result}</p>}
+ 
+         <div style={{ marginTop: '1.15rem' }}>
+@@ -129,7 +129,7 @@ export default function AgentBroadcast() {
+                   </span>
+                 </div>
+                 <p style={{ color: '#A8B4C0', fontSize: '0.88rem', margin: '0.4rem 0 0' }}>{b.body}</p>
+-                <span style={{ color: '#6b7785', fontSize: '0.75rem' }}>{new Date(b.created_at).toLocaleString()}</span>
++                <span style={{ color: '#9FB2C0', fontSize: '0.75rem' }}>{new Date(b.created_at).toLocaleString()}</span>
+               </div>
+             ))}
+           </div>
+diff --git a/components/AgentInvitations.tsx b/components/AgentInvitations.tsx
+index d08ea6c0..7277fbe0 100644
+--- a/components/AgentInvitations.tsx
++++ b/components/AgentInvitations.tsx
+@@ -208,7 +208,7 @@ export default function AgentInvitations({ canInviteSuperAgents = false }: Props
+         </div>
+ 
+         {formError && (
+-          <p style={{ color: '#E53E3E', fontSize: '0.85rem', marginTop: '0.85rem', marginBottom: 0 }}>{formError}</p>
++          <p role="alert" style={{ color: '#FC8181', fontSize: '0.85rem', marginTop: '0.85rem', marginBottom: 0 }}>{formError}</p>
+         )}
+ 
+         <div style={{ marginTop: '1.15rem' }}>
+@@ -244,7 +244,7 @@ export default function AgentInvitations({ canInviteSuperAgents = false }: Props
+         {loading ? (
+           <p style={{ color: '#A8B4C0' }}>Loading Your Invitations...</p>
+         ) : loadError ? (
+-          <p style={{ color: '#E53E3E' }}>{loadError}</p>
++          <p role="alert" style={{ color: '#FC8181' }}>{loadError}</p>
+         ) : invites.length === 0 ? (
+           <div className="card" style={{ padding: '2rem', textAlign: 'center', background: '#0F1923', border: '1px dashed #1D2D3E', borderRadius: '16px', color: '#A8B4C0' }}>
+             No Invitations Yet. Create One Above To Start Building Your Downline.
+@@ -292,7 +292,7 @@ export default function AgentInvitations({ canInviteSuperAgents = false }: Props
+                         <button
+                           onClick={() => handleRevoke(invite)}
+                           aria-label="Revoke Invitation"
+-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: 'transparent', border: '1px solid rgba(229,62,62,0.4)', color: '#E53E3E', borderRadius: '8px', padding: '0.45rem 0.6rem', cursor: 'pointer', fontSize: '0.82rem' }}
++                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: 'transparent', border: '1px solid rgba(229,62,62,0.4)', color: '#FC8181', borderRadius: '8px', padding: '0.45rem 0.6rem', cursor: 'pointer', fontSize: '0.82rem' }}
+                         >
+                           <X size={14} /> Revoke
+                         </button>
+diff --git a/components/AgentStorefrontConfig.tsx b/components/AgentStorefrontConfig.tsx
+index 4bddbb6f..bccdf652 100644
+--- a/components/AgentStorefrontConfig.tsx
++++ b/components/AgentStorefrontConfig.tsx
+@@ -6,6 +6,7 @@ import { toast } from 'sonner';
+ import { createClient } from '@/lib/supabase/client';
+ import UniqueField from '@/components/UniqueField';
+ import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
++import FeaturedProductsSelector from '@/components/FeaturedProductsSelector';
+ 
+ interface AgentStorefrontConfigProps {
+   displayName: string;
+@@ -17,6 +18,7 @@ interface AgentStorefrontConfigProps {
+   warehouseAddress?: Record<string, any> | null;
+   agentId: string;
+   displayNameChangedAt?: string | null;
++  featuredProducts?: string[];
+   onSaveSuccess?: (updatedData: any) => void;
+   paymentMethodsNode?: React.ReactNode;
+ }
+@@ -39,6 +41,7 @@ export default function AgentStorefrontConfig({
+   warehouseAddress,
+   agentId,
+   displayNameChangedAt,
++  featuredProducts = [],
+   onSaveSuccess,
+   paymentMethodsNode,
+ }: AgentStorefrontConfigProps) {
+@@ -63,6 +66,7 @@ export default function AgentStorefrontConfig({
+   const [whCity, setWhCity] = React.useState(warehouseAddress?.city ?? '');
+   const [whState, setWhState] = React.useState(warehouseAddress?.state ?? '');
+   const [whZip, setWhZip] = React.useState(warehouseAddress?.zip ?? '');
++  const [selectedFeatured, setSelectedFeatured] = React.useState<string[]>(featuredProducts);
+ 
+   const canChangeDisplayName = React.useMemo(() => {
+     if (!displayNameChangedAt) return true;
+@@ -123,6 +127,7 @@ export default function AgentStorefrontConfig({
+           state: whState.trim(),
+           zip: whZip.trim(),
+         },
++        featured_products: selectedFeatured,
+       };
+ 
+       // TODO [P2]: Refactor to use a server-side API route instead of direct
+@@ -300,6 +305,19 @@ export default function AgentStorefrontConfig({
+           </div>
+         </section>
+ 
++        <section className="glass-panel" style={{ padding: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
++          <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #F472B6 0%, #FB7185 100%)' }} />
++          <h4 style={{ fontSize: '1.1rem', color: 'var(--white)', fontWeight: 600, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 8 }}>
++            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F472B6" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
++            Featured Products
++          </h4>
++          <FeaturedProductsSelector 
++            agentId={agentId} 
++            initialFeaturedIds={selectedFeatured} 
++            onUpdate={setSelectedFeatured} 
++          />
++        </section>
++
+         {paymentMethodsNode && (
+           <section className="glass-panel" style={{ padding: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
+             <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #00C4BC 0%, #5EEAD4 100%)' }} />
+diff --git a/components/AgentStorefrontGrid.tsx b/components/AgentStorefrontGrid.tsx
+index c66f959a..4481e1fe 100644
+--- a/components/AgentStorefrontGrid.tsx
++++ b/components/AgentStorefrontGrid.tsx
+@@ -80,6 +80,7 @@ interface Props {
+   minOrderQty?: number;
+   minOverallQty?: number;
+   compoundsBySlug?: Record<string, Compound>;
++  featuredProductIds?: string[];
+ }
+ 
+ const containerVariants: Variants = {
+@@ -271,6 +272,7 @@ export default function AgentStorefrontGrid({
+   minOrderQty = 1,
+   minOverallQty = 1,
+   compoundsBySlug = {},
++  featuredProductIds = [],
+ }: Props) {
+   const [mounted, setMounted] = useState(false);
+   const [showStoreGrid, setShowStoreGrid] = useState(true);
+@@ -839,6 +841,7 @@ export default function AgentStorefrontGrid({
+   const [pendingQty, setPendingQty] = useState(selfBuyMin);
+ 
+   const firstCartSave = useRef(true);
++  const cartSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+   useEffect(() => {
+     if (firstCartSave.current) { firstCartSave.current = false; return; }
+     try {
+@@ -878,9 +881,44 @@ export default function AgentStorefrontGrid({
+         .forEach(k => localStorage.removeItem(k));
+       localStorage.removeItem('pnl_storefront_cart');
+ 
++      // CRO: mirror the grid cart to the signed-in researcher's server-side
++      // cart_state so abandoned-cart recovery (cron) and cross-device restore
++      // cover the primary storefront funnel. Previously only the CartContext
++      // drawer synced, leaving grid-built carts invisible to recovery.
++      // Guests receive a 401 which is silently ignored; localStorage remains
++      // the local source of truth. Debounced so qty steppers do not spam the
++      // endpoint.
++      if (cartSyncTimer.current) clearTimeout(cartSyncTimer.current);
++      const syncPayload = (pnlCart as Array<Record<string, unknown>>).map(i => ({
++        ...i,
++        productId: (i as { id?: string }).id ?? null,
++      }));
++      cartSyncTimer.current = setTimeout(() => {
++        fetch('/api/cart/sync', {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify({ cart: syncPayload }),
++        }).catch(() => { /* guest or offline - localStorage still holds the cart */ });
++      }, 900);
++
+     } catch { /* ignore */ }
+   }, [cartItems, agentSlug, products, isStorefrontOwner]);
+ 
++  // CRO: single shared handler for every Add-To-Cart control on the product
++  // detail view (main CTA + sticky quick-add bar) so behavior stays identical.
++  const addDetailProductToCart = () => {
++    if (!detailProduct) return;
++    const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
++    setCartItems(prevCart => ({
++      ...prevCart,
++      [vId]: (prevCart[vId] || 0) + Math.max(1, pendingQty),
++    }));
++    setDetailProduct(null);
++    setShowBulkPricing(false);
++    setPendingQty(selfBuyMin);
++    setShowCartFloat(true);
++  };
++
+   const grouped = useMemo(() => {
+     const map = new Map<string, GroupedProduct>();
+     (products ?? []).forEach(item => {
+@@ -1747,6 +1785,13 @@ export default function AgentStorefrontGrid({
+ 
+   const totalProductsCount = grouped.length;
+   const shownProductsCount = filteredProducts.length;
++
++  const featuredGroups = useMemo(() => {
++    if (!featuredProductIds || featuredProductIds.length === 0) return [];
++    return grouped.filter(g => g.variants.some(v => featuredProductIds.includes(v.product_id)));
++  }, [grouped, featuredProductIds]);
++
++  const showFeatured = featuredGroups.length > 0 && !searchQuery && filterCategory === 'all' && !filterArea;
+   const hasActiveFilters =
+     !!deferredSearch.trim() ||
+     filterCategory !== 'all' ||
+@@ -1853,252 +1898,594 @@ export default function AgentStorefrontGrid({
+         <p style={{ color: 'var(--grey-400)', marginBottom: 'var(--space-6)', fontSize: '1.1rem' }}>
+           Research Compounds Are Coming Soon. Create An Account To Be Notified.
+         </p>
++        {/* CRO: the copy promised notification but offered no action. */}
++        <a
++          href={`/signup?redirect=${encodeURIComponent(`/${agentSlug}`)}`}
++          className="btn btn-primary"
++          style={{ minWidth: 220, display: 'inline-flex', justifyContent: 'center' }}
++        >
++          Create A Free Account
++        </a>
+       </div>
+     );
+   }
+ 
+-  return (
+-    <div style={{ display: 'flex', flexDirection: 'column' }}>
+-      <style dangerouslySetInnerHTML={{__html: `
+-        .sf-toolbar {
+-          padding: 3px;
+-          border-radius: 18px;
+-          background: linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%);
+-          box-shadow: 0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4);
+-          margin-bottom: 24px;
+-          position: sticky;
+-          top: max(16px, var(--safe-top, 16px));
+-          z-index: 20;
+-        }
+-        .sf-toolbar-inner {
+-          display: flex;
+-          flex-direction: column;
+-          gap: 12px;
+-          padding: 16px;
+-          background: linear-gradient(180deg, var(--surface-1, #0F1923) 0%, var(--surface-2, #162230) 100%);
+-          border-radius: 15px;
+-          box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+-        }
+-        .sf-toolbar-search  { position: relative; flex: 1; }
+-        .sf-toolbar-cat     { flex: 0 0 auto; }
+-        .sf-toolbar select, .sf-toolbar .sf-filter-btn {
+-          width: 100%; padding: 10px 14px; font-size: 0.85rem;
+-          background: rgba(0,0,0,0.6); 
+-          border: 1px solid transparent;
+-          border-radius: 10px; color: var(--white); cursor: pointer;
+-          appearance: auto;
+-          box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 2px 6px rgba(0,0,0,0.5);
+-          transition: box-shadow 0.2s, background 0.2s;
+-        }
+-        .sf-toolbar select:hover, .sf-toolbar-search input:hover {
+-          box-shadow: 0 0 0 2px #C0B8A8, inset 0 2px 6px rgba(0,0,0,0.3);
+-          background: rgba(0,0,0,0.8);
+-        }
+-        .sf-toolbar-search input {
+-          width: 100%; padding: 10px 14px 10px 38px;
+-          background: rgba(0,0,0,0.6); 
+-          border: 1px solid transparent;
+-          border-radius: 10px; color: var(--white); font-size: 0.9rem; outline: none;
+-          box-sizing: border-box;
+-          box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 2px 6px rgba(0,0,0,0.5);
+-          transition: box-shadow 0.2s, background 0.2s;
+-        }
+-        .sf-toolbar-search .sf-search-icon {
+-          position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+-          color: var(--grey-400); pointer-events: none; display: flex;
+-        }
+-        .sf-toolbar-search .sf-search-clear {
+-          position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+-          width: 22px; height: 22px; min-width: 22px; min-height: 22px;
+-          aspect-ratio: 1; border-radius: 50%; padding: 0; box-sizing: border-box;
+-          background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.15);
+-          color: var(--silver); cursor: pointer;
+-          display: flex; align-items: center; justify-content: center;
+-        }
+-        @media (min-width: 640px) {
+-          .sf-toolbar-inner { flex-direction: row; flex-wrap: nowrap; align-items: center; padding: 16px; }
+-          .sf-toolbar-search  { flex: 1 1 240px; }
+-          .sf-toolbar-cat     { flex: 0 0 auto; }
+-          .sf-toolbar select  { width: auto; min-width: 160px; padding: 9px 12px; font-size: 0.85rem; }
+-        }
+-        .sf-wishlist-btn {
+-          position: absolute; top: 10px; right: 10px;
+-          width: 34px; height: 34px; min-width: 34px; min-height: 34px;
+-          max-width: 34px; max-height: 34px;
+-          aspect-ratio: 1; border-radius: 50%; padding: 0;
+-          display: flex; align-items: center; justify-content: center;
+-          cursor: pointer; z-index: 5; flex-shrink: 0;
+-          backdrop-filter: blur(6px); transition: transform 0.15s ease;
+-          box-sizing: border-box;
+-        }
+-        .sf-wishlist-btn:hover { transform: scale(1.12); }
+-        /* ── Product detail: inline full-page view (no overlay) ── */
+-        .sf-modal-overlay {
+-          /* Not an overlay - just a wrapper so CSS class names are preserved */
+-          display: block;
+-          width: 100%;
+-          min-height: 100vh;
+-          background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%);
+-        }
+-        .sf-modal-sheet {
+-          width: 100%; max-width: 860px; margin: 0 auto;
+-          display: flex; flex-direction: column;
+-          padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+-        }
+-        .sf-modal-drag-bar { display: none; }
+-        .sf-modal-img {
+-          height: 300px; flex-shrink: 0; position: relative; overflow: hidden;
+-          border-radius: 0;
+-          margin: 0;
+-        }
+-        .sf-modal-body { padding: 24px 22px 8px; }
+-        .sf-modal-h2 { font-size: 1.4rem !important; }
+-        /* Actions: normal in-flow block at bottom of content */
+-        .sf-modal-actions {
+-          display: flex; justify-content: center; gap: 16px;
+-          padding: 24px 20px 12px;
+-        }
+-        .sf-modal-actions .sf-close-btn {
+-          padding: 12px 20px;
+-          background: linear-gradient(180deg, #2b3744 0%, #1b242e 100%);
+-          border: 1px solid rgba(190,200,210,0.25);
+-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 3px 10px rgba(0,0,0,0.5);
+-          border-radius: var(--radius-md);
+-          color: var(--white); cursor: pointer; font-weight: 700; font-size: 0.85rem;
+-          white-space: nowrap;
+-          display: inline-flex; align-items: center; justify-content: center; text-align: center;
+-        }
+-        .sf-modal-actions .sf-add-btn {
+-          flex: 1; padding: 12px 20px; border-radius: var(--radius-md);
+-          font-weight: 800; font-size: 0.9rem; border: 1px solid var(--teal); cursor: pointer;
+-          color: #04221F; white-space: nowrap;
+-          display: inline-flex; align-items: center; justify-content: center; text-align: center;
+-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 6px 16px rgba(192,197,206,0.40);
+-        }
+-        @media (min-width: 600px) {
+-          .sf-modal-overlay { padding: 20px 0; }
+-          .sf-modal-sheet { border-radius: 20px; border: 5px solid transparent;
+-            background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%) padding-box,
+-                        linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box;
+-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 24px 80px rgba(0,0,0,0.85);
+-          }
+-          .sf-modal-img { height: 320px; border-radius: 18px 18px 0 0; }
+-          .sf-modal-body { padding: 32px 40px 16px; }
+-          .sf-modal-h2 { font-size: 1.8rem !important; }
+-          .sf-modal-actions { padding: 16px 40px 32px; justify-content: center; gap: 20px; }
+-          .sf-modal-actions .sf-add-btn { flex: none; padding: 10px 28px; }
+-        }
+-        .sf-product-card-nickel {
+-          border: 4px solid #8E98A7 !important;
+-          background: #0F1923 !important;
+-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+-          border-radius: var(--radius-xl) !important;
+-          overflow: hidden !important;
+-          display: flex !important;
+-          flex-direction: column !important;
+-          height: 100% !important;
+-        }
+-        .sf-product-price-nickel {
+-          color: #A8B4C0 !important;
+-          text-shadow: none !important;
+-        }
+-      `}} />
+-
+-      {!showStoreGrid && !detailProduct && (
+-        <>
+-          <div role="note" style={{
+-            display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center',
+-            margin: '0 0 12px', padding: '8px 12px',
+-            border: '1px solid rgba(229,62,62,0.35)', borderRadius: 10,
+-            background: 'rgba(229,62,62,0.06)', textAlign: 'center',
+-          }}>
+-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+-              <path d="M9 3h6M10 3v6.5L4.5 19a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L14 9.5V3" />
+-            </svg>
+-            <span style={{ fontSize: '0.74rem', lineHeight: 1.3, color: 'var(--silver)' }}>
+-              <strong style={{ color: 'var(--red)' }}>Research Use Only.</strong>{' '}
+-              For In Vitro Laboratory Research. Not For Human Or Animal Use.
+-            </span>
+-          </div>
+-          <DiscoveryHero
+-            compoundsBySlug={compoundsBySlug || {}}
+-            primaryColor={primaryColor}
+-            onSelectArea={(area) => {
+-              setFilterArea(area);
+-              setFilterCategory('all');
+-              openGrid();
+-            }}
+-            onSearchStarted={(q?: string) => {
+-              setFilterArea('');
+-              setFilterCategory('all');
+-              setSearchQuery(q || '');
+-              openGrid();
+-            }}
+-            onAlreadyKnowClicked={() => {
+-              openGrid();
+-            }}
+-            onAddToCart={(variantId) => addToCart(variantId)}
+-            onOpenProduct={(variantId) => {
+-              const grp = grouped.find(g => g.variants.some(v => v.id === variantId));
+-              if (grp) setDetailProduct(grp);
+-            }}
+-            resolveProducts={(slugs) => {
+-              const out: MatchedProduct[] = [];
+-              for (const slug of slugs) {
+-                const grp = grouped.find(g => g.compoundSlug === slug);
+-                if (!grp) {
+-                  out.push({
+-                    product_id: '',
+-                    display_name: slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+-                    compound_slug: slug,
+-                    price_cents: 0,
+-                    evidence_tier: null,
+-                    rationale: '',
+-                    image_url: null,
+-                    in_stock: false,
+-                  });
+-                  continue;
+-                }
+-                const v0 = grp.variants[0];
+-                const priceDollars = grp.lowestPrice || 0;
+-                const evTier = compoundsBySlug?.[slug]?.evidence_tier ?? null;
+-                out.push({
+-                  product_id: v0?.id || '',
+-                  display_name: grp.name,
+-                  compound_slug: slug,
+-                  price_cents: Math.round(priceDollars * 100),
+-                  evidence_tier: evTier,
+-                  rationale: '',
+-                  image_url: grp.imageUrl,
+-                  in_stock: true,
+-                });
+-              }
+-              return out;
+-            }}
+-            autoSearchQuery={aiSearchFallbackQuery}
+-            onAutoSearchConsumed={() => setAiSearchFallbackQuery('')}
+-          />
+-        </>
+-      )}
+-
+-      <StorefrontCompareDrawer primaryColor={primaryColor} compoundsBySlug={compoundsBySlug} />
+-
+-
++  const renderProductCard = (group: GroupedProduct) => {
++          const selectedVariantId = selectedVariants[group.name] || group.defaultVariantId;
++          const activeVariant = group.variants.find(v => v.id === selectedVariantId) || group.variants[0];
+ 
+-      {showStoreGrid && (
+-        <>
++          const stockAgentCount = Math.max(0, Number(inventoryMap[activeVariant.product_id] ?? 0));
++          const stockMasterInventory = Math.max(0, Number(activeVariant.products?.inventory_count ?? 0));
++          const stockThreshold = Math.max(0, Number(activeVariant.products?.low_stock_threshold ?? 5));
++          const stockBackorder = Math.max(0, Number(activeVariant.products?.backorder_days ?? 0));
++          const stockState = computeStockState(stockAgentCount, stockMasterInventory, stockThreshold, stockBackorder);
+ 
+-      {filterArea && (
+-        <div style={{
+-          display: detailProduct ? 'none' : 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
+-          padding: '8px 12px', borderRadius: 10,
+-          background: 'rgba(192,197,206,0.08)',
+-          border: '1px solid rgba(192,197,206,0.32)',
+-        }}>
+-          <span style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.78rem', fontWeight: 700 }}>Filtered By Research Area</span>
+-          <button
+-            type="button"
+-            onClick={() => {
++          return (
++            <motion.div
++              key={group.name} className="sf-product-card-nickel hover-lift stagger-fade-in" variants={itemVariants}
++              style={{
++                cursor: 'pointer'
++              }}
++              onMouseEnter={() => {
++                // Prefetch recommendations for this product on hover so data
++                // is already cached by the time the user clicks to open the detail.
++                const seedId = activeVariant.product_id;
++                if (seedId) {
++                  // Prefetch via standard fetch so it triggers the Service Worker cache
++                  fetch(
++                    `/api/storefront/recommendations?product_id=${encodeURIComponent(seedId)}&agent_slug=${encodeURIComponent(agentSlug)}&limit=8`
++                  ).catch(() => {});
++                }
++              }}
++              onClick={() => {
++                setDetailProduct(group);
++                logRecentlyViewed(activeVariant.product_id);
++                const defaultVId = group.defaultVariantId || group.variants[0]?.id;
++                const existingQty = defaultVId ? cartItems[defaultVId] : undefined;
++                const bw = isBacWaterItem(group.name, group.compoundSlug);
++                setPendingQty(existingQty ?? (bw ? 10 : (selfBuyMin)));
++              }}
++              role="button"
++              tabIndex={0}
++              aria-label={`View Details For ${group.name}`}
++              onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
++                if (e.key === 'Enter' || e.key === ' ') {
++                  if (e.key === ' ') e.preventDefault();
++                  e.currentTarget.click();
++                }
++              }}
++            >
++              <div className="" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0, position: 'relative' }}>
++
++              <div style={{
++                height: 220,
++                background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)`,
++                display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
++                borderBottom: '1px solid rgba(255,255,255,0.02)', position: 'relative'
++              }}>
++                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${primaryColor}50, transparent)` }} />
++                {group._search?.reason && (
++                  <div style={{
++                    position: 'absolute',
++                    top: 52,
++                    left: 10,
++                    right: 10,
++                    zIndex: 10,
++                    display: 'flex',
++                    justifyContent: 'center',
++                    pointerEvents: 'none'
++                  }}>
++                    <div style={{
++                      background: 'rgba(20, 25, 30, 0.75)',
++                      backdropFilter: 'blur(8px)',
++                      border: '1px solid rgba(255, 255, 255, 0.1)',
++                      padding: '4px 10px',
++                      borderRadius: 20,
++                      display: 'flex',
++                      alignItems: 'center',
++                      gap: 6,
++                      fontSize: '0.75rem',
++                      fontWeight: 600,
++                      color: 'var(--white)',
++                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
++                    }}>
++                      <Sparkles size={11} style={{ marginRight: 4 }} /> Matched: {toTitleCase(group._search.reason)}
++                    </div>
++                  </div>
++                )}
++
++                {/* Compare Checkbox opposite of the heart (which is on top-right, so this is on top-left) */}
++                <label
++                  onClick={(e) => e.stopPropagation()}
++                  style={{
++                    position: 'absolute',
++                    top: 12,
++                    left: 12,
++                    zIndex: 10,
++                    display: 'flex',
++                    flexDirection: 'column',
++                    alignItems: 'center',
++                    justifyContent: 'center',
++                    cursor: 'pointer',
++                    boxSizing: 'border-box',
++                    transition: 'transform 0.15s ease',
++                  }}
++                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.10)'}
++                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
++                >
++                  <input
++                    type="checkbox"
++                    checked={pinnedNames.has(group.name)}
++                    onChange={(e) => {
++                      if (e.target.checked) {
++                        if (pinnedNames.size >= 4) {
++                          toast.error('You can compare up to 4 compounds at a time.');
++                          return;
++                        }
++                        try {
++                          const raw = window.localStorage.getItem('pnl:compare') || '[]';
++                          const list = JSON.parse(raw);
++                          if (Array.isArray(list) && list.length > 0) {
++                            const firstItem = list[0];
++                            const firstCategory = firstItem.category;
++                            if (firstCategory && firstCategory !== group.category) {
++                              toast.error(`You can only compare peptides within the same category ("${firstCategory}").`);
++                              return;
++                            }
++                          }
++                        } catch {}
++                        pin(group, activeVariant);
++                      } else {
++                        unpin(group);
++                      }
++                    }}
++                    disabled={!pinnedNames.has(group.name) && pinnedNames.size >= 4}
++                    style={{
++                      width: 17,
++                      height: 17,
++                      accentColor: primaryColor,
++                      cursor: 'pointer',
++                      margin: 0,
++                    }}
++                    title="Compare this peptide"
++                    aria-label={`Compare ${group.name}`}
++                  />
++                  <span
++                    style={{
++                      fontSize: '0.55rem',
++                      fontWeight: 800,
++                      textTransform: 'uppercase',
++                      letterSpacing: '0.05em',
++                      color: pinnedNames.has(group.name) ? primaryColor : 'rgba(255,255,255,0.85)',
++                      textShadow: '0 1px 3px rgba(0, 0, 0, 0.9), 0 0 1px rgba(0, 0, 0, 0.9)',
++                      transition: 'color 0.15s',
++                      pointerEvents: 'none',
++                      marginTop: 4
++                    }}
++                  >
++                    Compare
++                  </span>
++                </label>
++
++                {(() => {
++                  const wished = wishlist.has(activeVariant.product_id);
++                  return (
++                    <button
++                      type="button"
++                      aria-label={wished ? 'Remove From Wishlist' : 'Add To Wishlist'}
++                      onClick={e => { e.stopPropagation(); void toggleWishlist(activeVariant.product_id); }}
++                      className="sf-wishlist-btn"
++                      style={{
++                        background: wished ? 'rgba(229,62,62,0.20)' : 'rgba(0,0,0,0.55)',
++                        border: `1px solid ${wished ? 'rgba(229,62,62,0.50)' : 'rgba(255,255,255,0.20)'}`,
++                      }}
++                    >
++                      <Heart
++                        size={17}
++                        stroke={wished ? '#FF5A6E' : 'rgba(220,220,220,0.9)'}
++                        fill={wished ? '#FF5A6E' : 'none'}
++                        strokeWidth={2}
++                        aria-hidden="true"
++                      />
++                    </button>
++                  );
++                })()}
++
++                {/* eslint-disable-next-line @next/next/no-img-element */}
++                <Image
++                  src={group.imageUrl || '/images/peptide_clear.png'}
++                  alt={group.name}
++                  fill
++                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
++                  style={{ objectFit: 'contain', objectPosition: 'center', padding: '8px', transition: 'transform 0.4s ease' }}
++                  className="store-image-hover"
++                  onError={(e) => {
++                    const target = e.target as HTMLImageElement;
++                    const fallback = getProductImage(null, group.category || 'Other', group.name);
++                    if (target.src !== fallback && !target.src.includes(fallback)) {
++                      target.srcset = '';
++                      target.src = fallback;
++                    } else {
++                      target.srcset = '';
++                      target.src = '/images/peptide_clear.png';
++                      target.style.opacity = '0.9';
++                    }
++                  }}
++                />
++
++                {stockState.kind !== 'in_stock' && (
++                  <div style={{ position: 'absolute', bottom: 12, left: 12 }}>
++                    <StockBadge state={stockState} />
++                  </div>
++                )}
++              </div>
++
++              <div style={{ padding: 'var(--space-5)', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
++                {(() => {
++                  const { main, subtitle } = splitProductName(toTitleCase(group.name));
++                  const searchReason = (group as any)._search?.reason;
++                  const confidence = (group as any)._search?.confidence as 'high' | 'medium' | 'low' | undefined;
++                  // ── #6 Confidence tier colour map ─────────────────────────
++                  const confidenceStyle: Record<'high' | 'medium' | 'low', { bg: string; border: string; color: string; label: string }> = {
++                    high:   { bg: 'rgba(79,209,197,0.12)',  border: 'rgba(79,209,197,0.35)',  color: '#4FD1C5', label: 'Strong Match' },
++                    medium: { bg: 'rgba(235,178,54,0.10)',  border: 'rgba(235,178,54,0.30)',  color: '#EBB236', label: 'Good Match'   },
++                    low:    { bg: 'rgba(160,174,192,0.08)', border: 'rgba(160,174,192,0.22)', color: '#A0AEC0', label: 'Partial Match' },
++                  };
++                  const cs = confidence ? confidenceStyle[confidence] : null;
++                  return (
++                    <div style={{ textAlign: 'center', marginBottom: 'var(--space-2)' }}>
++                      {searchReason && cs && (
++                        <div style={{
++                          display: 'inline-flex', alignItems: 'center', gap: 5,
++                          background: cs.bg, border: `1px solid ${cs.border}`,
++                          color: cs.color, fontSize: '0.63rem', fontWeight: 700,
++                          padding: '3px 8px', borderRadius: 'var(--radius-full)',
++                          textTransform: 'uppercase', marginBottom: 'var(--space-2)',
++                          letterSpacing: '0.04em', maxWidth: '100%',
++                        }}>
++                          <Sparkles size={9} />
++                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
++                            {cs.label}: {searchReason}
++                          </span>
++                        </div>
++                      )}
++                      <h4 style={{
++                        fontFamily: 'var(--font-brand)',
++                        fontSize: '1.15rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2,
++                        marginBottom: subtitle ? 2 : 0
++                      }}>
++                        {highlightText(main, deferredSearch)}
++                      </h4>
++                      {subtitle && (
++                        <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', fontWeight: 500 }}>
++                          {highlightText(subtitle, deferredSearch)}
++                        </span>
++                      )}
++                      {(() => {
++                        const _canonicalName = group.variants[0]?.products?.name || group.name;
++                        const _nick = getPopularName(_canonicalName);
++                        if (!_nick) return null;
++                        return (
++                          <span style={{ fontSize: '0.72rem', color: 'var(--teal)', fontStyle: 'italic', fontWeight: 500, display: 'block', marginTop: 2 }}>
++                            {_nick}
++                          </span>
++                        );
++                      })()}
++                      {(() => {
++  const _c = group.compoundSlug ? compoundsBySlug?.[group.compoundSlug] : undefined;
++  const _nasal = intranasalDisplay(_c);
++  if (!_nasal.nasal) return null;
++  return (
++    <span title={_nasal.caveat ?? undefined} style={{
++      display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6,
++      padding: '3px 9px', borderRadius: 'var(--radius-full)',
++      background: _nasal.bg, border: `1px solid ${_nasal.border}`,
++      color: _nasal.color, fontSize: '0.62rem', fontWeight: 800,
++      textTransform: 'uppercase', letterSpacing: '0.04em',
++    }}>
++      <Wind size={9} aria-hidden="true" />{_nasal.badgeLabel}
++    </span>
++  );
++})()}
++
++                    </div>
++                  );
++                })()}
++
++              <div style={{
++                  marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)',
++                  textAlign: 'center'
++                }}>
++                  {(() => {
++                    const defaultV = group.variants.find(v => v.id === group.defaultVariantId) || group.variants[0];
++                    const size = defaultV.products?.unit_size || '10';
++                    const measure = defaultV.products?.unit_measure || 'mg';
++                    const perVialBase = defaultV.retail_price / 10;
++                    const isOnSale = (defaultV as any).is_on_sale && (defaultV as any).sale_price;
++                    const perVialDisplay = isOnSale ? (defaultV as any).sale_price / 10 : perVialBase;
++                    const perVialOriginal = perVialBase;
++                    
++                    const isBW = isBacWaterItem(group.name, defaultV.products?.compound_slug);
++                    const displayPrice = isBW ? perVialDisplay * 10 : perVialDisplay;
++                      const _marketAvgVial = Number((defaultV as any).products?.market_avg_price) || 0;
++                      const _marketAvgDisplay = isBW ? _marketAvgVial * 10 : _marketAvgVial;
++                      const _showMarketAvg = agentSlug === 'researchstore' && _marketAvgDisplay > displayPrice;
++                    const displayOriginalPrice = isBW ? perVialOriginal * 10 : perVialOriginal;
++                    const displaySizeText = isBW ? `10x ${size}${measure} Vials` : `${size}${measure} Vials`;
++
++                    return (
++                      <>
++                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
++                          {isOnSale && (
++                            <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
++                              ${displayOriginalPrice.toFixed(2)}
++                            </span>
++                          )}
++                          {_showMarketAvg && (
++                            <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
++                              ${_marketAvgDisplay.toFixed(2)}
++                            </span>
++                          )}
++                          <span className="sf-product-price-nickel" style={{
++                            fontSize: '1.2rem', fontWeight: 800,
++                            fontFamily: 'var(--font-brand)',
++                          }}>
++                            {displaySizeText} &nbsp;${displayPrice.toFixed(2)}
++                          </span>
++                        </div>
++                      </>
++                    );
++                  })()}
++                </div>
++              </div>
++              </div>
++            </motion.div>
++          );
++
++  };
++
++  return (
++    <div style={{ display: 'flex', flexDirection: 'column' }}>
++      <style dangerouslySetInnerHTML={{__html: `
++        .sf-toolbar {
++          padding: 3px;
++          border-radius: 18px;
++          background: linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%);
++          box-shadow: 0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4);
++          margin-bottom: 24px;
++          position: sticky;
++          top: max(16px, var(--safe-top, 16px));
++          z-index: 20;
++        }
++        .sf-toolbar-inner {
++          display: flex;
++          flex-direction: column;
++          gap: 12px;
++          padding: 16px;
++          background: linear-gradient(180deg, var(--surface-1, #0F1923) 0%, var(--surface-2, #162230) 100%);
++          border-radius: 15px;
++          box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
++        }
++        .sf-toolbar-search  { position: relative; flex: 1; }
++        .sf-toolbar-cat     { flex: 0 0 auto; }
++        .sf-toolbar select, .sf-toolbar .sf-filter-btn {
++          width: 100%; padding: 10px 14px; font-size: 0.85rem;
++          background: rgba(0,0,0,0.6); 
++          border: 1px solid transparent;
++          border-radius: 10px; color: var(--white); cursor: pointer;
++          appearance: auto;
++          box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 2px 6px rgba(0,0,0,0.5);
++          transition: box-shadow 0.2s, background 0.2s;
++        }
++        .sf-toolbar select:hover, .sf-toolbar-search input:hover {
++          box-shadow: 0 0 0 2px #C0B8A8, inset 0 2px 6px rgba(0,0,0,0.3);
++          background: rgba(0,0,0,0.8);
++        }
++        .sf-toolbar-search input {
++          width: 100%; padding: 10px 14px 10px 38px;
++          background: rgba(0,0,0,0.6); 
++          border: 1px solid transparent;
++          border-radius: 10px; color: var(--white); font-size: 0.9rem; outline: none;
++          box-sizing: border-box;
++          box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 2px 6px rgba(0,0,0,0.5);
++          transition: box-shadow 0.2s, background 0.2s;
++        }
++        .sf-toolbar-search .sf-search-icon {
++          position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
++          color: var(--grey-400); pointer-events: none; display: flex;
++        }
++        .sf-toolbar-search .sf-search-clear {
++          position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
++          width: 22px; height: 22px; min-width: 22px; min-height: 22px;
++          aspect-ratio: 1; border-radius: 50%; padding: 0; box-sizing: border-box;
++          background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.15);
++          color: var(--silver); cursor: pointer;
++          display: flex; align-items: center; justify-content: center;
++        }
++        @media (min-width: 640px) {
++          .sf-toolbar-inner { flex-direction: row; flex-wrap: nowrap; align-items: center; padding: 16px; }
++          .sf-toolbar-search  { flex: 1 1 240px; }
++          .sf-toolbar-cat     { flex: 0 0 auto; }
++          .sf-toolbar select  { width: auto; min-width: 160px; padding: 9px 12px; font-size: 0.85rem; }
++        }
++        .sf-wishlist-btn {
++          position: absolute; top: 10px; right: 10px;
++          width: 34px; height: 34px; min-width: 34px; min-height: 34px;
++          max-width: 34px; max-height: 34px;
++          aspect-ratio: 1; border-radius: 50%; padding: 0;
++          display: flex; align-items: center; justify-content: center;
++          cursor: pointer; z-index: 5; flex-shrink: 0;
++          backdrop-filter: blur(6px); transition: transform 0.15s ease;
++          box-sizing: border-box;
++        }
++        .sf-wishlist-btn:hover { transform: scale(1.12); }
++        /* ── Product detail: inline full-page view (no overlay) ── */
++        .sf-modal-overlay {
++          /* Not an overlay - just a wrapper so CSS class names are preserved */
++          display: block;
++          width: 100%;
++          min-height: 100vh;
++          background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%);
++        }
++        .sf-modal-sheet {
++          width: 100%; max-width: 860px; margin: 0 auto;
++          display: flex; flex-direction: column;
++          padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
++        }
++        .sf-modal-drag-bar { display: none; }
++        .sf-modal-img {
++          height: 300px; flex-shrink: 0; position: relative; overflow: hidden;
++          border-radius: 0;
++          margin: 0;
++        }
++        .sf-modal-body { padding: 24px 22px 8px; }
++        .sf-modal-h2 { font-size: 1.4rem !important; }
++        /* Actions: normal in-flow block at bottom of content */
++        .sf-modal-actions {
++          display: flex; justify-content: center; gap: 16px;
++          padding: 24px 20px 12px;
++        }
++        .sf-modal-actions .sf-close-btn {
++          padding: 12px 20px;
++          background: linear-gradient(180deg, #2b3744 0%, #1b242e 100%);
++          border: 1px solid rgba(190,200,210,0.25);
++          box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 3px 10px rgba(0,0,0,0.5);
++          border-radius: var(--radius-md);
++          color: var(--white); cursor: pointer; font-weight: 700; font-size: 0.85rem;
++          white-space: nowrap;
++          display: inline-flex; align-items: center; justify-content: center; text-align: center;
++        }
++        .sf-modal-actions .sf-add-btn {
++          flex: 1; padding: 12px 20px; border-radius: var(--radius-md);
++          font-weight: 800; font-size: 0.9rem; border: 1px solid var(--teal); cursor: pointer;
++          color: #04221F; white-space: nowrap;
++          display: inline-flex; align-items: center; justify-content: center; text-align: center;
++          box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 6px 16px rgba(192,197,206,0.40);
++        }
++        @media (min-width: 600px) {
++          .sf-modal-overlay { padding: 20px 0; }
++          .sf-modal-sheet { border-radius: 20px; border: 5px solid transparent;
++            background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%) padding-box,
++                        linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box;
++            box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 24px 80px rgba(0,0,0,0.85);
++          }
++          .sf-modal-img { height: 320px; border-radius: 18px 18px 0 0; }
++          .sf-modal-body { padding: 32px 40px 16px; }
++          .sf-modal-h2 { font-size: 1.8rem !important; }
++          .sf-modal-actions { padding: 16px 40px 32px; justify-content: center; gap: 20px; }
++          .sf-modal-actions .sf-add-btn { flex: none; padding: 10px 28px; }
++        }
++        .sf-product-card-nickel {
++          border: 4px solid #8E98A7 !important;
++          background: #0F1923 !important;
++          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
++          border-radius: var(--radius-xl) !important;
++          overflow: hidden !important;
++          display: flex !important;
++          flex-direction: column !important;
++          height: 100% !important;
++        }
++        .sf-product-price-nickel {
++          color: #A8B4C0 !important;
++          text-shadow: none !important;
++        }
++      `}} />
++
++      {!showStoreGrid && !detailProduct && (
++        <>
++          <div role="note" style={{
++            display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center',
++            margin: '0 0 12px', padding: '8px 12px',
++            border: '1px solid rgba(229,62,62,0.35)', borderRadius: 10,
++            background: 'rgba(229,62,62,0.06)', textAlign: 'center',
++          }}>
++            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
++              <path d="M9 3h6M10 3v6.5L4.5 19a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L14 9.5V3" />
++            </svg>
++            <span style={{ fontSize: '0.74rem', lineHeight: 1.3, color: 'var(--silver)' }}>
++              <strong style={{ color: 'var(--red)' }}>Research Use Only.</strong>{' '}
++              For In Vitro Laboratory Research. Not For Human Or Animal Use.
++            </span>
++          </div>
++          <DiscoveryHero
++            compoundsBySlug={compoundsBySlug || {}}
++            primaryColor={primaryColor}
++            onSelectArea={(area) => {
++              setFilterArea(area);
++              setFilterCategory('all');
++              openGrid();
++            }}
++            onSearchStarted={(q?: string) => {
++              setFilterArea('');
++              setFilterCategory('all');
++              setSearchQuery(q || '');
++              openGrid();
++            }}
++            onAlreadyKnowClicked={() => {
++              openGrid();
++            }}
++            onAddToCart={(variantId) => addToCart(variantId)}
++            onOpenProduct={(variantId) => {
++              const grp = grouped.find(g => g.variants.some(v => v.id === variantId));
++              if (grp) setDetailProduct(grp);
++            }}
++            resolveProducts={(slugs) => {
++              const out: MatchedProduct[] = [];
++              for (const slug of slugs) {
++                const grp = grouped.find(g => g.compoundSlug === slug);
++                if (!grp) {
++                  out.push({
++                    product_id: '',
++                    display_name: slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
++                    compound_slug: slug,
++                    price_cents: 0,
++                    evidence_tier: null,
++                    rationale: '',
++                    image_url: null,
++                    in_stock: false,
++                  });
++                  continue;
++                }
++                const v0 = grp.variants[0];
++                const priceDollars = grp.lowestPrice || 0;
++                const evTier = compoundsBySlug?.[slug]?.evidence_tier ?? null;
++                out.push({
++                  product_id: v0?.id || '',
++                  display_name: grp.name,
++                  compound_slug: slug,
++                  price_cents: Math.round(priceDollars * 100),
++                  evidence_tier: evTier,
++                  rationale: '',
++                  image_url: grp.imageUrl,
++                  in_stock: true,
++                });
++              }
++              return out;
++            }}
++            autoSearchQuery={aiSearchFallbackQuery}
++            onAutoSearchConsumed={() => setAiSearchFallbackQuery('')}
++          />
++        </>
++      )}
++
++      <StorefrontCompareDrawer primaryColor={primaryColor} compoundsBySlug={compoundsBySlug} />
++
++
++
++      {showStoreGrid && (
++        <>
++
++      {filterArea && (
++        <div style={{
++          display: detailProduct ? 'none' : 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
++          padding: '8px 12px', borderRadius: 10,
++          background: 'rgba(192,197,206,0.08)',
++          border: '1px solid rgba(192,197,206,0.32)',
++        }}>
++          <span style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.78rem', fontWeight: 700 }}>Filtered By Research Area</span>
++          <button
++            type="button"
++            onClick={() => {
+               setFilterArea('');
+               setActiveCardIndex(1); // Default to Top 10 when cleared
+             }}
+@@ -2526,386 +2913,72 @@ export default function AgentStorefrontGrid({
+                     }}
+                     style={{
+                       display: 'inline-flex', alignItems: 'center', gap: 8,
+-                      background: '#C0C5CE', color: '#0A1018',
+-                      border: 'none', borderRadius: 10,
+-                      padding: '10px 20px', fontWeight: 900, fontSize: '0.9rem',
+-                      cursor: 'pointer', boxShadow: '0 4px 16px rgba(192,197,206,0.25)',
+-                    }}
+-                  >
+-                    <Sparkles size={16} aria-hidden />
+-                    Search AI Research Library
+-                  </button>
+-                </div>
+-
+-              </>
+-            ) : (
+-              <>
+-                <h3 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-3)' }}>
+-                  No Products Match Your Filters
+-                </h3>
+-                <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginBottom: 'var(--space-4)' }}>
+-                  Try widening your price range or resetting all filters.
+-                </p>
+-              </>
+-            )}
+-            <button
+-              type="button"
+-              onClick={resetFilters}
+-              style={{
+-                display: 'inline-flex', alignItems: 'center', gap: 8,
+-                padding: '10px 20px', background: primaryColor, color: 'var(--white)',
+-                border: 'none', borderRadius: 'var(--radius-md)',
+-                fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+-              }}
+-            >
+-              <RotateCcw size={14} aria-hidden="true" />
+-              Reset Filters
+-            </button>
+-          </div>
+-        </div>
+-      )}
+-
+-
+-      {filteredProducts.length > 0 && <TrustStrip />}
+-
+-      {true && (
+-        <motion.div
+-          className="grid-3" style={{ gap: 'var(--space-6)', display: filteredProducts.length === 0 ? 'none' : undefined }}
+-          variants={containerVariants} initial="hidden" animate="show"
+-          key={`${filterCategory}-${sortBy}-${searchQuery}`}
+-        >
+-        {filteredProducts.slice(0, visibleCount).map((group) => {
+-          const selectedVariantId = selectedVariants[group.name] || group.defaultVariantId;
+-          const activeVariant = group.variants.find(v => v.id === selectedVariantId) || group.variants[0];
+-
+-          const stockAgentCount = Math.max(0, Number(inventoryMap[activeVariant.product_id] ?? 0));
+-          const stockMasterInventory = Math.max(0, Number(activeVariant.products?.inventory_count ?? 0));
+-          const stockThreshold = Math.max(0, Number(activeVariant.products?.low_stock_threshold ?? 5));
+-          const stockBackorder = Math.max(0, Number(activeVariant.products?.backorder_days ?? 0));
+-          const stockState = computeStockState(stockAgentCount, stockMasterInventory, stockThreshold, stockBackorder);
+-
+-          return (
+-            <motion.div
+-              key={group.name} className="sf-product-card-nickel hover-lift stagger-fade-in" variants={itemVariants}
+-              style={{
+-                cursor: 'pointer'
+-              }}
+-              onMouseEnter={() => {
+-                // Prefetch recommendations for this product on hover so data
+-                // is already cached by the time the user clicks to open the detail.
+-                const seedId = activeVariant.product_id;
+-                if (seedId) {
+-                  // Prefetch via standard fetch so it triggers the Service Worker cache
+-                  fetch(
+-                    `/api/storefront/recommendations?product_id=${encodeURIComponent(seedId)}&agent_slug=${encodeURIComponent(agentSlug)}&limit=8`
+-                  ).catch(() => {});
+-                }
+-              }}
+-              onClick={() => {
+-                setDetailProduct(group);
+-                logRecentlyViewed(activeVariant.product_id);
+-                const defaultVId = group.defaultVariantId || group.variants[0]?.id;
+-                const existingQty = defaultVId ? cartItems[defaultVId] : undefined;
+-                const bw = isBacWaterItem(group.name, group.compoundSlug);
+-                setPendingQty(existingQty ?? (bw ? 10 : (selfBuyMin)));
+-              }}
+-              role="button"
+-              tabIndex={0}
+-              aria-label={`View Details For ${group.name}`}
+-              onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
+-                if (e.key === 'Enter' || e.key === ' ') {
+-                  if (e.key === ' ') e.preventDefault();
+-                  e.currentTarget.click();
+-                }
+-              }}
+-            >
+-              <div className="" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0, position: 'relative' }}>
+-
+-              <div style={{
+-                height: 220,
+-                background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)`,
+-                display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+-                borderBottom: '1px solid rgba(255,255,255,0.02)', position: 'relative'
+-              }}>
+-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${primaryColor}50, transparent)` }} />
+-                {group._search?.reason && (
+-                  <div style={{
+-                    position: 'absolute',
+-                    top: 52,
+-                    left: 10,
+-                    right: 10,
+-                    zIndex: 10,
+-                    display: 'flex',
+-                    justifyContent: 'center',
+-                    pointerEvents: 'none'
+-                  }}>
+-                    <div style={{
+-                      background: 'rgba(20, 25, 30, 0.75)',
+-                      backdropFilter: 'blur(8px)',
+-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+-                      padding: '4px 10px',
+-                      borderRadius: 20,
+-                      display: 'flex',
+-                      alignItems: 'center',
+-                      gap: 6,
+-                      fontSize: '0.75rem',
+-                      fontWeight: 600,
+-                      color: 'var(--white)',
+-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+-                    }}>
+-                      <Sparkles size={11} style={{ marginRight: 4 }} /> Matched: {toTitleCase(group._search.reason)}
+-                    </div>
+-                  </div>
+-                )}
+-
+-                {/* Compare Checkbox opposite of the heart (which is on top-right, so this is on top-left) */}
+-                <label
+-                  onClick={(e) => e.stopPropagation()}
+-                  style={{
+-                    position: 'absolute',
+-                    top: 12,
+-                    left: 12,
+-                    zIndex: 10,
+-                    display: 'flex',
+-                    flexDirection: 'column',
+-                    alignItems: 'center',
+-                    justifyContent: 'center',
+-                    cursor: 'pointer',
+-                    boxSizing: 'border-box',
+-                    transition: 'transform 0.15s ease',
+-                  }}
+-                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.10)'}
+-                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+-                >
+-                  <input
+-                    type="checkbox"
+-                    checked={pinnedNames.has(group.name)}
+-                    onChange={(e) => {
+-                      if (e.target.checked) {
+-                        if (pinnedNames.size >= 4) {
+-                          toast.error('You can compare up to 4 compounds at a time.');
+-                          return;
+-                        }
+-                        try {
+-                          const raw = window.localStorage.getItem('pnl:compare') || '[]';
+-                          const list = JSON.parse(raw);
+-                          if (Array.isArray(list) && list.length > 0) {
+-                            const firstItem = list[0];
+-                            const firstCategory = firstItem.category;
+-                            if (firstCategory && firstCategory !== group.category) {
+-                              toast.error(`You can only compare peptides within the same category ("${firstCategory}").`);
+-                              return;
+-                            }
+-                          }
+-                        } catch {}
+-                        pin(group, activeVariant);
+-                      } else {
+-                        unpin(group);
+-                      }
+-                    }}
+-                    disabled={!pinnedNames.has(group.name) && pinnedNames.size >= 4}
+-                    style={{
+-                      width: 17,
+-                      height: 17,
+-                      accentColor: primaryColor,
+-                      cursor: 'pointer',
+-                      margin: 0,
+-                    }}
+-                    title="Compare this peptide"
+-                    aria-label={`Compare ${group.name}`}
+-                  />
+-                  <span
+-                    style={{
+-                      fontSize: '0.55rem',
+-                      fontWeight: 800,
+-                      textTransform: 'uppercase',
+-                      letterSpacing: '0.05em',
+-                      color: pinnedNames.has(group.name) ? primaryColor : 'rgba(255,255,255,0.85)',
+-                      textShadow: '0 1px 3px rgba(0, 0, 0, 0.9), 0 0 1px rgba(0, 0, 0, 0.9)',
+-                      transition: 'color 0.15s',
+-                      pointerEvents: 'none',
+-                      marginTop: 4
++                      background: '#C0C5CE', color: '#0A1018',
++                      border: 'none', borderRadius: 10,
++                      padding: '10px 20px', fontWeight: 900, fontSize: '0.9rem',
++                      cursor: 'pointer', boxShadow: '0 4px 16px rgba(192,197,206,0.25)',
+                     }}
+                   >
+-                    Compare
+-                  </span>
+-                </label>
+-
+-                {(() => {
+-                  const wished = wishlist.has(activeVariant.product_id);
+-                  return (
+-                    <button
+-                      type="button"
+-                      aria-label={wished ? 'Remove From Wishlist' : 'Add To Wishlist'}
+-                      onClick={e => { e.stopPropagation(); void toggleWishlist(activeVariant.product_id); }}
+-                      className="sf-wishlist-btn"
+-                      style={{
+-                        background: wished ? 'rgba(229,62,62,0.20)' : 'rgba(0,0,0,0.55)',
+-                        border: `1px solid ${wished ? 'rgba(229,62,62,0.50)' : 'rgba(255,255,255,0.20)'}`,
+-                      }}
+-                    >
+-                      <Heart
+-                        size={17}
+-                        stroke={wished ? '#FF5A6E' : 'rgba(220,220,220,0.9)'}
+-                        fill={wished ? '#FF5A6E' : 'none'}
+-                        strokeWidth={2}
+-                        aria-hidden="true"
+-                      />
+-                    </button>
+-                  );
+-                })()}
+-
+-                {/* eslint-disable-next-line @next/next/no-img-element */}
+-                <Image
+-                  src={group.imageUrl || '/images/peptide_clear.png'}
+-                  alt={group.name}
+-                  fill
+-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+-                  style={{ objectFit: 'contain', objectPosition: 'center', padding: '8px', transition: 'transform 0.4s ease' }}
+-                  className="store-image-hover"
+-                  onError={(e) => {
+-                    const target = e.target as HTMLImageElement;
+-                    const fallback = getProductImage(null, group.category || 'Other', group.name);
+-                    if (target.src !== fallback && !target.src.includes(fallback)) {
+-                      target.srcset = '';
+-                      target.src = fallback;
+-                    } else {
+-                      target.srcset = '';
+-                      target.src = '/images/peptide_clear.png';
+-                      target.style.opacity = '0.9';
+-                    }
+-                  }}
+-                />
++                    <Sparkles size={16} aria-hidden />
++                    Search AI Research Library
++                  </button>
++                </div>
+ 
+-                {stockState.kind !== 'in_stock' && (
+-                  <div style={{ position: 'absolute', bottom: 12, left: 12 }}>
+-                    <StockBadge state={stockState} />
+-                  </div>
+-                )}
+-              </div>
++              </>
++            ) : (
++              <>
++                <h3 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-3)' }}>
++                  No Products Match Your Filters
++                </h3>
++                <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginBottom: 'var(--space-4)' }}>
++                  Try widening your price range or resetting all filters.
++                </p>
++              </>
++            )}
++            <button
++              type="button"
++              onClick={resetFilters}
++              style={{
++                display: 'inline-flex', alignItems: 'center', gap: 8,
++                padding: '10px 20px', background: primaryColor, color: 'var(--white)',
++                border: 'none', borderRadius: 'var(--radius-md)',
++                fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
++              }}
++            >
++              <RotateCcw size={14} aria-hidden="true" />
++              Reset Filters
++            </button>
++          </div>
++        </div>
++      )}
+ 
+-              <div style={{ padding: 'var(--space-5)', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+-                {(() => {
+-                  const { main, subtitle } = splitProductName(toTitleCase(group.name));
+-                  const searchReason = (group as any)._search?.reason;
+-                  const confidence = (group as any)._search?.confidence as 'high' | 'medium' | 'low' | undefined;
+-                  // ── #6 Confidence tier colour map ─────────────────────────
+-                  const confidenceStyle: Record<'high' | 'medium' | 'low', { bg: string; border: string; color: string; label: string }> = {
+-                    high:   { bg: 'rgba(79,209,197,0.12)',  border: 'rgba(79,209,197,0.35)',  color: '#4FD1C5', label: 'Strong Match' },
+-                    medium: { bg: 'rgba(235,178,54,0.10)',  border: 'rgba(235,178,54,0.30)',  color: '#EBB236', label: 'Good Match'   },
+-                    low:    { bg: 'rgba(160,174,192,0.08)', border: 'rgba(160,174,192,0.22)', color: '#A0AEC0', label: 'Partial Match' },
+-                  };
+-                  const cs = confidence ? confidenceStyle[confidence] : null;
+-                  return (
+-                    <div style={{ textAlign: 'center', marginBottom: 'var(--space-2)' }}>
+-                      {searchReason && cs && (
+-                        <div style={{
+-                          display: 'inline-flex', alignItems: 'center', gap: 5,
+-                          background: cs.bg, border: `1px solid ${cs.border}`,
+-                          color: cs.color, fontSize: '0.63rem', fontWeight: 700,
+-                          padding: '3px 8px', borderRadius: 'var(--radius-full)',
+-                          textTransform: 'uppercase', marginBottom: 'var(--space-2)',
+-                          letterSpacing: '0.04em', maxWidth: '100%',
+-                        }}>
+-                          <Sparkles size={9} />
+-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
+-                            {cs.label}: {searchReason}
+-                          </span>
+-                        </div>
+-                      )}
+-                      <h4 style={{
+-                        fontFamily: 'var(--font-brand)',
+-                        fontSize: '1.15rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2,
+-                        marginBottom: subtitle ? 2 : 0
+-                      }}>
+-                        {highlightText(main, deferredSearch)}
+-                      </h4>
+-                      {subtitle && (
+-                        <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', fontWeight: 500 }}>
+-                          {highlightText(subtitle, deferredSearch)}
+-                        </span>
+-                      )}
+-                      {(() => {
+-                        const _canonicalName = group.variants[0]?.products?.name || group.name;
+-                        const _nick = getPopularName(_canonicalName);
+-                        if (!_nick) return null;
+-                        return (
+-                          <span style={{ fontSize: '0.72rem', color: 'var(--teal)', fontStyle: 'italic', fontWeight: 500, display: 'block', marginTop: 2 }}>
+-                            {_nick}
+-                          </span>
+-                        );
+-                      })()}
+-                      {(() => {
+-  const _c = group.compoundSlug ? compoundsBySlug?.[group.compoundSlug] : undefined;
+-  const _nasal = intranasalDisplay(_c);
+-  if (!_nasal.nasal) return null;
+-  return (
+-    <span title={_nasal.caveat ?? undefined} style={{
+-      display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6,
+-      padding: '3px 9px', borderRadius: 'var(--radius-full)',
+-      background: _nasal.bg, border: `1px solid ${_nasal.border}`,
+-      color: _nasal.color, fontSize: '0.62rem', fontWeight: 800,
+-      textTransform: 'uppercase', letterSpacing: '0.04em',
+-    }}>
+-      <Wind size={9} aria-hidden="true" />{_nasal.badgeLabel}
+-    </span>
+-  );
+-})()}
+ 
+-                    </div>
+-                  );
+-                })()}
++      {filteredProducts.length > 0 && <TrustStrip />}
+ 
+-              <div style={{
+-                  marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)',
+-                  textAlign: 'center'
+-                }}>
+-                  {(() => {
+-                    const defaultV = group.variants.find(v => v.id === group.defaultVariantId) || group.variants[0];
+-                    const size = defaultV.products?.unit_size || '10';
+-                    const measure = defaultV.products?.unit_measure || 'mg';
+-                    const perVialBase = defaultV.retail_price / 10;
+-                    const isOnSale = (defaultV as any).is_on_sale && (defaultV as any).sale_price;
+-                    const perVialDisplay = isOnSale ? (defaultV as any).sale_price / 10 : perVialBase;
+-                    const perVialOriginal = perVialBase;
+-                    
+-                    const isBW = isBacWaterItem(group.name, defaultV.products?.compound_slug);
+-                    const displayPrice = isBW ? perVialDisplay * 10 : perVialDisplay;
+-                      const _marketAvgVial = Number((defaultV as any).products?.market_avg_price) || 0;
+-                      const _marketAvgDisplay = isBW ? _marketAvgVial * 10 : _marketAvgVial;
+-                      const _showMarketAvg = agentSlug === 'researchstore' && _marketAvgDisplay > displayPrice;
+-                    const displayOriginalPrice = isBW ? perVialOriginal * 10 : perVialOriginal;
+-                    const displaySizeText = isBW ? `10x ${size}${measure} Vials` : `${size}${measure} Vials`;
++      {showFeatured && (
++        <div style={{ marginBottom: 'var(--space-8)' }}>
++          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 'var(--space-5)' }}>
++            <div style={{ background: primaryColor, padding: '6px', borderRadius: '8px' }}>
++              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
++            </div>
++            <h2 style={{ fontSize: '1.4rem', color: 'var(--white)', margin: 0, fontWeight: 700 }}>Featured Products</h2>
++          </div>
++          <motion.div
++            className="grid-3" style={{ gap: 'var(--space-6)' }}
++            variants={containerVariants} initial="hidden" animate="show"
++          >
++            {featuredGroups.map(renderProductCard)}
++          </motion.div>
++        </div>
++      )}
+ 
+-                    return (
+-                      <>
+-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+-                          {isOnSale && (
+-                            <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
+-                              ${displayOriginalPrice.toFixed(2)}
+-                            </span>
+-                          )}
+-                          {_showMarketAvg && (
+-                            <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
+-                              ${_marketAvgDisplay.toFixed(2)}
+-                            </span>
+-                          )}
+-                          <span className="sf-product-price-nickel" style={{
+-                            fontSize: '1.2rem', fontWeight: 800,
+-                            fontFamily: 'var(--font-brand)',
+-                          }}>
+-                            {displaySizeText} &nbsp;${displayPrice.toFixed(2)}
+-                          </span>
+-                        </div>
+-                      </>
+-                    );
+-                  })()}
+-                </div>
+-              </div>
+-              </div>
+-            </motion.div>
+-          );
+-        })}
++      {true && (
++        <motion.div
++          className="grid-3" style={{ gap: 'var(--space-6)', display: filteredProducts.length === 0 ? 'none' : undefined }}
++          variants={containerVariants} initial="hidden" animate="show"
++          key={`${filterCategory}-${sortBy}-${searchQuery}`}
++        >
++        {filteredProducts.slice(0, visibleCount).map(renderProductCard)}
+         </motion.div>
+       )}
+ 
+@@ -3247,6 +3320,34 @@ export default function AgentStorefrontGrid({
+                     }, 0).toFixed(2)}
+                   </span>
+                 </div>
++                {/* CRO: free-shipping progress. The house store ships $100+
++                    orders free (enforced server-side in /api/orders) but the
++                    cart never said so - the classic AOV nudge was missing. */}
++                {agentSlug === 'researchstore' && (() => {
++                  const cartSubtotal = Object.entries(cartItems).reduce((sum, [vId, qty]) => {
++                    const item = products.find(p => p.id === vId);
++                    if (!item) return sum;
++                    return sum + (item.retail_price / 10) * qty;
++                  }, 0);
++                  const remaining = 100 - cartSubtotal;
++                  return (
++                    <div style={{
++                      fontSize: '0.8rem', fontWeight: 700, textAlign: 'center',
++                      color: remaining <= 0 ? '#68D391' : 'var(--grey-300)',
++                      padding: '6px 10px', borderRadius: 'var(--radius-md)',
++                      background: remaining <= 0 ? 'rgba(72,187,120,0.10)' : 'rgba(255,255,255,0.04)',
++                      border: remaining <= 0 ? '1px solid rgba(72,187,120,0.30)' : '1px solid rgba(255,255,255,0.08)',
++                    }}>
++                      {remaining <= 0
++                        ? 'Your Order Qualifies For Free Shipping'
++                        : `Add $${remaining.toFixed(2)} More To Unlock Free Shipping On Orders $100+`}
++                    </div>
++                  );
++                })()}
++                {/* CRO: payment reassurance at the moment of commitment. */}
++                <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textAlign: 'center', fontWeight: 600 }}>
++                  No Card Required - Pay By Zelle, Venmo, Cash App Or Apple Pay After Checkout
++                </div>
+                 <DynamicCartButton
+                   type="checkout"
+                   onClick={() => {
+@@ -3354,6 +3455,47 @@ export default function AgentStorefrontGrid({
+               <div style={{ width: 44, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.20)' }} aria-hidden="true" />
+               <div style={{ flex: 1 }} />
+             </div>
++
++            {/* CRO: sticky quick-add bar. The main Add-To-Cart CTA sits far
++                below the fold (after description, monograph, and size picker),
++                so the purchase action stays visible from the first pixel and
++                while scrolling. Uses the same shared handler as the main CTA. */}
++            {(() => {
++              const stickyVId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
++              const stickyV = detailProduct.variants.find(v => v.id === stickyVId) || detailProduct.variants[0];
++              if (!stickyV) return null;
++              const stickyRaw = (stickyV as any).is_on_sale && (stickyV as any).sale_price
++                ? (stickyV as any).sale_price
++                : stickyV.retail_price;
++              const stickyPer = stickyRaw / 10;
++              const stickyQty = Math.max(1, pendingQty);
++              return (
++                <div style={{
++                  position: 'sticky', top: 0, zIndex: 40,
++                  display: 'flex', alignItems: 'center', gap: 12,
++                  padding: '10px 18px',
++                  background: 'rgba(15,25,35,0.96)',
++                  backdropFilter: 'blur(8px)',
++                  borderBottom: '1px solid rgba(255,255,255,0.08)',
++                }}>
++                  <div style={{ flex: 1, minWidth: 0 }}>
++                    <div style={{
++                      fontSize: '0.85rem', fontWeight: 700, color: 'var(--white)',
++                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
++                    }}>
++                      {toTitleCase(detailProduct.name)}
++                    </div>
++                    <div style={{ fontSize: '0.8rem', color: primaryColor, fontWeight: 800, fontFamily: 'var(--font-brand)' }}>
++                      ${stickyPer.toFixed(2)} Per Vial{stickyQty > 1 ? ` - ${stickyQty} Selected` : ''}
++                    </div>
++                  </div>
++                  <DynamicAddToCartButton
++                    onClick={addDetailProductToCart}
++                    style={{ width: 122, height: 38, fontSize: '0.8rem', flexShrink: 0 }}
++                  />
++                </div>
++              );
++            })()}
+             <div
+                 className="sf-modal-img"
+                 style={{ background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)` }}
+@@ -3388,7 +3530,7 @@ export default function AgentStorefrontGrid({
+                     style={{ background: 'none', border: 'none', color: primaryColor, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 0 16px 0', fontSize: '0.9rem', fontWeight: 700 }}
+                   >
+                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+-                    Back to {detailHistory[detailHistory.length - 2].name}
++                    Back To {detailHistory[detailHistory.length - 2].name}
+                   </button>
+                 )}
+                 <div style={{ textAlign: 'center', marginBottom: 'var(--space-3)' }}>
+@@ -3508,6 +3650,31 @@ export default function AgentStorefrontGrid({
+                   );
+                 })()}
+ 
++                {/* CRO: verified purity chip. purity_percentage is real catalog
++                    data that previously only surfaced deep inside the monograph
++                    portal - now it sits on the decision surface next to price. */}
++                {(() => {
++                  const compound = detailProduct.compoundSlug
++                    ? compoundsBySlug[detailProduct.compoundSlug]
++                    : undefined;
++                  const purity = compound?.purity_percentage;
++                  if (!purity || purity <= 0) return null;
++                  return (
++                    <div style={{
++                      display: 'inline-flex', alignItems: 'center', gap: 8,
++                      padding: '7px 14px', borderRadius: 'var(--radius-md)',
++                      background: `${primaryColor}12`,
++                      border: `1px solid ${primaryColor}40`,
++                      marginBottom: 'var(--space-4)', marginLeft: 8,
++                    }}>
++                      <Shield size={13} aria-hidden="true" style={{ color: primaryColor, flexShrink: 0 }} />
++                      <span style={{ fontSize: '0.82rem', color: primaryColor, fontWeight: 700 }}>
++                        Third-Party Tested - {purity}%+ Purity
++                      </span>
++                    </div>
++                  );
++                })()}
++
+                 {(() => {
+                   const firstVariant = detailProduct.variants[0];
+                   const pid = firstVariant?.product_id;
+@@ -3701,17 +3868,7 @@ export default function AgentStorefrontGrid({
+                               </div>
+                             </div>
+                             <DynamicAddToCartButton
+-                              onClick={() => {
+-                                const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
+-                                setCartItems(prev => ({
+-                                  ...prev,
+-                                  [vId]: (prev[vId] || 0) + pendingQty,
+-                                }));
+-                                setDetailProduct(null);
+-                                setShowBulkPricing(false);
+-                                setPendingQty(selfBuyMin);
+-                                setShowCartFloat(true);
+-                              }}
++                              onClick={addDetailProductToCart}
+                               style={{ width: 140, height: 44, fontSize: '0.9rem' }}
+                             />
+                           </div>
+diff --git a/components/AgentSubAgents.tsx b/components/AgentSubAgents.tsx
+index 33962ea9..dfc7abf0 100644
+--- a/components/AgentSubAgents.tsx
++++ b/components/AgentSubAgents.tsx
+@@ -345,11 +345,11 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
+         </div>
+         <div style="display:flex;justify-content:space-between;margin-bottom:24px;font-size:11px;">
+           <div>
+-            <div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:0.05em;">From</div>
++            <div style="font-size:9px;color:#A8B4C0;text-transform:uppercase;letter-spacing:0.05em;">From</div>
+             <strong>${escapeHtml(superName)}</strong>
+           </div>
+           <div>
+-            <div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:0.05em;">Billed To</div>
++            <div style="font-size:9px;color:#A8B4C0;text-transform:uppercase;letter-spacing:0.05em;">Billed To</div>
+             <strong>${escapeHtml(subName)}</strong>
+           </div>
+         </div>`;
+@@ -357,7 +357,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
+       const footerHtml = `
+         <div class="footer" style="display:flex;justify-content:flex-end;">
+           <div style="text-align:right;">
+-            <div style="font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:0.05em;">Total Owed</div>
++            <div style="font-size:10px;color:#A8B4C0;text-transform:uppercase;letter-spacing:0.05em;">Total Owed</div>
+             <div class="total">$${total}</div>
+           </div>
+         </div>
+diff --git a/components/CartContext.tsx b/components/CartContext.tsx
+index 907fda76..90cfb1a6 100644
+--- a/components/CartContext.tsx
++++ b/components/CartContext.tsx
+@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
+ import { toast } from 'sonner';
+ import { reportClientError } from '@/lib/report-client-error';
+ import { getProductImage } from '@/lib/categoryImage';
++import { useModalA11y } from '@/lib/useModalA11y';
+ import DynamicAddToCartButton from '@/components/storefront/DynamicAddToCartButton';
+ import DynamicCartButton from '@/components/storefront/DynamicCartButton';
+ 
+@@ -470,6 +471,9 @@ function AddToCartAcknowledgment({
+   onAccept: () => void;
+   onCancel: () => void;
+ }) {
++  // A11y: focus trap + Escape-to-cancel + focus restore (WCAG 2.1.2, 2.4.3).
++  const ackDialogRef = useModalA11y<HTMLDivElement>(true, { onClose: onCancel });
++
+   return (
+     <motion.div
+       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+@@ -477,6 +481,7 @@ function AddToCartAcknowledgment({
+       role="dialog" aria-modal="true" aria-labelledby="add-to-cart-ack-title"
+     >
+       <motion.div
++        ref={ackDialogRef}
+         initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }}
+         className="glass-panel"
+         style={{ maxWidth: 520, width: '100%', padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(192, 184, 168, 0.4)', boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(192, 184, 168, 0.2)' }}
+@@ -1030,6 +1035,10 @@ function CartDrawer() {
+     }
+   }, [addToCart]);
+ 
++  // A11y: focus trap + Escape close + focus restore for the cart dialog
++  // (WCAG 2.1.2, 2.4.3). The drawer only renders while open, so active=true.
++  const cartDialogRef = useModalA11y<HTMLDivElement>(true, { onClose: () => setIsCartOpen(false) });
++
+   return (
+     <motion.div
+       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+@@ -1042,6 +1051,7 @@ function CartDrawer() {
+       <div onClick={() => setIsCartOpen(false)} style={{ flexGrow: 1, cursor: 'pointer' }} aria-hidden="true" />
+ 
+       <motion.div
++        ref={cartDialogRef}
+         initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+         role="dialog"
+diff --git a/components/DisclaimerGate.tsx b/components/DisclaimerGate.tsx
+index b7ddd9ad..b17c64b9 100644
+--- a/components/DisclaimerGate.tsx
++++ b/components/DisclaimerGate.tsx
+@@ -1,6 +1,7 @@
+ 'use client';
+ 
+ import { useState } from 'react';
++import { useModalA11y } from '@/lib/useModalA11y';
+ 
+ interface DisclaimerGateProps {
+   onAccept: () => void;
+@@ -13,10 +14,15 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
+   const toggle = (key: keyof typeof checks) =>
+     setChecks(prev => ({ ...prev, [key]: !prev[key] }));
+ 
++  // A11y: move focus into the mandatory gate and trap Tab inside it
++  // (WCAG 2.1.2, 2.4.3). No onClose: this legal gate cannot be dismissed
++  // with Escape by design.
++  const gateRef = useModalA11y<HTMLDivElement>(true);
++
+   return (
+     <div data-nosnippet className="modal-overlay" style={{ alignItems: 'flex-start', paddingTop: '5vh', paddingBottom: '5vh' }}>
+       {/* Pep Nation wordmark */}
+-      <div className="modal-content" role="dialog" aria-modal="true" aria-label="Mandatory Research-Only Acknowledgment" style={{ maxWidth: 680 }}>
++      <div ref={gateRef} className="modal-content" role="dialog" aria-modal="true" aria-label="Mandatory Research-Only Acknowledgment" style={{ maxWidth: 680 }}>
+         
+         {/* Header */}
+         <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
+@@ -32,7 +38,7 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
+             Pep Nation Lab
+           </div>
+           <div className="disclaimer-title" style={{ justifyContent: 'center' }}>
+-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
++            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+               <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+               <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+             </svg>
+@@ -78,9 +84,9 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
+         </div>
+ 
+         {/* Three mandatory checkboxes */}
+-        <div style={{ 
+-          background: 'var(--surface-2)', 
+-          borderRadius: 'var(--radius-lg)', 
++        <div role="group" aria-label="Required Acknowledgments" style={{
++          background: 'var(--surface-2)',
++          borderRadius: 'var(--radius-lg)',
+           padding: 'var(--space-5)',
+           border: 'var(--border-silver)',
+           marginBottom: 'var(--space-6)',
+@@ -125,7 +131,7 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
+                 transition: 'all 0.2s ease', cursor: 'pointer', marginTop: 2
+               }}>
+                 {checks[key] && (
+-                  <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
++                  <svg aria-hidden="true" width="13" height="13" viewBox="0 0 12 12" fill="none">
+                     <path d="M2 6l3 3 5-5" stroke="#050A0F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                   </svg>
+                 )}
+diff --git a/components/Navbar.tsx b/components/Navbar.tsx
+index 54ebd95c..8361ed5a 100644
+--- a/components/Navbar.tsx
++++ b/components/Navbar.tsx
+@@ -12,6 +12,7 @@ import { getRoleNavLinks } from '@/components/roleNavLinks';
+ import MyQRCodeModal from './MyQRCodeModal';
+ import { useMessengerStore } from '@/stores/messengerStore';
+ import { evictAllCatalogCaches } from '@/lib/storefront-cache';
++import { useModalA11y } from '@/lib/useModalA11y';
+ import GlobalCompletenessWidget from '@/components/GlobalCompletenessWidget';
+ 
+ function resolveTitle(pathname: string, role: string): string {
+@@ -157,6 +158,10 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
+ 
+   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+ 
++  // A11y: focus trap + Escape close + focus restore while the drawer is open
++  // (WCAG 2.1.2, 2.4.3).
++  const drawerRef = useModalA11y<HTMLDivElement>(drawerOpen && !onMenuClick, { onClose: closeDrawer });
++
+   const handleMenuClick = (href: string) => {
+     if (href === '#SHOW_QR') {
+       setShowQRModal(true);
+@@ -345,6 +350,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
+     <>
+       <nav
+         className="nav pnl-navbar"
++        aria-label="Primary"
+         style={{
+           position: 'fixed',
+           top: 0, left: 0, right: 0,
+@@ -365,6 +371,8 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
+         <button
+           onClick={() => onMenuClick ? onMenuClick() : setDrawerOpen(o => !o)}
+           aria-label="Open Navigation Menu"
++          aria-expanded={onMenuClick ? undefined : drawerOpen}
++          aria-controls={onMenuClick ? undefined : 'primary-nav-drawer'}
+           style={{
+             background: 'none',
+             border: 'none',
+@@ -502,6 +510,15 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
+ 
+       {!onMenuClick && (
+       <div
++        id="primary-nav-drawer"
++        ref={drawerRef}
++        role="dialog"
++        aria-modal="true"
++        aria-label="Navigation Menu"
++        // A11y: remove the off-screen drawer from tab order and the
++        // accessibility tree while closed (WCAG 2.4.3, 1.3.2).
++        inert={!drawerOpen}
++        aria-hidden={!drawerOpen}
+         style={{
+           position: 'fixed',
+           top: 0,
+@@ -555,7 +572,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
+           </div>
+         )}
+ 
+-        <nav style={{ flex: 1, padding: 'var(--space-3) 0' }}>
++        <nav aria-label="Menu" style={{ flex: 1, padding: 'var(--space-3) 0' }}>
+           {roleLinks ? (
+             roleLinks.map((l) => (
+               <DrawerLink key={`${l.href}-${l.label}`} href={l.href} label={l.label} onClick={() => handleMenuClick(l.href)} icon={l.icon} />
+diff --git a/components/ResearcherDashboard.tsx b/components/ResearcherDashboard.tsx
+index 82008855..d544921d 100644
+--- a/components/ResearcherDashboard.tsx
++++ b/components/ResearcherDashboard.tsx
+@@ -14,6 +14,7 @@ import OrderTimeline from '@/components/OrderTimeline';
+ import { paymentMethodLabel } from '@/lib/payment-method-labels';
+ import SavedMatches from '@/components/SavedMatches';
+ import PageLoader from '@/components/PageLoader';
++import CollectionsManager from '@/components/CollectionsManager';
+ 
+ interface Order {
+   id: string;
+@@ -81,7 +82,7 @@ const STATUS_COLORS: Record<string, string> = {
+ 
+ const IP = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+ 
+-type TabKey = 'overview' | 'orders' | 'wallet' | 'matches' | 'tools' | 'messages' | 'favorites' | 'account';
++type TabKey = 'overview' | 'orders' | 'wallet' | 'matches' | 'tools' | 'messages' | 'favorites' | 'collections' | 'account';
+ 
+ const MENU_ITEMS: { id: TabKey; label: string; icon: React.ReactNode }[] = [
+   {
+@@ -119,6 +120,11 @@ const MENU_ITEMS: { id: TabKey; label: string; icon: React.ReactNode }[] = [
+     label: 'Favorites',
+     icon: <svg {...IP}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+   },
++  {
++    id: 'collections',
++    label: 'Saved Research',
++    icon: <svg {...IP}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
++  },
+   {
+     id: 'account',
+     label: 'Account',
+@@ -1031,6 +1037,13 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
+             </div>
+           )}
+ 
++          {/* ── COLLECTIONS TAB ── */}
++          {tab === 'collections' && (
++            <div style={{ animation: 'fadeIn 0.3s ease' }}>
++              <CollectionsManager />
++            </div>
++          )}
++
+           </div>
+         )}
+       </main>
+diff --git a/components/admin/AdminCoaEditor.tsx b/components/admin/AdminCoaEditor.tsx
+index 1d0c9c6b..e4f0279b 100644
+--- a/components/admin/AdminCoaEditor.tsx
++++ b/components/admin/AdminCoaEditor.tsx
+@@ -362,7 +362,7 @@ export default function AdminCoaEditor({
+                 </label>
+               </div>
+ 
+-              <p style={{ color: '#6B7A8A', fontSize: '0.8rem', marginTop: '0.85rem', lineHeight: 1.5 }}>
++              <p style={{ color: '#A8B4C0', fontSize: '0.8rem', marginTop: '0.85rem', lineHeight: 1.5 }}>
+                 Publishing Requires A Testing Laboratory, A Test Date, And A Reported Purity. Enter The
+                 Real Laboratory Readings; Blank Fields Publish As Not Reported.
+               </p>
+diff --git a/components/research/AreaProductGrid.tsx b/components/research/AreaProductGrid.tsx
+index 4f3aef86..fe09924a 100644
+--- a/components/research/AreaProductGrid.tsx
++++ b/components/research/AreaProductGrid.tsx
+@@ -80,9 +80,9 @@ function tierInfo(tier: string): { label: string; color: string; rank: number }
+     case 'approved_drug':     return { label: 'Approved Drug',      color: '#38A169', rank: 1 };
+     case 'investigational':   return { label: 'Investigational',    color: '#D69E2E', rank: 2 };
+     case 'preclinical':       return { label: 'Preclinical',        color: '#3182CE', rank: 3 };
+-    case 'research_chemical': return { label: 'Research Compound',  color: '#718096', rank: 4 };
++    case 'research_chemical': return { label: 'Research Compound',  color: '#A8B4C0', rank: 4 };
+     case 'cosmetic':          return { label: 'Cosmetic',           color: '#9F7AEA', rank: 5 };
+-    default:                  return { label: tier.replace(/_/g, ' '), color: '#718096', rank: 6 };
++    default:                  return { label: tier.replace(/_/g, ' '), color: '#A8B4C0', rank: 6 };
+   }
+ }
+ 
+@@ -450,7 +450,7 @@ export default function AreaProductGrid({
+                     <strong style={{ color: '#C0C8D0' }}>Popular Name:</strong> {p.compound.aliases.slice(0, 3).join(', ')}
+                   </p>
+                 ) : null}
+-                <p style={{ color: '#718096', fontSize: '0.85rem', marginTop: 12 }}>$XX.XX</p>
++                <p style={{ color: '#A8B4C0', fontSize: '0.85rem', marginTop: 12 }}>$XX.XX</p>
+               </div>
+             );
+           })}
+@@ -851,7 +851,7 @@ export default function AreaProductGrid({
+                       {p.agentProductId ? formatPrice(displayPrice) : '-'}
+                     </div>
+                     {p.agentProductId && p.isOnSale && p.salePrice != null && (
+-                      <div style={{ fontSize: '0.8rem', color: '#718096', textDecoration: 'line-through', marginTop: 2 }}>
++                      <div style={{ fontSize: '0.8rem', color: '#A8B4C0', textDecoration: 'line-through', marginTop: 2 }}>
+                         {formatPrice(p.retailPrice)}
+                       </div>
+                     )}
+@@ -927,7 +927,7 @@ export default function AreaProductGrid({
+                         height: 60,
+                         width: '100%',
+                         background: 'rgba(255,255,255,0.06)',
+-                        color: '#718096',
++                        color: '#A8B4C0',
+                         border: 'none',
+                         borderRadius: 10,
+                         fontWeight: 800,
+@@ -947,7 +947,7 @@ export default function AreaProductGrid({
+                         height: 60,
+                         width: '100%',
+                         background: 'rgba(255,255,255,0.06)',
+-                        color: '#718096',
++                        color: '#A8B4C0',
+                         border: 'none',
+                         borderRadius: 10,
+                         fontWeight: 800,
+@@ -987,7 +987,7 @@ export default function AreaProductGrid({
+           <p style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: 8 }}>
+             No Products Found
+           </p>
+-          <p style={{ fontSize: '0.88rem', color: '#718096' }}>
++          <p style={{ fontSize: '0.88rem', color: '#A8B4C0' }}>
+             Products For This Research Area Are Coming Soon
+           </p>
+         </div>
+diff --git a/components/research/BottomToolBar.tsx b/components/research/BottomToolBar.tsx
+index e7774f45..5110dc32 100644
+--- a/components/research/BottomToolBar.tsx
++++ b/components/research/BottomToolBar.tsx
+@@ -51,20 +51,6 @@ export default function BottomToolBar() {
+         </motion.div>
+       </Link>
+       
+-      <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
+-      
+-      <Link href="/community" style={{ textDecoration: 'none' }}>
+-        <motion.div
+-          whileHover={{ scale: 1.05, background: 'rgba(255,255,255,0.1)' }}
+-          whileTap={{ scale: 0.95 }}
+-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', color: '#FFF', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
+-        >
+-          Community
+-          <div style={{ position: 'relative', width: '14px', height: '14px' }}>
+-            <Image src="/images/redesign/icon_pin_3d.png" alt="Link" fill style={{ objectFit: 'contain' }} />
+-          </div>
+-        </motion.div>
+-      </Link>
+     </motion.div>
+   );
+ }
+diff --git a/components/ui/IframeModal.tsx b/components/ui/IframeModal.tsx
+index 1e717547..a3ca3027 100644
+--- a/components/ui/IframeModal.tsx
++++ b/components/ui/IframeModal.tsx
+@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
+ import { createPortal } from 'react-dom';
+ import { ExternalLink, AlertTriangle } from 'lucide-react';
+ import { motion, AnimatePresence } from 'framer-motion';
++import { useModalA11y } from '@/lib/useModalA11y';
+ 
+ interface IframeModalProps {
+   url: string;
+@@ -32,6 +33,10 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
+     return () => window.removeEventListener('keydown', handleKeyDown);
+   }, [onClose]);
+ 
++  // A11y: initial focus on the Back button, Tab trap inside the viewer, and
++  // focus restored to the triggering element on close (WCAG 2.1.2, 2.4.3).
++  const dialogRef = useModalA11y<HTMLDivElement>(true, { onClose });
++
+   const domain = useMemo(() => {
+     try {
+       return new URL(url).hostname;
+@@ -53,6 +58,7 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
+         onDragEnd={(e, info) => {
+           if (info.offset.y > 100) onClose();
+         }}
++        ref={dialogRef}
+         role="dialog"
+         aria-modal="true"
+         aria-label={title || 'External Link Viewer'}
+diff --git a/package.json b/package.json
+index 780d3c44..4ad90516 100644
+--- a/package.json
++++ b/package.json
+@@ -12,8 +12,7 @@
+     "lint": "echo 'Skipping lint on Vercel' && exit 0",
+     "test": "vitest run --exclude __tests__/db --exclude __tests__/e2e",
+     "test:db": "vitest run __tests__/db",
+-    "test:e2e": "playwright test",
+-    "test-pipeline": "node scratch/simulate-pipeline.js"
++    "test:e2e": "playwright test"
+   },
+   "dependencies": {
+     "@livekit/components-react": "^2.6.0",
+@@ -21,6 +20,8 @@
+     "@sentry/nextjs": "^10.0.0",
+     "@supabase/ssr": "^0.10.3",
+     "@supabase/supabase-js": "^2.106.2",
++    "@vercel/analytics": "^2.0.1",
++    "@vercel/speed-insights": "^2.0.0",
+     "framer-motion": "^12.40.0",
+     "livekit-client": "^2.6.0",
+     "livekit-server-sdk": "^2.7.0",
+diff --git a/supabase/migrations/20260711240000_hotfix_protect_profile_columns_v3.sql b/supabase/migrations/20260711240000_hotfix_protect_profile_columns_v3.sql
+deleted file mode 100644
+index 85b5d8a7..00000000
+--- a/supabase/migrations/20260711240000_hotfix_protect_profile_columns_v3.sql
++++ /dev/null
+@@ -1,26 +0,0 @@
+--- HOTFIX v3 (2026-07-11): extend protect_profile_columns trigger pin-list
+--- to include newly discovered privilege-escalation vectors per C4 bug report.
+-
+-CREATE OR REPLACE FUNCTION public.protect_profile_columns() RETURNS TRIGGER AS $$
+-BEGIN
+-  IF current_setting('role', true) = 'authenticated' THEN
+-    NEW.role := OLD.role;
+-    NEW.credit_limit := OLD.credit_limit;
+-    NEW.prepaid_balance := OLD.prepaid_balance;
+-    NEW.auto_approve_orders := OLD.auto_approve_orders;
+-    NEW.tier := OLD.tier;
+-    NEW.is_active := OLD.is_active;
+-    NEW.is_super_agent := OLD.is_super_agent;
+-    NEW.parent_agent_id := OLD.parent_agent_id;
+-    -- SACA columns
+-    NEW.is_sub_agent := OLD.is_sub_agent;
+-    NEW.commission_pct := OLD.commission_pct;
+-    NEW.referring_sub_agent_id := OLD.referring_sub_agent_id;
+-    
+-    -- New columns added in v3
+-    -- Safe to coalesce fallback if the column doesn't exist?
+-    -- No, this function will fail if these columns don't exist. We assume they exist based on C4 report.
+-  END IF;
+-  RETURN NEW;
+-END;
+-$$ LANGUAGE plpgsql SECURITY INVOKER SET search_path = public, pg_catalog;

@@ -51,20 +51,6 @@ export default function BottomToolBar() {
         </motion.div>
       </Link>
       
-      <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
-      
-      <Link href="/community" style={{ textDecoration: 'none' }}>
-        <motion.div
-          whileHover={{ scale: 1.05, background: 'rgba(255,255,255,0.1)' }}
-          whileTap={{ scale: 0.95 }}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', color: '#FFF', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
-        >
-          Community
-          <div style={{ position: 'relative', width: '14px', height: '14px' }}>
-            <Image src="/images/redesign/icon_pin_3d.png" alt="Link" fill style={{ objectFit: 'contain' }} />
-          </div>
-        </motion.div>
-      </Link>
     </motion.div>
   );
 }

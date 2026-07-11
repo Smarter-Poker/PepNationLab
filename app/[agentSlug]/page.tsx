@@ -237,6 +237,7 @@ async function AgentStorefrontDataLoader({
         minOrderQty={agent.min_order_qty ?? 1}
         minOverallQty={agent.min_overall_qty ?? 1}
         compoundsBySlug={compoundsBySlug}
+        featuredProductIds={agent.featured_products || []}
       />
     </>
   );
@@ -261,7 +262,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
       volume_pricing_enabled,
       min_order_qty,
       min_overall_qty,
-      storefront_renamed_at
+      storefront_renamed_at,
+      featured_products
     `)
     .eq('slug', agentSlug)
     .maybeSingle();

@@ -79,7 +79,7 @@ export default async function AdminCoaListPage() {
           >
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 500 }}>{r.name}</div>
-              <div style={{ fontSize: '0.78rem', color: '#6B7A8A' }}>
+              <div style={{ fontSize: '0.78rem', color: '#A8B4C0' }}>
                 {r.molecular_weight_da ? `${r.molecular_weight_da} Da` : 'Mass Not On File'}
                 {r.sku_count > 1 ? ` · Covers ${r.sku_count} Sizes` : ''}
               </div>

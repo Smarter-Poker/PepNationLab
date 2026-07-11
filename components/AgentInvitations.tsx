@@ -208,7 +208,7 @@ export default function AgentInvitations({ canInviteSuperAgents = false }: Props
         </div>
 
         {formError && (
-          <p style={{ color: '#E53E3E', fontSize: '0.85rem', marginTop: '0.85rem', marginBottom: 0 }}>{formError}</p>
+          <p role="alert" style={{ color: '#FC8181', fontSize: '0.85rem', marginTop: '0.85rem', marginBottom: 0 }}>{formError}</p>
         )}
 
         <div style={{ marginTop: '1.15rem' }}>
@@ -244,7 +244,7 @@ export default function AgentInvitations({ canInviteSuperAgents = false }: Props
         {loading ? (
           <p style={{ color: '#A8B4C0' }}>Loading Your Invitations...</p>
         ) : loadError ? (
-          <p style={{ color: '#E53E3E' }}>{loadError}</p>
+          <p role="alert" style={{ color: '#FC8181' }}>{loadError}</p>
         ) : invites.length === 0 ? (
           <div className="card" style={{ padding: '2rem', textAlign: 'center', background: '#0F1923', border: '1px dashed #1D2D3E', borderRadius: '16px', color: '#A8B4C0' }}>
             No Invitations Yet. Create One Above To Start Building Your Downline.
@@ -292,7 +292,7 @@ export default function AgentInvitations({ canInviteSuperAgents = false }: Props
                         <button
                           onClick={() => handleRevoke(invite)}
                           aria-label="Revoke Invitation"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: 'transparent', border: '1px solid rgba(229,62,62,0.4)', color: '#E53E3E', borderRadius: '8px', padding: '0.45rem 0.6rem', cursor: 'pointer', fontSize: '0.82rem' }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: 'transparent', border: '1px solid rgba(229,62,62,0.4)', color: '#FC8181', borderRadius: '8px', padding: '0.45rem 0.6rem', cursor: 'pointer', fontSize: '0.82rem' }}
                         >
                           <X size={14} /> Revoke
                         </button>

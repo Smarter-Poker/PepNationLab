@@ -12,6 +12,7 @@ import { getRoleNavLinks } from '@/components/roleNavLinks';
 import MyQRCodeModal from './MyQRCodeModal';
 import { useMessengerStore } from '@/stores/messengerStore';
 import { evictAllCatalogCaches } from '@/lib/storefront-cache';
+import { useModalA11y } from '@/lib/useModalA11y';
 import GlobalCompletenessWidget from '@/components/GlobalCompletenessWidget';
 
 function resolveTitle(pathname: string, role: string): string {
@@ -156,6 +157,10 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
     : 'Dashboard';
 
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+
+  // A11y: focus trap + Escape close + focus restore while the drawer is open
+  // (WCAG 2.1.2, 2.4.3).
+  const drawerRef = useModalA11y<HTMLDivElement>(drawerOpen && !onMenuClick, { onClose: closeDrawer });
 
   const handleMenuClick = (href: string) => {
     if (href === '#SHOW_QR') {
@@ -345,6 +350,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
     <>
       <nav
         className="nav pnl-navbar"
+        aria-label="Primary"
         style={{
           position: 'fixed',
           top: 0, left: 0, right: 0,
@@ -365,6 +371,8 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
         <button
           onClick={() => onMenuClick ? onMenuClick() : setDrawerOpen(o => !o)}
           aria-label="Open Navigation Menu"
+          aria-expanded={onMenuClick ? undefined : drawerOpen}
+          aria-controls={onMenuClick ? undefined : 'primary-nav-drawer'}
           style={{
             background: 'none',
             border: 'none',
@@ -502,6 +510,15 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
 
       {!onMenuClick && (
       <div
+        id="primary-nav-drawer"
+        ref={drawerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation Menu"
+        // A11y: remove the off-screen drawer from tab order and the
+        // accessibility tree while closed (WCAG 2.4.3, 1.3.2).
+        inert={!drawerOpen}
+        aria-hidden={!drawerOpen}
         style={{
           position: 'fixed',
           top: 0,
@@ -555,7 +572,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
           </div>
         )}
 
-        <nav style={{ flex: 1, padding: 'var(--space-3) 0' }}>
+        <nav aria-label="Menu" style={{ flex: 1, padding: 'var(--space-3) 0' }}>
           {roleLinks ? (
             roleLinks.map((l) => (
               <DrawerLink key={`${l.href}-${l.label}`} href={l.href} label={l.label} onClick={() => handleMenuClick(l.href)} icon={l.icon} />
