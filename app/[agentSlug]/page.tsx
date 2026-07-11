@@ -175,7 +175,7 @@ async function AgentStorefrontDataLoader({
   // dropped the key entirely and Search Console flagged "Missing field name".
   // We now skip any product without a real name and only emit an Offer when the
   // price is a valid positive number, so we never publish an invalid node.
-  // NOTE: review/aggregateRating are intentionally omitted — there is no genuine
+  // NOTE: review/aggregateRating are intentionally omitted - there is no genuine
   // review data, and inventing ratings violates Google's structured-data policy.
   const productJsonLds = productsWithCost
     .map((p) => {
@@ -359,6 +359,31 @@ export default async function AgentStorefrontPage({ params }: Props) {
           settingsUrl="/dashboard/agent?tab=Storefront+Config"
         />
       ) : null}
+
+      {/* Crawlable storefront content layer - visually hidden (clip-rect),
+          present in the initial HTML for search engines and AI crawlers.
+          The product grid streams client-side inside Suspense, so without
+          this the only indexable storefront has no crawlable prose.
+          Restored 2026-07-11: a stale-snapshot bot commit (7a0a700c) deleted
+          this block while applying an unrelated structured-data fix. */}
+      <header style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}>
+        <h1>{agent.display_name} - Buy Research Peptides Online At Wholesale Pricing</h1>
+        <p>
+          Browse 100+ Research-Grade Peptides And Compounds Including BPC-157, TB-500, Semaglutide,
+          Tirzepatide, Retatrutide, Cagrilintide, CJC-1295, Ipamorelin, Sermorelin, GHK-Cu, PT-141,
+          NAD+, And Research Peptide Stacks. Every Vial Is Batch-Tested With Certificate Of Analysis
+          Documentation And Ships Same-Day Nationwide To Verified Researchers At True Wholesale
+          Pricing. All Products Are Strictly For In Vitro Laboratory Research Use Only - Not For
+          Human Consumption.
+        </p>
+        <nav aria-label="Research Resources">
+          <a href="/research">Peptide Research Library</a>
+          <a href="/find-a-peptide">Find A Peptide By Research Goal</a>
+          <a href="/peptides">Research Peptides By City</a>
+          <a href="/peptide-101">Peptide 101 Research Education</a>
+          <a href="/become-agent">Become A Peptide Distribution Agent</a>
+        </nav>
+      </header>
 
       {/* Products */}
       <section style={{ paddingTop: 8, paddingBottom: 24, position: 'relative', minHeight: '60vh' }}>
