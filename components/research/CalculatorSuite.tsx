@@ -469,22 +469,22 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
     if (name.includes('tirzepatide') || name.includes('semaglutide') || name.includes('retatrutide')) {
       return {
         title: 'GLP-1 Stability Advice',
-        advice: 'GLP-1 Receptor Agonists Are Highly Sensitive To Thermal Stress And Vigorous Mechanical Agitation. Store At <span class="calc-no-capitalize">2-8°C (36-46°F)</span> And Protect From Light. Do Not Freeze. Reconstituted Vials Remain Thermally Stable For Up To 28 Days Under Proper Refrigeration. Swirl Gently To Mix; Do Not Shake.',
+        advice: 'GLP-1 Receptor Agonists Are Highly Sensitive To Thermal Stress And Vigorous Mechanical Agitation. Store At <span class="calc-no-capitalize">36-46°F (2-8°C)</span> And Protect From Light. Do Not Freeze. Reconstituted Vials Remain Thermally Stable For Up To 28 Days Under Proper Refrigeration. Swirl Gently To Mix; Do Not Shake.',
       };
     } else if (name.includes('bpc-157') || name.includes('bpc157')) {
       return {
         title: 'BPC-157 Stability Advice',
-        advice: 'BPC-157 Exhibits High Structural Resilience Compared To Most Peptides. However, Reconstituted Solutions In Bacteriostatic Water Must Be Kept Refrigerated At <span class="calc-no-capitalize">2-8°C</span> To Prevent Degradation And Inhibit Bacterial Proliferation. Reconstituted Solutions Are Best Used Within 30 Days.',
+        advice: 'BPC-157 Exhibits High Structural Resilience Compared To Most Peptides. However, Reconstituted Solutions In Bacteriostatic Water Must Be Kept Refrigerated At <span class="calc-no-capitalize">36-46°F</span> To Prevent Degradation And Inhibit Bacterial Proliferation. Reconstituted Solutions Are Best Used Within 30 Days.',
       };
     } else if (name.includes('igf') || name.includes('lr3')) {
       return {
         title: 'IGF-1 Stability Advice',
-        advice: 'IGF-1 Analogues Precipitate Rapidly In Standard Aqueous Solutions. Reconstitute In <span class="calc-no-capitalize">0.6%</span> Acetic Acid As Recommended Above To Maintain Stability. Keep Reconstituted Solutions Refrigerated At <span class="calc-no-capitalize">2-8°C</span> And Use Within 14 Days For Maximum Active Recoverability.',
+        advice: 'IGF-1 Analogues Precipitate Rapidly In Standard Aqueous Solutions. Reconstitute In <span class="calc-no-capitalize">0.6%</span> Acetic Acid As Recommended Above To Maintain Stability. Keep Reconstituted Solutions Refrigerated At <span class="calc-no-capitalize">36-46°F</span> And Use Within 14 Days For Maximum Active Recoverability.',
       };
     } else {
       return {
         title: 'Standard Peptide Stability Advice',
-        advice: 'Lyophilized Peptides Are Fragile Biomolecules. Once Reconstituted, Keep Refrigerated At <span class="calc-no-capitalize">2-8°C (36-46°F)</span>. Protect Vials From Vibration, Thermal Shock, And Ultraviolet Light. Swirl Gently To Dissolve; Never Shake Reconstituted Vials.',
+        advice: 'Lyophilized Peptides Are Fragile Biomolecules. Once Reconstituted, Keep Refrigerated At <span class="calc-no-capitalize">36-46°F (2-8°C)</span>. Protect Vials From Vibration, Thermal Shock, And Ultraviolet Light. Swirl Gently To Dissolve; Never Shake Reconstituted Vials.',
       };
     }
   };
@@ -1260,10 +1260,13 @@ function StabilitySection() {
   const [ea, setEa] = useState('');
   const [profile, setProfile] = useState('83');
 
+  // Inputs are entered in Fahrenheit; the Arrhenius math works in Celsius/Kelvin,
+  // so convert F -> C before computing. (F - 32) * 5/9.
+  const fToC = (f: string) => (Number(f) - 32) * 5 / 9;
   const days = arrheniusStability({
     shelfDaysAtTempC: Number(shelf),
-    fromTempC: Number(tFrom),
-    toTempC: Number(tTo),
+    fromTempC: fToC(tFrom),
+    toTempC: fToC(tTo),
     activationEnergyKJmol: ea.trim() === '' ? undefined : Number(ea),
   });
 
@@ -1284,13 +1287,13 @@ function StabilitySection() {
         />
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
           <button 
-            onClick={() => { setTFrom('-20'); setTTo('4'); }} 
+            onClick={() => { setTFrom('-4'); setTTo('39'); }} 
             style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #00E5FF', background: 'transparent', color: '#00E5FF', cursor: 'pointer', fontSize: 13 }}
           >
             Preset: Freezer To Fridge
           </button>
           <button 
-            onClick={() => { setTFrom('4'); setTTo('25'); }} 
+            onClick={() => { setTFrom('39'); setTTo('77'); }} 
             style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #F6AD55', background: 'transparent', color: '#F6AD55', cursor: 'pointer', fontSize: 13 }}
           >
             Preset: Fridge To Room Temp
@@ -1302,11 +1305,11 @@ function StabilitySection() {
             <StyledInput type="number" step="any" value={shelf} onChange={(e) => setShelf(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Known Temperature (C)</div>
+            <div style={labelStyle}>Known Temperature (F)</div>
             <StyledInput type="number" step="any" value={tFrom} onChange={(e) => setTFrom(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Target Temperature (C)</div>
+            <div style={labelStyle}>Target Temperature (F)</div>
             <StyledInput type="number" step="any" value={tTo} onChange={(e) => setTTo(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
@@ -1325,20 +1328,20 @@ function StabilitySection() {
         </div>
         <div style={resultStyle}>
           {days === null
-            ? 'Enter Valid Inputs (Temperatures Must Be Above −273°C).'
+            ? 'Enter Valid Inputs (Temperatures Must Be Above −459.67°F).'
             : ea.trim() !== '' && Number(ea) === 0
             ? 'Activation Energy Cannot Be Zero - Temperature Has No Effect At Ea=0.'
-            : <>Predicted Shelf: <strong>{days.toFixed(1)} Days</strong> At {tTo}°C</>
+            : <>Predicted Shelf: <strong>{days.toFixed(1)} Days</strong> At {tTo}°F</>
           }
         </div>
 
         {days !== null && (
           <SaveToJournalButton
             title="Arrhenius Stability Prediction"
-            noteText={`Initial Shelf Life: ${shelf} Days At ${tFrom} C
-Target Temperature: ${tTo} C
+            noteText={`Initial Shelf Life: ${shelf} Days At ${tFrom} F
+Target Temperature: ${tTo} F
 Activation Energy (Ea): ${ea} kJ/mol
-Predicted Shelf Life At ${tTo} C: ${days.toFixed(1)} Days`}
+Predicted Shelf Life At ${tTo} F: ${days.toFixed(1)} Days`}
           />
         )}
 
