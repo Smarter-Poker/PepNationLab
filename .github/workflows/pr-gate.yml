@@ -1,0 +1,78 @@
+# PR Gate — makes concurrent multi-agent push+publish safe.
+#
+# Every change reaches `main` (and therefore production) only through a PR that
+# passes BOTH jobs below. This kills the two failure modes seen in the Vercel
+# dashboard without serializing agents:
+#
+#   * Error (build fails)   -> build-gate compiles the app; broken code cannot merge.
+#   * Blocked (bad author)  -> author-gate rejects any non-team-identity commit.
+#
+# This workflow only READS and CHECKS. It never commits or pushes, so it can
+# never itself produce a Blocked/Error deployment.
+#
+# Concurrency: N agents open N PRs. Each PR merges the moment its own checks go
+# green (enable GitHub auto-merge). No agent waits on another.
+
+name: PR Gate
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  author-gate:
+    name: Author identity gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Every commit must be the Smarter-Poker team identity
+        env:
+          APPROVED_EMAIL: "254329056+Smarter-Poker@users.noreply.github.com"
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          bad="$(git log --no-merges --format='%H %ae (%an)' "$BASE_SHA..$HEAD_SHA" \
+                 | awk -v ok="$APPROVED_EMAIL" '$2 != ok { print }')"
+          if [ -n "$bad" ]; then
+            echo "::error::Commits below are NOT authored by the approved Vercel-team identity."
+            echo "Vercel will BLOCK the production deploy. Re-author under:"
+            echo "  git config user.name  \"Smarter-Poker\""
+            echo "  git config user.email \"$APPROVED_EMAIL\""
+            echo "Then: git rebase --exec 'git commit --amend --reset-author --no-edit' $BASE_SHA"
+            echo "----"
+            echo "$bad"
+            exit 1
+          fi
+          echo "All commit authors are the approved team identity."
+
+  build-gate:
+    name: Production build gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm ci
+      - name: Build (same Turbopack build Vercel runs)
+        # Compile-phase failures (missing module/export, parse errors) — the exact
+        # errors that have been reaching production — fail here first.
+        # Secrets mirror the Vercel production env so static generation succeeds
+        # for good code. Add them under repo Settings > Secrets and variables > Actions.
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_APP_URL: "https://pepnationlab.com"
+        run: npm run build
