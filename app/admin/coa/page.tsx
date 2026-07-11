@@ -4,16 +4,17 @@ import { createServiceClient } from '@/lib/supabase/server';
 export const dynamic = 'force-dynamic';
 
 // Admin-gated by app/admin/layout.tsx. Management list for Certificates Of
-// Analysis: every peptide in the catalogue with its current status and an edit
-// link. Nothing here fabricates data; the editor is where real lab readings are
-// entered and published.
+// Analysis, grouped by COMPOUND: one row per peptide, not per SKU. A peptide
+// sold in several vial sizes shares one certificate, entered once. Nothing here
+// fabricates data; the editor is where real lab readings are entered.
 
 interface Row {
-  id: string;
+  primary_product_id: string;
   name: string;
   slug: string;
   molecular_weight_da: number | null;
   sequence_one_letter: string | null;
+  sku_count: number;
   published_count: number;
   draft_count: number;
 }
@@ -45,9 +46,9 @@ export default async function AdminCoaListPage() {
         Certificates Of Analysis
       </h1>
       <p style={{ color: '#A8B4C0', lineHeight: 1.7, marginBottom: '1rem' }}>
-        Every Peptide In The Catalogue. Open One To Edit Its Certificate: Enter The Laboratory
-        Results, Review The Full Layout, And Publish. A Published Certificate Is Public At Its Lot
-        Verification Page And Carries A Scannable QR Code.
+        One Peptide, One Certificate. A Peptide Sold In Several Vial Sizes Shares A Single
+        Certificate, Because Purity And Identity Are The Same Across Sizes From One Batch. Enter The
+        Lab Results Once; The Certificate And Its QR Code Apply To Every Size.
       </p>
 
       {error && (
@@ -57,14 +58,14 @@ export default async function AdminCoaListPage() {
       )}
 
       <p style={{ color: '#00C4BC', fontSize: '0.9rem', margin: '0 0 1.5rem' }}>
-        {published} Of {rows.length} Published
+        {published} Of {rows.length} Peptides Published
       </p>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         {rows.map((r, i) => (
           <Link
-            key={r.id}
-            href={`/admin/coa/${r.id}`}
+            key={r.primary_product_id}
+            href={`/admin/coa/${r.primary_product_id}`}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -80,6 +81,7 @@ export default async function AdminCoaListPage() {
               <div style={{ fontWeight: 500 }}>{r.name}</div>
               <div style={{ fontSize: '0.78rem', color: '#6B7A8A' }}>
                 {r.molecular_weight_da ? `${r.molecular_weight_da} Da` : 'Mass Not On File'}
+                {r.sku_count > 1 ? ` · Covers ${r.sku_count} Sizes` : ''}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

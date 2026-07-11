@@ -1,31 +1,36 @@
 /**
- * lib/shippo-webhook.ts
+ * lib/shipping-webhook.ts
  *
- * Shared processing core for inbound Shippo webhooks. Extracted from the
+ * Shared processing core for inbound EasyPost webhooks. Extracted from the
  * route handler so two callers can use the exact same logic:
  *
- *   - app/api/webhooks/shippo/route.ts        - the live receiver (real-time).
- *   - app/api/cron/shippo-webhook-retry       - reprocesses events whose first
- *                                               processing attempt failed.
+ *   - app/api/webhooks/easypost/route.ts        - the live receiver (real-time).
+ *   - app/api/cron/shipping-webhook-retry       - reprocesses events whose
+ *                                                 first processing attempt failed.
  *
  * Keeping this in one module guarantees a retried event takes precisely the
  * same code path as a fresh delivery. All functions operate on the Supabase
  * service-role client passed in; they perform no auth of their own - the route
- * does shared-secret verification before dispatch.
+ * does HMAC signature verification before dispatch.
  *
- * Event families handled (see Shippo docs):
- *   - track_updated         -> shipping_tracking_events row + guarded
- *                              orders.delivered_at / status='delivered' +
- *                              orders.delivery_eta refresh.
- *   - transaction_created   -> backfill shipping_label_purchases
- *   - transaction_updated      .label_amount_cents (real charged amount) and
- *                              tracking_url_provider.
- *   - batch_* / unknown     -> recorded by the caller; no state change.
+ * EasyPost delivers an Event object:
+ *   {id: 'evt_...', object: 'Event', description: 'tracker.updated',
+ *    mode: 'test'|'production', result: {...the updated object...}}
+ *
+ * Event families handled:
+ *   - tracker.created /      -> result is a Tracker. Append a
+ *     tracker.updated           shipping_tracking_events row and, when the
+ *                              carrier reports delivered, stamp
+ *                              orders.delivered_at + advance status to
+ *                              'delivered' (state-machine guarded). Also keeps
+ *                              orders.delivery_eta fresh from est_delivery_date.
+ *   - refund.successful      -> result is a Refund. Mark the matching
+ *                              shipping_label_purchases row refunded.
+ *   - everything else        -> recorded by the caller; no state change.
  */
 
-import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { decryptSecret } from '@/lib/shippo-crypto';
+import { decryptSecret } from '@/lib/shipping-crypto';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
 
@@ -52,15 +57,15 @@ export interface WebhookSecretResult {
 }
 
 /**
- * Resolve the expected shared webhook secret: active platform credentials row
- * (encrypted) first, then the SHIPPO_WEBHOOK_SECRET env var.
+ * Resolve the expected webhook signing secret: active platform credentials row
+ * (encrypted) first, then the EASYPOST_WEBHOOK_SECRET env var.
  */
 export async function resolveWebhookSecret(
   supabase: SupabaseClient,
 ): Promise<WebhookSecretResult> {
   try {
     const { data: row } = await supabase
-      .from('platform_shippo_credentials')
+      .from('shipping_provider_credentials')
       .select('webhook_secret_ciphertext, webhook_secret_iv, webhook_secret_tag')
       .eq('is_active', true)
       .maybeSingle();
@@ -72,10 +77,10 @@ export async function resolveWebhookSecret(
       if (plaintext) return { secret: plaintext, source: 'platform_db' };
     }
   } catch (err) {
-    console.warn('[shippo-webhook] secret decrypt failed; falling through:', err);
+    console.warn('[shipping-webhook] secret decrypt failed; falling through:', err);
   }
 
-  const env = process.env.SHIPPO_WEBHOOK_SECRET?.trim();
+  const env = process.env.EASYPOST_WEBHOOK_SECRET?.trim();
   if (env) return { secret: env, source: 'env' };
 
   return { secret: null, source: 'none' };
@@ -91,40 +96,34 @@ export function asString(v: unknown): string {
   return typeof v === 'string' ? v : '';
 }
 
-/** Normalise a Shippo tracking status (string OR object) to its status code. */
-export function readTrackingStatus(data: Record<string, unknown>): {
-  status: string;
-  substatus: string | null;
-  details: string | null;
+// ---------------------------------------------------------------------------
+// Tracker payload readers
+// ---------------------------------------------------------------------------
+
+interface NewestDetail {
+  message: string | null;
   occurredAt: string | null;
   location: Record<string, unknown> | null;
-} {
-  const ts = data.tracking_status;
-  if (typeof ts === 'string') {
-    return { status: ts.toUpperCase(), substatus: null, details: null, occurredAt: null, location: null };
-  }
-  const o = asRecord(ts);
-  const sub = asRecord(o.substatus);
-  return {
-    status: asString(o.status).toUpperCase() || 'UNKNOWN',
-    substatus: asString(sub.code) || null,
-    details: asString(o.status_details) || null,
-    occurredAt: asString(o.status_date) || null,
-    location: o.location && typeof o.location === 'object' ? (o.location as Record<string, unknown>) : null,
-  };
 }
 
-/** Deterministic dedup key - Shippo payloads carry no event id. */
-export function dedupKey(event: string, data: Record<string, unknown>): string {
-  if (event === 'track_updated') {
-    const ts = readTrackingStatus(data);
-    return `track:${asString(data.tracking_number)}:${ts.status}:${ts.occurredAt ?? ''}`;
+/**
+ * Pick the newest entry from an EasyPost tracker's tracking_details array
+ * (greatest `datetime`; ISO strings compare lexicographically).
+ */
+export function newestTrackingDetail(result: Record<string, unknown>): NewestDetail {
+  const details = Array.isArray(result.tracking_details) ? result.tracking_details : [];
+  let newest: Record<string, unknown> | null = null;
+  for (const d of details) {
+    const rec = asRecord(d);
+    if (!newest || asString(rec.datetime) >= asString(newest.datetime)) newest = rec;
   }
-  if (event === 'transaction_created' || event === 'transaction_updated') {
-    return `${event}:${asString(data.object_id)}:${asString(data.object_updated)}`;
-  }
-  const h = createHash('sha256').update(JSON.stringify(data ?? {})).digest('hex').slice(0, 32);
-  return `${event}:${h}`;
+  if (!newest) return { message: null, occurredAt: null, location: null };
+  const loc = newest.tracking_location;
+  return {
+    message: asString(newest.message) || null,
+    occurredAt: asString(newest.datetime) || null,
+    location: loc && typeof loc === 'object' ? (loc as Record<string, unknown>) : null,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -135,40 +134,48 @@ export interface ProcessResult {
 }
 
 /**
- * Apply the side effects of a single Shippo event. Throws on a hard failure so
- * the caller can record processing_error and (for the cron) retry later. The
- * caller is responsible for dedup/event-log bookkeeping.
+ * Apply the side effects of a single EasyPost event. Throws on a hard failure
+ * so the caller can record processing_error and (for the cron) retry later.
+ * The caller is responsible for dedup/event-log bookkeeping.
+ *
+ * `description` is the EasyPost Event.description (e.g. 'tracker.updated');
+ * `result` is the Event.result object.
  */
-export async function processShippoEvent(
+export async function processShippingEvent(
   supabase: SupabaseClient,
-  event: string,
-  data: Record<string, unknown>,
+  description: string,
+  result: Record<string, unknown>,
   rawPayload: Record<string, unknown>,
 ): Promise<ProcessResult> {
-  if (event === 'track_updated') {
-    return { orderTouched: await handleTrackUpdated(supabase, data, rawPayload) };
+  if (description === 'tracker.created' || description === 'tracker.updated') {
+    return { orderTouched: await handleTrackerEvent(supabase, result, rawPayload) };
   }
-  if (event === 'transaction_created' || event === 'transaction_updated') {
-    return { orderTouched: await handleTransaction(supabase, data) };
+  if (description === 'refund.successful') {
+    return { orderTouched: await handleRefundSuccessful(supabase, result) };
   }
   return { orderTouched: null };
 }
 
 // ---------------------------------------------------------------------------
-// track_updated
+// tracker.created / tracker.updated
 // ---------------------------------------------------------------------------
 const DELIVERED_STATUSES = new Set(['DELIVERED']);
 
-export async function handleTrackUpdated(
+export async function handleTrackerEvent(
   supabase: SupabaseClient,
-  data: Record<string, unknown>,
+  result: Record<string, unknown>,
   rawPayload: Record<string, unknown>,
 ): Promise<string | null> {
-  const trackingNumber = asString(data.tracking_number);
+  const trackingNumber = asString(result.tracking_code);
   if (!trackingNumber) return null;
-  const carrier = asString(data.carrier) || null;
-  const eta = asString(data.eta) || null;
-  const ts = readTrackingStatus(data);
+  const carrier = asString(result.carrier) || null;
+  const eta = asString(result.est_delivery_date) || null;
+
+  // EasyPost tracker statuses are lowercase snake_case
+  // ('in_transit', 'out_for_delivery', ...). Store UPPERCASE.
+  const status = (asString(result.status) || 'unknown').toUpperCase();
+  const substatus = asString(result.status_detail) || null;
+  const newest = newestTrackingDetail(result);
 
   // Resolve the order from the tracking number. Prefer the label-purchase
   // ledger (authoritative), fall back to orders.tracking_number.
@@ -198,17 +205,17 @@ export async function handleTrackUpdated(
   // event-log level (handled by the caller) and ignored here.
   if (!orderId) return null;
 
-  const occurredAt = ts.occurredAt ?? new Date().toISOString();
+  const occurredAt = newest.occurredAt ?? new Date().toISOString();
 
   // Append the tracking event. Idempotency at the event level is handled by
-  // the caller (shippo_webhook_events.event_id). Guard against a duplicate
+  // the caller (shipping_webhook_events.event_id). Guard against a duplicate
   // timeline row when a retry re-applies the same status.
   const { data: dupe } = await supabase
     .from('shipping_tracking_events')
     .select('id')
     .eq('order_id', orderId)
     .eq('tracking_number', trackingNumber)
-    .eq('status', ts.status)
+    .eq('status', status)
     .eq('occurred_at', occurredAt)
     .limit(1)
     .maybeSingle();
@@ -218,10 +225,10 @@ export async function handleTrackUpdated(
       order_id: orderId,
       tracking_number: trackingNumber,
       carrier,
-      status: ts.status,
-      substatus: ts.substatus,
-      status_details: ts.details,
-      location: ts.location,
+      status,
+      substatus,
+      status_details: newest.message,
+      location: newest.location,
       occurred_at: occurredAt,
       raw_payload: rawPayload,
     });
@@ -241,7 +248,7 @@ export async function handleTrackUpdated(
   if (eta) update.delivery_eta = eta;
 
   let justDelivered = false;
-  if (DELIVERED_STATUSES.has(ts.status) && !orderRow.delivered_at) {
+  if (DELIVERED_STATUSES.has(status) && !orderRow.delivered_at) {
     update.delivered_at = occurredAt;
     if (canTransition(currentStatus, 'delivered', 'admin')) {
       update.status = 'delivered';
@@ -269,33 +276,48 @@ export async function handleTrackUpdated(
 }
 
 // ---------------------------------------------------------------------------
-// transaction_created / transaction_updated
+// refund.successful
 // ---------------------------------------------------------------------------
-export async function handleTransaction(
+
+/**
+ * result is an EasyPost Refund: {tracking_code, shipment_id, status, ...}.
+ * Mark the matching shipping_label_purchases row refunded. Match by
+ * provider_transaction_id (= EasyPost shipment id) first, then fall back to
+ * the tracking number.
+ */
+export async function handleRefundSuccessful(
   supabase: SupabaseClient,
-  data: Record<string, unknown>,
+  result: Record<string, unknown>,
 ): Promise<string | null> {
-  const txId = asString(data.object_id);
-  if (!txId) return null;
+  const shipmentId = asString(result.shipment_id);
+  const trackingCode = asString(result.tracking_code);
+  if (!shipmentId && !trackingCode) return null;
 
-  const rate = asRecord(data.rate);
-  const amountStr = asString(rate.amount);
-  const amountCents = amountStr ? Math.round(parseFloat(amountStr) * 100) : null;
-  const trackingUrl = asString(data.tracking_url_provider) || null;
+  const patch = { refunded: true, refunded_at: new Date().toISOString() };
 
-  const patch: Record<string, unknown> = {};
-  if (amountCents != null && Number.isFinite(amountCents) && amountCents >= 0) {
-    patch.label_amount_cents = amountCents;
+  if (shipmentId) {
+    const { data: rows } = await supabase
+      .from('shipping_label_purchases')
+      .update(patch)
+      .eq('provider_transaction_id', shipmentId)
+      .eq('refunded', false)
+      .select('order_id');
+    if (rows && rows.length > 0) {
+      return (rows[0].order_id as string | null) ?? null;
+    }
   }
-  if (trackingUrl) patch.tracking_url_provider = trackingUrl;
-  if (Object.keys(patch).length === 0) return null;
 
-  const { data: updated } = await supabase
-    .from('shipping_label_purchases')
-    .update(patch)
-    .eq('shippo_transaction_id', txId)
-    .select('order_id')
-    .maybeSingle();
+  if (trackingCode) {
+    const { data: rows } = await supabase
+      .from('shipping_label_purchases')
+      .update(patch)
+      .eq('tracking_number', trackingCode)
+      .eq('refunded', false)
+      .select('order_id');
+    if (rows && rows.length > 0) {
+      return (rows[0].order_id as string | null) ?? null;
+    }
+  }
 
-  return (updated?.order_id as string | null) ?? null;
+  return null;
 }

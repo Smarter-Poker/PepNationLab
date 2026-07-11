@@ -1174,7 +1174,10 @@ function PaymentStep({ onDone }: { onDone: () => void }) {
       const v = (handles[k] || '').trim();
       if (v) payload[k] = v;
     }
-    if (WIZARD_PAYMENT_METHODS.every((m) => !payload[m.key])) {
+    // Mirror the server rule exactly: at least ONE non-empty handle on ANY
+    // supported method (including ones prefilled from Account Settings, like
+    // PayPal) satisfies the step. More methods are encouraged, never required.
+    if (Object.keys(payload).length === 0) {
       setErr('Add At Least One Payment Handle To Continue.');
       return;
     }
@@ -1194,11 +1197,12 @@ function PaymentStep({ onDone }: { onDone: () => void }) {
   return (
     <div>
       <StepIntro icon={CreditCard} title="Add Your Payment Methods"
-        blurb="Researchers Pay You Directly Through These Handles At Checkout. Add At Least One -- You Can Add Or Change The Rest Anytime From Your Dashboard." />
+        blurb="Researchers Pay You Directly Through These Handles At Checkout. Only One Method Is Required To Finish Setup, But Adding More Is Recommended So Every Researcher Can Pay The Way They Prefer." />
       <GuidePanel steps={[
-        'Fill In The Handle For At Least One Payment Method Below.',
+        'Fill In The Handle For At Least One Payment Method Below. One Is Required.',
+        'Add More Methods If You Can - More Options Means Fewer Missed Sales.',
         'Double-Check Each Handle - Researchers Send Money Straight To It.',
-        'Click "Save And Continue".',
+        'Click "Save And Continue". You Can Add Or Change Methods Anytime From Your Dashboard.',
       ]} />
       {WIZARD_PAYMENT_METHODS.map((m) => (
         <Field key={m.key} label={m.label}>

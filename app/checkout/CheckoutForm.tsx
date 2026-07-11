@@ -16,18 +16,32 @@ import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
 import { trackStorefrontEvent } from '@/lib/track';
 
-type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'apple_pay' | 'apple_cash';
+type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'apple_pay' | 'apple_cash' | 'paypal' | 'google_wallet' | 'wise' | 'chime' | 'varo';
 
 const baseStyle = { height: 28, width: 'auto', objectFit: 'contain' as const };
 const scaleStyle = (scale: number) => ({ ...baseStyle, transform: `scale(${scale})` });
 
+// Every payment method the platform supports. The checkout list is filtered
+// down to the methods the agent actually has a handle for, so an agent whose
+// only handle is (for example) Varo or PayPal still gives their researchers a
+// working payment option instead of an empty list.
 const ALL_PAYMENT_METHODS: { id: PaymentMethodId; name: string; desc: string; icon: React.ReactNode }[] = [
   { id: 'zelle',      name: 'Zelle',      desc: 'Instant Direct Transfer. Fastest Processing.', icon: <Image src="/payment-logos/zelle.svg" width={40} height={28} alt="Zelle" unoptimized style={baseStyle} /> },
   { id: 'cashapp',    name: 'Cash App',   desc: 'Secure Mobile Check. Handled Manually.', icon: <Image src="/payment-logos/cashapp.svg" width={40} height={28} alt="Cash App" unoptimized style={baseStyle} /> },
   { id: 'venmo',      name: 'Venmo',      desc: 'Social Transfer. Manual Clearance.', icon: <Image src="/payment-logos/venmo.svg" width={40} height={28} alt="Venmo" unoptimized style={scaleStyle(1.4)} /> },
   { id: 'apple_pay',  name: 'Apple Pay',  desc: 'Tap To Pay. Instant Mobile Checkout.', icon: <Image src="/payment-logos/apple_cash.svg" width={40} height={28} alt="Apple Pay" unoptimized style={scaleStyle(1.4)} /> },
   { id: 'apple_cash', name: 'Apple Cash', desc: 'Secure Contactless Flow. Fast Settlement.', icon: <Image src="/payment-logos/apple_cash.svg" width={40} height={28} alt="Apple Cash" unoptimized style={scaleStyle(1.4)} /> },
+  { id: 'paypal',        name: 'PayPal',        desc: 'Send Directly To Your Agent By Email.', icon: <Image src="/payment-logos/paypal.svg" width={40} height={28} alt="PayPal" unoptimized style={baseStyle} /> },
+  { id: 'google_wallet', name: 'Google Wallet', desc: 'Google Pay Transfer Via Email Or Phone.', icon: <Image src="/payment-logos/google_wallet.svg" width={40} height={28} alt="Google Wallet" unoptimized style={scaleStyle(1.4)} /> },
+  { id: 'wise',          name: 'Wise',          desc: 'Bank-Linked Transfer By Email.', icon: <Image src="/payment-logos/wise.svg" width={40} height={28} alt="Wise" unoptimized style={baseStyle} /> },
+  { id: 'chime',         name: 'Chime',         desc: 'Chime Pay Anyone Transfer.', icon: <Image src="/payment-logos/chime.png" width={40} height={28} alt="Chime" unoptimized style={baseStyle} /> },
+  { id: 'varo',          name: 'Varo',          desc: 'Varo Bank Instant Transfer.', icon: <Image src="/payment-logos/varo.svg" width={40} height={28} alt="Varo" unoptimized style={baseStyle} /> },
 ];
+
+const PAYMENT_METHOD_LABELS: Record<PaymentMethodId, string> = {
+  zelle: 'Zelle', cashapp: 'Cash App', venmo: 'Venmo', apple_pay: 'Apple Pay', apple_cash: 'Apple Cash',
+  paypal: 'PayPal', google_wallet: 'Google Wallet', wise: 'Wise', chime: 'Chime', varo: 'Varo',
+};
 
 interface Profile {
   full_name: string | null;
@@ -955,6 +969,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       case 'venmo': return { label: 'Venmo Payment Details', handle: handle || noHandle, instructions: handle ? `Send Total Amount To Venmo: ${handle}. Please Reference Your Order ID In Memo.` : 'Contact Your Agent For Venmo Payment Instructions.' };
       case 'apple_pay': return { label: 'Apple Pay Details', handle: handle || noHandle, instructions: handle ? `Send Total Amount Via Apple Pay To: ${handle}. Please Reference Your Order ID.` : 'Contact Your Agent For Apple Pay Payment Instructions.' };
       case 'apple_cash': return { label: 'Apple Cash Details', handle: handle || noHandle, instructions: handle ? `Send Total Amount Via Apple Cash To: ${handle}. Please Reference Your Order ID.` : 'Contact Your Agent For Apple Cash Payment Instructions.' };
+      case 'paypal': return { label: 'PayPal Details', handle: handle || noHandle, instructions: handle ? `Send Total Amount Via PayPal To: ${handle}. Please Reference Your Order ID In The Note.` : 'Contact Your Agent For PayPal Payment Instructions.' };
+      case 'google_wallet': return { label: 'Google Wallet Details', handle: handle || noHandle, instructions: handle ? `Send Total Amount Via Google Wallet To: ${handle}. Please Reference Your Order ID.` : 'Contact Your Agent For Google Wallet Payment Instructions.' };
+      case 'wise': return { label: 'Wise Details', handle: handle || noHandle, instructions: handle ? `Send Total Amount Via Wise To: ${handle}. Please Reference Your Order ID.` : 'Contact Your Agent For Wise Payment Instructions.' };
+      case 'chime': return { label: 'Chime Details', handle: handle || noHandle, instructions: handle ? `Send Total Amount Via Chime To: ${handle}. Please Reference Your Order ID.` : 'Contact Your Agent For Chime Payment Instructions.' };
+      case 'varo': return { label: 'Varo Details', handle: handle || noHandle, instructions: handle ? `Send Total Amount Via Varo To: ${handle}. Please Reference Your Order ID.` : 'Contact Your Agent For Varo Payment Instructions.' };
       default: return { label: 'Payment Details', handle: handle || noHandle, instructions: handle ? `Send Total Amount To: ${handle}. Please Reference Your Order ID.` : 'Contact Your Agent For Payment Instructions.' };
     }
   };
@@ -1012,12 +1031,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payment Method</span>
-              <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>{paymentMethod === 'cashapp' ? 'Cash App'
-                  : paymentMethod === 'apple_cash' ? 'Apple Cash'
-                  : paymentMethod === 'apple_pay' ? 'Apple Pay'
-                  : paymentMethod === 'venmo' ? 'Venmo'
-                  : paymentMethod === 'zelle' ? 'Zelle'
-                  : paymentMethod}</strong>
+              <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>{PAYMENT_METHOD_LABELS[paymentMethod] ?? paymentMethod}</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
               <span style={{ color: 'var(--grey-400)', fontWeight: 600 }}>Amount Due</span>
