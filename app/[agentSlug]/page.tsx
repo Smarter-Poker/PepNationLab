@@ -23,15 +23,19 @@ interface Props {
 async function AgentStorefrontDataLoader({
   agentSlug,
   agent,
+  user,
+  userProfile,
 }: {
   agentSlug: string;
   agent: any;
+  user: any;
+  userProfile: any;
 }) {
   const supabase = await createClient();
 
-  // -- Fetch products and auth user in parallel -----------------------------------------------------------------------
+  // -- Fetch products in parallel -----------------------------------------------------------------------
   // Products are scoped to agent.id (from outer query) - safe to start immediately.
-  const [productsResult, { data: { user } }] = await Promise.all([
+  const [productsResult] = await Promise.all([
     supabase
       .from('agent_products')
       .select(`
@@ -61,9 +65,8 @@ async function AgentStorefrontDataLoader({
       `)
       .eq('agent_id', agent.id)
       .eq('is_visible', true)
-      .order('sort_order'),
-
-    supabase.auth.getUser(),
+      .order('sort_order')
+      .limit(250),
   ]);
   // Distinguish "load failed" from "genuinely empty catalog". A transient DB error
   // returns { data: null, error } -- if we silently treated null as [], a fully
@@ -74,22 +77,6 @@ async function AgentStorefrontDataLoader({
   }
   const products = productsResult.data;
 
-  // Storefronts are public (allowed in middleware). Resolve the REAL viewer
-  // profile when signed in so the storefront owner sees self-buy cost pricing
-  // and researchers get their wishlist + correct viewer context. Anonymous
-  // shoppers browse at retail. Previously this was stubbed to a mock admin
-  // profile, which silently disabled owner self-buy pricing and researcher
-  // wishlists on every storefront.
-  type ViewerProfile = { role: string | null; id: string; tier: string | null; referring_agent_id: string | null; parent_agent_id: string | null };
-  let userProfile: ViewerProfile | null = null;
-  if (user) {
-    const { data: viewerProfile } = await supabase
-      .from('profiles')
-      .select('role, id, tier, referring_agent_id, parent_agent_id')
-      .eq('id', user.id)
-      .maybeSingle();
-    userProfile = (viewerProfile as ViewerProfile | null) ?? null;
-  }
   const isStorefrontOwner = !!user && userProfile?.id === agent.id;
 
   // -- Run independent queries in parallel - saves ~2 sequential round-trips --
@@ -306,21 +293,12 @@ export default async function AgentStorefrontPage({ params }: Props) {
     );
   }
 
-  // `user` was already resolved above (for the guest-redirect rule). We reuse it
-  // here to determine the top navbar icons and rename banner.
-  //
-  // Note: AgentStorefrontDataLoader (rendered inside the Suspense boundary below)
-  // also fetches userProfile independently with a broader column set
-  // (role, id, tier, referring_agent_id, parent_agent_id) needed for pricing and
-  // wishlist logic. The two fetches cannot share state because the DataLoader is a
-  // separate async Server Component rendered after the Suspense fallback resolves.
-  // If this becomes a performance concern, the full profile could be passed as a
-  // prop from here into the DataLoader instead of re-querying.
+  // We fetch userProfile here with the broader column set needed for DataLoader pricing and wishlist logic.
   let userProfile = null;
   if (user) {
     const { data } = await supabase
       .from('profiles')
-      .select('role, id')
+      .select('role, id, tier, referring_agent_id, parent_agent_id')
       .eq('id', user.id)
       .maybeSingle();
     userProfile = data;
@@ -391,7 +369,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
       <section style={{ paddingTop: 8, paddingBottom: 24, position: 'relative', minHeight: '60vh' }}>
         <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 8px' }}>
           <Suspense fallback={<StorefrontSkeleton />}>
-            <AgentStorefrontDataLoader agentSlug={agentSlug} agent={agent} />
+            <AgentStorefrontDataLoader agentSlug={agentSlug} agent={agent} user={user} userProfile={userProfile} />
           </Suspense>
         </div>
       </section>
