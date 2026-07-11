@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import PageShell from '@/components/PageShell';
+import OrderStageTimeline from '@/components/OrderStageTimeline';
 import ReorderButton, { ViewLink } from './OrdersListClient';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import { getPopularName } from '@/lib/peptide-popular-names';
@@ -57,6 +58,9 @@ interface Order {
   shipping_cost: number;
   total: number;
   tracking_number: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  updated_at: string | null;
   order_items: OrderItem[];
 }
 
@@ -93,7 +97,7 @@ export default async function OrdersPage({
 
   let query = supabase
     .from('orders')
-    .select('id, status, created_at, payment_method, fulfillment_method, subtotal, discount_amount, coupon_code, shipping_cost, total, tracking_number, order_items(id, product_name, quantity, unit_retail_price)')
+    .select('id, status, created_at, payment_method, fulfillment_method, subtotal, discount_amount, coupon_code, shipping_cost, total, tracking_number, shipped_at, delivered_at, updated_at, order_items(id, product_name, quantity, unit_retail_price)')
     .eq('buyer_id', user.id);
 
   if (sort === 'oldest') query = query.order('created_at', { ascending: true });
@@ -258,6 +262,19 @@ export default async function OrdersPage({
                       >
                         {STATUS_LABELS[order.status] ?? order.status}
                       </span>
+                    </div>
+
+                    {/* Order Progress Timeline (B3) */}
+                    <div style={{ marginBottom: 'var(--space-5)' }}>
+                      <OrderStageTimeline
+                        status={order.status}
+                        fulfillmentMethod={order.fulfillment_method}
+                        trackingNumber={order.tracking_number}
+                        createdAt={order.created_at}
+                        shippedAt={order.shipped_at}
+                        deliveredAt={order.delivered_at}
+                        updatedAt={order.updated_at}
+                      />
                     </div>
 
                     {/* Line items */}
