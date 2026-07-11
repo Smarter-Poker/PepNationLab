@@ -1,5 +1,6 @@
-# One-shot self-deleting applier for the national city expansion (v2 re-arm:
-# first trigger fired before the data blocks were staged).
+# One-shot self-deleting applier for the national city expansion.
+# v3 re-arm: all four inputs (apply.cjs, ca-block.txt, states-block.txt,
+# validate.mjs plus required-pairs.txt) are now staged.
 name: Apply National City Expansion
 on:
   push:
