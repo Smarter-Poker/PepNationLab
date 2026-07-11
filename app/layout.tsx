@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
 import FlashSaleBanner from "@/components/FlashSaleBanner";
 import GlobalErrorReporter from "@/components/GlobalErrorReporter";
+import UtmCapture from "@/components/UtmCapture";
 // Non-critical global widgets (PWA/notification prompts, stale-browser + OAuth
 // handlers, admin impersonation banner, messenger realtime listeners) are
 // lazy-loaded client-side after hydration so they no longer ship in every
@@ -206,6 +207,10 @@ export default function RootLayout({
           {/* App-wide capture of uncaught errors + unhandled promise rejections.
               Kept eager so it captures from first paint. */}
           <GlobalErrorReporter />
+          {/* First-party acquisition attribution. Eager so first-touch UTM/
+              referrer is recorded before the disclaimer gate or any client
+              navigation. Renders null; no layout impact. */}
+          <UtmCapture />
           {/* fix-56 #2: storefront-wide flash sale banner. Self-hides on /admin and /api.
               Kept eager (server-rendered) so an active sale banner does not pop in
               after hydration and shift layout. */}
