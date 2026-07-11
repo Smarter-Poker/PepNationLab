@@ -19,6 +19,12 @@ import UtmCapture from "@/components/UtmCapture";
 // page's initial JS bundle. Each renders null until an event/condition fires,
 // so deferring them causes no layout shift. See components/DeferredGlobals.tsx.
 import DeferredGlobals from "@/components/DeferredGlobals";
+// Real-user measurement: Vercel Speed Insights (Core Web Vitals field data)
+// and Web Analytics (privacy-friendly page views). Both render null and
+// inject a lightweight script after hydration; they no-op harmlessly until
+// the matching tabs are enabled on the Vercel project dashboard.
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 
 import { Inter } from "next/font/google";
 
@@ -223,6 +229,10 @@ export default function RootLayout({
               after hydration instead of in every page's initial bundle. */}
           <DeferredGlobals />
           <Script src="/sw-register.js" strategy="afterInteractive" />
+          {/* Real-user field measurement. Render null; scripts load after
+              hydration, so no layout or LCP impact. */}
+          <SpeedInsights />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
