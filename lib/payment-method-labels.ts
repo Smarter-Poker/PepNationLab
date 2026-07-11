@@ -2,12 +2,12 @@
  * Canonical payment-method enum + label map (R26).
  *
  * `profiles.default_payment_method` and `orders.payment_method` both accept
- * any of the 9 slugs below (CHECK-constrained at the DB level). Until this
+ * any of the 10 slugs below (CHECK-constrained at the DB level). Until this
  * file existed, every order surface (researcher list, agent list, admin list,
  * and the order-detail variants) maintained its OWN 4-method dictionary, so
- * orders paid via apple_cash / paypal / google_wallet / wise / chime rendered
- * as raw lowercase slugs ("apple_cash") or worse - admin's screen showed them
- * uppercased ("APPLE_CASH") because the dict was missing.
+ * orders paid via apple_cash / paypal / google_wallet / wise / chime / varo
+ * rendered as raw lowercase slugs ("apple_cash") or worse - admin's screen
+ * showed them uppercased ("APPLE_CASH") because the dict was missing.
  *
  * Import this from every consumer so the UI never drifts again.
  */
@@ -21,7 +21,8 @@ export type PaymentMethodSlug =
   | 'paypal'
   | 'google_wallet'
   | 'wise'
-  | 'chime';
+  | 'chime'
+  | 'varo';
 
 export const PAYMENT_METHOD_SLUGS: readonly PaymentMethodSlug[] = [
   'zelle',
@@ -33,6 +34,7 @@ export const PAYMENT_METHOD_SLUGS: readonly PaymentMethodSlug[] = [
   'google_wallet',
   'wise',
   'chime',
+  'varo',
 ] as const;
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethodSlug, string> = {
@@ -45,6 +47,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethodSlug, string> = {
   google_wallet: 'Google Wallet',
   wise: 'Wise',
   chime: 'Chime',
+  varo: 'Varo',
 };
 
 /** Safe display: returns the friendly label, or a Title-Cased fallback for an
