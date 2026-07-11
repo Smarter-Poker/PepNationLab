@@ -604,7 +604,7 @@ export default function AgentDashboardClient({
           />
 
           {/* My Referrals Quick Link */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-3)' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap', marginBottom: 'var(--space-3)' }}>
             <Link
               href="/dashboard/agent/referrals"
               style={{
@@ -630,6 +630,30 @@ export default function AgentDashboardClient({
               </svg>
               My Referrals
             </Link>
+            <Link
+              href="/dashboard/agent/broadcasts"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--teal)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(0,196,188,0.3)', background: 'rgba(0,196,188,0.06)' }}
+            >
+              <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 11l18-5v12L3 14v-3z" />
+                <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+              </svg>
+              Broadcast
+            </Link>
+            {userProfile.is_super_agent && (
+              <Link
+                href="/dashboard/agent/invitations"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--teal)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(0,196,188,0.3)', background: 'rgba(0,196,188,0.06)' }}
+              >
+                <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <line x1="19" y1="8" x2="19" y2="14" />
+                  <line x1="22" y1="11" x2="16" y2="11" />
+                </svg>
+                Invite Agents
+              </Link>
+            )}
           </div>
 
         {/* My Sub-Agents Tab - only rendered for regular agents; super-agents are remapped by resolveTab */}
@@ -1195,6 +1219,7 @@ export default function AgentDashboardClient({
               logoUrl={logoUrl} setLogoUrl={setLogoUrl}
               warehouseAddress={agentProfile?.warehouse_address}
               displayNameChangedAt={agentProfile?.display_name_changed_at}
+              featuredProducts={agentProfile?.featured_products || []}
               agentId={userProfile.id}
               onSaveSuccess={(updatedData) => {
                 if (agentProfile) {

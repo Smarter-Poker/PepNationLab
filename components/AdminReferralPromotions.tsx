@@ -19,8 +19,6 @@ interface Promo {
   live?: boolean;
 }
 
-const toLocalInput = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 16) : '');
-
 export default function AdminReferralPromotions() {
   const [promos, setPromos] = useState<Promo[]>([]);
   const [loading, setLoading] = useState(true);
