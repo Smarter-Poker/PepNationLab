@@ -10,6 +10,7 @@ import SiteDisclaimerGate from "@/components/SiteDisclaimerGate";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
 import FlashSaleBanner from "@/components/FlashSaleBanner";
+import FreeShippingBanner from "@/components/FreeShippingBanner";
 import GlobalErrorReporter from "@/components/GlobalErrorReporter";
 import UtmCapture from "@/components/UtmCapture";
 // Non-critical global widgets (PWA/notification prompts, stale-browser + OAuth
@@ -207,6 +208,7 @@ export default function RootLayout({
               Kept eager (server-rendered) so an active sale banner does not pop in
               after hydration and shift layout. */}
           <FlashSaleBanner />
+          <FreeShippingBanner />
           <SiteDisclaimerGate>
             <CartProvider>
               <InAppBrowserProvider>

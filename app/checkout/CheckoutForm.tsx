@@ -735,7 +735,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     return getShippingCost(shippingOption, totalWeightOz);
   };
 
-  const shippingCost = calculateShippingCost();
+  const shippingCost = (agentSlug === 'researchstore' && cartSubtotal >= 100) ? 0 : calculateShippingCost();
   const discount = appliedCoupon?.discount ?? 0;
   const flashDiscount = flashSale && cartSubtotal > 0
     ? Math.round(cartSubtotal * (flashSale.discount_pct / 100) * 100) / 100
