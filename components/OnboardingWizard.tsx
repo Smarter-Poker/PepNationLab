@@ -560,11 +560,11 @@ function ProfileStep({ state, onDone }: { state: OnboardingState; onDone: () => 
         'Click "Save And Continue" Below.',
       ]} />
       <div style={{ display: 'flex', gap: 'var(--space-3, 12px)', flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 180px' }}><Field label="First Name"><input style={inputStyle} value={first} onChange={(e) => setFirst(e.target.value)} /></Field></div>
-        <div style={{ flex: '1 1 180px' }}><Field label="Last Name"><input style={inputStyle} value={last} onChange={(e) => setLast(e.target.value)} /></Field></div>
+        <div style={{ flex: '1 1 180px' }}><Field label="First Name"><input style={inputStyle} autoComplete="given-name" autoCapitalize="words" value={first} onChange={(e) => setFirst(e.target.value)} /></Field></div>
+        <div style={{ flex: '1 1 180px' }}><Field label="Last Name"><input style={inputStyle} autoComplete="family-name" autoCapitalize="words" value={last} onChange={(e) => setLast(e.target.value)} /></Field></div>
       </div>
-      <Field label="Email Address"><input type="email" style={inputStyle} value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
-      <Field label="Phone Number"><input type="tel" style={inputStyle} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 555-5555" /></Field>
+      <Field label="Email Address"><input type="email" style={inputStyle} autoComplete="email" autoCapitalize="none" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
+      <Field label="Phone Number"><input type="tel" style={inputStyle} autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 555-5555" /></Field>
       <ErrorLine msg={err} />
       <PrimaryButton onClick={submit} busy={busy}>Save And Continue</PrimaryButton>
     </div>
@@ -727,11 +727,11 @@ function WarehouseStep({ state, onDone }: { state: OnboardingState; onDone: () =
         </div>
         {acLoading && <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', marginTop: 4 }}>Searching Addresses...</div>}
       </Field>
-      <Field label="Suite / Unit (Optional)"><input style={inputStyle} value={street2} onChange={(e) => setStreet2(e.target.value)} /></Field>
+      <Field label="Suite / Unit (Optional)"><input style={inputStyle} autoComplete="address-line2" value={street2} onChange={(e) => setStreet2(e.target.value)} /></Field>
       <div style={{ display: 'flex', gap: 'var(--space-3, 12px)', flexWrap: 'wrap' }}>
-        <div style={{ flex: '2 1 160px' }}><Field label="City"><input style={inputStyle} value={city} onChange={(e) => setCity(e.target.value)} /></Field></div>
-        <div style={{ flex: '1 1 80px' }}><Field label="State"><input style={inputStyle} value={statev} onChange={(e) => setStatev(e.target.value)} placeholder="TX" /></Field></div>
-        <div style={{ flex: '1 1 100px' }}><Field label="Zip"><input style={inputStyle} value={zip} onChange={(e) => setZip(e.target.value)} /></Field></div>
+        <div style={{ flex: '2 1 160px' }}><Field label="City"><input style={inputStyle} autoComplete="address-level2" autoCapitalize="words" value={city} onChange={(e) => setCity(e.target.value)} /></Field></div>
+        <div style={{ flex: '1 1 80px' }}><Field label="State"><input style={inputStyle} autoComplete="address-level1" autoCapitalize="characters" value={statev} onChange={(e) => setStatev(e.target.value)} placeholder="TX" /></Field></div>
+        <div style={{ flex: '1 1 100px' }}><Field label="Zip"><input style={inputStyle} inputMode="numeric" pattern="[0-9]*" autoComplete="postal-code" value={zip} onChange={(e) => setZip(e.target.value)} /></Field></div>
       </div>
 
       {suggestion && (
@@ -828,7 +828,7 @@ function StorefrontStep({ state, onDone }: { state: OnboardingState; onDone: () 
       <Field label="Storefront Web Address">
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', whiteSpace: 'nowrap' }}>pepnationlab.com/</span>
-          <input style={inputStyle} value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase())} placeholder="your-store" />
+          <input style={inputStyle} autoCapitalize="none" autoCorrect="off" spellCheck={false} value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase())} placeholder="your-store" />
         </div>
       </Field>
 
@@ -971,7 +971,7 @@ function ProductsTutorialStep({ state, onDone }: { state: OnboardingState; onDon
       </div>
 
       <Field label="Your Default Markup % (Recommended: 50%)">
-        <input type="number" style={inputStyle} value={markup} onChange={(e) => setMarkup(e.target.value)} min="0" max="500" step="1" />
+        <input type="number" inputMode="decimal" style={inputStyle} value={markup} onChange={(e) => setMarkup(e.target.value)} min="0" max="500" step="1" />
       </Field>
       <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
         We Have Set Your Default Markup To 50% To Get You Started. You Can Change This Anytime, And You Can Override The Price On Individual Products From The Products Page.
@@ -1051,7 +1051,7 @@ function DownstreamStep({ state, onDone }: { state: OnboardingState; onDone: () 
               </div>
             </div>
             <Field label="Default Agent Markup %">
-              <input type="number" style={inputStyle} value={pct} onChange={(e) => setPct(e.target.value)} min="0" max="500" step="1" />
+              <input type="number" inputMode="decimal" style={inputStyle} value={pct} onChange={(e) => setPct(e.target.value)} min="0" max="500" step="1" />
             </Field>
           </>
         ) : (
@@ -1086,7 +1086,7 @@ function DownstreamStep({ state, onDone }: { state: OnboardingState; onDone: () 
         <InfoRow icon={Users} title="Up To 40%" body="You Can Set Any Default Between 0 And 40 Percent, And Override It Per Sub-Agent From The Sub-Agents Section." />
       </div>
       <Field label="Default Sub-Agent Commission %">
-        <input type="number" style={inputStyle} value={pct} onChange={(e) => setPct(e.target.value)} min="0" max="40" step="1" />
+        <input type="number" inputMode="decimal" style={inputStyle} value={pct} onChange={(e) => setPct(e.target.value)} min="0" max="40" step="1" />
       </Field>
       <ErrorLine msg={err} />
       <PrimaryButton onClick={submit} busy={busy}>Save Default And Continue</PrimaryButton>
