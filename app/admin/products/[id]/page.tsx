@@ -118,6 +118,7 @@ export default function EditProductPage() {
     const supabase = createClient();
     let finalImageUrl = form.image_url;
 
+    try {
     if (fileInputRef.current?.files?.[0]) {
       setUploadingImage(true);
       const file = fileInputRef.current.files[0];
@@ -175,6 +176,14 @@ export default function EditProductPage() {
 
     router.push('/admin/products');
     router.refresh();
+    } catch {
+      // A network drop / non-JSON 5xx used to reject the promise before
+      // setSaving(false) ran, leaving the button stuck on "Saving..." forever
+      // with no feedback. Always surface an error and re-enable the form.
+      setError('Could Not Save Product. Check Your Connection And Try Again.');
+      setSaving(false);
+      setUploadingImage(false);
+    }
   }
 
   if (loading) {

@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
+import { writeAuditLog } from '@/lib/admin-audit';
 
 const VALID_TRANSACTION_TYPES = [
   'commission', 'withdrawal', 'adjustment', 'order_charge', 'restock_charge',
@@ -93,6 +94,21 @@ export async function POST(req: NextRequest) {
           created_by: gate.userId,
         }).select('id').maybeSingle();
         if (error || !data) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+
+        // Audit every manual balance move. NOTE: the read-modify-write above is
+        // not atomic against a concurrent order debit (last-writer-wins can
+        // desync prepaid_balance from the ledger). The hardening report ships a
+        // paired migration (admin_adjust_prepaid_balance RPC with FOR UPDATE)
+        // that replaces this block; apply it to close the race. The audit row
+        // here is safe to add now and is a prerequisite either way.
+        await writeAuditLog(supabase, {
+          actorId: gate.userId,
+          action: 'manual_balance_adjustment',
+          entityType: 'profile',
+          entityId: agent_id,
+          changes: { type, amount: parsedAmount, balance_before: balanceBefore, balance_after: balanceAfter, description: description.trim() },
+        });
+
         return NextResponse.json({ success: true, id: data.id, balanceBefore, balanceAfter });
       },
     });

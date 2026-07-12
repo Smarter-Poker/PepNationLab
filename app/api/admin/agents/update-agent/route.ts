@@ -3,6 +3,7 @@ import { safeError } from '@/lib/api-error';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { writeAuditLog } from '@/lib/admin-audit';
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -34,6 +35,23 @@ export async function PATCH(request: NextRequest) {
 
     if (!id) return NextResponse.json({ error: 'Missing Agent ID' }, { status: 400 });
 
+    // Admin-target guard: every sibling route (update-password, update-contact,
+    // update-tier, super-upgrade) refuses to operate on an admin account. This
+    // route did not, so one admin could deactivate a co-admin (or themselves)
+    // and change any admin's money fields by id. Mirror the guard here.
+    const { data: target } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', id)
+      .maybeSingle();
+    if (!target) return NextResponse.json({ error: 'Profile Not Found' }, { status: 404 });
+    if (target.role === 'admin') {
+      return NextResponse.json(
+        { error: 'Cannot Modify An Admin Account Via This Route' },
+        { status: 403 },
+      );
+    }
+
     const updates: any = {};
     if (full_name !== undefined) updates.full_name = full_name;
     if (is_active !== undefined) updates.is_active = is_active;
@@ -57,6 +75,20 @@ export async function PATCH(request: NextRequest) {
     if (error) {
       return safeError('admin.update-agent', error, 500);
     }
+
+    // Audit activation and money-field changes. NOTE: direct prepaid_balance
+    // writes here bypass the append-only balance_transactions ledger; the
+    // sanctioned path is the atomic adjust-balance flow. Logging the change at
+    // least makes an out-of-band balance edit traceable. See the hardening
+    // report for the recommended migration to route balance moves through the
+    // ledger RPC.
+    await writeAuditLog(supabase, {
+      actorId: gate.userId,
+      action: 'agent_account_updated',
+      entityType: 'profile',
+      entityId: id,
+      changes: updates,
+    });
 
     return NextResponse.json({ success: true, updates });
   } catch (err: unknown) {

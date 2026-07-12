@@ -24,6 +24,7 @@ type BulkPushEvent = 'order_approved' | 'order_shipped' | 'order_delivered';
 interface BulkBody {
   ids?: unknown;
   action?: unknown;
+  reason?: unknown;
 }
 
 const VALID_ACTIONS: BulkAction[] = [
@@ -48,6 +49,10 @@ export async function POST(req: NextRequest) {
     ? body.ids.filter((x): x is string => typeof x === 'string' && UUID_REGEX.test(x))
     : [];
   const action = body.action as BulkAction;
+  const bulkReason =
+    typeof body.reason === 'string' && body.reason.trim()
+      ? body.reason.trim().slice(0, 300)
+      : 'Bulk admin cancellation';
 
   if (ids.length === 0) {
     return NextResponse.json({ error: 'At Least One Order ID Is Required.' }, { status: 400 });
@@ -108,7 +113,7 @@ export async function POST(req: NextRequest) {
         // and local stock reserved on every bulk-cancelled order.
         const { error } = await supabase.rpc('cancel_order', {
           p_order_id: id,
-          p_reason: 'Bulk admin cancellation',
+          p_reason: bulkReason,
           p_refund_type: 'none',
           p_actor_id: gate.userId,
         });
@@ -121,14 +126,38 @@ export async function POST(req: NextRequest) {
         if (target === 'approved_ship' || target === 'approved_pickup') {
           (updates as Record<string, string>).agent_approved_at = new Date().toISOString();
         }
-        const { error } = await supabase.from('orders').update(updates).eq('id', id);
+        // Optimistic lock: condition on the status we validated so a concurrent
+        // transition on the same order fails this row cleanly instead of
+        // overwriting it (mirrors the single-order route).
+        const { data: updatedRows, error } = await supabase
+          .from('orders')
+          .update(updates)
+          .eq('id', id)
+          .eq('status', current)
+          .select('id');
         upErr = error ? { message: error.message } : null;
+        if (!error && (!updatedRows || updatedRows.length === 0)) {
+          failed.push({ id, reason: 'Order Status Changed Concurrently.' });
+          continue;
+        }
       }
       if (upErr) {
         failed.push({ id, reason: 'An Unexpected Error Occurred While Updating This Order.' });
         continue;
       }
       succeeded.push(id);
+
+      // Credit-line agents: debit their running credit balance for this order's
+      // COGS + shipping on approval. The single-order route does this (see
+      // app/api/admin/orders/route.ts approve branch); the bulk path previously
+      // skipped it, so any order approved via the bulk action never consumed the
+      // agent's credit headroom - a path-dependent under-billing / revenue leak.
+      // charge_order_credit_line is idempotent (skips if a charge row exists).
+      if (target === 'approved_ship' || target === 'approved_pickup') {
+        try {
+          await supabase.rpc('charge_order_credit_line', { p_order_id: id, p_created_by: gate.userId });
+        } catch { /* credit-line ledger must not break the bulk release */ }
+      }
 
       // In-app + push notifications (awaited) for bulk transitions.
       try {
@@ -196,7 +225,12 @@ export async function POST(req: NextRequest) {
           action: 'bulk_order_status_change',
           entity_type: 'orders',
           entity_id: succeeded.join(','),
-          changes: { target_status: target, count: succeeded.length, order_ids: succeeded },
+          changes: {
+            target_status: target,
+            count: succeeded.length,
+            order_ids: succeeded,
+            ...(target === 'cancelled' ? { reason: bulkReason } : {}),
+          },
         });
       } catch { /* audit failures must not block response */ }
     }
@@ -239,6 +273,14 @@ export async function POST(req: NextRequest) {
     }
     if ((order.fulfillment_method as string) !== 'ship') {
       failed.push({ id, reason: 'Order Is Not A Shipping Order.' });
+      continue;
+    }
+    // Never buy postage for an order that is not approved for shipping. Without
+    // this, a mixed batch that included a cancelled or unpaid order would spend
+    // real money on a label AND fire a bogus "shipped" push to that buyer.
+    const labelStatus = order.status as OrderStatus;
+    if (!(['approved_ship', 'in_fulfillment', 'shipped'] as OrderStatus[]).includes(labelStatus)) {
+      failed.push({ id, reason: 'Order Is Not Approved For Shipping.' });
       continue;
     }
 

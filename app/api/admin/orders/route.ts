@@ -9,7 +9,7 @@ import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyAdminOrderStatusChange } from '@/lib/notify';
-import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail, sendOrderApprovedEmail, sendOrderCancelledEmail } from '@/lib/email';
+import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail } from '@/lib/email';
 
 type OrderPushEvent = 'order_approved' | 'order_shipped' | 'order_delivered';
 
@@ -167,11 +167,23 @@ export async function POST(req: NextRequest) {
       });
       updateError = error;
     } else {
-      const { error } = await supabase
+      // Optimistic lock: only apply the transition if the status is still the
+      // one we validated against. A concurrent cancel/approve on the same order
+      // loses this race cleanly (0 rows) instead of overwriting a terminal
+      // state (e.g. a stale "mark shipped" clobbering a just-committed cancel).
+      const { data: updatedRows, error } = await supabase
         .from('orders')
         .update(updates)
-        .eq('id', id);
+        .eq('id', id)
+        .eq('status', currentStatus)
+        .select('id');
       updateError = error;
+      if (!error && (!updatedRows || updatedRows.length === 0)) {
+        return NextResponse.json(
+          { error: 'Order Status Changed Concurrently. Please Refresh And Retry.' },
+          { status: 409 },
+        );
+      }
     }
 
     if (updateError) {
@@ -220,30 +232,27 @@ export async function POST(req: NextRequest) {
         if (status === 'approved_ship' || status === 'approved_pickup') event = 'order_approved';
         else if (status === 'shipped') event = 'order_shipped';
         else if (status === 'delivered') event = 'order_delivered';
-        if (event) {
+        // Only push on an actual transition. canTransition() returns true for
+        // from === to, so re-saving an already-shipped order used to re-notify
+        // the buyer; gate the push on a real status change.
+        if (event && currentStatus !== status) {
           await enqueueOrderPush(supabase, { userId: orderRow.buyer_id, orderId: id, event, tracking: trk });
         }
 
         // Transactional email for shipped/delivered. Best-effort, non-blocking,
         // only to a verified contact email, and only on an actual transition so
         // re-saving the same status cannot re-send. Never breaks the response.
-        const EMAIL_STATUSES = ['shipped', 'delivered', 'approved_ship', 'approved_pickup', 'cancelled'];
-        if (EMAIL_STATUSES.includes(status) && currentStatus !== status && emailConfigured()) {
+        if ((status === 'shipped' || status === 'delivered') && currentStatus !== status && emailConfigured()) {
           const { data: buyer } = await supabase
             .from('profiles')
             .select('contact_email, email_verified, full_name')
             .eq('id', orderRow.buyer_id)
             .maybeSingle();
           if (buyer?.contact_email && buyer.email_verified) {
-            const common = { to: buyer.contact_email, fullName: buyer.full_name, orderId: id };
             if (status === 'shipped') {
-              void sendOrderShippedEmail({ ...common, trackingNumber: trk }).catch(() => {});
-            } else if (status === 'delivered') {
-              void sendOrderDeliveredEmail(common).catch(() => {});
-            } else if (status === 'approved_ship' || status === 'approved_pickup') {
-              void sendOrderApprovedEmail({ ...common, pickup: status === 'approved_pickup' }).catch(() => {});
-            } else if (status === 'cancelled') {
-              void sendOrderCancelledEmail(common).catch(() => {});
+              void sendOrderShippedEmail({ to: buyer.contact_email, fullName: buyer.full_name, orderId: id, trackingNumber: trk }).catch(() => {});
+            } else {
+              void sendOrderDeliveredEmail({ to: buyer.contact_email, fullName: buyer.full_name, orderId: id }).catch(() => {});
             }
           }
         }
@@ -257,7 +266,9 @@ export async function POST(req: NextRequest) {
       else if (status === 'shipped') webhookEvent = 'order.shipped';
       else if (status === 'delivered') webhookEvent = 'order.delivered';
       else if (status === 'cancelled') webhookEvent = 'order.cancelled';
-      if (webhookEvent) {
+      // Only dispatch on an actual transition, so a no-op re-save cannot
+      // re-fire an order.* webhook to the agent's endpoint.
+      if (webhookEvent && currentStatus !== status) {
         const orderPayload = await fetchOrderForWebhook(supabase, id);
         if (orderPayload) {
           await enqueueWebhook(supabase, {

@@ -14,3 +14,18 @@ export async function register() {
     await import('./sentry.edge.config');
   }
 }
+
+export async function onRequestError(err: Error, request: any, context: any) {
+  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN;
+  if (!dsn) return;
+  try {
+    const mod = '@sentry/nextjs';
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
+    const Sentry: any = require(mod);
+    if (Sentry?.captureRequestError) {
+      await Sentry.captureRequestError(err, request, context);
+    }
+  } catch {
+    // Sentry not installed or failed to load.
+  }
+}

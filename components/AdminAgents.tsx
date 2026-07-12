@@ -271,6 +271,24 @@ export default function AdminAgents() {
   const formatCurrency = (val: number) => `$${(Number(val) || 0).toFixed(2)}`;
 
   const handleTierChange = async (agentId: string, newTier: string) => {
+    // Changing an agent's tier is not cosmetic: the DB tier-pricing triggers
+    // re-derive that agent's entire storefront pricing and lock them to the new
+    // tier. Guard against a stray click / arrow-key / mobile scroll on the
+    // native select silently re-pricing a whole catalog. No-op if unchanged.
+    const current = agents.find(a => a.id === agentId);
+    if (current && current.tier === newTier) {
+      setTierEditing(prev => { const n = new Set(prev); n.delete(agentId); return n; });
+      return;
+    }
+    const agentLabel = current?.full_name || current?.username || 'This Agent';
+    const fromLabel = (current?.tier || 'current').replace('_', ' ').toUpperCase();
+    const toLabel = newTier.replace('_', ' ').toUpperCase();
+    if (typeof window !== 'undefined' && !window.confirm(
+      `Change ${agentLabel} From ${fromLabel} To ${toLabel}? This Re-Prices Their Entire Storefront And Cannot Be Auto-Reverted.`
+    )) {
+      setTierEditing(prev => { const n = new Set(prev); n.delete(agentId); return n; });
+      return;
+    }
     setTierSaving(prev => new Set([...prev, agentId]));
     try {
       const res = await fetch('/api/admin/agents/update-tier', {

@@ -69,6 +69,17 @@ export async function POST(req: NextRequest) {
       max_auto_approve_limit,
     } = body;
 
+    // Allowlist the caller-supplied account_role. Without this, account_role is
+    // written straight into profiles.role below (profileRole), so a crafted
+    // request with account_role:'admin' (or 'shipping') would mint a new
+    // privileged account - a persistence backdoor that survives the original
+    // admin's password rotation. This route may only provision non-privileged
+    // account types; new admins/shipping users are created out of band.
+    const ALLOWED_ACCOUNT_ROLES = new Set(['agent', 'super_agent', 'researcher']);
+    if (!ALLOWED_ACCOUNT_ROLES.has(account_role)) {
+      return NextResponse.json({ error: 'Invalid Account Role' }, { status: 400 });
+    }
+
     const isResearcher = account_role === 'researcher';
 
     // Platform rule: no commission / gamification level may exceed 40%.

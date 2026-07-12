@@ -394,6 +394,34 @@ export default async function proxy(request: NextRequest) {
     return redirectWithCookies(url);
   }
 
+  // Defense in depth: /api/admin is admin-only at the edge. The two fulfillment
+  // endpoints the shipping role legitimately uses are the sole exception. Every
+  // handler still calls requireAdmin / requireOrdersAccess itself, so this is a
+  // second wall closing the gap where a non-admin authenticated user could
+  // previously reach an admin route handler before its in-route guard ran.
+  // profile.role is already loaded above - no extra DB round trip.
+  if (pathname.startsWith('/api/admin')) {
+    const isFulfillmentRoute =
+      pathname === '/api/admin/orders' || pathname === '/api/admin/orders/items';
+    const allowed =
+      profile?.role === 'admin' ||
+      (isFulfillmentRoute && profile?.role === 'shipping');
+    if (!allowed) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+  }
+
+  // Defense in depth: the shipping console is for the shipping role and admins.
+  if (
+    pathname.startsWith('/shipping') &&
+    profile?.role !== 'shipping' &&
+    profile?.role !== 'admin'
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/dashboard';
+    return redirectWithCookies(url);
+  }
+
   // Mandatory 2FA enforcement is DISABLED per owner decision (2026-06-09).
   // Two-factor auth remains available for anyone who wants it via
   // /account/security, but no role is forced to enroll. To re-enable the hard

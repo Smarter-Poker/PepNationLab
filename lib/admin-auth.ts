@@ -213,17 +213,17 @@ export async function assertMfaRecent(
     );
   }
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    return NextResponse.json(
-      { error: 'No Active Session.' },
-      { status: 401 },
-    );
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const amr: Array<{ method: string; timestamp: number }> = (session as any).amr ?? [];
-  if (!Array.isArray(amr) || amr.length === 0) {
+  // AMR (authentication methods reference) claims are NOT present on the
+  // supabase-js Session object - reading (session as any).amr always yielded
+  // undefined, so this guard used to return 403 unconditionally and made the
+  // EasyPost connect/rotate/disconnect routes permanently unusable. The
+  // methods (with per-method timestamps) are exposed only through the MFA
+  // assurance-level API.
+  const { data: aal, error: aalErr } =
+    await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const methods: Array<{ method: string; timestamp: number }> =
+    aal?.currentAuthenticationMethods ?? [];
+  if (aalErr || methods.length === 0) {
     return NextResponse.json(
       { error: 'Multi-Factor Authentication Required For This Action.' },
       { status: 403 },
@@ -232,7 +232,7 @@ export async function assertMfaRecent(
 
   const mfaMethods = new Set(['totp', 'webauthn', 'recovery_code']);
   const cutoffSec = (Date.now() - windowMs) / 1000;
-  const recentMfa = amr.some(
+  const recentMfa = methods.some(
     (entry) => mfaMethods.has(entry.method) && entry.timestamp >= cutoffSec,
   );
 

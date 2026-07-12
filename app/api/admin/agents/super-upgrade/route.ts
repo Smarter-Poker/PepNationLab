@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
+import { writeAuditLog } from '@/lib/admin-audit';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -66,6 +67,14 @@ export async function POST(req: NextRequest) {
     if (error) {
       return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
+
+    await writeAuditLog(supabase, {
+      actorId: gate.userId,
+      action: 'agent_super_status_changed',
+      entityType: 'profile',
+      entityId: agentId,
+      changes: { is_super_agent },
+    });
 
     return NextResponse.json({ success: true, is_super_agent });
       },

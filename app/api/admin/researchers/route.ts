@@ -105,6 +105,26 @@ export async function POST(req: NextRequest) {
     const { id, action, role, tier, account_type, credit_limit, is_active, slug, display_name, balance_delta, custom_markup_override, assign_to_agent_id } = body;
     if (!id) return NextResponse.json({ error: 'Missing User ID' }, { status: 400 });
 
+    // Admin-target guard: no action on this route may operate on an admin
+    // account. Without this, an admin could demote a co-admin to researcher or
+    // deactivate them (including self-lockout of the last admin). Sibling agent
+    // routes already refuse admin targets; enforce the same invariant here for
+    // every mutating action.
+    {
+      const { data: targetProfile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', id)
+        .maybeSingle();
+      if (!targetProfile) return NextResponse.json({ error: 'User Not Found' }, { status: 404 });
+      if (targetProfile.role === 'admin') {
+        return NextResponse.json(
+          { error: 'Cannot Modify An Admin Account.' },
+          { status: 403 },
+        );
+      }
+    }
+
     // Security: role must be one of the allowed non-admin values.
     const ALLOWED_ROLES = new Set(['researcher', 'agent', 'super_agent']);
     if (action !== 'toggle_active' && action !== 'adjust_balance' && action !== 'assign_researcher') {

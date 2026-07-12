@@ -305,6 +305,20 @@ function AdminOrdersPageInner() {
       return;
     }
 
+    // Confirm the actions that spend money or are irreversible. generate_labels
+    // buys a real (billable) EasyPost label per order; mark_delivered is a
+    // terminal state with no undo. A mis-click on a large selection would
+    // otherwise purchase dozens of labels or terminally close dozens of orders.
+    if (action === "generate_labels" || action === "mark_delivered") {
+      const confirmMsg =
+        action === "generate_labels"
+          ? `Purchase Shipping Labels For ${ids.length} Order(s)? This Spends Real Money, One Billable Label Per Order.`
+          : `Mark ${ids.length} Order(s) Delivered? This Is A Final State And Cannot Be Undone.`;
+      if (typeof window !== "undefined" && !window.confirm(confirmMsg)) {
+        return;
+      }
+    }
+
     setBulkRunning(true);
     const progressToast = toast.loading(
       `${labelMap[action]} ${ids.length} Order(s)...`,

@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
+import { writeAuditLog } from '@/lib/admin-audit';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -60,6 +61,16 @@ export async function POST(req: NextRequest) {
   if (profileErr) {
     console.error('Failed to set must_change_password flag:', profileErr);
   }
+
+  // Account takeover is the single most dangerous admin action; it must leave a
+  // forensic trail. Record who reset whose password (never the value itself).
+  await writeAuditLog(supabase, {
+    actorId: gate.userId,
+    action: 'agent_password_reset_by_admin',
+    entityType: 'profile',
+    entityId: userId,
+    changes: { must_change_password: true },
+  });
 
   return NextResponse.json({ success: true });
 }

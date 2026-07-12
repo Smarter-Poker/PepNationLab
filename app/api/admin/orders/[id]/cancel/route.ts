@@ -71,13 +71,20 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 422 });
       }
 
-      await service.from('admin_audit_log').insert({
-        actor_id: gate.userId,
-        action: 'order_cancelled',
-        entity_type: 'order',
-        entity_id: id,
-        changes: { reason: parsed.data.reason },
-      });
+      // The order is already committed-cancelled by the RPC above. If the audit
+      // insert throws, it must NOT bubble out of the handler: withIdempotency
+      // would delete the key and rethrow a 500, misleading the client into
+      // thinking the cancel failed (a retry then hits the terminal-state guard).
+      // Wrap it like every other route so a committed cancel is never masked.
+      try {
+        await service.from('admin_audit_log').insert({
+          actor_id: gate.userId,
+          action: 'order_cancelled',
+          entity_type: 'order',
+          entity_id: id,
+          changes: { reason: parsed.data.reason },
+        });
+      } catch { /* audit failure must not mask a committed cancel */ }
 
       return NextResponse.json({ success: true, cancelled: true });
     },

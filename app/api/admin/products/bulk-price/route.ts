@@ -48,8 +48,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid Adjustment Type' }, { status: 400 });
   }
   if (newValue === null) return NextResponse.json({ error: 'Invalid New Value' }, { status: 400 });
-  if (adjustmentType === 'set' && newValue < 0) {
-    return NextResponse.json({ error: 'New Value Cannot Be Negative' }, { status: 400 });
+  // Bound every adjustment type. Previously only 'set' was floored at 0, so a
+  // percent_delta of -200 or a flat_delta of -999999 drove base_cost / bulk
+  // price to zero or negative catalog-wide (agents/researchers then charged $0
+  // since computeAgentCost floors a non-positive base to 0). Clamp per type.
+  if (adjustmentType === 'set' && (newValue < 0 || newValue > 99999.99)) {
+    return NextResponse.json({ error: 'New Value Must Be Between 0 And 99999.99' }, { status: 400 });
+  }
+  if (adjustmentType === 'flat_delta' && (newValue < -99999.99 || newValue > 99999.99)) {
+    return NextResponse.json({ error: 'Flat Adjustment Must Be Between -99999.99 And 99999.99' }, { status: 400 });
+  }
+  if (adjustmentType === 'percent_delta' && (newValue < -90 || newValue > 500)) {
+    return NextResponse.json({ error: 'Percent Adjustment Must Be Between -90% And 500%' }, { status: 400 });
   }
 
   const effectiveAt = effectiveAtRaw ? new Date(effectiveAtRaw) : new Date();

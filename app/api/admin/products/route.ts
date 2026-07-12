@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { writeAuditLog } from '@/lib/admin-audit';
 
 export async function GET(req: NextRequest) {
   const gate = await requireAdmin();
@@ -114,6 +115,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Product Was Created But ID Could Not Be Retrieved' }, { status: 500 });
     }
 
+    await writeAuditLog(supabase, {
+      actorId: gate.userId,
+      action: 'product_created',
+      entityType: 'product',
+      entityId: data.id,
+      changes: { name, base_cost },
+    });
+
     return NextResponse.json({ id: data.id }, { status: 201 });
   } catch (err) {
     console.error('[admin/products] POST error:', err);
@@ -144,6 +153,12 @@ export async function PATCH(req: NextRequest) {
       'is_active', 'admin_bulk_price', 'admin_bulk_threshold'
     ] as const;
 
+    // Non-negative integer fields (client min="0" inputs are cosmetic and are
+    // bypassed by a direct API call). A negative inventory_count or a huge
+    // backorder_days used to persist silently.
+    const NONNEG_INT_FIELDS = new Set(['inventory_count', 'low_stock_threshold', 'backorder_days', 'admin_bulk_threshold']);
+    const NONNEG_MONEY_FIELDS = new Set(['admin_bulk_price']);
+
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     for (const field of ALLOWED_FIELDS) {
       if (field in raw) {
@@ -152,6 +167,24 @@ export async function PATCH(req: NextRequest) {
           if (isNaN(cost) || cost <= 0) {
             return NextResponse.json({ error: 'base_cost Must Be A Positive Number' }, { status: 400 });
           }
+        }
+        if (NONNEG_INT_FIELDS.has(field) && raw[field] !== null && raw[field] !== '') {
+          const n = Number(raw[field]);
+          if (!Number.isInteger(n) || n < 0 || n > 10_000_000) {
+            return NextResponse.json({ error: `${field} Must Be A Whole Number Between 0 And 10,000,000` }, { status: 400 });
+          }
+        }
+        if (NONNEG_MONEY_FIELDS.has(field) && raw[field] !== null && raw[field] !== '') {
+          const n = Number(raw[field]);
+          if (!Number.isFinite(n) || n < 0 || n > 99999.99) {
+            return NextResponse.json({ error: `${field} Must Be Between 0 And 99999.99` }, { status: 400 });
+          }
+        }
+        if (field === 'name' && typeof raw[field] === 'string' && raw[field].length > 200) {
+          return NextResponse.json({ error: 'Name Too Long (Max 200 Characters)' }, { status: 400 });
+        }
+        if (field === 'image_url' && typeof raw[field] === 'string' && raw[field].length > 500) {
+          return NextResponse.json({ error: 'Image URL Too Long (Max 500 Characters)' }, { status: 400 });
         }
         updates[field] = raw[field];
       }
@@ -175,6 +208,17 @@ export async function PATCH(req: NextRequest) {
         await supabase.rpc('recalculate_agent_product_prices', { p_product_id: id });
       } catch { /* non-critical: triggers handle recomputation */ }
     }
+
+    // Audit single-product edits. A COGS/inventory/deactivation change is the
+    // exact "pricing mistake loses money" event and was previously untraceable
+    // while bulk changes were logged.
+    await writeAuditLog(supabase, {
+      actorId: gate.userId,
+      action: 'product_updated',
+      entityType: 'product',
+      entityId: id,
+      changes: Object.fromEntries(Object.entries(updates).filter(([k]) => k !== 'updated_at')),
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

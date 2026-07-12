@@ -14,9 +14,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing Or Invalid Order ID Parameter' }, { status: 400 });
   }
 
+  // The shipping role is fulfillment-only and must never see internal cost
+  // basis. order_items carries unit_cost_price and unit_super_agent_cost (COGS
+  // and super-agent margin); select an explicit column set that excludes those
+  // for non-admins, and only widen to '*' for a true admin.
+  const isAdmin = gate.role === 'admin';
+  const FULFILLMENT_COLUMNS =
+    'id, order_id, product_id, product_name, quantity, unit_retail_price';
+
   const { data, error } = await supabase
     .from('order_items')
-    .select('*')
+    .select(isAdmin ? '*' : FULFILLMENT_COLUMNS)
     .eq('order_id', orderId);
 
   if (error) {

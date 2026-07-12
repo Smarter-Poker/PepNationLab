@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { writeAuditLog } from '@/lib/admin-audit';
 
 export async function GET() {
   const gate = await requireAdmin();
@@ -54,6 +55,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Multiplier Must Be A Valid Number Between 1.0 And 99.99' }, { status: 400 });
     }
 
+    // Capture the outgoing multiplier so the audit row records from -> to. This
+    // change cascades to every storefront on the tier, so it must be traceable.
+    const { data: beforeTier } = await supabase
+      .from('pricing_tiers')
+      .select('multiplier')
+      .eq('tier_name', tier_name)
+      .maybeSingle();
+
     const updates: Record<string, unknown> = {
       multiplier: numMultiplier,
       updated_at: new Date().toISOString(),
@@ -94,6 +103,19 @@ export async function POST(req: NextRequest) {
         console.error('[admin/pricing-tiers] retail recalc failed:', recalcErr.message);
       }
     }
+
+    await writeAuditLog(supabase, {
+      actorId: gate.userId,
+      action: 'pricing_tier_multiplier_change',
+      entityType: 'pricing_tiers',
+      entityId: tier_name,
+      changes: {
+        tier_name,
+        from: beforeTier ? Number(beforeTier.multiplier) : null,
+        to: numMultiplier,
+        cascaded_retail_recalc: true,
+      },
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { isTierLadderV2 } from '@/lib/pricing';
+import { writeAuditLog } from '@/lib/admin-audit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -136,6 +137,14 @@ export async function POST(req: NextRequest) {
   // 2026-07-06): the DB trigger fn_recalc_agent_products_on_markup_change
   // keeps retail_price fixed and re-derives margin_percent from the new
   // wholesale cost. No retail recalculation here.
+
+  await writeAuditLog(svc, {
+    actorId: gate.userId,
+    action: 'agent_tier_override_set',
+    entityType: 'profile',
+    entityId: agentId,
+    changes: { enabled, level: enabled ? level : null, custom_markup_pct: customMarkupPct },
+  });
 
   return NextResponse.json({ success: true, agentId, enabled, level: enabled ? level : null, customMarkup: customMarkupPct });
 }
