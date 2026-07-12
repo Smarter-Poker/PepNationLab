@@ -23,6 +23,8 @@ export const StorefrontRegisterSchema = z.object({
   referralCode: z.string().trim().max(50).optional().nullable(),
   // An admin/super-agent signup promo code (grants a first-time perk).
   promoCode: z.string().trim().max(40).optional().nullable(),
+  // Sub-agent attribution captured from a `?sa=<sub-agent-id>` storefront link.
+  subAgentId: z.string().uuid().optional().nullable(),
 });
 export type StorefrontRegisterInput = z.infer<typeof StorefrontRegisterSchema>;
 

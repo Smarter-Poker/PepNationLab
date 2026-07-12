@@ -62,14 +62,16 @@ function SignupForm() {
   // Capture the agent slug from localStorage so the new account is linked
   // to the agent the guest was browsing when they decided to sign up.
   const [capturedAgentSlug, setCapturedAgentSlug] = useState<string | null>(null);
+  const [capturedSubAgentId, setCapturedSubAgentId] = useState<string | null>(null);
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem('pnl_referral_agent');
       if (stored) {
-        const parsed = JSON.parse(stored) as { slug?: string; savedAt?: number };
+        const parsed = JSON.parse(stored) as { slug?: string; sa?: string; savedAt?: number };
         const age = Date.now() - (parsed.savedAt ?? 0);
         if (parsed.slug && age < 30 * 24 * 60 * 60 * 1000) {
           setCapturedAgentSlug(parsed.slug);
+          if (parsed.sa && /^[0-9a-f-]{36}$/i.test(parsed.sa)) setCapturedSubAgentId(parsed.sa);
         }
       }
     } catch { /* ignore */ }
@@ -207,6 +209,7 @@ function SignupForm() {
           code: verificationCode,
           referralCode: referralInput.trim() || undefined,
           promoCode: promoInput.trim() || undefined,
+          subAgentId: capturedSubAgentId ?? undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));

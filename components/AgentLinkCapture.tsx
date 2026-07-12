@@ -43,10 +43,24 @@ export default function AgentLinkCapture({ agentSlug }: Props) {
         }
       }
 
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ slug: agentSlug, savedAt: Date.now() })
-      );
+      // Also capture a `?sa=<sub-agent-id>` attribution param when present, so a
+      // guest who arrives via a sub-agent's share link is credited to that
+      // sub-agent (not only the parent agent) at signup. Preserve a previously
+      // captured sa for the same agent when the current URL omits it.
+      let sa: string | null = null;
+      try {
+        const p = new URLSearchParams(window.location.search).get('sa');
+        if (p && /^[0-9a-f-]{36}$/i.test(p)) sa = p;
+      } catch { /* ignore */ }
+      if (!sa && raw) {
+        try {
+          const prev = JSON.parse(raw) as { slug?: string; sa?: string };
+          if (prev.slug === agentSlug && prev.sa) sa = prev.sa;
+        } catch { /* ignore */ }
+      }
+      const entry: { slug: string; sa?: string; savedAt: number } = { slug: agentSlug, savedAt: Date.now() };
+      if (sa) entry.sa = sa;
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entry));
     } catch {
       // localStorage unavailable (private mode, etc.) - fail silently.
     }

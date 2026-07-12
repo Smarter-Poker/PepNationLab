@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
   const { agentSlug, username, password, firstName, lastName, phone, code } = parsedBody.data;
+  const subAgentId = parsedBody.data.subAgentId ?? null;
   const email = normalizeEmail(parsedBody.data.email ?? '');
 
   // A real email is required for all public signups.
@@ -100,6 +101,21 @@ export async function POST(req: NextRequest) {
     }
 
     const referringAgentId: string = agentProfile.id;
+
+    // Optional sub-agent attribution (?sa=<id> capture). Only honored when the
+    // id is a real sub-agent whose parent is this storefront's agent, so a
+    // forged or stale id can never misattribute the signup.
+    let referringSubAgentId: string | null = null;
+    if (subAgentId) {
+      const { data: subAgent } = await admin
+        .from('profiles')
+        .select('id, is_sub_agent, parent_agent_id')
+        .eq('id', subAgentId)
+        .maybeSingle();
+      if (subAgent && subAgent.is_sub_agent && subAgent.parent_agent_id === referringAgentId) {
+        referringSubAgentId = subAgentId;
+      }
+    }
 
     // Check username uniqueness - use .eq() not .ilike() (underscore is a LIKE wildcard).
     const { data: existingUser } = await admin
@@ -187,6 +203,7 @@ export async function POST(req: NextRequest) {
       phone: phone ? String(phone).trim() : null,
       role: 'researcher',
       referring_agent_id: referringAgentId,
+      referring_sub_agent_id: referringSubAgentId,
       acquisition_source: 'storefront',
       disclaimer_v1_accepted: false,
       is_active: true,
