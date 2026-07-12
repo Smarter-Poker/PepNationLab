@@ -55,11 +55,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const compound = await getCompound(slug);
   if (!compound) return { title: 'Compound | Research | Pep Nation Lab', robots: { index: false } };
   const name = compound.display_name;
-  const summary = (compound.plain_summary ?? '').slice(0, 155);
+  const raw = compound.plain_summary ?? '';
+  const clipped = raw.length > 130 ? raw.slice(0, 130).replace(/\s+\S*$/, '') + '...' : raw;
+  const description = clipped
+    ? `${name}: ${clipped} Research Use Only.`
+    : `${name} research-use-only reference: mechanism, evidence, handling, and references.`;
   // Open this monograph to indexing - it's pure RUO reference content.
   return {
     title: `${name} | Research Library | Pep Nation Lab`,
-    description: summary || `${name} research-use-only reference: mechanism, evidence, handling, and references.`,
+    description,
     keywords: [name, ...(compound.aliases ?? []).slice(0, 4), 'research peptide', 'RUO compound', 'peptide research', 'Pep Nation Lab'].join(', '),
     robots: { index: true, follow: true },
     alternates: { 
@@ -68,18 +72,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         'text/markdown': `https://pepnationlab.com/api/llm/compound/${slug}`,
       },
     },
+    // NOTE: no `images` here on purpose - the file-based opengraph-image.tsx
+    // in this route segment generates a unique per-compound OG card. Declaring
+    // a static image in metadata would override and kill the dynamic one.
     openGraph: {
       title: `${name} - Research Reference | Pep Nation Lab`,
-      description: summary || `${name} research-use-only reference: mechanism, evidence, handling, and references.`,
+      description,
       url: `https://pepnationlab.com/research/${slug}`,
       type: 'article',
-      images: [{ url: '/og-card.png', width: 1200, height: 630, alt: `${name} Research Reference - Pep Nation Lab` }],
     },
     twitter: {
       card: 'summary_large_image',
       title: `${name} | Pep Nation Lab Research Library`,
-      description: summary || `${name} RUO research reference: mechanism, evidence tier, and handling data.`,
-      images: ['/og-card.png'],
+      description,
     },
   };
 }
@@ -226,6 +231,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     })
     .filter((x): x is { href: string; name: string } => x !== null);
 
+  // Content freshness pulled from the compound row itself (updated_at /
+  // created_at) - never fabricated from the render date.
+  const freshness = compound as { updated_at?: string | null; created_at?: string | null };
+  const reviewedDate = (freshness.updated_at ?? freshness.created_at)?.slice(0, 10) ?? null;
+  const publishedDate = freshness.created_at?.slice(0, 10) ?? null;
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -244,7 +255,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         publisher: { '@id': 'https://pepnationlab.com/#organization' },
         reviewedBy: { '@id': 'https://pepnationlab.com/#organization' },
         maintainer: { '@id': 'https://pepnationlab.com/#organization' },
-        lastReviewed: new Date().toISOString().slice(0, 10),
+        ...(reviewedDate ? { lastReviewed: reviewedDate, dateModified: reviewedDate } : {}),
+        ...(publishedDate ? { datePublished: publishedDate } : {}),
         audience: {
           '@type': 'Audience',
           audienceType: 'Qualified Researchers And Scientific Institutions',

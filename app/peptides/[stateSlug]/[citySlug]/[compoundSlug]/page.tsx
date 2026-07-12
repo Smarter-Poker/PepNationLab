@@ -184,13 +184,20 @@ export default async function CompoundCityPage({
           '@type': 'Offer',
           price: (card!.price as number).toFixed(2),
           priceCurrency: 'USD',
+          priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+          itemCondition: 'https://schema.org/NewCondition',
           availability: 'https://schema.org/InStock',
           url: `${BASE}${storeHref}`,
           seller: { '@id': `${BASE}/#organization` },
         },
       }
     : null;
-  if (productNode && card?.image) productNode.image = `${BASE}${card.image}`;
+  if (productNode && card?.image) {
+    // Guard: DB image URLs may already be absolute (Supabase storage).
+    productNode.image = String(card.image).startsWith('http')
+      ? card.image
+      : `${BASE}${card.image}`;
+  }
 
   const jsonLd = {
     '@context': 'https://schema.org',

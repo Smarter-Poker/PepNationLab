@@ -54,7 +54,7 @@ export async function generateMetadata({
   const city = getCity(stateSlug, citySlug);
   if (!city) return { robots: { index: false } };
 
-  const title = `Peptide Research In ${city.name}, ${city.stateAbbr} - Pep Nation Lab`;
+  const title = `Research Peptides In ${city.name}, ${city.stateAbbr} | Pep Nation Lab`;
   const description = `Pep Nation Lab supplies research-grade peptides to qualified researchers in ${city.name}, ${city.state}. BPC-157, Semaglutide, Tirzepatide, TB-500 & 100+ more research compounds. Wholesale pricing. Verified accounts only.`;
 
   return {
@@ -188,12 +188,19 @@ export default async function CityLandingPage({
                     '@type': 'Offer',
                     price: price.toFixed(2),
                     priceCurrency: 'USD',
+                    priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                    itemCondition: 'https://schema.org/NewCondition',
                     availability: 'https://schema.org/InStock',
                     url: `https://pepnationlab.com/${DEFAULT_STORE_SLUG}?product=${p.productId}`,
                     seller: { '@id': 'https://pepnationlab.com/#organization' },
                   },
                 };
-                if (p.image) node.image = `https://pepnationlab.com${p.image}`;
+                if (p.image) {
+                  // Guard: DB image URLs may already be absolute (Supabase storage).
+                  node.image = String(p.image).startsWith('http')
+                    ? p.image
+                    : `https://pepnationlab.com${p.image}`;
+                }
                 return node;
               }),
           ]

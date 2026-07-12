@@ -292,7 +292,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
 
             {/* H1 */}
             <h1 style={{ color: 'var(--white)', fontSize: 'clamp(2.4rem, 6vw, 4.5rem)', fontWeight: 900, lineHeight: 1.05, letterSpacing: '-0.03em', marginBottom: 'var(--space-5)', maxWidth: 700, fontFamily: 'var(--font-brand)' }}>
-              Peptide Research<br />
+              Research Peptides<br />
               In <span style={{ color: 'var(--teal)', textShadow: '0 0 40px rgba(0,196,188,0.5)' }}>{city.name}</span>
             </h1>
 
