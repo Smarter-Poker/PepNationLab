@@ -166,51 +166,55 @@ export default function AgentOverview({
 
   return (
     <div className="aoc-wrap">
-      {/* Three KPI boxes */}
-      <div className="aoc-kpi-grid">
-        {/* 1. Today's Revenue */}
-        <button type="button" className="aoc-kpi" onClick={() => onNavigate?.('Sales & Accounting')}>
-          <div className="aoc-kpi-icon" style={{ color: '#7BE08F' }}><DollarSign size={40} /></div>
-          <span className="aoc-kpi-label">Today&apos;s Revenue</span>
-          <span className="aoc-kpi-value">{currency.format(todayRevenue)}</span>
-          <span className="aoc-kpi-footer" style={{ color: '#7BE08F' }}>Total Collected: {currency.format(totalRevenue)}</span>
-        </button>
+      {/* Three KPI boxes embedded in a metallic frame */}
+      <div className="aoc-kpi-frame">
+        <div className="aoc-kpi-inner">
+          <div className="aoc-kpi-grid">
+            {/* 1. Today's Revenue */}
+            <button type="button" className="aoc-kpi" onClick={() => onNavigate?.('Sales & Accounting')}>
+              <div className="aoc-kpi-icon" style={{ color: '#7BE08F' }}><DollarSign size={40} /></div>
+              <span className="aoc-kpi-label">Today&apos;s Revenue</span>
+              <span className="aoc-kpi-value">{currency.format(todayRevenue)}</span>
+              <span className="aoc-kpi-footer" style={{ color: '#7BE08F' }}>Total Collected: {currency.format(totalRevenue)}</span>
+            </button>
 
-        {/* 2. Recent Activity (Combined) */}
-        <button type="button" className="aoc-kpi" onClick={() => onNavigate?.('Orders')} style={{ padding: '16px' }}>
-          <div className="aoc-kpi-icon" style={{ color: '#C09EF6' }}><Activity size={32} /></div>
-          <span className="aoc-kpi-label" style={{ marginBottom: '12px' }}>Recent Activity</span>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', alignItems: 'center' }}>
-            {needsApprovalCount > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#F6A461', fontSize: '0.9rem', fontWeight: 700 }}>
-                <AlertCircle size={14} /> {needsApprovalCount} Need{needsApprovalCount === 1 ? 's' : ''} Approval
+            {/* 2. Recent Activity (Combined) */}
+            <button type="button" className="aoc-kpi" onClick={() => onNavigate?.('Orders')} style={{ padding: '16px' }}>
+              <div className="aoc-kpi-icon" style={{ color: '#C09EF6' }}><Activity size={32} /></div>
+              <span className="aoc-kpi-label" style={{ marginBottom: '12px' }}>Recent Activity</span>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', alignItems: 'center' }}>
+                {needsApprovalCount > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#F6A461', fontSize: '0.9rem', fontWeight: 700 }}>
+                    <AlertCircle size={14} /> {needsApprovalCount} Need{needsApprovalCount === 1 ? 's' : ''} Approval
+                  </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#F6C761', fontSize: '0.9rem', fontWeight: 700 }}>
+                  <Hourglass size={14} /> {awaitingPaymentCount} Awaiting Payment
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#C09EF6', fontSize: '0.9rem', fontWeight: 700 }}>
+                  <Activity size={14} /> {recentCount} Recent Orders
+                </div>
               </div>
-            )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#F6C761', fontSize: '0.9rem', fontWeight: 700 }}>
-              <Hourglass size={14} /> {awaitingPaymentCount} Awaiting Payment
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#C09EF6', fontSize: '0.9rem', fontWeight: 700 }}>
-              <Activity size={14} /> {recentCount} Recent Orders
-            </div>
-          </div>
-        </button>
+            </button>
 
-        {/* 3. Active Agents & Active Researchers (stacked) */}
-        <button type="button" className="aoc-kpi" onClick={() => onNavigate?.(userProfile?.is_super_agent ? 'My Agent Accounts' : 'Researchers')} style={{ padding: '16px' }}>
-          <div className="aoc-kpi-icon" style={{ color: '#61D6F6' }}><Users size={32} /></div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', alignItems: 'center', marginTop: '8px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--white)' }}>{activeAgentsCount}</span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Active Agents</span>
-            </div>
-            <div style={{ width: '40px', height: '1px', background: 'rgba(255,255,255,0.1)' }} />
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--white)' }}>{activeResearchersCount}</span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Active Researchers</span>
-            </div>
+            {/* 3. Active Agents & Active Researchers (stacked) */}
+            <button type="button" className="aoc-kpi" onClick={() => onNavigate?.(userProfile?.is_super_agent ? 'My Agent Accounts' : 'Researchers')} style={{ padding: '16px' }}>
+              <div className="aoc-kpi-icon" style={{ color: '#61D6F6' }}><Users size={32} /></div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', alignItems: 'center', marginTop: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                  <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--white)' }}>{activeAgentsCount}</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Active Agents</span>
+                </div>
+                <div style={{ width: '40px', height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                  <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--white)' }}>{activeResearchersCount}</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Active Researchers</span>
+                </div>
+              </div>
+            </button>
           </div>
-        </button>
+        </div>
       </div>
 
       {/* Metallic menu image with clickable zones (restored) */}
@@ -292,35 +296,64 @@ export default function AgentOverview({
         }
         .aoc-copy-btn:hover { background: var(--surface-3, #1D2D3E); color: var(--text-primary, #FFFFFF); }
 
-        /* Five equal boxes */
-        .aoc-kpi-grid {
-          display: grid;
-          grid-template-columns: repeat(5, minmax(0, 1fr));
-          gap: var(--space-4, 16px);
+        /* Premium Metallic Frame */
+        .aoc-kpi-frame {
+          width: 100%;
+          max-width: 480px;
+          margin: 0 auto var(--space-4, 16px) auto;
+          position: relative;
+          border-radius: 14px;
+          /* Thick brushed nickel background */
+          background: linear-gradient(135deg, #e6e9ec 0%, #aeb6bf 25%, #6a7683 50%, #909ba7 75%, #d1d6dc 100%);
+          padding: 8px; /* Thickness of the frame */
+          box-shadow: 
+            0 12px 30px rgba(0,0,0,0.6),
+            inset 0 1px 3px rgba(255,255,255,0.8),
+            inset 0 -1px 4px rgba(0,0,0,0.6);
         }
-        @media (max-width: 1024px) { .aoc-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-        @media (max-width: 640px)  { .aoc-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        .aoc-kpi-inner {
+          background: #0A1016; /* Deep dark background matching the image inner */
+          border-radius: 8px;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          box-shadow: inset 0 3px 8px rgba(0,0,0,0.9);
+        }
 
+        /* The 3 KPI boxes vertically stacked */
+        .aoc-kpi-grid {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3, 12px);
+          width: 100%;
+        }
+
+        /* Glossy Dark Button mimicking the dynamic image buttons */
         .aoc-kpi {
           position: relative;
           display: flex;
           flex-direction: column;
-          align-items: flex-start;
-          text-align: left;
-          padding: var(--space-5, 20px);
-          background: linear-gradient(145deg, var(--surface-2, #162230) 0%, var(--surface-1, #0F1923) 100%);
-          border: var(--border-subtle, 1px solid rgba(255,255,255,0.05));
-          border-radius: var(--radius-lg, 12px);
+          align-items: center; /* Centered content for all 3 boxes */
+          text-align: center;
+          padding: var(--space-4, 16px);
+          background: linear-gradient(180deg, #1C2B3C 0%, #0F1923 100%);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 6px;
           overflow: hidden;
           cursor: pointer;
-          transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+          transition: all 0.2s ease;
           font-family: inherit;
-          min-height: 132px;
+          min-height: auto;
+          box-shadow: 
+            0 2px 4px rgba(0,0,0,0.5),
+            inset 0 1px 1px rgba(255,255,255,0.15);
         }
         .aoc-kpi:hover {
-          border-color: rgba(168, 180, 192, 0.3);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+          background: linear-gradient(180deg, #24364A 0%, #152230 100%);
+          border-color: rgba(255, 255, 255, 0.25);
+          box-shadow: 
+            0 4px 12px rgba(0,0,0,0.7),
+            inset 0 1px 1px rgba(255,255,255,0.3);
         }
         .aoc-kpi:focus-visible,
         .dash-zone:focus-visible {
@@ -338,8 +371,10 @@ export default function AgentOverview({
         .aoc-kpi:hover .aoc-kpi-icon { opacity: 0.28; }
         .aoc-kpi-label {
           font-size: 0.8125rem;
-          font-weight: 600;
+          font-weight: 700;
           color: var(--text-muted, #8090A0);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
           margin-bottom: var(--space-2, 8px);
         }
         .aoc-kpi-value {
@@ -348,6 +383,7 @@ export default function AgentOverview({
           letter-spacing: -0.02em;
           color: var(--text-primary, #FFFFFF);
           line-height: 1.1;
+          margin-bottom: var(--space-2, 8px);
         }
         .aoc-kpi-footer {
           margin-top: auto;
