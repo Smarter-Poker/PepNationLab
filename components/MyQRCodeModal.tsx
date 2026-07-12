@@ -434,7 +434,7 @@ export default function MyQRCodeModal({
                       disabled={rewardSaving}
                       onClick={(e) => { e.stopPropagation(); saveReward(!reward.enabled, reward.enabled ? 0 : (reward.amount || 10)); }}
                       style={{
-                        cursor: 'pointer', padding: '6px 12px', borderRadius: 999, border: 'none',
+                        cursor: 'pointer', padding: '6px 12px', borderRadius: 999,
                         fontWeight: 800, fontSize: '0.72rem', letterSpacing: '0.05em',
                         color: reward.enabled ? '#04231F' : '#CBD5E1',
                         background: reward.enabled ? 'linear-gradient(180deg,#2fe0c9,#12b3a0)' : 'rgba(255,255,255,0.08)',

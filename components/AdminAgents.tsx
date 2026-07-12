@@ -269,7 +269,7 @@ export default function AdminAgents() {
     }
   };
 
-  const formatCurrency = (val: number) => `$${(Number(val) || 0).toFixed(2)}`;
+  const formatCurrency = (val: number) => `$${(Number(val) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const handleTierChange = async (agentId: string, newTier: string) => {
     // Changing an agent's tier is not cosmetic: the DB tier-pricing triggers

@@ -239,7 +239,7 @@ export default function RootLayout({
               </InAppBrowserProvider>
             </CartProvider>
           </SiteDisclaimerGate>
-          <Toaster theme="dark" position="bottom-right" richColors />
+          <Toaster theme="dark" position="bottom-right" richColors style={{ zIndex: 999999 }} />
           {/* All non-critical global widgets, loaded in their own async chunks
               after hydration instead of in every page's initial bundle. */}
           <DeferredGlobals />

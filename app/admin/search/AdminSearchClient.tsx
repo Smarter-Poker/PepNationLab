@@ -103,8 +103,7 @@ const BLANK_FILTERS: OrderFilters = { status: '', payment: '', from: '', to: '',
 const INITIAL_GROUP_VISIBLE = 25;
 
 function formatMoney(v: number | null | undefined): string {
-  if (v == null) return '-';
-  return `$${Number(v).toFixed(2)}`;
+  return `$${(Number(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function roleLabel(u: UserHit): string {

@@ -87,7 +87,7 @@ type Detail = {
   }>;
 };
 
-const fmtMoney = (v: number | null | undefined) => `$${(Number(v) || 0).toFixed(2)}`;
+const fmtMoney = (v: number | null | undefined) => `$${(Number(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fmtPct = (n: number) => `${Number.isInteger(n) ? n : Number(n.toFixed(1))}%`;
 const fmtDate = (s: string | null | undefined) => {
   if (!s) return '-';

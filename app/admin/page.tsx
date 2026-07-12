@@ -22,7 +22,7 @@ const ICON_PROPS = {
 };
 
 function formatCurrency(n: number): string {
-  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${(Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatAuditAction(action: string): string {

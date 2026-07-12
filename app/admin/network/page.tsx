@@ -21,7 +21,7 @@ interface TreeRow {
 }
 
 function fmtMoney(n: number): string {
-  return `$${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${(Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function roleBadge(row: TreeRow): { label: string; color: string } {

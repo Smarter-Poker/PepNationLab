@@ -132,7 +132,7 @@ function findGroupForCompound(
 }
 
 function formatMoney(dollars: number): string {
-  return dollars.toFixed(2);
+  return (Number(dollars) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function SectionTitle({ children, primaryColor }: { children: React.ReactNode; primaryColor: string }) {

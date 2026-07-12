@@ -13,6 +13,8 @@ import MyQRCodeModal from './MyQRCodeModal';
 import { evictAllCatalogCaches } from '@/lib/storefront-cache';
 import { useModalA11y } from '@/lib/useModalA11y';
 import GlobalCompletenessWidget from '@/components/GlobalCompletenessWidget';
+import { toast } from 'sonner';
+import { triggerInstall, isRunningAsApp, isKnownInstalled, subscribeInstallState } from '@/lib/pwaInstall';
 
 function resolveTitle(pathname: string, role: string): string {
   if (pathname === '/')               return 'Pep Nation Lab';
@@ -134,6 +136,9 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
   const [agentName, setAgentName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showQRModal, setShowQRModal] = useState(false);
+  // Whether to surface the manual "Download Pep Nation App" menu item: only
+  // when NOT already installed (or running as the app) on this device.
+  const [canOfferInstall, setCanOfferInstall] = useState(false);
 
   const activeAgentSlug = propAgentSlug || agentSlug;
 
@@ -168,6 +173,28 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
       closeDrawer();
     }
   };
+
+  // Manual PWA install entry. Only offered when the app is NOT already
+  // installed on this device (desktop and mobile detected independently).
+  useEffect(() => {
+    const update = () => setCanOfferInstall(!isRunningAsApp() && !isKnownInstalled());
+    update();
+    return subscribeInstallState(update);
+  }, []);
+
+  const handleInstallClick = useCallback(async () => {
+    closeDrawer();
+    const result = await triggerInstall();
+    if (result === 'ios-instructions') {
+      toast('To Install: Tap The Share Icon, Then "Add To Home Screen".', { duration: 6000 });
+    } else if (result === 'unavailable') {
+      toast('To Install, Open Your Browser Menu (Or The Address-Bar Install Icon) And Choose "Install App".', { duration: 6000 });
+    } else if (result === 'already-installed') {
+      toast('Pep Nation Lab Is Already Installed On This Device.');
+    } else if (result === 'accepted') {
+      setCanOfferInstall(false);
+    }
+  }, [closeDrawer]);
 
   const roleLinks = user
     ? getRoleNavLinks(role, {
@@ -557,6 +584,32 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
               <DrawerLink href="/peptide-101" label="Peptide 101" onClick={closeDrawer}
                 icon={<svg {...IP}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>}
               />
+              {canOfferInstall && (
+                <button
+                  onClick={handleInstallClick}
+                  className="drawer-link"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--space-3)',
+                    padding: '12px var(--space-5)',
+                    color: 'var(--silver)',
+                    fontSize: '0.95rem',
+                    fontWeight: 500,
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    width: '100%',
+                    textAlign: 'left',
+                    minHeight: 48,
+                  }}
+                >
+                  <span style={{ display: 'inline-flex', opacity: 0.7 }}>
+                    <svg {...IP}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </span>
+                  Download Pep Nation App
+                </button>
+              )}
               <button
                 onClick={() => { closeDrawer(); handleSignOut(); }}
                 style={{
