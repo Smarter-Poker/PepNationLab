@@ -775,7 +775,16 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
                   onChange={(e) => { setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 24)); touch('code'); }}
                   onBlur={() => touch('code')}
                   placeholder="SUMMER20"
+                  // Code / discount type / discount value are immutable once a coupon
+                  // exists: PATCH /api/agent/coupons/[id] deliberately ignores them to
+                  // protect redemption + statement integrity. Editing them silently
+                  // no-oped before; lock them in the UI so the contract is visible.
+                  disabled={!!editingId}
+                  readOnly={!!editingId}
                 />
+                {editingId && (
+                  <p style={{ color: 'var(--grey-400)', fontSize: '0.7rem', marginTop: 4 }}>Code Is Locked After Creation. Create A New Coupon To Change It.</p>
+                )}
                 {touched.code && validation.code && (
                   <p style={{ color: 'var(--red)', fontSize: '0.72rem', marginTop: 4 }}>{validation.code}</p>
                 )}
@@ -784,7 +793,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--grey-300)', display: 'block', marginBottom: 4 }}>Discount Type *</label>
-                  <select className="form-input" value={discountType} onChange={(e) => setDiscountType(e.target.value as 'percent' | 'fixed')}>
+                  <select className="form-input" value={discountType} onChange={(e) => setDiscountType(e.target.value as 'percent' | 'fixed')} disabled={!!editingId}>
                     <option value="percent">Percent Off (%)</option>
                     <option value="fixed">Fixed Dollar ($)</option>
                   </select>
@@ -802,7 +811,12 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
                     step={discountType === 'percent' ? 1 : 0.01}
                     min={0.01}
                     placeholder={discountType === 'percent' ? '10' : '5.00'}
+                    disabled={!!editingId}
+                    readOnly={!!editingId}
                   />
+                  {editingId && (
+                    <p style={{ color: 'var(--grey-400)', fontSize: '0.7rem', marginTop: 4 }}>Discount Is Locked After Creation.</p>
+                  )}
                   {touched.discountValue && validation.discountValue && (
                     <p style={{ color: 'var(--red)', fontSize: '0.72rem', marginTop: 4 }}>{validation.discountValue}</p>
                   )}
