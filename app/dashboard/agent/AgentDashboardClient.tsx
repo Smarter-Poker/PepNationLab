@@ -89,6 +89,7 @@ interface AgentDashboardClientProps {
   initialAgentProfile: AgentProfile | null;
   initialResearchers: Researcher[];
   initialOrders: Order[];
+  initialAgentsCount?: number;
 }
 
 
@@ -96,7 +97,8 @@ export default function AgentDashboardClient({
   userProfile,
   initialAgentProfile,
   initialResearchers,
-  initialOrders
+  initialOrders,
+  initialAgentsCount = 0
 }: AgentDashboardClientProps) {
   const supabase = useMemo(() => createClient(), []);
 
@@ -737,6 +739,7 @@ export default function AgentDashboardClient({
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
             <AgentOverview
               activeResearchersCount={activeResearchersCount}
+              activeAgentsCount={initialAgentsCount}
               activeOrdersCount={activeOrdersCount}
               totalRevenue={totalRevenue}
               storefrontUrl={storefrontUrl}

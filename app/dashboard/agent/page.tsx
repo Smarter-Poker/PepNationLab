@@ -77,6 +77,7 @@ export default async function AgentDashboardPage() {
     .select('id')
     .eq('parent_agent_id', user.id);
   const agentIds = [user.id, ...(subAgents || []).map((a: any) => a.id)];
+  const activeAgentsCount = (subAgents || []).length;
 
   // 6. Fetch referred/assigned orders
   const { data: ordersData } = await supabase
@@ -143,6 +144,7 @@ export default async function AgentDashboardPage() {
         initialAgentProfile={agentProfile} // @ts-ignore
         initialResearchers={researchers} // @ts-ignore
         initialOrders={orders}
+        initialAgentsCount={activeAgentsCount}
       />
     </Suspense>
   );
