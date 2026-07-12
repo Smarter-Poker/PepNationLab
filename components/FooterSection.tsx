@@ -64,7 +64,7 @@ export default function FooterSection() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {[
                 { label: 'Research Library', href: '/research' },
-                { label: 'Find A Peptide', href: '/find-a-peptide' },
+                { label: 'Find A Peptide', href: '/research/match' },
                 { label: 'Peptide 101 Academy', href: '/peptide-101' },
                 { label: 'Reconstitution Calculators', href: '/research/calculators' },
                 { label: 'Compare Compounds', href: '/research/compare' },
