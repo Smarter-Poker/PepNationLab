@@ -24,15 +24,15 @@ export const dynamic = 'force-dynamic';
 
 const ALLOWED_IDS = new Set(FAQ_ITEMS.map((it) => it.id));
 
-function dailySalt(): string {
+function hashIp(ip: string): string | null {
+  // Fail closed: with a known fallback salt the IPv4 space brute-forces in
+  // minutes, so "hashed" would be a fiction. No env salt, no hash stored.
+  const salt = process.env.FAQ_CLICK_SALT;
+  if (!salt) return null;
   const day = new Date().toISOString().slice(0, 10);
-  return `${process.env.FAQ_CLICK_SALT ?? 'pnl-faq'}-${day}`;
-}
-
-function hashIp(ip: string): string {
   return crypto
     .createHash('sha256')
-    .update(`${ip}|${dailySalt()}`)
+    .update(`${ip}|${salt}-${day}`)
     .digest('hex')
     .slice(0, 32);
 }
@@ -66,13 +66,13 @@ export async function POST(req: NextRequest) {
       ? body.source.slice(0, 64)
       : null;
 
-  let userId: string | null = null;
+  // Role only, never identity: which ROLE reads which answer is the useful
+  // analytics dimension; a per-user click log of help topics is not.
   let userRole: string | null = null;
   try {
     const supa = await createClient();
     const { data } = await supa.auth.getUser();
     if (data?.user) {
-      userId = data.user.id;
       const { data: prof } = await supa
         .from('profiles')
         .select('role')
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
       faq_id: faqId,
       source,
       user_role: userRole,
-      user_id: userId,
+      user_id: null,
       ip_hash: ipHash,
       user_agent: ua,
     });

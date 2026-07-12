@@ -13,6 +13,7 @@ import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-di
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
 import { notifyOrderPlaced, notify, notifyCouponRedeemed } from '@/lib/notify';
 import { sendOrderConfirmationEmail } from '@/lib/email';
+import { recordServerAnalyticsEvent } from '@/lib/server-analytics';
 import { captureError } from '@/lib/sentry';
 import { logError } from '@/lib/log';
 
@@ -38,6 +39,10 @@ const CheckoutSchema = z.object({
   couponCode: z.string().optional().nullable(),
   idempotencyKey: z.string().uuid().optional().nullable(),
   wholesale: z.boolean().optional(),
+
+  /** Analytics funnel linkage (optional, never trusted for money math). */
+  sessionId: z.string().min(8).max(80).optional().nullable(),
+  visitorId: z.string().uuid().optional().nullable(),
 
   /** Which agent storefront initiated this checkout - used for closed-loop catalog validation */
   agentSlug: z.string().regex(/^[a-zA-Z0-9_-]+$/).optional().nullable(),
@@ -100,6 +105,8 @@ export async function POST(request: NextRequest) {
       wholesale: explicitWholesale,
 
       agentSlug,
+      sessionId: analyticsSessionId,
+      visitorId: analyticsVisitorId,
     } = validation.data;
 
     if (fulfillmentMethod === 'ship' && !shippingAddress) {
@@ -1420,6 +1427,27 @@ export async function POST(request: NextRequest) {
           itemsSummary,
         }).catch(() => { /* ignore */ });
       } catch { /* ignore */ }
+    }
+
+    // Server-authoritative purchase analytics: emitted here (never client-side)
+    // with the server-computed total, deduped by a partial unique index on
+    // order_id, and skipped for idempotency replays (those return earlier).
+    // Wholesale restocks and agent self-buys are flagged so the retail funnel
+    // view excludes them. Best-effort: can never fail the order.
+    const analyticsAgentId = isAgentSelfBuy
+      ? (superAgentProfile ? superAgentProfile.id : null)
+      : (agentProfile ? agentProfile.id : null);
+    if (analyticsAgentId) {
+      await recordServerAnalyticsEvent(serviceSupabase, {
+        agent_id: analyticsAgentId,
+        event_type: 'order_complete',
+        session_id: analyticsSessionId ?? null,
+        visitor_id: analyticsVisitorId ?? null,
+        path: '/checkout',
+        order_id: order.id,
+        amount_cents: Math.round((Number(order.total) || 0) * 100),
+        is_wholesale: isWholesaleRestock || isAgentSelfBuy,
+      });
     }
 
     return NextResponse.json({

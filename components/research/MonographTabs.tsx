@@ -13,7 +13,7 @@
  *
  * Research-Use-Only. Title Case on prose via `capitalize`.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -36,6 +36,7 @@ import ResearchCartButton from '@/components/research/ResearchCartButton';
 import EfficacyScoreChart from '@/components/research/EfficacyScoreChart';
 import TrialsMetricsPanel from '@/components/research/TrialsMetricsPanel';
 import IframeModal from '@/components/ui/IframeModal';
+import { trackResearchEvent } from '@/lib/research-track';
 
 interface Props {
   compound: Compound;
@@ -181,6 +182,13 @@ export default function MonographTabs({ compound, related = [] }: Props) {
   const [active, setActive] = useState('overview');
   const [modalUrl, setModalUrl] = useState<string | null>(null);
 
+  // Research page view (once per session per path; dedupe in lib/research-track).
+  // The SEO content investment previously had zero first-party view measurement.
+  useEffect(() => {
+    trackResearchEvent('page_view', { compound_slug: compound.slug });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <article style={{ maxWidth: 820, margin: '0 auto', padding: 'var(--space-4) var(--space-4) var(--space-8)' }}>
       {/* Sticky Back / actions bar */}
@@ -290,7 +298,11 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               id={`tab-${t.key}`}
               aria-selected={isActive}
               aria-controls="monograph-tabpanel"
-              onClick={() => setActive(t.key)}
+              onClick={() => {
+                setActive(t.key);
+                // Engagement analytics: which monograph tabs earn attention.
+                trackResearchEvent('tab_view', { detail: t.key, compound_slug: compound.slug });
+              }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',

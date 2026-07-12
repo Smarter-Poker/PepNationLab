@@ -235,7 +235,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const storefrontUrl = `${APP_URL}/${slug}`;
+    // QR payload carries utm params so scans are attributable as offline/QR
+    // traffic in first-party attribution (UtmCapture ingests and strips them).
+    const storefrontUrl = `${APP_URL}/${slug}?utm_source=qr&utm_medium=offline`;
     let qrCodeData: string | null = null;
     try {
       qrCodeData = await generateQrDataUrl(storefrontUrl);

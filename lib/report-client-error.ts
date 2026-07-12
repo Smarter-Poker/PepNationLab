@@ -31,7 +31,9 @@ export function reportClientError(
       kind: extra?.kind ?? 'caught',
       message,
       stack,
-      url: typeof location !== 'undefined' ? location.href : undefined,
+      // Path only: full href can carry auth tokens (Supabase recovery links
+      // put access tokens in the fragment) and reset codes in query strings.
+      url: typeof location !== 'undefined' ? location.origin + location.pathname : undefined,
       meta: extra?.meta,
     });
 

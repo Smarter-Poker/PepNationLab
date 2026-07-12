@@ -139,6 +139,7 @@ export async function POST(req: NextRequest) {
     last_name: String(lastName).trim(),
     role: 'researcher',
     referring_agent_id: referringAgentId,
+    acquisition_source: 'agent_created',
     created_by_agent_id: user.id,
     created_by_role: createdByRole,
     disclaimer_v1_accepted: false,

@@ -76,6 +76,13 @@ export default function FindAPeptideClient({
     setCurrentPath(window.location.pathname + window.location.search);
   }, []);
 
+  // Funnel step: pageview for the guided discovery surface (once per session
+  // per path; dedupe lives in lib/track.ts).
+  useEffect(() => {
+    trackStorefrontEvent(agentSlug, 'pageview');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentSlug]);
+
   // Load cart on mount
   useEffect(() => {
     try {
@@ -193,7 +200,11 @@ export default function FindAPeptideClient({
 
     // Funnel step: the add_to_cart event the agent analytics view counts.
     if (!wasCapped) {
-      trackStorefrontEvent(agentSlug, 'add_to_cart', { product_id: item.product_id });
+      trackStorefrontEvent(agentSlug, 'add_to_cart', {
+        product_id: item.product_id,
+        quantity: 1,
+        amount_cents: Number.isFinite(Number(item.retail_price)) ? Math.round(Number(item.retail_price) * 100) : undefined,
+      });
     }
   }, [products, agentSlug]);
 

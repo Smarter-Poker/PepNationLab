@@ -1,10 +1,11 @@
 // Web Vitals RUM sink. Receives fire-and-forget Core Web Vitals reports from the
 // browser (components/WebVitalsReporter) and stores them in web_vitals via the
-// service role. Same-origin only, rate limited, every field clamped, best-effort
-// auth attribution, never throws, always returns 204 so it never affects the
-// page it is measuring.
+// service role. Same-origin only, rate limited, every field clamped, never
+// throws, always returns 204 so it never affects the page it is measuring.
+// Deliberately identity-free: performance metrics do not need a user id, and
+// storing one built an undisclosed per-user browsing log of health-topic paths.
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
@@ -35,18 +36,11 @@ export async function POST(req: NextRequest) {
       return new NextResponse(null, { status: 204 });
     }
 
-    let userId: string | null = null;
-    try {
-      const supabase = await createClient();
-      const { data } = await supabase.auth.getUser();
-      userId = data.user?.id ?? null;
-    } catch {
-      // anonymous reports are expected (guests on the landing page)
-    }
-
     const service = await createServiceClient();
+    // Duplicate metric_ids (bfcache restores, keepalive replays) now hit a
+    // unique index; the outer catch swallows the conflict and returns 204.
     await service.from('web_vitals').insert({
-      user_id: userId,
+      user_id: null,
       metric,
       // CLS is a small ratio; others are ms. Round to avoid float dust.
       value: Math.round(value * 1000) / 1000,

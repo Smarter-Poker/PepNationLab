@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { writeCatalogCache, isCatalogCacheFresh, readCatalogCache, CATALOG_TTL_MS, evictCatalogCache } from '@/lib/storefront-cache';
 import { createClient } from '@/lib/supabase/client';
 import { getPopularName } from '@/lib/peptide-popular-names';
+import { quantityDiscountPct, discountedUnitPrice, isVolumeDiscountExcluded, QUANTITY_DISCOUNT_TIERS } from '@/lib/quantity-discount';
 import TrustStrip from './storefront/TrustStrip';
 
 interface ProductItem {
@@ -103,9 +104,8 @@ interface GroupedProduct {
   popularity: number;
   defaultVariantId: string;
   compoundSlug: string | null;
-  // Attached by the search pipeline (see the result.map that spreads
-  // { ...r.g, _search: r.search }) -- why this card matched a query.
-  _search?: { reason?: string; confidence?: 'high' | 'medium' | 'low' } | null;
+  /** Search-match metadata attached by the filtered/sorted projection. */
+  _search?: { score: number; reason?: string; confidence?: 'high' | 'medium' | 'low' } | null;
 }
 
 const POPULAR_ORDER: string[] = [
@@ -411,10 +411,17 @@ export default function AgentStorefrontGrid({
   const deferredSearch = useDeferredValue(searchQuery);
 
   // Funnel step: storefront search. Debounced so we record the query the researcher
-  // settled on, not every keystroke.
+  // settled on, not every keystroke. Queries that arrive via ?q= (DiscoveryHero /
+  // FindAPeptide navigations) were already tracked by the originating surface, so
+  // the first emit for that exact query is skipped to avoid double counting.
+  const urlSeededSearchRef = useRef<string>(_getSearchParam('q').trim());
   useEffect(() => {
     const q = searchQuery.trim();
     if (q.length < 2) return;
+    if (urlSeededSearchRef.current && q === urlSeededSearchRef.current) {
+      urlSeededSearchRef.current = '';
+      return;
+    }
     const t = setTimeout(() => trackStorefrontEvent(agentSlug, 'search', { search_term: q }), 800);
     return () => clearTimeout(t);
   }, [searchQuery, agentSlug]);
@@ -892,6 +899,9 @@ export default function AgentStorefrontGrid({
       // the local source of truth. Debounced so qty steppers do not spam the
       // endpoint.
       if (cartSyncTimer.current) clearTimeout(cartSyncTimer.current);
+      // Agent self-restock carts are wholesale operations, not researcher
+      // funnels - keep them out of abandoned-cart recovery.
+      if (isStorefrontOwner) return;
       const syncPayload = (pnlCart as Array<Record<string, unknown>>).map(i => ({
         ...i,
         productId: (i as { id?: string }).id ?? null,
@@ -907,15 +917,35 @@ export default function AgentStorefrontGrid({
     } catch { /* ignore */ }
   }, [cartItems, agentSlug, products, isStorefrontOwner]);
 
+  // Clear any pending cart-sync debounce on unmount so the timer never fires
+  // against an unmounted component or a stale storefront.
+  useEffect(() => {
+    return () => {
+      if (cartSyncTimer.current) clearTimeout(cartSyncTimer.current);
+    };
+  }, []);
+
   // CRO: single shared handler for every Add-To-Cart control on the product
   // detail view (main CTA + sticky quick-add bar) so behavior stays identical.
   const addDetailProductToCart = () => {
     if (!detailProduct) return;
     const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
+    const qty = Math.max(1, pendingQty);
     setCartItems(prevCart => ({
       ...prevCart,
-      [vId]: (prevCart[vId] || 0) + Math.max(1, pendingQty),
+      [vId]: (prevCart[vId] || 0) + qty,
     }));
+    // Funnel step: highest-intent add-to-cart path (product detail view). The
+    // grid-card addToCart emits its own event; without this the detail-view CTA
+    // silently vanished from the funnel.
+    const variant = detailProduct.variants.find(v => v.id === vId) ?? detailProduct.variants[0];
+    if (variant?.product_id) {
+      trackStorefrontEvent(agentSlug, 'add_to_cart', {
+        product_id: variant.product_id,
+        quantity: qty,
+        amount_cents: Number.isFinite(Number(variant.retail_price)) ? Math.round(Number(variant.retail_price) * qty * 100) : undefined,
+      });
+    }
     setDetailProduct(null);
     setShowBulkPricing(false);
     setPendingQty(selfBuyMin);
@@ -1757,13 +1787,18 @@ export default function AgentStorefrontGrid({
     return result.map(r => ({ ...r.g, _search: r.search }));
   }, [grouped, matchesCategory, matchesArea, matchesSearch, matchesPrice, matchesWeight, matchesInStock, matchesBulk, sortBy, deferredSearch, activeCardIndex, inventoryMap, compoundsBySlug]);
 
+  // Missed-search logging, deduped per query per mount so a zero-result query
+  // does not re-post on every keystroke extension while still at zero results.
+  const sentMissedSearchesRef = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (filteredProducts.length === 0 && deferredSearch.trim().length > 2) {
-       fetch('/api/analytics/missed-search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: deferredSearch.trim() })
-       }).catch(() => {});
+    const q = deferredSearch.trim().toLowerCase();
+    if (filteredProducts.length === 0 && q.length > 2 && !sentMissedSearchesRef.current.has(q)) {
+      sentMissedSearchesRef.current.add(q);
+      fetch('/api/analytics/missed-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: deferredSearch.trim() })
+      }).catch(() => {});
     }
   }, [filteredProducts.length, deferredSearch]);
 
@@ -1845,7 +1880,11 @@ export default function AgentStorefrontGrid({
     // Funnel step: the add_to_cart event the agent analytics view counts. Before
     // this, `add_to_cart_30d` was permanently 0 because nothing ever emitted it.
     if (!wasCapped) {
-      trackStorefrontEvent(agentSlug, 'add_to_cart', { product_id: item.product_id });
+      trackStorefrontEvent(agentSlug, 'add_to_cart', {
+        product_id: item.product_id,
+        quantity: 1,
+        amount_cents: Number.isFinite(Number(item.retail_price)) ? Math.round(Number(item.retail_price) * 100) : undefined,
+      });
     }
   }, [products, inventoryMap, agentSlug]);
 
@@ -2190,6 +2229,29 @@ export default function AgentStorefrontGrid({
     </span>
   );
 })()}
+                      {(() => {
+                        // CRO: purity and third-party COAs are the strongest
+                        // objection-handlers for research buyers, but they only
+                        // appeared deep inside the detail modal. Surface a
+                        // display-only trust chip at the browse stage using the
+                        // same catalog data (click still opens the modal).
+                        const _c2 = group.compoundSlug ? compoundsBySlug?.[group.compoundSlug] : undefined;
+                        const _purity = Number((_c2 as any)?.purity_percentage) || 0;
+                        const _hasCoa = group.variants.some(v => v.product_id && coaByProductId?.[v.product_id]);
+                        if (!_hasCoa && _purity <= 0) return null;
+                        return (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, marginLeft: 4,
+                            padding: '3px 9px', borderRadius: 'var(--radius-full)',
+                            background: 'rgba(0, 196, 188, 0.08)', border: '1px solid rgba(0, 196, 188, 0.30)',
+                            color: 'var(--teal)', fontSize: '0.62rem', fontWeight: 800,
+                            textTransform: 'uppercase', letterSpacing: '0.04em',
+                          }}>
+                            <Shield size={9} aria-hidden="true" />
+                            {_purity > 0 ? `${_purity}%+ Tested` : 'COA Available'}
+                          </span>
+                        );
+                      })()}
 
                     </div>
                   );
@@ -3112,9 +3174,36 @@ export default function AgentStorefrontGrid({
                         <div style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {lineName}
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 6 }}>
-                          ${formatPrice(unitPrice)} Each / ${formatPrice(perVial * qty)} Total
-                        </div>
+                        {(() => {
+                          // CRO: quantity discounts (3+ vials 10%, 5+ 15%, 7+ 20%)
+                          // were applied silently at checkout but invisible here,
+                          // so the cart over-quoted the price and never asked for
+                          // the next tier. Mirror the server math per line.
+                          const qdEligible = volumePricingEnabled !== false && !isBW && !isVolumeDiscountExcluded(item.products?.name) && !isStorefrontOwner;
+                          const pct = qdEligible ? quantityDiscountPct(qty) : 0;
+                          const discUnit = qdEligible ? discountedUnitPrice(perVial, qty) : perVial;
+                          const nextTier = qdEligible
+                            ? [...QUANTITY_DISCOUNT_TIERS].reverse().find(t => qty < t.minQty && t.pct > pct)
+                            : undefined;
+                          return (
+                            <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 6 }}>
+                              {pct > 0 ? (
+                                <>
+                                  <span style={{ textDecoration: 'line-through', opacity: 0.55 }}>${formatPrice(unitPrice)}</span>{' '}
+                                  <span style={{ color: '#68D391', fontWeight: 700 }}>${formatPrice(discUnit)} Each ({pct}% Off)</span>
+                                  {' / '}${formatPrice(discUnit * qty)} Total
+                                </>
+                              ) : (
+                                <>${formatPrice(unitPrice)} Each / ${formatPrice(perVial * qty)} Total</>
+                              )}
+                              {nextTier && (
+                                <div style={{ color: 'var(--teal)', fontWeight: 700, marginTop: 2 }}>
+                                  Add {nextTier.minQty - qty} More To Unlock {nextTier.pct}% Off This Peptide
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <button onClick={() => setCartItems(prev => {
                           const next = { ...prev };
@@ -3312,17 +3401,52 @@ export default function AgentStorefrontGrid({
                 )}
               </div>
               <div style={{ padding: '16px 20px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop: '1px solid rgba(255,255,255,0.10)', display: 'flex', flexDirection: 'column', gap: 10, background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.25))' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '0.9rem', color: 'var(--grey-300)', marginBottom: 4 }}>
-                  <span style={{ fontWeight: 700 }}>Total</span>
-                  <span style={{ color: 'var(--white)', fontWeight: 800, fontSize: '1.25rem', letterSpacing: '0.01em' }}>
-                    ${Object.entries(cartItems).reduce((sum, [vId, qty]) => {
-                      const item = products.find(p => p.id === vId);
-                      if (!item) return sum;
-                      const per = item.retail_price / 10;
-                      return sum + per * qty;
-                    }, 0).toFixed(2)}
-                  </span>
-                </div>
+                {(() => {
+                  // CRO: the footer quoted flat retail while checkout applies
+                  // per-peptide quantity discounts - the cart literally showed a
+                  // HIGHER price than the user would pay. Quote the discounted
+                  // total and celebrate the savings instead.
+                  let flatTotal = 0;
+                  let discTotal = 0;
+                  for (const [vId, qty] of Object.entries(cartItems)) {
+                    const item = products.find(p => p.id === vId);
+                    if (!item) continue;
+                    const per = item.retail_price / 10;
+                    flatTotal += per * qty;
+                    const eligible = volumePricingEnabled !== false
+                      && !isStorefrontOwner
+                      && !isBacWaterItem(item.products?.name, item.products?.compound_slug)
+                      && !isVolumeDiscountExcluded(item.products?.name);
+                    discTotal += (eligible ? discountedUnitPrice(per, qty) : per) * qty;
+                  }
+                  const saved = flatTotal - discTotal;
+                  return (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '0.9rem', color: 'var(--grey-300)', marginBottom: 4 }}>
+                        <span style={{ fontWeight: 700 }}>Total</span>
+                        <span style={{ color: 'var(--white)', fontWeight: 800, fontSize: '1.25rem', letterSpacing: '0.01em' }}>
+                          {saved > 0.004 && (
+                            <span style={{ textDecoration: 'line-through', color: 'var(--grey-400)', fontWeight: 600, fontSize: '0.9rem', marginRight: 8 }}>
+                              ${flatTotal.toFixed(2)}
+                            </span>
+                          )}
+                          ${discTotal.toFixed(2)}
+                        </span>
+                      </div>
+                      {saved > 0.004 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#68D391', fontWeight: 700, marginBottom: 4 }}>
+                          <span>Quantity Discounts Applied</span>
+                          <span>You Save ${saved.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {totalCartItems > 0 && totalCartItems < overallMin && (
+                        <div style={{ fontSize: '0.78rem', color: 'var(--grey-300)', fontWeight: 700, textAlign: 'center', padding: '5px 10px', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 2 }}>
+                          {totalCartItems} Of {overallMin} Minimum Items - Add {overallMin - totalCartItems} More To Check Out
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
                 {/* CRO: free-shipping progress. The house store ships $100+
                     orders free (enforced server-side in /api/orders) but the
                     cart never said so - the classic AOV nudge was missing. */}
@@ -3407,8 +3531,22 @@ export default function AgentStorefrontGrid({
                 <DynamicCartButton
                   type="clear"
                   onClick={() => {
+                    // CRO: clearing was one irreversible tap on a cart that can
+                    // take minutes to build (order minimums, 10-pack diluents).
+                    // Snapshot + Undo toast turns a rage-quit moment into a
+                    // recoverable one.
+                    const snapshot = { ...cartItems };
                     setCartItems({});
                     setShowCartFloat(false);
+                    if (Object.keys(snapshot).length > 0) {
+                      toast('Cart Cleared', {
+                        action: {
+                          label: 'Undo',
+                          onClick: () => setCartItems(snapshot),
+                        },
+                        duration: 6000,
+                      });
+                    }
                   }}
                 />
                 </div>
@@ -3823,6 +3961,7 @@ export default function AgentStorefrontGrid({
                             >-</button>
                             <input
                               type="number"
+                              aria-label="Quantity"
                               value={qty || ''}
                               onChange={e => {
                                 const val = parseInt(e.target.value, 10);

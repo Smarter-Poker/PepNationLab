@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
+import { recordServerAnalyticsEvent } from '@/lib/server-analytics';
 
 // All sales are final - no refunds or exchanges. Cancellation simply voids
 // the order and commission rows. No refund_type parameter is accepted.
@@ -85,6 +86,25 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
           changes: { reason: parsed.data.reason },
         });
       } catch { /* audit failure must not mask a committed cancel */ }
+
+      // Funnel analytics: net this order out of the 30d revenue rollup.
+      // Best-effort and deduped per order id by a partial unique index.
+      try {
+        const { data: cancelled } = await service
+          .from('orders')
+          .select('agent_id, total, is_wholesale_restock')
+          .eq('id', id)
+          .maybeSingle();
+        if (cancelled?.agent_id) {
+          await recordServerAnalyticsEvent(service, {
+            agent_id: cancelled.agent_id,
+            event_type: 'order_cancelled',
+            order_id: id,
+            amount_cents: Math.round((Number(cancelled.total) || 0) * 100),
+            is_wholesale: cancelled.is_wholesale_restock === true,
+          });
+        }
+      } catch { /* analytics must never fail a cancellation */ }
 
       return NextResponse.json({ success: true, cancelled: true });
     },

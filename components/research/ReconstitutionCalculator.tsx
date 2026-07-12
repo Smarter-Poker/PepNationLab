@@ -9,9 +9,10 @@
  *     The Diluent Volume To Add.
  * All Math Comes From The Pure Helpers In `@/lib/compounds`.
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { drawVolumeMl, reconstitutionVolumeMl } from '@/lib/compounds';
+import { trackResearchEvent } from '@/lib/research-track';
 
 const EXAMPLE_DRAW_MASSES_MG = [0.25, 0.5, 1, 2, 5];
 
@@ -68,6 +69,15 @@ export default function ReconstitutionCalculator({
   const [diluentMl, setDiluentMl] = useState<string>('2');
   const [targetConc, setTargetConc] = useState<string>('5');
 
+  // Usage analytics: one event per mount, on the researcher's FIRST interaction
+  // with any input (not per keystroke). Fire-and-forget, never blocks the UI.
+  const usageTrackedRef = useRef(false);
+  const markCalculatorUsed = () => {
+    if (usageTrackedRef.current) return;
+    usageTrackedRef.current = true;
+    trackResearchEvent('calculator_used', { tool: 'reconstitution' });
+  };
+
   const mass = parseFloat(massMg);
   const diluent = parseFloat(diluentMl);
   const target = parseFloat(targetConc);
@@ -100,6 +110,7 @@ export default function ReconstitutionCalculator({
   return (
     <div
       className="calc-container"
+      onInput={markCalculatorUsed}
       style={{
         border: '1px solid rgba(0, 229, 255, 0.2)',
         borderRadius: 16,

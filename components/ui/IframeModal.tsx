@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { ExternalLink, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useModalA11y } from '@/lib/useModalA11y';
+import { trackResearchEvent } from '@/lib/research-track';
 
 interface IframeModalProps {
   url: string;
@@ -20,9 +21,15 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
     // Prevent scrolling on the body when modal is open
     const originalStyle = window.getComputedStyle(document.body).overflow;
     document.body.style.overflow = 'hidden';
+    // Engagement analytics: which external citations (PubMed, FDA, DrugBank)
+    // actually get opened. Host only, fire-and-forget, never blocks the modal.
+    try {
+      trackResearchEvent('external_doc_open', { url_host: new URL(url).hostname });
+    } catch { /* invalid URL - skip analytics */ }
     return () => {
       document.body.style.overflow = originalStyle;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

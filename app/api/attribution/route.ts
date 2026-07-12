@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,14 +28,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const visitorId =
     typeof body?.visitor_id === 'string' ? body.visitor_id.trim().slice(0, 100) : '';
-  if (!visitorId || visitorId.length < 8) {
+  if (!visitorId || !UUID_RE.test(visitorId)) {
     return NextResponse.json({ error: 'Invalid visitor_id' }, { status: 400 });
   }
 
-  // Rate limit per visitor. The client throttles to ~1 post / 30 min for
-  // organic navigation; this caps a misbehaving or forged client.
+  // Two-key rate limit. Per-visitor alone was floodable: a bot rotating a
+  // random visitor_id per request never fills any bucket while record_attribution
+  // upserts one row per id -- unbounded table growth. The IP bucket closes that.
+  const ipLimited = await rateLimit({
+    key: 'attribution_ip',
+    limit: 30,
+    windowSeconds: 60,
+    identifier: getClientIp(req),
+  });
+  if (!ipLimited.allowed) {
+    return NextResponse.json({ error: 'Rate Limit Exceeded' }, { status: 429 });
+  }
   const limited = await rateLimit({
     key: 'attribution_record',
     limit: 20,

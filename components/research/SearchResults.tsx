@@ -58,12 +58,14 @@ function trackClick(query: string, slug: string, position: number, intent: Searc
       navigator.sendBeacon('/api/research/click', new Blob([body], { type: 'application/json' }));
       return;
     }
-    void fetch('/api/research/click', {
+    // .catch: a network failure here used to raise an unhandledrejection,
+    // which the global error capture then reported as error telemetry.
+    fetch('/api/research/click', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
       keepalive: true,
-    });
+    }).catch(() => { /* best-effort */ });
   } catch {
     /* swallow */
   }

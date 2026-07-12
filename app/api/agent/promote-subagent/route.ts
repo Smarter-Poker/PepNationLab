@@ -51,7 +51,8 @@ async function provisionAgentStorefront(
       }
       let qr: string | null = null;
       try {
-        qr = await generateQrDataUrl(`${APP_URL}/${slug}`);
+        // utm params make QR scans attributable as offline traffic.
+        qr = await generateQrDataUrl(`${APP_URL}/${slug}?utm_source=qr&utm_medium=offline`);
       } catch {
         /* QR is non-essential; storefront works without it */
       }

@@ -38,7 +38,11 @@ export async function POST(req: NextRequest) {
   if (!rl.allowed) return new NextResponse(null, { status: 204 });
 
   try {
-    const body = await req.json().catch(() => null);
+    // Size guard before parsing: refuse multi-megabyte bodies outright.
+    const raw = await req.text().catch(() => '');
+    if (raw.length > 32768) return new NextResponse(null, { status: 204 });
+    let body: any = null;
+    try { body = JSON.parse(raw); } catch { body = null; }
     const message = clamp(body?.message, 2000);
     if (!message) return new NextResponse(null, { status: 204 });
 
