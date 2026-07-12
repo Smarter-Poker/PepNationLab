@@ -5,10 +5,10 @@ import {
   AlertCircle,
   Hourglass,
   Users,
-  Users2,
   Activity,
   Copy,
   Check,
+  FlaskConical,
 } from 'lucide-react';
 
 interface OverviewOrder {
@@ -166,50 +166,74 @@ export default function AgentOverview({
 
   return (
     <div className="aoc-wrap">
+      <svg width="0" height="0" style={{ position: 'absolute' }}>
+        <defs>
+          <linearGradient id="metalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#f4f5f7" />
+            <stop offset="25%" stopColor="#d1d6dc" />
+            <stop offset="50%" stopColor="#7a8591" />
+            <stop offset="51%" stopColor="#96a2ae" />
+            <stop offset="100%" stopColor="#c8d0d8" />
+          </linearGradient>
+        </defs>
+      </svg>
       {/* Three KPI boxes embedded in a metallic frame */}
       <div className="aoc-kpi-frame">
         <div className="aoc-kpi-inner">
           <div className="aoc-kpi-grid">
             {/* 1. Today's Revenue */}
-            <button type="button" className="aoc-kpi" onClick={() => onNavigate?.('Sales & Accounting')}>
-              <div className="aoc-kpi-icon" style={{ color: '#7BE08F' }}><DollarSign size={40} /></div>
-              <span className="aoc-kpi-label">Today&apos;s Revenue</span>
-              <span className="aoc-kpi-value">{currency.format(todayRevenue)}</span>
-              <span className="aoc-kpi-footer" style={{ color: '#7BE08F' }}>Total Collected: {currency.format(totalRevenue)}</span>
+            <button type="button" className="aoc-kpi-panel" onClick={() => onNavigate?.('Sales & Accounting')}>
+              <div className="aoc-kpi-left">
+                <DollarSign stroke="url(#metalGrad)" strokeWidth={1.5} size={72} style={{ filter: 'drop-shadow(0px 4px 4px rgba(0,0,0,0.8))' }} />
+              </div>
+              <div className="aoc-kpi-separator" />
+              <div className="aoc-kpi-right">
+                <div className="aoc-kpi-title metal-text">TODAY&apos;S REVENUE</div>
+                <div className="aoc-kpi-amount metal-text-large">{currency.format(todayRevenue)}</div>
+                <div className="aoc-kpi-subtitle metal-text-dim">Total Collected: {currency.format(totalRevenue)}</div>
+              </div>
             </button>
 
             {/* 2. Recent Activity (Combined) */}
-            <button type="button" className="aoc-kpi" onClick={() => onNavigate?.('Orders')} style={{ padding: '16px' }}>
-              <div className="aoc-kpi-icon" style={{ color: '#C09EF6' }}><Activity size={32} /></div>
-              <span className="aoc-kpi-label" style={{ marginBottom: '12px' }}>Recent Activity</span>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', alignItems: 'center' }}>
-                {needsApprovalCount > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#F6A461', fontSize: '0.9rem', fontWeight: 700 }}>
-                    <AlertCircle size={14} /> {needsApprovalCount} Need{needsApprovalCount === 1 ? 's' : ''} Approval
-                  </div>
-                )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#F6C761', fontSize: '0.9rem', fontWeight: 700 }}>
-                  <Hourglass size={14} /> {awaitingPaymentCount} Awaiting Payment
+            <button type="button" className="aoc-kpi-panel" onClick={() => onNavigate?.('Orders')}>
+              <div className="aoc-kpi-left">
+                <Activity stroke="url(#metalGrad)" strokeWidth={1.5} size={72} style={{ filter: 'drop-shadow(0px 4px 4px rgba(0,0,0,0.8))' }} />
+              </div>
+              <div className="aoc-kpi-separator" />
+              <div className="aoc-kpi-right">
+                <div className="aoc-kpi-title metal-text">RECENT ACTIVITY</div>
+                <div className="aoc-kpi-stat">
+                  <span className="metal-text-large stat-num">{awaitingPaymentCount}</span>
+                  <span className="metal-text-dim">Awaiting Payment</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#C09EF6', fontSize: '0.9rem', fontWeight: 700 }}>
-                  <Activity size={14} /> {recentCount} Recent Orders
+                <div className="aoc-kpi-stat" style={{ marginTop: '6px' }}>
+                  <span className="metal-text-large stat-num">{recentCount}</span>
+                  <span className="metal-text-dim">Recent Orders</span>
                 </div>
               </div>
             </button>
 
             {/* 3. Active Agents & Active Researchers (stacked) */}
-            <button type="button" className="aoc-kpi" onClick={() => onNavigate?.(userProfile?.is_super_agent ? 'My Agent Accounts' : 'Researchers')} style={{ padding: '16px' }}>
-              <div className="aoc-kpi-icon" style={{ color: '#61D6F6' }}><Users size={32} /></div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', alignItems: 'center', marginTop: '8px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                  <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--white)' }}>{activeAgentsCount}</span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Active Agents</span>
+            <button type="button" className="aoc-kpi-panel aoc-kpi-panel-split" onClick={() => onNavigate?.(userProfile?.is_super_agent ? 'My Agent Accounts' : 'Researchers')}>
+              <div className="aoc-kpi-row">
+                <div className="aoc-kpi-left-small">
+                  <Users stroke="url(#metalGrad)" strokeWidth={1.5} size={48} style={{ filter: 'drop-shadow(0px 3px 3px rgba(0,0,0,0.8))' }} />
                 </div>
-                <div style={{ width: '40px', height: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                  <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--white)' }}>{activeResearchersCount}</span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Active Researchers</span>
+                <div className="aoc-kpi-separator-small" />
+                <div className="aoc-kpi-right-row">
+                  <span className="metal-text-large row-num">{activeAgentsCount}</span>
+                  <span className="metal-text row-label">ACTIVE AGENTS</span>
+                </div>
+              </div>
+              <div className="aoc-kpi-divider-h" />
+              <div className="aoc-kpi-row" style={{ marginTop: '16px' }}>
+                <div className="aoc-kpi-left-small">
+                  <FlaskConical stroke="url(#metalGrad)" strokeWidth={1.5} size={48} style={{ filter: 'drop-shadow(0px 3px 3px rgba(0,0,0,0.8))' }} />
+                </div>
+                <div className="aoc-kpi-separator-small" />
+                <div className="aoc-kpi-right-row">
+                  <span className="metal-text-large row-num">{activeResearchersCount}</span>
+                  <span className="metal-text row-label">ACTIVE RESEARCHERS</span>
                 </div>
               </div>
             </button>
@@ -329,103 +353,146 @@ export default function AgentOverview({
         }
 
         /* Glossy Dark Button mimicking the dynamic image buttons */
-        .aoc-kpi {
+        .aoc-kpi-panel {
           position: relative;
           display: flex;
-          flex-direction: column;
-          align-items: center; /* Centered content for all 3 boxes */
-          text-align: center;
-          padding: var(--space-4, 16px);
-          background: linear-gradient(180deg, #1C2B3C 0%, #0F1923 100%);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 6px;
+          align-items: center; /* side by side */
+          text-align: left;
+          padding: 24px;
+          background: linear-gradient(180deg, #182432 0%, #0F161E 100%);
+          border: 1px solid rgba(255, 255, 255, 0.03);
+          border-top: 1px solid rgba(255, 255, 255, 0.08); /* Slight top highlight */
+          border-bottom: 1px solid rgba(0, 0, 0, 0.8); /* Deep shadow at bottom */
+          border-radius: 8px;
           overflow: hidden;
           cursor: pointer;
           transition: all 0.2s ease;
           font-family: inherit;
-          min-height: auto;
+          min-height: 120px;
           box-shadow: 
-            0 2px 4px rgba(0,0,0,0.5),
-            inset 0 1px 1px rgba(255,255,255,0.15);
+            0 4px 6px rgba(0,0,0,0.4),
+            inset 0 1px 1px rgba(255,255,255,0.05);
+          color: white;
         }
-        .aoc-kpi:hover {
-          background: linear-gradient(180deg, #24364A 0%, #152230 100%);
-          border-color: rgba(255, 255, 255, 0.25);
-          box-shadow: 
-            0 4px 12px rgba(0,0,0,0.7),
-            inset 0 1px 1px rgba(255,255,255,0.3);
+        .aoc-kpi-panel:hover {
+          background: linear-gradient(180deg, #1C2B3C 0%, #121A24 100%);
         }
-        .aoc-kpi:focus-visible,
+        
+        .aoc-kpi-panel-split {
+          flex-direction: column;
+          align-items: stretch;
+          padding: 24px;
+        }
+        
+        .aoc-kpi-left {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 80px;
+          flex-shrink: 0;
+        }
+        .aoc-kpi-left-small {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 80px;
+          flex-shrink: 0;
+        }
+        
+        .aoc-kpi-separator {
+          width: 2px;
+          align-self: stretch;
+          background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(255,255,255,0.05) 100%);
+          margin: 0 24px;
+        }
+        .aoc-kpi-separator-small {
+          width: 2px;
+          align-self: stretch;
+          background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(255,255,255,0.05) 100%);
+          margin: 0 24px;
+        }
+        
+        .aoc-kpi-right {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          flex-grow: 1;
+        }
+        
+        .aoc-kpi-row {
+          display: flex;
+          align-items: center;
+        }
+        .aoc-kpi-right-row {
+          display: flex;
+          align-items: baseline;
+          gap: 12px;
+        }
+        
+        .aoc-kpi-divider-h {
+          height: 2px;
+          width: 100%;
+          background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(255,255,255,0.03) 100%);
+          margin: 16px 0 0 0;
+        }
+        
+        /* Metallic text styling */
+        .metal-text {
+          background: linear-gradient(180deg, #d4d9de 0%, #a2abb3 45%, #6a7683 55%, #c8d0d8 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.9));
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .metal-text-large {
+          background: linear-gradient(180deg, #ffffff 0%, #d1d6dc 45%, #96a2ae 55%, #f4f5f7 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.9));
+          font-weight: 800;
+        }
+        .metal-text-dim {
+          color: #8090A0;
+          font-weight: 600;
+          font-size: 0.875rem;
+        }
+        
+        .aoc-kpi-title {
+          font-size: 0.95rem;
+          margin-bottom: 8px;
+        }
+        .aoc-kpi-amount {
+          font-size: 2.75rem;
+          line-height: 1;
+          margin-bottom: 4px;
+        }
+        .aoc-kpi-subtitle {
+          font-size: 0.85rem;
+        }
+        .aoc-kpi-stat {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .stat-num {
+          font-size: 1.5rem;
+          min-width: 20px;
+        }
+        .row-num {
+          font-size: 2.25rem;
+          line-height: 1;
+        }
+        .row-label {
+          font-size: 0.95rem;
+        }
+
+        .aoc-kpi-panel:focus-visible,
         .dash-zone:focus-visible {
           outline: 2px solid var(--teal, #00C4BC);
           outline-offset: 2px;
         }
-        .aoc-kpi-urgent { border-color: rgba(246, 164, 97, 0.45); }
-        .aoc-kpi-icon {
-          position: absolute;
-          top: var(--space-3, 12px);
-          right: var(--space-3, 12px);
-          opacity: 0.14;
-          transition: opacity 0.2s ease;
-        }
-        .aoc-kpi:hover .aoc-kpi-icon { opacity: 0.28; }
-        .aoc-kpi-label {
-          font-size: 0.8125rem;
-          font-weight: 700;
-          color: var(--text-muted, #8090A0);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin-bottom: var(--space-2, 8px);
-        }
-        .aoc-kpi-value {
-          font-size: 1.75rem;
-          font-weight: 800;
-          letter-spacing: -0.02em;
-          color: var(--text-primary, #FFFFFF);
-          line-height: 1.1;
-          margin-bottom: var(--space-2, 8px);
-        }
-        .aoc-kpi-footer {
-          margin-top: auto;
-          padding-top: var(--space-3, 12px);
-          font-size: 0.75rem;
-          font-weight: 500;
-          color: var(--text-muted, #8090A0);
-        }
-
-        /* Combined Agents + Researchers box */
-        .aoc-kpi-split .aoc-split-row {
-          display: flex;
-          align-items: stretch;
-          gap: var(--space-2, 8px);
-          width: 100%;
-        }
-        .aoc-split-cell {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-          min-width: 0;
-        }
-        .aoc-split-value {
-          font-size: 1.5rem;
-          font-weight: 800;
-          letter-spacing: -0.02em;
-          color: var(--text-primary, #FFFFFF);
-          line-height: 1.1;
-        }
-        .aoc-split-label {
-          font-size: 0.6875rem;
-          font-weight: 600;
-          color: var(--text-muted, #8090A0);
-          white-space: nowrap;
-        }
-        .aoc-split-divider {
-          width: 1px;
-          align-self: stretch;
-          background: rgba(255,255,255,0.08);
-          margin: 0 var(--space-1, 4px);
-        }
-
         /* -- Metallic menu image -- */
         .dash-hero-wrap {
           width: 100%;
