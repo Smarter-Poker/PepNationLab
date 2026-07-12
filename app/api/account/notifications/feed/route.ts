@@ -3,10 +3,14 @@ import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
+// Authed per-user feed: notification titles/bodies can reference orders and
+// balances. Must never be cached by the browser, CDN, or any shared proxy.
+const NO_STORE = { 'Cache-Control': 'private, no-store' } as const;
+
 export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ unread_count: 0, recent: [] });
+  if (!user) return NextResponse.json({ unread_count: 0, recent: [] }, { headers: NO_STORE });
 
   // Read from dedicated notifications table
   const { data: notifs, count: unreadCount } = await supabase
@@ -38,5 +42,5 @@ export async function GET() {
       created_at: n.created_at,
       kind: 'notification' as const,
     })),
-  });
+  }, { headers: NO_STORE });
 }

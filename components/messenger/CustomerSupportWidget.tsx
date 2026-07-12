@@ -529,7 +529,10 @@ function CustomerSupportWidgetInner() {
       .subscribe();
     channelRef.current = ch;
 
-    pollRef.current = setInterval(fetchInbox, 60_000);
+    // Realtime (above) is the primary freshness mechanism; this interval is a
+    // fallback ONLY for silently-dropped realtime connections, so 5 minutes
+    // is plenty (was 60s, which just duplicated the subscription's work).
+    pollRef.current = setInterval(fetchInbox, 300_000);
 
     return () => {
       try { supabase.removeChannel(ch); } catch {}

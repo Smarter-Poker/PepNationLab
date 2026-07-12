@@ -6,8 +6,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { getCompound } from '@/lib/compounds-server';
+import { unstable_cache } from 'next/cache';
+import { createServiceClient } from '@/lib/supabase/server';
+import { getCompound, supabaseEnvReady } from '@/lib/compounds-server';
 
 import IframeLink from '@/components/ui/IframeLink';
 
@@ -23,7 +24,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export const dynamic = 'force-dynamic';
+// ISR: reads only the public compound row + compound_recall_alerts table
+// (refreshed by the weekly sync crons) with no per-request/cookie data, so it
+// is safe to statically cache and revalidate hourly instead of rendering dynamically.
+export const revalidate = 3600;
+export const dynamicParams = true;
 
 interface RecallRow {
   id: string;
@@ -67,22 +72,36 @@ function RegCard({ agency, status, detail, url, isPending }: RegCardProps) {
   );
 }
 
+// Cached fetcher: the service client is constructed INSIDE unstable_cache so
+// the query runs in the Data Cache scope (the proven ISR pattern from
+// lib/compounds-server.ts) - a raw createServerClient call at render time
+// breaks static prerendering. Keyed by slug (args are part of the cache key).
+const getCompoundRecallAlerts = unstable_cache(
+  async (slug: string) => {
+    // Env-less builds (e.g. Vercel Preview without the service key) prerender
+    // to an empty list instead of crashing - same guard as compounds-server.
+    if (!supabaseEnvReady()) return [];
+    const supabase = await createServiceClient();
+    const { data } = await supabase
+      .from('compound_recall_alerts')
+      .select('id, compound_slug, alert_type, agency, alert_date, title, summary, url')
+      .eq('compound_slug', slug)
+      .in('alert_type', ['recall', 'black_box', 'safety_signal'])
+      .order('alert_date', { ascending: false });
+    return data ?? [];
+  },
+  ['research-compound-recall-alerts'],
+  { revalidate: 3600, tags: ['compounds'] }
+);
+
 export default async function CompoundRegulatoryPage({ params }: PageProps) {
   const { slug } = await params;
   const compound = await getCompound(slug);
   if (!compound) notFound();
 
-  const supabase = await createClient();
   const reg = (compound ?? {}) as unknown as RegRow;
 
-  const { data: recallsData } = await supabase
-    .from('compound_recall_alerts')
-    .select('id, compound_slug, alert_type, agency, alert_date, title, summary, url')
-    .eq('compound_slug', slug)
-    .in('alert_type', ['recall', 'black_box', 'safety_signal'])
-    .order('alert_date', { ascending: false });
-
-  const recalls = (recallsData ?? []) as RecallRow[];
+  const recalls = (await getCompoundRecallAlerts(slug)) as RecallRow[];
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>

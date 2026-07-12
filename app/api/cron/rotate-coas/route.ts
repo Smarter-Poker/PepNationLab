@@ -18,6 +18,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { APPROVED_LABS } from '@/lib/labs';
@@ -354,6 +355,15 @@ export async function GET(req: NextRequest) {
         });
       } catch {}
     }
+  }
+
+  // Rotated lots carry new COA storage keys, and the public storefront
+  // catalog embeds COA URLs per product - purge the cached catalogs so the
+  // fresh COAs are served immediately instead of after the 120s window.
+  if (rotated.length > 0) {
+    try {
+      revalidateTag('storefront-catalog', { expire: 0 });
+    } catch { /* best-effort cache refresh */ }
   }
 
   const report = {

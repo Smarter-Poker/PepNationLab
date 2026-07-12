@@ -197,7 +197,16 @@ function useCatalogRefresh(agentSlug: string) {
         if (cached && isCatalogCacheFresh(cached)) return;
       }
 
-      const res = await fetch(`/api/storefront/catalog/${encodeURIComponent(agentSlug)}`, {
+      // The catalog URL is edge-cached (s-maxage=60). Forced refreshes come
+      // from the Realtime listener reacting to a JUST-committed change, so a
+      // cache-busting query param makes them bypass the CDN copy and hit the
+      // origin (whose data cache was tag-purged by the mutation). Mount and
+      // interval refreshes are warmers and deliberately keep the plain URL so
+      // they can be served from the edge cache.
+      const url = force
+        ? `/api/storefront/catalog/${encodeURIComponent(agentSlug)}?fresh=${Date.now()}`
+        : `/api/storefront/catalog/${encodeURIComponent(agentSlug)}`;
+      const res = await fetch(url, {
         method: 'GET',
         credentials: 'omit', // public endpoint - no cookies needed
         headers: { Accept: 'application/json' },

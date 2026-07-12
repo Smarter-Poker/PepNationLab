@@ -274,7 +274,12 @@ async function performSearch(
   return { finalRows, total, parsed };
 }
 
-async function handle(req: NextRequest, q: string, limit: number, offset: number) {
+// GET responses are CDN-cacheable (public data backed by the compound_search
+// materialized view, refreshed every 4h). POST stays uncached - CDNs do not
+// cache POST and we never want a shared cache keyed off a request body.
+const SEARCH_CACHE_CONTROL = 'public, s-maxage=300, stale-while-revalidate=1800';
+
+async function handle(req: NextRequest, q: string, limit: number, offset: number, cacheable: boolean) {
   const t0 = Date.now();
   const trimmed = (q || '').trim();
   if (!trimmed) {
@@ -286,7 +291,10 @@ async function handle(req: NextRequest, q: string, limit: number, offset: number
         note: RESEARCH_NOTE,
         filters_applied: [],
       },
-      { status: 200 },
+      {
+        status: 200,
+        headers: cacheable ? { 'Cache-Control': SEARCH_CACHE_CONTROL } : undefined,
+      },
     );
   }
 
@@ -358,7 +366,11 @@ async function handle(req: NextRequest, q: string, limit: number, offset: number
       correctedQuery,
       originalQuery,
     },
-    { status: 200 },
+    {
+      status: 200,
+      // Success only - the 400/429 guards above intentionally send no cache header.
+      headers: cacheable ? { 'Cache-Control': SEARCH_CACHE_CONTROL } : undefined,
+    },
   );
 }
 
@@ -369,7 +381,7 @@ export async function GET(req: NextRequest) {
     Math.min(50, Number(req.nextUrl.searchParams.get('limit') ?? '20') || 20),
   );
   const offset = Math.max(0, Number(req.nextUrl.searchParams.get('offset') ?? '0') || 0);
-  return handle(req, q, limit, offset);
+  return handle(req, q, limit, offset, true);
 }
 
 export async function POST(req: NextRequest) {
@@ -389,5 +401,5 @@ export async function POST(req: NextRequest) {
   }
   limit = Math.max(1, Math.min(50, limit));
   offset = Math.max(0, offset);
-  return handle(req, q, limit, offset);
+  return handle(req, q, limit, offset, false);
 }

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
@@ -32,6 +33,11 @@ export async function POST(req: NextRequest) {
     if (userProfile?.parent_agent_id) {
       await adminClient.from('notifications').insert({ user_id: userProfile.parent_agent_id, type: 'system', title: 'Sub-Agent Name Change', body: `Your sub-agent "${currentProfile.display_name}" is now known as "${newName}".`, url: '/dashboard/agent/sub-agents' });
     }
+    // Storefront identity changed - purge the public catalog cache. Global
+    // tag only; the agent's slug is not in scope in this handler.
+    try {
+      revalidateTag('storefront-catalog', { expire: 0 });
+    } catch { /* best-effort cache refresh */ }
     return NextResponse.json({ success: true, changed: true, display_name_changed_at: new Date().toISOString() });
   } catch (err) {
     console.error('[storefront-name] POST error:', err);

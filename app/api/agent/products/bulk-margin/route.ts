@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -124,6 +125,15 @@ export async function POST(req: NextRequest) {
       })
     );
     updatedCount = updateResults.filter(r => r !== null).length;
+
+    // Bulk retail-price rewrite - purge the public storefront catalog cache
+    // so the new prices show immediately. Only fires when rows were actually
+    // updated; the agent slug is not in scope so the global tag is used.
+    if (updatedCount > 0) {
+      try {
+        revalidateTag('storefront-catalog', { expire: 0 });
+      } catch { /* best-effort cache refresh */ }
+    }
 
     return NextResponse.json({ success: true, updated: updatedCount });
   } catch (error) {

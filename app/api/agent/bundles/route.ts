@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -61,7 +62,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'A bundle cannot contain more than 20 products' }, { status: 400 });
   }
   const supabase = await createServiceClient();
-  const { data: profile } = await supabase.from('agent_profiles').select('bundles_config').eq('id', gate.user.id).maybeSingle();
+  // slug rides along on the existing read (no extra round-trip) so the
+  // per-store catalog tag can be busted after the write.
+  const { data: profile } = await supabase.from('agent_profiles').select('bundles_config, slug').eq('id', gate.user.id).maybeSingle();
   const existing: Bundle[] = profile?.bundles_config || [];
   const newBundle: Bundle = {
     id: randomUUID(),
@@ -75,6 +78,12 @@ export async function POST(req: NextRequest) {
   const updated = [...existing, newBundle];
   const { error } = await supabase.from('agent_profiles').update({ bundles_config: updated, updated_at: new Date().toISOString() }).eq('id', gate.user.id);
   if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
+  // Bundles surface on the public storefront - purge this store's cached
+  // catalog (plus the global tag) so the new bundle shows immediately.
+  try {
+    revalidateTag('storefront-catalog', { expire: 0 });
+    if (profile?.slug) revalidateTag('catalog:' + profile.slug, { expire: 0 });
+  } catch { /* best-effort cache refresh */ }
   return NextResponse.json({ success: true, bundle: newBundle });
 }
 
@@ -91,11 +100,18 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: `Invalid action. Must be one of: ${VALID_PATCH_ACTIONS.join(', ')}` }, { status: 400 });
   }
   const supabase = await createServiceClient();
-  const { data: profile } = await supabase.from('agent_profiles').select('bundles_config').eq('id', gate.user.id).maybeSingle();
+  // slug rides along on the existing read (no extra round-trip) for the
+  // per-store catalog tag bust below.
+  const { data: profile } = await supabase.from('agent_profiles').select('bundles_config, slug').eq('id', gate.user.id).maybeSingle();
   const existing: Bundle[] = profile?.bundles_config || [];
   const updated = existing.map(b => b.id === id ? { ...b, is_active: action === 'toggle' ? !b.is_active : b.is_active } : b);
   const { error } = await supabase.from('agent_profiles').update({ bundles_config: updated, updated_at: new Date().toISOString() }).eq('id', gate.user.id);
   if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
+  // Bundle visibility toggled - purge this store's cached public catalog.
+  try {
+    revalidateTag('storefront-catalog', { expire: 0 });
+    if (profile?.slug) revalidateTag('catalog:' + profile.slug, { expire: 0 });
+  } catch { /* best-effort cache refresh */ }
   return NextResponse.json({ success: true });
 }
 
@@ -108,10 +124,17 @@ export async function DELETE(req: NextRequest) {
   const { id } = body;
   if (!id) return NextResponse.json({ error: 'Bundle ID Required' }, { status: 400 });
   const supabase = await createServiceClient();
-  const { data: profile } = await supabase.from('agent_profiles').select('bundles_config').eq('id', gate.user.id).maybeSingle();
+  // slug rides along on the existing read (no extra round-trip) for the
+  // per-store catalog tag bust below.
+  const { data: profile } = await supabase.from('agent_profiles').select('bundles_config, slug').eq('id', gate.user.id).maybeSingle();
   const existing: Bundle[] = profile?.bundles_config || [];
   const updated = existing.filter(b => b.id !== id);
   const { error } = await supabase.from('agent_profiles').update({ bundles_config: updated, updated_at: new Date().toISOString() }).eq('id', gate.user.id);
   if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
+  // Bundle removed - purge this store's cached public catalog.
+  try {
+    revalidateTag('storefront-catalog', { expire: 0 });
+    if (profile?.slug) revalidateTag('catalog:' + profile.slug, { expire: 0 });
+  } catch { /* best-effort cache refresh */ }
   return NextResponse.json({ success: true });
 }

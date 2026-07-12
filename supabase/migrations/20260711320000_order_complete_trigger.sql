@@ -67,6 +67,12 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
+-- Trigger functions must not be directly callable by client roles. The trigger
+-- fires as the table owner regardless, so revoking EXECUTE does not affect it.
+REVOKE ALL ON FUNCTION public.emit_order_complete_event() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.emit_order_complete_event() FROM anon;
+REVOKE ALL ON FUNCTION public.emit_order_complete_event() FROM authenticated;
+
 DROP TRIGGER IF EXISTS trg_emit_order_complete ON public.orders;
 CREATE TRIGGER trg_emit_order_complete
   AFTER INSERT ON public.orders

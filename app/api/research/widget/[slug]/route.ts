@@ -65,7 +65,9 @@ export async function GET(
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=300',
+        // Browser 5m, CDN 10m, then serve stale for 1h while revalidating -
+        // embed cards are public and tolerate slightly stale compound data.
+        'Cache-Control': 'public, max-age=300, s-maxage=600, stale-while-revalidate=3600',
         'Access-Control-Allow-Origin': '*',
         // X-Frame-Options is intentionally omitted — frame-ancestors * (CSP below) is the modern mechanism
         // and X-Frame-Options: ALLOWALL is not a valid spec value.

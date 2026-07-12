@@ -6,8 +6,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { getAllCompounds } from '@/lib/compounds-server';
+import { unstable_cache } from 'next/cache';
+import { createServiceClient } from '@/lib/supabase/server';
+import { getAllCompounds, supabaseEnvReady } from '@/lib/compounds-server';
 import { evidenceTier } from '@/lib/compounds';
 import { ReceptorAffinityHeatmap } from '@/components/research/LazyCharts';
 
@@ -22,7 +23,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export const dynamic = 'force-dynamic';
+// ISR: reads only the public compound_chembl_bindings table (refreshed by the
+// weekly chembl sync cron) with no per-request/cookie data, so it is safe to
+// statically cache and revalidate hourly instead of rendering dynamically.
+export const revalidate = 3600;
+export const dynamicParams = true;
 
 interface CompoundRow {
   slug: string;
@@ -42,22 +47,35 @@ interface BindingRow {
   pchembl_value: number | null;
 }
 
+// Cached fetcher: the service client is constructed INSIDE unstable_cache so
+// the query runs in the Data Cache scope (the proven ISR pattern from
+// lib/compounds-server.ts) - a raw createServerClient call at render time
+// breaks static prerendering. Keyed by target name (args are part of the key).
+const getTargetBindings = unstable_cache(
+  async (targetName: string) => {
+    // Env-less builds (e.g. Vercel Preview without the service key) prerender
+    // to an empty list instead of crashing - same guard as compounds-server.
+    if (!supabaseEnvReady()) return [];
+    const supabase = await createServiceClient();
+    const { data } = await supabase
+      .from('compound_chembl_bindings')
+      .select('compound_slug, target_name, standard_type, standard_value, standard_units, pchembl_value')
+      .ilike('target_name', targetName);
+    return data ?? [];
+  },
+  ['research-target-bindings'],
+  { revalidate: 3600, tags: ['compounds', 'bindings'] }
+);
+
 export default async function ResearchTargetDetailPage({ params }: PageProps) {
   const { target } = await params;
   const decoded = decodeURIComponent(target);
   if (!decoded || decoded.length > 200) notFound();
 
-  const supabase = await createClient();
-
   const allCompounds = await getAllCompounds();
   const compoundRows = allCompounds.filter((c) => ((c as unknown) as { receptors?: string[] }).receptors?.includes(decoded)) as unknown as CompoundRow[];
 
-  const { data: bindings } = await supabase
-    .from('compound_chembl_bindings')
-    .select('compound_slug, target_name, standard_type, standard_value, standard_units, pchembl_value')
-    .ilike('target_name', decoded);
-
-  const bindingRows = (bindings ?? []) as BindingRow[];
+  const bindingRows = (await getTargetBindings(decoded)) as BindingRow[];
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>

@@ -16,7 +16,7 @@ import type { Compound } from '@/lib/compounds';
 // This guard lets those pages prerender to an empty index on env-less builds
 // instead of crashing. It NEVER changes production behavior: when the env vars
 // exist (always, in prod build + runtime) the real fetch path runs unchanged.
-function supabaseEnvReady(): boolean {
+export function supabaseEnvReady(): boolean {
   return Boolean(
     (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim() &&
       (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
@@ -40,6 +40,12 @@ function coerceCompound(row: Record<string, unknown>): Compound {
   };
 }
 
+// Data Cache TTL for every compound reader below. Compounds change only via
+// the weekly sync crons (pubmed-sync, chembl-sync, search-refresh) and admin
+// writes, all of which now bust the 'compounds' tag explicitly - so a 1-hour
+// revalidate window is purely a safety net, not the freshness mechanism.
+const COMPOUND_CACHE_SECONDS = 3600;
+
 const PUBLIC_COMPOUND_COLUMNS = 'id, slug, display_name, aliases, category, evidence_tier, compound_class, molecular_target, identity, mechanism, studied_for, research_areas, benefits, side_effects, warnings, handling, regulatory, wada_status, sources, plain_summary, is_temp_sensitive, is_pro_angiogenic, is_glp1, is_stack, stack_components, stack_rationale, reconstitution_shelf_days, best_stacked_with, efficacy_scores, eli5_summary, quality_score, risk_level, half_life, molecular_weight_da, pubmed_citation_count, active_trial_count, updated_at, created_at';
 
 export const getAllCompounds = unstable_cache(
@@ -54,7 +60,7 @@ export const getAllCompounds = unstable_cache(
     return data.map((row) => coerceCompound(row as Record<string, unknown>));
   },
   ['research-all-compounds'],
-  { revalidate: 60, tags: ['compounds'] }
+  { revalidate: COMPOUND_CACHE_SECONDS, tags: ['compounds'] }
 );
 
 /**
@@ -79,7 +85,7 @@ const fetchCompoundsBatch = unstable_cache(
     return map;
   },
   ['compounds-by-slugs'],
-  { revalidate: 60, tags: ['compounds'] }
+  { revalidate: COMPOUND_CACHE_SECONDS, tags: ['compounds'] }
 );
 
 export async function getCompoundsBySlugs(
@@ -107,7 +113,7 @@ export const getCompound = unstable_cache(
     return coerceCompound(data as Record<string, unknown>);
   },
   ['research-single-compound'],
-  { revalidate: 60, tags: ['compounds'] }
+  { revalidate: COMPOUND_CACHE_SECONDS, tags: ['compounds'] }
 );
 
 export const getCompoundBindings = unstable_cache(
@@ -122,7 +128,7 @@ export const getCompoundBindings = unstable_cache(
     return data ?? [];
   },
   ['research-compound-bindings'],
-  { revalidate: 60, tags: ['compounds', 'bindings'] }
+  { revalidate: COMPOUND_CACHE_SECONDS, tags: ['compounds', 'bindings'] }
 );
 
 export const getCompoundStructures = unstable_cache(
@@ -137,5 +143,5 @@ export const getCompoundStructures = unstable_cache(
     return data ?? [];
   },
   ['research-compound-structures'],
-  { revalidate: 60, tags: ['compounds', 'structures'] }
+  { revalidate: COMPOUND_CACHE_SECONDS, tags: ['compounds', 'structures'] }
 );

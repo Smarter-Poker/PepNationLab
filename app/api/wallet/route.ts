@@ -3,6 +3,10 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
+// Authed money route: balances and transaction history. Must never be cached
+// by the browser, CDN, or any shared proxy - success or error alike.
+const NO_STORE = { 'Cache-Control': 'private, no-store' } as const;
+
 /**
  * GET /api/wallet
  *
@@ -41,7 +45,7 @@ export async function GET() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized. Please Sign In.' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized. Please Sign In.' }, { status: 401, headers: NO_STORE });
   }
 
   const service = await createServiceClient();
@@ -53,7 +57,7 @@ export async function GET() {
     .maybeSingle();
 
   if (!profile) {
-    return NextResponse.json({ error: 'Profile Not Found.' }, { status: 404 });
+    return NextResponse.json({ error: 'Profile Not Found.' }, { status: 404, headers: NO_STORE });
   }
 
   const role = (profile.role as string) || 'researcher';
@@ -160,5 +164,5 @@ export async function GET() {
     creditUsed: Math.round(creditUsed * 100) / 100,
     creditAvailable,
     transactions,
-  });
+  }, { headers: NO_STORE });
 }

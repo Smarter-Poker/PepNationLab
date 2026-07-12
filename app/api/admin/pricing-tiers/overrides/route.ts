@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -96,6 +97,12 @@ export async function POST(req: NextRequest) {
     changes: { product_id, tier_name, custom_multiplier: mult },
   });
 
+  // Tier overrides change agent cost floors and trigger retail recomputes -
+  // purge the public storefront catalog cache so prices update immediately.
+  try {
+    revalidateTag('storefront-catalog', { expire: 0 });
+  } catch { /* best-effort cache refresh */ }
+
   return NextResponse.json({ success: true, id: saved.id });
 }
 
@@ -135,6 +142,12 @@ export async function DELETE(req: NextRequest) {
     entity_id: product_id,
     changes: { product_id, tier_name },
   });
+
+  // Removing an override reverts pricing to the tier default - purge the
+  // public storefront catalog cache so the reverted prices show immediately.
+  try {
+    revalidateTag('storefront-catalog', { expire: 0 });
+  } catch { /* best-effort cache refresh */ }
 
   return NextResponse.json({ success: true });
 }

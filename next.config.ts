@@ -162,6 +162,41 @@ const nextConfig = {
           },
         ],
       },
+      // Static-asset cache policy. The public/ filenames below are
+      // content-stable but NOT content-hashed, so they are deliberately NOT
+      // immutable - stale-while-revalidate lets an updated asset propagate
+      // within a day. sw.js is pinned to must-revalidate so clients never
+      // strand on an old service worker.
+      {
+        source: "/logo.svg",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
+        ],
+      },
+      {
+        source: "/logo-mark.svg",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
+        ],
+      },
+      {
+        source: "/payment-logos/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
+        ],
+      },
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
+        ],
+      },
+      {
+        source: "/sw-register.js",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
+        ],
+      },
     ];
   },
   // R33: removed the `eslint: { ignoreDuringBuilds: true }` block. Next 16

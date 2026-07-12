@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { CheckoutSchema } from '@/lib/schemas/order';
 import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
@@ -1235,6 +1236,14 @@ export async function POST(request: NextRequest) {
     // inventory/coupon/prepaid -- those belong to this order.
     orderCommitted = true;
     compensateOnThrow = null;
+
+    // Order + items are committed and reserve_inventory has already deducted
+    // stock, so the public catalog's inventoryMap is now stale - purge the
+    // storefront catalog cache. Best-effort and non-blocking by design; this
+    // must NEVER fail a placed order.
+    try {
+      revalidateTag('storefront-catalog', { expire: 0 });
+    } catch { /* best-effort cache refresh */ }
 
     if (initialStatus === 'approved_ship' || initialStatus === 'approved_pickup') {
       const { error: creditErr } = await serviceSupabase.rpc('charge_order_credit_line', { p_order_id: order.id, p_created_by: user.id });

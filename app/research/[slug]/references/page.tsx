@@ -6,8 +6,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { getCompound } from '@/lib/compounds-server';
+import { unstable_cache } from 'next/cache';
+import { createServiceClient } from '@/lib/supabase/server';
+import { getCompound, supabaseEnvReady } from '@/lib/compounds-server';
 
 import CompoundReferencesClient from '@/components/research/CompoundReferencesClient';
 
@@ -23,7 +24,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export const dynamic = 'force-dynamic';
+// ISR: this bibliography reads only the public compound_references table, which
+// is refreshed by the weekly sync crons - no per-request/cookie data - so it is
+// safe to statically cache and revalidate hourly instead of rendering dynamically.
+export const revalidate = 3600;
+export const dynamicParams = true;
 
 interface ReferenceRow {
   id: string;
@@ -41,19 +46,33 @@ interface ReferenceRow {
   is_pivotal?: boolean | null;
 }
 
+// Cached fetcher: the service client is constructed INSIDE unstable_cache so
+// the query runs in the Data Cache scope (the proven ISR pattern from
+// lib/compounds-server.ts) - a raw createServerClient call at render time
+// breaks static prerendering. Keyed by slug (args are part of the cache key).
+const getCompoundReferences = unstable_cache(
+  async (slug: string) => {
+    // Env-less builds (e.g. Vercel Preview without the service key) prerender
+    // to an empty list instead of crashing - same guard as compounds-server.
+    if (!supabaseEnvReady()) return [];
+    const supabase = await createServiceClient();
+    const { data } = await supabase
+      .from('compound_references')
+      .select('id, compound_slug, ref_type, authors, title, journal, year, pmid, doi, url, volume, pages, is_pivotal')
+      .eq('compound_slug', slug)
+      .order('year', { ascending: false, nullsFirst: false });
+    return data ?? [];
+  },
+  ['research-compound-references'],
+  { revalidate: 3600, tags: ['compounds'] }
+);
+
 export default async function CompoundReferencesPage({ params }: PageProps) {
   const { slug } = await params;
   const compound = await getCompound(slug);
   if (!compound) notFound();
 
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('compound_references')
-    .select('id, compound_slug, ref_type, authors, title, journal, year, pmid, doi, url, volume, pages, is_pivotal')
-    .eq('compound_slug', slug)
-    .order('year', { ascending: false, nullsFirst: false });
-
-  const refs = (data ?? []) as ReferenceRow[];
+  const refs = (await getCompoundReferences(slug)) as ReferenceRow[];
   const types = Array.from(new Set(refs.map((r) => r.ref_type).filter(Boolean) as string[])).sort();
 
   return (

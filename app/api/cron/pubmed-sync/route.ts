@@ -12,6 +12,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { esearch } from '@/lib/research/pubmed';
@@ -112,6 +113,17 @@ export async function GET(req: Request) {
       'succeeded',
       `processed=${processed} updated=${updated} failed=${failed}`,
     );
+
+    // Expire the shared 'compounds' Data Cache tag now that the citation
+    // counters have been written, so the 1-hour unstable_cache TTL in
+    // lib/compounds-server.ts never delays fresh evidence data. In Next 16
+    // revalidateTag requires a profile arg; { expire: 0 } is the documented
+    // immediate-expiration form for route handlers.
+    if (updated > 0) {
+      try {
+        revalidateTag('compounds', { expire: 0 });
+      } catch { /* best-effort cache refresh */ }
+    }
 
     return NextResponse.json({
       ok: true,

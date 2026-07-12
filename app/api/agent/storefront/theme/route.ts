@@ -1,5 +1,6 @@
 // R24 phase 6 - Storefront theme builder API.
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { safeError } from '@/lib/api-error';
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -39,10 +40,22 @@ export async function PATCH(req: Request) {
   try { body = Body.parse(await req.json()); }
   catch (e: any) { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
   const svc = await createServiceClient();
-  const { error } = await svc
+  // .select('slug') rides along on the UPDATE (no extra round-trip) so the
+  // per-store catalog tag can be busted below.
+  const { data, error } = await svc
     .from('agent_profiles')
     .update(body)
-    .eq('id', gate.user.id);
+    .eq('id', gate.user.id)
+    .select('slug')
+    .maybeSingle();
   if (error) return safeError('storefront.theme', error, 400);
+
+  // primary_color feeds the public catalog payload - purge this store's
+  // cached catalog (plus the global tag) so the theme change shows.
+  try {
+    revalidateTag('storefront-catalog', { expire: 0 });
+    if (data?.slug) revalidateTag('catalog:' + data.slug, { expire: 0 });
+  } catch { /* best-effort cache refresh */ }
+
   return NextResponse.json({ ok: true });
 }

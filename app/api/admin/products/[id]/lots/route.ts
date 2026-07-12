@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -123,6 +124,12 @@ export async function POST(req: NextRequest, { params }: Params) {
     entity_id: lot.id,
     changes: { product_id: id, lot_number: lotNumber },
   });
+
+  // product_lots feed the COA URLs embedded in the public storefront catalog
+  // payload - purge the cached catalogs so the new lot's COA shows.
+  try {
+    revalidateTag('storefront-catalog', { expire: 0 });
+  } catch { /* best-effort cache refresh */ }
 
   return NextResponse.json({ lot });
 }

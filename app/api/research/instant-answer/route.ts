@@ -269,10 +269,17 @@ async function buildPayload(
   }
 }
 
+// Public, non-personalized card data - cacheable at the CDN edge. Short TTL
+// because instant answers should track compound edits reasonably quickly.
+const CACHE_CONTROL = 'public, s-maxage=120, stale-while-revalidate=600';
+
 export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get('q') ?? '').trim();
   if (!q) {
-    return NextResponse.json({ kind: 'none', note: RESEARCH_NOTE });
+    return NextResponse.json(
+      { kind: 'none', note: RESEARCH_NOTE },
+      { headers: { 'Cache-Control': CACHE_CONTROL } },
+    );
   }
 
   // Guard: very long queries are a DoS vector against the intent classifier.
@@ -298,13 +305,17 @@ export async function GET(req: NextRequest) {
     const intent = classifyIntent(parsed, { catalog });
     const { payload } = await buildPayload(supabase, intent);
 
-    return NextResponse.json({
-      ...payload,
-      intent,
-      note: RESEARCH_NOTE,
-    });
+    return NextResponse.json(
+      {
+        ...payload,
+        intent,
+        note: RESEARCH_NOTE,
+      },
+      { headers: { 'Cache-Control': CACHE_CONTROL } },
+    );
   } catch (err) {
     console.error('[instant-answer] error:', err);
+    // Error fallback - deliberately uncached so the CDN never pins a failure.
     return NextResponse.json({ kind: 'none', note: RESEARCH_NOTE });
   }
 }

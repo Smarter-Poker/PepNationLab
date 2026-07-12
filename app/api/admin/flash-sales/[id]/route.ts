@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -36,6 +37,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const svc = await createServiceClient();
   const { error } = await svc.from('flash_sales').update(updates).eq('id', id);
   if (error) return NextResponse.json({ error: 'Failed To Update' }, { status: 500 });
+
+  // Activation / discount / window edits change displayed pricing - purge
+  // the public storefront catalog cache.
+  try {
+    revalidateTag('storefront-catalog', { expire: 0 });
+  } catch { /* best-effort cache refresh */ }
+
   return NextResponse.json({ success: true });
 }
 
@@ -52,5 +60,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const svc = await createServiceClient();
   const { error } = await svc.from('flash_sales').delete().eq('id', id);
   if (error) return NextResponse.json({ error: 'Failed To Delete' }, { status: 500 });
+
+  // Deleting an active sale restores regular pricing - purge the public
+  // storefront catalog cache.
+  try {
+    revalidateTag('storefront-catalog', { expire: 0 });
+  } catch { /* best-effort cache refresh */ }
+
   return NextResponse.json({ success: true });
 }

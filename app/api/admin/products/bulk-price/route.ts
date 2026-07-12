@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -101,6 +102,14 @@ export async function POST(req: NextRequest) {
       console.error('apply_due_price_changes failed (products bulk-price):', applyErr.message);
     } else {
       appliedCount = typeof applied === 'number' ? applied : 0;
+      // Prices actually changed right now (not just scheduled) - purge the
+      // public storefront catalog cache so the new retail prices show
+      // immediately. Scheduled-only changes are applied later by the cron.
+      if (appliedCount > 0) {
+        try {
+          revalidateTag('storefront-catalog', { expire: 0 });
+        } catch { /* best-effort cache refresh */ }
+      }
     }
   }
 

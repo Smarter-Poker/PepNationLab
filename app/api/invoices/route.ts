@@ -3,11 +3,16 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notify } from '@/lib/notify';
 
+// Authed money route: invoices carry amounts, emails, and names. Must never
+// be cached by the browser, CDN, or any shared proxy - success or error alike.
+export const dynamic = 'force-dynamic';
+const NO_STORE = { 'Cache-Control': 'private, no-store' } as const;
+
 /** GET: List invoices | PATCH: Update invoice status */
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: NO_STORE });
 
   const service = await createServiceClient();
   const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).maybeSingle();
@@ -32,8 +37,8 @@ export async function GET(req: NextRequest) {
   }
 
   const { data, error } = await query.limit(100);
-  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
-  return NextResponse.json({ invoices: data });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500, headers: NO_STORE });
+  return NextResponse.json({ invoices: data }, { headers: NO_STORE });
 }
 
 export async function PATCH(req: NextRequest) {

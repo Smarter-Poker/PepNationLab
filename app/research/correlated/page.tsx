@@ -4,9 +4,30 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
-import { getAllCompounds } from '@/lib/compounds-server';
+import { unstable_cache } from 'next/cache';
+import { createServiceClient } from '@/lib/supabase/server';
+import { getAllCompounds, supabaseEnvReady } from '@/lib/compounds-server';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
+
+// Cached fetcher: the service client is constructed INSIDE unstable_cache so
+// the query runs in the Data Cache scope (the proven ISR pattern from
+// lib/compounds-server.ts) - a raw createServerClient call at render time
+// breaks static prerendering.
+const getCompanionPapers = unstable_cache(
+  async () => {
+    // Env-less builds (e.g. Vercel Preview without the service key) prerender
+    // to an empty list instead of crashing - same guard as compounds-server.
+    if (!supabaseEnvReady()) return [];
+    const supabase = await createServiceClient();
+    const { data } = await supabase
+      .from('compound_companion_papers')
+      .select('compound_slug, companion_slug, co_occurrence_count')
+      .order('co_occurrence_count', { ascending: false });
+    return data ?? [];
+  },
+  ['research-companion-papers'],
+  { revalidate: 3600, tags: ['compounds'] }
+);
 
 export const metadata: Metadata = {
   title: 'Correlated Peptides | Research Compound Correlations | Pep Nation Lab',
@@ -30,7 +51,10 @@ export const metadata: Metadata = {
   },
 };
 
-export const dynamic = 'force-dynamic';
+// ISR: reads only the public compound_companion_papers table (rebuilt weekly by
+// the PubMed sync cron) with no per-request/cookie data, so it is safe to
+// statically cache and revalidate hourly instead of rendering dynamically.
+export const revalidate = 3600;
 
 interface CompanionRow {
   compound_slug: string;
@@ -115,15 +139,9 @@ export default async function ResearchCorrelatedPage() {
     ]
   };
 
-  const supabase = await createClient();
-  const { data: companions } = await supabase
-    .from('compound_companion_papers')
-    .select('compound_slug, companion_slug, co_occurrence_count')
-    .order('co_occurrence_count', { ascending: false });
-
   const compoundRows = (await getAllCompounds()) as unknown as CompoundRow[];
 
-  const companionRows = (companions ?? []) as CompanionRow[];
+  const companionRows = (await getCompanionPapers()) as CompanionRow[];
 
   const nameBySlug = new Map<string, string>();
   for (const c of compoundRows) nameBySlug.set(c.slug, c.display_name);

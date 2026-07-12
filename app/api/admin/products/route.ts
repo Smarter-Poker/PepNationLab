@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -112,6 +113,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Product Was Created But ID Could Not Be Retrieved' }, { status: 500 });
     }
 
+    // New master product - purge every storefront catalog so any auto-created
+    // agent_products rows (and the house store) surface it immediately.
+    try {
+      revalidateTag('storefront-catalog', { expire: 0 });
+    } catch { /* best-effort cache refresh */ }
+
     return NextResponse.json({ id: data.id }, { status: 201 });
   } catch (err) {
     console.error('[admin/products] POST error:', err);
@@ -169,6 +176,13 @@ export async function PATCH(req: NextRequest) {
         await supabase.rpc('recalculate_agent_product_prices', { p_product_id: id });
       } catch { /* non-critical: triggers handle recomputation */ }
     }
+
+    // Master product fields (name, image, category, base_cost-driven retail
+    // recompute, is_active, backorder_days) all feed the public storefront
+    // catalog - purge every store's cached copy.
+    try {
+      revalidateTag('storefront-catalog', { expire: 0 });
+    } catch { /* best-effort cache refresh */ }
 
     return NextResponse.json({ success: true });
   } catch (err) {

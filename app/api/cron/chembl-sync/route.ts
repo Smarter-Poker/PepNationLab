@@ -4,6 +4,7 @@
  * compound_chembl_bindings (target_chembl_id, pchembl_value, etc).
  */
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { searchMolecule, getActivities } from '@/lib/research/chembl';
@@ -66,6 +67,15 @@ export async function GET(req: Request) {
       await sleep(GAP_MS);
     }
     await finishCronRun(claim.id, 'succeeded', `processed=${processed} errored=${errored} deferred=${deferred}`);
+    // Expire the cached compound + binding readers in lib/compounds-server.ts
+    // now that new ChEMBL rows are written, so monograph heatmaps do not wait
+    // out the 1-hour TTL. Next 16 form: revalidateTag(tag, { expire: 0 }).
+    if (processed > 0) {
+      try {
+        revalidateTag('compounds', { expire: 0 });
+        revalidateTag('bindings', { expire: 0 });
+      } catch { /* best-effort cache refresh */ }
+    }
     return NextResponse.json({ ok: true, processed, errored, deferred });
   } catch (err) {
     const m = err instanceof Error ? err.message : String(err);

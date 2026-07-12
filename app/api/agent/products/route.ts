@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -305,6 +306,14 @@ export async function PATCH(req: NextRequest) {
     if (error) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
     }
+
+    // Purge the public storefront catalog cache so shoppers see the price /
+    // visibility / naming change immediately instead of waiting out the 120s
+    // data-cache window. Global tag only - the agent's slug is not in scope
+    // here and fetching it would cost an extra round-trip.
+    try {
+      revalidateTag('storefront-catalog', { expire: 0 });
+    } catch { /* best-effort cache refresh */ }
 
     return NextResponse.json({ success: true });
   } catch (err) {

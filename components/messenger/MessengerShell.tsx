@@ -18,7 +18,10 @@ interface Props {
   userId: string;
 }
 
-const PRESENCE_INTERVAL_MS = 30_000;
+// Presence only needs coarse "recently active" granularity; 60s halves the
+// serverless invocations of the old 30s cadence, and hidden tabs skip the
+// ping entirely (see the presence effect below).
+const PRESENCE_INTERVAL_MS = 60_000;
 
 interface CachedPrefs {
   browser_push: boolean;
@@ -232,8 +235,20 @@ export default function MessengerShell({ userId }: Props) {
       } catch { /* silent */ }
     };
     void ping();
-    const id = setInterval(() => { if (!cancelled) void ping(); }, PRESENCE_INTERVAL_MS);
-    return () => { cancelled = true; clearInterval(id); };
+    // Skip pings while the tab is hidden - a backgrounded tab is not
+    // "present", and this saves an API call per interval per idle tab.
+    const id = setInterval(() => {
+      if (!cancelled && !document.hidden) void ping();
+    }, PRESENCE_INTERVAL_MS);
+    // Ping immediately when the tab becomes visible again so presence
+    // recovers without waiting out a full interval.
+    const onVisible = () => { if (!cancelled && !document.hidden) void ping(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
 
   const handleNewConversation = useCallback(() => {

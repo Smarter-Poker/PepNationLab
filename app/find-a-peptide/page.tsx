@@ -50,7 +50,9 @@ export default async function FindAPeptidePage() {
     if (profile.role === 'researcher' && profile.referring_agent_id) {
       agentId = profile.referring_agent_id;
     } else if ((profile.role === 'agent' || profile.role === 'super_agent')) {
-      agentId = profile.parent_agent_id ?? profile.id;
+      // Agents always browse their OWN storefront catalog — not the parent's.
+      // parent_agent_id is for the billing chain only.
+      agentId = profile.id;
     }
   }
 

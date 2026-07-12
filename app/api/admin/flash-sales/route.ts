@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -61,6 +62,13 @@ export async function POST(req: NextRequest) {
     })
     .select('id')
     .maybeSingle();
+
+
+  // Flash sales affect displayed storefront pricing - purge the public
+  // storefront catalog cache so an immediately-active sale shows right away.
+  try {
+    revalidateTag('storefront-catalog', { expire: 0 });
+  } catch { /* best-effort cache refresh */ }
 
   if (error || !data) return safeError('admin.flash-sales.create', error, 500, 'Failed To Create Flash Sale. Please Try Again.');
   return NextResponse.json({ id: data.id, success: true });

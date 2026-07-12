@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -79,6 +80,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Capture the OLD slug before the rename so its cached catalog entry can be
+  // purged too - otherwise the old URL keeps serving a stale catalog (instead
+  // of a 404) until its revalidate window expires.
+  const { data: previous } = await supabase
+    .from('agent_profiles')
+    .select('slug')
+    .eq('id', agentId)
+    .maybeSingle();
+  const oldSlug = previous?.slug ?? null;
+
   const { data, error } = await supabase
     .from('agent_profiles')
     .update({ slug: cleanSlug })
@@ -109,6 +120,15 @@ export async function POST(req: NextRequest) {
   if (!data) {
     return NextResponse.json({ error: 'Slug Was Updated But Could Not Be Retrieved' }, { status: 500 });
   }
+
+  // A slug rename moves the storefront URL: purge the NEW slug's tag (so the
+  // first hit builds fresh), the OLD slug's tag (so the abandoned URL stops
+  // serving a cached catalog), and the global tag.
+  try {
+    revalidateTag('storefront-catalog', { expire: 0 });
+    revalidateTag('catalog:' + data.slug, { expire: 0 });
+    if (oldSlug && oldSlug !== data.slug) revalidateTag('catalog:' + oldSlug, { expire: 0 });
+  } catch { /* best-effort cache refresh */ }
 
   return NextResponse.json({ slug: data.slug, url: `/${data.slug}` });
 }

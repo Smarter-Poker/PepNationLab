@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -181,6 +182,13 @@ export async function POST(req: NextRequest) {
     if (error) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
     }
+
+    // Inventory counts feed the public storefront catalog's inventoryMap -
+    // purge the cache so stock badges update immediately. Global tag only;
+    // the agent's storefront slug is not in scope here.
+    try {
+      revalidateTag('storefront-catalog', { expire: 0 });
+    } catch { /* best-effort cache refresh */ }
 
     return NextResponse.json({ success: true });
   } catch (error) {

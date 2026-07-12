@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -116,6 +117,12 @@ export async function POST(req: NextRequest) {
         cascaded_retail_recalc: true,
       },
     });
+
+    // The recalc above rewrites retail_price across EVERY agent store on this
+    // tier - purge all cached storefront catalogs so the new prices show.
+    try {
+      revalidateTag('storefront-catalog', { expire: 0 });
+    } catch { /* best-effort cache refresh */ }
 
     return NextResponse.json({ success: true });
   } catch (err) {

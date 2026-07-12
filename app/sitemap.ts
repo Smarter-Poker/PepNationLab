@@ -10,6 +10,11 @@ import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { GUIDES, GUIDES_UPDATED } from '@/lib/research/guides';
 import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
 import { RESEARCH_AREAS } from '@/lib/compounds';
+
+// Regenerate at most hourly - each hit builds thousands of URLs and runs up to
+// three 2000-row Supabase queries, which crawlers should not trigger per-request.
+export const revalidate = 3600;
+
 const BASE = 'https://pepnationlab.com';
 
 // Real content-edit date for hand-authored static/hub/list pages. Bump this
