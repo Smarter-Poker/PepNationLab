@@ -390,6 +390,7 @@ export default function AgentOverview({
           transition: all 0.2s ease;
           font-family: inherit;
           min-height: 120px;
+          min-width: 0;
           box-shadow: 
             0 8px 16px rgba(0,0,0,0.8),
             inset 0 1px 2px rgba(255,255,255,0.05);
@@ -446,6 +447,8 @@ export default function AgentOverview({
           flex-direction: column;
           justify-content: center;
           flex-grow: 1;
+          min-width: 0;
+          overflow: hidden;
         }
         
         .aoc-kpi-row {
@@ -484,6 +487,7 @@ export default function AgentOverview({
           display: flex;
           align-items: center;
           gap: 12px;
+          min-width: 0;
         }
         
         .aoc-kpi-divider-h {
@@ -514,6 +518,7 @@ export default function AgentOverview({
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
+          white-space: nowrap;
         }
         .metal-text-large {
           background: linear-gradient(180deg, #ffffff 0%, #d1d6dc 45%, #96a2ae 55%, #f4f5f7 100%);
@@ -548,14 +553,70 @@ export default function AgentOverview({
         .stat-num {
           font-size: 1.5rem;
           min-width: 20px;
+          flex-shrink: 0;
         }
         .row-num {
           font-size: 2.25rem;
           line-height: 1;
+          flex-shrink: 0;
         }
         .row-label {
           font-size: 0.95rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          min-width: 0;
         }
+
+        /* ── Mobile responsive overrides ──────────────────────────── */
+        @media (max-width: 480px) {
+          .aoc-kpi-panel {
+            padding: 14px 12px;
+            min-height: 92px;
+          }
+          .aoc-kpi-panel-split {
+            padding: 12px 14px;
+          }
+          /* Shrink the icon column */
+          .aoc-kpi-left {
+            width: 48px;
+          }
+          .aoc-kpi-left-small {
+            width: 40px;
+          }
+          /* Tighten separator margins */
+          .aoc-kpi-separator,
+          .aoc-kpi-separator-small {
+            margin: 0 10px;
+          }
+          /* Scale down the big $ icon */
+          .metal-icon-text {
+            font-size: 46px !important;
+          }
+          /* Scale down Lucide icons */
+          .aoc-kpi-left svg,
+          .aoc-kpi-left-small svg {
+            width: 36px !important;
+            height: 36px !important;
+          }
+          /* Scale down amount */
+          .aoc-kpi-amount {
+            font-size: 1.65rem;
+          }
+          /* Smaller title/subtitle text */
+          .aoc-kpi-title {
+            font-size: 0.75rem;
+          }
+          .aoc-kpi-subtitle {
+            font-size: 0.7rem;
+          }
+          /* Row stats */
+          .row-num { font-size: 1.5rem; }
+          .row-label { font-size: 0.75rem; }
+          .stat-num { font-size: 1.1rem; }
+        }
+        /* ─────────────────────────────────────────────────────────── */
+
 
         .aoc-kpi-panel:focus-visible,
         .dash-zone:focus-visible {
