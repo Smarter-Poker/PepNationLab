@@ -19,6 +19,7 @@ export const StorefrontRegisterSchema = z.object({
   email: z.string().max(320).optional(),
   phone: z.string().trim().max(30).optional().nullable(),
   code: z.union([z.string(), z.number()]).optional().nullable(),
+  referralCode: z.string().trim().max(20).optional().nullable(),
 });
 export type StorefrontRegisterInput = z.infer<typeof StorefrontRegisterSchema>;
 

@@ -27,6 +27,8 @@ interface Props {
   referralCode: string | null;
   referrals: Referral[];
   settings: Settings;
+  /** Status of a referral where the current user is the referee, if any. */
+  myReferralStatus?: string | null;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -47,8 +49,37 @@ const STATUS_COLORS: Record<string, string> = {
   revoked: 'var(--red)',
 };
 
-export default function ReferralsClient({ referralCode, referrals, settings }: Props) {
+export default function ReferralsClient({ referralCode, referrals, settings, myReferralStatus = null }: Props) {
   const [copied, setCopied] = useState(false);
+
+  // "Enter A Code" state for users who signed up without a referral link.
+  const [enteredCode, setEnteredCode] = useState('');
+  const [applying, setApplying] = useState(false);
+  const [appliedStatus, setAppliedStatus] = useState<string | null>(myReferralStatus);
+
+  async function applyCode() {
+    const code = enteredCode.trim();
+    if (!code || applying) return;
+    setApplying(true);
+    try {
+      const res = await fetch('/api/researcher/referrals/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setAppliedStatus('qualifying');
+        toast.success('Referral Code Applied. Your Credit Unlocks After Your First Qualifying Order.');
+      } else {
+        toast.error(data?.error || 'Could Not Apply That Referral Code.');
+      }
+    } catch {
+      toast.error('Could Not Apply That Referral Code.');
+    } finally {
+      setApplying(false);
+    }
+  }
 
   const [originUrl, setOriginUrl] = useState('https://pepnationlab.com');
   useEffect(() => {
@@ -58,7 +89,7 @@ export default function ReferralsClient({ referralCode, referrals, settings }: P
   }, []);
   
   const referralLink = referralCode
-    ? `${originUrl}/invite?ref=${referralCode}`
+    ? `${originUrl}/signup?ref=${referralCode}`
     : null;
 
   async function copyCode() {
@@ -185,6 +216,58 @@ export default function ReferralsClient({ referralCode, referrals, settings }: P
             </div>
           )}
         </div>
+
+        {/* Enter A Referral Code (referee side) */}
+        {settings.is_active && (
+          <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
+            <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)', fontSize: '1.1rem' }}>Have A Referral Code?</h2>
+            {appliedStatus ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Check size={16} aria-hidden style={{ color: 'var(--teal)', flexShrink: 0 }} />
+                <span style={{ color: 'var(--silver)', fontSize: '0.9rem' }}>
+                  {appliedStatus === 'rewarded'
+                    ? 'Your Referral Credit Has Been Issued.'
+                    : `A Referral Code Is Applied To Your Account. Your $${settings.referee_reward} Credit Unlocks After Your First Qualifying Order Over $${settings.min_order_total}.`}
+                </span>
+              </div>
+            ) : (
+              <>
+                <p style={{ color: 'var(--silver)', fontSize: '0.88rem', marginBottom: 'var(--space-4)' }}>
+                  Enter A Friend&apos;s Code To Earn ${settings.referee_reward} In Store Credit After Your First Qualifying Order Over ${settings.min_order_total}.
+                </p>
+                <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                  <input
+                    type="text"
+                    value={enteredCode}
+                    onChange={e => setEnteredCode(e.target.value.toUpperCase())}
+                    placeholder="Enter Code"
+                    maxLength={20}
+                    aria-label="Referral Code"
+                    style={{
+                      flex: 1,
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '12px 16px',
+                      fontSize: '1rem',
+                      letterSpacing: '0.08em',
+                      color: 'var(--white)',
+                      fontFamily: 'var(--font-mono, monospace)',
+                    }}
+                  />
+                  <button
+                    onClick={applyCode}
+                    disabled={applying || !enteredCode.trim()}
+                    className="btn btn-primary"
+                    style={{ flexShrink: 0 }}
+                  >
+                    {applying ? 'Applying...' : 'Apply Code'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Referral History */}
         <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>

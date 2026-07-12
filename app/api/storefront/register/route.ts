@@ -223,6 +223,28 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Researcher referral code (best-effort, never fails the registration).
+    // The RPC validates the code, dedupes, and applies any live promotion's
+    // reward amounts. Executed via the service client -- authenticated EXECUTE
+    // on apply_referral_code was revoked in the 2026-07-11 RPC lockdown.
+    {
+      const referralCode = String(parsedBody.data.referralCode ?? '').trim();
+      if (referralCode) {
+        try {
+          const { data: referralId, error: refErr } = await admin.rpc('apply_referral_code', {
+            p_referee_id: newUserId,
+            p_code: referralCode.slice(0, 20),
+          });
+          if (!refErr && referralId) {
+            await admin
+              .from('researcher_referrals')
+              .update({ referee_email: email })
+              .eq('id', referralId as string);
+          }
+        } catch { /* invalid or duplicate code -- signup proceeds regardless */ }
+      }
+    }
+
     // Welcome email (best-effort, non-blocking). No-op if the sender is not
     // configured; only meaningful once email is live.
     sendWelcomeEmail({ to: email, fullName, username: usernameClean }).catch(() => { /* ignore */ });

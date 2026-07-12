@@ -7,9 +7,9 @@ import { Bell, BellRing, Check } from 'lucide-react';
 // it only needs the product id (and optionally the storefront agent id for
 // price-drop context). Posts to /api/researcher/product-alerts.
 //
-// Not yet wired into AgentStorefrontGrid to avoid editing that hot file while a
-// concurrent refactor is in flight; import and render it wherever a product is
-// shown out of stock, e.g. <NotifyMeButton productId={p.id} agentId={agentId} />.
+// Rendered by AgentStorefrontGrid on out-of-stock product cards; also safe to
+// mount anywhere else a product is shown, e.g.
+// <NotifyMeButton productId={p.id} agentId={agentId} />.
 
 interface Props {
   productId: string;

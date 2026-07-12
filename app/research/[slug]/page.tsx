@@ -26,6 +26,7 @@ import MechanismSVG from '@/components/research/MechanismSVG';
 import { PKChart, ReceptorAffinityHeatmap } from '@/components/research/LazyCharts';
 import SaveToCollectionButton from '@/components/research/SaveToCollectionButton';
 import AddToReadingQueueButton from '@/components/research/AddToReadingQueueButton';
+import MarkQueueRead from '@/components/research/MarkQueueRead';
 import SubscribeButton from '@/components/research/SubscribeButton';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
@@ -322,6 +323,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       >
         <SaveToCollectionButton compoundSlug={compound.slug} compoundName={compound.display_name} />
         <AddToReadingQueueButton compoundSlug={compound.slug} compoundName={compound.display_name} />
+        <MarkQueueRead compoundSlug={compound.slug} />
         <SubscribeButton compoundSlug={compound.slug} compoundName={compound.display_name} />
         <PinToCompareButton
           compoundSlug={compound.slug}
