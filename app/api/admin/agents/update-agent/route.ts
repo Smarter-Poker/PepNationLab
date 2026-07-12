@@ -70,6 +70,7 @@ export async function PATCH(request: NextRequest) {
     // Hard-lock: If account is prepay or null, strictly nullify credit_limit to prevent phantom balances.
     if (updates.account_type === 'prepaid' || updates.account_type === null) {
       updates.credit_limit = null;
+      updates.max_auto_approve_limit = null;
     }
 
     const { error } = await supabase
